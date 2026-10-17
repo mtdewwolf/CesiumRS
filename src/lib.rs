@@ -7,6 +7,7 @@
 //! it is not affiliated with Cesium GS, Inc.
 
 pub mod api;
+pub mod core;
 pub mod camera;
 pub mod ellipsoid;
 pub mod geodesic;

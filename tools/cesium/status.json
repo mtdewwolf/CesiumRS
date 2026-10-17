@@ -1,0 +1,185 @@
+{
+  "Core/BoundingRectangle": {
+    "status": "ported",
+    "rust": "core::bounding_rectangle"
+  },
+  "Core/BoundingSphere": {
+    "status": "partial",
+    "rust": "core::bounding_sphere",
+    "note": "Missing fromOrientedBoundingBox (needs OrientedBoundingBox) and isOccluded (needs Occluder)."
+  },
+  "Core/Cartesian2": {
+    "status": "ported",
+    "rust": "core::cartesian2"
+  },
+  "Core/Cartesian3": {
+    "status": "ported",
+    "rust": "core::cartesian3"
+  },
+  "Core/Cartesian4": {
+    "status": "ported",
+    "rust": "core::cartesian4"
+  },
+  "Core/Cartographic": {
+    "status": "ported",
+    "rust": "core::cartographic"
+  },
+  "Core/Check": {
+    "status": "n/a",
+    "note": "Argument checks; Rust types and Result do this at compile time or in the signature."
+  },
+  "Core/Color": {
+    "status": "ported",
+    "rust": "core::color"
+  },
+  "Core/DeveloperError": {
+    "status": "n/a",
+    "note": "Panics on programmer error, Result for recoverable errors."
+  },
+  "Core/Ellipsoid": {
+    "status": "ported",
+    "rust": "core::ellipsoid",
+    "note": "Ellipsoid.default is not a mutable global; APIs take the ellipsoid explicitly."
+  },
+  "Core/FeatureDetection": {
+    "status": "n/a",
+    "note": "Browser and WebGL feature sniffing."
+  },
+  "Core/Frozen": {
+    "status": "n/a",
+    "note": "Rust values are immutable unless declared mut."
+  },
+  "Core/Fullscreen": {
+    "status": "n/a",
+    "note": "Browser Fullscreen API."
+  },
+  "Core/GeographicProjection": {
+    "status": "ported",
+    "rust": "core::geographic_projection"
+  },
+  "Core/HeadingPitchRange": {
+    "status": "ported",
+    "rust": "core::heading_pitch_range"
+  },
+  "Core/HeadingPitchRoll": {
+    "status": "ported",
+    "rust": "core::heading_pitch_roll"
+  },
+  "Core/Intersect": {
+    "status": "ported",
+    "rust": "core::intersect"
+  },
+  "Core/Interval": {
+    "status": "ported",
+    "rust": "core::interval"
+  },
+  "Core/MapProjection": {
+    "status": "ported",
+    "rust": "core::map_projection"
+  },
+  "Core/Math": {
+    "status": "ported",
+    "rust": "core::math"
+  },
+  "Core/Matrix2": {
+    "status": "ported",
+    "rust": "core::matrix2"
+  },
+  "Core/Matrix3": {
+    "status": "ported",
+    "rust": "core::matrix3"
+  },
+  "Core/Matrix4": {
+    "status": "ported",
+    "rust": "core::matrix4"
+  },
+  "Core/Plane": {
+    "status": "ported",
+    "rust": "core::plane"
+  },
+  "Core/Quaternion": {
+    "status": "ported",
+    "rust": "core::quaternion"
+  },
+  "Core/Rectangle": {
+    "status": "ported",
+    "rust": "core::rectangle"
+  },
+  "Core/RuntimeError": {
+    "status": "ported",
+    "rust": "core::runtime_error"
+  },
+  "Core/Spherical": {
+    "status": "ported",
+    "rust": "core::spherical"
+  },
+  "Core/Transforms": {
+    "status": "partial",
+    "rust": "core::transforms",
+    "note": "Local frames, HPR frames, window coordinates, 2D bases done; ICRF/TEME/Moon frames need JulianDate, EOP, and IAU 2006 data."
+  },
+  "Core/TranslationRotationScale": {
+    "status": "ported",
+    "rust": "core::translation_rotation_scale"
+  },
+  "Core/WebMercatorProjection": {
+    "status": "ported",
+    "rust": "core::web_mercator_projection"
+  },
+  "Core/addAllToArray": {
+    "status": "n/a",
+    "note": "Vec::extend."
+  },
+  "Core/buildModuleUrl": {
+    "status": "n/a",
+    "note": "Resolves the JS bundle base URL."
+  },
+  "Core/clone": {
+    "status": "n/a",
+    "note": "Clone/Copy derives."
+  },
+  "Core/combine": {
+    "status": "n/a",
+    "note": "Struct update syntax and Default."
+  },
+  "Core/defer": {
+    "status": "n/a",
+    "note": "Promise helper; Rust uses futures/channels."
+  },
+  "Core/defined": {
+    "status": "n/a",
+    "note": "Option<T> replaces undefined checks."
+  },
+  "Core/deprecationWarning": {
+    "status": "n/a",
+    "note": "Console helper for the JS API; Rust uses #[deprecated]."
+  },
+  "Core/destroyObject": {
+    "status": "n/a",
+    "note": "Drop."
+  },
+  "Core/formatError": {
+    "status": "n/a",
+    "note": "JS Error formatting; Rust uses Display."
+  },
+  "Core/globalTypes": {
+    "status": "n/a",
+    "note": "JSDoc type declarations only."
+  },
+  "Core/loadAndExecuteScript": {
+    "status": "n/a",
+    "note": "Injects a <script> tag."
+  },
+  "Core/oneTimeWarning": {
+    "status": "n/a",
+    "note": "Console helper for the JS API."
+  },
+  "Core/scaleToGeodeticSurface": {
+    "status": "ported",
+    "rust": "core::scale_to_geodetic_surface"
+  },
+  "Core/wrapFunction": {
+    "status": "n/a",
+    "note": "JS function wrapping helper."
+  }
+}
