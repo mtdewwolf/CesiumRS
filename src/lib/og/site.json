@@ -1,4 +1,6 @@
 {
   "title": "cesium-rs",
-  "card": "custom"
+  "type": "x:game",
+  "card": "custom",
+  "banner": "/x-banner.jpg"
 }
