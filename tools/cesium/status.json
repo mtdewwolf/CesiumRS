@@ -3,6 +3,11 @@
     "status": "ported",
     "rust": "core::arc_type"
   },
+  "Core/AttributeCompression": {
+    "status": "ported",
+    "rust": "core::attribute_compression",
+    "note": "Typed Rust slices replace JS typed arrays and component-datatype arguments; Float32 rounding and Uint16 wrapping preserved."
+  },
   "Core/AxisAlignedBoundingBox": {
     "status": "ported",
     "rust": "core::axis_aligned_bounding_box"
@@ -90,6 +95,10 @@
     "status": "ported",
     "rust": "core::ellipsoidal_occluder"
   },
+  "Core/EncodedCartesian3": {
+    "status": "ported",
+    "rust": "core::encoded_cartesian3"
+  },
   "Core/Event": {
     "status": "ported",
     "rust": "core::event",
@@ -122,6 +131,11 @@
   "Core/HeadingPitchRoll": {
     "status": "ported",
     "rust": "core::heading_pitch_roll"
+  },
+  "Core/HilbertOrder": {
+    "status": "partial",
+    "rust": "core::hilbert_order",
+    "note": "Levels 1\u201332 checked against CesiumJS, including Number precision and signed-bit quirks. Higher levels are not supported yet."
   },
   "Core/Intersect": {
     "status": "ported",
@@ -167,6 +181,11 @@
   "Core/Matrix4": {
     "status": "ported",
     "rust": "core::matrix4"
+  },
+  "Core/MortonOrder": {
+    "status": "ported",
+    "rust": "core::morton_order",
+    "note": "2D 16-bit and 3D 10-bit coordinate encode/decode."
   },
   "Core/Occluder": {
     "status": "ported",
