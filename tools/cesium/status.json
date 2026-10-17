@@ -31,6 +31,19 @@
     "status": "n/a",
     "note": "Argument checks; Rust types and Result do this at compile time or in the signature."
   },
+  "Core/Clock": {
+    "status": "ported",
+    "rust": "core::clock",
+    "note": "Clock::new returns None when start is after stop (a debug check in Cesium; LOOP_STOP would never end). tick_at takes the system time explicitly."
+  },
+  "Core/ClockRange": {
+    "status": "ported",
+    "rust": "core::clock_range"
+  },
+  "Core/ClockStep": {
+    "status": "ported",
+    "rust": "core::clock_step"
+  },
   "Core/Color": {
     "status": "ported",
     "rust": "core::color"
@@ -69,6 +82,11 @@
     "status": "ported",
     "rust": "core::ellipsoidal_occluder"
   },
+  "Core/Event": {
+    "status": "ported",
+    "rust": "core::event",
+    "note": "Listeners are boxed closures identified by ListenerId; Cesium scopes become captured state."
+  },
   "Core/FeatureDetection": {
     "status": "n/a",
     "note": "Browser and WebGL feature sniffing."
@@ -84,6 +102,10 @@
   "Core/GeographicProjection": {
     "status": "ported",
     "rust": "core::geographic_projection"
+  },
+  "Core/GregorianDate": {
+    "status": "ported",
+    "rust": "core::gregorian_date"
   },
   "Core/HeadingPitchRange": {
     "status": "ported",
@@ -104,6 +126,19 @@
   "Core/Interval": {
     "status": "ported",
     "rust": "core::interval"
+  },
+  "Core/Iso8601": {
+    "status": "ported",
+    "rust": "core::iso8601"
+  },
+  "Core/JulianDate": {
+    "status": "ported",
+    "rust": "core::julian_date",
+    "note": "fromIso8601 returns Err where Cesium throws; JulianDate.leapSeconds is a const table, not a mutable array."
+  },
+  "Core/LeapSecond": {
+    "status": "ported",
+    "rust": "core::leap_second"
   },
   "Core/MapProjection": {
     "status": "ported",
@@ -181,6 +216,24 @@
     "status": "ported",
     "rust": "core::spherical"
   },
+  "Core/TimeConstants": {
+    "status": "ported",
+    "rust": "core::time_constants"
+  },
+  "Core/TimeInterval": {
+    "status": "ported",
+    "rust": "core::time_interval",
+    "note": "Interval data is generic; data comparers and merge callbacks are closures."
+  },
+  "Core/TimeIntervalCollection": {
+    "status": "ported",
+    "rust": "core::time_interval_collection",
+    "note": "Data comparers are closures; the plain methods use PartialEq where Cesium uses ===."
+  },
+  "Core/TimeStandard": {
+    "status": "ported",
+    "rust": "core::time_standard"
+  },
   "Core/Transforms": {
     "status": "partial",
     "rust": "core::transforms",
@@ -201,6 +254,10 @@
   "Core/addAllToArray": {
     "status": "n/a",
     "note": "Vec::extend."
+  },
+  "Core/binarySearch": {
+    "status": "ported",
+    "rust": "core::binary_search"
   },
   "Core/buildModuleUrl": {
     "status": "n/a",
@@ -234,9 +291,17 @@
     "status": "n/a",
     "note": "JS Error formatting; Rust uses Display."
   },
+  "Core/getTimestamp": {
+    "status": "ported",
+    "rust": "core::clock::get_timestamp"
+  },
   "Core/globalTypes": {
     "status": "n/a",
     "note": "JSDoc type declarations only."
+  },
+  "Core/isLeapYear": {
+    "status": "ported",
+    "rust": "core::is_leap_year"
   },
   "Core/loadAndExecuteScript": {
     "status": "n/a",

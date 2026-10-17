@@ -2,6 +2,8 @@
 //
 //   npm run fixtures
 //
+// Run with TZ=UTC (the npm script sets it) so nothing depends on local time.
+//
 // Each file is `{ "module", "cesium", "cases": [{ "f", "a", "r" }] }`: the
 // function name, encoded arguments, and encoded result (or `{ "throws" }`).
 
@@ -11,12 +13,13 @@ import { fileURLToPath } from "node:url";
 import coreBounds from "./core-bounds.mjs";
 import coreGeometry from "./core-geometry.mjs";
 import coreMath from "./core-math.mjs";
+import coreTime from "./core-time.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = join(here, "../../../tests/fixtures");
 const version = JSON.parse(readFileSync(join(here, "../node_modules/@cesium/engine/package.json"), "utf8")).version;
 
-const packages = { core: [...coreMath(), ...coreGeometry(), ...coreBounds()] };
+const packages = { core: [...coreMath(), ...coreGeometry(), ...coreBounds(), ...coreTime()] };
 
 let total = 0;
 for (const [pkg, suites] of Object.entries(packages)) {

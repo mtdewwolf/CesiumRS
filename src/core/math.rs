@@ -436,3 +436,44 @@ pub fn js_number_to_string(value: f64) -> String {
         _ => s,
     }
 }
+
+/// JavaScript `Number.prototype.toFixed(digits)` for `|value| < 1e21`:
+/// exact decimal rounding with ties going up in magnitude (Rust's own
+/// formatting rounds ties to even).
+pub fn js_to_fixed(value: f64, digits: usize) -> String {
+    if !value.is_finite() || value.abs() >= 1e21 {
+        return js_number_to_string(value);
+    }
+    // f64 values have finite decimal expansions of at most 1074 fractional digits.
+    let exact = format!("{:.1100}", value.abs());
+    let (int_part, frac_part) = exact.split_once('.').unwrap();
+    let mut digits_vec: Vec<u8> = int_part.bytes().chain(frac_part.bytes().take(digits)).map(|b| b - b'0').collect();
+    let round_up = frac_part.as_bytes().get(digits).is_some_and(|b| *b >= b'5');
+    if round_up {
+        let mut i = digits_vec.len();
+        loop {
+            if i == 0 {
+                digits_vec.insert(0, 1);
+                break;
+            }
+            i -= 1;
+            if digits_vec[i] == 9 {
+                digits_vec[i] = 0;
+            } else {
+                digits_vec[i] += 1;
+                break;
+            }
+        }
+    }
+    let int_len = digits_vec.len() - digits;
+    let mut s: String = digits_vec[..int_len].iter().map(|d| char::from(b'0' + d)).collect();
+    if digits > 0 {
+        s.push('.');
+        s.extend(digits_vec[int_len..].iter().map(|d| char::from(b'0' + d)));
+    }
+    let is_zero = digits_vec.iter().all(|d| *d == 0);
+    if value < 0.0 && !is_zero {
+        s.insert(0, '-');
+    }
+    s
+}
