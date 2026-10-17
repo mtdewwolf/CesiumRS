@@ -350,3 +350,21 @@ fn clock_tick() {
         },
     );
 }
+
+#[test]
+fn simon1994_planetary_positions() {
+    use cesium_rs::core::simon1994_planetary_positions as simon;
+    run(
+        "core",
+        "Simon1994PlanetaryPositions",
+        |_| TIGHT_VECTOR,
+        |f, a| {
+            let d = JulianDate::new(n(&a[0]), n(&a[1]), TimeStandard::Tai);
+            match f {
+                "sun" => ok(simon::compute_sun_position_in_earth_inertial_frame(&d)),
+                "moon" => ok(simon::compute_moon_position_in_earth_inertial_frame(&d)),
+                _ => None,
+            }
+        },
+    );
+}

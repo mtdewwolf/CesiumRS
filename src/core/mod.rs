@@ -60,6 +60,7 @@ pub mod ray;
 pub mod rectangle;
 pub mod runtime_error;
 pub mod scale_to_geodetic_surface;
+pub mod simon1994_planetary_positions;
 pub mod spherical;
 pub mod time_constants;
 pub mod time_interval;

@@ -10,6 +10,7 @@ import {
   ClockStep,
   GregorianDate,
   JulianDate,
+  Simon1994PlanetaryPositions,
   TimeInterval,
   TimeIntervalCollection,
   TimeStandard,
@@ -346,5 +347,16 @@ function clockSuite() {
 }
 
 export default function coreTime() {
-  return [julianDateSuite(), timeIntervalSuite(), collectionSuite(), clockSuite()];
+  return [julianDateSuite(), timeIntervalSuite(), collectionSuite(), clockSuite(), simonSuite()];
+}
+
+export function simonSuite() {
+  const g = generators(makeRng(404));
+  const s = suite("Simon1994PlanetaryPositions");
+  const date = () => [Math.floor(g.uniform(2400000, 2500000)), g.uniform(0, 86400)];
+  s.repeat("sun", 60, date, (d, sod) => Simon1994PlanetaryPositions.computeSunPositionInEarthInertialFrame(J([d, sod])));
+  s.repeat("moon", 60, date, (d, sod) => Simon1994PlanetaryPositions.computeMoonPositionInEarthInertialFrame(J([d, sod])));
+  s.add("sun", [2451545, 0], (d, sod) => Simon1994PlanetaryPositions.computeSunPositionInEarthInertialFrame(J([d, sod])));
+  s.add("moon", [2451545, 0], (d, sod) => Simon1994PlanetaryPositions.computeMoonPositionInEarthInertialFrame(J([d, sod])));
+  return s;
 }

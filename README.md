@@ -1,34 +1,68 @@
-# cesium-rs
+# CesiumRS
 
-A Rust port of the **CesiumJS 1.139 geospatial core** — the math Cesium uses to put a camera on a WGS84 globe. Not a binding to the JavaScript library, and not a line-by-line copy of the renderer, 3D Tiles, or terrain pipeline.
+A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is a rewrite, not a binding to the JavaScript library, and each ported module is checked against real CesiumJS output.
 
-Ported, and covered by `cargo test`:
+![Port progress by package](docs/progress.svg)
 
-| CesiumJS | cesium-rs |
+![Overall progress over time](docs/progress-history.svg)
+
+**Status: 8.6% of CesiumJS ported** (60 of 1,266 applicable modules, weighted by JavaScript lines). Core, the math, geometry and time foundation, is 33.6% done. [PORTING.md](PORTING.md) lists every module with its status.
+
+## What is ported
+
+All of these live in `src/core`, one Rust module per Cesium module:
+
+| Area | Cesium modules |
 | --- | --- |
-| `Ellipsoid.WGS84`, `scaleToGeodeticSurface`, cartographic ↔ Cartesian | `ellipsoid` |
-| `Transforms.eastNorthUpToFixedFrame` | `camera::enu_axes` |
-| `Camera` heading / pitch / range + perspective | `camera::look_at` |
-| `IntersectionTests.rayEllipsoid` | `intersect::ray_ellipsoid` |
-| `EllipsoidGeodesic` (Vincenty) | `geodesic` |
-| `WebMercatorProjection` | `projection` |
-| `GeographicTilingScheme`, `WebMercatorTilingScheme` | `projection` |
-| Globe mesh, graticule, tile outlines, star directions | `mesh` |
+| Math | `Math` (incl. `MersenneTwister` random numbers), `Cartesian2/3/4`, `Matrix2/3/4`, `Quaternion`, `HeadingPitchRoll`, `HeadingPitchRange`, `Spherical`, `Cartographic`, `TranslationRotationScale`, `Color` (CSS parsing, named colors) |
+| Ellipsoid and projections | `Ellipsoid` (WGS84, Moon, Mars, unit sphere), `scaleToGeodeticSurface`, `Rectangle`, `GeographicProjection`, `WebMercatorProjection`, `MapProjection`, `EllipsoidTangentPlane` |
+| Curves | `EllipsoidGeodesic` (Vincenty), `EllipsoidRhumbLine` |
+| Intersections | `Ray`, `Plane`, `IntersectionTests`, `Intersect`, `Interval`, `QuadraticRealPolynomial`, `CubicRealPolynomial`, `QuarticRealPolynomial` |
+| Bounding volumes and culling | `BoundingSphere`, `BoundingRectangle`, `AxisAlignedBoundingBox`, `OrientedBoundingBox`, `CullingVolume`, `Occluder`, `EllipsoidalOccluder`, `Visibility` |
+| Frustums | `PerspectiveFrustum`, `PerspectiveOffCenterFrustum`, `OrthographicFrustum`, `OrthographicOffCenterFrustum` |
+| Frames | `Transforms` (local frames, heading-pitch-roll, window coordinates, 2D model matrices). The ICRF, TEME and Moon frames are not ported yet. |
+| Time | `JulianDate`, `GregorianDate`, `LeapSecond`, `Iso8601`, `TimeInterval`, `TimeIntervalCollection`, `TimeStandard`, `TimeConstants`, `Clock`, `ClockStep`, `ClockRange`, `Event` |
+| Astronomy | `Simon1994PlanetaryPositions` (Sun and Moon positions) |
 
-Algorithms follow CesiumJS 1.139 ([Apache-2.0](https://github.com/CesiumGS/cesium)). This project is not affiliated with Cesium GS, Inc.
+### Mapping CesiumJS to Rust
+
+- `result` out-parameters become return values.
+- Where Cesium returns `undefined`, Rust returns `Option`. Where Cesium throws a `RuntimeError` or rejects bad input (such as an invalid ISO 8601 string), Rust returns `Result`.
+- Checks that only exist in Cesium's debug builds (`DeveloperError`) are not ported. Rust behaves like Cesium's release build, except where the check prevents a crash or an endless loop; those cases return `Option`.
+- Cesium's quirks are kept on purpose and documented where they occur. For example, `Date.UTC` maps years 0–99 to 1900–1999, `fastSlerp` rounds to `Float32Array`, and the cubic root solver has a known bug.
+
+## How parity is checked
+
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The `tests/core_*.rs` suites replay all **13,878 cases** through the Rust port and compare the results within a relative and absolute tolerance of 1e-12. A fixture function that has no Rust counterpart fails the test, so nothing is skipped by accident.
 
 ```bash
-cargo test
-cargo build --release --target wasm32-unknown-unknown
+cargo test                                   # unit tests + all CesiumJS fixtures
+cd tools/cesium && npm ci && npm run fixtures   # regenerate fixtures from CesiumJS
+npm run tracker                              # rebuild PORTING.md and the charts
+npm run milestone -- "Name"                  # same, starting a new point on the history chart
 ```
-
-The `cdylib` exposes a C ABI (`camera_look_at`, `pick_ndc`, `build_globe`, …) for the in-browser globe.
 
 ## Viewer
 
-`web/` is a [Lakebed](https://lakebed.dev) capsule that draws the globe with WebGL on top of the wasm build: places, Vincenty geodesics, tap-to-measure, picking, graticule, geographic and Web Mercator tile grids, and sun lighting. Imagery is Natural Earth II, the same set CesiumJS bundles.
+![The CesiumRS viewer](docs/viewer.png)
+
+`web/` is a [Lakebed](https://lakebed.dev) capsule that draws a WGS84 globe with WebGL. It runs on the wasm build of this crate and provides places, Vincenty geodesics, tap-to-measure, picking, a graticule, geographic and Web Mercator tile grids, and sun lighting. The imagery is Natural Earth II, the same set CesiumJS bundles. A live build is at https://frosted-ridge-959d00d06e.lakebed.app.
 
 ```bash
-scripts/build-web.sh
+scripts/build-web.sh          # cargo build --target wasm32-unknown-unknown, embedded into web/
 cd web && npx lakebed dev
 ```
+
+The viewer still uses the first-generation modules in `src/` (`camera`, `ellipsoid`, `geodesic`, `intersect`, `projection`, `mesh`, `sun`). Moving it onto `src/core` is on the roadmap.
+
+## Roadmap
+
+1. **Core time and astronomy (in progress):** the ICRF, TEME and Moon-fixed frames in `Transforms`, `EarthOrientationParameters`, `Iau2006XysData`, and the IAU orientation models.
+2. **Core algorithms:** splines, `PolygonPipeline` and earcut, `AttributeCompression`, `EncodedCartesian3`, sorting and queues, and Morton and Hilbert orders.
+3. **Core geometry:** box, ellipsoid, polygon, polyline, corridor and wall geometries, plus terrain and tiling schemes.
+4. **Moving the viewer onto `src/core`,** then redeploying it.
+5. **Renderer, Scene, DataSources, Workers and Shaders,** the rest of the way to 100%.
+
+## License
+
+Apache-2.0. The algorithms follow CesiumJS ([Apache-2.0](https://github.com/CesiumGS/cesium)). This project is not affiliated with Cesium GS, Inc.

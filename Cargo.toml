@@ -2,7 +2,7 @@
 name = "cesium-rs"
 version = "0.1.0"
 edition = "2021"
-description = "Rust port of the CesiumJS geospatial core: WGS84 ellipsoid, camera, geodesics, Web Mercator, tiling, and picking."
+description = "Rust port of CesiumJS (@cesium/engine 23.0.0), checked against CesiumJS fixtures."
 license = "Apache-2.0"
 publish = false
 readme = "README.md"

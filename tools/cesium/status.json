@@ -212,6 +212,11 @@
     "status": "ported",
     "rust": "core::runtime_error"
   },
+  "Core/Simon1994PlanetaryPositions": {
+    "status": "ported",
+    "rust": "core::simon1994_planetary_positions",
+    "note": "Orbit-element checks are unreachable for the Earth/Moon elements and are not ported."
+  },
   "Core/Spherical": {
     "status": "ported",
     "rust": "core::spherical"
