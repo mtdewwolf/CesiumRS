@@ -1,0 +1,19 @@
+[package]
+name = "cesium-rs"
+version = "0.1.0"
+edition = "2021"
+description = "Rust port of the CesiumJS geospatial core: WGS84 ellipsoid, camera, geodesics, Web Mercator, tiling, and picking."
+license = "Apache-2.0"
+publish = false
+readme = "README.md"
+
+[lib]
+name = "cesium_rs"
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
