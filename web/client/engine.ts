@@ -1,10 +1,10 @@
-import { previewPathPrefix } from "@/lib/preview-path-prefix";
+import { WASM_BASE64 } from "./generated/wasm";
 
-export function assetUrl(path: string): string {
-  const normalized = path.startsWith("/") ? path : `/${path}`;
-  if (typeof window === "undefined") return normalized;
-  const prefix = previewPathPrefix(window.location.hostname, window.location.pathname) ?? "";
-  return `${prefix}${normalized}`;
+export function decodeBase64(data: string): Uint8Array {
+  const binary = atob(data);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
 }
 
 type Exports = {
@@ -29,6 +29,7 @@ type Exports = {
   ) => void;
   pick_ndc: (x: number, y: number) => void;
   llh_to_ecef: (lon: number, lat: number, height: number) => void;
+  ecef_to_llh: (x: number, y: number, z: number) => void;
   geodesic_info: (lon1: number, lat1: number, lon2: number, lat2: number) => void;
   sun_direction: (jd: number) => void;
   suggested_level: (range: number) => number;
@@ -90,6 +91,8 @@ export type CesiumEngine = {
     far: number;
   }) => CameraFrame;
   pick: (ndcX: number, ndcY: number) => PickHit | null;
+  toCartesian: (lon: number, lat: number, height: number) => [number, number, number];
+  toCartographic: (x: number, y: number, z: number) => { longitude: number; latitude: number } | null;
   geodesic: (lon1: number, lat1: number, lon2: number, lat2: number) => GeodesicInfo;
   sun: (jd: number) => { direction: [number, number, number]; longitude: number; latitude: number };
   level: (range: number) => number;
@@ -129,10 +132,8 @@ function mat16(src: Float64Array, offset: number): Float32Array {
 }
 
 export async function loadEngine(): Promise<CesiumEngine> {
-  const response = await fetch(assetUrl("/cesium_rs.wasm"));
-  if (!response.ok) throw new Error(`cesium-rs failed to load (${response.status})`);
-  const { instance } = await WebAssembly.instantiate(await response.arrayBuffer(), {});
-  const exp = instance.exports as Exports;
+  const { instance } = await WebAssembly.instantiate(decodeBase64(WASM_BASE64), {});
+  const exp = instance.exports as unknown as Exports;
   if (typeof exp.camera_look_at !== "function" || !exp.memory) {
     throw new Error("cesium-rs wasm is missing the camera export");
   }
@@ -169,6 +170,16 @@ export async function loadEngine(): Promise<CesiumEngine> {
       const raw = takeF64(exp);
       if (raw.length < 8 || raw[0] === 0) return null;
       return { t: raw[1], longitude: raw[2], latitude: raw[3], height: raw[4] };
+    },
+    toCartesian(lon, lat, height) {
+      exp.llh_to_ecef(lon, lat, height);
+      return vec3(takeF64(exp), 0);
+    },
+    toCartographic(x, y, z) {
+      exp.ecef_to_llh(x, y, z);
+      const raw = takeF64(exp);
+      if (raw.length < 3 || raw[0] === 0) return null;
+      return { longitude: raw[1], latitude: raw[2] };
     },
     geodesic(lon1, lat1, lon2, lat2) {
       exp.geodesic_info(lon1, lat1, lon2, lat2);

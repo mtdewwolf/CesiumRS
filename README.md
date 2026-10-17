@@ -23,3 +23,12 @@ cargo build --release --target wasm32-unknown-unknown
 ```
 
 The `cdylib` exposes a C ABI (`camera_look_at`, `pick_ndc`, `build_globe`, …) for the in-browser globe.
+
+## Viewer
+
+`web/` is a [Lakebed](https://lakebed.dev) capsule that draws the globe with WebGL on top of the wasm build: places, Vincenty geodesics, tap-to-measure, picking, graticule, geographic and Web Mercator tile grids, and sun lighting. Imagery is Natural Earth II, the same set CesiumJS bundles.
+
+```bash
+scripts/build-web.sh
+cd web && npx lakebed dev
+```

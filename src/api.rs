@@ -220,6 +220,8 @@ pub extern "C" fn build_tile_mesh(
     focus_lat: f64,
     window: u32,
 ) {
+    // Keep each edge chord under ~3° so outlines do not sink into the globe.
+    let edge_segments = (64u32 >> level.min(6)).max(4);
     let lines = build_tile_grid(
         &ellipsoid(),
         level,
@@ -227,7 +229,7 @@ pub extern "C" fn build_tile_mesh(
         focus_lon,
         focus_lat,
         window,
-        4,
+        edge_segments,
     );
     SCRATCH.with(|s| {
         s.borrow_mut().f32s = lines;
