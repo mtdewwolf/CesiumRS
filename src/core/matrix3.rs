@@ -228,11 +228,8 @@ fn shur_decomposition(m: &Matrix3) -> Matrix3 {
         let pp = m.0[idx(p, p)];
         let qp = m.0[idx(q, p)];
         let tau = (qq - pp) / 2.0 / qp;
-        let t = if tau < 0.0 {
-            -1.0 / (-tau + (1.0 + tau * tau).sqrt())
-        } else {
-            1.0 / (tau + (1.0 + tau * tau).sqrt())
-        };
+        let t =
+            if tau < 0.0 { -1.0 / (-tau + (1.0 + tau * tau).sqrt()) } else { 1.0 / (tau + (1.0 + tau * tau).sqrt()) };
         c = 1.0 / (1.0 + t * t).sqrt();
         s = t * c;
     }

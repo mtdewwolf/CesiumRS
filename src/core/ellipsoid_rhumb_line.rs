@@ -2,7 +2,9 @@
 
 use super::cartographic::Cartographic;
 use super::ellipsoid::Ellipsoid;
-use super::math::{equals_epsilon, negative_pi_to_pi, sign, EPSILON10, EPSILON12, EPSILON14, EPSILON8, PI, PI_OVER_TWO};
+use super::math::{
+    equals_epsilon, negative_pi_to_pi, sign, EPSILON10, EPSILON12, EPSILON14, EPSILON8, PI, PI_OVER_TWO,
+};
 
 /// Meridional arc length from the equator to `latitude`.
 fn calculate_m(ellipticity: f64, major: f64, latitude: f64) -> f64 {
@@ -23,7 +25,12 @@ fn calculate_m(ellipticity: f64, major: f64, latitude: f64) -> f64 {
     let sin10_phi = (10.0 * phi).sin();
     let sin12_phi = (12.0 * phi).sin();
     major
-        * ((1.0 - e2 / 4.0 - (3.0 * e4) / 64.0 - (5.0 * e6) / 256.0 - (175.0 * e8) / 16384.0 - (441.0 * e10) / 65536.0
+        * ((1.0
+            - e2 / 4.0
+            - (3.0 * e4) / 64.0
+            - (5.0 * e6) / 256.0
+            - (175.0 * e8) / 16384.0
+            - (441.0 * e10) / 65536.0
             - (4851.0 * e12) / 1048576.0)
             * phi
             - ((3.0 * e2) / 8.0
@@ -33,7 +40,10 @@ fn calculate_m(ellipticity: f64, major: f64, latitude: f64) -> f64 {
                 + (2205.0 * e10) / 131072.0
                 + (6237.0 * e12) / 524288.0)
                 * sin2_phi
-            + ((15.0 * e4) / 256.0 + (45.0 * e6) / 1024.0 + (525.0 * e8) / 16384.0 + (1575.0 * e10) / 65536.0
+            + ((15.0 * e4) / 256.0
+                + (45.0 * e6) / 1024.0
+                + (525.0 * e8) / 16384.0
+                + (1575.0 * e10) / 65536.0
                 + (155925.0 * e12) / 8388608.0)
                 * sin4_phi
             - ((35.0 * e6) / 3072.0 + (175.0 * e8) / 12288.0 + (3675.0 * e10) / 262144.0 + (13475.0 * e12) / 1048576.0)
@@ -90,7 +100,8 @@ fn calculate_inverse_m(m: f64, ellipticity: f64, major: f64) -> f64 {
             * cos6_d
         + ((1097.0 * d * e10) / 65536.0 + (42783.0 * d * e12) / 1048576.0) * cos8_d
         + ((8011.0 * d * e12) / 1048576.0) * cos10_d
-        + ((3.0 * e2) / 8.0 + (3.0 * e4) / 16.0 + (213.0 * e6) / 2048.0 - (3.0 * d2 * e6) / 64.0 + (255.0 * e8) / 4096.0
+        + ((3.0 * e2) / 8.0 + (3.0 * e4) / 16.0 + (213.0 * e6) / 2048.0 - (3.0 * d2 * e6) / 64.0
+            + (255.0 * e8) / 4096.0
             - (33.0 * d2 * e8) / 512.0
             + (20861.0 * e10) / 524288.0
             - (33.0 * d2 * e10) / 512.0
@@ -215,7 +226,12 @@ impl EllipsoidRhumbLine {
         }
     }
 
-    pub fn from_start_heading_distance(start: &Cartographic, heading: f64, distance: f64, ellipsoid: &Ellipsoid) -> Self {
+    pub fn from_start_heading_distance(
+        start: &Cartographic,
+        heading: f64,
+        distance: f64,
+        ellipsoid: &Ellipsoid,
+    ) -> Self {
         let major = ellipsoid.maximum_radius;
         let minor = ellipsoid.minimum_radius;
         let ellipticity = ((major * major - minor * minor) / (major * major)).sqrt();

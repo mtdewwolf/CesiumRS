@@ -25,7 +25,12 @@ impl OrthographicFrustum {
     }
 
     pub fn pack(&self, array: &mut [f64], starting_index: usize) {
-        array[starting_index..starting_index + 4].copy_from_slice(&[self.width, self.aspect_ratio, self.near, self.far]);
+        array[starting_index..starting_index + 4].copy_from_slice(&[
+            self.width,
+            self.aspect_ratio,
+            self.near,
+            self.far,
+        ]);
     }
 
     pub fn unpack(array: &[f64], starting_index: usize) -> Self {
@@ -53,14 +58,14 @@ impl OrthographicFrustum {
     }
 
     pub fn equals(&self, other: &Self) -> bool {
-        self.width == other.width && self.aspect_ratio == other.aspect_ratio && self.off_center_frustum() == other.off_center_frustum()
+        self.width == other.width
+            && self.aspect_ratio == other.aspect_ratio
+            && self.off_center_frustum() == other.off_center_frustum()
     }
 
     pub fn equals_epsilon(&self, other: &Self, relative_epsilon: f64, absolute_epsilon: f64) -> bool {
         equals_epsilon(self.width, other.width, relative_epsilon, absolute_epsilon)
             && equals_epsilon(self.aspect_ratio, other.aspect_ratio, relative_epsilon, absolute_epsilon)
-            && self
-                .off_center_frustum()
-                .equals_epsilon(&other.off_center_frustum(), relative_epsilon, absolute_epsilon)
+            && self.off_center_frustum().equals_epsilon(&other.off_center_frustum(), relative_epsilon, absolute_epsilon)
     }
 }

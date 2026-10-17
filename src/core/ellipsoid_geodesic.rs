@@ -144,7 +144,8 @@ fn vincenty_inverse(major: f64, minor: f64, lon1: f64, lat1: f64, lon2: f64, lat
         * sine_sigma
         * (cosine_twice_sigma_midpoint
             + (b * (cosine_sigma * (2.0 * cos2 - 1.0)
-                - (b * cosine_twice_sigma_midpoint * (4.0 * sine_sigma * sine_sigma - 3.0) * (4.0 * cos2 - 3.0)) / 6.0))
+                - (b * cosine_twice_sigma_midpoint * (4.0 * sine_sigma * sine_sigma - 3.0) * (4.0 * cos2 - 3.0))
+                    / 6.0))
                 / 4.0);
     let distance = minor * a * (sigma - delta_sigma);
     // Cesium uses the sine and cosine from the last iteration, not the final lambda.

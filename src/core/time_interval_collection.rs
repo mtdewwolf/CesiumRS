@@ -191,7 +191,13 @@ impl<T: Clone> TimeIntervalCollection<T> {
                 if same(&intervals[index - 1].data, &interval.data) {
                     let prev = &intervals[index - 1];
                     interval = if JulianDate::greater_than(&interval.stop, &prev.stop) {
-                        TimeInterval::new(prev.start, interval.stop, prev.is_start_included, interval.is_stop_included, interval.data)
+                        TimeInterval::new(
+                            prev.start,
+                            interval.stop,
+                            prev.is_start_included,
+                            interval.is_stop_included,
+                            interval.data,
+                        )
                     } else {
                         TimeInterval::new(
                             prev.start,
@@ -232,7 +238,9 @@ impl<T: Clone> TimeIntervalCollection<T> {
 
         while index < intervals.len() {
             let comparison = JulianDate::compare(&interval.stop, &intervals[index].start);
-            if comparison > 0.0 || (comparison == 0.0 && (interval.is_stop_included || intervals[index].is_start_included)) {
+            if comparison > 0.0
+                || (comparison == 0.0 && (interval.is_stop_included || intervals[index].is_start_included))
+            {
                 if same(&intervals[index].data, &interval.data) {
                     let next = &intervals[index];
                     let later = JulianDate::greater_than(&next.stop, &interval.stop);
@@ -270,7 +278,11 @@ impl<T: Clone> TimeIntervalCollection<T> {
     /// Removes the time covered by `interval`, splitting intervals as needed.
     /// `same` decides whether the intervals on either side of a removed
     /// point can merge back. Returns `true` if anything changed.
-    pub fn remove_interval_with(&mut self, interval: &TimeInterval<T>, same: impl Fn(&Option<T>, &Option<T>) -> bool) -> bool {
+    pub fn remove_interval_with(
+        &mut self,
+        interval: &TimeInterval<T>,
+        same: impl Fn(&Option<T>, &Option<T>) -> bool,
+    ) -> bool {
         if interval.is_empty() {
             return false;
         }
@@ -290,12 +302,23 @@ impl<T: Clone> TimeIntervalCollection<T> {
             if JulianDate::greater_than(&prev.stop, &interval.stop)
                 || (prev.is_stop_included && !interval.is_stop_included && prev.stop == interval.stop)
             {
-                let tail = TimeInterval::new(interval.stop, prev.stop, !interval.is_stop_included, prev.is_stop_included, prev.data.clone());
+                let tail = TimeInterval::new(
+                    interval.stop,
+                    prev.stop,
+                    !interval.is_stop_included,
+                    prev.is_stop_included,
+                    prev.data.clone(),
+                );
                 intervals.insert(index, tail);
             }
             let prev = &intervals[index - 1];
-            intervals[index - 1] =
-                TimeInterval::new(prev.start, interval.start, prev.is_start_included, !interval.is_start_included, prev.data.clone());
+            intervals[index - 1] = TimeInterval::new(
+                prev.start,
+                interval.start,
+                prev.is_start_included,
+                !interval.is_start_included,
+                prev.data.clone(),
+            );
         }
 
         if index < intervals.len()
@@ -324,7 +347,8 @@ impl<T: Clone> TimeIntervalCollection<T> {
                 {
                     intervals.remove(index);
                     let next = &intervals[index];
-                    intervals[index] = TimeInterval::new(next.start, next.stop, true, next.is_stop_included, next.data.clone());
+                    intervals[index] =
+                        TimeInterval::new(next.start, next.stop, true, next.is_stop_included, next.data.clone());
                 } else {
                     let cur = &intervals[index];
                     intervals[index] = TimeInterval::new(interval.stop, interval.stop, true, true, cur.data.clone());
@@ -336,11 +360,19 @@ impl<T: Clone> TimeIntervalCollection<T> {
 
         if index < intervals.len()
             && (JulianDate::greater_than(&interval.stop, &intervals[index].start)
-                || (interval.stop == intervals[index].start && interval.is_stop_included && intervals[index].is_start_included))
+                || (interval.stop == intervals[index].start
+                    && interval.is_stop_included
+                    && intervals[index].is_start_included))
         {
             result = true;
             let next = &intervals[index];
-            intervals[index] = TimeInterval::new(interval.stop, next.stop, !interval.is_stop_included, next.is_stop_included, next.data.clone());
+            intervals[index] = TimeInterval::new(
+                interval.stop,
+                next.stop,
+                !interval.is_stop_included,
+                next.is_stop_included,
+                next.data.clone(),
+            );
         }
 
         if result {
@@ -375,7 +407,9 @@ impl<T: Clone> TimeIntervalCollection<T> {
                         result.add_interval_with(intersection, same);
                     }
                 }
-                if JulianDate::less_than(&l.stop, &r.stop) || (l.stop == r.stop && !l.is_stop_included && r.is_stop_included) {
+                if JulianDate::less_than(&l.stop, &r.stop)
+                    || (l.stop == r.stop && !l.is_stop_included && r.is_stop_included)
+                {
                     left += 1;
                 } else {
                     right += 1;
@@ -402,7 +436,8 @@ impl<T: Clone> TimeIntervalCollection<T> {
         };
         if options.leading_interval {
             start_index += 1;
-            let interval = TimeInterval::new(iso8601::minimum_value(), julian_dates[0], true, !options.is_start_included, None);
+            let interval =
+                TimeInterval::new(iso8601::minimum_value(), julian_dates[0], true, !options.is_start_included, None);
             add(&mut result, interval);
         }
         for i in 0..length.saturating_sub(1) {
@@ -416,7 +451,13 @@ impl<T: Clone> TimeIntervalCollection<T> {
             add(&mut result, interval);
         }
         if options.trailing_interval {
-            let interval = TimeInterval::new(julian_dates[length - 1], iso8601::maximum_value(), !options.is_stop_included, true, None);
+            let interval = TimeInterval::new(
+                julian_dates[length - 1],
+                iso8601::maximum_value(),
+                !options.is_stop_included,
+                true,
+                None,
+            );
             add(&mut result, interval);
         }
         result
@@ -514,7 +555,8 @@ impl<T: Clone + PartialEq> TimeIntervalCollection<T> {
     }
 
     pub fn equals(&self, right: &Self) -> bool {
-        self.intervals.len() == right.intervals.len() && self.intervals.iter().zip(&right.intervals).all(|(a, b)| a.equals(b))
+        self.intervals.len() == right.intervals.len()
+            && self.intervals.iter().zip(&right.intervals).all(|(a, b)| a.equals(b))
     }
 }
 

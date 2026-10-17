@@ -25,7 +25,16 @@ impl Enc for JulianDate {
 
 impl Enc for GregorianDate {
     fn enc(&self) -> Value {
-        json!([self.year, self.month, self.day, self.hour, self.minute, self.second, num(self.millisecond), self.is_leap_second])
+        json!([
+            self.year,
+            self.month,
+            self.day,
+            self.hour,
+            self.minute,
+            self.second,
+            num(self.millisecond),
+            self.is_leap_second
+        ])
     }
 }
 
@@ -81,71 +90,81 @@ fn same(a: &Option<f64>, b: &Option<f64>) -> bool {
 
 #[test]
 fn julian_date() {
-    run("core", "JulianDate", |_| TIGHT, |f, a| {
-        let d = |i: usize| jd(&a[i]);
-        match f {
-            "new" => {
-                let standard = if n(&a[2]) == 0.0 { TimeStandard::Utc } else { TimeStandard::Tai };
-                ok(JulianDate::new(n(&a[0]), n(&a[1]), standard))
+    run(
+        "core",
+        "JulianDate",
+        |_| TIGHT,
+        |f, a| {
+            let d = |i: usize| jd(&a[i]);
+            match f {
+                "new" => {
+                    let standard = if n(&a[2]) == 0.0 { TimeStandard::Utc } else { TimeStandard::Tai };
+                    ok(JulianDate::new(n(&a[0]), n(&a[1]), standard))
+                }
+                "fromGregorianDate" => {
+                    let i = |k: usize| n(&a[k]) as i32;
+                    let g = GregorianDate {
+                        year: i(0),
+                        month: i(1),
+                        day: i(2),
+                        hour: i(3),
+                        minute: i(4),
+                        second: i(5),
+                        millisecond: n(&a[6]),
+                        is_leap_second: b(&a[7]),
+                    };
+                    ok(JulianDate::from_gregorian_date(&g))
+                }
+                "fromDate" => ok(JulianDate::from_date(n(&a[0]))),
+                "fromIso8601" => or_invalid(JulianDate::from_iso8601(s(&a[0]))),
+                "toGregorianDate" => ok(d(0).to_gregorian_date()),
+                "toDate" => ok(d(0).to_date()),
+                "toIso8601" => ok(d(0).to_iso8601(opt(&a[1]).map(|p| p as usize))),
+                "roundTripIso8601" => res(JulianDate::from_iso8601(&d(0).to_iso8601(None))),
+                "compare" => ok(JulianDate::compare(&d(0), &d(1))),
+                "equals" => ok(d(0).equals(&d(1))),
+                "equalsEpsilon" => ok(d(0).equals_epsilon(&d(1), n(&a[2]))),
+                "lessThan" => ok(JulianDate::less_than(&d(0), &d(1))),
+                "lessThanOrEquals" => ok(JulianDate::less_than_or_equals(&d(0), &d(1))),
+                "greaterThan" => ok(JulianDate::greater_than(&d(0), &d(1))),
+                "greaterThanOrEquals" => ok(JulianDate::greater_than_or_equals(&d(0), &d(1))),
+                "totalDays" => ok(d(0).total_days()),
+                "secondsDifference" => ok(JulianDate::seconds_difference(&d(0), &d(1))),
+                "daysDifference" => ok(JulianDate::days_difference(&d(0), &d(1))),
+                "computeTaiMinusUtc" => ok(d(0).compute_tai_minus_utc()),
+                "addSeconds" => ok(d(0).add_seconds(n(&a[1]))),
+                "addMinutes" => ok(d(0).add_minutes(n(&a[1]))),
+                "addHours" => ok(d(0).add_hours(n(&a[1]))),
+                "addDays" => ok(d(0).add_days(n(&a[1]))),
+                _ => None,
             }
-            "fromGregorianDate" => {
-                let i = |k: usize| n(&a[k]) as i32;
-                let g = GregorianDate {
-                    year: i(0),
-                    month: i(1),
-                    day: i(2),
-                    hour: i(3),
-                    minute: i(4),
-                    second: i(5),
-                    millisecond: n(&a[6]),
-                    is_leap_second: b(&a[7]),
-                };
-                ok(JulianDate::from_gregorian_date(&g))
-            }
-            "fromDate" => ok(JulianDate::from_date(n(&a[0]))),
-            "fromIso8601" => or_invalid(JulianDate::from_iso8601(s(&a[0]))),
-            "toGregorianDate" => ok(d(0).to_gregorian_date()),
-            "toDate" => ok(d(0).to_date()),
-            "toIso8601" => ok(d(0).to_iso8601(opt(&a[1]).map(|p| p as usize))),
-            "roundTripIso8601" => res(JulianDate::from_iso8601(&d(0).to_iso8601(None))),
-            "compare" => ok(JulianDate::compare(&d(0), &d(1))),
-            "equals" => ok(d(0).equals(&d(1))),
-            "equalsEpsilon" => ok(d(0).equals_epsilon(&d(1), n(&a[2]))),
-            "lessThan" => ok(JulianDate::less_than(&d(0), &d(1))),
-            "lessThanOrEquals" => ok(JulianDate::less_than_or_equals(&d(0), &d(1))),
-            "greaterThan" => ok(JulianDate::greater_than(&d(0), &d(1))),
-            "greaterThanOrEquals" => ok(JulianDate::greater_than_or_equals(&d(0), &d(1))),
-            "totalDays" => ok(d(0).total_days()),
-            "secondsDifference" => ok(JulianDate::seconds_difference(&d(0), &d(1))),
-            "daysDifference" => ok(JulianDate::days_difference(&d(0), &d(1))),
-            "computeTaiMinusUtc" => ok(d(0).compute_tai_minus_utc()),
-            "addSeconds" => ok(d(0).add_seconds(n(&a[1]))),
-            "addMinutes" => ok(d(0).add_minutes(n(&a[1]))),
-            "addHours" => ok(d(0).add_hours(n(&a[1]))),
-            "addDays" => ok(d(0).add_days(n(&a[1]))),
-            _ => None,
-        }
-    });
+        },
+    );
 }
 
 #[test]
 fn time_interval() {
-    run("core", "TimeInterval", |_| TIGHT, |f, a| {
-        let i = |k: usize| interval(&a[k]);
-        match f {
-            "fromIso8601" => or_invalid(TimeInterval::<f64>::from_iso8601(s(&a[0]), b(&a[1]), b(&a[2]), None)),
-            "toIso8601" => ok(i(0).to_iso8601(opt(&a[1]).map(|p| p as usize))),
-            "isEmpty" => ok(i(0).is_empty()),
-            "contains" => ok(i(0).contains(&jd(&a[1]))),
-            "equals" => ok(i(0).equals(&i(1))),
-            "equalsEpsilon" => ok(i(0).equals_epsilon(&i(1), n(&a[2]))),
-            "intersect" => {
-                let m: Option<time_interval::DataMerge<'_, f64>> = if b(&a[2]) { Some(&merge) } else { None };
-                ok(i(0).intersect(&i(1), m))
+    run(
+        "core",
+        "TimeInterval",
+        |_| TIGHT,
+        |f, a| {
+            let i = |k: usize| interval(&a[k]);
+            match f {
+                "fromIso8601" => or_invalid(TimeInterval::<f64>::from_iso8601(s(&a[0]), b(&a[1]), b(&a[2]), None)),
+                "toIso8601" => ok(i(0).to_iso8601(opt(&a[1]).map(|p| p as usize))),
+                "isEmpty" => ok(i(0).is_empty()),
+                "contains" => ok(i(0).contains(&jd(&a[1]))),
+                "equals" => ok(i(0).equals(&i(1))),
+                "equalsEpsilon" => ok(i(0).equals_epsilon(&i(1), n(&a[2]))),
+                "intersect" => {
+                    let m: Option<time_interval::DataMerge<'_, f64>> = if b(&a[2]) { Some(&merge) } else { None };
+                    ok(i(0).intersect(&i(1), m))
+                }
+                _ => None,
             }
-            _ => None,
-        }
-    });
+        },
+    );
 }
 
 /// Applies `["add" | "remove", interval]` operations; returns the
@@ -175,46 +194,64 @@ fn time_interval_collection() {
             grid.push(JulianDate::new(f64::from(2451545 + d), f64::from(k * 10800), TimeStandard::Tai));
         }
     }
-    run("core", "TimeIntervalCollection", |_| TIGHT, |f, a| match f {
-        "ops" => {
-            let (c, removed, changed) = build(&a[0]);
-            let index: Vec<f64> = grid.iter().map(|d| c.index_of(d) as f64).collect();
-            let data: Vec<Option<f64>> = grid.iter().map(|d| c.find_data_for_interval_containing_date(d).copied()).collect();
-            let bounds = (!c.is_empty()).then(|| {
-                json!([c.start().unwrap().enc(), c.is_start_included(), c.stop().unwrap().enc(), c.is_stop_included()])
-            });
-            ok(json!([c.enc(), removed.enc(), changed, index.enc(), data.enc(), bounds.enc()]))
-        }
-        "intersect" => {
-            let (left, ..) = build(&a[0]);
-            let (right, ..) = build(&a[1]);
-            let m: Option<time_interval::DataMerge<'_, f64>> = if b(&a[2]) { Some(&merge) } else { None };
-            ok(left.intersect_with(&right, same, m))
-        }
-        "fromJulianDateArray" => {
-            let dates = list(&a[0], jd);
-            ok(TimeIntervalCollection::from_julian_date_array(&dates, date_options(&a[1]), index_data, same))
-        }
-        "fromIso8601" => or_invalid(TimeIntervalCollection::from_iso8601(s(&a[0]), date_options(&a[1]), index_data, same)),
-        "fromIso8601DateArray" => {
-            let dates = list(&a[0], |v| s(v).to_string());
-            let dates: Vec<&str> = dates.iter().map(String::as_str).collect();
-            or_invalid(TimeIntervalCollection::from_iso8601_date_array(&dates, date_options(&a[1]), index_data, same))
-        }
-        "fromIso8601DurationArray" => {
-            let durations = list(&a[1], |v| s(v).to_string());
-            let durations: Vec<&str> = durations.iter().map(String::as_str).collect();
-            or_invalid(TimeIntervalCollection::from_iso8601_duration_array(
-                &jd(&a[0]),
-                &durations,
-                b(&a[2]),
-                date_options(&a[3]),
-                index_data,
-                same,
-            ))
-        }
-        _ => None,
-    });
+    run(
+        "core",
+        "TimeIntervalCollection",
+        |_| TIGHT,
+        |f, a| match f {
+            "ops" => {
+                let (c, removed, changed) = build(&a[0]);
+                let index: Vec<f64> = grid.iter().map(|d| c.index_of(d) as f64).collect();
+                let data: Vec<Option<f64>> =
+                    grid.iter().map(|d| c.find_data_for_interval_containing_date(d).copied()).collect();
+                let bounds = (!c.is_empty()).then(|| {
+                    json!([
+                        c.start().unwrap().enc(),
+                        c.is_start_included(),
+                        c.stop().unwrap().enc(),
+                        c.is_stop_included()
+                    ])
+                });
+                ok(json!([c.enc(), removed.enc(), changed, index.enc(), data.enc(), bounds.enc()]))
+            }
+            "intersect" => {
+                let (left, ..) = build(&a[0]);
+                let (right, ..) = build(&a[1]);
+                let m: Option<time_interval::DataMerge<'_, f64>> = if b(&a[2]) { Some(&merge) } else { None };
+                ok(left.intersect_with(&right, same, m))
+            }
+            "fromJulianDateArray" => {
+                let dates = list(&a[0], jd);
+                ok(TimeIntervalCollection::from_julian_date_array(&dates, date_options(&a[1]), index_data, same))
+            }
+            "fromIso8601" => {
+                or_invalid(TimeIntervalCollection::from_iso8601(s(&a[0]), date_options(&a[1]), index_data, same))
+            }
+            "fromIso8601DateArray" => {
+                let dates = list(&a[0], |v| s(v).to_string());
+                let dates: Vec<&str> = dates.iter().map(String::as_str).collect();
+                or_invalid(TimeIntervalCollection::from_iso8601_date_array(
+                    &dates,
+                    date_options(&a[1]),
+                    index_data,
+                    same,
+                ))
+            }
+            "fromIso8601DurationArray" => {
+                let durations = list(&a[1], |v| s(v).to_string());
+                let durations: Vec<&str> = durations.iter().map(String::as_str).collect();
+                or_invalid(TimeIntervalCollection::from_iso8601_duration_array(
+                    &jd(&a[0]),
+                    &durations,
+                    b(&a[2]),
+                    date_options(&a[3]),
+                    index_data,
+                    same,
+                ))
+            }
+            _ => None,
+        },
+    );
 }
 
 fn clock_step(v: &Value) -> ClockStep {
@@ -254,57 +291,62 @@ fn clock_state(c: &Clock) -> Value {
 
 #[test]
 fn clock_tick() {
-    run("core", "Clock", |_| TIGHT, |f, a| match f {
-        "tick" => {
-            let mut now = 1000.0;
-            let mut c = clock(&a[0], now);
-            let stops = Rc::new(Cell::new(0));
-            let ticks = Rc::new(Cell::new(0));
-            let (st, tk) = (stops.clone(), ticks.clone());
-            c.on_stop.add_event_listener(move |_| st.set(st.get() + 1));
-            c.on_tick.add_event_listener(move |_| tk.set(tk.get() + 1));
-            let out: Vec<Value> = a[1]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|dt| {
-                    now += n(dt);
-                    c.tick_at(now).enc()
-                })
-                .collect();
-            ok(json!([out, stops.get(), ticks.get(), clock_state(&c)]))
-        }
-        "setters" => {
-            let mut c = clock(&a[0], 0.0);
-            let mut from_system = false;
-            let states: Vec<Value> = a[1]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|op| {
-                    let v = &op[1];
-                    match s(&op[0]) {
-                        "clockStep" => {
-                            let step = clock_step(v);
-                            c.set_clock_step(step);
-                            from_system |= step == ClockStep::SystemClock;
+    run(
+        "core",
+        "Clock",
+        |_| TIGHT,
+        |f, a| match f {
+            "tick" => {
+                let mut now = 1000.0;
+                let mut c = clock(&a[0], now);
+                let stops = Rc::new(Cell::new(0));
+                let ticks = Rc::new(Cell::new(0));
+                let (st, tk) = (stops.clone(), ticks.clone());
+                c.on_stop.add_event_listener(move |_| st.set(st.get() + 1));
+                c.on_tick.add_event_listener(move |_| tk.set(tk.get() + 1));
+                let out: Vec<Value> = a[1]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|dt| {
+                        now += n(dt);
+                        c.tick_at(now).enc()
+                    })
+                    .collect();
+                ok(json!([out, stops.get(), ticks.get(), clock_state(&c)]))
+            }
+            "setters" => {
+                let mut c = clock(&a[0], 0.0);
+                let mut from_system = false;
+                let states: Vec<Value> = a[1]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|op| {
+                        let v = &op[1];
+                        match s(&op[0]) {
+                            "clockStep" => {
+                                let step = clock_step(v);
+                                c.set_clock_step(step);
+                                from_system |= step == ClockStep::SystemClock;
+                            }
+                            "multiplier" => c.set_multiplier(n(v)),
+                            "shouldAnimate" => c.set_should_animate(b(v)),
+                            _ => {
+                                c.set_current_time(jd(v));
+                                from_system = false;
+                            }
                         }
-                        "multiplier" => c.set_multiplier(n(v)),
-                        "shouldAnimate" => c.set_should_animate(b(v)),
-                        _ => {
-                            c.set_current_time(jd(v));
-                            from_system = false;
+                        let mut state = clock_state(&c);
+                        if from_system {
+                            state[0] = json!("now");
                         }
-                    }
-                    let mut state = clock_state(&c);
-                    if from_system {
-                        state[0] = json!("now");
-                    }
-                    state
-                })
-                .collect();
-            ok(states)
-        }
-        _ => None,
-    });
+                        state
+                    })
+                    .collect();
+                ok(states)
+            }
+            _ => None,
+        },
+    );
 }

@@ -53,11 +53,7 @@ const fn max3(x: f64, y: f64, z: f64) -> f64 {
 impl Ellipsoid {
     pub const WGS84: Self = Self::new(6378137.0, 6378137.0, 6356752.3142451793);
     pub const UNIT_SPHERE: Self = Self::new(1.0, 1.0, 1.0);
-    pub const MOON: Self = Self::new(
-        super::math::LUNAR_RADIUS,
-        super::math::LUNAR_RADIUS,
-        super::math::LUNAR_RADIUS,
-    );
+    pub const MOON: Self = Self::new(super::math::LUNAR_RADIUS, super::math::LUNAR_RADIUS, super::math::LUNAR_RADIUS);
     pub const MARS: Self = Self::new(3396190.0, 3396190.0, 3376200.0);
     pub const PACKED_LENGTH: usize = 3;
 
@@ -130,11 +126,7 @@ impl Ellipsoid {
         let p = self.scale_to_geodetic_surface(cartesian)?;
         let n = self.geodetic_surface_normal(p)?;
         let h = cartesian.subtract(p);
-        Some(Cartographic::new(
-            n.y.atan2(n.x),
-            n.z.asin(),
-            sign(h.dot(cartesian)) * h.magnitude(),
-        ))
+        Some(Cartographic::new(n.y.atan2(n.x), n.z.asin(), sign(h.dot(cartesian)) * h.magnitude()))
     }
 
     pub fn cartesian_array_to_cartographic_array(&self, cartesians: &[Cartesian3]) -> Vec<Option<Cartographic>> {
@@ -225,20 +217,8 @@ impl Ellipsoid {
     }
 }
 
-const ABSCISSAS: [f64; 5] = [
-    0.14887433898163,
-    0.43339539412925,
-    0.67940956829902,
-    0.86506336668898,
-    0.97390652851717,
-];
-const WEIGHTS: [f64; 5] = [
-    0.29552422471475,
-    0.26926671930999,
-    0.21908636251598,
-    0.14945134915058,
-    0.066671344308684,
-];
+const ABSCISSAS: [f64; 5] = [0.14887433898163, 0.43339539412925, 0.67940956829902, 0.86506336668898, 0.97390652851717];
+const WEIGHTS: [f64; 5] = [0.29552422471475, 0.26926671930999, 0.21908636251598, 0.14945134915058, 0.066671344308684];
 
 fn gauss_legendre_quadrature(a: f64, b: f64, f: impl Fn(f64) -> f64) -> f64 {
     let x_mean = 0.5 * (b + a);

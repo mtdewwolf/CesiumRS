@@ -83,7 +83,13 @@ pub fn ray_triangle_parametric(
     }
 }
 
-pub fn ray_triangle(ray: &Ray, p0: Cartesian3, p1: Cartesian3, p2: Cartesian3, cull_back_faces: bool) -> Option<Cartesian3> {
+pub fn ray_triangle(
+    ray: &Ray,
+    p0: Cartesian3,
+    p1: Cartesian3,
+    p2: Cartesian3,
+    cull_back_faces: bool,
+) -> Option<Cartesian3> {
     let t = ray_triangle_parametric(ray, p0, p1, p2, cull_back_faces)?;
     if t < 0.0 {
         return None;
@@ -182,11 +188,7 @@ pub fn ray_ellipsoid(ray: &Ray, ellipsoid: &Ellipsoid) -> Option<Interval> {
             let temp = -qw + discriminant.sqrt();
             let root0 = temp / w2;
             let root1 = difference / temp;
-            return Some(if root0 < root1 {
-                Interval::new(root0, root1)
-            } else {
-                Interval::new(root1, root0)
-            });
+            return Some(if root0 < root1 { Interval::new(root0, root1) } else { Interval::new(root1, root0) });
         }
         let root = (difference / w2).sqrt();
         return Some(Interval::new(root, root));
@@ -348,17 +350,7 @@ pub fn grazing_altitude_location(ray: &Ray, ellipsoid: &Ellipsoid) -> Option<Car
     let b_t = big_b.transpose();
     let d_i = Matrix3::from_scale(ellipsoid.radii);
     let d = Matrix3::from_scale(ellipsoid.one_over_radii);
-    let c = Matrix3([
-        0.0,
-        -direction.z,
-        direction.y,
-        direction.z,
-        0.0,
-        -direction.x,
-        -direction.y,
-        direction.x,
-        0.0,
-    ]);
+    let c = Matrix3([0.0, -direction.z, direction.y, direction.z, 0.0, -direction.x, -direction.y, direction.x, 0.0]);
     let temp = b_t.multiply(&d).multiply(&c);
     let a = temp.multiply(&d_i).multiply(&big_b);
     let b = temp.multiply_by_vector(position);

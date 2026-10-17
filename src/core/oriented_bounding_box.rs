@@ -35,20 +35,11 @@ fn from_plane_extents(
     minimum_z: f64,
     maximum_z: f64,
 ) -> OrientedBoundingBox {
-    let half_axes = Matrix3::ZERO
-        .set_column(0, plane_x_axis)
-        .set_column(1, plane_y_axis)
-        .set_column(2, plane_z_axis);
-    let center_offset = Cartesian3::new(
-        (minimum_x + maximum_x) / 2.0,
-        (minimum_y + maximum_y) / 2.0,
-        (minimum_z + maximum_z) / 2.0,
-    );
-    let scale = Cartesian3::new(
-        (maximum_x - minimum_x) / 2.0,
-        (maximum_y - minimum_y) / 2.0,
-        (maximum_z - minimum_z) / 2.0,
-    );
+    let half_axes = Matrix3::ZERO.set_column(0, plane_x_axis).set_column(1, plane_y_axis).set_column(2, plane_z_axis);
+    let center_offset =
+        Cartesian3::new((minimum_x + maximum_x) / 2.0, (minimum_y + maximum_y) / 2.0, (minimum_z + maximum_z) / 2.0);
+    let scale =
+        Cartesian3::new((maximum_x - minimum_x) / 2.0, (maximum_y - minimum_y) / 2.0, (maximum_z - minimum_z) / 2.0);
     let center = plane_origin.add(half_axes.multiply_by_vector(center_offset));
     OrientedBoundingBox { center, half_axes: half_axes.multiply_by_scale(scale) }
 }
@@ -123,7 +114,12 @@ impl OrientedBoundingBox {
     /// Tight box around a cartographic rectangle between two heights.
     /// `None` for rectangles wider than 2π or taller than π, or an ellipsoid
     /// that is not one of revolution, where Cesium throws.
-    pub fn from_rectangle(rectangle: &Rectangle, minimum_height: f64, maximum_height: f64, ellipsoid: &Ellipsoid) -> Option<Self> {
+    pub fn from_rectangle(
+        rectangle: &Rectangle,
+        minimum_height: f64,
+        maximum_height: f64,
+        ellipsoid: &Ellipsoid,
+    ) -> Option<Self> {
         use super::math::{equals_epsilon, EPSILON15, PI, TWO_PI};
         let width = rectangle.width();
         let height = rectangle.height();
@@ -139,17 +135,16 @@ impl OrientedBoundingBox {
             let tangent_plane = EllipsoidTangentPlane::new(tangent_point, ellipsoid)?;
             let plane = tangent_plane.plane;
             let lon_center = tangent_point_cartographic.longitude;
-            let lat_center = if rectangle.south < 0.0 && rectangle.north > 0.0 {
-                0.0
-            } else {
-                tangent_point_cartographic.latitude
-            };
+            let lat_center =
+                if rectangle.south < 0.0 && rectangle.north > 0.0 { 0.0 } else { tangent_point_cartographic.latitude };
             let nc = Cartographic::new(lon_center, rectangle.north, maximum_height);
             let mut nw = Cartographic::new(rectangle.west, rectangle.north, maximum_height);
             let cw = Cartographic::new(rectangle.west, lat_center, maximum_height);
             let mut sw = Cartographic::new(rectangle.west, rectangle.south, maximum_height);
             let sc = Cartographic::new(lon_center, rectangle.south, maximum_height);
-            let project = |c: &Cartographic| tangent_plane.project_point_to_nearest_on_plane(ellipsoid.cartographic_to_cartesian(c));
+            let project = |c: &Cartographic| {
+                tangent_plane.project_point_to_nearest_on_plane(ellipsoid.cartographic_to_cartesian(c))
+            };
             let p_nc = project(&nc);
             let p_nw = project(&nw);
             let p_cw = project(&cw);
@@ -189,7 +184,8 @@ impl OrientedBoundingBox {
             0.0
         };
         let center_longitude = rectangle.center().longitude;
-        let mut plane_origin = Cartesian3::from_radians(center_longitude, latitude_nearest_to_equator, maximum_height, ellipsoid);
+        let mut plane_origin =
+            Cartesian3::from_radians(center_longitude, latitude_nearest_to_equator, maximum_height, ellipsoid);
         plane_origin.z = 0.0;
         let is_pole = plane_origin.x.abs() < EPSILON10 && plane_origin.y.abs() < EPSILON10;
         let plane_normal = if !is_pole { plane_origin.normalize() } else { Cartesian3::UNIT_X };
@@ -242,9 +238,10 @@ impl OrientedBoundingBox {
     pub fn intersect_plane(&self, plane: &Plane) -> Intersect {
         let n = plane.normal;
         let h = &self.half_axes.0;
-        let rad_effective = (n.x * h[Matrix3::COLUMN0ROW0] + n.y * h[Matrix3::COLUMN0ROW1] + n.z * h[Matrix3::COLUMN0ROW2]).abs()
-            + (n.x * h[Matrix3::COLUMN1ROW0] + n.y * h[Matrix3::COLUMN1ROW1] + n.z * h[Matrix3::COLUMN1ROW2]).abs()
-            + (n.x * h[Matrix3::COLUMN2ROW0] + n.y * h[Matrix3::COLUMN2ROW1] + n.z * h[Matrix3::COLUMN2ROW2]).abs();
+        let rad_effective =
+            (n.x * h[Matrix3::COLUMN0ROW0] + n.y * h[Matrix3::COLUMN0ROW1] + n.z * h[Matrix3::COLUMN0ROW2]).abs()
+                + (n.x * h[Matrix3::COLUMN1ROW0] + n.y * h[Matrix3::COLUMN1ROW1] + n.z * h[Matrix3::COLUMN1ROW2]).abs()
+                + (n.x * h[Matrix3::COLUMN2ROW0] + n.y * h[Matrix3::COLUMN2ROW1] + n.z * h[Matrix3::COLUMN2ROW2]).abs();
         let distance_to_plane = n.dot(self.center) + plane.distance;
         if distance_to_plane <= -rad_effective {
             Intersect::Outside

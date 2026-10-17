@@ -14,10 +14,8 @@ pub struct Case {
 }
 
 pub fn load(package: &str, module: &str) -> Vec<Case> {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures")
-        .join(package)
-        .join(format!("{module}.json"));
+    let path =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures").join(package).join(format!("{module}.json"));
     let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let doc: Value = serde_json::from_str(&text).expect("fixture JSON");
     doc["cases"]
@@ -409,8 +407,12 @@ pub fn run(package: &str, module: &str, tol: impl Fn(&str) -> Tol, port: impl Fn
         match (out, expected_throw) {
             (Out::Err(_), true) => {}
             (Out::Ok(v), false) if close(&v, &c.r, tol(&c.f)) => {}
-            (Out::Ok(v), _) => failures.push(format!("#{i} {}({}) expected {} got {}", c.f, Value::Array(c.a.clone()), c.r, v)),
-            (Out::Err(e), false) => failures.push(format!("#{i} {}({}) expected {} got error {e}", c.f, Value::Array(c.a.clone()), c.r)),
+            (Out::Ok(v), _) => {
+                failures.push(format!("#{i} {}({}) expected {} got {}", c.f, Value::Array(c.a.clone()), c.r, v))
+            }
+            (Out::Err(e), false) => {
+                failures.push(format!("#{i} {}({}) expected {} got error {e}", c.f, Value::Array(c.a.clone()), c.r))
+            }
         }
     }
     let mut report = String::new();

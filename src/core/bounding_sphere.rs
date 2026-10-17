@@ -129,11 +129,7 @@ impl BoundingSphere {
         let height = upper_right.y - lower_left.y;
         let elevation = upper_right.z - lower_left.z;
         Self::new(
-            Cartesian3::new(
-                lower_left.x + width * 0.5,
-                lower_left.y + height * 0.5,
-                lower_left.z + elevation * 0.5,
-            ),
+            Cartesian3::new(lower_left.x + width * 0.5, lower_left.y + height * 0.5, lower_left.z + elevation * 0.5),
             (width * width + height * height + elevation * elevation).sqrt() * 0.5,
         )
     }
@@ -234,9 +230,8 @@ impl BoundingSphere {
             return *right;
         }
         let half_distance = (self.radius + center_separation + right.radius) * 0.5;
-        let center = to_right_center
-            .multiply_by_scalar((-self.radius + half_distance) / center_separation)
-            .add(self.center);
+        let center =
+            to_right_center.multiply_by_scalar((-self.radius + half_distance) / center_separation).add(self.center);
         Self::new(center, half_distance)
     }
 
@@ -295,9 +290,7 @@ impl BoundingSphere {
         let mut normal = if center == Cartesian3::ZERO {
             Cartesian3::UNIT_X
         } else {
-            ellipsoid
-                .geodetic_surface_normal(center)
-                .unwrap_or(Cartesian3::new(f64::NAN, f64::NAN, f64::NAN))
+            ellipsoid.geodetic_surface_normal(center).unwrap_or(Cartesian3::new(f64::NAN, f64::NAN, f64::NAN))
         };
         let east = Cartesian3::UNIT_Z.cross(normal).normalize();
         let north = normal.cross(east).normalize();
@@ -322,9 +315,8 @@ impl BoundingSphere {
             .iter()
             .map(|corner| {
                 let p = center.add(*corner);
-                let c = ellipsoid
-                    .cartesian_to_cartographic(p)
-                    .unwrap_or(Cartographic::new(f64::NAN, f64::NAN, f64::NAN));
+                let c =
+                    ellipsoid.cartesian_to_cartographic(p).unwrap_or(Cartographic::new(f64::NAN, f64::NAN, f64::NAN));
                 projection.project(&c)
             })
             .collect();

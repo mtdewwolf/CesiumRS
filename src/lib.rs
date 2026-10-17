@@ -7,8 +7,8 @@
 //! it is not affiliated with Cesium GS, Inc.
 
 pub mod api;
-pub mod core;
 pub mod camera;
+pub mod core;
 pub mod ellipsoid;
 pub mod geodesic;
 pub mod intersect;
@@ -18,9 +18,7 @@ pub mod projection;
 pub mod sun;
 
 pub use camera::look_at;
-pub use ellipsoid::{
-    cartesian_to_cartographic, cartographic_to_cartesian, Ellipsoid,
-};
+pub use ellipsoid::{cartesian_to_cartographic, cartographic_to_cartesian, Ellipsoid};
 pub use geodesic::Geodesic;
 pub use intersect::{pick_ray, ray_ellipsoid};
 pub use projection::{project, unproject};
@@ -31,9 +29,7 @@ mod tests {
     use super::*;
     use crate::camera::{enu_axes, offset_from_heading_pitch_range};
     use crate::math::{to_radians, PI, PI_OVER_TWO};
-    use crate::projection::{
-        geographic_tile_rectangle, maximum_latitude, mercator_angle_to_geodetic_latitude,
-    };
+    use crate::projection::{geographic_tile_rectangle, maximum_latitude, mercator_angle_to_geodetic_latitude};
 
     fn wgs84() -> Ellipsoid {
         Ellipsoid::wgs84()
@@ -93,19 +89,7 @@ mod tests {
     #[test]
     fn nadir_camera_sits_above_focus() {
         let e = wgs84();
-        let frame = look_at(
-            &e,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            -PI_OVER_TWO,
-            1_000.0,
-            to_radians(60.0),
-            1.0,
-            1.0,
-            10_000_000.0,
-        );
+        let frame = look_at(&e, 0.0, 0.0, 0.0, 0.0, -PI_OVER_TWO, 1_000.0, to_radians(60.0), 1.0, 1.0, 10_000_000.0);
         let focus = cartographic_to_cartesian(&e, 0.0, 0.0, 0.0);
         let offset = frame.eye - focus;
         assert!((offset.magnitude() - 1_000.0).abs() < 1e-4);
@@ -144,18 +128,9 @@ mod tests {
 
     #[test]
     fn new_york_to_london_is_about_5570_km() {
-        let g = Geodesic::new(
-            &wgs84(),
-            to_radians(-74.006),
-            to_radians(40.7128),
-            to_radians(-0.1276),
-            to_radians(51.5074),
-        );
-        assert!(
-            (g.distance - 5_570_000.0).abs() < 30_000.0,
-            "{}",
-            g.distance
-        );
+        let g =
+            Geodesic::new(&wgs84(), to_radians(-74.006), to_radians(40.7128), to_radians(-0.1276), to_radians(51.5074));
+        assert!((g.distance - 5_570_000.0).abs() < 30_000.0, "{}", g.distance);
     }
 
     #[test]

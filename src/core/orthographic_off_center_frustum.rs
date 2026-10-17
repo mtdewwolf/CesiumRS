@@ -53,7 +53,13 @@ impl OrthographicOffCenterFrustum {
         CullingVolume::new(planes)
     }
 
-    pub fn get_pixel_dimensions(&self, drawing_buffer_width: f64, drawing_buffer_height: f64, _distance: f64, pixel_ratio: f64) -> Cartesian2 {
+    pub fn get_pixel_dimensions(
+        &self,
+        drawing_buffer_width: f64,
+        drawing_buffer_height: f64,
+        _distance: f64,
+        pixel_ratio: f64,
+    ) -> Cartesian2 {
         let frustum_width = self.right - self.left;
         let frustum_height = self.top - self.bottom;
         Cartesian2::new(

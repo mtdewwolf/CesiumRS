@@ -98,7 +98,9 @@ impl LocalFrame {
     pub fn to_fixed_frame(&self, origin: Cartesian3, ellipsoid: &Ellipsoid) -> Matrix4 {
         let (a, b, c) = if origin.equals_epsilon(Cartesian3::ZERO, EPSILON14) {
             (self.first.degenerate(), self.second.degenerate(), self.third.degenerate())
-        } else if equals_epsilon(origin.x, 0.0, EPSILON14, EPSILON14) && equals_epsilon(origin.y, 0.0, EPSILON14, EPSILON14) {
+        } else if equals_epsilon(origin.x, 0.0, EPSILON14, EPSILON14)
+            && equals_epsilon(origin.y, 0.0, EPSILON14, EPSILON14)
+        {
             let s = sign(origin.z);
             let pick = |axis: LocalAxis| {
                 let v = axis.degenerate();
@@ -110,9 +112,7 @@ impl LocalFrame {
             };
             (pick(self.first), pick(self.second), pick(self.third))
         } else {
-            let up = ellipsoid
-                .geodetic_surface_normal(origin)
-                .expect("origin is away from the center");
+            let up = ellipsoid.geodetic_surface_normal(origin).expect("origin is away from the center");
             let east = Cartesian3::new(-origin.y, origin.x, 0.0).normalize();
             let north = up.cross(east);
             let axis = |a: LocalAxis| match a {
@@ -125,9 +125,7 @@ impl LocalFrame {
             };
             (axis(self.first), axis(self.second), axis(self.third))
         };
-        Matrix4([
-            a.x, a.y, a.z, 0.0, b.x, b.y, b.z, 0.0, c.x, c.y, c.z, 0.0, origin.x, origin.y, origin.z, 1.0,
-        ])
+        Matrix4([a.x, a.y, a.z, 0.0, b.x, b.y, b.z, 0.0, c.x, c.y, c.z, 0.0, origin.x, origin.y, origin.z, 1.0])
     }
 }
 
@@ -136,9 +134,8 @@ pub struct Transforms;
 
 impl Transforms {
     /// Rows `[0,0,1,0; 1,0,0,0; 0,1,0,0; 0,0,0,1]`: swaps x, y, z for 2D.
-    pub const SWIZZLE_3D_TO_2D_MATRIX: Matrix4 = Matrix4::new(
-        0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-    );
+    pub const SWIZZLE_3D_TO_2D_MATRIX: Matrix4 =
+        Matrix4::new(0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
 
     pub fn east_north_up_to_fixed_frame(origin: Cartesian3, ellipsoid: &Ellipsoid) -> Matrix4 {
         LocalFrame::EAST_NORTH_UP.to_fixed_frame(origin, ellipsoid)
@@ -179,7 +176,11 @@ impl Transforms {
     }
 
     /// Heading, pitch, and roll of `transform` relative to the local frame at its translation.
-    pub fn fixed_frame_to_heading_pitch_roll(transform: &Matrix4, ellipsoid: &Ellipsoid, frame: LocalFrame) -> HeadingPitchRoll {
+    pub fn fixed_frame_to_heading_pitch_roll(
+        transform: &Matrix4,
+        ellipsoid: &Ellipsoid,
+        frame: LocalFrame,
+    ) -> HeadingPitchRoll {
         let center = transform.get_translation();
         if center == Cartesian3::ZERO {
             return HeadingPitchRoll::default();
@@ -192,14 +193,22 @@ impl Transforms {
     }
 
     /// Window coordinates with the origin at the top left.
-    pub fn point_to_window_coordinates(model_view_projection: &Matrix4, viewport_transformation: &Matrix4, point: Cartesian3) -> Cartesian2 {
+    pub fn point_to_window_coordinates(
+        model_view_projection: &Matrix4,
+        viewport_transformation: &Matrix4,
+        point: Cartesian3,
+    ) -> Cartesian2 {
         let mut r = Self::point_to_gl_window_coordinates(model_view_projection, viewport_transformation, point);
         r.y = 2.0 * viewport_transformation[5] - r.y;
         r
     }
 
     /// Window coordinates with the origin at the bottom left, as in WebGL.
-    pub fn point_to_gl_window_coordinates(model_view_projection: &Matrix4, viewport_transformation: &Matrix4, point: Cartesian3) -> Cartesian2 {
+    pub fn point_to_gl_window_coordinates(
+        model_view_projection: &Matrix4,
+        viewport_transformation: &Matrix4,
+        point: Cartesian3,
+    ) -> Cartesian2 {
         let clip = model_view_projection.multiply_by_vector(Cartesian4::new(point.x, point.y, point.z, 1.0));
         let ndc = clip.multiply_by_scalar(1.0 / clip.w);
         Cartesian2::from_cartesian4(viewport_transformation.multiply_by_vector(ndc))
@@ -207,10 +216,13 @@ impl Transforms {
 
     /// Rotation whose columns are velocity, right, and up for a body moving
     /// with `velocity` at `position`.
-    pub fn rotation_matrix_from_position_velocity(position: Cartesian3, velocity: Cartesian3, ellipsoid: &Ellipsoid) -> Matrix3 {
-        let normal = ellipsoid
-            .geodetic_surface_normal(position)
-            .unwrap_or(Cartesian3::new(f64::NAN, f64::NAN, f64::NAN));
+    pub fn rotation_matrix_from_position_velocity(
+        position: Cartesian3,
+        velocity: Cartesian3,
+        ellipsoid: &Ellipsoid,
+    ) -> Matrix3 {
+        let normal =
+            ellipsoid.geodetic_surface_normal(position).unwrap_or(Cartesian3::new(f64::NAN, f64::NAN, f64::NAN));
         let mut right = velocity.cross(normal);
         if right.equals_epsilon(Cartesian3::ZERO, EPSILON6) {
             right = Cartesian3::UNIT_X;
@@ -227,9 +239,7 @@ impl Transforms {
         let projected = if rtc_center == Cartesian3::ZERO {
             Cartesian3::ZERO
         } else {
-            let c = ellipsoid
-                .cartesian_to_cartographic(rtc_center)
-                .expect("translation is away from the center");
+            let c = ellipsoid.cartesian_to_cartographic(rtc_center).expect("translation is away from the center");
             let p = projection.project(&c);
             Cartesian3::new(p.z, p.x, p.y)
         };
@@ -244,9 +254,7 @@ impl Transforms {
         let ellipsoid = projection.ellipsoid();
         let from_enu = Self::east_north_up_to_fixed_frame(center, ellipsoid);
         let to_enu = from_enu.inverse_transformation();
-        let c = ellipsoid
-            .cartesian_to_cartographic(center)
-            .expect("center is away from the ellipsoid's center");
+        let c = ellipsoid.cartesian_to_cartographic(center).expect("center is away from the ellipsoid's center");
         let p = projection.project(&c);
         let translation = Matrix4::from_translation(Cartesian3::new(p.z, p.x, p.y));
         translation.multiply(&Self::SWIZZLE_3D_TO_2D_MATRIX.multiply(&to_enu))

@@ -61,7 +61,11 @@ impl EllipsoidalOccluder {
 
     /// Like [`Self::is_scaled_space_point_visible`], but tests against an
     /// ellipsoid shrunk by `minimum_height` when that is negative.
-    pub fn is_scaled_space_point_visible_possibly_under_ellipsoid(&self, occludee: Cartesian3, minimum_height: Option<f64>) -> bool {
+    pub fn is_scaled_space_point_visible_possibly_under_ellipsoid(
+        &self,
+        occludee: Cartesian3,
+        minimum_height: Option<f64>,
+    ) -> bool {
         let e = &self.ellipsoid;
         let (cv, vh) = match minimum_height {
             Some(h) if h < 0.0 && e.minimum_radius > -h => {
@@ -79,7 +83,11 @@ impl EllipsoidalOccluder {
 
     /// A point along `direction_to_point` that is visible only if one of
     /// `positions` might be. `None` if no such point exists.
-    pub fn compute_horizon_culling_point(&self, direction_to_point: Cartesian3, positions: &[Cartesian3]) -> Option<Cartesian3> {
+    pub fn compute_horizon_culling_point(
+        &self,
+        direction_to_point: Cartesian3,
+        positions: &[Cartesian3],
+    ) -> Option<Cartesian3> {
         from_positions(&self.ellipsoid, direction_to_point, positions)
     }
 
@@ -114,7 +122,11 @@ impl EllipsoidalOccluder {
         from_vertices(&possibly_shrunk(&self.ellipsoid, minimum_height), direction_to_point, vertices, stride, center)
     }
 
-    pub fn compute_horizon_culling_point_from_rectangle(&self, rectangle: &Rectangle, ellipsoid: &Ellipsoid) -> Option<Cartesian3> {
+    pub fn compute_horizon_culling_point_from_rectangle(
+        &self,
+        rectangle: &Rectangle,
+        ellipsoid: &Ellipsoid,
+    ) -> Option<Cartesian3> {
         let positions = rectangle.subsample(ellipsoid, 0.0);
         let bs = BoundingSphere::from_points(&positions);
         if bs.center.magnitude() < 0.1 * ellipsoid.minimum_radius {
@@ -161,7 +173,11 @@ fn magnitude_to_point(direction_to_point: Cartesian3, magnitude: f64) -> Option<
     Some(direction_to_point.multiply_by_scalar(magnitude))
 }
 
-fn from_positions(ellipsoid: &Ellipsoid, direction_to_point: Cartesian3, positions: &[Cartesian3]) -> Option<Cartesian3> {
+fn from_positions(
+    ellipsoid: &Ellipsoid,
+    direction_to_point: Cartesian3,
+    positions: &[Cartesian3],
+) -> Option<Cartesian3> {
     let direction = scaled_space_direction(ellipsoid, direction_to_point);
     let mut result_magnitude = 0.0;
     for p in positions {
@@ -174,7 +190,13 @@ fn from_positions(ellipsoid: &Ellipsoid, direction_to_point: Cartesian3, positio
     magnitude_to_point(direction, result_magnitude)
 }
 
-fn from_vertices(ellipsoid: &Ellipsoid, direction_to_point: Cartesian3, vertices: &[f64], stride: usize, center: Cartesian3) -> Option<Cartesian3> {
+fn from_vertices(
+    ellipsoid: &Ellipsoid,
+    direction_to_point: Cartesian3,
+    vertices: &[f64],
+    stride: usize,
+    center: Cartesian3,
+) -> Option<Cartesian3> {
     let direction = scaled_space_direction(ellipsoid, direction_to_point);
     let mut result_magnitude = 0.0;
     for i in (0..vertices.len()).step_by(stride) {

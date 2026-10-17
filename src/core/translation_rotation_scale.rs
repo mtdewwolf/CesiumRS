@@ -12,11 +12,7 @@ pub struct TranslationRotationScale {
 
 impl Default for TranslationRotationScale {
     fn default() -> Self {
-        Self {
-            translation: Cartesian3::ZERO,
-            rotation: Quaternion::IDENTITY,
-            scale: Cartesian3::ONE,
-        }
+        Self { translation: Cartesian3::ZERO, rotation: Quaternion::IDENTITY, scale: Cartesian3::ONE }
     }
 }
 

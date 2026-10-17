@@ -29,11 +29,7 @@ impl HeadingPitchRoll {
     }
 
     pub fn from_degrees(heading: f64, pitch: f64, roll: f64) -> Self {
-        Self::new(
-            heading * RADIANS_PER_DEGREE,
-            pitch * RADIANS_PER_DEGREE,
-            roll * RADIANS_PER_DEGREE,
-        )
+        Self::new(heading * RADIANS_PER_DEGREE, pitch * RADIANS_PER_DEGREE, roll * RADIANS_PER_DEGREE)
     }
 
     pub fn equals(&self, r: &Self) -> bool {

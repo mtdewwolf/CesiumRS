@@ -17,9 +17,7 @@ pub struct Matrix4(pub [f64; 16]);
 matrix_common!(Matrix4, 4, 16, Cartesian4);
 
 impl Matrix4 {
-    pub const IDENTITY: Self = Self([
-        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-    ]);
+    pub const IDENTITY: Self = Self([1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]);
     pub const ZERO: Self = Self([0.0; 16]);
     pub const COLUMN0ROW0: usize = 0;
     pub const COLUMN0ROW1: usize = 1;
@@ -58,9 +56,7 @@ impl Matrix4 {
         c2r3: f64,
         c3r3: f64,
     ) -> Self {
-        Self([
-            c0r0, c0r1, c0r2, c0r3, c1r0, c1r1, c1r2, c1r3, c2r0, c2r1, c2r2, c2r3, c3r0, c3r1, c3r2, c3r3,
-        ])
+        Self([c0r0, c0r1, c0r2, c0r3, c1r0, c1r1, c1r2, c1r3, c2r0, c2r1, c2r2, c2r3, c3r0, c3r1, c3r2, c3r3])
     }
 
     pub fn from_rotation_translation(rotation: &Matrix3, translation: Cartesian3) -> Self {
@@ -139,9 +135,7 @@ impl Matrix4 {
     }
 
     pub fn from_scale(scale: Cartesian3) -> Self {
-        Self::new(
-            scale.x, 0.0, 0.0, 0.0, 0.0, scale.y, 0.0, 0.0, 0.0, 0.0, scale.z, 0.0, 0.0, 0.0, 0.0, 1.0,
-        )
+        Self::new(scale.x, 0.0, 0.0, 0.0, 0.0, scale.y, 0.0, 0.0, 0.0, 0.0, scale.z, 0.0, 0.0, 0.0, 0.0, 1.0)
     }
 
     pub fn from_uniform_scale(scale: f64) -> Self {
@@ -257,7 +251,11 @@ impl Matrix4 {
 
     /// Maps normalized device coordinates to window coordinates. Cesium's
     /// defaults are a zero viewport and a depth range of `[0, 1]`.
-    pub fn compute_viewport_transformation(viewport: &BoundingRectangle, near_depth_range: f64, far_depth_range: f64) -> Self {
+    pub fn compute_viewport_transformation(
+        viewport: &BoundingRectangle,
+        near_depth_range: f64,
+        far_depth_range: f64,
+    ) -> Self {
         let half_width = viewport.width * 0.5;
         let half_height = viewport.height * 0.5;
         let half_depth = (far_depth_range - near_depth_range) * 0.5;
@@ -585,9 +583,7 @@ impl Matrix4 {
         let x = -m[0] * vx - m[1] * vy - m[2] * vz;
         let y = -m[4] * vx - m[5] * vy - m[6] * vz;
         let z = -m[8] * vx - m[9] * vy - m[10] * vz;
-        Self([
-            m[0], m[4], m[8], 0.0, m[1], m[5], m[9], 0.0, m[2], m[6], m[10], 0.0, x, y, z, 1.0,
-        ])
+        Self([m[0], m[4], m[8], 0.0, m[1], m[5], m[9], 0.0, m[2], m[6], m[10], 0.0, x, y, z, 1.0])
     }
 
     pub fn inverse_transpose(&self) -> Result<Self, RuntimeError> {

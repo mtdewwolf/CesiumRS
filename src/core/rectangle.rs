@@ -71,9 +71,7 @@ impl Rectangle {
     /// Panics if a position is at the center of the ellipsoid, where Cesium throws.
     pub fn from_cartesian_array(cartesians: &[Cartesian3], ellipsoid: &Ellipsoid) -> Self {
         Self::from_lon_lat(cartesians.iter().map(|c| {
-            let p = ellipsoid
-                .cartesian_to_cartographic(*c)
-                .expect("position is at the center of the ellipsoid");
+            let p = ellipsoid.cartesian_to_cartographic(*c).expect("position is at the center of the ellipsoid");
             (p.longitude, p.latitude)
         }))
     }
@@ -121,13 +119,7 @@ impl Rectangle {
         let east = east.multiply_by_scalar(radius);
         let south = north.negate();
         let west = east.negate();
-        let positions = [
-            center.add(north),
-            center.add(west),
-            center.add(south),
-            center.add(east),
-            center,
-        ];
+        let positions = [center.add(north), center.add(west), center.add(south), center.add(east), center];
         Self::from_cartesian_array(&positions, ellipsoid)
     }
 
@@ -163,11 +155,7 @@ impl Rectangle {
         if east < self.west {
             east += TWO_PI;
         }
-        Cartographic::new(
-            negative_pi_to_pi((self.west + east) * 0.5),
-            (self.south + self.north) * 0.5,
-            0.0,
-        )
+        Cartographic::new(negative_pi_to_pi((self.west + east) * 0.5), (self.south + self.north) * 0.5, 0.0)
     }
 
     /// Adjusts east/west so that rectangles crossing the antimeridian compare

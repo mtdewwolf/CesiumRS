@@ -21,7 +21,13 @@ impl<T> Default for TimeInterval<T> {
 }
 
 impl<T> TimeInterval<T> {
-    pub fn new(start: JulianDate, stop: JulianDate, is_start_included: bool, is_stop_included: bool, data: Option<T>) -> Self {
+    pub fn new(
+        start: JulianDate,
+        stop: JulianDate,
+        is_start_included: bool,
+        is_stop_included: bool,
+        data: Option<T>,
+    ) -> Self {
         Self { start, stop, is_start_included, is_stop_included, data }
     }
 
@@ -31,7 +37,12 @@ impl<T> TimeInterval<T> {
     }
 
     /// `start/stop` in ISO 8601.
-    pub fn from_iso8601(iso8601: &str, is_start_included: bool, is_stop_included: bool, data: Option<T>) -> Result<Self, Iso8601Error> {
+    pub fn from_iso8601(
+        iso8601: &str,
+        is_start_included: bool,
+        is_stop_included: bool,
+        data: Option<T>,
+    ) -> Result<Self, Iso8601Error> {
         let dates: Vec<&str> = iso8601.split('/').collect();
         if dates.len() != 2 {
             return Err(Iso8601Error(iso8601.to_string()));
@@ -80,7 +91,12 @@ impl<T> TimeInterval<T> {
                 && data_comparer(&self.data, &right.data))
     }
 
-    pub fn equals_epsilon_with(&self, right: &Self, epsilon: f64, data_comparer: impl Fn(&Option<T>, &Option<T>) -> bool) -> bool {
+    pub fn equals_epsilon_with(
+        &self,
+        right: &Self,
+        epsilon: f64,
+        data_comparer: impl Fn(&Option<T>, &Option<T>) -> bool,
+    ) -> bool {
         (self.is_empty() && right.is_empty())
             || (self.is_start_included == right.is_start_included
                 && self.is_stop_included == right.is_stop_included
@@ -108,7 +124,8 @@ impl<T: Clone> TimeInterval<T> {
         let start = if intersects_start_right { right_start } else { left_start };
         let is_start_included = (self.is_start_included && right.is_start_included)
             || (right_start != left_start
-                && ((intersects_start_right && right.is_start_included) || (intersects_start_left && self.is_start_included)));
+                && ((intersects_start_right && right.is_start_included)
+                    || (intersects_start_left && self.is_start_included)));
         let stop = if left_less_than_right { left_stop } else { right_stop };
         let is_stop_included = if left_less_than_right {
             self.is_stop_included

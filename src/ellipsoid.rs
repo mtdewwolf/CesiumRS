@@ -57,27 +57,16 @@ impl Ellipsoid {
 }
 
 pub fn geodetic_surface_normal(ellipsoid: &Ellipsoid, cartesian: Vec3) -> Vec3 {
-    cartesian
-        .mul_components(ellipsoid.one_over_radii_squared)
-        .normalize()
+    cartesian.mul_components(ellipsoid.one_over_radii_squared).normalize()
 }
 
 pub fn geodetic_surface_normal_cartographic(longitude: f64, latitude: f64) -> Vec3 {
     let cos_lat = latitude.cos();
-    Vec3::new(
-        cos_lat * longitude.cos(),
-        cos_lat * longitude.sin(),
-        latitude.sin(),
-    )
+    Vec3::new(cos_lat * longitude.cos(), cos_lat * longitude.sin(), latitude.sin())
 }
 
 /// Cesium `Ellipsoid.cartographicToCartesian`. Longitude and latitude are radians.
-pub fn cartographic_to_cartesian(
-    ellipsoid: &Ellipsoid,
-    longitude: f64,
-    latitude: f64,
-    height: f64,
-) -> Vec3 {
+pub fn cartographic_to_cartesian(ellipsoid: &Ellipsoid, longitude: f64, latitude: f64, height: f64) -> Vec3 {
     let n = geodetic_surface_normal_cartographic(longitude, latitude);
     let k = ellipsoid.radii_squared.mul_components(n);
     let gamma = n.dot(k).sqrt();
@@ -99,11 +88,7 @@ pub fn scale_to_geodetic_surface(ellipsoid: &Ellipsoid, cartesian: Vec3) -> Opti
     let intersection = cartesian * ratio;
 
     if squared_norm < ellipsoid.center_tolerance_squared {
-        return if ratio.is_finite() {
-            Some(intersection)
-        } else {
-            None
-        };
+        return if ratio.is_finite() { Some(intersection) } else { None };
     }
 
     let gradient = Vec3::new(
@@ -127,9 +112,8 @@ pub fn scale_to_geodetic_surface(ellipsoid: &Ellipsoid, cartesian: Vec3) -> Opti
         let y_m2 = y_m * y_m;
         let z_m2 = z_m * z_m;
         let func = x2 * x_m2 + y2 * y_m2 + z2 * z_m2 - 1.0;
-        let denominator = x2 * x_m2 * x_m * one_over_sq.x
-            + y2 * y_m2 * y_m * one_over_sq.y
-            + z2 * z_m2 * z_m * one_over_sq.z;
+        let denominator =
+            x2 * x_m2 * x_m * one_over_sq.x + y2 * y_m2 * y_m * one_over_sq.y + z2 * z_m2 * z_m * one_over_sq.z;
         let derivative = -2.0 * denominator;
         if derivative == 0.0 || !derivative.is_finite() {
             break;
@@ -140,11 +124,7 @@ pub fn scale_to_geodetic_surface(ellipsoid: &Ellipsoid, cartesian: Vec3) -> Opti
         }
     }
 
-    Some(Vec3::new(
-        cartesian.x * x_m,
-        cartesian.y * y_m,
-        cartesian.z * z_m,
-    ))
+    Some(Vec3::new(cartesian.x * x_m, cartesian.y * y_m, cartesian.z * z_m))
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -165,15 +145,9 @@ pub fn cartesian_to_cartographic(ellipsoid: &Ellipsoid, cartesian: Vec3) -> Opti
     if !longitude.is_finite() || !latitude.is_finite() || !height.is_finite() {
         return None;
     }
-    Some(Cartographic {
-        longitude,
-        latitude,
-        height,
-    })
+    Some(Cartographic { longitude, latitude, height })
 }
 
 pub fn vec3_near(a: Vec3, b: Vec3, eps: f64) -> bool {
-    equals_epsilon(a.x, b.x, eps)
-        && equals_epsilon(a.y, b.y, eps)
-        && equals_epsilon(a.z, b.z, eps)
+    equals_epsilon(a.x, b.x, eps) && equals_epsilon(a.y, b.y, eps) && equals_epsilon(a.z, b.z, eps)
 }

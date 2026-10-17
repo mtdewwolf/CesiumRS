@@ -213,11 +213,8 @@ impl Color {
 
     /// `rgb(r,g,b)` when opaque, else `rgba(r,g,b,a)`.
     pub fn to_css_color_string(&self) -> String {
-        let (r, g, b) = (
-            Self::float_to_byte(self.red),
-            Self::float_to_byte(self.green),
-            Self::float_to_byte(self.blue),
-        );
+        let (r, g, b) =
+            (Self::float_to_byte(self.red), Self::float_to_byte(self.green), Self::float_to_byte(self.blue));
         if self.alpha == 1.0 {
             format!("rgb({r},{g},{b})")
         } else {
@@ -266,12 +263,7 @@ impl Color {
     /// Moves each channel toward 1 by `magnitude`.
     pub fn brighten(&self, magnitude: f64) -> Self {
         let m = 1.0 - magnitude;
-        Self::new(
-            1.0 - (1.0 - self.red) * m,
-            1.0 - (1.0 - self.green) * m,
-            1.0 - (1.0 - self.blue) * m,
-            self.alpha,
-        )
+        Self::new(1.0 - (1.0 - self.red) * m, 1.0 - (1.0 - self.green) * m, 1.0 - (1.0 - self.blue) * m, self.alpha)
     }
 
     /// Moves each channel toward 0 by `magnitude`.

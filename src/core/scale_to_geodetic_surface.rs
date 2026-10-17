@@ -23,11 +23,7 @@ pub fn scale_to_geodetic_surface(
         return if ratio.is_finite() { Some(intersection) } else { None };
     }
     let (ox, oy, oz) = (one_over_radii_squared.x, one_over_radii_squared.y, one_over_radii_squared.z);
-    let gradient = Cartesian3::new(
-        intersection.x * ox * 2.0,
-        intersection.y * oy * 2.0,
-        intersection.z * oz * 2.0,
-    );
+    let gradient = Cartesian3::new(intersection.x * ox * 2.0, intersection.y * oy * 2.0, intersection.z * oz * 2.0);
     let mut lambda = ((1.0 - ratio) * cartesian.magnitude()) / (0.5 * gradient.magnitude());
     let mut correction = 0.0;
     let (mut xm, mut ym, mut zm);

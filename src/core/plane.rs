@@ -15,10 +15,7 @@ pub struct Plane {
 }
 
 fn debug_check_normal(normal: Cartesian3) {
-    debug_assert!(
-        equals_epsilon(normal.magnitude(), 1.0, EPSILON6, EPSILON6),
-        "normal must be normalized."
-    );
+    debug_assert!(equals_epsilon(normal.magnitude(), 1.0, EPSILON6, EPSILON6), "normal must be normalized.");
 }
 
 impl Plane {

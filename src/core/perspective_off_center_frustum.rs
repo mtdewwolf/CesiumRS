@@ -65,7 +65,13 @@ impl PerspectiveOffCenterFrustum {
     }
 
     /// Size of one pixel at `distance` from the camera, in meters.
-    pub fn get_pixel_dimensions(&self, drawing_buffer_width: f64, drawing_buffer_height: f64, distance: f64, pixel_ratio: f64) -> Cartesian2 {
+    pub fn get_pixel_dimensions(
+        &self,
+        drawing_buffer_width: f64,
+        drawing_buffer_height: f64,
+        distance: f64,
+        pixel_ratio: f64,
+    ) -> Cartesian2 {
         let inverse_near = 1.0 / self.near;
         let mut tan_theta = self.top * inverse_near;
         let pixel_height = (2.0 * pixel_ratio * distance * tan_theta) / drawing_buffer_height;

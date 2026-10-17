@@ -35,14 +35,7 @@ pub fn build_globe(ellipsoid: &Ellipsoid, lat_segments: u32, lon_segments: u32) 
             let p = cartographic_to_cartesian(ellipsoid, lon, lat, 0.0);
             let n = geodetic_surface_normal_cartographic(lon, lat);
             vertices.extend_from_slice(&[
-                p.x as f32,
-                p.y as f32,
-                p.z as f32,
-                n.x as f32,
-                n.y as f32,
-                n.z as f32,
-                u as f32,
-                v as f32,
+                p.x as f32, p.y as f32, p.z as f32, n.x as f32, n.y as f32, n.z as f32, u as f32, v as f32,
             ]);
         }
     }
@@ -95,9 +88,7 @@ fn push_parallel(out: &mut Vec<f32>, ellipsoid: &Ellipsoid, lat: f64, segments: 
 }
 
 fn push_seg(out: &mut Vec<f32>, a: crate::math::Vec3, b: crate::math::Vec3) {
-    out.extend_from_slice(&[
-        a.x as f32, a.y as f32, a.z as f32, b.x as f32, b.y as f32, b.z as f32,
-    ]);
+    out.extend_from_slice(&[a.x as f32, a.y as f32, a.z as f32, b.x as f32, b.y as f32, b.z as f32]);
 }
 
 pub fn build_geodesic_arc(
@@ -134,11 +125,7 @@ pub fn build_tile_grid(
 ) -> Vec<f32> {
     let level = level.min(6);
     let edge_segments = edge_segments.max(1);
-    let (nx, ny) = if scheme == 1 {
-        web_mercator_tile_count(level)
-    } else {
-        geographic_tile_count(level)
-    };
+    let (nx, ny) = if scheme == 1 { web_mercator_tile_count(level) } else { geographic_tile_count(level) };
     let (cx, cy) = if scheme == 0 {
         geographic_tile_of(focus_lon, focus_lat, level)
     } else {
@@ -165,11 +152,7 @@ pub fn build_tile_grid(
     let mut y = y0;
     while y < y1 {
         let mut x = x0;
-        let count = if window == 0 || nx * ny <= 64 {
-            nx
-        } else {
-            window * 2 + 1
-        };
+        let count = if window == 0 || nx * ny <= 64 { nx } else { window * 2 + 1 };
         for _ in 0..count {
             let tx = x % nx;
             let rect = if scheme == 1 {
@@ -185,36 +168,18 @@ pub fn build_tile_grid(
     out
 }
 
-fn push_rect(
-    out: &mut Vec<f32>,
-    ellipsoid: &Ellipsoid,
-    rect: crate::projection::Rectangle,
-    segments: u32,
-) {
+fn push_rect(out: &mut Vec<f32>, ellipsoid: &Ellipsoid, rect: crate::projection::Rectangle, segments: u32) {
     push_edge(out, ellipsoid, rect.west, rect.south, rect.east, rect.south, segments);
     push_edge(out, ellipsoid, rect.east, rect.south, rect.east, rect.north, segments);
     push_edge(out, ellipsoid, rect.east, rect.north, rect.west, rect.north, segments);
     push_edge(out, ellipsoid, rect.west, rect.north, rect.west, rect.south, segments);
 }
 
-fn push_edge(
-    out: &mut Vec<f32>,
-    ellipsoid: &Ellipsoid,
-    lon0: f64,
-    lat0: f64,
-    lon1: f64,
-    lat1: f64,
-    segments: u32,
-) {
+fn push_edge(out: &mut Vec<f32>, ellipsoid: &Ellipsoid, lon0: f64, lat0: f64, lon1: f64, lat1: f64, segments: u32) {
     let mut prev = cartographic_to_cartesian(ellipsoid, lon0, lat0, 0.0);
     for i in 1..=segments {
         let t = f64::from(i) / f64::from(segments);
-        let p = cartographic_to_cartesian(
-            ellipsoid,
-            lon0 + (lon1 - lon0) * t,
-            lat0 + (lat1 - lat0) * t,
-            0.0,
-        );
+        let p = cartographic_to_cartesian(ellipsoid, lon0 + (lon1 - lon0) * t, lat0 + (lat1 - lat0) * t, 0.0);
         push_seg(out, prev, p);
         prev = p;
     }
@@ -234,12 +199,7 @@ pub fn build_stars(count: u32, seed: u32) -> Vec<f32> {
         let z = 1.0 - 2.0 * v;
         let r = (1.0 - z * z).max(0.0).sqrt();
         let brightness = 0.35 + next() as f64 * 0.65;
-        out.extend_from_slice(&[
-            (r * theta.cos()) as f32,
-            (r * theta.sin()) as f32,
-            z as f32,
-            brightness as f32,
-        ]);
+        out.extend_from_slice(&[(r * theta.cos()) as f32, (r * theta.sin()) as f32, z as f32, brightness as f32]);
     }
     out
 }

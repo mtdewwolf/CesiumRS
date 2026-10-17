@@ -118,16 +118,10 @@ fn neumark(a3: f64, a2: f64, a1: f64, a0: f64) -> Vec<f64> {
     let n_error = a3_squared + 4.0 * y.abs();
     let (g2, h2) = if y < 0.0 || m * n_error < n * m_error {
         let square_root_of_n = n.sqrt();
-        (
-            square_root_of_n / 2.0,
-            if square_root_of_n == 0.0 { 0.0 } else { (a3 * h1 - a1) / square_root_of_n },
-        )
+        (square_root_of_n / 2.0, if square_root_of_n == 0.0 { 0.0 } else { (a3 * h1 - a1) / square_root_of_n })
     } else {
         let square_root_of_m = m.sqrt();
-        (
-            if square_root_of_m == 0.0 { 0.0 } else { (a3 * h1 - a1) / square_root_of_m },
-            square_root_of_m / 2.0,
-        )
+        (if square_root_of_m == 0.0 { 0.0 } else { (a3 * h1 - a1) / square_root_of_m }, square_root_of_m / 2.0)
     };
     let (big_g, g) = if g1 == 0.0 && g2 == 0.0 {
         (0.0, 0.0)

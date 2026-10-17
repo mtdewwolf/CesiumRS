@@ -97,7 +97,11 @@ impl Quaternion {
 
     /// Converts packed samples `starting_index..=last_index` to rotation
     /// vectors relative to the sample at `last_index`, three values each.
-    pub fn convert_packed_array_for_interpolation(packed: &[f64], starting_index: usize, last_index: usize) -> Vec<f64> {
+    pub fn convert_packed_array_for_interpolation(
+        packed: &[f64],
+        starting_index: usize,
+        last_index: usize,
+    ) -> Vec<f64> {
         let q0_conjugate = Self::unpack(packed, last_index * 4).conjugate();
         let mut out = vec![0.0; (last_index - starting_index + 1) * 3];
         for i in 0..=last_index - starting_index {
@@ -119,11 +123,7 @@ impl Quaternion {
         let rotation = Cartesian3::from_array(array, 0);
         let magnitude = rotation.magnitude();
         let q0 = Self::unpack(source, last_index * 4);
-        let t = if magnitude == 0.0 {
-            Self::IDENTITY
-        } else {
-            Self::from_axis_angle(rotation, magnitude)
-        };
+        let t = if magnitude == 0.0 { Self::IDENTITY } else { Self::from_axis_angle(rotation, magnitude) };
         t.multiply(&q0)
     }
 
@@ -289,8 +289,7 @@ impl Quaternion {
         }
         let horner = |b: &[f64; 8]| {
             1.0 + b[0]
-                * (1.0
-                    + b[1] * (1.0 + b[2] * (1.0 + b[3] * (1.0 + b[4] * (1.0 + b[5] * (1.0 + b[6] * (1.0 + b[7])))))))
+                * (1.0 + b[1] * (1.0 + b[2] * (1.0 + b[3] * (1.0 + b[4] * (1.0 + b[5] * (1.0 + b[6] * (1.0 + b[7])))))))
         };
         let ct = sign * t * horner(&bt);
         let cd = d * horner(&bd);

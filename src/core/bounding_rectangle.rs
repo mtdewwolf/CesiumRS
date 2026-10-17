@@ -53,12 +53,7 @@ impl BoundingRectangle {
         let projection = projection.unwrap_or(&default);
         let lower_left = projection.project(&rectangle.southwest());
         let upper_right = projection.project(&rectangle.northeast());
-        Self::new(
-            lower_left.x,
-            lower_left.y,
-            upper_right.x - lower_left.x,
-            upper_right.y - lower_left.y,
-        )
+        Self::new(lower_left.x, lower_left.y, upper_right.x - lower_left.x, upper_right.y - lower_left.y)
     }
 
     pub fn union(&self, right: &Self) -> Self {

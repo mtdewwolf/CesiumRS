@@ -22,11 +22,7 @@ impl Default for GeographicProjection {
 impl GeographicProjection {
     pub fn new(ellipsoid: Ellipsoid) -> Self {
         let semimajor_axis = ellipsoid.maximum_radius;
-        Self {
-            ellipsoid,
-            semimajor_axis,
-            one_over_semimajor_axis: 1.0 / semimajor_axis,
-        }
+        Self { ellipsoid, semimajor_axis, one_over_semimajor_axis: 1.0 / semimajor_axis }
     }
 }
 

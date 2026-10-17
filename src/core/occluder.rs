@@ -155,7 +155,11 @@ impl Occluder {
 
     /// A point that, when hidden by the occluder, guarantees every one of
     /// `positions` is hidden. `None` if no such point exists.
-    pub fn compute_occludee_point(occluder: &BoundingSphere, occludee_position: Cartesian3, positions: &[Cartesian3]) -> Option<Cartesian3> {
+    pub fn compute_occludee_point(
+        occluder: &BoundingSphere,
+        occludee_position: Cartesian3,
+        positions: &[Cartesian3],
+    ) -> Option<Cartesian3> {
         let occluder_position = occluder.center;
         let occluder_radius = occluder.radius;
         if positions.is_empty() || occluder_position == occludee_position {
@@ -166,9 +170,16 @@ impl Occluder {
         let any_rotation_vector = any_rotation_vector(occluder_position, plane_normal, plane_d);
         // Cesium treats a dot of exactly 0 (or NaN) like a failure, since it tests `!dot`.
         let usable = |d: Option<f64>| d.filter(|v| *v != 0.0 && !v.is_nan());
-        let mut dot = usable(horizon_to_plane_normal_dot_product(occluder, plane_normal, plane_d, any_rotation_vector, positions[0]))?;
+        let mut dot = usable(horizon_to_plane_normal_dot_product(
+            occluder,
+            plane_normal,
+            plane_d,
+            any_rotation_vector,
+            positions[0],
+        ))?;
         for p in &positions[1..] {
-            let temp_dot = usable(horizon_to_plane_normal_dot_product(occluder, plane_normal, plane_d, any_rotation_vector, *p))?;
+            let temp_dot =
+                usable(horizon_to_plane_normal_dot_product(occluder, plane_normal, plane_d, any_rotation_vector, *p))?;
             if temp_dot < dot {
                 dot = temp_dot;
             }
@@ -219,7 +230,12 @@ fn any_rotation_vector(occluder_position: Cartesian3, plane_normal: Cartesian3, 
     temp_vec0.add(temp_vec1.multiply_by_scalar(u)).subtract(occluder_position).normalize()
 }
 
-fn rotation_vector(occluder_position: Cartesian3, plane_normal: Cartesian3, position: Cartesian3, any_rotation_vector: Cartesian3) -> Cartesian3 {
+fn rotation_vector(
+    occluder_position: Cartesian3,
+    plane_normal: Cartesian3,
+    position: Cartesian3,
+    any_rotation_vector: Cartesian3,
+) -> Cartesian3 {
     let position_direction = position.subtract(occluder_position).normalize();
     if plane_normal.dot(position_direction) < 0.999_999_984_769_129_049_327_808_509_034_44 {
         let cross_product = plane_normal.cross(position_direction);
