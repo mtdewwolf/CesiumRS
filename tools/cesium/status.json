@@ -1,4 +1,8 @@
 {
+  "Core/ArcType": {
+    "status": "ported",
+    "rust": "core::arc_type"
+  },
   "Core/AxisAlignedBoundingBox": {
     "status": "ported",
     "rust": "core::axis_aligned_bounding_box"
@@ -47,6 +51,10 @@
   "Core/Color": {
     "status": "ported",
     "rust": "core::color"
+  },
+  "Core/CornerType": {
+    "status": "ported",
+    "rust": "core::corner_type"
   },
   "Core/CubicRealPolynomial": {
     "status": "ported",
@@ -208,6 +216,10 @@
     "status": "ported",
     "rust": "core::rectangle"
   },
+  "Core/ReferenceFrame": {
+    "status": "ported",
+    "rust": "core::reference_frame"
+  },
   "Core/RuntimeError": {
     "status": "ported",
     "rust": "core::runtime_error"
@@ -303,6 +315,10 @@
   "Core/globalTypes": {
     "status": "n/a",
     "note": "JSDoc type declarations only."
+  },
+  "Core/isBitSet": {
+    "status": "ported",
+    "rust": "core::is_bit_set"
   },
   "Core/isLeapYear": {
     "status": "ported",

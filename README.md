@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 8.6% of CesiumJS ported** (60 of 1,266 applicable modules, weighted by JavaScript lines). Core, the math, geometry and time foundation, is 33.6% done. [PORTING.md](PORTING.md) lists every module with its status.
+**Status: 8.6% of CesiumJS ported** (64 of 1,266 applicable modules, weighted by JavaScript lines). Core, the math, geometry and time foundation, is 33.7% done. [PORTING.md](PORTING.md) lists every module with its status.
 
 ## What is ported
 
@@ -20,6 +20,7 @@ All of these live in `src/core`, one Rust module per Cesium module:
 | Intersections | `Ray`, `Plane`, `IntersectionTests`, `Intersect`, `Interval`, `QuadraticRealPolynomial`, `CubicRealPolynomial`, `QuarticRealPolynomial` |
 | Bounding volumes and culling | `BoundingSphere`, `BoundingRectangle`, `AxisAlignedBoundingBox`, `OrientedBoundingBox`, `CullingVolume`, `Occluder`, `EllipsoidalOccluder`, `Visibility` |
 | Frustums | `PerspectiveFrustum`, `PerspectiveOffCenterFrustum`, `OrthographicFrustum`, `OrthographicOffCenterFrustum` |
+| Enums and helpers | `ArcType`, `CornerType`, `ReferenceFrame`, `isBitSet` |
 | Frames | `Transforms` (local frames, heading-pitch-roll, window coordinates, 2D model matrices). The ICRF, TEME and Moon frames are not ported yet. |
 | Time | `JulianDate`, `GregorianDate`, `LeapSecond`, `Iso8601`, `TimeInterval`, `TimeIntervalCollection`, `TimeStandard`, `TimeConstants`, `Clock`, `ClockStep`, `ClockRange`, `Event` |
 | Astronomy | `Simon1994PlanetaryPositions` (Sun and Moon positions) |
