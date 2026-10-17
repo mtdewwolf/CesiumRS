@@ -1,12 +1,15 @@
 {
+  "Core/AxisAlignedBoundingBox": {
+    "status": "ported",
+    "rust": "core::axis_aligned_bounding_box"
+  },
   "Core/BoundingRectangle": {
     "status": "ported",
     "rust": "core::bounding_rectangle"
   },
   "Core/BoundingSphere": {
-    "status": "partial",
-    "rust": "core::bounding_sphere",
-    "note": "Missing fromOrientedBoundingBox (needs OrientedBoundingBox) and isOccluded (needs Occluder)."
+    "status": "ported",
+    "rust": "core::bounding_sphere"
   },
   "Core/Cartesian2": {
     "status": "ported",
@@ -32,6 +35,14 @@
     "status": "ported",
     "rust": "core::color"
   },
+  "Core/CubicRealPolynomial": {
+    "status": "ported",
+    "rust": "core::cubic_real_polynomial"
+  },
+  "Core/CullingVolume": {
+    "status": "ported",
+    "rust": "core::culling_volume"
+  },
   "Core/DeveloperError": {
     "status": "n/a",
     "note": "Panics on programmer error, Result for recoverable errors."
@@ -40,6 +51,23 @@
     "status": "ported",
     "rust": "core::ellipsoid",
     "note": "Ellipsoid.default is not a mutable global; APIs take the ellipsoid explicitly."
+  },
+  "Core/EllipsoidGeodesic": {
+    "status": "ported",
+    "rust": "core::ellipsoid_geodesic",
+    "note": "Near-antipodal input (Cesium debug check) returns None instead of iterating forever."
+  },
+  "Core/EllipsoidRhumbLine": {
+    "status": "ported",
+    "rust": "core::ellipsoid_rhumb_line"
+  },
+  "Core/EllipsoidTangentPlane": {
+    "status": "ported",
+    "rust": "core::ellipsoid_tangent_plane"
+  },
+  "Core/EllipsoidalOccluder": {
+    "status": "ported",
+    "rust": "core::ellipsoidal_occluder"
   },
   "Core/FeatureDetection": {
     "status": "n/a",
@@ -69,6 +97,10 @@
     "status": "ported",
     "rust": "core::intersect"
   },
+  "Core/IntersectionTests": {
+    "status": "ported",
+    "rust": "core::intersection_tests"
+  },
   "Core/Interval": {
     "status": "ported",
     "rust": "core::interval"
@@ -93,13 +125,49 @@
     "status": "ported",
     "rust": "core::matrix4"
   },
+  "Core/Occluder": {
+    "status": "ported",
+    "rust": "core::occluder"
+  },
+  "Core/OrientedBoundingBox": {
+    "status": "ported",
+    "rust": "core::oriented_bounding_box"
+  },
+  "Core/OrthographicFrustum": {
+    "status": "ported",
+    "rust": "core::orthographic_frustum"
+  },
+  "Core/OrthographicOffCenterFrustum": {
+    "status": "ported",
+    "rust": "core::orthographic_off_center_frustum"
+  },
+  "Core/PerspectiveFrustum": {
+    "status": "ported",
+    "rust": "core::perspective_frustum"
+  },
+  "Core/PerspectiveOffCenterFrustum": {
+    "status": "ported",
+    "rust": "core::perspective_off_center_frustum"
+  },
   "Core/Plane": {
     "status": "ported",
     "rust": "core::plane"
   },
+  "Core/QuadraticRealPolynomial": {
+    "status": "ported",
+    "rust": "core::quadratic_real_polynomial"
+  },
+  "Core/QuarticRealPolynomial": {
+    "status": "ported",
+    "rust": "core::quartic_real_polynomial"
+  },
   "Core/Quaternion": {
     "status": "ported",
     "rust": "core::quaternion"
+  },
+  "Core/Ray": {
+    "status": "ported",
+    "rust": "core::ray"
   },
   "Core/Rectangle": {
     "status": "ported",
@@ -121,6 +189,10 @@
   "Core/TranslationRotationScale": {
     "status": "ported",
     "rust": "core::translation_rotation_scale"
+  },
+  "Core/Visibility": {
+    "status": "ported",
+    "rust": "core::visibility"
   },
   "Core/WebMercatorProjection": {
     "status": "ported",

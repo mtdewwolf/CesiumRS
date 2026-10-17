@@ -8,6 +8,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import coreBounds from "./core-bounds.mjs";
 import coreGeometry from "./core-geometry.mjs";
 import coreMath from "./core-math.mjs";
 
@@ -15,7 +16,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const out = join(here, "../../../tests/fixtures");
 const version = JSON.parse(readFileSync(join(here, "../node_modules/@cesium/engine/package.json"), "utf8")).version;
 
-const packages = { core: [...coreMath(), ...coreGeometry()] };
+const packages = { core: [...coreMath(), ...coreGeometry(), ...coreBounds()] };
 
 let total = 0;
 for (const [pkg, suites] of Object.entries(packages)) {

@@ -136,6 +136,9 @@ export function enc(v) {
   if (v instanceof BoundingRectangle) return [v.x, v.y, v.width, v.height].map(enc);
   if (Array.isArray(v) || ArrayBuffer.isView(v)) return Array.from(v).map(enc);
   if (typeof v === "object") {
+    // Some Cesium paths return a bare `{ start, stop }` instead of an Interval.
+    const keys = Object.keys(v);
+    if (keys.length === 2 && "start" in v && "stop" in v) return [v.start, v.stop].map(enc);
     const out = {};
     for (const [k, val] of Object.entries(v)) out[k] = enc(val);
     return out;

@@ -308,19 +308,43 @@ pub fn res<T: Enc, E: std::fmt::Display>(v: Result<T, E>) -> Option<Out> {
     })
 }
 
-/// Relative and absolute tolerance for one comparison.
+/// Relative and absolute tolerance for one comparison. With `vector`, a
+/// component of a flat numeric array may also differ by `rel` times the
+/// array's largest magnitude; use it for positions computed through
+/// cancellation, never for mixed-unit arrays like `[lon, lat, height]`.
 #[derive(Clone, Copy)]
 pub struct Tol {
     pub rel: f64,
     pub abs: f64,
+    pub vector: bool,
 }
 
-pub const EXACT: Tol = Tol { rel: 0.0, abs: 0.0 };
-pub const TIGHT: Tol = Tol { rel: 1e-12, abs: 1e-12 };
+pub const EXACT: Tol = Tol { rel: 0.0, abs: 0.0, vector: false };
+pub const TIGHT: Tol = Tol { rel: 1e-12, abs: 1e-12, vector: false };
+/// [`TIGHT`] relative to each array's norm.
+pub const TIGHT_VECTOR: Tol = Tol { rel: 1e-12, abs: 1e-12, vector: true };
+
+fn flat_scale(x: &[Value], y: &[Value]) -> Option<f64> {
+    let mut scale: f64 = 0.0;
+    for v in x.iter().chain(y) {
+        match v {
+            Value::Number(_) => scale = scale.max(n(v).abs()),
+            Value::String(_) | Value::Null => {}
+            _ => return None,
+        }
+    }
+    Some(scale)
+}
 
 fn close(a: &Value, b: &Value, tol: Tol) -> bool {
     match (a, b) {
-        (Value::Array(x), Value::Array(y)) => x.len() == y.len() && x.iter().zip(y).all(|(p, q)| close(p, q, tol)),
+        (Value::Array(x), Value::Array(y)) => {
+            let tol = match flat_scale(x, y) {
+                Some(scale) if tol.vector => Tol { abs: tol.abs.max(tol.rel * scale), ..tol },
+                _ => tol,
+            };
+            x.len() == y.len() && x.iter().zip(y).all(|(p, q)| close(p, q, tol))
+        }
         (Value::Object(x), Value::Object(y)) => {
             x.len() == y.len() && x.iter().all(|(k, p)| y.get(k).is_some_and(|q| close(p, q, tol)))
         }
@@ -342,6 +366,8 @@ fn close(a: &Value, b: &Value, tol: Tol) -> bool {
             let diff = (p - q).abs();
             diff <= tol.abs || diff <= tol.rel * p.abs().max(q.abs())
         }
+        // JS `undefined` inside an array is written as `null`; the port uses NaN.
+        (Value::Null, Value::String(s)) | (Value::String(s), Value::Null) => s == "NaN",
         _ => a == b,
     }
 }

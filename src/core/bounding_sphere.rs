@@ -10,6 +10,8 @@ use super::map_projection::MapProjection;
 use super::math::{js_max, PI};
 use super::matrix3::Matrix3;
 use super::matrix4::Matrix4;
+use super::occluder::Occluder;
+use super::oriented_bounding_box::OrientedBoundingBox;
 use super::plane::Plane;
 use super::rectangle::Rectangle;
 
@@ -198,6 +200,14 @@ impl BoundingSphere {
         let v = half_axes.get_column(1);
         let w = half_axes.get_column(2);
         Self::new(center, u.add(v).add(w).magnitude())
+    }
+
+    pub fn from_oriented_bounding_box(obb: &OrientedBoundingBox) -> Self {
+        Self::from_oriented_bounding_box_parts(obb.center, &obb.half_axes)
+    }
+
+    pub fn is_occluded(&self, occluder: &Occluder) -> bool {
+        !occluder.is_bounding_sphere_visible(self)
     }
 
     /// Sphere around the unit cube transformed by `transformation`.
