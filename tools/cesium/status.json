@@ -3,6 +3,11 @@
     "status": "ported",
     "rust": "core::arc_type"
   },
+  "Core/AttributeCompression": {
+    "status": "ported",
+    "rust": "core::attribute_compression",
+    "note": "Typed Rust slices replace JS typed arrays and component-datatype arguments; Float32 rounding and Uint16 wrapping preserved."
+  },
   "Core/AxisAlignedBoundingBox": {
     "status": "ported",
     "rust": "core::axis_aligned_bounding_box"
@@ -52,6 +57,10 @@
     "status": "ported",
     "rust": "core::color"
   },
+  "Core/ConstantSpline": {
+    "status": "ported",
+    "rust": "core::constant_spline"
+  },
   "Core/CornerType": {
     "status": "ported",
     "rust": "core::corner_type"
@@ -90,6 +99,10 @@
     "status": "ported",
     "rust": "core::ellipsoidal_occluder"
   },
+  "Core/EncodedCartesian3": {
+    "status": "ported",
+    "rust": "core::encoded_cartesian3"
+  },
   "Core/Event": {
     "status": "ported",
     "rust": "core::event",
@@ -123,6 +136,11 @@
     "status": "ported",
     "rust": "core::heading_pitch_roll"
   },
+  "Core/HilbertOrder": {
+    "status": "partial",
+    "rust": "core::hilbert_order",
+    "note": "Levels 1\u201332 checked against CesiumJS, including Number precision and signed-bit quirks. Higher levels are not supported yet."
+  },
   "Core/Intersect": {
     "status": "ported",
     "rust": "core::intersect"
@@ -148,6 +166,10 @@
     "status": "ported",
     "rust": "core::leap_second"
   },
+  "Core/LinearSpline": {
+    "status": "ported",
+    "rust": "core::linear_spline"
+  },
   "Core/MapProjection": {
     "status": "ported",
     "rust": "core::map_projection"
@@ -167,6 +189,15 @@
   "Core/Matrix4": {
     "status": "ported",
     "rust": "core::matrix4"
+  },
+  "Core/MorphWeightSpline": {
+    "status": "ported",
+    "rust": "core::morph_weight_spline"
+  },
+  "Core/MortonOrder": {
+    "status": "ported",
+    "rust": "core::morton_order",
+    "note": "2D 16-bit and 3D 10-bit coordinate encode/decode."
   },
   "Core/Occluder": {
     "status": "ported",
@@ -208,6 +239,10 @@
     "status": "ported",
     "rust": "core::quaternion"
   },
+  "Core/QuaternionSpline": {
+    "status": "ported",
+    "rust": "core::quaternion_spline"
+  },
   "Core/Ray": {
     "status": "ported",
     "rust": "core::ray"
@@ -232,6 +267,16 @@
   "Core/Spherical": {
     "status": "ported",
     "rust": "core::spherical"
+  },
+  "Core/Spline": {
+    "status": "ported",
+    "rust": "core::spline",
+    "note": "Rust trait and sealed point types replace the abstract JS class and runtime type dispatch; interval lookup, wrapping, and clamping ported."
+  },
+  "Core/SteppedSpline": {
+    "status": "ported",
+    "rust": "core::stepped_spline",
+    "note": "Preserves Cesium returning the penultimate point when evaluated at the final time."
   },
   "Core/TimeConstants": {
     "status": "ported",

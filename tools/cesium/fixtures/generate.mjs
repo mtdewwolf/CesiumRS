@@ -14,17 +14,27 @@ import coreBounds from "./core-bounds.mjs";
 import coreGeometry from "./core-geometry.mjs";
 import coreMath from "./core-math.mjs";
 import coreTime from "./core-time.mjs";
+import corePacking from "./core-packing.mjs";
+import coreSplines from "./core-splines.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = join(here, "../../../tests/fixtures");
 const version = JSON.parse(readFileSync(join(here, "../node_modules/@cesium/engine/package.json"), "utf8")).version;
 
-const packages = { core: [...coreMath(), ...coreGeometry(), ...coreBounds(), ...coreTime()] };
+const packages = { core: [...coreMath(), ...coreGeometry(), ...coreBounds(), ...coreTime(), ...corePacking(), ...coreSplines()] };
+
+// Optional module names avoid rewriting unrelated fixtures during porting.
+const selected = new Set(process.argv.slice(2));
+const known = new Set(Object.values(packages).flat().map(s => s.module));
+for (const name of selected) {
+  if (!known.has(name)) throw new Error(`Unknown fixture module: ${name}`);
+}
 
 let total = 0;
 for (const [pkg, suites] of Object.entries(packages)) {
   mkdirSync(join(out, pkg), { recursive: true });
   for (const s of suites) {
+    if (selected.size && !selected.has(s.module)) continue;
     const file = join(out, pkg, `${s.module}.json`);
     writeFileSync(file, JSON.stringify({ module: s.module, cesium: version, cases: s.cases }) + "\n");
     total += s.cases.length;
