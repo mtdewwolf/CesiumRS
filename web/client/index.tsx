@@ -236,8 +236,9 @@ export function App() {
       >
         <div className="flex items-start justify-between gap-3">
           <p className="font-mono text-sm tabular-nums text-[#c9d3df]">
-            {formatLat(camera.lat / RAD)} {formatLon(camera.lon / RAD)}
-            <span className="whitespace-nowrap text-[#8b97a8]"> · {formatKm(camera.range)} range</span>
+            <span className="whitespace-nowrap">{formatLat(camera.lat / RAD)}</span>{" "}
+            <span className="whitespace-nowrap">{formatLon(camera.lon / RAD)}</span>{" "}
+            <span className="whitespace-nowrap text-[#8b97a8]">· {formatKm(camera.range)} range</span>
           </p>
           <button
             type="button"
