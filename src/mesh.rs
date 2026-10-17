@@ -11,6 +11,11 @@ use crate::projection::{
 #[derive(Clone, Debug)]
 pub struct GlobeMesh {
     /// Interleaved `px, py, pz, nx, ny, nz, u, v`.
+    ///
+    /// `u = 0` is −180° and `v = 0` is the north pole, matching an
+    /// equirectangular image whose first row is the north edge. Upload that
+    /// image with `UNPACK_FLIP_Y_WEBGL` off; turning it on (or using `1 - v`)
+    /// mirrors the globe north–south.
     pub vertices: Vec<f32>,
     pub indices: Vec<u32>,
 }
