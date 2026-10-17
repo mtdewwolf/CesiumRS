@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 8.6% of CesiumJS ported** (64 of 1,266 applicable modules, weighted by JavaScript lines). Core, the math, geometry and time foundation, is 33.6% done. [PORTING.md](PORTING.md) lists every module with its status.
+**Status: 8.6% of CesiumJS ported** (64 of 1,266 applicable modules, weighted by JavaScript lines). Core, the math, geometry and time foundation, is 33.7% done. [PORTING.md](PORTING.md) lists every module with its status.
 
 ## What is ported
 
