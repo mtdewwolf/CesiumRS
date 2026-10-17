@@ -55,8 +55,7 @@ fn compute_delta_lambda(
         * (sigma
             + c * sine_sigma
                 * (cosine_twice_sigma_midpoint
-                    + c * cosine_sigma
-                        * (2.0 * cosine_twice_sigma_midpoint * cosine_twice_sigma_midpoint - 1.0)))
+                    + c * cosine_sigma * (2.0 * cosine_twice_sigma_midpoint * cosine_twice_sigma_midpoint - 1.0)))
 }
 
 fn slerp(a: Vec3, b: Vec3, t: f64) -> Vec3 {
@@ -75,13 +74,7 @@ fn slerp(a: Vec3, b: Vec3, t: f64) -> Vec3 {
 }
 
 impl Geodesic {
-    pub fn new(
-        ellipsoid: &Ellipsoid,
-        start_lon: f64,
-        start_lat: f64,
-        end_lon: f64,
-        end_lat: f64,
-    ) -> Self {
+    pub fn new(ellipsoid: &Ellipsoid, start_lon: f64, start_lat: f64, end_lon: f64, end_lat: f64) -> Self {
         let start = cartographic_to_cartesian(ellipsoid, start_lon, start_lat, 0.0);
         let end = cartographic_to_cartesian(ellipsoid, end_lon, end_lat, 0.0);
         let start_dir = start.normalize();
@@ -127,23 +120,9 @@ impl Geodesic {
             end_lon,
             end_lat,
         );
-        let constants = set_constants(
-            ellipsoid.maximum_radius,
-            ellipsoid.minimum_radius,
-            start_lat,
-            start_heading,
-            u_squared,
-        );
-        Self {
-            distance,
-            start_heading,
-            end_heading,
-            start_lon,
-            start_dir,
-            end_dir,
-            spherical: false,
-            constants,
-        }
+        let constants =
+            set_constants(ellipsoid.maximum_radius, ellipsoid.minimum_radius, start_lat, start_heading, u_squared);
+        Self { distance, start_heading, end_heading, start_lon, start_dir, end_dir, spherical: false, constants }
     }
 
     pub fn interpolate(&self, fraction: f64) -> (f64, f64) {
@@ -152,11 +131,7 @@ impl Geodesic {
 
     pub fn interpolate_distance(&self, distance: f64) -> (f64, f64) {
         if self.spherical || self.distance.abs() < 1e-6 {
-            let t = if self.distance.abs() < 1e-6 {
-                0.0
-            } else {
-                distance / self.distance
-            };
+            let t = if self.distance.abs() < 1e-6 { 0.0 } else { distance / self.distance };
             let dir = slerp(self.start_dir, self.end_dir, t.clamp(0.0, 1.0));
             let longitude = dir.y.atan2(dir.x);
             let latitude = (dir.z).clamp(-1.0, 1.0).asin();
@@ -180,10 +155,7 @@ impl Geodesic {
         let u4 = c.u4_over_16;
 
         let mut sigma = (2.0 * s3 * u8 * cosine2s) / 3.0
-            + s * (1.0 - u2
-                + (7.0 * u4) / 4.0
-                + (15.0 * u6) / -4.0
-                + (579.0 * u8) / 64.0
+            + s * (1.0 - u2 + (7.0 * u4) / 4.0 + (15.0 * u6) / -4.0 + (579.0 * u8) / 64.0
                 - (u4 - (15.0 * u6) / 4.0 + (187.0 * u8) / 16.0) * cosine2s
                 - ((5.0 * u6) / 4.0 - (115.0 * u8) / 16.0) * cosine4s
                 - (29.0 * u8 * cosine6s) / 16.0)
@@ -262,46 +234,37 @@ fn vincenty_inverse(
             cosine_squared_alpha = 1.0 - sine_alpha * sine_alpha;
         }
         let lambda_dot = lambda;
-        cosine_twice_sigma_midpoint = if cosine_squared_alpha.abs() < 1e-15 {
-            0.0
-        } else {
-            cosine_sigma - (2.0 * ss) / cosine_squared_alpha
-        };
+        cosine_twice_sigma_midpoint =
+            if cosine_squared_alpha.abs() < 1e-15 { 0.0 } else { cosine_sigma - (2.0 * ss) / cosine_squared_alpha };
         if !cosine_twice_sigma_midpoint.is_finite() {
             cosine_twice_sigma_midpoint = 0.0;
         }
-        lambda = l
-            + compute_delta_lambda(
-                eff,
-                sine_alpha,
-                cosine_squared_alpha,
-                sigma,
-                sine_sigma,
-                cosine_sigma,
-                cosine_twice_sigma_midpoint,
-            );
+        lambda = l + compute_delta_lambda(
+            eff,
+            sine_alpha,
+            cosine_squared_alpha,
+            sigma,
+            sine_sigma,
+            cosine_sigma,
+            cosine_twice_sigma_midpoint,
+        );
         if (lambda - lambda_dot).abs() <= EPSILON12 {
             break;
         }
     }
 
     let u_squared = (cosine_squared_alpha * (major * major - minor * minor)) / (minor * minor);
-    let a = 1.0
-        + (u_squared * (4096.0 + u_squared * (u_squared * (320.0 - 175.0 * u_squared) - 768.0)))
-            / 16384.0;
-    let b = (u_squared * (256.0 + u_squared * (u_squared * (74.0 - 47.0 * u_squared) - 128.0)))
-        / 1024.0;
+    let a = 1.0 + (u_squared * (4096.0 + u_squared * (u_squared * (320.0 - 175.0 * u_squared) - 768.0))) / 16384.0;
+    let b = (u_squared * (256.0 + u_squared * (u_squared * (74.0 - 47.0 * u_squared) - 128.0))) / 1024.0;
     let cosine_squared_twice = cosine_twice_sigma_midpoint * cosine_twice_sigma_midpoint;
     let delta_sigma = b
         * sine_sigma
         * (cosine_twice_sigma_midpoint
-            + (b
-                * (cosine_sigma * (2.0 * cosine_squared_twice - 1.0)
-                    - (b
-                        * cosine_twice_sigma_midpoint
-                        * (4.0 * sine_sigma * sine_sigma - 3.0)
-                        * (4.0 * cosine_squared_twice - 3.0))
-                        / 6.0))
+            + (b * (cosine_sigma * (2.0 * cosine_squared_twice - 1.0)
+                - (b * cosine_twice_sigma_midpoint
+                    * (4.0 * sine_sigma * sine_sigma - 3.0)
+                    * (4.0 * cosine_squared_twice - 3.0))
+                    / 6.0))
                 / 4.0);
     let distance = minor * a * (sigma - delta_sigma);
     let start_heading = (cosine_u2 * lambda.sin()).atan2(cs - sc * lambda.cos());
@@ -325,8 +288,7 @@ fn set_constants(a: f64, b: f64, start_lat: f64, start_heading: f64, u_squared: 
     let u4_over_16 = u2_over_4 * u2_over_4;
     let u6_over_64 = u4_over_16 * u2_over_4;
     let u8_over_256 = u4_over_16 * u4_over_16;
-    let a0 = 1.0 + u2_over_4 - (3.0 * u4_over_16) / 4.0 + (5.0 * u6_over_64) / 4.0
-        - (175.0 * u8_over_256) / 64.0;
+    let a0 = 1.0 + u2_over_4 - (3.0 * u4_over_16) / 4.0 + (5.0 * u6_over_64) / 4.0 - (175.0 * u8_over_256) / 64.0;
     let a1 = 1.0 - u2_over_4 + (15.0 * u4_over_16) / 8.0 - (35.0 * u6_over_64) / 8.0;
     let a2 = 1.0 - 3.0 * u2_over_4 + (35.0 * u4_over_16) / 4.0;
     let a3 = 1.0 - 5.0 * u2_over_4;

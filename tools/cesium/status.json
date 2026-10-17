@@ -1,0 +1,327 @@
+{
+  "Core/AxisAlignedBoundingBox": {
+    "status": "ported",
+    "rust": "core::axis_aligned_bounding_box"
+  },
+  "Core/BoundingRectangle": {
+    "status": "ported",
+    "rust": "core::bounding_rectangle"
+  },
+  "Core/BoundingSphere": {
+    "status": "ported",
+    "rust": "core::bounding_sphere"
+  },
+  "Core/Cartesian2": {
+    "status": "ported",
+    "rust": "core::cartesian2"
+  },
+  "Core/Cartesian3": {
+    "status": "ported",
+    "rust": "core::cartesian3"
+  },
+  "Core/Cartesian4": {
+    "status": "ported",
+    "rust": "core::cartesian4"
+  },
+  "Core/Cartographic": {
+    "status": "ported",
+    "rust": "core::cartographic"
+  },
+  "Core/Check": {
+    "status": "n/a",
+    "note": "Argument checks; Rust types and Result do this at compile time or in the signature."
+  },
+  "Core/Clock": {
+    "status": "ported",
+    "rust": "core::clock",
+    "note": "Clock::new returns None when start is after stop (a debug check in Cesium; LOOP_STOP would never end). tick_at takes the system time explicitly."
+  },
+  "Core/ClockRange": {
+    "status": "ported",
+    "rust": "core::clock_range"
+  },
+  "Core/ClockStep": {
+    "status": "ported",
+    "rust": "core::clock_step"
+  },
+  "Core/Color": {
+    "status": "ported",
+    "rust": "core::color"
+  },
+  "Core/CubicRealPolynomial": {
+    "status": "ported",
+    "rust": "core::cubic_real_polynomial"
+  },
+  "Core/CullingVolume": {
+    "status": "ported",
+    "rust": "core::culling_volume"
+  },
+  "Core/DeveloperError": {
+    "status": "n/a",
+    "note": "Panics on programmer error, Result for recoverable errors."
+  },
+  "Core/Ellipsoid": {
+    "status": "ported",
+    "rust": "core::ellipsoid",
+    "note": "Ellipsoid.default is not a mutable global; APIs take the ellipsoid explicitly."
+  },
+  "Core/EllipsoidGeodesic": {
+    "status": "ported",
+    "rust": "core::ellipsoid_geodesic",
+    "note": "Near-antipodal input (Cesium debug check) returns None instead of iterating forever."
+  },
+  "Core/EllipsoidRhumbLine": {
+    "status": "ported",
+    "rust": "core::ellipsoid_rhumb_line"
+  },
+  "Core/EllipsoidTangentPlane": {
+    "status": "ported",
+    "rust": "core::ellipsoid_tangent_plane"
+  },
+  "Core/EllipsoidalOccluder": {
+    "status": "ported",
+    "rust": "core::ellipsoidal_occluder"
+  },
+  "Core/Event": {
+    "status": "ported",
+    "rust": "core::event",
+    "note": "Listeners are boxed closures identified by ListenerId; Cesium scopes become captured state."
+  },
+  "Core/FeatureDetection": {
+    "status": "n/a",
+    "note": "Browser and WebGL feature sniffing."
+  },
+  "Core/Frozen": {
+    "status": "n/a",
+    "note": "Rust values are immutable unless declared mut."
+  },
+  "Core/Fullscreen": {
+    "status": "n/a",
+    "note": "Browser Fullscreen API."
+  },
+  "Core/GeographicProjection": {
+    "status": "ported",
+    "rust": "core::geographic_projection"
+  },
+  "Core/GregorianDate": {
+    "status": "ported",
+    "rust": "core::gregorian_date"
+  },
+  "Core/HeadingPitchRange": {
+    "status": "ported",
+    "rust": "core::heading_pitch_range"
+  },
+  "Core/HeadingPitchRoll": {
+    "status": "ported",
+    "rust": "core::heading_pitch_roll"
+  },
+  "Core/Intersect": {
+    "status": "ported",
+    "rust": "core::intersect"
+  },
+  "Core/IntersectionTests": {
+    "status": "ported",
+    "rust": "core::intersection_tests"
+  },
+  "Core/Interval": {
+    "status": "ported",
+    "rust": "core::interval"
+  },
+  "Core/Iso8601": {
+    "status": "ported",
+    "rust": "core::iso8601"
+  },
+  "Core/JulianDate": {
+    "status": "ported",
+    "rust": "core::julian_date",
+    "note": "fromIso8601 returns Err where Cesium throws; JulianDate.leapSeconds is a const table, not a mutable array."
+  },
+  "Core/LeapSecond": {
+    "status": "ported",
+    "rust": "core::leap_second"
+  },
+  "Core/MapProjection": {
+    "status": "ported",
+    "rust": "core::map_projection"
+  },
+  "Core/Math": {
+    "status": "ported",
+    "rust": "core::math"
+  },
+  "Core/Matrix2": {
+    "status": "ported",
+    "rust": "core::matrix2"
+  },
+  "Core/Matrix3": {
+    "status": "ported",
+    "rust": "core::matrix3"
+  },
+  "Core/Matrix4": {
+    "status": "ported",
+    "rust": "core::matrix4"
+  },
+  "Core/Occluder": {
+    "status": "ported",
+    "rust": "core::occluder"
+  },
+  "Core/OrientedBoundingBox": {
+    "status": "ported",
+    "rust": "core::oriented_bounding_box"
+  },
+  "Core/OrthographicFrustum": {
+    "status": "ported",
+    "rust": "core::orthographic_frustum"
+  },
+  "Core/OrthographicOffCenterFrustum": {
+    "status": "ported",
+    "rust": "core::orthographic_off_center_frustum"
+  },
+  "Core/PerspectiveFrustum": {
+    "status": "ported",
+    "rust": "core::perspective_frustum"
+  },
+  "Core/PerspectiveOffCenterFrustum": {
+    "status": "ported",
+    "rust": "core::perspective_off_center_frustum"
+  },
+  "Core/Plane": {
+    "status": "ported",
+    "rust": "core::plane"
+  },
+  "Core/QuadraticRealPolynomial": {
+    "status": "ported",
+    "rust": "core::quadratic_real_polynomial"
+  },
+  "Core/QuarticRealPolynomial": {
+    "status": "ported",
+    "rust": "core::quartic_real_polynomial"
+  },
+  "Core/Quaternion": {
+    "status": "ported",
+    "rust": "core::quaternion"
+  },
+  "Core/Ray": {
+    "status": "ported",
+    "rust": "core::ray"
+  },
+  "Core/Rectangle": {
+    "status": "ported",
+    "rust": "core::rectangle"
+  },
+  "Core/RuntimeError": {
+    "status": "ported",
+    "rust": "core::runtime_error"
+  },
+  "Core/Simon1994PlanetaryPositions": {
+    "status": "ported",
+    "rust": "core::simon1994_planetary_positions",
+    "note": "Orbit-element checks are unreachable for the Earth/Moon elements and are not ported."
+  },
+  "Core/Spherical": {
+    "status": "ported",
+    "rust": "core::spherical"
+  },
+  "Core/TimeConstants": {
+    "status": "ported",
+    "rust": "core::time_constants"
+  },
+  "Core/TimeInterval": {
+    "status": "ported",
+    "rust": "core::time_interval",
+    "note": "Interval data is generic; data comparers and merge callbacks are closures."
+  },
+  "Core/TimeIntervalCollection": {
+    "status": "ported",
+    "rust": "core::time_interval_collection",
+    "note": "Data comparers are closures; the plain methods use PartialEq where Cesium uses ===."
+  },
+  "Core/TimeStandard": {
+    "status": "ported",
+    "rust": "core::time_standard"
+  },
+  "Core/Transforms": {
+    "status": "partial",
+    "rust": "core::transforms",
+    "note": "Local frames, HPR frames, window coordinates, 2D bases done; ICRF/TEME/Moon frames need JulianDate, EOP, and IAU 2006 data."
+  },
+  "Core/TranslationRotationScale": {
+    "status": "ported",
+    "rust": "core::translation_rotation_scale"
+  },
+  "Core/Visibility": {
+    "status": "ported",
+    "rust": "core::visibility"
+  },
+  "Core/WebMercatorProjection": {
+    "status": "ported",
+    "rust": "core::web_mercator_projection"
+  },
+  "Core/addAllToArray": {
+    "status": "n/a",
+    "note": "Vec::extend."
+  },
+  "Core/binarySearch": {
+    "status": "ported",
+    "rust": "core::binary_search"
+  },
+  "Core/buildModuleUrl": {
+    "status": "n/a",
+    "note": "Resolves the JS bundle base URL."
+  },
+  "Core/clone": {
+    "status": "n/a",
+    "note": "Clone/Copy derives."
+  },
+  "Core/combine": {
+    "status": "n/a",
+    "note": "Struct update syntax and Default."
+  },
+  "Core/defer": {
+    "status": "n/a",
+    "note": "Promise helper; Rust uses futures/channels."
+  },
+  "Core/defined": {
+    "status": "n/a",
+    "note": "Option<T> replaces undefined checks."
+  },
+  "Core/deprecationWarning": {
+    "status": "n/a",
+    "note": "Console helper for the JS API; Rust uses #[deprecated]."
+  },
+  "Core/destroyObject": {
+    "status": "n/a",
+    "note": "Drop."
+  },
+  "Core/formatError": {
+    "status": "n/a",
+    "note": "JS Error formatting; Rust uses Display."
+  },
+  "Core/getTimestamp": {
+    "status": "ported",
+    "rust": "core::clock::get_timestamp"
+  },
+  "Core/globalTypes": {
+    "status": "n/a",
+    "note": "JSDoc type declarations only."
+  },
+  "Core/isLeapYear": {
+    "status": "ported",
+    "rust": "core::is_leap_year"
+  },
+  "Core/loadAndExecuteScript": {
+    "status": "n/a",
+    "note": "Injects a <script> tag."
+  },
+  "Core/oneTimeWarning": {
+    "status": "n/a",
+    "note": "Console helper for the JS API."
+  },
+  "Core/scaleToGeodeticSurface": {
+    "status": "ported",
+    "rust": "core::scale_to_geodetic_surface"
+  },
+  "Core/wrapFunction": {
+    "status": "n/a",
+    "note": "JS function wrapping helper."
+  }
+}

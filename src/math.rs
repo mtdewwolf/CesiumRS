@@ -30,11 +30,7 @@ impl Vec3 {
     }
 
     pub fn cross(self, o: Self) -> Self {
-        Self::new(
-            self.y * o.z - self.z * o.y,
-            self.z * o.x - self.x * o.z,
-            self.x * o.y - self.y * o.x,
-        )
+        Self::new(self.y * o.z - self.z * o.y, self.z * o.x - self.x * o.z, self.x * o.y - self.y * o.x)
     }
 
     pub fn magnitude_squared(self) -> f64 {
@@ -47,7 +43,11 @@ impl Vec3 {
 
     pub fn normalize(self) -> Self {
         let m = self.magnitude();
-        if m == 0.0 { Self::ZERO } else { self / m }
+        if m == 0.0 {
+            Self::ZERO
+        } else {
+            self / m
+        }
     }
 
     pub fn mul_components(self, o: Self) -> Self {
@@ -110,12 +110,7 @@ impl Quat {
     pub fn from_axis_angle(axis: Vec3, angle: f64) -> Self {
         let half = angle * 0.5;
         let s = half.sin();
-        Self {
-            x: axis.x * s,
-            y: axis.y * s,
-            z: axis.z * s,
-            w: half.cos(),
-        }
+        Self { x: axis.x * s, y: axis.y * s, z: axis.z * s, w: half.cos() }
     }
 
     /// Hamilton product. Cesium `Quaternion.multiply(left, right)`.

@@ -1,0 +1,20 @@
+[
+  {
+    "milestone": "Start",
+    "date": "2026-10-16",
+    "percent": 0,
+    "ported": 0
+  },
+  {
+    "milestone": "Math + geometry",
+    "date": "2026-10-17",
+    "percent": 7.41,
+    "ported": 44
+  },
+  {
+    "milestone": "Time + Sun/Moon",
+    "date": "2026-10-17",
+    "percent": 8.6,
+    "ported": 60
+  }
+]

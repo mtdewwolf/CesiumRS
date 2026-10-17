@@ -2,8 +2,8 @@
 
 use crate::ellipsoid::{cartographic_to_cartesian, geodetic_surface_normal, Ellipsoid};
 use crate::math::{
-    clamp, equals_epsilon, mat3_from_quaternion, mat3_mul_vec, mat4_mul, mat4_mul_dir,
-    mat4_mul_point, sign, zero_to_two_pi, Mat4, Quat, Vec3, EPSILON10, EPSILON14, PI_OVER_TWO,
+    clamp, equals_epsilon, mat3_from_quaternion, mat3_mul_vec, mat4_mul, mat4_mul_dir, mat4_mul_point, sign,
+    zero_to_two_pi, Mat4, Quat, Vec3, EPSILON10, EPSILON14, PI_OVER_TWO,
 };
 
 /// Cesium `Transforms.eastNorthUpToFixedFrame` axes: east, north, up.
@@ -16,11 +16,7 @@ pub fn enu_axes(origin: Vec3, ellipsoid: &Ellipsoid) -> (Vec3, Vec3, Vec3) {
     }
     if equals_epsilon(origin.x, 0.0, EPSILON14) && equals_epsilon(origin.y, 0.0, EPSILON14) {
         let s = sign(origin.z);
-        return (
-            Vec3::UNIT_Y,
-            Vec3::new(-s, 0.0, 0.0),
-            Vec3::new(0.0, 0.0, s),
-        );
+        return (Vec3::UNIT_Y, Vec3::new(-s, 0.0, 0.0), Vec3::new(0.0, 0.0, s));
     }
     let up = geodetic_surface_normal(ellipsoid, origin);
     let east = Vec3::new(-origin.y, origin.x, 0.0).normalize();
@@ -127,11 +123,7 @@ pub fn look_at(
 
     let mut direction = -offset;
     let mag = direction.magnitude();
-    direction = if mag > 0.0 {
-        direction / mag
-    } else {
-        Vec3::new(0.0, 0.0, -1.0)
-    };
+    direction = if mag > 0.0 { direction / mag } else { Vec3::new(0.0, 0.0, -1.0) };
     let mut right = direction.cross(Vec3::UNIT_Z);
     if right.magnitude_squared() < EPSILON10 {
         right = Vec3::UNIT_X;

@@ -21,20 +21,12 @@ pub fn geodetic_latitude_to_mercator_angle(latitude: f64) -> f64 {
 }
 
 pub fn project(longitude: f64, latitude: f64, height: f64, semimajor: f64) -> (f64, f64, f64) {
-    (
-        longitude * semimajor,
-        geodetic_latitude_to_mercator_angle(latitude) * semimajor,
-        height,
-    )
+    (longitude * semimajor, geodetic_latitude_to_mercator_angle(latitude) * semimajor, height)
 }
 
 pub fn unproject(x: f64, y: f64, z: f64, semimajor: f64) -> (f64, f64, f64) {
     let inv = 1.0 / semimajor;
-    (
-        x * inv,
-        mercator_angle_to_geodetic_latitude(y * inv),
-        z,
-    )
+    (x * inv, mercator_angle_to_geodetic_latitude(y * inv), z)
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -56,12 +48,7 @@ pub fn geographic_tile_rectangle(x: u32, y: u32, level: u32) -> Rectangle {
     let y_height = PI / f64::from(ny);
     let west = -PI + f64::from(x) * x_width;
     let north = PI_OVER_TWO - f64::from(y) * y_height;
-    Rectangle {
-        west,
-        south: north - y_height,
-        east: west + x_width,
-        north,
-    }
+    Rectangle { west, south: north - y_height, east: west + x_width, north }
 }
 
 pub fn geographic_tile_of(longitude: f64, latitude: f64, level: u32) -> (u32, u32) {

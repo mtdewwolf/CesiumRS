@@ -8,6 +8,7 @@
 
 pub mod api;
 pub mod camera;
+pub mod core;
 pub mod ellipsoid;
 pub mod geodesic;
 pub mod intersect;
@@ -17,9 +18,7 @@ pub mod projection;
 pub mod sun;
 
 pub use camera::look_at;
-pub use ellipsoid::{
-    cartesian_to_cartographic, cartographic_to_cartesian, Ellipsoid,
-};
+pub use ellipsoid::{cartesian_to_cartographic, cartographic_to_cartesian, Ellipsoid};
 pub use geodesic::Geodesic;
 pub use intersect::{pick_ray, ray_ellipsoid};
 pub use projection::{project, unproject};
@@ -30,9 +29,7 @@ mod tests {
     use super::*;
     use crate::camera::{enu_axes, offset_from_heading_pitch_range};
     use crate::math::{to_radians, PI, PI_OVER_TWO};
-    use crate::projection::{
-        geographic_tile_rectangle, maximum_latitude, mercator_angle_to_geodetic_latitude,
-    };
+    use crate::projection::{geographic_tile_rectangle, maximum_latitude, mercator_angle_to_geodetic_latitude};
 
     fn wgs84() -> Ellipsoid {
         Ellipsoid::wgs84()
@@ -92,19 +89,7 @@ mod tests {
     #[test]
     fn nadir_camera_sits_above_focus() {
         let e = wgs84();
-        let frame = look_at(
-            &e,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            -PI_OVER_TWO,
-            1_000.0,
-            to_radians(60.0),
-            1.0,
-            1.0,
-            10_000_000.0,
-        );
+        let frame = look_at(&e, 0.0, 0.0, 0.0, 0.0, -PI_OVER_TWO, 1_000.0, to_radians(60.0), 1.0, 1.0, 10_000_000.0);
         let focus = cartographic_to_cartesian(&e, 0.0, 0.0, 0.0);
         let offset = frame.eye - focus;
         assert!((offset.magnitude() - 1_000.0).abs() < 1e-4);
@@ -143,18 +128,9 @@ mod tests {
 
     #[test]
     fn new_york_to_london_is_about_5570_km() {
-        let g = Geodesic::new(
-            &wgs84(),
-            to_radians(-74.006),
-            to_radians(40.7128),
-            to_radians(-0.1276),
-            to_radians(51.5074),
-        );
-        assert!(
-            (g.distance - 5_570_000.0).abs() < 30_000.0,
-            "{}",
-            g.distance
-        );
+        let g =
+            Geodesic::new(&wgs84(), to_radians(-74.006), to_radians(40.7128), to_radians(-0.1276), to_radians(51.5074));
+        assert!((g.distance - 5_570_000.0).abs() < 30_000.0, "{}", g.distance);
     }
 
     #[test]
@@ -187,5 +163,77 @@ mod tests {
         assert!((d.magnitude() - 1.0).abs() < 1e-9);
         let p = cartesian_to_cartographic(&wgs84(), d * wgs84().maximum_radius).unwrap();
         assert!(p.latitude.abs() < 0.45);
+    }
+
+    fn to_ndc(m: &[f64; 16], p: crate::math::Vec3) -> (f64, f64) {
+        let x = m[0] * p.x + m[4] * p.y + m[8] * p.z + m[12];
+        let y = m[1] * p.x + m[5] * p.y + m[9] * p.z + m[13];
+        let w = m[3] * p.x + m[7] * p.y + m[11] * p.z + m[15];
+        (x / w, y / w)
+    }
+
+    #[test]
+    fn heading_zero_puts_north_up_and_east_right() {
+        let e = wgs84();
+        for &(lon, lat) in &[(-86.71, 30.05), (-105.08, 40.59), (151.2, -33.87), (0.0, 0.0)] {
+            let (lon, lat) = (to_radians(lon), to_radians(lat));
+            for &pitch in &[-PI_OVER_TWO, to_radians(-45.0)] {
+                let f = look_at(&e, lon, lat, 0.0, 0.0, pitch, 2.0e7, 0.8, 1.5, 1.0, 1.0e9);
+                let (cx, cy) = to_ndc(&f.view_projection, f.focus);
+                let d = to_radians(5.0);
+                let (nx, ny) = to_ndc(&f.view_projection, cartographic_to_cartesian(&e, lon, lat + d, 0.0));
+                let (ex, _) = to_ndc(&f.view_projection, cartographic_to_cartesian(&e, lon + d, lat, 0.0));
+                assert!(cx.abs() < 1e-6 && cy.abs() < 1e-6);
+                assert!(ny > cy && (nx - cx).abs() < 1e-6, "north must be up");
+                assert!(ex > cx, "east must be right");
+            }
+        }
+    }
+
+    #[test]
+    fn globe_uv_matches_equirectangular_image_rows() {
+        // Row 0 of an equirectangular image is the north edge and column 0 is
+        // the antimeridian, so v = 0 is +90° and u = 0 is −180°.
+        let mesh = crate::mesh::build_globe(&wgs84(), 6, 12);
+        let cols = 13;
+        let vert = |row: usize, col: usize| &mesh.vertices[(row * cols + col) * 8..][..8];
+        let north = vert(0, 0);
+        assert!(north[2] > 6.3e6 && north[7] == 0.0);
+        let south = vert(6, 0);
+        assert!(south[2] < -6.3e6 && south[7] == 1.0);
+        let greenwich_equator = vert(3, 6);
+        assert!(greenwich_equator[0] > 6.3e6 && greenwich_equator[6] == 0.5);
+        let east_90 = vert(3, 9);
+        assert!(east_90[1] > 6.3e6 && east_90[6] == 0.75);
+    }
+
+    #[test]
+    fn globe_triangles_face_outward() {
+        let mesh = crate::mesh::build_globe(&wgs84(), 8, 16);
+        let p = |i: u32| {
+            let v = &mesh.vertices[i as usize * 8..][..3];
+            crate::math::Vec3::new(f64::from(v[0]), f64::from(v[1]), f64::from(v[2]))
+        };
+        for t in mesh.indices.chunks(3) {
+            let (a, b, c) = (p(t[0]), p(t[1]), p(t[2]));
+            let n = (b - a).cross(c - a);
+            if n.magnitude() < 1.0 {
+                continue; // collapsed triangle at a pole
+            }
+            assert!(n.dot(a + b + c) > 0.0, "triangle winds inward");
+        }
+    }
+
+    #[test]
+    fn pick_above_center_lands_north() {
+        let e = wgs84();
+        let (lon, lat) = (to_radians(-86.71), to_radians(30.05));
+        let f = look_at(&e, lon, lat, 0.0, 0.0, -PI_OVER_TWO, 2.0e7, 0.8, 1.5, 1.0, 1.0e9);
+        let (o, d) = crate::camera::ray_from_ndc(&f, 0.0, 0.2);
+        let up = pick_ray(o, d, &e).unwrap();
+        let (o, d) = crate::camera::ray_from_ndc(&f, 0.2, 0.0);
+        let right = pick_ray(o, d, &e).unwrap();
+        assert!(up.latitude > lat);
+        assert!(right.longitude > lon);
     }
 }

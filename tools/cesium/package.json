@@ -1,0 +1,14 @@
+{
+  "name": "cesium-rs-tools",
+  "private": true,
+  "type": "module",
+  "description": "Reference CesiumJS for the port: fixture generation and the port tracker.",
+  "scripts": {
+    "fixtures": "TZ=UTC node fixtures/generate.mjs",
+    "tracker": "node tracker.mjs",
+    "milestone": "node tracker.mjs --milestone"
+  },
+  "dependencies": {
+    "@cesium/engine": "23.0.0"
+  }
+}

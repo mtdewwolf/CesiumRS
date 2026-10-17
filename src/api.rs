@@ -2,9 +2,7 @@
 //! that writes the same buffer.
 
 use crate::camera::{look_at, ray_from_ndc, CameraFrame};
-use crate::ellipsoid::{
-    cartesian_to_cartographic, cartographic_to_cartesian, Ellipsoid,
-};
+use crate::ellipsoid::{cartesian_to_cartographic, cartographic_to_cartesian, Ellipsoid};
 use crate::geodesic::Geodesic;
 use crate::intersect::pick_ray;
 use crate::math::{to_radians, Vec3};
@@ -88,19 +86,8 @@ pub extern "C" fn camera_look_at(
     near: f64,
     far: f64,
 ) {
-    let frame = look_at(
-        &ellipsoid(),
-        focus_lon,
-        focus_lat,
-        focus_height,
-        heading,
-        pitch,
-        range,
-        fov_y,
-        aspect,
-        near,
-        far,
-    );
+    let frame =
+        look_at(&ellipsoid(), focus_lon, focus_lat, focus_height, heading, pitch, range, fov_y, aspect, near, far);
     SCRATCH.with(|s| {
         let mut s = s.borrow_mut();
         s.f64s.clear();
@@ -213,22 +200,10 @@ pub extern "C" fn build_geodesic_mesh(lon1: f64, lat1: f64, lon2: f64, lat2: f64
 }
 
 #[no_mangle]
-pub extern "C" fn build_tile_mesh(
-    level: u32,
-    scheme: u32,
-    focus_lon: f64,
-    focus_lat: f64,
-    window: u32,
-) {
-    let lines = build_tile_grid(
-        &ellipsoid(),
-        level,
-        scheme,
-        focus_lon,
-        focus_lat,
-        window,
-        4,
-    );
+pub extern "C" fn build_tile_mesh(level: u32, scheme: u32, focus_lon: f64, focus_lat: f64, window: u32) {
+    // Keep each edge chord under ~3° so outlines do not sink into the globe.
+    let edge_segments = (64u32 >> level.min(6)).max(4);
+    let lines = build_tile_grid(&ellipsoid(), level, scheme, focus_lon, focus_lat, window, edge_segments);
     SCRATCH.with(|s| {
         s.borrow_mut().f32s = lines;
     });

@@ -76,11 +76,5 @@ pub fn pick_ray(origin: Vec3, direction: Vec3, ellipsoid: &Ellipsoid) -> Option<
     };
     let position = origin + direction * t;
     let c = cartesian_to_cartographic(ellipsoid, position)?;
-    Some(Pick {
-        t,
-        longitude: c.longitude,
-        latitude: c.latitude,
-        height: c.height,
-        position,
-    })
+    Some(Pick { t, longitude: c.longitude, latitude: c.latitude, height: c.height, position })
 }
