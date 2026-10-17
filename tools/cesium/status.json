@@ -57,6 +57,10 @@
     "status": "ported",
     "rust": "core::color"
   },
+  "Core/ConstantSpline": {
+    "status": "ported",
+    "rust": "core::constant_spline"
+  },
   "Core/CornerType": {
     "status": "ported",
     "rust": "core::corner_type"
@@ -162,6 +166,10 @@
     "status": "ported",
     "rust": "core::leap_second"
   },
+  "Core/LinearSpline": {
+    "status": "ported",
+    "rust": "core::linear_spline"
+  },
   "Core/MapProjection": {
     "status": "ported",
     "rust": "core::map_projection"
@@ -181,6 +189,10 @@
   "Core/Matrix4": {
     "status": "ported",
     "rust": "core::matrix4"
+  },
+  "Core/MorphWeightSpline": {
+    "status": "ported",
+    "rust": "core::morph_weight_spline"
   },
   "Core/MortonOrder": {
     "status": "ported",
@@ -227,6 +239,10 @@
     "status": "ported",
     "rust": "core::quaternion"
   },
+  "Core/QuaternionSpline": {
+    "status": "ported",
+    "rust": "core::quaternion_spline"
+  },
   "Core/Ray": {
     "status": "ported",
     "rust": "core::ray"
@@ -251,6 +267,16 @@
   "Core/Spherical": {
     "status": "ported",
     "rust": "core::spherical"
+  },
+  "Core/Spline": {
+    "status": "ported",
+    "rust": "core::spline",
+    "note": "Rust trait and sealed point types replace the abstract JS class and runtime type dispatch; interval lookup, wrapping, and clamping ported."
+  },
+  "Core/SteppedSpline": {
+    "status": "ported",
+    "rust": "core::stepped_spline",
+    "note": "Preserves Cesium returning the penultimate point when evaluated at the final time."
   },
   "Core/TimeConstants": {
     "status": "ported",
