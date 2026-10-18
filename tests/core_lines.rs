@@ -200,3 +200,49 @@ fn wall_geometries() {
         _ => None,
     });
 }
+
+fn corner_type(v: &Value) -> CornerType {
+    match u(v) {
+        1 => CornerType::Mitered,
+        2 => CornerType::Beveled,
+        _ => CornerType::Rounded,
+    }
+}
+
+fn volume_options(a: &[Value]) -> PolylineVolumeGeometryOptions {
+    let mut o = PolylineVolumeGeometryOptions::new(list(&a[0], c3), list(&a[1], c2));
+    o.corner_type = corner_type(&a[2]);
+    o.vertex_format = format(&a[3]);
+    if let Some(g) = opt(&a[4]) {
+        o.granularity = g;
+    }
+    o.ellipsoid = ellipsoid(&a[5]);
+    o
+}
+
+fn volume_outline(o: PolylineVolumeGeometryOptions) -> PolylineVolumeOutlineGeometry {
+    PolylineVolumeOutlineGeometry::new(o.polyline_positions, o.shape_positions, Some(o.ellipsoid), Some(o.corner_type), Some(o.granularity))
+}
+
+#[test]
+fn polyline_volume_geometries() {
+    run("core", "PolylineVolumeGeometry", |f| if f.contains("npack") { TIGHT } else { GEOMETRY }, |f, a| match f {
+        "volume" => {
+            let v = PolylineVolumeGeometry::new(volume_options(a));
+            ok(json!([packed(v.packed_length, |arr| v.pack(arr, 0)).enc(), geometry_enc(v.create_geometry())]))
+        }
+        "volumeOutline" => {
+            let v = volume_outline(volume_options(a));
+            ok(json!([packed(v.packed_length, |arr| v.pack(arr, 0)).enc(), geometry_enc(v.create_geometry())]))
+        }
+        "unpack" => {
+            let v = PolylineVolumeGeometry::unpack(&nums(&a[0]), 0);
+            ok(packed(v.packed_length, |arr| v.pack(arr, 0)))
+        }
+        "outlineUnpack" => {
+            let v = PolylineVolumeOutlineGeometry::unpack(&nums(&a[0]), 0);
+            ok(packed(v.packed_length, |arr| v.pack(arr, 0)))
+        }
+        _ => None,
+    });
+}

@@ -537,6 +537,20 @@
     "rust": "core::polyline_pipeline",
     "note": "Geodesic arcs use WGS84 whatever the ellipsoid, as Cesium module-level geodesic does. Heights are a PolylineHeight (constant or per position)."
   },
+  "Core/PolylineVolumeGeometry": {
+    "status": "ported",
+    "rust": "core::polyline_volume_geometry",
+    "note": "A tangent that normalizes to NaN drops tangents and bitangents, as Cesium's debug build does."
+  },
+  "Core/PolylineVolumeGeometryLibrary": {
+    "status": "ported",
+    "rust": "core::polyline_volume_geometry_library",
+    "note": "Positions are scaled onto the surface in place, as in Cesium."
+  },
+  "Core/PolylineVolumeOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::polyline_volume_outline_geometry"
+  },
   "Core/PrimitiveType": {
     "status": "ported",
     "rust": "core::primitive_type"

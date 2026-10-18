@@ -197,8 +197,17 @@ fn compute_attributes(positions: Vec<f64>, shape: &[Cartesian2], br: &BoundingRe
         compute_normal(&mut geometry)?;
     }
     if vf.tangent || vf.bitangent {
-        // Cesium catches the failure (no normals) and warns.
-        let _ = compute_tangent_and_bitangent(&mut geometry);
+        // Cesium catches the failure (no normals, or a tangent that
+        // normalizes to NaN, which its debug build rejects) and warns,
+        // leaving neither tangents nor bitangents.
+        if compute_tangent_and_bitangent(&mut geometry).is_some() {
+            let a = &mut geometry.attributes;
+            let nan = |v: &Option<GeometryAttribute>| v.as_ref().is_some_and(|v| v.values.to_f64_vec().iter().any(|x| x.is_nan()));
+            if nan(&a.tangent) || nan(&a.bitangent) {
+                a.tangent = None;
+                a.bitangent = None;
+            }
+        }
         if !vf.tangent {
             geometry.attributes.tangent = None;
         }
