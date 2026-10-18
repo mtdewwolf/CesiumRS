@@ -36,6 +36,11 @@
     "status": "ported",
     "rust": "core::cartographic"
   },
+  "Core/CatmullRomSpline": {
+    "status": "ported",
+    "rust": "core::catmull_rom_spline",
+    "note": "Two-point splines extrapolate outside their times, as in Cesium."
+  },
   "Core/Check": {
     "status": "n/a",
     "note": "Argument checks; Rust types and Result do this at compile time or in the signature."
@@ -57,6 +62,11 @@
     "status": "ported",
     "rust": "core::color"
   },
+  "Core/ComponentDatatype": {
+    "status": "ported",
+    "rust": "core::component_datatype",
+    "note": "Typed arrays are the TypedArray enum (core::typed_array), with JavaScript element conversion."
+  },
   "Core/ConstantSpline": {
     "status": "ported",
     "rust": "core::constant_spline"
@@ -77,6 +87,14 @@
     "status": "n/a",
     "note": "Panics on programmer error, Result for recoverable errors."
   },
+  "Core/DistanceDisplayCondition": {
+    "status": "ported",
+    "rust": "core::distance_display_condition"
+  },
+  "Core/DoubleEndedPriorityQueue": {
+    "status": "ported",
+    "rust": "core::double_ended_priority_queue"
+  },
   "Core/EarthOrientationParameters": {
     "status": "ported",
     "rust": "core::earth_orientation_parameters",
@@ -85,6 +103,11 @@
   "Core/EarthOrientationParametersSample": {
     "status": "ported",
     "rust": "core::earth_orientation_parameters::EarthOrientationParametersSample"
+  },
+  "Core/EasingFunction": {
+    "status": "ported",
+    "rust": "core::easing_function",
+    "note": "The tween.js 25 curves Cesium re-exports, as an enum."
   },
   "Core/Ellipsoid": {
     "status": "ported",
@@ -133,6 +156,10 @@
     "status": "ported",
     "rust": "core::geographic_projection"
   },
+  "Core/GeographicTilingScheme": {
+    "status": "ported",
+    "rust": "core::tiling_scheme::GeographicTilingScheme"
+  },
   "Core/GregorianDate": {
     "status": "ported",
     "rust": "core::gregorian_date"
@@ -144,6 +171,19 @@
   "Core/HeadingPitchRoll": {
     "status": "ported",
     "rust": "core::heading_pitch_roll"
+  },
+  "Core/Heap": {
+    "status": "ported",
+    "rust": "core::heap"
+  },
+  "Core/HermitePolynomialApproximation": {
+    "status": "ported",
+    "rust": "core::hermite_polynomial_approximation"
+  },
+  "Core/HermiteSpline": {
+    "status": "ported",
+    "rust": "core::hermite_spline",
+    "note": "createNaturalCubic and createClampedCubic return a CubicSpline enum (Hermite or, for two points, Linear)."
   },
   "Core/HilbertOrder": {
     "status": "partial",
@@ -172,6 +212,10 @@
     "status": "ported",
     "rust": "core::iau_orientation_parameters"
   },
+  "Core/IndexDatatype": {
+    "status": "ported",
+    "rust": "core::index_datatype"
+  },
   "Core/Intersect": {
     "status": "ported",
     "rust": "core::intersect"
@@ -179,6 +223,10 @@
   "Core/IntersectionTests": {
     "status": "ported",
     "rust": "core::intersection_tests"
+  },
+  "Core/Intersections2D": {
+    "status": "ported",
+    "rust": "core::intersections_2d"
   },
   "Core/Interval": {
     "status": "ported",
@@ -193,9 +241,17 @@
     "rust": "core::julian_date",
     "note": "fromIso8601 returns Err where Cesium throws. The leap-second table is process-wide and mutable, like JulianDate.leapSeconds (leap_seconds, add_leap_second, reset_leap_seconds)."
   },
+  "Core/LagrangePolynomialApproximation": {
+    "status": "ported",
+    "rust": "core::lagrange_polynomial_approximation"
+  },
   "Core/LeapSecond": {
     "status": "ported",
     "rust": "core::leap_second"
+  },
+  "Core/LinearApproximation": {
+    "status": "ported",
+    "rust": "core::linear_approximation"
   },
   "Core/LinearSpline": {
     "status": "ported",
@@ -230,6 +286,10 @@
     "rust": "core::morton_order",
     "note": "2D 16-bit and 3D 10-bit coordinate encode/decode."
   },
+  "Core/NearFarScalar": {
+    "status": "ported",
+    "rust": "core::near_far_scalar"
+  },
   "Core/Occluder": {
     "status": "ported",
     "rust": "core::occluder"
@@ -257,6 +317,10 @@
   "Core/Plane": {
     "status": "ported",
     "rust": "core::plane"
+  },
+  "Core/PrimitiveType": {
+    "status": "ported",
+    "rust": "core::primitive_type"
   },
   "Core/QuadraticRealPolynomial": {
     "status": "ported",
@@ -309,6 +373,15 @@
     "rust": "core::stepped_spline",
     "note": "Preserves Cesium returning the penultimate point when evaluated at the final time."
   },
+  "Core/Stereographic": {
+    "status": "ported",
+    "rust": "core::stereographic"
+  },
+  "Core/TilingScheme": {
+    "status": "ported",
+    "rust": "core::tiling_scheme::TilingScheme",
+    "note": "A trait."
+  },
   "Core/TimeConstants": {
     "status": "ported",
     "rust": "core::time_constants"
@@ -327,6 +400,10 @@
     "status": "ported",
     "rust": "core::time_standard"
   },
+  "Core/Tipsify": {
+    "status": "ported",
+    "rust": "core::tipsify"
+  },
   "Core/Transforms": {
     "status": "ported",
     "rust": "core::transforms",
@@ -336,13 +413,30 @@
     "status": "ported",
     "rust": "core::translation_rotation_scale"
   },
+  "Core/TridiagonalSystemSolver": {
+    "status": "ported",
+    "rust": "core::tridiagonal_system_solver"
+  },
   "Core/Visibility": {
     "status": "ported",
     "rust": "core::visibility"
   },
+  "Core/WebGLConstants": {
+    "status": "ported",
+    "rust": "core::webgl_constants",
+    "note": "Generated from the CesiumJS object."
+  },
   "Core/WebMercatorProjection": {
     "status": "ported",
     "rust": "core::web_mercator_projection"
+  },
+  "Core/WebMercatorTilingScheme": {
+    "status": "ported",
+    "rust": "core::tiling_scheme::WebMercatorTilingScheme"
+  },
+  "Core/WireframeIndexGenerator": {
+    "status": "ported",
+    "rust": "core::wireframe_index_generator"
   },
   "Core/addAllToArray": {
     "status": "n/a",

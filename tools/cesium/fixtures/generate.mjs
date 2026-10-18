@@ -16,13 +16,14 @@ import coreMath from "./core-math.mjs";
 import coreTime from "./core-time.mjs";
 import corePacking from "./core-packing.mjs";
 import coreSplines from "./core-splines.mjs";
+import coreAlgorithms from "./core-algorithms.mjs";
 import coreAstronomy from "./core-astronomy.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = join(here, "../../../tests/fixtures");
 const version = JSON.parse(readFileSync(join(here, "../node_modules/@cesium/engine/package.json"), "utf8")).version;
 
-const packages = { core: [...coreMath(), ...coreGeometry(), ...coreBounds(), ...coreTime(), ...corePacking(), ...coreSplines(), ...coreAstronomy()] };
+const packages = { core: [...coreMath(), ...coreGeometry(), ...coreBounds(), ...coreTime(), ...corePacking(), ...coreSplines(), ...coreAlgorithms(), ...coreAstronomy()] };
 // coreAstronomy runs last: loading EOP data adds leap seconds to JulianDate.leapSeconds.
 
 // Optional module names avoid rewriting unrelated fixtures during porting.
