@@ -271,3 +271,57 @@ fn unpack_round_trips() {
     fg.pack(&mut array, 0);
     assert_eq!(FrustumGeometry::unpack(&array, 0), fg);
 }
+
+#[test]
+fn ellipse_outline_geometry() {
+    use cesium_rs::core::ellipse_geometry_library::{compute_ellipse_positions, EllipseOptions};
+    run(
+        "core",
+        "EllipseOutlineGeometry",
+        |_| TIGHT_VECTOR,
+        |f, a| {
+            let x = |i: usize| n(&a[i]);
+            match f {
+                "ellipseOutline" => {
+                    let mut options = EllipseOutlineOptions::new(c3(&a[0]), x(1), x(2));
+                    options.rotation = x(3);
+                    options.granularity = x(4);
+                    options.height = x(5);
+                    options.extruded_height = opt(&a[6]);
+                    options.number_of_vertical_lines = x(7);
+                    options.offset_attribute = offset(&a[8]);
+                    let e = EllipseOutlineGeometry::new(options).unwrap();
+                    if x(1) == 0.0 {
+                        // The degenerate case's fixture has no packing.
+                        return ok(json!([geometry_enc(e.create_geometry()), null]));
+                    }
+                    with_pack(e.create_geometry(), EllipseOutlineGeometry::PACKED_LENGTH, |arr| e.pack(arr, 0))
+                }
+                "circleOutline" => {
+                    let mut options = EllipseOutlineOptions::new(c3(&a[0]), 0.0, 0.0);
+                    options.granularity = x(2);
+                    options.height = x(3);
+                    options.extruded_height = opt(&a[4]);
+                    options.number_of_vertical_lines = x(5);
+                    let c = CircleOutlineGeometry::new(x(1), options).unwrap();
+                    with_pack(c.create_geometry(), CircleOutlineGeometry::PACKED_LENGTH, |arr| c.pack(arr, 0))
+                }
+                "computeEllipsePositions" => {
+                    let p = compute_ellipse_positions(
+                        &EllipseOptions {
+                            center: c3(&a[0]),
+                            semi_major_axis: x(1),
+                            semi_minor_axis: x(2),
+                            rotation: x(3),
+                            granularity: x(4),
+                        },
+                        true,
+                        true,
+                    );
+                    ok(json!([p.positions.enc(), p.num_pts.map(|v| v as f64).enc(), p.outer_positions.enc()]))
+                }
+                _ => None,
+            }
+        },
+    );
+}

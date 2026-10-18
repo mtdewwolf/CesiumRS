@@ -67,8 +67,10 @@ impl PlaneOutlineGeometry {
     pub const PACKED_LENGTH: usize = 0;
 
     pub fn create_geometry(&self) -> Geometry {
-        let attributes =
-            GeometryAttributes { position: Some(GeometryAttribute::doubles(3, POSITIONS.to_vec())), ..Default::default() };
+        let attributes = GeometryAttributes {
+            position: Some(GeometryAttribute::doubles(3, POSITIONS.to_vec())),
+            ..Default::default()
+        };
         let indices = TypedArray::Uint16(vec![0, 1, 1, 2, 2, 3, 3, 0]);
         let mut geometry = Geometry::new(attributes, Some(indices), PrimitiveType::Lines);
         geometry.bounding_sphere = Some(BoundingSphere::new(Cartesian3::ZERO, 2f64.sqrt()));

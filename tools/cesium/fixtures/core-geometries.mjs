@@ -5,6 +5,10 @@ import {
   BoxGeometry,
   BoxOutlineGeometry,
   Cartesian3,
+  CircleOutlineGeometry,
+  EllipseGeometryLibrary,
+  EllipseOutlineGeometry,
+  Ellipsoid,
   CylinderGeometry,
   CylinderOutlineGeometry,
   EllipsoidGeometry,
@@ -207,6 +211,51 @@ function frustumSuite() {
   return s;
 }
 
+function ellipseSuite() {
+  const g = generators(makeRng(704));
+  const s = suite("EllipseOutlineGeometry");
+  for (let k = 0; k < 20; k++) {
+    const center = g.surface();
+    const minor = g.uniform(1e3, 2e5);
+    const major = minor * g.pick([1, g.uniform(1, 3)]);
+    const rotation = g.pick([0, g.angle()]);
+    const granularity = g.pick([Math.PI / 180, 0.02, 0.05, 0.003]);
+    const height = g.pick([0, g.uniform(-100, 5000)]);
+    const extruded = g.pick([null, g.uniform(-2000, 8000), height + 0.001]);
+    const lines = g.pick([16, 0, 5, 1000, 2.5]);
+    const offset = [null, GeometryOffsetAttribute.NONE, GeometryOffsetAttribute.ALL, GeometryOffsetAttribute.TOP][k % 4];
+    s.add("ellipseOutline", [center, major, minor, rotation, granularity, height, extruded, lines, offset], (c, ma, mi, r, gr, h, e, n, o) => {
+      const el = new EllipseOutlineGeometry({
+        center: c,
+        semiMajorAxis: ma,
+        semiMinorAxis: mi,
+        rotation: r,
+        granularity: gr,
+        height: h,
+        extrudedHeight: e ?? undefined,
+        numberOfVerticalLines: n,
+        offsetAttribute: o ?? undefined,
+      });
+      const pack = EllipseOutlineGeometry.pack(el, new Array(EllipseOutlineGeometry.packedLength).fill(0));
+      return [geometryEnc(EllipseOutlineGeometry.createGeometry(el)), pack];
+    });
+    s.add("circleOutline", [center, minor, granularity, height, extruded, lines], (c, r, gr, h, e, n) => {
+      const ci = new CircleOutlineGeometry({ center: c, radius: r, granularity: gr, height: h, extrudedHeight: e ?? undefined, numberOfVerticalLines: n });
+      const pack = CircleOutlineGeometry.pack(ci, new Array(CircleOutlineGeometry.packedLength).fill(0));
+      return [geometryEnc(CircleOutlineGeometry.createGeometry(ci)), pack];
+    });
+    const surfaceCenter = Ellipsoid.WGS84.scaleToGeodeticSurface(center);
+    s.add("computeEllipsePositions", [surfaceCenter, major, minor, rotation, granularity * 3], (c, ma, mi, r, gr) => {
+      const p = EllipseGeometryLibrary.computeEllipsePositions({ center: c, semiMajorAxis: ma, semiMinorAxis: mi, rotation: r, granularity: gr }, true, true);
+      return [p.positions, p.numPts, p.outerPositions];
+    });
+  }
+  s.add("ellipseOutline", [new Cartesian3(6378137, 0, 0), 0, 0, 0, 0.02, 0, null, 16, null], (c, ma, mi, r, gr, h, e, n) =>
+    [geometryEnc(EllipseOutlineGeometry.createGeometry(new EllipseOutlineGeometry({ center: c, semiMajorAxis: ma, semiMinorAxis: mi, granularity: gr }))), null],
+  );
+  return s;
+}
+
 function vertexFormatSuite() {
   const s = suite("VertexFormat");
   for (const f of formatNames) s.add("pack", [f], (f) => VertexFormat.pack(formats[f], new Array(6).fill(0)));
@@ -214,5 +263,5 @@ function vertexFormatSuite() {
 }
 
 export default function coreGeometries() {
-  return [boxPlaneSuite(), ellipsoidSuite(), cylinderSuite(), frustumSuite(), vertexFormatSuite()];
+  return [boxPlaneSuite(), ellipsoidSuite(), cylinderSuite(), frustumSuite(), ellipseSuite(), vertexFormatSuite()];
 }

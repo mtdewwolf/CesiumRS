@@ -53,6 +53,10 @@
     "status": "n/a",
     "note": "Argument checks; Rust types and Result do this at compile time or in the signature."
   },
+  "Core/CircleOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::ellipse_outline_geometry::CircleOutlineGeometry"
+  },
   "Core/Clock": {
     "status": "ported",
     "rust": "core::clock",
@@ -128,6 +132,15 @@
     "status": "ported",
     "rust": "core::easing_function",
     "note": "The tween.js 25 curves Cesium re-exports, as an enum."
+  },
+  "Core/EllipseGeometryLibrary": {
+    "status": "ported",
+    "rust": "core::ellipse_geometry_library"
+  },
+  "Core/EllipseOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::ellipse_outline_geometry",
+    "note": "createGeometry does not move the stored center onto the surface (Cesium mutates it); the result is the same."
   },
   "Core/Ellipsoid": {
     "status": "ported",

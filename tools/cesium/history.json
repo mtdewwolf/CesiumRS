@@ -38,7 +38,13 @@
   {
     "milestone": "Splines, queues, tiling",
     "date": "2026-10-18",
-    "percent": 12.57,
-    "ported": 122
+    "percent": 11.13,
+    "ported": 103
+  },
+  {
+    "milestone": "Geometries: 50% Core",
+    "date": "2026-10-18",
+    "percent": 12.82,
+    "ported": 125
   }
 ]
