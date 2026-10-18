@@ -118,6 +118,21 @@
     "status": "ported",
     "rust": "core::corner_type"
   },
+  "Core/CorridorGeometry": {
+    "status": "ported",
+    "rust": "core::corridor_geometry",
+    "note": "Options struct; bounds and geometry project copies of stored positions. Missing position values become an absent attribute; tangent-only extrusion returns None where Cesium throws."
+  },
+  "Core/CorridorGeometryLibrary": {
+    "status": "ported",
+    "rust": "core::corridor_geometry_library",
+    "note": "Typed edge and corner results; add_attribute validates offsets without partial writes."
+  },
+  "Core/CorridorOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::corridor_outline_geometry",
+    "note": "Options struct; create_geometry projects a copy of the stored positions rather than mutating them."
+  },
   "Core/CubicRealPolynomial": {
     "status": "ported",
     "rust": "core::cubic_real_polynomial"
@@ -536,6 +551,20 @@
     "status": "ported",
     "rust": "core::polyline_pipeline",
     "note": "Geodesic arcs use WGS84 whatever the ellipsoid, as Cesium module-level geodesic does. Heights are a PolylineHeight (constant or per position)."
+  },
+  "Core/PolylineVolumeGeometry": {
+    "status": "ported",
+    "rust": "core::polyline_volume_geometry",
+    "note": "Invalid tangent frames are omitted, matching Cesium's caught internal normalization failure. Stored positions are not mutated."
+  },
+  "Core/PolylineVolumeGeometryLibrary": {
+    "status": "ported",
+    "rust": "core::polyline_volume_geometry_library"
+  },
+  "Core/PolylineVolumeOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::polyline_volume_outline_geometry",
+    "note": "create_geometry projects a copy of the stored positions rather than mutating them."
   },
   "Core/PrimitiveType": {
     "status": "ported",

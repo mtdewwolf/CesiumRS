@@ -12,6 +12,21 @@ use serde_json::{json, Map, Value};
 /// the last bit.
 const GEOMETRY: Tol = Tol { rel: 1e-7, abs: 1e-9, vector: false };
 
+#[test]
+fn degenerate_texture_coordinates_do_not_publish_invalid_tangents() {
+    let attributes = GeometryAttributes {
+        position: Some(GeometryAttribute::doubles(3, vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0])),
+        normal: Some(GeometryAttribute::floats(3, &[0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0])),
+        st: Some(GeometryAttribute::floats(2, &[0.0; 6])),
+        tangent: Some(GeometryAttribute::floats(3, &[1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0])),
+        ..Default::default()
+    };
+    let mut geometry = Geometry::new(attributes, Some(TypedArray::Uint16(vec![0, 1, 2])), PrimitiveType::Triangles);
+    let before = geometry.clone();
+    assert!(gp::compute_tangent_and_bitangent(&mut geometry).is_none());
+    assert_eq!(geometry, before);
+}
+
 fn typed(ctor: &str, values: &[f64]) -> TypedArray {
     let datatype = match ctor {
         "Int8Array" => ComponentDatatype::Byte,
