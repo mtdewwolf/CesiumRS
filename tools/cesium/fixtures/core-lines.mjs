@@ -5,7 +5,7 @@ import * as Cesium from "@cesium/engine";
 import { geometryEnc } from "./core-geometries.mjs";
 import { generators, makeRng, suite } from "./lib.mjs";
 
-const { ArcType, Cartesian3, Color, Ellipsoid, Matrix4, PolylineGeometry, PolylinePipeline, Quaternion, SimplePolylineGeometry, VertexFormat, WallGeometry, WallOutlineGeometry } = Cesium;
+const { ArcType, Cartesian2, Cartesian3, Color, CornerType, Ellipsoid, Matrix4, PolylineGeometry, PolylineVolumeGeometry, PolylineVolumeOutlineGeometry, PolylinePipeline, Quaternion, SimplePolylineGeometry, VertexFormat, WallGeometry, WallOutlineGeometry } = Cesium;
 
 export const formats = {
   POSITION_ONLY: VertexFormat.POSITION_ONLY,
@@ -174,6 +174,82 @@ function wallSuite() {
   return s;
 }
 
+/** A closed 2D shape in metres: a regular polygon, a star or a box, optionally clockwise or with a repeated point. */
+function shapeArgs(g) {
+  const kind = g.pick(["polygon", "star", "box"]);
+  const r = g.uniform(500, 20000);
+  let pts;
+  if (kind === "box") {
+    const w = r * g.uniform(0.3, 1);
+    pts = [[-w, -r], [w, -r], [w, r], [-w, r]];
+  } else {
+    const n = 3 + Math.floor(g.rng() * 6);
+    const count = kind === "star" ? n * 2 : n;
+    pts = Array.from({ length: count }, (_, i) => {
+      const a = (i / count) * 2 * Math.PI;
+      const rr = kind === "star" && i % 2 ? r * 0.4 : r;
+      return [rr * Math.cos(a), rr * Math.sin(a)];
+    });
+  }
+  if (g.rng() < 0.3) pts.reverse();
+  if (g.rng() < 0.2) pts.splice(1, 0, pts[1].slice());
+  if (g.rng() < 0.2) pts.push(pts[0].slice());
+  return pts;
+}
+
+function volumeSuite() {
+  const rng = makeRng(1503);
+  const g = { ...generators(rng), rng };
+  g.uniform = (lo, hi) => lo + (hi - lo) * rng();
+  const s = suite("PolylineVolumeGeometry");
+  const args = () => {
+    const name = g.rng() < 0.85 ? "WGS84" : "MOON";
+    const path = pathArgs(g, { name, n: 2 + Math.floor(g.rng() * 4), repeat: g.rng() < 0.3, step: 1.5 });
+    return [path, shapeArgs(g), g.pick([CornerType.ROUNDED, CornerType.MITERED, CornerType.BEVELED]), g.pick(formatNames), g.rng() < 0.4 ? null : g.uniform(1, 4) * DEG, name];
+  };
+  const options = ([path, shape, cornerType, format, granularity, name]) => ({
+    polylinePositions: path.map(c3),
+    shapePositions: shape.map((p) => new Cartesian2(...p)),
+    cornerType,
+    vertexFormat: formats[format],
+    granularity: granularity ?? undefined,
+    ellipsoid: ellipsoids[name],
+  });
+  // Pack first: createGeometry scales the input positions onto the surface in place.
+  for (let i = 0; i < 40; i++) {
+    const a = args();
+    s.add("volume", a, (...x) => {
+      const v = new PolylineVolumeGeometry(options(x));
+      const p = packed(PolylineVolumeGeometry, v);
+      return [p, geometryEnc(PolylineVolumeGeometry.createGeometry(v))];
+    });
+    s.add("volumeOutline", a, (...x) => {
+      const v = new PolylineVolumeOutlineGeometry(options(x));
+      const p = packed(PolylineVolumeOutlineGeometry, v);
+      return [p, geometryEnc(PolylineVolumeOutlineGeometry.createGeometry(v))];
+    });
+  }
+  // Degenerate: one distinct position, or a two-point shape.
+  const one = pathArgs(g, { n: 1 });
+  for (const a of [
+    [[one[0], one[0]], shapeArgs(g), CornerType.ROUNDED, "ALL", null, "WGS84"],
+    [pathArgs(g, { n: 3 }), [[0, 0], [100, 0], [0, 0]], CornerType.ROUNDED, "ALL", null, "WGS84"],
+  ]) {
+    s.add("volume", a, (...x) => {
+      const v = new PolylineVolumeGeometry(options(x));
+      return [packed(PolylineVolumeGeometry, v), geometryEnc(PolylineVolumeGeometry.createGeometry(v))];
+    });
+  }
+  for (let i = 0; i < 4; i++) {
+    const a = args();
+    s.add("unpack", [packed(PolylineVolumeGeometry, new PolylineVolumeGeometry(options(a)))], (arr) => packed(PolylineVolumeGeometry, PolylineVolumeGeometry.unpack(arr)));
+    s.add("outlineUnpack", [packed(PolylineVolumeOutlineGeometry, new PolylineVolumeOutlineGeometry(options(a)))], (arr) =>
+      packed(PolylineVolumeOutlineGeometry, PolylineVolumeOutlineGeometry.unpack(arr)),
+    );
+  }
+  return s;
+}
+
 export default function coreLines() {
-  return [pipelineSuite(), polylineSuite(), wallSuite()];
+  return [pipelineSuite(), polylineSuite(), wallSuite(), volumeSuite()];
 }
