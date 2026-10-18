@@ -54,11 +54,11 @@ All of these live in `src/core`, one Rust module per Cesium module:
 ```bash
 cargo test                                   # unit tests + all CesiumJS fixtures
 cd tools/cesium && npm ci && npm run fixtures   # regenerate fixtures from CesiumJS
-npm run tracker                              # rebuild PORTING.md and the charts
+npm run tracker                              # refresh README metrics, PORTING.md and charts
 npm run milestone -- "Name"                  # same, starting a new point on the history chart
 ```
 
-The tracker reads module status from `tools/cesium/status.json` and the hand-written plan from `tools/cesium/plan.md`.
+The tracker reads module status from `tools/cesium/status.json` and the hand-written plan from `tools/cesium/plan.md`. It updates the progress numbers in both this README and `PORTING.md`, and counts the fixture files to refresh the README's case total. Capability descriptions and roadmap details are updated with each porting batch.
 
 For a focused fixture refresh, pass module names, for example
 `bun run fixtures LinearSpline QuaternionSpline` from `tools/cesium`.

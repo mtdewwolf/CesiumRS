@@ -111,6 +111,37 @@ for (const pkg of packages) {
 
 writeFileSync(join(here, "../../PORTING.md"), md);
 
+// Keep README metrics derived from the same status rows as PORTING.md.
+// The capability descriptions and roadmap remain hand-written.
+{
+  const readmeFile = join(here, "../../README.md");
+  const readme = readFileSync(readmeFile, "utf8");
+  const core = summary(rows.filter((r) => r.pkg === "Core"));
+  const remaining = Math.max(0, Math.ceil(((100 - core.percent) / 100) * core.lines));
+  const count = (n) => n.toLocaleString("en-US");
+  const status = `**Status: ${all.percent.toFixed(1)}% of CesiumJS ported** (${count(all.ported)} fully ported and ${count(all.partial)} partial of ${count(all.modules - all.na)} applicable modules, weighted by JavaScript lines). **Core, the math, geometry and time foundation, is at ${core.percent.toFixed(1)}%, working toward 100% Core** (${count(remaining)} more lines). [PORTING.md](PORTING.md) lists every module with its status, and its [Plan](PORTING.md#plan) section lists the roadmap to 100% Core.`;
+  function fixtureCount(dir) {
+    let total = 0;
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) total += fixtureCount(path);
+      else if (entry.name.endsWith(".json")) {
+        const fixture = JSON.parse(readFileSync(path, "utf8"));
+        if (!Array.isArray(fixture.cases)) throw new Error(`Missing cases in fixture: ${path}`);
+        total += fixture.cases.length;
+      }
+    }
+    return total;
+  }
+  const statusPattern = /^\*\*Status: .*$/m;
+  const casesPattern = /\*\*[\d,]+ cases\*\*/;
+  if (!statusPattern.test(readme) || !casesPattern.test(readme)) {
+    throw new Error("README.md is missing its progress paragraph or fixture count");
+  }
+  const cases = fixtureCount(join(here, "../../tests/fixtures"));
+  writeFileSync(readmeFile, readme.replace(statusPattern, status).replace(casesPattern, `**${count(cases)} cases**`));
+}
+
 // ---- Charts ----
 
 const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
