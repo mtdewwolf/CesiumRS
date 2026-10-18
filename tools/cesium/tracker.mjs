@@ -11,6 +11,8 @@
 // (overall percentage per milestone, kept in history.json). Pass
 // `--milestone "name"` to start a new milestone; otherwise the last one is
 // updated in place.
+//
+// The Plan section of PORTING.md comes from plan.md, which is edited by hand.
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
@@ -85,6 +87,19 @@ for (const pkg of packages) {
   md += `| ${pkg} | ${s.modules} | ${s.ported} | ${s.partial} | ${s.todo} | ${s.na} | ${s.percent.toFixed(1)}% |\n`;
 }
 md += `| **Total** | ${all.modules} | ${all.ported} | ${all.partial} | ${all.todo} | ${all.na} | **${all.percent.toFixed(1)}%** |\n`;
+
+// The hand-written plan (plan.md), headed by the live distance to the Core milestone.
+{
+  const core = summary(rows.filter((r) => r.pkg === "Core"));
+  const target = 75;
+  const remaining = Math.max(0, Math.ceil(((target - core.percent) / 100) * core.lines));
+  md += `\n## Plan\n\n**Core: ${core.percent.toFixed(1)}%** of ${core.lines.toLocaleString("en-US")} lines. `;
+  md += remaining > 0
+    ? `The ${target}% Core milestone needs about ${remaining.toLocaleString("en-US")} more ported lines.\n`
+    : `The ${target}% Core milestone is reached.\n`;
+  const plan = join(here, "plan.md");
+  if (existsSync(plan)) md += `\n${readFileSync(plan, "utf8").trim()}\n`;
+}
 
 for (const pkg of packages) {
   md += `\n## ${pkg}\n\n| Module | Lines | Status | Rust | Note |\n| --- | ---: | --- | --- | --- |\n`;
