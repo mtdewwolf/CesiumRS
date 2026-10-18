@@ -20,6 +20,14 @@
     "status": "ported",
     "rust": "core::bounding_sphere"
   },
+  "Core/BoxGeometry": {
+    "status": "ported",
+    "rust": "core::box_geometry"
+  },
+  "Core/BoxOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::box_outline_geometry"
+  },
   "Core/Cartesian2": {
     "status": "ported",
     "rust": "core::cartesian2"
@@ -83,6 +91,18 @@
     "status": "ported",
     "rust": "core::culling_volume"
   },
+  "Core/CylinderGeometry": {
+    "status": "ported",
+    "rust": "core::cylinder_geometry"
+  },
+  "Core/CylinderGeometryLibrary": {
+    "status": "ported",
+    "rust": "core::cylinder_geometry::compute_positions"
+  },
+  "Core/CylinderOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::cylinder_geometry::CylinderOutlineGeometry"
+  },
   "Core/DeveloperError": {
     "status": "n/a",
     "note": "Panics on programmer error, Result for recoverable errors."
@@ -119,6 +139,14 @@
     "rust": "core::ellipsoid_geodesic",
     "note": "Near-antipodal input (Cesium debug check) returns None instead of iterating forever."
   },
+  "Core/EllipsoidGeometry": {
+    "status": "ported",
+    "rust": "core::ellipsoid_geometry"
+  },
+  "Core/EllipsoidOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::ellipsoid_outline_geometry"
+  },
   "Core/EllipsoidRhumbLine": {
     "status": "ported",
     "rust": "core::ellipsoid_rhumb_line"
@@ -148,6 +176,16 @@
     "status": "n/a",
     "note": "Rust values are immutable unless declared mut."
   },
+  "Core/FrustumGeometry": {
+    "status": "ported",
+    "rust": "core::frustum_geometry",
+    "note": "Perspective x/y offsets are dropped and all vertex attributes are always generated, as in Cesium."
+  },
+  "Core/FrustumOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::frustum_geometry::FrustumOutlineGeometry",
+    "note": "The connecting edges Cesium writes past its index array are dropped, as in Cesium."
+  },
   "Core/Fullscreen": {
     "status": "n/a",
     "note": "Browser Fullscreen API."
@@ -159,6 +197,27 @@
   "Core/GeographicTilingScheme": {
     "status": "ported",
     "rust": "core::tiling_scheme::GeographicTilingScheme"
+  },
+  "Core/Geometry": {
+    "status": "ported",
+    "rust": "core::geometry",
+    "note": "Typed arrays are TypedArray values; extra attributes (applyOffset) are named entries in GeometryAttributes."
+  },
+  "Core/GeometryAttribute": {
+    "status": "ported",
+    "rust": "core::geometry::GeometryAttribute"
+  },
+  "Core/GeometryAttributes": {
+    "status": "ported",
+    "rust": "core::geometry::GeometryAttributes"
+  },
+  "Core/GeometryOffsetAttribute": {
+    "status": "ported",
+    "rust": "core::geometry::GeometryOffsetAttribute"
+  },
+  "Core/GeometryType": {
+    "status": "ported",
+    "rust": "core::geometry::GeometryType"
   },
   "Core/GregorianDate": {
     "status": "ported",
@@ -318,6 +377,14 @@
     "status": "ported",
     "rust": "core::plane"
   },
+  "Core/PlaneGeometry": {
+    "status": "ported",
+    "rust": "core::plane_geometry"
+  },
+  "Core/PlaneOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::plane_geometry::PlaneOutlineGeometry"
+  },
   "Core/PrimitiveType": {
     "status": "ported",
     "rust": "core::primitive_type"
@@ -358,6 +425,14 @@
     "status": "ported",
     "rust": "core::simon1994_planetary_positions",
     "note": "Orbit-element checks are unreachable for the Earth/Moon elements and are not ported."
+  },
+  "Core/SphereGeometry": {
+    "status": "ported",
+    "rust": "core::sphere_geometry"
+  },
+  "Core/SphereOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::sphere_geometry::SphereOutlineGeometry"
   },
   "Core/Spherical": {
     "status": "ported",
@@ -416,6 +491,10 @@
   "Core/TridiagonalSystemSolver": {
     "status": "ported",
     "rust": "core::tridiagonal_system_solver"
+  },
+  "Core/VertexFormat": {
+    "status": "ported",
+    "rust": "core::vertex_format"
   },
   "Core/Visibility": {
     "status": "ported",
