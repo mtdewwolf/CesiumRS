@@ -105,7 +105,8 @@
   },
   "Core/CylinderOutlineGeometry": {
     "status": "ported",
-    "rust": "core::cylinder_geometry::CylinderOutlineGeometry"
+    "rust": "core::cylinder_geometry::CylinderOutlineGeometry",
+    "note": "new returns None for fewer than three slices (a debug check in CesiumJS)."
   },
   "Core/DeveloperError": {
     "status": "n/a",
@@ -117,7 +118,8 @@
   },
   "Core/DoubleEndedPriorityQueue": {
     "status": "ported",
-    "rust": "core::double_ended_priority_queue"
+    "rust": "core::double_ended_priority_queue",
+    "note": "Fixes a CesiumJS bug: its trickle-down continues after swapping with a direct child, which can hide the maximum."
   },
   "Core/EarthOrientationParameters": {
     "status": "ported",
@@ -154,7 +156,8 @@
   },
   "Core/EllipsoidGeometry": {
     "status": "ported",
-    "rust": "core::ellipsoid_geometry"
+    "rust": "core::ellipsoid_geometry",
+    "note": "Index width comes from the vertex count; CesiumJS uses the index count and wraps 16-bit indices past 254 partitions."
   },
   "Core/EllipsoidOutlineGeometry": {
     "status": "ported",
@@ -269,7 +272,7 @@
   "Core/Iau2006XysData": {
     "status": "ported",
     "rust": "core::iau2006_xys_data",
-    "note": "Chunks are not downloaded: needed chunks are recorded (take_requested_chunks) and supplied with add_chunk_json. The bundled-xys feature compiles in all of them."
+    "note": "Chunks are not downloaded: needed chunks are recorded (take_requested_chunks) and supplied with add_chunk_json. The bundled-xys feature compiles in all of them. preload asks for every chunk the stop time needs; CesiumJS bitwise-ORs its stop index and can miss one."
   },
   "Core/Iau2006XysSample": {
     "status": "ported",

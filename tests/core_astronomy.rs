@@ -150,3 +150,20 @@ fn bundled_xys_matches_asset_files() {
         assert_eq!(bundled.compute_xys_radians(day, 1234.5), files.compute_xys_radians(day, 1234.5));
     }
 }
+
+#[test]
+fn preload_requests_every_chunk_compute_needs() {
+    // Around the boundary between chunks 0 and 1 (sample 1000 is day 2443396.5 TT),
+    // loading exactly the preloaded chunks must be enough to evaluate.
+    for step in 0..200 {
+        let day = 2443390.0 + f64::from(step) * 0.1;
+        let probe = Iau2006XysData::default();
+        let chunks = probe.preload(day, 0.0, day, 0.0);
+        let mut xys = Iau2006XysData::default();
+        for chunk in chunks {
+            let path = format!("{}/assets/IAU2006_XYS/IAU2006_XYS_{chunk}.json", env!("CARGO_MANIFEST_DIR"));
+            xys.add_chunk_json(chunk, &std::fs::read_to_string(path).unwrap()).unwrap();
+        }
+        assert!(xys.compute_xys_radians(day, 0.0).is_some(), "day {day}");
+    }
+}

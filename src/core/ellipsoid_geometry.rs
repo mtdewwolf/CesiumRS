@@ -300,9 +300,12 @@ impl EllipsoidGeometry {
                 ]);
             }
         }
-        // Cesium sizes the typed array (and picks its width) from these counts.
+        // Cesium sizes the index array from these counts, but picks its width
+        // from `index_count`, which can be under 64K while the vertex count is
+        // not: past 254 partitions its 16-bit indices wrap. The width here
+        // comes from the vertex count.
         indices.resize(num_indices.max(0) as usize, 0);
-        let indices = IndexDatatype::create_typed_array(index_count, &indices);
+        let indices = IndexDatatype::create_typed_array(vertex_count, &indices);
 
         let mut attributes = GeometryAttributes::default();
         if vertex_format.position {

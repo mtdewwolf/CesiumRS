@@ -325,3 +325,36 @@ fn ellipse_outline_geometry() {
         },
     );
 }
+
+#[test]
+fn large_ellipsoids_use_32_bit_indices() {
+    // 254 partitions: 66,049 vertices but an index count of 65,025. CesiumJS
+    // picks 16-bit indices from the latter and wraps them.
+    let e = EllipsoidGeometry::new(
+        Cartesian3::new(1.0, 1.0, 1.0),
+        None,
+        0.0,
+        std::f64::consts::TAU,
+        0.0,
+        std::f64::consts::PI,
+        254.0,
+        254.0,
+        VertexFormat::POSITION_ONLY,
+        None,
+    )
+    .unwrap();
+    let g = e.create_geometry().unwrap();
+    let vertices = g.attributes.position.as_ref().unwrap().values.len() / 3;
+    assert_eq!(vertices, 66_049);
+    let indices = g.indices.unwrap();
+    assert!(matches!(indices, TypedArray::Uint32(_)));
+    assert!(indices.to_f64_vec().iter().any(|&i| i >= 65_536.0));
+    assert!(indices.to_f64_vec().iter().all(|&i| (i as usize) < vertices));
+}
+
+#[test]
+fn cylinder_outlines_need_three_slices() {
+    assert!(CylinderOutlineGeometry::new(1.0, 1.0, 1.0, 2, 16.0, None).is_none());
+    assert!(CylinderOutlineGeometry::new(1.0, 1.0, 1.0, 0, 16.0, None).is_none());
+    assert!(CylinderOutlineGeometry::new(1.0, 1.0, 1.0, 3, 16.0, None).is_some());
+}

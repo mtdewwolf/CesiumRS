@@ -467,3 +467,47 @@ fn display_conditions_match_cesium_defaults_and_packing() {
     DistanceDisplayCondition::new(5.0, 6.0).pack(&mut array, 5);
     assert_eq!(DistanceDisplayCondition::unpack(&array, 5), DistanceDisplayCondition::new(5.0, 6.0));
 }
+
+#[test]
+fn double_ended_priority_queue_keeps_the_maximum_reachable() {
+    // The case from the PR #4 review: CesiumJS reports 23 here, with 28 still queued.
+    let mut q = DoubleEndedPriorityQueue::new(|a: &f64, b: &f64| a - b, None);
+    for v in [10.0, 23.0, 29.0, 23.0, 23.0, 28.0] {
+        q.insert(v);
+    }
+    assert_eq!(q.remove_minimum(), Some(10.0));
+    assert_eq!(q.remove_maximum(), Some(29.0));
+    assert_eq!(q.get_maximum(), Some(&28.0));
+
+    // Against a sorted list, over many random operations.
+    let mut seed = 12345u64;
+    let mut next = || {
+        seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        (seed >> 33) as u32
+    };
+    for _ in 0..200 {
+        let mut q = DoubleEndedPriorityQueue::new(|a: &f64, b: &f64| a - b, None);
+        let mut reference: Vec<f64> = Vec::new();
+        for _ in 0..60 {
+            match next() % 4 {
+                0 | 1 => {
+                    let v = f64::from(next() % 50);
+                    q.insert(v);
+                    reference.push(v);
+                }
+                2 => {
+                    reference.sort_by(f64::total_cmp);
+                    let expected = (!reference.is_empty()).then(|| reference.remove(0));
+                    assert_eq!(q.remove_minimum(), expected);
+                }
+                _ => {
+                    reference.sort_by(f64::total_cmp);
+                    assert_eq!(q.remove_maximum(), reference.pop());
+                }
+            }
+            reference.sort_by(f64::total_cmp);
+            assert_eq!(q.get_minimum(), reference.first());
+            assert_eq!(q.get_maximum(), reference.last());
+        }
+    }
+}

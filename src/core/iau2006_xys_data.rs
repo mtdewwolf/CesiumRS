@@ -7,6 +7,9 @@
 //! them ([`Iau2006XysData::chunk_url`]) and hands them over with
 //! [`Iau2006XysData::add_chunk_json`]. With the `bundled-xys` feature,
 //! [`Iau2006XysData::bundled`] has every chunk built in.
+//!
+//! One deliberate difference: `preload` asks for every chunk the stop time
+//! needs, where CesiumJS's index arithmetic can miss the last one.
 
 use std::cell::RefCell;
 use std::collections::BTreeSet;
@@ -130,9 +133,11 @@ impl Iau2006XysData {
         let half_order = self.interpolation_order as f64 / 2.0;
 
         let start_index = to_int32(start_days_since_epoch / self.step_size_days - half_order).max(0);
-        // Cesium writes `(… - order / 2) | (0 + order)`: a bitwise OR, kept as is.
-        let mut stop_index =
-            to_int32(stop_days_since_epoch / self.step_size_days - half_order) | self.interpolation_order as i32;
+        // The last sample compute_xys_radians reads at the stop time. Cesium
+        // writes `(stop - order / 2) | (0 + order)`, a bitwise OR that can
+        // leave out the chunk holding it (999 | 9 is 999, not 1008).
+        let degree = self.interpolation_order as i32;
+        let mut stop_index = to_int32(stop_days_since_epoch / self.step_size_days) - degree / 2 + degree;
         if stop_index >= self.total_samples as i32 {
             stop_index = self.total_samples as i32 - 1;
         }

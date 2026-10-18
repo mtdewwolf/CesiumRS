@@ -222,8 +222,9 @@ pub struct CylinderOutlineGeometry {
 impl CylinderOutlineGeometry {
     pub const PACKED_LENGTH: usize = 6;
 
-    /// Cesium defaults to 128 slices and 16 vertical lines. `None` for a
-    /// [`GeometryOffsetAttribute::Top`] offset.
+    /// Cesium defaults to 128 slices and 16 vertical lines. `None` for fewer
+    /// than three slices or a [`GeometryOffsetAttribute::Top`] offset (Cesium
+    /// checks both in debug builds).
     pub fn new(
         length: f64,
         top_radius: f64,
@@ -232,7 +233,7 @@ impl CylinderOutlineGeometry {
         number_of_vertical_lines: f64,
         offset_attribute: Option<GeometryOffsetAttribute>,
     ) -> Option<Self> {
-        if offset_attribute == Some(GeometryOffsetAttribute::Top) {
+        if slices < 3 || offset_attribute == Some(GeometryOffsetAttribute::Top) {
             return None;
         }
         Some(Self {

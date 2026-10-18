@@ -1,5 +1,8 @@
 //! CesiumJS `DoubleEndedPriorityQueue`: a min-max heap with fast access to
 //! both the least and the greatest element, and an optional maximum length.
+//!
+//! One deliberate difference: the trickle-down after a removal stops where a
+//! min-max heap must, fixing a CesiumJS bug that can misplace the maximum.
 
 use super::math::log2;
 
@@ -180,14 +183,20 @@ impl<T, F: Fn(&T, &T) -> f64> DoubleEndedPriorityQueue<T, F> {
                     }
                 }
             }
-            if self.less_than(target, index) == on_min_level {
-                self.array.swap(target, index);
-                if target != left_child_index && target != right_child_index {
-                    let parent_of_grandchild_index = (target - 1) / 2;
-                    if self.greater_than(target, parent_of_grandchild_index) == on_min_level {
-                        self.array.swap(target, parent_of_grandchild_index);
-                    }
-                }
+            // Cesium keeps descending from `target` whether or not it swapped,
+            // and also after swapping with a direct child, which is on the
+            // other level: later removals can then report the wrong maximum
+            // (CesiumJS 1.139 does). Only a swapped grandchild continues.
+            if self.less_than(target, index) != on_min_level {
+                break;
+            }
+            self.array.swap(target, index);
+            if target == left_child_index || target == right_child_index {
+                break;
+            }
+            let parent_of_grandchild_index = (target - 1) / 2;
+            if self.greater_than(target, parent_of_grandchild_index) == on_min_level {
+                self.array.swap(target, parent_of_grandchild_index);
             }
             index = target;
         }
