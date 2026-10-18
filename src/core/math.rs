@@ -367,7 +367,8 @@ pub fn cbrt(number: f64) -> f64 {
 }
 
 pub fn log2(number: f64) -> f64 {
-    number.log2()
+    // `Math.log2`, rounded as V8 rounds it.
+    libm::log2(number)
 }
 
 /// Fog density at a distance, as in Cesium's fog shader.

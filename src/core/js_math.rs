@@ -24,6 +24,7 @@ pub trait JsMath {
     /// `Math.log`.
     fn js_ln(self) -> f64;
     fn js_cosh(self) -> f64;
+    fn js_log2(self) -> f64;
 }
 
 impl JsMath for f64 {
@@ -59,6 +60,9 @@ impl JsMath for f64 {
     }
     fn js_cosh(self) -> f64 {
         libm::cosh(self)
+    }
+    fn js_log2(self) -> f64 {
+        libm::log2(self)
     }
 }
 

@@ -194,3 +194,136 @@ fn rectangle_geometry_and_outline() {
         },
     );
 }
+
+fn hierarchy(v: &Value) -> PolygonHierarchy {
+    PolygonHierarchy::new(list(&v["positions"], c3), v["holes"].as_array().map_or(Vec::new(), |h| h.iter().map(hierarchy).collect()))
+}
+
+fn texture_hierarchy(v: &Value) -> TextureCoordinateHierarchy {
+    TextureCoordinateHierarchy {
+        positions: list(&v["positions"], c2),
+        holes: v["holes"].as_array().map_or(Vec::new(), |h| h.iter().map(texture_hierarchy).collect()),
+    }
+}
+
+fn arc_type(v: &Value) -> ArcType {
+    match u(v) {
+        0 => ArcType::None,
+        2 => ArcType::Rhumb,
+        _ => ArcType::Geodesic,
+    }
+}
+
+/// Options from `polygonArgs`.
+fn polygon_options(a: &[Value]) -> PolygonGeometryOptions {
+    let mut o = PolygonGeometryOptions::new(hierarchy(&a[0]));
+    o.ellipsoid = ellipsoid(&a[1]);
+    if let Some(h) = opt(&a[2]) {
+        o.height = h;
+    }
+    o.extruded_height = opt(&a[3]);
+    o.st_rotation = n(&a[4]);
+    if let Some(g) = opt(&a[5]) {
+        o.granularity = g;
+    }
+    o.vertex_format = format(&a[6]);
+    o.per_position_height = a[7].as_bool().unwrap();
+    o.close_top = a[8].as_bool().unwrap();
+    o.close_bottom = a[9].as_bool().unwrap();
+    o.arc_type = arc_type(&a[10]);
+    o.shadow_volume = a[11].as_bool().unwrap();
+    o.offset_attribute = opt(&a[12]).and_then(GeometryOffsetAttribute::unpack);
+    o.texture_coordinates = (!a[13].is_null()).then(|| texture_hierarchy(&a[13]));
+    o
+}
+
+fn polygon_outline_options(a: &[Value]) -> PolygonOutlineOptions {
+    let p = polygon_options(a);
+    PolygonOutlineOptions {
+        polygon_hierarchy: p.polygon_hierarchy,
+        height: p.height,
+        extruded_height: p.extruded_height,
+        ellipsoid: p.ellipsoid,
+        granularity: p.granularity,
+        per_position_height: p.per_position_height,
+        arc_type: p.arc_type,
+        offset_attribute: p.offset_attribute,
+    }
+}
+
+#[test]
+fn polygon_geometry_and_outline() {
+    run(
+        "core",
+        "PolygonGeometry",
+        |f| if f == "computeRectangleFromPositions" || f.contains("npack") { TIGHT } else { GEOMETRY },
+        |f, a| match f {
+            "polygon" => {
+                let p = PolygonGeometry::new(polygon_options(a));
+                let pack = packed(p.packed_length, |arr| p.pack(arr, 0));
+                ok(json!([
+                    pack.enc(),
+                    p.rectangle().enc(),
+                    p.texture_coordinate_rotation_points().to_vec().enc(),
+                    geometry_enc(p.create_geometry())
+                ]))
+            }
+            "outline" => {
+                let p = PolygonOutlineGeometry::new(polygon_outline_options(a));
+                let pack = packed(p.packed_length, |arr| p.pack(arr, 0));
+                ok(json!([pack.enc(), geometry_enc(p.create_geometry())]))
+            }
+            "unpack" => {
+                let p = PolygonGeometry::unpack(&nums(&a[0]), 0);
+                ok(packed(p.packed_length, |arr| p.pack(arr, 0)))
+            }
+            "outlineUnpack" => {
+                let p = PolygonOutlineGeometry::unpack(&nums(&a[0]), 0);
+                ok(packed(p.packed_length, |arr| p.pack(arr, 0)))
+            }
+            "createShadowVolume" => {
+                let p = PolygonGeometry::new(polygon_options(a)).create_shadow_volume(|_, _| -1000.0, |_, _| 3000.0);
+                let pack = packed(p.packed_length, |arr| p.pack(arr, 0));
+                ok(json!([pack.enc(), geometry_enc(p.create_geometry())]))
+            }
+            "computeRectangleFromPositions" => {
+                ok(PolygonGeometry::compute_rectangle_from_positions(&list(&a[0], c3), &Ellipsoid::WGS84, arc_type(&a[1])))
+            }
+            _ => None,
+        },
+    );
+}
+
+#[test]
+fn coplanar_polygon_geometry_and_outline() {
+    run(
+        "core",
+        "CoplanarPolygonGeometry",
+        |f| if f.contains("npack") { TIGHT } else { GEOMETRY },
+        |f, a| match f {
+            "coplanar" => {
+                let mut o = CoplanarPolygonGeometryOptions::new(hierarchy(&a[0]));
+                o.st_rotation = n(&a[1]);
+                o.vertex_format = format(&a[2]);
+                o.texture_coordinates = (!a[3].is_null()).then(|| texture_hierarchy(&a[3]));
+                let p = CoplanarPolygonGeometry::new(o);
+                let pack = packed(p.packed_length, |arr| p.pack(arr, 0));
+                ok(json!([pack.enc(), geometry_enc(p.create_geometry())]))
+            }
+            "coplanarOutline" => {
+                let p = CoplanarPolygonOutlineGeometry::new(hierarchy(&a[0]));
+                let pack = packed(p.packed_length, |arr| p.pack(arr, 0));
+                ok(json!([pack.enc(), geometry_enc(p.create_geometry())]))
+            }
+            "unpack" => {
+                let p = CoplanarPolygonGeometry::unpack(&nums(&a[0]), 0);
+                ok(packed(p.packed_length, |arr| p.pack(arr, 0)))
+            }
+            "outlineUnpack" => {
+                let p = CoplanarPolygonOutlineGeometry::unpack(&nums(&a[0]), 0);
+                ok(packed(p.packed_length, |arr| p.pack(arr, 0)))
+            }
+            _ => None,
+        },
+    );
+}

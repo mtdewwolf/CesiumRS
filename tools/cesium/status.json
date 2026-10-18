@@ -101,6 +101,19 @@
     "status": "ported",
     "rust": "core::constant_spline"
   },
+  "Core/CoplanarPolygonGeometry": {
+    "status": "ported",
+    "rust": "core::coplanar_polygon_geometry",
+    "note": "The scratch tangent Cesium rotates for each polygon starts at zero unless the vertex format sets it."
+  },
+  "Core/CoplanarPolygonGeometryLibrary": {
+    "status": "ported",
+    "rust": "core::coplanar_polygon_geometry_library"
+  },
+  "Core/CoplanarPolygonOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::coplanar_polygon_outline_geometry"
+  },
   "Core/CornerType": {
     "status": "ported",
     "rust": "core::corner_type"
@@ -491,9 +504,23 @@
     "status": "ported",
     "rust": "core::plane_geometry::PlaneOutlineGeometry"
   },
+  "Core/PolygonGeometry": {
+    "status": "ported",
+    "rust": "core::polygon_geometry",
+    "note": "create_geometry works on a copy of the hierarchy (Cesium scales it in place). The per-position tangent frame Cesium keeps in module scratch carries over within a call but starts at zero for each call. Returns None where Cesium throws: texture coordinates on polygons wider or taller than half the globe, and per-position tangents without normals."
+  },
+  "Core/PolygonGeometryLibrary": {
+    "status": "ported",
+    "rust": "core::polygon_geometry_library",
+    "note": "Hierarchies are generic over Cartesian3 and Cartesian2 rings. The equator split repeats the ring as Cesium does (it passes one array as input and result)."
+  },
   "Core/PolygonHierarchy": {
     "status": "ported",
     "rust": "core::polygon_hierarchy"
+  },
+  "Core/PolygonOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::polygon_outline_geometry"
   },
   "Core/PolygonPipeline": {
     "status": "ported",
