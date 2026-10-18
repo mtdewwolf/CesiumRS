@@ -91,7 +91,7 @@ md += `| **Total** | ${all.modules} | ${all.ported} | ${all.partial} | ${all.tod
 // The hand-written plan (plan.md), headed by the live distance to the Core milestone.
 {
   const core = summary(rows.filter((r) => r.pkg === "Core"));
-  const target = 75;
+  const target = 100;
   const remaining = Math.max(0, Math.ceil(((target - core.percent) / 100) * core.lines));
   md += `\n## Plan\n\n**Core: ${core.percent.toFixed(1)}%** of ${core.lines.toLocaleString("en-US")} lines. `;
   md += remaining > 0

@@ -343,6 +343,11 @@
     "status": "ported",
     "rust": "core::heightmap_encoding"
   },
+  "Core/HeightmapTessellator": {
+    "status": "ported",
+    "rust": "core::heightmap_tessellator",
+    "note": "TypedArray height samples and an options struct; returns encoded vertices, bounds and horizon metadata. Invalid grids and sample layouts return None."
+  },
   "Core/HermitePolynomialApproximation": {
     "status": "ported",
     "rust": "core::hermite_polynomial_approximation"
@@ -671,6 +676,11 @@
   "Core/Stereographic": {
     "status": "ported",
     "rust": "core::stereographic"
+  },
+  "Core/TerrainEncoding": {
+    "status": "ported",
+    "rust": "core::terrain_encoding",
+    "note": "Native f32 slices, typed vertex/layout records and Clone. Missing optional fields return None; invalid writes and layout conversions leave buffers unchanged."
   },
   "Core/TerrainQuantization": {
     "status": "ported",

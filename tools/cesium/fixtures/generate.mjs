@@ -25,12 +25,13 @@ import corePipeline from "./core-pipeline.mjs";
 import coreSurfaces from "./core-surfaces.mjs";
 import coreLines from "./core-lines.mjs";
 import coreCorridors from "./core-corridors.mjs";
+import coreTerrain from "./core-terrain.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = join(here, "../../../tests/fixtures");
 const version = JSON.parse(readFileSync(join(here, "../node_modules/@cesium/engine/package.json"), "utf8")).version;
 
-const packages = { core: [...coreMath(), ...coreGeometry(), ...coreBounds(), ...coreTime(), ...corePacking(), ...coreSplines(), ...coreAlgorithms(), ...coreGeometries(), ...coreUtilities(), ...corePolygon(), ...corePipeline(), ...coreSurfaces(), ...coreLines(), ...coreCorridors(), ...coreAstronomy()] };
+const packages = { core: [...coreMath(), ...coreGeometry(), ...coreBounds(), ...coreTime(), ...corePacking(), ...coreSplines(), ...coreAlgorithms(), ...coreGeometries(), ...coreUtilities(), ...corePolygon(), ...corePipeline(), ...coreSurfaces(), ...coreLines(), ...coreCorridors(), ...coreTerrain(), ...coreAstronomy()] };
 // coreAstronomy runs last: loading EOP data adds leap seconds to JulianDate.leapSeconds.
 
 // Optional module names avoid rewriting unrelated fixtures during porting.

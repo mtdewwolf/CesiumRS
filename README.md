@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 18.9% of CesiumJS ported** (202 fully ported and 1 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core, the math, geometry and time foundation, is at 73.8%, on the way to a 75% milestone** (1,220 more lines). [PORTING.md](PORTING.md) lists every module with its status, and its [Plan](PORTING.md#plan) section lists the batches to 75% Core.
+**Status: 19.2% of CesiumJS ported** (204 fully ported and 1 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core, the math, geometry and time foundation, is at 75.1%, working toward 100% Core** (24,472 more lines). [PORTING.md](PORTING.md) lists every module with its status, and its [Plan](PORTING.md#plan) section lists the roadmap to 100% Core.
 
 ## What is ported
 
@@ -25,6 +25,7 @@ All of these live in `src/core`, one Rust module per Cesium module:
 | Frustums | `PerspectiveFrustum`, `PerspectiveOffCenterFrustum`, `OrthographicFrustum`, `OrthographicOffCenterFrustum` |
 | Enums and helpers | `ArcType`, `CornerType`, `ReferenceFrame`, `isBitSet`, `NearFarScalar`, `DistanceDisplayCondition`, `WebGLConstants` |
 | Tiling | `TilingScheme` (trait), `GeographicTilingScheme`, `WebMercatorTilingScheme`, `Stereographic` |
+| Terrain | `TerrainEncoding` (12-bit and uncompressed vertex codecs, optional normals/Mercator coordinates, layout descriptors, exaggeration), `HeightmapTessellator` (all numeric sample types, packed sample layouts, geographic and Mercator grids, edge skirts, bounds and horizon culling) |
 | Mesh data | `ComponentDatatype`, `IndexDatatype`, `PrimitiveType` (typed arrays as one `TypedArray` enum), `Tipsify`, `WireframeIndexGenerator`, `Intersections2D` |
 | Geometries | `Geometry`, `GeometryAttribute(s)`, `GeometryType`, `GeometryOffsetAttribute`, `VertexFormat`; `BoxGeometry`, `PlaneGeometry`, `EllipsoidGeometry`, `SphereGeometry`, `CylinderGeometry`, `FrustumGeometry` and their outlines; `EllipseGeometry`, `CircleGeometry`, `EllipseOutlineGeometry`, `CircleOutlineGeometry`, `EllipseGeometryLibrary`; `RectangleGeometry`, `RectangleOutlineGeometry`, `RectangleGeometryLibrary`; `PolygonGeometry`, `PolygonOutlineGeometry`, `PolygonGeometryLibrary` (holes, extrusion, per-position heights, rhumb lines, equator splitting), `CoplanarPolygonGeometry`, `CoplanarPolygonOutlineGeometry`, `CoplanarPolygonGeometryLibrary`; `PolylineGeometry`, `SimplePolylineGeometry`; `WallGeometry`, `WallOutlineGeometry`, `WallGeometryLibrary`; `PolylineVolumeGeometry`, `PolylineVolumeOutlineGeometry`, `PolylineVolumeGeometryLibrary`; `CorridorGeometryLibrary`, `CorridorGeometry`, `CorridorOutlineGeometry` (rounded, mitered and beveled corners, surface frames, texture coordinates, extrusion, offsets, bounds and shadow volumes). Full vertex and index buffers are compared with CesiumJS. |
 | Polygons | `PolygonPipeline` (area, winding order, triangulation, chord and rhumb-line subdivision, geodetic height scaling) on `earcut`, a line-for-line port of earcut 3.2.4 whose triangle order matches the JavaScript library |
@@ -48,7 +49,7 @@ All of these live in `src/core`, one Rust module per Cesium module:
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The `tests/core_*.rs` suites load all **22,469 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The `tests/core_*.rs` suites load all **22,657 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
 
 ```bash
 cargo test                                   # unit tests + all CesiumJS fixtures
@@ -81,10 +82,9 @@ Near-antipodal routes use a deterministic great-circle approximation when Vincen
 
 ## Roadmap
 
-1. **Core terrain:** `TerrainEncoding`, then `HeightmapTessellator`. Corridors and polyline volumes are ported.
-2. **Core algorithms:** Hilbert levels above 32.
-3. **Moving the viewer onto `src/core`,** then redeploying it.
-4. **Renderer, Scene, DataSources, Workers and Shaders,** the rest of the way to 100%.
+1. **Finish Core to 100%:** terrain data/picking, spatial algorithms (including Hilbert levels above 32), assets, resources, providers and host interfaces. `TerrainEncoding` and `HeightmapTessellator` are ported; `TerrainProvider` and `TileAvailability` are next.
+2. **Move the viewer onto `src/core` after Core is complete,** then redeploy it.
+3. **Renderer, Scene, DataSources, Workers and Shaders,** the rest of the way to 100% overall.
 
 ## License
 

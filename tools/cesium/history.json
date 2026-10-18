@@ -94,5 +94,11 @@
     "date": "2026-10-18",
     "percent": 18.9,
     "ported": 202
+  },
+  {
+    "milestone": "Terrain encoding and heightmaps (75% Core)",
+    "date": "2026-10-18",
+    "percent": 19.24,
+    "ported": 204
   }
 ]
