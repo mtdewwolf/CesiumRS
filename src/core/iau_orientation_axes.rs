@@ -4,6 +4,7 @@
 use super::cartesian3::Cartesian3;
 use super::iau2000_orientation;
 use super::iau_orientation_parameters::IauOrientationParameters;
+use super::js_math::JsMath;
 use super::julian_date::JulianDate;
 use super::math::{zero_to_two_pi, PI_OVER_TWO};
 use super::matrix3::Matrix3;
@@ -22,9 +23,9 @@ impl Default for IauOrientationAxes {
 }
 
 fn compute_rotation_matrix(alpha: f64, delta: f64) -> Matrix3 {
-    let x_axis = Cartesian3::new((alpha + PI_OVER_TWO).cos(), (alpha + PI_OVER_TWO).sin(), 0.0);
-    let cos_dec = delta.cos();
-    let z_axis = Cartesian3::new(cos_dec * alpha.cos(), cos_dec * alpha.sin(), delta.sin());
+    let x_axis = Cartesian3::new((alpha + PI_OVER_TWO).js_cos(), (alpha + PI_OVER_TWO).js_sin(), 0.0);
+    let cos_dec = delta.js_cos();
+    let z_axis = Cartesian3::new(cos_dec * alpha.js_cos(), cos_dec * alpha.js_sin(), delta.js_sin());
     let y_axis = z_axis.cross(x_axis);
     Matrix3::from_column_major_array([
         x_axis.x, y_axis.x, z_axis.x, x_axis.y, y_axis.y, z_axis.y, x_axis.z, y_axis.z, z_axis.z,

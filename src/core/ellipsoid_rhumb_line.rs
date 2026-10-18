@@ -2,6 +2,7 @@
 
 use super::cartographic::Cartographic;
 use super::ellipsoid::Ellipsoid;
+use super::js_math::JsMath;
 use super::math::{
     equals_epsilon, negative_pi_to_pi, sign, EPSILON10, EPSILON12, EPSILON14, EPSILON8, PI, PI_OVER_TWO,
 };
@@ -18,12 +19,12 @@ fn calculate_m(ellipticity: f64, major: f64, latitude: f64) -> f64 {
     let e10 = e8 * e2;
     let e12 = e10 * e2;
     let phi = latitude;
-    let sin2_phi = (2.0 * phi).sin();
-    let sin4_phi = (4.0 * phi).sin();
-    let sin6_phi = (6.0 * phi).sin();
-    let sin8_phi = (8.0 * phi).sin();
-    let sin10_phi = (10.0 * phi).sin();
-    let sin12_phi = (12.0 * phi).sin();
+    let sin2_phi = (2.0 * phi).js_sin();
+    let sin4_phi = (4.0 * phi).js_sin();
+    let sin6_phi = (6.0 * phi).js_sin();
+    let sin8_phi = (8.0 * phi).js_sin();
+    let sin10_phi = (10.0 * phi).js_sin();
+    let sin12_phi = (12.0 * phi).js_sin();
     major
         * ((1.0
             - e2 / 4.0
@@ -69,17 +70,17 @@ fn calculate_inverse_m(m: f64, ellipticity: f64, major: f64) -> f64 {
     let e8 = e6 * e2;
     let e10 = e8 * e2;
     let e12 = e10 * e2;
-    let sin2_d = (2.0 * d).sin();
-    let cos2_d = (2.0 * d).cos();
-    let sin4_d = (4.0 * d).sin();
-    let cos4_d = (4.0 * d).cos();
-    let sin6_d = (6.0 * d).sin();
-    let cos6_d = (6.0 * d).cos();
-    let sin8_d = (8.0 * d).sin();
-    let cos8_d = (8.0 * d).cos();
-    let sin10_d = (10.0 * d).sin();
-    let cos10_d = (10.0 * d).cos();
-    let sin12_d = (12.0 * d).sin();
+    let sin2_d = (2.0 * d).js_sin();
+    let cos2_d = (2.0 * d).js_cos();
+    let sin4_d = (4.0 * d).js_sin();
+    let cos4_d = (4.0 * d).js_cos();
+    let sin6_d = (6.0 * d).js_sin();
+    let cos6_d = (6.0 * d).js_cos();
+    let sin8_d = (8.0 * d).js_sin();
+    let cos8_d = (8.0 * d).js_cos();
+    let sin10_d = (10.0 * d).js_sin();
+    let cos10_d = (10.0 * d).js_cos();
+    let sin12_d = (12.0 * d).js_sin();
     d + (d * e2) / 4.0
         + (7.0 * d * e4) / 64.0
         + (15.0 * d * e6) / 256.0
@@ -131,10 +132,10 @@ fn calculate_inverse_m(m: f64, ellipticity: f64, major: f64) -> f64 {
 /// Isometric latitude.
 fn calculate_sigma(ellipticity: f64, latitude: f64) -> f64 {
     if ellipticity == 0.0 {
-        return (0.5 * (PI_OVER_TWO + latitude)).tan().ln();
+        return (0.5 * (PI_OVER_TWO + latitude)).js_tan().js_ln();
     }
-    let e_sin_l = ellipticity * latitude.sin();
-    (0.5 * (PI_OVER_TWO + latitude)).tan().ln() - (ellipticity / 2.0) * ((1.0 + e_sin_l) / (1.0 - e_sin_l)).ln()
+    let e_sin_l = ellipticity * latitude.js_sin();
+    (0.5 * (PI_OVER_TWO + latitude)).js_tan().js_ln() - (ellipticity / 2.0) * ((1.0 + e_sin_l) / (1.0 - e_sin_l)).js_ln()
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -158,7 +159,7 @@ fn interpolate(start: &Cartographic, heading: f64, distance: f64, major: f64, el
     let (longitude, latitude);
     if (PI_OVER_TWO - heading.abs()).abs() > EPSILON8 {
         let m1 = calculate_m(ellipticity, major, start.latitude);
-        let delta_m = distance * heading.cos();
+        let delta_m = distance * heading.js_cos();
         let m2 = m1 + delta_m;
         latitude = calculate_inverse_m(m2, ellipticity, major);
         if heading.abs() < EPSILON10 {
@@ -166,16 +167,16 @@ fn interpolate(start: &Cartographic, heading: f64, distance: f64, major: f64, el
         } else {
             let sigma1 = calculate_sigma(ellipticity, start.latitude);
             let sigma2 = calculate_sigma(ellipticity, latitude);
-            let delta_longitude = heading.tan() * (sigma2 - sigma1);
+            let delta_longitude = heading.js_tan() * (sigma2 - sigma1);
             longitude = negative_pi_to_pi(start.longitude + delta_longitude);
         }
     } else {
         latitude = start.latitude;
         let local_rad = if ellipticity == 0.0 {
-            major * start.latitude.cos()
+            major * start.latitude.js_cos()
         } else {
-            let sin_phi = start.latitude.sin();
-            (major * start.latitude.cos()) / (1.0 - ellipticity_squared * sin_phi * sin_phi).sqrt()
+            let sin_phi = start.latitude.js_sin();
+            (major * start.latitude.js_cos()) / (1.0 - ellipticity_squared * sin_phi * sin_phi).sqrt()
         };
         let delta_longitude = distance / local_rad;
         longitude = if heading > 0.0 {
@@ -199,21 +200,21 @@ impl EllipsoidRhumbLine {
         let end = Cartographic::new(end.longitude, end.latitude, 0.0);
         let sigma1 = calculate_sigma(ellipticity, start.latitude);
         let sigma2 = calculate_sigma(ellipticity, end.latitude);
-        let heading = negative_pi_to_pi(end.longitude - start.longitude).atan2(sigma2 - sigma1);
+        let heading = negative_pi_to_pi(end.longitude - start.longitude).js_atan2(sigma2 - sigma1);
 
         let delta_longitude = end.longitude - start.longitude;
         let distance = if equals_epsilon(heading.abs(), PI_OVER_TWO, EPSILON8, EPSILON8) {
             if major == minor {
-                major * start.latitude.cos() * negative_pi_to_pi(delta_longitude)
+                major * start.latitude.js_cos() * negative_pi_to_pi(delta_longitude)
             } else {
-                let sin_phi = start.latitude.sin();
-                (major * start.latitude.cos() * negative_pi_to_pi(delta_longitude))
+                let sin_phi = start.latitude.js_sin();
+                (major * start.latitude.js_cos() * negative_pi_to_pi(delta_longitude))
                     / (1.0 - ellipticity_squared * sin_phi * sin_phi).sqrt()
             }
         } else {
             let m1 = calculate_m(ellipticity, major, start.latitude);
             let m2 = calculate_m(ellipticity, major, end.latitude);
-            (m2 - m1) / heading.cos()
+            (m2 - m1) / heading.js_cos()
         };
         Self {
             ellipsoid: *ellipsoid,
@@ -271,15 +272,15 @@ impl EllipsoidRhumbLine {
             return Some(Cartographic::new(lon, PI_OVER_TWO * sign(PI_OVER_TWO - heading), 0.0));
         }
         let phi1 = start.latitude;
-        let e_sin_phi1 = ellipticity * phi1.sin();
-        let left_component = (0.5 * (PI_OVER_TWO + phi1)).tan() * ((lon - start.longitude) / heading.tan()).exp();
+        let e_sin_phi1 = ellipticity * phi1.js_sin();
+        let left_component = (0.5 * (PI_OVER_TWO + phi1)).js_tan() * ((lon - start.longitude) / heading.js_tan()).js_exp();
         let denominator = (1.0 + e_sin_phi1) / (1.0 - e_sin_phi1);
         let mut new_phi = start.latitude;
         loop {
             let phi = new_phi;
-            let e_sin_phi = ellipticity * phi.sin();
+            let e_sin_phi = ellipticity * phi.js_sin();
             let numerator = (1.0 + e_sin_phi) / (1.0 - e_sin_phi);
-            new_phi = 2.0 * (left_component * (numerator / denominator).powf(ellipticity / 2.0)).atan() - PI_OVER_TWO;
+            new_phi = 2.0 * (left_component * (numerator / denominator).powf(ellipticity / 2.0)).js_atan() - PI_OVER_TWO;
             if equals_epsilon(new_phi, phi, EPSILON12, EPSILON12) {
                 break;
             }
@@ -294,7 +295,7 @@ impl EllipsoidRhumbLine {
         }
         let sigma1 = calculate_sigma(self.ellipticity, self.start.latitude);
         let sigma2 = calculate_sigma(self.ellipticity, intersection_latitude);
-        let delta_longitude = self.heading.tan() * (sigma2 - sigma1);
+        let delta_longitude = self.heading.js_tan() * (sigma2 - sigma1);
         let longitude = negative_pi_to_pi(self.start.longitude + delta_longitude);
         Some(Cartographic::new(longitude, intersection_latitude, 0.0))
     }

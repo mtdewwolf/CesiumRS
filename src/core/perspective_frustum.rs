@@ -4,6 +4,7 @@
 use super::cartesian2::Cartesian2;
 use super::cartesian3::Cartesian3;
 use super::culling_volume::CullingVolume;
+use super::js_math::JsMath;
 use super::math::equals_epsilon;
 use super::matrix4::Matrix4;
 use super::perspective_off_center_frustum::PerspectiveOffCenterFrustum;
@@ -48,17 +49,17 @@ impl PerspectiveFrustum {
         if self.aspect_ratio <= 1.0 {
             self.fov
         } else {
-            ((self.fov * 0.5).tan() / self.aspect_ratio).atan() * 2.0
+            ((self.fov * 0.5).js_tan() / self.aspect_ratio).js_atan() * 2.0
         }
     }
 
     /// `2 tan(fovy / 2)`, used in screen-space-error computations.
     pub fn sse_denominator(&self) -> f64 {
-        2.0 * (0.5 * self.fovy()).tan()
+        2.0 * (0.5 * self.fovy()).js_tan()
     }
 
     pub fn off_center_frustum(&self) -> PerspectiveOffCenterFrustum {
-        let top = self.near * (0.5 * self.fovy()).tan();
+        let top = self.near * (0.5 * self.fovy()).js_tan();
         let bottom = -top;
         let right = self.aspect_ratio * top;
         let left = -right;

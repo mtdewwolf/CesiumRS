@@ -3,6 +3,7 @@
 use super::cartesian::cartesian_common;
 use super::cartesian4::Cartesian4;
 use super::ellipsoid::Ellipsoid;
+use super::js_math::JsMath;
 use super::math::to_radians;
 use super::spherical::Spherical;
 
@@ -23,11 +24,11 @@ impl Cartesian3 {
     pub const UNIT_Z: Self = Self::new(0.0, 0.0, 1.0);
 
     pub fn from_spherical(spherical: &Spherical) -> Self {
-        let radial = spherical.magnitude * spherical.cone.sin();
+        let radial = spherical.magnitude * spherical.cone.js_sin();
         Self::new(
-            radial * spherical.clock.cos(),
-            radial * spherical.clock.sin(),
-            spherical.magnitude * spherical.cone.cos(),
+            radial * spherical.clock.js_cos(),
+            radial * spherical.clock.js_sin(),
+            spherical.magnitude * spherical.cone.js_cos(),
         )
     }
 
@@ -53,7 +54,7 @@ impl Cartesian3 {
         let b = right.normalize();
         let cosine = a.dot(b);
         let sine = a.cross(b).magnitude();
-        sine.atan2(cosine)
+        sine.js_atan2(cosine)
     }
 
     /// The unit axis least aligned with this vector.
@@ -84,8 +85,8 @@ impl Cartesian3 {
 
     /// Longitude and latitude in radians, height in meters.
     pub fn from_radians(longitude: f64, latitude: f64, height: f64, ellipsoid: &Ellipsoid) -> Self {
-        let cos_latitude = latitude.cos();
-        let n = Self::new(cos_latitude * longitude.cos(), cos_latitude * longitude.sin(), latitude.sin()).normalize();
+        let cos_latitude = latitude.js_cos();
+        let n = Self::new(cos_latitude * longitude.js_cos(), cos_latitude * longitude.js_sin(), latitude.js_sin()).normalize();
         let k = ellipsoid.radii_squared.multiply_components(n);
         let gamma = n.dot(k).sqrt();
         k.divide_by_scalar(gamma).add(n.multiply_by_scalar(height))

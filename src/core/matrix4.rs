@@ -3,6 +3,7 @@
 use super::bounding_rectangle::BoundingRectangle;
 use super::cartesian3::Cartesian3;
 use super::cartesian4::Cartesian4;
+use super::js_math::JsMath;
 use super::math::{EPSILON21, EPSILON7};
 use super::matrix::matrix_common;
 use super::matrix3::Matrix3;
@@ -158,7 +159,7 @@ impl Matrix4 {
     }
 
     pub fn compute_perspective_field_of_view(fov_y: f64, aspect_ratio: f64, near: f64, far: f64) -> Self {
-        let bottom = (fov_y * 0.5).tan();
+        let bottom = (fov_y * 0.5).js_tan();
         let column1_row1 = 1.0 / bottom;
         let column0_row0 = column1_row1 / aspect_ratio;
         let column2_row2 = (far + near) / (near - far);

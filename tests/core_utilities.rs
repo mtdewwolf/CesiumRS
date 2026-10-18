@@ -396,3 +396,32 @@ fn guids_events_headers_and_origins() {
     assert_eq!(append_forward_slash("a"), "a/");
     assert_eq!(append_forward_slash("a/"), "a/");
 }
+
+#[test]
+fn js_math_matches_v8_bit_for_bit() {
+    use cesium_rs::core::js_math::JsMath;
+    run("core", "JsMath", |_| EXACT, |f, a| {
+        let xs = nums(&a[0]);
+        let map = |op: fn(f64) -> f64| ok(xs.iter().map(|&x| op(x)).collect::<Vec<_>>());
+        match f {
+            "sin" => map(f64::js_sin),
+            "cos" => map(f64::js_cos),
+            "tan" => map(f64::js_tan),
+            "atan" => map(f64::js_atan),
+            "exp" => map(f64::js_exp),
+            "log" => map(f64::js_ln),
+            "asin" => map(f64::js_asin),
+            "acos" => map(f64::js_acos),
+            "cosh" => map(f64::js_cosh),
+            "atan2" => {
+                let x = nums(&a[1]);
+                ok(xs.iter().zip(&x).map(|(&y, &x)| y.js_atan2(x)).collect::<Vec<_>>())
+            }
+            "special" => ok(xs
+                .iter()
+                .flat_map(|&x| [x.js_sin(), x.js_cos(), x.abs().js_ln(), x.js_atan()])
+                .collect::<Vec<_>>()),
+            _ => None,
+        }
+    });
+}

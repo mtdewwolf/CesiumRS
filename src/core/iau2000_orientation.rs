@@ -2,6 +2,7 @@
 //! working group report (2000).
 
 use super::iau_orientation_parameters::IauOrientationParameters;
+use super::js_math::JsMath;
 use super::julian_date::JulianDate;
 use super::math::RADIANS_PER_DEGREE;
 use super::time_constants::DAYS_PER_JULIAN_CENTURY;
@@ -44,19 +45,19 @@ pub fn compute_moon(date: &JulianDate) -> IauOrientationParameters {
     let e12 = e(239.961, C12);
     let e13 = e(25.053, C13);
 
-    let (sin_e1, cos_e1) = e1.sin_cos();
-    let (sin_e2, cos_e2) = e2.sin_cos();
-    let (sin_e3, cos_e3) = e3.sin_cos();
-    let (sin_e4, cos_e4) = e4.sin_cos();
-    let (sin_e5, cos_e5) = e5.sin_cos();
-    let (sin_e6, cos_e6) = e6.sin_cos();
-    let (sin_e7, cos_e7) = e7.sin_cos();
-    let (sin_e8, cos_e8) = e8.sin_cos();
-    let (sin_e9, cos_e9) = e9.sin_cos();
-    let (sin_e10, cos_e10) = e10.sin_cos();
-    let (sin_e11, cos_e11) = e11.sin_cos();
-    let (sin_e12, cos_e12) = e12.sin_cos();
-    let (sin_e13, cos_e13) = e13.sin_cos();
+    let (sin_e1, cos_e1) = e1.js_sin_cos();
+    let (sin_e2, cos_e2) = e2.js_sin_cos();
+    let (sin_e3, cos_e3) = e3.js_sin_cos();
+    let (sin_e4, cos_e4) = e4.js_sin_cos();
+    let (sin_e5, cos_e5) = e5.js_sin_cos();
+    let (sin_e6, cos_e6) = e6.js_sin_cos();
+    let (sin_e7, cos_e7) = e7.js_sin_cos();
+    let (sin_e8, cos_e8) = e8.js_sin_cos();
+    let (sin_e9, cos_e9) = e9.js_sin_cos();
+    let (sin_e10, cos_e10) = e10.js_sin_cos();
+    let (sin_e11, cos_e11) = e11.js_sin_cos();
+    let (sin_e12, cos_e12) = e12.js_sin_cos();
+    let (sin_e13, cos_e13) = e13.js_sin_cos();
 
     let right_ascension = (269.9949 + 0.0031 * t - 3.8787 * sin_e1 - 0.1204 * sin_e2 + 0.07 * sin_e3 - 0.0172 * sin_e4
         + 0.0072 * sin_e6

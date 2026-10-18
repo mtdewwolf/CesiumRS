@@ -62,6 +62,10 @@
     "status": "n/a",
     "note": "Argument checks; Rust types and Result do this at compile time or in the signature."
   },
+  "Core/CircleGeometry": {
+    "status": "ported",
+    "rust": "core::circle_geometry"
+  },
   "Core/CircleOutlineGeometry": {
     "status": "ported",
     "rust": "core::ellipse_outline_geometry::CircleOutlineGeometry"
@@ -83,6 +87,11 @@
     "status": "ported",
     "rust": "core::color"
   },
+  "Core/ColorGeometryInstanceAttribute": {
+    "status": "ported",
+    "rust": "core::color_geometry_instance_attribute",
+    "note": "Converts into GeometryInstanceAttribute with From."
+  },
   "Core/ComponentDatatype": {
     "status": "ported",
     "rust": "core::component_datatype",
@@ -91,6 +100,19 @@
   "Core/ConstantSpline": {
     "status": "ported",
     "rust": "core::constant_spline"
+  },
+  "Core/CoplanarPolygonGeometry": {
+    "status": "ported",
+    "rust": "core::coplanar_polygon_geometry",
+    "note": "The scratch tangent Cesium rotates for each polygon starts at zero unless the vertex format sets it."
+  },
+  "Core/CoplanarPolygonGeometryLibrary": {
+    "status": "ported",
+    "rust": "core::coplanar_polygon_geometry_library"
+  },
+  "Core/CoplanarPolygonOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::coplanar_polygon_outline_geometry"
   },
   "Core/CornerType": {
     "status": "ported",
@@ -125,6 +147,11 @@
     "status": "ported",
     "rust": "core::distance_display_condition"
   },
+  "Core/DistanceDisplayConditionGeometryInstanceAttribute": {
+    "status": "ported",
+    "rust": "core::distance_display_condition_geometry_instance_attribute",
+    "note": "Converts into GeometryInstanceAttribute with From."
+  },
   "Core/DoubleEndedPriorityQueue": {
     "status": "ported",
     "rust": "core::double_ended_priority_queue",
@@ -148,6 +175,11 @@
     "status": "ported",
     "rust": "core::easing_function",
     "note": "The tween.js 25 curves Cesium re-exports, as an enum."
+  },
+  "Core/EllipseGeometry": {
+    "status": "ported",
+    "rust": "core::ellipse_geometry",
+    "note": "Options struct with Cesium defaults; rectangle() and texture_coordinate_rotation_points() are computed on demand rather than cached. create_geometry does not move the stored center to the surface as Cesium does."
   },
   "Core/EllipseGeometryLibrary": {
     "status": "ported",
@@ -254,9 +286,23 @@
     "status": "ported",
     "rust": "core::geometry::GeometryAttributes"
   },
+  "Core/GeometryInstance": {
+    "status": "ported",
+    "rust": "core::geometry_instance",
+    "note": "id is an Option<String>; pickPrimitive is a Scene concern and is not ported."
+  },
+  "Core/GeometryInstanceAttribute": {
+    "status": "ported",
+    "rust": "core::geometry_instance_attribute"
+  },
   "Core/GeometryOffsetAttribute": {
     "status": "ported",
     "rust": "core::geometry::GeometryOffsetAttribute"
+  },
+  "Core/GeometryPipeline": {
+    "status": "ported",
+    "rust": "core::geometry_pipeline",
+    "note": "Functions take &mut Geometry / &mut GeometryInstance and return None where Cesium throws or reads past its arrays. Plain-array outputs become Float64 values and Uint32 indices."
   },
   "Core/GeometryType": {
     "status": "ported",
@@ -416,6 +462,11 @@
     "status": "ported",
     "rust": "core::occluder"
   },
+  "Core/OffsetGeometryInstanceAttribute": {
+    "status": "ported",
+    "rust": "core::offset_geometry_instance_attribute",
+    "note": "Converts into GeometryInstanceAttribute with From."
+  },
   "Core/OrientedBoundingBox": {
     "status": "ported",
     "rust": "core::oriented_bounding_box"
@@ -453,14 +504,38 @@
     "status": "ported",
     "rust": "core::plane_geometry::PlaneOutlineGeometry"
   },
+  "Core/PolygonGeometry": {
+    "status": "ported",
+    "rust": "core::polygon_geometry",
+    "note": "create_geometry works on a copy of the hierarchy (Cesium scales it in place). The per-position tangent frame Cesium keeps in module scratch carries over within a call but starts at zero for each call. Returns None where Cesium throws: texture coordinates on polygons wider or taller than half the globe, and per-position tangents without normals."
+  },
+  "Core/PolygonGeometryLibrary": {
+    "status": "ported",
+    "rust": "core::polygon_geometry_library",
+    "note": "Hierarchies are generic over Cartesian3 and Cartesian2 rings. The equator split repeats the ring as Cesium does (it passes one array as input and result)."
+  },
   "Core/PolygonHierarchy": {
     "status": "ported",
     "rust": "core::polygon_hierarchy"
+  },
+  "Core/PolygonOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::polygon_outline_geometry"
   },
   "Core/PolygonPipeline": {
     "status": "ported",
     "rust": "core::polygon_pipeline",
     "note": "Triangulates with core::earcut, a port of earcut 3.2.4 whose triangle order matches the JS library. Subdivision returns None where Cesium would read past its arrays."
+  },
+  "Core/PolylineGeometry": {
+    "status": "ported",
+    "rust": "core::polyline_geometry",
+    "note": "Rhumb lines with colors return None where Cesium throws a RangeError."
+  },
+  "Core/PolylinePipeline": {
+    "status": "ported",
+    "rust": "core::polyline_pipeline",
+    "note": "Geodesic arcs use WGS84 whatever the ellipsoid, as Cesium module-level geodesic does. Heights are a PolylineHeight (constant or per position)."
   },
   "Core/PrimitiveType": {
     "status": "ported",
@@ -494,6 +569,19 @@
     "status": "ported",
     "rust": "core::rectangle"
   },
+  "Core/RectangleGeometry": {
+    "status": "ported",
+    "rust": "core::rectangle_geometry",
+    "note": "An extruded shadow volume that also asks for normals returns None where Cesium throws a RangeError."
+  },
+  "Core/RectangleGeometryLibrary": {
+    "status": "ported",
+    "rust": "core::rectangle_geometry_library"
+  },
+  "Core/RectangleOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::rectangle_outline_geometry"
+  },
   "Core/ReferenceFrame": {
     "status": "ported",
     "rust": "core::reference_frame"
@@ -514,10 +602,20 @@
     "status": "ported",
     "rust": "core::screen_space_event_type"
   },
+  "Core/ShowGeometryInstanceAttribute": {
+    "status": "ported",
+    "rust": "core::show_geometry_instance_attribute",
+    "note": "Converts into GeometryInstanceAttribute with From."
+  },
   "Core/Simon1994PlanetaryPositions": {
     "status": "ported",
     "rust": "core::simon1994_planetary_positions",
     "note": "Orbit-element checks are unreachable for the Earth/Moon elements and are not ported."
+  },
+  "Core/SimplePolylineGeometry": {
+    "status": "ported",
+    "rust": "core::simple_polyline_geometry",
+    "note": "Rhumb lines with per-segment colors return None where Cesium throws a RangeError."
   },
   "Core/SphereGeometry": {
     "status": "ported",
@@ -613,6 +711,20 @@
     "status": "ported",
     "rust": "core::vulkan_constants",
     "note": "Generated from the CesiumJS object."
+  },
+  "Core/WallGeometry": {
+    "status": "ported",
+    "rust": "core::wall_geometry",
+    "note": "Keeps the scratch aliasing that bends tangents after a normal recompute. Cesium carries its scratch tangent between calls; here it starts at zero."
+  },
+  "Core/WallGeometryLibrary": {
+    "status": "ported",
+    "rust": "core::wall_geometry_library",
+    "note": "Heights are read by the index after duplicate positions are removed, as in Cesium."
+  },
+  "Core/WallOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::wall_outline_geometry"
   },
   "Core/WebGLConstants": {
     "status": "ported",

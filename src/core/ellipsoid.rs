@@ -6,6 +6,7 @@
 use super::cartesian2::Cartesian2;
 use super::cartesian3::Cartesian3;
 use super::cartographic::Cartographic;
+use super::js_math::JsMath;
 use super::math::{equals_epsilon, sign, EPSILON1, EPSILON14, EPSILON15, TWO_PI};
 use super::rectangle::Rectangle;
 use super::scale_to_geodetic_surface::scale_to_geodetic_surface;
@@ -93,11 +94,11 @@ impl Ellipsoid {
     }
 
     pub fn geodetic_surface_normal_cartographic(&self, cartographic: &Cartographic) -> Cartesian3 {
-        let cos_latitude = cartographic.latitude.cos();
+        let cos_latitude = cartographic.latitude.js_cos();
         Cartesian3::new(
-            cos_latitude * cartographic.longitude.cos(),
-            cos_latitude * cartographic.longitude.sin(),
-            cartographic.latitude.sin(),
+            cos_latitude * cartographic.longitude.js_cos(),
+            cos_latitude * cartographic.longitude.js_sin(),
+            cartographic.latitude.js_sin(),
         )
         .normalize()
     }
@@ -126,7 +127,7 @@ impl Ellipsoid {
         let p = self.scale_to_geodetic_surface(cartesian)?;
         let n = self.geodetic_surface_normal(p)?;
         let h = cartesian.subtract(p);
-        Some(Cartographic::new(n.y.atan2(n.x), n.z.asin(), sign(h.dot(cartesian)) * h.magnitude()))
+        Some(Cartographic::new(n.y.js_atan2(n.x), n.z.js_asin(), sign(h.dot(cartesian)) * h.magnitude()))
     }
 
     pub fn cartesian_array_to_cartographic_array(&self, cartesians: &[Cartesian3]) -> Vec<Option<Cartographic>> {
@@ -203,12 +204,12 @@ impl Ellipsoid {
         let c2 = self.radii_squared.z;
         let a2b2 = a2 * b2;
         gauss_legendre_quadrature(min_latitude, max_latitude, |lat| {
-            let sin_phi = lat.cos();
-            let cos_phi = lat.sin();
-            lat.cos()
+            let sin_phi = lat.js_cos();
+            let cos_phi = lat.js_sin();
+            lat.js_cos()
                 * gauss_legendre_quadrature(min_longitude, max_longitude, |lon| {
-                    let cos_theta = lon.cos();
-                    let sin_theta = lon.sin();
+                    let cos_theta = lon.js_cos();
+                    let sin_theta = lon.js_sin();
                     (a2b2 * cos_phi * cos_phi
                         + c2 * (b2 * cos_theta * cos_theta + a2 * sin_theta * sin_theta) * sin_phi * sin_phi)
                         .sqrt()

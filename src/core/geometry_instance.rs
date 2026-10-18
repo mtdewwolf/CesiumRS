@@ -7,7 +7,9 @@ use super::matrix4::Matrix4;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct GeometryInstance {
-    pub geometry: Geometry,
+    /// `None` once `GeometryPipeline::split_longitude` has split the
+    /// geometry into the two hemisphere geometries.
+    pub geometry: Option<Geometry>,
     pub model_matrix: Matrix4,
     /// Cesium accepts any value; the port keeps a string.
     pub id: Option<String>,
@@ -23,7 +25,7 @@ impl GeometryInstance {
     /// `model_matrix` defaults to the identity.
     pub fn new(geometry: Geometry, model_matrix: Option<Matrix4>) -> Self {
         Self {
-            geometry,
+            geometry: Some(geometry),
             model_matrix: model_matrix.unwrap_or(Matrix4::IDENTITY),
             id: None,
             attributes: Vec::new(),

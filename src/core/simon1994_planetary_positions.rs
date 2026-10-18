@@ -8,6 +8,7 @@
 //! here, so the helpers do not report errors.
 
 use super::cartesian3::Cartesian3;
+use super::js_math::JsMath;
 use super::julian_date::JulianDate;
 use super::math::{zero_to_two_pi, EPSILON8, PI, RADIANS_PER_ARCSECOND, RADIANS_PER_DEGREE, TWO_PI};
 use super::matrix3::Matrix3;
@@ -15,7 +16,7 @@ use super::time_constants::{DAYS_PER_JULIAN_CENTURY, SECONDS_PER_DAY};
 
 fn compute_tdb_minus_tt_spice(days_since_j2000_in_terrestrial_time: f64) -> f64 {
     let g = 6.239996 + 0.0172019696544 * days_since_j2000_in_terrestrial_time;
-    1.657e-3 * (g + 1.671e-2 * g.sin()).sin()
+    1.657e-3 * (g + 1.671e-2 * g.js_sin()).js_sin()
 }
 
 const TDT_MINUS_TAI: f64 = 32.184;
@@ -54,8 +55,8 @@ fn elements_to_cartesian(
     let perifocal_to_equatorial =
         perifocal_to_cartesian_matrix(argument_of_periapsis, inclination, right_ascension_of_ascending_node);
     let semilatus = radius_of_periapsis * (1.0 + eccentricity);
-    let costheta = true_anomaly.cos();
-    let sintheta = true_anomaly.sin();
+    let costheta = true_anomaly.js_cos();
+    let sintheta = true_anomaly.js_sin();
     let denom = 1.0 + eccentricity * costheta;
     let radius = semilatus / denom;
     perifocal_to_equatorial.multiply_by_vector(Cartesian3::new(radius * costheta, radius * sintheta, 0.0))
@@ -73,13 +74,13 @@ fn mean_anomaly_to_eccentric_anomaly(mut mean_anomaly: f64, eccentricity: f64) -
     let revs = (mean_anomaly / TWO_PI).floor();
     mean_anomaly -= revs * TWO_PI;
     let mut iteration_value = mean_anomaly
-        + (eccentricity * mean_anomaly.sin()) / (1.0 - (mean_anomaly + eccentricity).sin() + mean_anomaly.sin());
+        + (eccentricity * mean_anomaly.js_sin()) / (1.0 - (mean_anomaly + eccentricity).js_sin() + mean_anomaly.js_sin());
     let mut eccentric_anomaly = f64::MAX;
     let mut count = 0;
     while count < MAX_ITERATION_COUNT && (eccentric_anomaly - iteration_value).abs() > KEPLER_EQ_CONVERGENCE {
         eccentric_anomaly = iteration_value;
-        let nr_function = eccentric_anomaly - eccentricity * eccentric_anomaly.sin() - mean_anomaly;
-        let d_nr_function = 1.0 - eccentricity * eccentric_anomaly.cos();
+        let nr_function = eccentric_anomaly - eccentricity * eccentric_anomaly.js_sin() - mean_anomaly;
+        let d_nr_function = 1.0 - eccentricity * eccentric_anomaly.js_cos();
         iteration_value = eccentric_anomaly - nr_function / d_nr_function;
         count += 1;
     }
@@ -89,9 +90,9 @@ fn mean_anomaly_to_eccentric_anomaly(mut mean_anomaly: f64, eccentricity: f64) -
 fn eccentric_anomaly_to_true_anomaly(mut eccentric_anomaly: f64, eccentricity: f64) -> f64 {
     let revs = (eccentric_anomaly / TWO_PI).floor();
     eccentric_anomaly -= revs * TWO_PI;
-    let true_anomaly_x = eccentric_anomaly.cos() - eccentricity;
-    let true_anomaly_y = eccentric_anomaly.sin() * (1.0 - eccentricity * eccentricity).sqrt();
-    let mut true_anomaly = zero_to_two_pi(true_anomaly_y.atan2(true_anomaly_x));
+    let true_anomaly_x = eccentric_anomaly.js_cos() - eccentricity;
+    let true_anomaly_y = eccentric_anomaly.js_sin() * (1.0 - eccentricity * eccentricity).sqrt();
+    let mut true_anomaly = zero_to_two_pi(true_anomaly_y.js_atan2(true_anomaly_x));
     if eccentric_anomaly < 0.0 {
         true_anomaly -= TWO_PI;
     }
@@ -99,9 +100,9 @@ fn eccentric_anomaly_to_true_anomaly(mut eccentric_anomaly: f64, eccentricity: f
 }
 
 fn perifocal_to_cartesian_matrix(argument_of_periapsis: f64, inclination: f64, right_ascension: f64) -> Matrix3 {
-    let (sinap, cosap) = argument_of_periapsis.sin_cos();
-    let (sini, cosi) = inclination.sin_cos();
-    let (sinraan, cosraan) = right_ascension.sin_cos();
+    let (sinap, cosap) = argument_of_periapsis.js_sin_cos();
+    let (sini, cosi) = inclination.js_sin_cos();
+    let (sinraan, cosraan) = right_ascension.js_sin_cos();
     // Cesium fills its scratch matrix in column-major order.
     Matrix3::from_column_major_array([
         cosraan * cosap - sinraan * sinap * cosi,
@@ -156,12 +157,12 @@ fn compute_simon_earth_moon_barycenter(date: &JulianDate) -> Cartesian3 {
     let mut semimajor_axis = SEMI_MAJOR_AXIS0;
     for (p, ca, sa) in SEMIMAJOR_TERMS {
         semimajor_axis = semimajor_axis
-            + ca * 1e-7 * METERS_PER_ASTRONOMICAL_UNIT * (p * u).cos()
-            + sa * 1e-7 * METERS_PER_ASTRONOMICAL_UNIT * (p * u).sin();
+            + ca * 1e-7 * METERS_PER_ASTRONOMICAL_UNIT * (p * u).js_cos()
+            + sa * 1e-7 * METERS_PER_ASTRONOMICAL_UNIT * (p * u).js_sin();
     }
     let mut mean_longitude = MEAN_LONGITUDE0 + MEAN_LONGITUDE1 * t;
     for (q, cl, sl) in LONGITUDE_TERMS {
-        mean_longitude = mean_longitude + cl * 1e-7 * (q * u).cos() + sl * 1e-7 * (q * u).sin();
+        mean_longitude = mean_longitude + cl * 1e-7 * (q * u).js_cos() + sl * 1e-7 * (q * u).js_sin();
     }
     let eccentricity = 0.0167086342 - 0.0004203654 * t;
     let longitude_of_perigee = 102.93734808 * RADIANS_PER_DEGREE + 11612.3529 * RADIANS_PER_ARCSECOND * t;
@@ -214,78 +215,78 @@ fn compute_simon_moon(date: &JulianDate) -> Cartesian3 {
     let fourl = 4.0 * l;
     let two_f = 2.0 * f;
 
-    semimajor_axis += 3400.4 * two_d.cos() - 635.6 * (two_d - l).cos() - 235.6 * l.cos()
-        + 218.1 * (two_d - lprime).cos()
-        + 181.0 * (two_d + l).cos();
+    semimajor_axis += 3400.4 * two_d.js_cos() - 635.6 * (two_d - l).js_cos() - 235.6 * l.js_cos()
+        + 218.1 * (two_d - lprime).js_cos()
+        + 181.0 * (two_d + l).js_cos();
 
-    eccentricity += 0.014216 * (two_d - l).cos() + 0.008551 * (two_d - twol).cos() - 0.001383 * l.cos()
-        + 0.001356 * (two_d + l).cos()
-        - 0.001147 * (four_d - threel).cos()
-        - 0.000914 * (four_d - twol).cos()
-        + 0.000869 * (two_d - lprime - l).cos()
-        - 0.000627 * two_d.cos()
-        - 0.000394 * (four_d - fourl).cos()
-        + 0.000282 * (two_d - lprime - twol).cos()
-        - 0.000279 * (d - l).cos()
-        - 0.000236 * twol.cos()
-        + 0.000231 * four_d.cos()
-        + 0.000229 * (six_d - fourl).cos()
-        - 0.000201 * (twol - two_f).cos();
+    eccentricity += 0.014216 * (two_d - l).js_cos() + 0.008551 * (two_d - twol).js_cos() - 0.001383 * l.js_cos()
+        + 0.001356 * (two_d + l).js_cos()
+        - 0.001147 * (four_d - threel).js_cos()
+        - 0.000914 * (four_d - twol).js_cos()
+        + 0.000869 * (two_d - lprime - l).js_cos()
+        - 0.000627 * two_d.js_cos()
+        - 0.000394 * (four_d - fourl).js_cos()
+        + 0.000282 * (two_d - lprime - twol).js_cos()
+        - 0.000279 * (d - l).js_cos()
+        - 0.000236 * twol.js_cos()
+        + 0.000231 * four_d.js_cos()
+        + 0.000229 * (six_d - fourl).js_cos()
+        - 0.000201 * (twol - two_f).js_cos();
 
-    inclination_sec_part += 486.26 * (two_d - two_f).cos() - 40.13 * two_d.cos()
-        + 37.51 * two_f.cos()
-        + 25.73 * (twol - two_f).cos()
-        + 19.97 * (two_d - lprime - two_f).cos();
+    inclination_sec_part += 486.26 * (two_d - two_f).js_cos() - 40.13 * two_d.js_cos()
+        + 37.51 * two_f.js_cos()
+        + 25.73 * (twol - two_f).js_cos()
+        + 19.97 * (two_d - lprime - two_f).js_cos();
 
-    longitude_of_perigee_sec_part += -55609.0 * (two_d - l).sin() - 34711.0 * (two_d - twol).sin() - 9792.0 * l.sin()
-        + 9385.0 * (four_d - threel).sin()
-        + 7505.0 * (four_d - twol).sin()
-        + 5318.0 * (two_d + l).sin()
-        + 3484.0 * (four_d - fourl).sin()
-        - 3417.0 * (two_d - lprime - l).sin()
-        - 2530.0 * (six_d - fourl).sin()
-        - 2376.0 * two_d.sin()
-        - 2075.0 * (two_d - threel).sin()
-        - 1883.0 * twol.sin()
-        - 1736.0 * (six_d - 5.0 * l).sin()
-        + 1626.0 * lprime.sin()
-        - 1370.0 * (six_d - threel).sin();
+    longitude_of_perigee_sec_part += -55609.0 * (two_d - l).js_sin() - 34711.0 * (two_d - twol).js_sin() - 9792.0 * l.js_sin()
+        + 9385.0 * (four_d - threel).js_sin()
+        + 7505.0 * (four_d - twol).js_sin()
+        + 5318.0 * (two_d + l).js_sin()
+        + 3484.0 * (four_d - fourl).js_sin()
+        - 3417.0 * (two_d - lprime - l).js_sin()
+        - 2530.0 * (six_d - fourl).js_sin()
+        - 2376.0 * two_d.js_sin()
+        - 2075.0 * (two_d - threel).js_sin()
+        - 1883.0 * twol.js_sin()
+        - 1736.0 * (six_d - 5.0 * l).js_sin()
+        + 1626.0 * lprime.js_sin()
+        - 1370.0 * (six_d - threel).js_sin();
 
-    longitude_of_node_sec_part += -5392.0 * (two_d - two_f).sin() - 540.0 * lprime.sin() - 441.0 * two_d.sin()
-        + 423.0 * two_f.sin()
-        - 288.0 * (twol - two_f).sin();
+    longitude_of_node_sec_part += -5392.0 * (two_d - two_f).js_sin() - 540.0 * lprime.js_sin() - 441.0 * two_d.js_sin()
+        + 423.0 * two_f.js_sin()
+        - 288.0 * (twol - two_f).js_sin();
 
-    mean_longitude_sec_part += -3332.9 * two_d.sin() + 1197.4 * (two_d - l).sin() - 662.5 * lprime.sin()
-        + 396.3 * l.sin()
-        - 218.0 * (two_d - lprime).sin();
+    mean_longitude_sec_part += -3332.9 * two_d.js_sin() + 1197.4 * (two_d - l).js_sin() - 662.5 * lprime.js_sin()
+        + 396.3 * l.js_sin()
+        - 218.0 * (two_d - lprime).js_sin();
 
     // Planetary perturbations.
     let two_psi = 2.0 * psi;
     let three_psi = 3.0 * psi;
 
-    inclination_sec_part += 46.997 * psi.cos() * t - 0.614 * (two_d - two_f + psi).cos() * t
-        + 0.614 * (two_d - two_f - psi).cos() * t
-        - 0.0297 * two_psi.cos() * t2
-        - 0.0335 * psi.cos() * t2
-        + 0.0012 * (two_d - two_f + two_psi).cos() * t2
-        - 0.00016 * psi.cos() * t3
-        + 0.00004 * three_psi.cos() * t3
-        + 0.00004 * two_psi.cos() * t3;
+    inclination_sec_part += 46.997 * psi.js_cos() * t - 0.614 * (two_d - two_f + psi).js_cos() * t
+        + 0.614 * (two_d - two_f - psi).js_cos() * t
+        - 0.0297 * two_psi.js_cos() * t2
+        - 0.0335 * psi.js_cos() * t2
+        + 0.0012 * (two_d - two_f + two_psi).js_cos() * t2
+        - 0.00016 * psi.js_cos() * t3
+        + 0.00004 * three_psi.js_cos() * t3
+        + 0.00004 * two_psi.js_cos() * t3;
 
-    let perigee_and_mean = 2.116 * psi.sin() * t - 0.111 * (two_d - two_f - psi).sin() * t - 0.0015 * psi.sin() * t2;
+    let perigee_and_mean = 2.116 * psi.js_sin() * t - 0.111 * (two_d - two_f - psi).js_sin() * t - 0.0015 * psi.js_sin() * t2;
     longitude_of_perigee_sec_part += perigee_and_mean;
     mean_longitude_sec_part += perigee_and_mean;
 
     longitude_of_node_sec_part +=
-        -520.77 * psi.sin() * t + 13.66 * (two_d - two_f + psi).sin() * t + 1.12 * (two_d - psi).sin() * t
-            - 1.06 * (two_f - psi).sin() * t
-            + 0.66 * two_psi.sin() * t2
-            + 0.371 * psi.sin() * t2
-            - 0.035 * (two_d - two_f + two_psi).sin() * t2
-            - 0.015 * (two_d - two_f + psi).sin() * t2
-            + 0.0014 * psi.sin() * t3
-            - 0.0011 * three_psi.sin() * t3
-            - 0.0009 * two_psi.sin() * t3;
+        -520.77 * psi.js_sin() * t + 13.66 * (two_d - two_f + psi).js_sin() * t + 1.12 * (two_d - psi).js_sin() * t
+            - 1.06 * (two_f - psi).js_sin() * t
+            + 0.66 * two_psi.js_sin() * t2
+            + 0.371 * psi.js_sin() * t2
+            - 0.035 * (two_d - two_f + two_psi).js_sin() * t2
+            - 0.015 * (two_d - two_f + psi).js_sin() * t2
+            + 0.0014 * psi.js_sin() * t3
+            - 0.0011 * three_psi.js_sin() * t3
+            - 0.0009 * two_psi.js_sin() * t3;
 
     semimajor_axis *= METERS_PER_KILOMETER;
     let inclination = inclination_constant + inclination_sec_part * RADIANS_PER_ARCSECOND;

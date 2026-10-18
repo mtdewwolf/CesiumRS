@@ -6,6 +6,7 @@ use super::cartesian3::Cartesian3;
 use super::ellipsoid::Ellipsoid;
 use super::geometry::{Geometry, GeometryAttribute, GeometryAttributes, GeometryOffsetAttribute};
 use super::index_datatype::IndexDatatype;
+use super::js_math::JsMath;
 use super::math::{js_round, PI, TWO_PI};
 use super::primitive_type::PrimitiveType;
 use super::vertex_format::VertexFormat;
@@ -190,10 +191,10 @@ impl EllipsoidGeometry {
             * (index_count as isize + extra_indices as isize + 1
                 - ((slice_partitions + stack_partitions) * vertex_multiplier) as isize);
 
-        let sin_phi: Vec<f64> = phis.iter().map(|p| p.sin()).collect();
-        let cos_phi: Vec<f64> = phis.iter().map(|p| p.cos()).collect();
-        let cos_theta: Vec<f64> = thetas.iter().map(|t| t.cos()).collect();
-        let sin_theta: Vec<f64> = thetas.iter().map(|t| t.sin()).collect();
+        let sin_phi: Vec<f64> = phis.iter().map(|p| p.js_sin()).collect();
+        let cos_phi: Vec<f64> = phis.iter().map(|p| p.js_cos()).collect();
+        let cos_theta: Vec<f64> = thetas.iter().map(|t| t.js_cos()).collect();
+        let sin_theta: Vec<f64> = thetas.iter().map(|t| t.js_sin()).collect();
 
         let mut index = 0;
         for i in 0..num_phis {
@@ -329,8 +330,8 @@ impl EllipsoidGeometry {
                 }
                 if vertex_format.st {
                     let (nx, ny) = (-normal.x, -normal.y);
-                    st.push(ny.atan2(nx) / TWO_PI + 0.5);
-                    st.push(normal.z.asin() / PI + 0.5);
+                    st.push(ny.js_atan2(nx) / TWO_PI + 0.5);
+                    st.push(normal.z.js_asin() / PI + 0.5);
                 }
                 if vertex_format.normal {
                     normals.extend([normal.x, normal.y, normal.z]);

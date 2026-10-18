@@ -5,49 +5,11 @@ mod common;
 
 use cesium_rs::core::*;
 use common::*;
-use serde_json::{json, Map, Value};
+use serde_json::{json, Value};
 
 /// Float32 attributes can land one f32 step apart when the f64 inputs differ
 /// in the last bit; 1e-7 relative covers that and nothing larger.
 const GEOMETRY: Tol = Tol { rel: 1e-7, abs: 1e-9, vector: false };
-
-fn typed_array_name(a: &TypedArray) -> &'static str {
-    match a {
-        TypedArray::Int8(_) => "Int8Array",
-        TypedArray::Uint8(_) => "Uint8Array",
-        TypedArray::Int16(_) => "Int16Array",
-        TypedArray::Uint16(_) => "Uint16Array",
-        TypedArray::Int32(_) => "Int32Array",
-        TypedArray::Uint32(_) => "Uint32Array",
-        TypedArray::Float32(_) => "Float32Array",
-        TypedArray::Float64(_) => "Float64Array",
-    }
-}
-
-pub fn geometry_enc(g: Option<Geometry>) -> Value {
-    let Some(g) = g else { return Value::Null };
-    let mut attributes = Map::new();
-    for (name, a) in g.attributes.iter() {
-        attributes.insert(
-            name.to_string(),
-            json!([
-                a.component_datatype as u32,
-                a.components_per_attribute,
-                a.normalize,
-                typed_array_name(&a.values),
-                a.values.to_f64_vec().enc()
-            ]),
-        );
-    }
-    json!({
-        "attributes": attributes,
-        "indices": g.indices.as_ref().map(|i| json!([typed_array_name(i), i.to_f64_vec().enc()])),
-        "primitiveType": g.primitive_type as u32,
-        "boundingSphere": g.bounding_sphere.enc(),
-        "geometryType": g.geometry_type as u32,
-        "offsetAttribute": g.offset_attribute.map(|o| o as u32),
-    })
-}
 
 fn format(v: &Value) -> VertexFormat {
     match s(v) {

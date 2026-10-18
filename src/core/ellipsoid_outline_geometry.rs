@@ -6,6 +6,7 @@ use super::cartesian3::Cartesian3;
 use super::ellipsoid::Ellipsoid;
 use super::geometry::{Geometry, GeometryAttribute, GeometryAttributes, GeometryOffsetAttribute};
 use super::index_datatype::IndexDatatype;
+use super::js_math::JsMath;
 use super::math::{js_round, PI, TWO_PI};
 use super::primitive_type::PrimitiveType;
 
@@ -184,8 +185,8 @@ impl EllipsoidOutlineGeometry {
             (0..stack_partitions).map(|i| angle(minimum_cone, maximum_cone, i, stack_partitions)).collect();
         let thetas: Vec<f64> =
             (0..subdivisions).map(|i| angle(minimum_clock, maximum_clock, i, subdivisions)).collect();
-        let (sin_phi, cos_phi): (Vec<f64>, Vec<f64>) = phis.iter().map(|p| (p.sin(), p.cos())).unzip();
-        let (sin_theta, cos_theta): (Vec<f64>, Vec<f64>) = thetas.iter().map(|t| (t.sin(), t.cos())).unzip();
+        let (sin_phi, cos_phi): (Vec<f64>, Vec<f64>) = phis.iter().map(|p| (p.js_sin(), p.js_cos())).unzip();
+        let (sin_theta, cos_theta): (Vec<f64>, Vec<f64>) = thetas.iter().map(|t| (t.js_sin(), t.js_cos())).unzip();
         push_ring(&mut positions, radii, &sin_phi, &cos_phi, &sin_theta, &cos_theta);
         if has_inner_surface {
             push_ring(&mut positions, inner_radii, &sin_phi, &cos_phi, &sin_theta, &cos_theta);
@@ -195,8 +196,8 @@ impl EllipsoidOutlineGeometry {
         let phis: Vec<f64> = (0..subdivisions).map(|i| angle(minimum_cone, maximum_cone, i, subdivisions)).collect();
         let thetas: Vec<f64> =
             (0..slice_partitions).map(|i| angle(minimum_clock, maximum_clock, i, slice_partitions)).collect();
-        let (sin_phi, cos_phi): (Vec<f64>, Vec<f64>) = phis.iter().map(|p| (p.sin(), p.cos())).unzip();
-        let (sin_theta, cos_theta): (Vec<f64>, Vec<f64>) = thetas.iter().map(|t| (t.sin(), t.cos())).unzip();
+        let (sin_phi, cos_phi): (Vec<f64>, Vec<f64>) = phis.iter().map(|p| (p.js_sin(), p.js_cos())).unzip();
+        let (sin_theta, cos_theta): (Vec<f64>, Vec<f64>) = thetas.iter().map(|t| (t.js_sin(), t.js_cos())).unzip();
         push_ring(&mut positions, radii, &sin_phi, &cos_phi, &sin_theta, &cos_theta);
         if has_inner_surface {
             push_ring(&mut positions, inner_radii, &sin_phi, &cos_phi, &sin_theta, &cos_theta);

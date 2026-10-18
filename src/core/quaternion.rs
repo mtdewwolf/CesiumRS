@@ -2,6 +2,7 @@
 
 use super::cartesian3::Cartesian3;
 use super::heading_pitch_roll::HeadingPitchRoll;
+use super::js_math::JsMath;
 use super::math::{acos_clamped, EPSILON6};
 use super::matrix3::Matrix3;
 
@@ -27,9 +28,9 @@ impl Quaternion {
     /// Rotation of `angle` radians about `axis` (normalized here).
     pub fn from_axis_angle(axis: Cartesian3, angle: f64) -> Self {
         let half = angle / 2.0;
-        let s = half.sin();
+        let s = half.js_sin();
         let a = axis.normalize();
-        Self::new(a.x * s, a.y * s, a.z * s, half.cos())
+        Self::new(a.x * s, a.y * s, a.z * s, half.js_cos())
     }
 
     pub fn from_rotation_matrix(matrix: &Matrix3) -> Self {
@@ -199,7 +200,7 @@ impl Quaternion {
         if (self.w - 1.0).abs() < EPSILON6 {
             return 0.0;
         }
-        2.0 * self.w.acos()
+        2.0 * self.w.js_acos()
     }
 
     pub fn lerp(&self, end: &Self, t: f64) -> Self {
@@ -219,23 +220,23 @@ impl Quaternion {
         if 1.0 - dot < EPSILON6 {
             return self.lerp(&r, t);
         }
-        let theta = dot.acos();
-        let p = self.multiply_by_scalar(((1.0 - t) * theta).sin());
-        let q = r.multiply_by_scalar((t * theta).sin());
-        p.add(&q).multiply_by_scalar(1.0 / theta.sin())
+        let theta = dot.js_acos();
+        let p = self.multiply_by_scalar(((1.0 - t) * theta).js_sin());
+        let q = r.multiply_by_scalar((t * theta).js_sin());
+        p.add(&q).multiply_by_scalar(1.0 / theta.js_sin())
     }
 
     /// Logarithm of a unit quaternion as a rotation vector.
     pub fn log(&self) -> Cartesian3 {
         let theta = acos_clamped(self.w);
-        let k = if theta != 0.0 { theta / theta.sin() } else { 0.0 };
+        let k = if theta != 0.0 { theta / theta.js_sin() } else { 0.0 };
         Cartesian3::new(self.x * k, self.y * k, self.z * k)
     }
 
     pub fn exp(cartesian: Cartesian3) -> Self {
         let theta = cartesian.magnitude();
-        let k = if theta != 0.0 { theta.sin() / theta } else { 0.0 };
-        Self::new(cartesian.x * k, cartesian.y * k, cartesian.z * k, theta.cos())
+        let k = if theta != 0.0 { theta.js_sin() / theta } else { 0.0 };
+        Self::new(cartesian.x * k, cartesian.y * k, cartesian.z * k, theta.js_cos())
     }
 
     /// Inner quadrangle point for `squad` at `q1`.

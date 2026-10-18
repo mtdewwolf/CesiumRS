@@ -279,6 +279,27 @@ function miscSuite() {
   return s;
 }
 
+/** Math functions bit for bit: the port's JsMath must round exactly as V8 does. */
+function jsMathSuite() {
+  const g = generators(makeRng(810));
+  const s = suite("JsMath");
+  const inputs = (scale, n = 400) => Array.from({ length: n }, () => g.uniform(-scale, scale));
+  const sets = { small: inputs(4), medium: inputs(1000), large: inputs(1e7), huge: inputs(1e300, 40) };
+  for (const f of ["sin", "cos", "tan", "atan", "exp", "log", "asin", "acos", "cosh"]) {
+    for (const [name, xs] of Object.entries(sets)) {
+      const args = xs.map((x) => (f === "asin" || f === "acos" ? x / 1e7 : f === "exp" || f === "cosh" ? x / 1e5 : f === "log" ? Math.abs(x) : x));
+      if ((f === "exp" || f === "cosh" || f === "asin" || f === "acos") && name === "huge") continue;
+      s.add(f, [args], (a) => a.map(Math[f]));
+    }
+  }
+  const ys = inputs(10, 400);
+  s.add("atan2", [ys, sets.medium], (y, x) => y.map((v, i) => Math.atan2(v, x[i])));
+  s.add("special", [[0, -0, Infinity, -Infinity, NaN, Math.PI / 2, Math.PI, 1e-300, 5e-324, 1, -1]], (a) =>
+    a.flatMap((x) => [Math.sin(x), Math.cos(x), Math.log(Math.abs(x)), Math.atan(x)]),
+  );
+  return s;
+}
+
 export default function coreUtilities() {
-  return [arraySuite(), containerSuite(), stringSuite(), querySuite(), pixelSuite(), miscSuite()];
+  return [arraySuite(), containerSuite(), stringSuite(), querySuite(), pixelSuite(), miscSuite(), jsMathSuite()];
 }

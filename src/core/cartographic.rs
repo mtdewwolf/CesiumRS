@@ -2,6 +2,7 @@
 
 use super::cartesian3::Cartesian3;
 use super::ellipsoid::Ellipsoid;
+use super::js_math::JsMath;
 use super::math::{sign, to_radians};
 use super::scale_to_geodetic_surface::scale_to_geodetic_surface;
 
@@ -37,7 +38,7 @@ impl Cartographic {
         )?;
         let n = p.multiply_components(ellipsoid.one_over_radii_squared).normalize();
         let h = cartesian.subtract(p);
-        Some(Self::new(n.y.atan2(n.x), n.z.asin(), sign(h.dot(cartesian)) * h.magnitude()))
+        Some(Self::new(n.y.js_atan2(n.x), n.z.js_asin(), sign(h.dot(cartesian)) * h.magnitude()))
     }
 
     pub fn to_cartesian(&self, ellipsoid: &Ellipsoid) -> Cartesian3 {

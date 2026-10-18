@@ -430,3 +430,43 @@ pub fn run(package: &str, module: &str, tol: impl Fn(&str) -> Tol, port: impl Fn
     );
     eprintln!("{module}: {checked} cases match CesiumJS ({preconditions} debug-only preconditions skipped)");
 }
+
+// ---- geometries ------------------------------------------------------------
+
+pub fn typed_array_name(a: &TypedArray) -> &'static str {
+    match a {
+        TypedArray::Int8(_) => "Int8Array",
+        TypedArray::Uint8(_) => "Uint8Array",
+        TypedArray::Int16(_) => "Int16Array",
+        TypedArray::Uint16(_) => "Uint16Array",
+        TypedArray::Int32(_) => "Int32Array",
+        TypedArray::Uint32(_) => "Uint32Array",
+        TypedArray::Float32(_) => "Float32Array",
+        TypedArray::Float64(_) => "Float64Array",
+    }
+}
+
+pub fn geometry_enc(g: Option<Geometry>) -> Value {
+    let Some(g) = g else { return Value::Null };
+    let mut attributes = serde_json::Map::new();
+    for (name, a) in g.attributes.iter() {
+        attributes.insert(
+            name.to_string(),
+            serde_json::json!([
+                a.component_datatype as u32,
+                a.components_per_attribute,
+                a.normalize,
+                typed_array_name(&a.values),
+                a.values.to_f64_vec().enc()
+            ]),
+        );
+    }
+    serde_json::json!({
+        "attributes": attributes,
+        "indices": g.indices.as_ref().map(|i| serde_json::json!([typed_array_name(i), i.to_f64_vec().enc()])),
+        "primitiveType": g.primitive_type as u32,
+        "boundingSphere": g.bounding_sphere.enc(),
+        "geometryType": g.geometry_type as u32,
+        "offsetAttribute": g.offset_attribute.map(|o| o as u32),
+    })
+}
