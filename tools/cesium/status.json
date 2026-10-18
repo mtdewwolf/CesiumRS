@@ -118,6 +118,19 @@
     "status": "ported",
     "rust": "core::corner_type"
   },
+  "Core/CorridorGeometry": {
+    "status": "ported",
+    "rust": "core::corridor_geometry",
+    "note": "createGeometry and the rectangle scale the input positions in Cesium; the port leaves them unchanged."
+  },
+  "Core/CorridorGeometryLibrary": {
+    "status": "ported",
+    "rust": "core::corridor_geometry_library"
+  },
+  "Core/CorridorOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::corridor_outline_geometry"
+  },
   "Core/CubicRealPolynomial": {
     "status": "ported",
     "rust": "core::cubic_real_polynomial"

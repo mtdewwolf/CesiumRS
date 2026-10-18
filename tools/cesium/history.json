@@ -88,5 +88,11 @@
     "date": "2026-10-18",
     "percent": 18.24,
     "ported": 199
+  },
+  {
+    "milestone": "Corridor geometries",
+    "date": "2026-10-18",
+    "percent": 18.9,
+    "ported": 202
   }
 ]

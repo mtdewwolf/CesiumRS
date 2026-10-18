@@ -11,11 +11,11 @@ Along the way, `core::js_math` made the port's `sin`, `cos`, `log` and the other
    - ✅ `EllipseGeometry`, `CircleGeometry`
    - ✅ `RectangleGeometry`, `RectangleGeometryLibrary`, `RectangleOutlineGeometry`
    - ✅ `PolygonGeometryLibrary`, `PolygonGeometry`, `PolygonOutlineGeometry`, and the coplanar polygon geometries
-4. 🟡 **Line and volume geometries:**
+4. ✅ **Line and volume geometries:**
    - ✅ `PolylinePipeline`, `PolylineGeometry`, `SimplePolylineGeometry`
    - ✅ `WallGeometryLibrary`, `WallGeometry`, `WallOutlineGeometry`
    - ✅ `PolylineVolumeGeometryLibrary`, `PolylineVolumeGeometry`, `PolylineVolumeOutlineGeometry`
-   - ⬜ `CorridorGeometryLibrary`, `CorridorGeometry`, `CorridorOutlineGeometry` (next)
-5. ⬜ **Terrain helpers:** `HeightmapTessellator`, `TerrainEncoding`
+   - ✅ `CorridorGeometryLibrary`, `CorridorGeometry`, `CorridorOutlineGeometry`
+5. ⬜ **Terrain helpers:** `HeightmapTessellator`, `TerrainEncoding` (next)
 
 After 75% Core: move the viewer onto `src/core` and redeploy it, then finish the rest of Core and start Renderer and Scene.

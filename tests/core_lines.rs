@@ -246,3 +246,59 @@ fn polyline_volume_geometries() {
         _ => None,
     });
 }
+
+fn corridor_options(a: &[Value]) -> CorridorGeometryOptions {
+    let mut o = CorridorGeometryOptions::new(list(&a[0], c3), n(&a[1]));
+    o.height = n(&a[2]);
+    o.extruded_height = opt(&a[3]);
+    o.corner_type = corner_type(&a[4]);
+    o.vertex_format = format(&a[5]);
+    if let Some(g) = opt(&a[6]) {
+        o.granularity = g;
+    }
+    o.ellipsoid = ellipsoid(&a[7]);
+    o.offset_attribute = opt(&a[8]).and_then(GeometryOffsetAttribute::unpack);
+    o.shadow_volume = a[9].as_bool().unwrap();
+    o
+}
+
+fn corridor_outline(o: CorridorGeometryOptions) -> CorridorOutlineGeometry {
+    CorridorOutlineGeometry::new(
+        o.positions,
+        o.width,
+        Some(o.height),
+        o.extruded_height,
+        Some(o.ellipsoid),
+        Some(o.corner_type),
+        Some(o.granularity),
+        o.offset_attribute,
+    )
+}
+
+#[test]
+fn corridor_geometries() {
+    run("core", "CorridorGeometry", |f| if f.contains("npack") { TIGHT } else { GEOMETRY }, |f, a| match f {
+        "corridor" => {
+            let c = CorridorGeometry::new(corridor_options(a));
+            let r = c.rectangle()?;
+            ok(json!([packed(c.packed_length, |arr| c.pack(arr, 0)).enc(), vec![r.west, r.south, r.east, r.north].enc(), geometry_enc(c.create_geometry())]))
+        }
+        "corridorOutline" => {
+            let c = corridor_outline(corridor_options(a));
+            ok(json!([packed(c.packed_length, |arr| c.pack(arr, 0)).enc(), geometry_enc(c.create_geometry())]))
+        }
+        "shadowVolume" => {
+            let c = CorridorGeometry::new(corridor_options(a)).create_shadow_volume(n(&a[10]), n(&a[11]));
+            ok(json!([packed(c.packed_length, |arr| c.pack(arr, 0)).enc(), geometry_enc(c.create_geometry())]))
+        }
+        "unpack" => {
+            let c = CorridorGeometry::unpack(&nums(&a[0]), 0);
+            ok(packed(c.packed_length, |arr| c.pack(arr, 0)))
+        }
+        "outlineUnpack" => {
+            let c = CorridorOutlineGeometry::unpack(&nums(&a[0]), 0);
+            ok(packed(c.packed_length, |arr| c.pack(arr, 0)))
+        }
+        _ => None,
+    });
+}

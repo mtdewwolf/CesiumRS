@@ -5,7 +5,7 @@ import * as Cesium from "@cesium/engine";
 import { geometryEnc } from "./core-geometries.mjs";
 import { generators, makeRng, suite } from "./lib.mjs";
 
-const { ArcType, Cartesian2, Cartesian3, Color, CornerType, Ellipsoid, Matrix4, PolylineGeometry, PolylineVolumeGeometry, PolylineVolumeOutlineGeometry, PolylinePipeline, Quaternion, SimplePolylineGeometry, VertexFormat, WallGeometry, WallOutlineGeometry } = Cesium;
+const { ArcType, Cartesian2, Cartesian3, Color, CornerType, CorridorGeometry, CorridorOutlineGeometry, Ellipsoid, GeometryOffsetAttribute, Matrix4, PolylineGeometry, PolylineVolumeGeometry, PolylineVolumeOutlineGeometry, PolylinePipeline, Quaternion, SimplePolylineGeometry, VertexFormat, WallGeometry, WallOutlineGeometry } = Cesium;
 
 export const formats = {
   POSITION_ONLY: VertexFormat.POSITION_ONLY,
@@ -250,6 +250,63 @@ function volumeSuite() {
   return s;
 }
 
+function corridorSuite() {
+  const rng = makeRng(1504);
+  const g = { ...generators(rng), rng };
+  g.uniform = (lo, hi) => lo + (hi - lo) * rng();
+  const s = suite("CorridorGeometry");
+  const offsets = [null, GeometryOffsetAttribute.NONE, GeometryOffsetAttribute.TOP, GeometryOffsetAttribute.ALL];
+  const args = () => {
+    const name = g.rng() < 0.85 ? "WGS84" : "MOON";
+    const path = pathArgs(g, { name, n: 2 + Math.floor(g.rng() * 5), repeat: g.rng() < 0.3, step: 1.5 });
+    const height = g.pick([0, 0, 1000, g.uniform(-200, 3000)]);
+    const extruded = g.rng() < 0.5 ? null : g.pick([height, g.uniform(-500, 8000)]);
+    return [path, g.uniform(200, 60000), height, extruded, g.pick([CornerType.ROUNDED, CornerType.MITERED, CornerType.BEVELED]), g.pick(formatNames), g.rng() < 0.4 ? null : g.uniform(0.5, 3) * DEG, name, g.pick(offsets), g.rng() < 0.1];
+  };
+  const options = ([path, width, height, extruded, cornerType, format, granularity, name, offset, shadow]) => ({
+    positions: path.map(c3),
+    width,
+    height,
+    extrudedHeight: extruded ?? undefined,
+    cornerType,
+    vertexFormat: formats[format],
+    granularity: granularity ?? undefined,
+    ellipsoid: ellipsoids[name],
+    offsetAttribute: offset ?? undefined,
+    shadowVolume: shadow,
+  });
+  // Separate objects: the rectangle and createGeometry each scale the input positions in place.
+  const corridor = (...x) => {
+    const c = new CorridorGeometry(options(x));
+    const p = packed(CorridorGeometry, c);
+    const r = new CorridorGeometry(options(x)).rectangle;
+    return [p, [r.west, r.south, r.east, r.north], geometryEnc(CorridorGeometry.createGeometry(new CorridorGeometry(options(x))))];
+  };
+  const outline = (...x) => {
+    const c = new CorridorOutlineGeometry(options(x));
+    return [packed(CorridorOutlineGeometry, c), geometryEnc(CorridorOutlineGeometry.createGeometry(new CorridorOutlineGeometry(options(x))))];
+  };
+  for (let i = 0; i < 50; i++) {
+    const a = args();
+    s.add("corridor", a, corridor);
+    s.add("corridorOutline", a, outline);
+  }
+  // Degenerate: one distinct position, or no width.
+  const one = pathArgs(g, { n: 1 });
+  s.add("corridor", [[one[0], one[0]], 1000, 0, null, CornerType.ROUNDED, "ALL", null, "WGS84", null, false], corridor);
+  s.add("corridor", [pathArgs(g, { n: 3 }), 0, 0, null, CornerType.ROUNDED, "ALL", null, "WGS84", null, false], corridor);
+  for (let i = 0; i < 4; i++) {
+    const a = args();
+    s.add("shadowVolume", [...a, -100, 2000], (...x) => {
+      const c = CorridorGeometry.createShadowVolume(new CorridorGeometry(options(x)), () => x[10], () => x[11]);
+      return [packed(CorridorGeometry, c), geometryEnc(CorridorGeometry.createGeometry(c))];
+    });
+    s.add("unpack", [packed(CorridorGeometry, new CorridorGeometry(options(a)))], (arr) => packed(CorridorGeometry, CorridorGeometry.unpack(arr)));
+    s.add("outlineUnpack", [packed(CorridorOutlineGeometry, new CorridorOutlineGeometry(options(a)))], (arr) => packed(CorridorOutlineGeometry, CorridorOutlineGeometry.unpack(arr)));
+  }
+  return s;
+}
+
 export default function coreLines() {
-  return [pipelineSuite(), polylineSuite(), wallSuite(), volumeSuite()];
+  return [pipelineSuite(), polylineSuite(), wallSuite(), volumeSuite(), corridorSuite()];
 }
