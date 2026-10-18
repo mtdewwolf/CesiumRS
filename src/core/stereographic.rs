@@ -7,6 +7,7 @@ use super::cartographic::Cartographic;
 use super::ellipsoid::Ellipsoid;
 use super::ellipsoid_tangent_plane::EllipsoidTangentPlane;
 use super::intersection_tests::ray_plane;
+use super::js_math::JsMath;
 use super::math::{sign_not_zero, PI_OVER_TWO, TWO_PI};
 use super::ray::Ray;
 
@@ -53,11 +54,11 @@ impl Stereographic {
         let r = self.position.magnitude();
         let d = 2.0 * self.ellipsoid().maximum_radius;
         let sign = self.tangent_plane.plane.normal.z;
-        sign * (PI_OVER_TWO - 2.0 * r.atan2(d))
+        sign * (PI_OVER_TWO - 2.0 * r.js_atan2(d))
     }
 
     pub fn longitude(&self) -> f64 {
-        let mut longitude = PI_OVER_TWO + self.y().atan2(self.x());
+        let mut longitude = PI_OVER_TWO + self.y().js_atan2(self.x());
         if longitude > std::f64::consts::PI {
             longitude -= TWO_PI;
         }

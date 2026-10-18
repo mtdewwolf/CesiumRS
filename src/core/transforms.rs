@@ -13,6 +13,7 @@ use super::earth_orientation_parameters::EarthOrientationParameters;
 use super::ellipsoid::Ellipsoid;
 use super::heading_pitch_roll::HeadingPitchRoll;
 use super::iau2006_xys_data::Iau2006XysData;
+use super::js_math::JsMath;
 use super::julian_date::JulianDate;
 use super::map_projection::MapProjection;
 use super::math::{equals_epsilon, sign, to_radians, EPSILON14, EPSILON6, RADIANS_PER_DEGREE, TWO_PI};
@@ -289,7 +290,7 @@ impl Transforms {
         let ratio = WGS84_WR_PRECESSING + RATE_COEF * (utc_day_number - 2451545.5);
         let seconds_since_midnight = (utc_seconds_into_day + SECONDS_PER_DAY * 0.5) % SECONDS_PER_DAY;
         let gha = angle + ratio * seconds_since_midnight;
-        let (sin_gha, cos_gha) = gha.sin_cos();
+        let (sin_gha, cos_gha) = gha.js_sin_cos();
         Matrix3::new(cos_gha, sin_gha, 0.0, -sin_gha, cos_gha, 0.0, 0.0, 0.0, 1.0)
     }
 
@@ -334,19 +335,19 @@ impl Transforms {
         let e4 = to_radians(261.105) + to_radians(13.340716) * d;
         let e5 = to_radians(358.0) + to_radians(0.9856) * d;
 
-        let pitch = to_radians(270.0 - 90.0) - to_radians(3.878) * e1.sin() - to_radians(0.12) * e2.sin()
-            + to_radians(0.07) * e3.sin()
-            - to_radians(0.017) * e4.sin();
-        let roll = to_radians(66.53 - 90.0) + to_radians(1.543) * e1.cos() + to_radians(0.24) * e2.cos()
-            - to_radians(0.028) * e3.cos()
-            + to_radians(0.007) * e4.cos();
+        let pitch = to_radians(270.0 - 90.0) - to_radians(3.878) * e1.js_sin() - to_radians(0.12) * e2.js_sin()
+            + to_radians(0.07) * e3.js_sin()
+            - to_radians(0.017) * e4.js_sin();
+        let roll = to_radians(66.53 - 90.0) + to_radians(1.543) * e1.js_cos() + to_radians(0.24) * e2.js_cos()
+            - to_radians(0.028) * e3.js_cos()
+            + to_radians(0.007) * e4.js_cos();
         let heading = to_radians(244.375 - 90.0)
             + to_radians(13.17635831) * d
-            + to_radians(3.558) * e1.sin()
-            + to_radians(0.121) * e2.sin()
-            - to_radians(0.064) * e3.sin()
-            + to_radians(0.016) * e4.sin()
-            + to_radians(0.025) * e5.sin();
+            + to_radians(3.558) * e1.js_sin()
+            + to_radians(0.121) * e2.js_sin()
+            - to_radians(0.064) * e3.js_sin()
+            + to_radians(0.016) * e4.js_sin()
+            + to_radians(0.025) * e5.js_sin();
         Matrix3::from_heading_pitch_roll(&HeadingPitchRoll::new(heading, pitch, roll))
     }
 
@@ -401,15 +402,15 @@ impl Transforms {
         let pf_to_icrf = matrix_q.multiply(&earth_rotation);
 
         // Polar motion.
-        let (sinxp, cosxp) = eop.x_pole_wander.sin_cos();
-        let (sinyp, cosyp) = eop.y_pole_wander.sin_cos();
+        let (sinxp, cosxp) = eop.x_pole_wander.js_sin_cos();
+        let (sinyp, cosyp) = eop.y_pole_wander.js_sin_cos();
 
         let mut ttt = day_tt - J2000_TT_DAYS + second_tt / SECONDS_PER_DAY;
         ttt /= 36525.0;
 
         // Approximate s' in radians.
         let sp = (-47.0e-6 * ttt * RADIANS_PER_DEGREE) / 3600.0;
-        let (sinsp, cossp) = sp.sin_cos();
+        let (sinsp, cossp) = sp.js_sin_cos();
 
         let f_to_pf_mtx = Matrix3::from_column_major_array([
             cosxp * cossp,

@@ -3,6 +3,7 @@
 
 use super::cartesian3::Cartesian3;
 use super::ellipsoid::Ellipsoid;
+use super::js_math::JsMath;
 use super::math::PI_OVER_TWO;
 use super::matrix3::Matrix3;
 use super::quaternion::Quaternion;
@@ -42,9 +43,9 @@ fn point_on_ellipsoid(
     unit_pos: Cartesian3,
 ) -> Cartesian3 {
     let azimuth = theta + rotation;
-    let rot_axis = east_vec.multiply_by_scalar(azimuth.cos()).add(north_vec.multiply_by_scalar(azimuth.sin()));
-    let cos_theta_squared = theta.cos() * theta.cos();
-    let sin_theta_squared = theta.sin() * theta.sin();
+    let rot_axis = east_vec.multiply_by_scalar(azimuth.js_cos()).add(north_vec.multiply_by_scalar(azimuth.js_sin()));
+    let cos_theta_squared = theta.js_cos() * theta.js_cos();
+    let sin_theta_squared = theta.js_sin() * theta.js_sin();
     let radius = ab / (b_sqr * cos_theta_squared + a_sqr * sin_theta_squared).sqrt();
     let angle = radius / mag;
     let rot_mtx = Matrix3::from_quaternion(&Quaternion::from_axis_angle(rot_axis, angle));

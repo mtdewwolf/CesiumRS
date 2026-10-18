@@ -1,5 +1,6 @@
 //! CesiumJS `CubicRealPolynomial`: `a x³ + b x² + c x + d`.
 
+use super::js_math::JsMath;
 use super::quadratic_real_polynomial;
 
 pub fn compute_discriminant(a: f64, b: f64, c: f64, d: f64) -> f64 {
@@ -60,20 +61,20 @@ fn compute_real_roots_general(a: f64, b: f64, c: f64, d: f64) -> Vec<f64> {
     let square_root_of_discriminant = discriminant.sqrt();
     let half_square_root_of_3 = 3.0_f64.sqrt() / 2.0;
 
-    let mut theta = ((big_a * square_root_of_discriminant).atan2(-d_bar_a) / 3.0).abs();
+    let mut theta = ((big_a * square_root_of_discriminant).js_atan2(-d_bar_a) / 3.0).abs();
     let mut temp = 2.0 * (-c_bar_a).sqrt();
-    let mut cosine = theta.cos();
+    let mut cosine = theta.js_cos();
     let mut temp1 = temp * cosine;
-    let mut temp3 = temp * (-cosine / 2.0 - half_square_root_of_3 * theta.sin());
+    let mut temp3 = temp * (-cosine / 2.0 - half_square_root_of_3 * theta.js_sin());
     let numerator_large = if temp1 + temp3 > 2.0 * big_b { temp1 - big_b } else { temp3 - big_b };
     let denominator_large = big_a;
     let root1 = numerator_large / denominator_large;
 
-    theta = ((big_d * square_root_of_discriminant).atan2(-d_bar_d) / 3.0).abs();
+    theta = ((big_d * square_root_of_discriminant).js_atan2(-d_bar_d) / 3.0).abs();
     temp = 2.0 * (-c_bar_d).sqrt();
-    cosine = theta.cos();
+    cosine = theta.js_cos();
     temp1 = temp * cosine;
-    temp3 = temp * (-cosine / 2.0 - half_square_root_of_3 * theta.sin());
+    temp3 = temp * (-cosine / 2.0 - half_square_root_of_3 * theta.js_sin());
     let numerator_small = -big_d;
     let denominator_small = if temp1 + temp3 < 2.0 * big_c { temp1 + big_c } else { temp3 + big_c };
     let root3 = numerator_small / denominator_small;

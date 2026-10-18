@@ -3,6 +3,7 @@
 use super::cartesian3::Cartesian3;
 use super::cartographic::Cartographic;
 use super::ellipsoid::Ellipsoid;
+use super::js_math::JsMath;
 use super::map_projection::MapProjection;
 use super::math::PI_OVER_TWO;
 
@@ -31,7 +32,7 @@ impl WebMercatorProjection {
     }
 
     pub fn mercator_angle_to_geodetic_latitude(mercator_angle: f64) -> f64 {
-        PI_OVER_TWO - 2.0 * (-mercator_angle).exp().atan()
+        PI_OVER_TWO - 2.0 * (-mercator_angle).js_exp().js_atan()
     }
 
     /// Clamps to `±maximum_latitude()` first.
@@ -44,8 +45,8 @@ impl WebMercatorProjection {
         } else {
             latitude
         };
-        let s = latitude.sin();
-        0.5 * ((1.0 + s) / (1.0 - s)).ln()
+        let s = latitude.js_sin();
+        0.5 * ((1.0 + s) / (1.0 - s)).js_ln()
     }
 }
 

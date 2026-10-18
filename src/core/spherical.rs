@@ -1,6 +1,7 @@
 //! CesiumJS `Spherical`: clock (azimuth), cone (from +Z), and magnitude.
 
 use super::cartesian3::Cartesian3;
+use super::js_math::JsMath;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Spherical {
@@ -23,8 +24,8 @@ impl Spherical {
     pub fn from_cartesian3(c: Cartesian3) -> Self {
         let radial_squared = c.x * c.x + c.y * c.y;
         Self {
-            clock: c.y.atan2(c.x),
-            cone: radial_squared.sqrt().atan2(c.z),
+            clock: c.y.js_atan2(c.x),
+            cone: radial_squared.sqrt().js_atan2(c.z),
             magnitude: (radial_squared + c.z * c.z).sqrt(),
         }
     }

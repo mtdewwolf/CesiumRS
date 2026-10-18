@@ -7,6 +7,7 @@ use super::cartesian2::Cartesian2;
 use super::cartesian3::Cartesian3;
 use super::geometry::{Geometry, GeometryAttribute, GeometryAttributes, GeometryOffsetAttribute};
 use super::index_datatype::IndexDatatype;
+use super::js_math::JsMath;
 use super::math::{js_max, js_round, TWO_PI};
 use super::primitive_type::PrimitiveType;
 use super::vertex_format::VertexFormat;
@@ -25,8 +26,8 @@ pub fn compute_positions(length: f64, top_radius: f64, bottom_radius: f64, slice
     let top_offset = if fill { (two_slice + slices) * 3 } else { slices * 3 };
     for i in 0..slices {
         let angle = (i as f64 / slices as f64) * TWO_PI;
-        let x = angle.cos();
-        let y = angle.sin();
+        let x = angle.js_cos();
+        let y = angle.js_sin();
         let (bottom_x, bottom_y) = (x * bottom_radius, y * bottom_radius);
         let (top_x, top_y) = (x * top_radius, y * top_radius);
         positions[tb_index + bottom_offset..tb_index + bottom_offset + 3]
@@ -118,13 +119,13 @@ impl CylinderGeometry {
         let compute_normal = vertex_format.normal || vertex_format.tangent || vertex_format.bitangent;
         if compute_normal {
             let compute_tangent = vertex_format.tangent || vertex_format.bitangent;
-            let theta = (bottom_radius - top_radius).atan2(length);
-            let normal_z = theta.sin();
-            let normal_scale = theta.cos();
+            let theta = (bottom_radius - top_radius).js_atan2(length);
+            let normal_z = theta.js_sin();
+            let normal_scale = theta.js_cos();
             let mut tangent = Cartesian3::ZERO;
             for i in 0..slices {
                 let angle = (i as f64 / slices as f64) * TWO_PI;
-                let normal = Cartesian3::new(normal_scale * angle.cos(), normal_scale * angle.sin(), normal_z);
+                let normal = Cartesian3::new(normal_scale * angle.js_cos(), normal_scale * angle.js_sin(), normal_z);
                 if compute_tangent {
                     tangent = Cartesian3::UNIT_Z.cross(normal).normalize();
                 }

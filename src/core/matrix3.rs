@@ -2,6 +2,7 @@
 
 use super::cartesian3::Cartesian3;
 use super::heading_pitch_roll::HeadingPitchRoll;
+use super::js_math::JsMath;
 use super::math::{EPSILON15, EPSILON20};
 use super::matrix::{matrix_common, matrix_scale_rotation};
 use super::quaternion::Quaternion;
@@ -85,12 +86,12 @@ impl Matrix3 {
 
     /// Rotation for a heading, pitch, and roll in a local frame.
     pub fn from_heading_pitch_roll(hpr: &HeadingPitchRoll) -> Self {
-        let cos_theta = (-hpr.pitch).cos();
-        let cos_psi = (-hpr.heading).cos();
-        let cos_phi = hpr.roll.cos();
-        let sin_theta = (-hpr.pitch).sin();
-        let sin_psi = (-hpr.heading).sin();
-        let sin_phi = hpr.roll.sin();
+        let cos_theta = (-hpr.pitch).js_cos();
+        let cos_psi = (-hpr.heading).js_cos();
+        let cos_phi = hpr.roll.js_cos();
+        let sin_theta = (-hpr.pitch).js_sin();
+        let sin_psi = (-hpr.heading).js_sin();
+        let sin_phi = hpr.roll.js_sin();
         Self::new(
             cos_theta * cos_psi,
             -cos_phi * sin_psi + sin_phi * sin_theta * cos_psi,
@@ -110,17 +111,17 @@ impl Matrix3 {
     }
 
     pub fn from_rotation_x(angle: f64) -> Self {
-        let (s, c) = angle.sin_cos();
+        let (s, c) = angle.js_sin_cos();
         Self::new(1.0, 0.0, 0.0, 0.0, c, -s, 0.0, s, c)
     }
 
     pub fn from_rotation_y(angle: f64) -> Self {
-        let (s, c) = angle.sin_cos();
+        let (s, c) = angle.js_sin_cos();
         Self::new(c, 0.0, s, 0.0, 1.0, 0.0, -s, 0.0, c)
     }
 
     pub fn from_rotation_z(angle: f64) -> Self {
-        let (s, c) = angle.sin_cos();
+        let (s, c) = angle.js_sin_cos();
         Self::new(c, -s, 0.0, s, c, 0.0, 0.0, 0.0, 1.0)
     }
 

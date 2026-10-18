@@ -1,5 +1,6 @@
 //! CesiumJS `HeadingPitchRoll`: rotation about -Z, -Y, and X in a local frame.
 
+use super::js_math::JsMath;
 use super::math::{asin_clamped, equals_epsilon, RADIANS_PER_DEGREE};
 use super::quaternion::Quaternion;
 
@@ -22,8 +23,8 @@ impl HeadingPitchRoll {
         let denominator_heading = 1.0 - 2.0 * (q.y * q.y + q.z * q.z);
         let numerator_heading = 2.0 * (q.w * q.z + q.x * q.y);
         Self {
-            heading: -numerator_heading.atan2(denominator_heading),
-            roll: numerator_roll.atan2(denominator_roll),
+            heading: -numerator_heading.js_atan2(denominator_heading),
+            roll: numerator_roll.js_atan2(denominator_roll),
             pitch: -asin_clamped(test),
         }
     }

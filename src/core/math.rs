@@ -1,5 +1,6 @@
 //! CesiumJS `Math` (`CesiumMath`): constants and scalar helpers.
 
+use super::js_math::JsMath;
 use std::cell::RefCell;
 
 pub const EPSILON1: f64 = 0.1;
@@ -126,7 +127,7 @@ pub fn sinh(value: f64) -> f64 {
 }
 
 pub fn cosh(value: f64) -> f64 {
-    value.cosh()
+    value.js_cosh()
 }
 
 pub fn lerp(p: f64, q: f64, time: f64) -> f64 {
@@ -345,20 +346,20 @@ pub fn random_between(min: f64, max: f64) -> f64 {
 }
 
 pub fn acos_clamped(value: f64) -> f64 {
-    clamp(value, -1.0, 1.0).acos()
+    clamp(value, -1.0, 1.0).js_acos()
 }
 
 pub fn asin_clamped(value: f64) -> f64 {
-    clamp(value, -1.0, 1.0).asin()
+    clamp(value, -1.0, 1.0).js_asin()
 }
 
 /// Length of the chord subtending `angle` on a circle of `radius`.
 pub fn chord_length(angle: f64, radius: f64) -> f64 {
-    2.0 * radius * (angle * 0.5).sin()
+    2.0 * radius * (angle * 0.5).js_sin()
 }
 
 pub fn log_base(number: f64, base: f64) -> f64 {
-    number.ln() / base.ln()
+    number.js_ln() / base.js_ln()
 }
 
 pub fn cbrt(number: f64) -> f64 {
@@ -372,7 +373,7 @@ pub fn log2(number: f64) -> f64 {
 /// Fog density at a distance, as in Cesium's fog shader.
 pub fn fog(distance_to_camera: f64, density: f64) -> f64 {
     let scalar = distance_to_camera * density;
-    1.0 - (-(scalar * scalar)).exp()
+    1.0 - (-(scalar * scalar)).js_exp()
 }
 
 /// Polynomial `atan` for `x` in `[-1, 1]`.

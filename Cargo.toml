@@ -19,6 +19,7 @@ panic = "abort"
 strip = "symbols"
 
 [dependencies]
+libm = "0.2"
 serde_json = { version = "1", features = ["float_roundtrip"] }
 
 [features]

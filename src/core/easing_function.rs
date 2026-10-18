@@ -1,6 +1,7 @@
 //! CesiumJS `EasingFunction`: the tween.js 25 easing curves Cesium exposes
 //! for camera flights and animations.
 
+use super::js_math::JsMath;
 use std::f64::consts::PI;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -166,9 +167,9 @@ impl EasingFunction {
                 a -= 2.0;
                 0.5 * (a * a * a * a * a + 2.0)
             }
-            Self::SinusoidalIn => 1.0 - (((1.0 - a) * PI) / 2.0).sin(),
-            Self::SinusoidalOut => ((a * PI) / 2.0).sin(),
-            Self::SinusoidalInOut => 0.5 * (1.0 - (PI * (0.5 - a)).sin()),
+            Self::SinusoidalIn => 1.0 - (((1.0 - a) * PI) / 2.0).js_sin(),
+            Self::SinusoidalOut => ((a * PI) / 2.0).js_sin(),
+            Self::SinusoidalInOut => 0.5 * (1.0 - (PI * (0.5 - a)).js_sin()),
             Self::ExponentialIn => {
                 if a == 0.0 {
                     0.0
@@ -216,7 +217,7 @@ impl EasingFunction {
                 if a == 1.0 {
                     return 1.0;
                 }
-                -(2f64.powf(10.0 * (a - 1.0))) * ((a - 1.1) * 5.0 * PI).sin()
+                -(2f64.powf(10.0 * (a - 1.0))) * ((a - 1.1) * 5.0 * PI).js_sin()
             }
             Self::ElasticOut => {
                 if a == 0.0 {
@@ -225,7 +226,7 @@ impl EasingFunction {
                 if a == 1.0 {
                     return 1.0;
                 }
-                2f64.powf(-10.0 * a) * ((a - 0.1) * 5.0 * PI).sin() + 1.0
+                2f64.powf(-10.0 * a) * ((a - 0.1) * 5.0 * PI).js_sin() + 1.0
             }
             Self::ElasticInOut => {
                 if a == 0.0 {
@@ -236,9 +237,9 @@ impl EasingFunction {
                 }
                 a *= 2.0;
                 if a < 1.0 {
-                    return -0.5 * 2f64.powf(10.0 * (a - 1.0)) * ((a - 1.1) * 5.0 * PI).sin();
+                    return -0.5 * 2f64.powf(10.0 * (a - 1.0)) * ((a - 1.1) * 5.0 * PI).js_sin();
                 }
-                0.5 * 2f64.powf(-10.0 * (a - 1.0)) * ((a - 1.1) * 5.0 * PI).sin() + 1.0
+                0.5 * 2f64.powf(-10.0 * (a - 1.0)) * ((a - 1.1) * 5.0 * PI).js_sin() + 1.0
             }
             Self::BackIn => {
                 let s = 1.70158;

@@ -62,6 +62,10 @@
     "status": "n/a",
     "note": "Argument checks; Rust types and Result do this at compile time or in the signature."
   },
+  "Core/CircleGeometry": {
+    "status": "ported",
+    "rust": "core::circle_geometry"
+  },
   "Core/CircleOutlineGeometry": {
     "status": "ported",
     "rust": "core::ellipse_outline_geometry::CircleOutlineGeometry"
@@ -158,6 +162,11 @@
     "status": "ported",
     "rust": "core::easing_function",
     "note": "The tween.js 25 curves Cesium re-exports, as an enum."
+  },
+  "Core/EllipseGeometry": {
+    "status": "ported",
+    "rust": "core::ellipse_geometry",
+    "note": "Options struct with Cesium defaults; rectangle() and texture_coordinate_rotation_points() are computed on demand rather than cached. create_geometry does not move the stored center to the surface as Cesium does."
   },
   "Core/EllipseGeometryLibrary": {
     "status": "ported",
@@ -522,6 +531,19 @@
   "Core/Rectangle": {
     "status": "ported",
     "rust": "core::rectangle"
+  },
+  "Core/RectangleGeometry": {
+    "status": "ported",
+    "rust": "core::rectangle_geometry",
+    "note": "An extruded shadow volume that also asks for normals returns None where Cesium throws a RangeError."
+  },
+  "Core/RectangleGeometryLibrary": {
+    "status": "ported",
+    "rust": "core::rectangle_geometry_library"
+  },
+  "Core/RectangleOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::rectangle_outline_geometry"
   },
   "Core/ReferenceFrame": {
     "status": "ported",

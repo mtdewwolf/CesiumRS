@@ -4,6 +4,7 @@
 use super::cartesian3::Cartesian3;
 use super::cartographic::Cartographic;
 use super::ellipsoid::Ellipsoid;
+use super::js_math::JsMath;
 use super::math::EPSILON12;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -78,12 +79,12 @@ const MAX_ITERATIONS: usize = 10_000;
 fn vincenty_inverse(major: f64, minor: f64, lon1: f64, lat1: f64, lon2: f64, lat2: f64) -> (f64, f64, f64, f64) {
     let eff = (major - minor) / major;
     let l = lon2 - lon1;
-    let u1 = ((1.0 - eff) * lat1.tan()).atan();
-    let u2 = ((1.0 - eff) * lat2.tan()).atan();
-    let cosine_u1 = u1.cos();
-    let sine_u1 = u1.sin();
-    let cosine_u2 = u2.cos();
-    let sine_u2 = u2.sin();
+    let u1 = ((1.0 - eff) * lat1.js_tan()).js_atan();
+    let u2 = ((1.0 - eff) * lat2.js_tan()).js_atan();
+    let cosine_u1 = u1.js_cos();
+    let sine_u1 = u1.js_sin();
+    let cosine_u2 = u2.js_cos();
+    let sine_u2 = u2.js_sin();
     let cc = cosine_u1 * cosine_u2;
     let cs = cosine_u1 * sine_u2;
     let ss = sine_u1 * sine_u2;
@@ -100,12 +101,12 @@ fn vincenty_inverse(major: f64, minor: f64, lon1: f64, lat1: f64, lon2: f64, lat
     let mut cosine_twice_sigma_midpoint;
     let mut iterations = 0;
     loop {
-        cosine_lambda = lambda.cos();
-        sine_lambda = lambda.sin();
+        cosine_lambda = lambda.js_cos();
+        sine_lambda = lambda.js_sin();
         let temp = cs - sc * cosine_lambda;
         sine_sigma = (cosine_u2 * cosine_u2 * sine_lambda * sine_lambda + temp * temp).sqrt();
         cosine_sigma = ss + cc * cosine_lambda;
-        sigma = sine_sigma.atan2(cosine_sigma);
+        sigma = sine_sigma.js_atan2(cosine_sigma);
         let sine_alpha;
         if sine_sigma == 0.0 {
             sine_alpha = 0.0;
@@ -149,8 +150,8 @@ fn vincenty_inverse(major: f64, minor: f64, lon1: f64, lat1: f64, lon2: f64, lat
                 / 4.0);
     let distance = minor * a * (sigma - delta_sigma);
     // Cesium uses the sine and cosine from the last iteration, not the final lambda.
-    let start_heading = (cosine_u2 * sine_lambda).atan2(cs - sc * cosine_lambda);
-    let end_heading = (cosine_u1 * sine_lambda).atan2(cs * cosine_lambda - sc);
+    let start_heading = (cosine_u2 * sine_lambda).js_atan2(cs - sc * cosine_lambda);
+    let end_heading = (cosine_u1 * sine_lambda).js_atan2(cs * cosine_lambda - sc);
     (distance, start_heading, end_heading, u_squared)
 }
 
@@ -158,12 +159,12 @@ fn set_constants(ellipsoid: &Ellipsoid, start_latitude: f64, start_heading: f64,
     let a = ellipsoid.maximum_radius;
     let b = ellipsoid.minimum_radius;
     let f = (a - b) / a;
-    let cosine_heading = start_heading.cos();
-    let sine_heading = start_heading.sin();
-    let tan_u = (1.0 - f) * start_latitude.tan();
+    let cosine_heading = start_heading.js_cos();
+    let sine_heading = start_heading.js_sin();
+    let tan_u = (1.0 - f) * start_latitude.js_tan();
     let cosine_u = 1.0 / (1.0 + tan_u * tan_u).sqrt();
     let sine_u = cosine_u * tan_u;
-    let sigma = tan_u.atan2(cosine_heading);
+    let sigma = tan_u.js_atan2(cosine_heading);
     let sine_alpha = cosine_u * sine_heading;
     let sine_squared_alpha = sine_alpha * sine_alpha;
     let cosine_squared_alpha = 1.0 - sine_squared_alpha;
@@ -177,10 +178,10 @@ fn set_constants(ellipsoid: &Ellipsoid, start_latitude: f64, start_heading: f64,
     let a2 = 1.0 - 3.0 * u2_over_4 + (35.0 * u4_over_16) / 4.0;
     let a3 = 1.0 - 5.0 * u2_over_4;
     let distance_ratio = a0 * sigma
-        - (a1 * (2.0 * sigma).sin() * u2_over_4) / 2.0
-        - (a2 * (4.0 * sigma).sin() * u4_over_16) / 16.0
-        - (a3 * (6.0 * sigma).sin() * u6_over_64) / 48.0
-        - ((8.0 * sigma).sin() * 5.0 * u8_over_256) / 512.0;
+        - (a1 * (2.0 * sigma).js_sin() * u2_over_4) / 2.0
+        - (a2 * (4.0 * sigma).js_sin() * u4_over_16) / 16.0
+        - (a3 * (6.0 * sigma).js_sin() * u6_over_64) / 48.0
+        - ((8.0 * sigma).js_sin() * 5.0 * u8_over_256) / 512.0;
     Constants {
         a,
         b,
@@ -254,13 +255,13 @@ impl EllipsoidGeodesic {
     pub fn interpolate_using_surface_distance(&self, distance: f64) -> Cartographic {
         let c = &self.constants;
         let s = c.distance_ratio + distance / c.b;
-        let cosine2_s = (2.0 * s).cos();
-        let cosine4_s = (4.0 * s).cos();
-        let cosine6_s = (6.0 * s).cos();
-        let sine2_s = (2.0 * s).sin();
-        let sine4_s = (4.0 * s).sin();
-        let sine6_s = (6.0 * s).sin();
-        let sine8_s = (8.0 * s).sin();
+        let cosine2_s = (2.0 * s).js_cos();
+        let cosine4_s = (4.0 * s).js_cos();
+        let cosine6_s = (6.0 * s).js_cos();
+        let sine2_s = (2.0 * s).js_sin();
+        let sine4_s = (4.0 * s).js_sin();
+        let sine6_s = (6.0 * s).js_sin();
+        let sine8_s = (8.0 * s).js_sin();
         let s2 = s * s;
         let s3 = s * s2;
         let u8 = c.u8_over_256;
@@ -277,15 +278,15 @@ impl EllipsoidGeodesic {
             - s2 * ((u6 - (11.0 * u8) / 2.0) * sine2_s + (5.0 * u8 * sine4_s) / 2.0)
             + ((29.0 * u6) / 96.0 - (29.0 * u8) / 16.0) * sine6_s
             + (539.0 * u8 * sine8_s) / 1536.0;
-        let theta = (sigma.sin() * c.cosine_alpha).asin();
-        let latitude = ((c.a / c.b) * theta.tan()).atan();
+        let theta = (sigma.js_sin() * c.cosine_alpha).js_asin();
+        let latitude = ((c.a / c.b) * theta.js_tan()).js_atan();
         sigma -= c.sigma;
-        let cosine_twice_sigma_midpoint = (2.0 * c.sigma + sigma).cos();
-        let sine_sigma = sigma.sin();
-        let cosine_sigma = sigma.cos();
+        let cosine_twice_sigma_midpoint = (2.0 * c.sigma + sigma).js_cos();
+        let sine_sigma = sigma.js_sin();
+        let cosine_sigma = sigma.js_cos();
         let cc = c.cosine_u * cosine_sigma;
         let ss = c.sine_u * sine_sigma;
-        let lambda = (sine_sigma * c.sine_heading).atan2(cc - ss * c.cosine_heading);
+        let lambda = (sine_sigma * c.sine_heading).js_atan2(cc - ss * c.cosine_heading);
         let l = lambda
             - compute_delta_lambda(
                 c.f,
