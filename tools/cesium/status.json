@@ -3,6 +3,15 @@
     "status": "ported",
     "rust": "core::arc_type"
   },
+  "Core/ArticulationStageType": {
+    "status": "ported",
+    "rust": "core::articulation_stage_type"
+  },
+  "Core/AssociativeArray": {
+    "status": "ported",
+    "rust": "core::associative_array",
+    "note": "Keys are strings, as JavaScript object keys are."
+  },
   "Core/AttributeCompression": {
     "status": "ported",
     "rust": "core::attribute_compression",
@@ -121,6 +130,11 @@
     "rust": "core::double_ended_priority_queue",
     "note": "Fixes a CesiumJS bug: its trickle-down continues after swapping with a direct child, which can hide the maximum."
   },
+  "Core/DoublyLinkedList": {
+    "status": "ported",
+    "rust": "core::doubly_linked_list",
+    "note": "Nodes live in an arena and are addressed by NodeId."
+  },
   "Core/EarthOrientationParameters": {
     "status": "ported",
     "rust": "core::earth_orientation_parameters",
@@ -184,6 +198,15 @@
     "rust": "core::event",
     "note": "Listeners are boxed closures identified by ListenerId; Cesium scopes become captured state."
   },
+  "Core/EventHelper": {
+    "status": "ported",
+    "rust": "core::event_helper",
+    "note": "Events are shared as Rc<RefCell<Event>>."
+  },
+  "Core/ExtrapolationType": {
+    "status": "ported",
+    "rust": "core::extrapolation_type"
+  },
   "Core/FeatureDetection": {
     "status": "n/a",
     "note": "Browser and WebGL feature sniffing."
@@ -205,6 +228,10 @@
   "Core/Fullscreen": {
     "status": "n/a",
     "note": "Browser Fullscreen API."
+  },
+  "Core/GeocodeType": {
+    "status": "ported",
+    "rust": "core::geocode_type"
   },
   "Core/GeographicProjection": {
     "status": "ported",
@@ -251,6 +278,10 @@
     "status": "ported",
     "rust": "core::heap"
   },
+  "Core/HeightmapEncoding": {
+    "status": "ported",
+    "rust": "core::heightmap_encoding"
+  },
   "Core/HermitePolynomialApproximation": {
     "status": "ported",
     "rust": "core::hermite_polynomial_approximation"
@@ -291,6 +322,10 @@
     "status": "ported",
     "rust": "core::index_datatype"
   },
+  "Core/InterpolationType": {
+    "status": "ported",
+    "rust": "core::interpolation_type"
+  },
   "Core/Intersect": {
     "status": "ported",
     "rust": "core::intersect"
@@ -307,6 +342,10 @@
     "status": "ported",
     "rust": "core::interval"
   },
+  "Core/IonGeocodeProviderType": {
+    "status": "ported",
+    "rust": "core::ion_geocode_provider_type"
+  },
   "Core/Iso8601": {
     "status": "ported",
     "rust": "core::iso8601"
@@ -315,6 +354,10 @@
     "status": "ported",
     "rust": "core::julian_date",
     "note": "fromIso8601 returns Err where Cesium throws. The leap-second table is process-wide and mutable, like JulianDate.leapSeconds (leap_seconds, add_leap_second, reset_leap_seconds)."
+  },
+  "Core/KeyboardEventModifier": {
+    "status": "ported",
+    "rust": "core::keyboard_event_modifier"
   },
   "Core/LagrangePolynomialApproximation": {
     "status": "ported",
@@ -331,6 +374,10 @@
   "Core/LinearSpline": {
     "status": "ported",
     "rust": "core::linear_spline"
+  },
+  "Core/ManagedArray": {
+    "status": "ported",
+    "rust": "core::managed_array"
   },
   "Core/MapProjection": {
     "status": "ported",
@@ -389,6 +436,11 @@
     "status": "ported",
     "rust": "core::perspective_off_center_frustum"
   },
+  "Core/PixelFormat": {
+    "status": "ported",
+    "rust": "core::pixel_format",
+    "note": "toInternalFormat takes the WebGL 2 flag Cesium reads from the context."
+  },
   "Core/Plane": {
     "status": "ported",
     "rust": "core::plane"
@@ -400,6 +452,10 @@
   "Core/PlaneOutlineGeometry": {
     "status": "ported",
     "rust": "core::plane_geometry::PlaneOutlineGeometry"
+  },
+  "Core/PolygonHierarchy": {
+    "status": "ported",
+    "rust": "core::polygon_hierarchy"
   },
   "Core/PrimitiveType": {
     "status": "ported",
@@ -421,6 +477,10 @@
     "status": "ported",
     "rust": "core::quaternion_spline"
   },
+  "Core/Queue": {
+    "status": "ported",
+    "rust": "core::queue"
+  },
   "Core/Ray": {
     "status": "ported",
     "rust": "core::ray"
@@ -433,9 +493,21 @@
     "status": "ported",
     "rust": "core::reference_frame"
   },
+  "Core/RequestState": {
+    "status": "ported",
+    "rust": "core::request_state"
+  },
+  "Core/RequestType": {
+    "status": "ported",
+    "rust": "core::request_type"
+  },
   "Core/RuntimeError": {
     "status": "ported",
     "rust": "core::runtime_error"
+  },
+  "Core/ScreenSpaceEventType": {
+    "status": "ported",
+    "rust": "core::screen_space_event_type"
   },
   "Core/Simon1994PlanetaryPositions": {
     "status": "ported",
@@ -468,6 +540,14 @@
     "status": "ported",
     "rust": "core::stereographic"
   },
+  "Core/TerrainQuantization": {
+    "status": "ported",
+    "rust": "core::terrain_quantization"
+  },
+  "Core/TileEdge": {
+    "status": "ported",
+    "rust": "core::tile_edge"
+  },
   "Core/TilingScheme": {
     "status": "ported",
     "rust": "core::tiling_scheme::TilingScheme",
@@ -495,6 +575,10 @@
     "status": "ported",
     "rust": "core::tipsify"
   },
+  "Core/TrackingReferenceFrame": {
+    "status": "ported",
+    "rust": "core::tracking_reference_frame"
+  },
   "Core/Transforms": {
     "status": "ported",
     "rust": "core::transforms",
@@ -512,9 +596,18 @@
     "status": "ported",
     "rust": "core::vertex_format"
   },
+  "Core/VerticalExaggeration": {
+    "status": "ported",
+    "rust": "core::vertical_exaggeration"
+  },
   "Core/Visibility": {
     "status": "ported",
     "rust": "core::visibility"
+  },
+  "Core/VulkanConstants": {
+    "status": "ported",
+    "rust": "core::vulkan_constants",
+    "note": "Generated from the CesiumJS object."
   },
   "Core/WebGLConstants": {
     "status": "ported",
@@ -529,6 +622,10 @@
     "status": "ported",
     "rust": "core::tiling_scheme::WebMercatorTilingScheme"
   },
+  "Core/WindingOrder": {
+    "status": "ported",
+    "rust": "core::winding_order"
+  },
   "Core/WireframeIndexGenerator": {
     "status": "ported",
     "rust": "core::wireframe_index_generator"
@@ -536,6 +633,19 @@
   "Core/addAllToArray": {
     "status": "n/a",
     "note": "Vec::extend."
+  },
+  "Core/appendForwardSlash": {
+    "status": "ported",
+    "rust": "core::uri_helpers::append_forward_slash"
+  },
+  "Core/arrayRemoveDuplicates": {
+    "status": "ported",
+    "rust": "core::array_remove_duplicates"
+  },
+  "Core/barycentricCoordinates": {
+    "status": "ported",
+    "rust": "core::barycentric_coordinates",
+    "note": "2D and 3D are separate functions."
   },
   "Core/binarySearch": {
     "status": "ported",
@@ -552,6 +662,11 @@
   "Core/combine": {
     "status": "n/a",
     "note": "Struct update syntax and Default."
+  },
+  "Core/createGuid": {
+    "status": "ported",
+    "rust": "core::create_guid",
+    "note": "Randomness from std hash keys; same v4 format."
   },
   "Core/defer": {
     "status": "n/a",
@@ -573,6 +688,37 @@
     "status": "n/a",
     "note": "JS Error formatting; Rust uses Display."
   },
+  "Core/getAbsoluteUri": {
+    "status": "ported",
+    "rust": "core::uri_helpers::get_absolute_uri",
+    "note": "The page URL Cesium reads from document is an explicit base."
+  },
+  "Core/getBaseUri": {
+    "status": "ported",
+    "rust": "core::uri_helpers::get_base_uri"
+  },
+  "Core/getExtensionFromUri": {
+    "status": "ported",
+    "rust": "core::uri_helpers::get_extension_from_uri",
+    "note": "Uses core::uri, a port of the urijs subset Cesium relies on."
+  },
+  "Core/getFilenameFromUri": {
+    "status": "ported",
+    "rust": "core::uri_helpers::get_filename_from_uri"
+  },
+  "Core/getJsonFromTypedArray": {
+    "status": "ported",
+    "rust": "core::get_string_from_typed_array::get_json_from_typed_array"
+  },
+  "Core/getMagic": {
+    "status": "ported",
+    "rust": "core::get_string_from_typed_array::get_magic"
+  },
+  "Core/getStringFromTypedArray": {
+    "status": "ported",
+    "rust": "core::get_string_from_typed_array",
+    "note": "Decodes like TextDecoder (BOM dropped, U+FFFD for invalid bytes)."
+  },
   "Core/getTimestamp": {
     "status": "ported",
     "rust": "core::clock::get_timestamp"
@@ -585,6 +731,19 @@
     "status": "ported",
     "rust": "core::is_bit_set"
   },
+  "Core/isBlobUri": {
+    "status": "ported",
+    "rust": "core::uri_helpers::is_blob_uri"
+  },
+  "Core/isCrossOriginUrl": {
+    "status": "ported",
+    "rust": "core::uri_helpers::is_cross_origin_url",
+    "note": "Takes the page URL Cesium reads from window.location."
+  },
+  "Core/isDataUri": {
+    "status": "ported",
+    "rust": "core::uri_helpers::is_data_uri"
+  },
   "Core/isLeapYear": {
     "status": "ported",
     "rust": "core::is_leap_year"
@@ -593,16 +752,53 @@
     "status": "n/a",
     "note": "Injects a <script> tag."
   },
+  "Core/mergeSort": {
+    "status": "ported",
+    "rust": "core::merge_sort"
+  },
+  "Core/objectToQuery": {
+    "status": "ported",
+    "rust": "core::query",
+    "note": "Objects are ordered entry lists, in JavaScript key order."
+  },
   "Core/oneTimeWarning": {
     "status": "n/a",
     "note": "Console helper for the JS API."
+  },
+  "Core/parseResponseHeaders": {
+    "status": "ported",
+    "rust": "core::query::parse_response_headers"
+  },
+  "Core/pointInsideTriangle": {
+    "status": "ported",
+    "rust": "core::barycentric_coordinates::point_inside_triangle"
+  },
+  "Core/queryToObject": {
+    "status": "ported",
+    "rust": "core::query::query_to_object"
   },
   "Core/scaleToGeodeticSurface": {
     "status": "ported",
     "rust": "core::scale_to_geodetic_surface"
   },
+  "Core/srgbToLinear": {
+    "status": "ported",
+    "rust": "core::srgb_to_linear"
+  },
+  "Core/subdivideArray": {
+    "status": "ported",
+    "rust": "core::subdivide_array"
+  },
+  "Core/webGLConstantToGlslType": {
+    "status": "ported",
+    "rust": "core::webgl_constant_to_glsl_type"
+  },
   "Core/wrapFunction": {
     "status": "n/a",
     "note": "JS function wrapping helper."
+  },
+  "Renderer/PixelDatatype": {
+    "status": "ported",
+    "rust": "core::pixel_datatype"
   }
 }
