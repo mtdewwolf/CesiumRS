@@ -135,7 +135,7 @@ mkdirSync(docs, { recursive: true });
   else history[history.length - 1] = entry;
   writeFileSync(historyFile, JSON.stringify(history, null, 2) + "\n");
 
-  const W = 720, H = 230, l = 90, r = 70, t = 44, b = 34;
+  const W = 720, H = 320, l = 90, r = 70, t = 44, b = 124;
   const max = Math.max(10, Math.ceil(Math.max(...history.map((h) => h.percent)) / 10) * 10);
   const x = (i) => l + (history.length === 1 ? (W - l - r) / 2 : (i * (W - l - r)) / (history.length - 1));
   const y = (p) => t + (H - t - b) * (1 - p / max);
@@ -149,7 +149,9 @@ mkdirSync(docs, { recursive: true });
   svg += `<polyline points="${pts}" fill="none" stroke="#1a7f37" stroke-width="2.5"/>`;
   history.forEach((h, i) => {
     svg += `<circle class="done" cx="${x(i).toFixed(1)}" cy="${y(h.percent).toFixed(1)}" r="4"/>`;
-    svg += `<text class="dim" x="${x(i).toFixed(1)}" y="${H - 12}" text-anchor="middle">${esc(h.milestone)}</text>`;
+    // Angled so long milestone names do not overlap.
+    const ly = H - b + 16;
+    svg += `<text class="dim" x="${x(i).toFixed(1)}" y="${ly}" text-anchor="end" transform="rotate(-35 ${x(i).toFixed(1)} ${ly})">${esc(h.milestone)}</text>`;
     svg += `<text x="${x(i).toFixed(1)}" y="${(y(h.percent) - 9).toFixed(1)}" text-anchor="middle">${h.percent.toFixed(1)}%</text>`;
   });
   writeFileSync(join(docs, "progress-history.svg"), svg + "</svg>\n");

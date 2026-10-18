@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 9.1% of CesiumJS ported** (73 fully ported and 2 partial of 1,266 applicable modules, weighted by JavaScript lines). Core, the math, geometry and time foundation, is 35.7% done. [PORTING.md](PORTING.md) lists every module with its status.
+**Status: 12.8% of CesiumJS ported** (125 fully ported and 1 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core, the math, geometry and time foundation, is past the halfway mark at 50.1%.** [PORTING.md](PORTING.md) lists every module with its status.
 
 ## What is ported
 
@@ -17,16 +17,20 @@ All of these live in `src/core`, one Rust module per Cesium module:
 | Math | `Math` (incl. `MersenneTwister` random numbers), `Cartesian2/3/4`, `Matrix2/3/4`, `Quaternion`, `HeadingPitchRoll`, `HeadingPitchRange`, `Spherical`, `Cartographic`, `TranslationRotationScale`, `Color` (CSS parsing, named colors) |
 | Ellipsoid and projections | `Ellipsoid` (WGS84, Moon, Mars, unit sphere), `scaleToGeodeticSurface`, `Rectangle`, `GeographicProjection`, `WebMercatorProjection`, `MapProjection`, `EllipsoidTangentPlane` |
 | Curves | `EllipsoidGeodesic` (Vincenty), `EllipsoidRhumbLine` |
-| Animation splines | `Spline` (shared trait and time operations), `ConstantSpline`, `LinearSpline`, `SteppedSpline`, `QuaternionSpline`, `MorphWeightSpline` |
+| Animation and interpolation | `Spline` (shared trait and time operations), `ConstantSpline`, `LinearSpline`, `SteppedSpline`, `QuaternionSpline`, `MorphWeightSpline`, `HermiteSpline` (incl. natural and clamped cubics), `CatmullRomSpline`, `TridiagonalSystemSolver`, `EasingFunction`, `LagrangePolynomialApproximation`, `LinearApproximation`, `HermitePolynomialApproximation` |
 | Intersections | `Ray`, `Plane`, `IntersectionTests`, `Intersect`, `Interval`, `QuadraticRealPolynomial`, `CubicRealPolynomial`, `QuarticRealPolynomial` |
 | Spatial ordering | `MortonOrder` (2D/3D Z-order encode/decode), `HilbertOrder` (2D encode/decode through level 32; higher levels remain unported) |
 | Vertex packing | `AttributeCompression` (oct normals, texture coordinates, ZigZag terrain decoding, dequantization, RGB), `EncodedCartesian3` (high/low position splitting) |
 | Bounding volumes and culling | `BoundingSphere`, `BoundingRectangle`, `AxisAlignedBoundingBox`, `OrientedBoundingBox`, `CullingVolume`, `Occluder`, `EllipsoidalOccluder`, `Visibility` |
 | Frustums | `PerspectiveFrustum`, `PerspectiveOffCenterFrustum`, `OrthographicFrustum`, `OrthographicOffCenterFrustum` |
-| Enums and helpers | `ArcType`, `CornerType`, `ReferenceFrame`, `isBitSet` |
-| Frames | `Transforms` (local frames, heading-pitch-roll, window coordinates, 2D model matrices). The ICRF, TEME and Moon frames are not ported yet. |
-| Time | `JulianDate`, `GregorianDate`, `LeapSecond`, `Iso8601`, `TimeInterval`, `TimeIntervalCollection`, `TimeStandard`, `TimeConstants`, `Clock`, `ClockStep`, `ClockRange`, `Event` |
-| Astronomy | `Simon1994PlanetaryPositions` (Sun and Moon positions) |
+| Enums and helpers | `ArcType`, `CornerType`, `ReferenceFrame`, `isBitSet`, `NearFarScalar`, `DistanceDisplayCondition`, `WebGLConstants` |
+| Queues | `Heap`, `DoubleEndedPriorityQueue` |
+| Tiling | `TilingScheme` (trait), `GeographicTilingScheme`, `WebMercatorTilingScheme`, `Stereographic` |
+| Mesh data | `ComponentDatatype`, `IndexDatatype`, `PrimitiveType` (typed arrays as one `TypedArray` enum), `Tipsify`, `WireframeIndexGenerator`, `Intersections2D` |
+| Geometries | `Geometry`, `GeometryAttribute(s)`, `GeometryType`, `GeometryOffsetAttribute`, `VertexFormat`; `BoxGeometry`, `PlaneGeometry`, `EllipsoidGeometry`, `SphereGeometry`, `CylinderGeometry`, `FrustumGeometry` and their outlines; `EllipseOutlineGeometry`, `CircleOutlineGeometry`, `EllipseGeometryLibrary`. Full vertex and index buffers are compared with CesiumJS. |
+| Frames | `Transforms`: local frames, heading-pitch-roll, window coordinates, 2D model matrices, and the time-dependent TEME, ICRF and Moon-fixed frames |
+| Time | `JulianDate` (with Cesium's runtime-extendable leap-second table), `GregorianDate`, `LeapSecond`, `Iso8601`, `TimeInterval`, `TimeIntervalCollection`, `TimeStandard`, `TimeConstants`, `Clock`, `ClockStep`, `ClockRange`, `Event` |
+| Astronomy and Earth orientation | `Simon1994PlanetaryPositions` (Sun and Moon positions), `EarthOrientationParameters`, `Iau2006XysData` (Cesium's XYS tables are in `assets/IAU2006_XYS`; the `bundled-xys` feature compiles them in), `Iau2000Orientation`, `IauOrientationAxes`, `IauOrientationParameters` |
 
 ### Mapping CesiumJS to Rust
 
@@ -40,7 +44,7 @@ All of these live in `src/core`, one Rust module per Cesium module:
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The `tests/core_*.rs` suites replay all **18,363 cases** through the Rust port and compare the results within a relative and absolute tolerance of 1e-12. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, so nothing is skipped by accident.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The `tests/core_*.rs` suites replay all **20,062 cases** through the Rust port and compare the results within a relative and absolute tolerance of 1e-12. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, so nothing is skipped by accident.
 
 ```bash
 cargo test                                   # unit tests + all CesiumJS fixtures
@@ -68,11 +72,10 @@ The viewer still uses the first-generation modules in `src/` (`camera`, `ellipso
 
 ## Roadmap
 
-1. **Core time and astronomy (in progress):** the ICRF, TEME and Moon-fixed frames in `Transforms`, `EarthOrientationParameters`, `Iau2006XysData`, and the IAU orientation models.
-2. **Core algorithms:** `CatmullRomSpline`, `HermiteSpline`, `PolygonPipeline` and earcut, sorting and queues, and Hilbert levels above 32.
-3. **Core geometry:** box, ellipsoid, polygon, polyline, corridor and wall geometries, plus terrain and tiling schemes.
-4. **Moving the viewer onto `src/core`,** then redeploying it.
-5. **Renderer, Scene, DataSources, Workers and Shaders,** the rest of the way to 100%.
+1. **Core algorithms:** `PolygonPipeline` and earcut, `GeometryPipeline`, and Hilbert levels above 32.
+2. **Core geometry:** filled ellipses and circles, rectangles, polygons, polylines, corridors and walls (these need `GeometryPipeline` and `PolygonPipeline`), plus terrain.
+3. **Moving the viewer onto `src/core`,** then redeploying it.
+4. **Renderer, Scene, DataSources, Workers and Shaders,** the rest of the way to 100%.
 
 ## License
 

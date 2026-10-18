@@ -1,17 +1,26 @@
-//! CesiumJS `Transforms`: local frames, heading-pitch-roll frames, and
-//! window-coordinate helpers. The time-dependent ICRF, TEME, and Moon frames
-//! need `JulianDate` and are added with the time modules.
+//! CesiumJS `Transforms`: local frames, heading-pitch-roll frames,
+//! window-coordinate helpers, and the time-dependent TEME, ICRF, and Moon
+//! frames.
+//!
+//! Cesium keeps the Earth orientation and IAU 2006 XYS data in the globals
+//! `Transforms.earthOrientationParameters` and `Transforms.iau2006XysData`;
+//! here the functions that need them take them as arguments.
 
 use super::cartesian2::Cartesian2;
 use super::cartesian3::Cartesian3;
 use super::cartesian4::Cartesian4;
+use super::earth_orientation_parameters::EarthOrientationParameters;
 use super::ellipsoid::Ellipsoid;
 use super::heading_pitch_roll::HeadingPitchRoll;
+use super::iau2006_xys_data::Iau2006XysData;
+use super::julian_date::JulianDate;
 use super::map_projection::MapProjection;
-use super::math::{equals_epsilon, sign, EPSILON14, EPSILON6};
+use super::math::{equals_epsilon, sign, to_radians, EPSILON14, EPSILON6, RADIANS_PER_DEGREE, TWO_PI};
 use super::matrix3::Matrix3;
 use super::matrix4::Matrix4;
 use super::quaternion::Quaternion;
+use super::time_constants::{DAYS_PER_JULIAN_CENTURY, SECONDS_PER_DAY};
+use super::time_interval::TimeInterval;
 
 /// An axis of a local frame.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -259,4 +268,171 @@ impl Transforms {
         let translation = Matrix4::from_translation(Cartesian3::new(p.z, p.x, p.y));
         translation.multiply(&Self::SWIZZLE_3D_TO_2D_MATRIX.multiply(&to_enu))
     }
+
+    /// The rotation from TEME to the pseudo-fixed frame at a TAI date, using
+    /// UTC in place of UT1 for Greenwich mean sidereal time.
+    pub fn compute_teme_to_pseudo_fixed_matrix(date: &JulianDate) -> Matrix3 {
+        // Not convert_tai_to_utc: this must not fail inside a leap second.
+        let date_in_utc = date.add_seconds(-date.compute_tai_minus_utc());
+        let utc_day_number = date_in_utc.day_number;
+        let utc_seconds_into_day = date_in_utc.seconds_of_day;
+
+        let diff_days = utc_day_number - 2451545.0;
+        let t = if utc_seconds_into_day >= 43200.0 {
+            (diff_days + 0.5) / DAYS_PER_JULIAN_CENTURY
+        } else {
+            (diff_days - 0.5) / DAYS_PER_JULIAN_CENTURY
+        };
+
+        let gmst0 = GMST_CONSTANT0 + t * (GMST_CONSTANT1 + t * (GMST_CONSTANT2 + t * GMST_CONSTANT3));
+        let angle = (gmst0 * TWO_PI_OVER_SECONDS_IN_DAY) % TWO_PI;
+        let ratio = WGS84_WR_PRECESSING + RATE_COEF * (utc_day_number - 2451545.5);
+        let seconds_since_midnight = (utc_seconds_into_day + SECONDS_PER_DAY * 0.5) % SECONDS_PER_DAY;
+        let gha = angle + ratio * seconds_since_midnight;
+        let (sin_gha, cos_gha) = gha.sin_cos();
+        Matrix3::new(cos_gha, sin_gha, 0.0, -sin_gha, cos_gha, 0.0, 0.0, 0.0, 1.0)
+    }
+
+    /// The XYS chunks needed for ICRF conversions over `time_interval` (TAI),
+    /// recorded as requested on `xys`.
+    pub fn preload_icrf_fixed<T>(time_interval: &TimeInterval<T>, xys: &Iau2006XysData) -> Vec<usize> {
+        let start_day_tt = time_interval.start.day_number;
+        let start_second_tt = time_interval.start.seconds_of_day + TT_MINUS_TAI;
+        let stop_day_tt = time_interval.stop.day_number;
+        let stop_second_tt = time_interval.stop.seconds_of_day + TT_MINUS_TAI;
+        xys.preload(start_day_tt, start_second_tt, stop_day_tt, stop_second_tt)
+    }
+
+    /// ICRF to Earth-fixed at a TAI date; `None` while XYS data is missing.
+    pub fn compute_icrf_to_fixed_matrix(
+        date: &JulianDate,
+        eop: &EarthOrientationParameters,
+        xys: &Iau2006XysData,
+    ) -> Option<Matrix3> {
+        Self::compute_fixed_to_icrf_matrix(date, eop, xys).map(|m| m.transpose())
+    }
+
+    /// ICRF to Earth-fixed if the data is available, otherwise TEME to pseudo-fixed.
+    pub fn compute_icrf_to_central_body_fixed_matrix(
+        date: &JulianDate,
+        eop: &EarthOrientationParameters,
+        xys: &Iau2006XysData,
+    ) -> Matrix3 {
+        Self::compute_icrf_to_fixed_matrix(date, eop, xys)
+            .unwrap_or_else(|| Self::compute_teme_to_pseudo_fixed_matrix(date))
+    }
+
+    /// The Moon's fixed frame to ICRF at a TAI date, from the approximate
+    /// rotation of Eckhardt (1981).
+    pub fn compute_moon_fixed_to_icrf_matrix(date: &JulianDate) -> Matrix3 {
+        let seconds_tt = date.add_seconds(TT_MINUS_TAI);
+        let d = seconds_tt.total_days() - J2000_DAYS;
+
+        let e1 = to_radians(12.112) - to_radians(0.052992) * d;
+        let e2 = to_radians(24.224) - to_radians(0.105984) * d;
+        let e3 = to_radians(227.645) + to_radians(13.012) * d;
+        let e4 = to_radians(261.105) + to_radians(13.340716) * d;
+        let e5 = to_radians(358.0) + to_radians(0.9856) * d;
+
+        let pitch = to_radians(270.0 - 90.0) - to_radians(3.878) * e1.sin() - to_radians(0.12) * e2.sin()
+            + to_radians(0.07) * e3.sin()
+            - to_radians(0.017) * e4.sin();
+        let roll = to_radians(66.53 - 90.0) + to_radians(1.543) * e1.cos() + to_radians(0.24) * e2.cos()
+            - to_radians(0.028) * e3.cos()
+            + to_radians(0.007) * e4.cos();
+        let heading = to_radians(244.375 - 90.0)
+            + to_radians(13.17635831) * d
+            + to_radians(3.558) * e1.sin()
+            + to_radians(0.121) * e2.sin()
+            - to_radians(0.064) * e3.sin()
+            + to_radians(0.016) * e4.sin()
+            + to_radians(0.025) * e5.sin();
+        Matrix3::from_heading_pitch_roll(&HeadingPitchRoll::new(heading, pitch, roll))
+    }
+
+    pub fn compute_icrf_to_moon_fixed_matrix(date: &JulianDate) -> Matrix3 {
+        Self::compute_moon_fixed_to_icrf_matrix(date).transpose()
+    }
+
+    /// Earth-fixed to ICRF at a TAI date (IAU 2006 CIO-based); `None` while
+    /// XYS data is missing.
+    pub fn compute_fixed_to_icrf_matrix(
+        date: &JulianDate,
+        eop: &EarthOrientationParameters,
+        xys: &Iau2006XysData,
+    ) -> Option<Matrix3> {
+        let eop = eop.compute(date);
+
+        // TT from TAI by offset. secondTT may pass 86400, which Cesium accepts.
+        let day_tt = date.day_number;
+        let second_tt = date.seconds_of_day + TT_MINUS_TAI;
+        let xys = xys.compute_xys_radians(day_tt, second_tt)?;
+
+        let x = xys.x + eop.x_pole_offset;
+        let y = xys.y + eop.y_pole_offset;
+
+        // XYS rotation.
+        let a = 1.0 / (1.0 + (1.0 - x * x - y * y).sqrt());
+        let rotation1 = Matrix3::from_column_major_array([
+            1.0 - a * x * x,
+            -a * x * y,
+            -x,
+            -a * x * y,
+            1.0 - a * y * y,
+            -y,
+            x,
+            y,
+            1.0 - a * (x * x + y * y),
+        ]);
+        let rotation2 = Matrix3::from_rotation_z(-xys.s);
+        let matrix_q = rotation1.multiply(&rotation2);
+
+        let date_ut1_day = date.day_number;
+        let date_ut1_sec = date.seconds_of_day - date.compute_tai_minus_utc() + eop.ut1_minus_utc;
+
+        // Earth rotation angle, dropping whole revolutions for precision:
+        // era = a + fractionOfDay + b (JulianDayNumber - 2451545 + fractionOfDay).
+        let days_since_j2000 = date_ut1_day - 2451545.0;
+        let fraction_of_day = date_ut1_sec / SECONDS_PER_DAY;
+        let mut era = 0.779057273264 + fraction_of_day + 0.00273781191135448 * (days_since_j2000 + fraction_of_day);
+        era = (era % 1.0) * TWO_PI;
+
+        let earth_rotation = Matrix3::from_rotation_z(era);
+        let pf_to_icrf = matrix_q.multiply(&earth_rotation);
+
+        // Polar motion.
+        let (sinxp, cosxp) = eop.x_pole_wander.sin_cos();
+        let (sinyp, cosyp) = eop.y_pole_wander.sin_cos();
+
+        let mut ttt = day_tt - J2000_TT_DAYS + second_tt / SECONDS_PER_DAY;
+        ttt /= 36525.0;
+
+        // Approximate s' in radians.
+        let sp = (-47.0e-6 * ttt * RADIANS_PER_DEGREE) / 3600.0;
+        let (sinsp, cossp) = sp.sin_cos();
+
+        let f_to_pf_mtx = Matrix3::from_column_major_array([
+            cosxp * cossp,
+            cosxp * sinsp,
+            sinxp,
+            -cosyp * sinsp + sinyp * sinxp * cossp,
+            cosyp * cossp + sinyp * sinxp * sinsp,
+            -sinyp * cosxp,
+            -sinyp * sinsp - cosyp * sinxp * cossp,
+            sinyp * cossp - cosyp * sinxp * sinsp,
+            cosyp * cosxp,
+        ]);
+        Some(pf_to_icrf.multiply(&f_to_pf_mtx))
+    }
 }
+
+const GMST_CONSTANT0: f64 = 6.0 * 3600.0 + 41.0 * 60.0 + 50.54841;
+const GMST_CONSTANT1: f64 = 8640184.812866;
+const GMST_CONSTANT2: f64 = 0.093104;
+const GMST_CONSTANT3: f64 = -6.2e-6;
+const RATE_COEF: f64 = 1.1772758384668e-19;
+const WGS84_WR_PRECESSING: f64 = 7.2921158553e-5;
+const TWO_PI_OVER_SECONDS_IN_DAY: f64 = TWO_PI / 86400.0;
+const TT_MINUS_TAI: f64 = 32.184;
+const J2000_TT_DAYS: f64 = 2451545.0;
+const J2000_DAYS: f64 = 2451545.0;

@@ -20,6 +20,14 @@
     "status": "ported",
     "rust": "core::bounding_sphere"
   },
+  "Core/BoxGeometry": {
+    "status": "ported",
+    "rust": "core::box_geometry"
+  },
+  "Core/BoxOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::box_outline_geometry"
+  },
   "Core/Cartesian2": {
     "status": "ported",
     "rust": "core::cartesian2"
@@ -36,9 +44,18 @@
     "status": "ported",
     "rust": "core::cartographic"
   },
+  "Core/CatmullRomSpline": {
+    "status": "ported",
+    "rust": "core::catmull_rom_spline",
+    "note": "Two-point splines extrapolate outside their times, as in Cesium."
+  },
   "Core/Check": {
     "status": "n/a",
     "note": "Argument checks; Rust types and Result do this at compile time or in the signature."
+  },
+  "Core/CircleOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::ellipse_outline_geometry::CircleOutlineGeometry"
   },
   "Core/Clock": {
     "status": "ported",
@@ -57,6 +74,11 @@
     "status": "ported",
     "rust": "core::color"
   },
+  "Core/ComponentDatatype": {
+    "status": "ported",
+    "rust": "core::component_datatype",
+    "note": "Typed arrays are the TypedArray enum (core::typed_array), with JavaScript element conversion."
+  },
   "Core/ConstantSpline": {
     "status": "ported",
     "rust": "core::constant_spline"
@@ -73,9 +95,54 @@
     "status": "ported",
     "rust": "core::culling_volume"
   },
+  "Core/CylinderGeometry": {
+    "status": "ported",
+    "rust": "core::cylinder_geometry"
+  },
+  "Core/CylinderGeometryLibrary": {
+    "status": "ported",
+    "rust": "core::cylinder_geometry::compute_positions"
+  },
+  "Core/CylinderOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::cylinder_geometry::CylinderOutlineGeometry",
+    "note": "new returns None for fewer than three slices (a debug check in CesiumJS)."
+  },
   "Core/DeveloperError": {
     "status": "n/a",
     "note": "Panics on programmer error, Result for recoverable errors."
+  },
+  "Core/DistanceDisplayCondition": {
+    "status": "ported",
+    "rust": "core::distance_display_condition"
+  },
+  "Core/DoubleEndedPriorityQueue": {
+    "status": "ported",
+    "rust": "core::double_ended_priority_queue",
+    "note": "Fixes a CesiumJS bug: its trickle-down continues after swapping with a direct child, which can hide the maximum."
+  },
+  "Core/EarthOrientationParameters": {
+    "status": "ported",
+    "rust": "core::earth_orientation_parameters",
+    "note": "fromUrl is replaced by from_json on text the caller fetched. NONE is EarthOrientationParameters::none()."
+  },
+  "Core/EarthOrientationParametersSample": {
+    "status": "ported",
+    "rust": "core::earth_orientation_parameters::EarthOrientationParametersSample"
+  },
+  "Core/EasingFunction": {
+    "status": "ported",
+    "rust": "core::easing_function",
+    "note": "The tween.js 25 curves Cesium re-exports, as an enum."
+  },
+  "Core/EllipseGeometryLibrary": {
+    "status": "ported",
+    "rust": "core::ellipse_geometry_library"
+  },
+  "Core/EllipseOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::ellipse_outline_geometry",
+    "note": "createGeometry does not move the stored center onto the surface (Cesium mutates it); the result is the same."
   },
   "Core/Ellipsoid": {
     "status": "ported",
@@ -86,6 +153,15 @@
     "status": "ported",
     "rust": "core::ellipsoid_geodesic",
     "note": "Near-antipodal input (Cesium debug check) returns None instead of iterating forever."
+  },
+  "Core/EllipsoidGeometry": {
+    "status": "ported",
+    "rust": "core::ellipsoid_geometry",
+    "note": "Index width comes from the vertex count; CesiumJS uses the index count and wraps 16-bit indices past 254 partitions."
+  },
+  "Core/EllipsoidOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::ellipsoid_outline_geometry"
   },
   "Core/EllipsoidRhumbLine": {
     "status": "ported",
@@ -116,6 +192,16 @@
     "status": "n/a",
     "note": "Rust values are immutable unless declared mut."
   },
+  "Core/FrustumGeometry": {
+    "status": "ported",
+    "rust": "core::frustum_geometry",
+    "note": "Perspective x/y offsets are dropped and all vertex attributes are always generated, as in Cesium."
+  },
+  "Core/FrustumOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::frustum_geometry::FrustumOutlineGeometry",
+    "note": "The connecting edges Cesium writes past its index array are dropped, as in Cesium."
+  },
   "Core/Fullscreen": {
     "status": "n/a",
     "note": "Browser Fullscreen API."
@@ -123,6 +209,31 @@
   "Core/GeographicProjection": {
     "status": "ported",
     "rust": "core::geographic_projection"
+  },
+  "Core/GeographicTilingScheme": {
+    "status": "ported",
+    "rust": "core::tiling_scheme::GeographicTilingScheme"
+  },
+  "Core/Geometry": {
+    "status": "ported",
+    "rust": "core::geometry",
+    "note": "Typed arrays are TypedArray values; extra attributes (applyOffset) are named entries in GeometryAttributes."
+  },
+  "Core/GeometryAttribute": {
+    "status": "ported",
+    "rust": "core::geometry::GeometryAttribute"
+  },
+  "Core/GeometryAttributes": {
+    "status": "ported",
+    "rust": "core::geometry::GeometryAttributes"
+  },
+  "Core/GeometryOffsetAttribute": {
+    "status": "ported",
+    "rust": "core::geometry::GeometryOffsetAttribute"
+  },
+  "Core/GeometryType": {
+    "status": "ported",
+    "rust": "core::geometry::GeometryType"
   },
   "Core/GregorianDate": {
     "status": "ported",
@@ -136,10 +247,49 @@
     "status": "ported",
     "rust": "core::heading_pitch_roll"
   },
+  "Core/Heap": {
+    "status": "ported",
+    "rust": "core::heap"
+  },
+  "Core/HermitePolynomialApproximation": {
+    "status": "ported",
+    "rust": "core::hermite_polynomial_approximation"
+  },
+  "Core/HermiteSpline": {
+    "status": "ported",
+    "rust": "core::hermite_spline",
+    "note": "createNaturalCubic and createClampedCubic return a CubicSpline enum (Hermite or, for two points, Linear)."
+  },
   "Core/HilbertOrder": {
     "status": "partial",
     "rust": "core::hilbert_order",
-    "note": "Levels 1\u201332 checked against CesiumJS, including Number precision and signed-bit quirks. Higher levels are not supported yet."
+    "note": "Levels 1–32 checked against CesiumJS, including Number precision and signed-bit quirks. Higher levels are not supported yet."
+  },
+  "Core/Iau2000Orientation": {
+    "status": "ported",
+    "rust": "core::iau2000_orientation"
+  },
+  "Core/Iau2006XysData": {
+    "status": "ported",
+    "rust": "core::iau2006_xys_data",
+    "note": "Chunks are not downloaded: needed chunks are recorded (take_requested_chunks) and supplied with add_chunk_json. The bundled-xys feature compiles in all of them. preload asks for every chunk the stop time needs; CesiumJS bitwise-ORs its stop index and can miss one."
+  },
+  "Core/Iau2006XysSample": {
+    "status": "ported",
+    "rust": "core::iau2006_xys_data::Iau2006XysSample"
+  },
+  "Core/IauOrientationAxes": {
+    "status": "ported",
+    "rust": "core::iau_orientation_axes",
+    "note": "The compute function is a fn pointer; the default is the Moon."
+  },
+  "Core/IauOrientationParameters": {
+    "status": "ported",
+    "rust": "core::iau_orientation_parameters"
+  },
+  "Core/IndexDatatype": {
+    "status": "ported",
+    "rust": "core::index_datatype"
   },
   "Core/Intersect": {
     "status": "ported",
@@ -148,6 +298,10 @@
   "Core/IntersectionTests": {
     "status": "ported",
     "rust": "core::intersection_tests"
+  },
+  "Core/Intersections2D": {
+    "status": "ported",
+    "rust": "core::intersections_2d"
   },
   "Core/Interval": {
     "status": "ported",
@@ -160,11 +314,19 @@
   "Core/JulianDate": {
     "status": "ported",
     "rust": "core::julian_date",
-    "note": "fromIso8601 returns Err where Cesium throws; JulianDate.leapSeconds is a const table, not a mutable array."
+    "note": "fromIso8601 returns Err where Cesium throws. The leap-second table is process-wide and mutable, like JulianDate.leapSeconds (leap_seconds, add_leap_second, reset_leap_seconds)."
+  },
+  "Core/LagrangePolynomialApproximation": {
+    "status": "ported",
+    "rust": "core::lagrange_polynomial_approximation"
   },
   "Core/LeapSecond": {
     "status": "ported",
     "rust": "core::leap_second"
+  },
+  "Core/LinearApproximation": {
+    "status": "ported",
+    "rust": "core::linear_approximation"
   },
   "Core/LinearSpline": {
     "status": "ported",
@@ -199,6 +361,10 @@
     "rust": "core::morton_order",
     "note": "2D 16-bit and 3D 10-bit coordinate encode/decode."
   },
+  "Core/NearFarScalar": {
+    "status": "ported",
+    "rust": "core::near_far_scalar"
+  },
   "Core/Occluder": {
     "status": "ported",
     "rust": "core::occluder"
@@ -226,6 +392,18 @@
   "Core/Plane": {
     "status": "ported",
     "rust": "core::plane"
+  },
+  "Core/PlaneGeometry": {
+    "status": "ported",
+    "rust": "core::plane_geometry"
+  },
+  "Core/PlaneOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::plane_geometry::PlaneOutlineGeometry"
+  },
+  "Core/PrimitiveType": {
+    "status": "ported",
+    "rust": "core::primitive_type"
   },
   "Core/QuadraticRealPolynomial": {
     "status": "ported",
@@ -264,6 +442,14 @@
     "rust": "core::simon1994_planetary_positions",
     "note": "Orbit-element checks are unreachable for the Earth/Moon elements and are not ported."
   },
+  "Core/SphereGeometry": {
+    "status": "ported",
+    "rust": "core::sphere_geometry"
+  },
+  "Core/SphereOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::sphere_geometry::SphereOutlineGeometry"
+  },
   "Core/Spherical": {
     "status": "ported",
     "rust": "core::spherical"
@@ -277,6 +463,15 @@
     "status": "ported",
     "rust": "core::stepped_spline",
     "note": "Preserves Cesium returning the penultimate point when evaluated at the final time."
+  },
+  "Core/Stereographic": {
+    "status": "ported",
+    "rust": "core::stereographic"
+  },
+  "Core/TilingScheme": {
+    "status": "ported",
+    "rust": "core::tiling_scheme::TilingScheme",
+    "note": "A trait."
   },
   "Core/TimeConstants": {
     "status": "ported",
@@ -296,22 +491,47 @@
     "status": "ported",
     "rust": "core::time_standard"
   },
+  "Core/Tipsify": {
+    "status": "ported",
+    "rust": "core::tipsify"
+  },
   "Core/Transforms": {
-    "status": "partial",
+    "status": "ported",
     "rust": "core::transforms",
-    "note": "Local frames, HPR frames, window coordinates, 2D bases done; ICRF/TEME/Moon frames need JulianDate, EOP, and IAU 2006 data."
+    "note": "The EOP and XYS data that Cesium keeps in Transforms globals are passed as arguments."
   },
   "Core/TranslationRotationScale": {
     "status": "ported",
     "rust": "core::translation_rotation_scale"
   },
+  "Core/TridiagonalSystemSolver": {
+    "status": "ported",
+    "rust": "core::tridiagonal_system_solver"
+  },
+  "Core/VertexFormat": {
+    "status": "ported",
+    "rust": "core::vertex_format"
+  },
   "Core/Visibility": {
     "status": "ported",
     "rust": "core::visibility"
   },
+  "Core/WebGLConstants": {
+    "status": "ported",
+    "rust": "core::webgl_constants",
+    "note": "Generated from the CesiumJS object."
+  },
   "Core/WebMercatorProjection": {
     "status": "ported",
     "rust": "core::web_mercator_projection"
+  },
+  "Core/WebMercatorTilingScheme": {
+    "status": "ported",
+    "rust": "core::tiling_scheme::WebMercatorTilingScheme"
+  },
+  "Core/WireframeIndexGenerator": {
+    "status": "ported",
+    "rust": "core::wireframe_index_generator"
   },
   "Core/addAllToArray": {
     "status": "n/a",
