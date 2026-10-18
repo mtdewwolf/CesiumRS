@@ -83,6 +83,11 @@
     "status": "ported",
     "rust": "core::color"
   },
+  "Core/ColorGeometryInstanceAttribute": {
+    "status": "ported",
+    "rust": "core::color_geometry_instance_attribute",
+    "note": "Converts into GeometryInstanceAttribute with From."
+  },
   "Core/ComponentDatatype": {
     "status": "ported",
     "rust": "core::component_datatype",
@@ -124,6 +129,11 @@
   "Core/DistanceDisplayCondition": {
     "status": "ported",
     "rust": "core::distance_display_condition"
+  },
+  "Core/DistanceDisplayConditionGeometryInstanceAttribute": {
+    "status": "ported",
+    "rust": "core::distance_display_condition_geometry_instance_attribute",
+    "note": "Converts into GeometryInstanceAttribute with From."
   },
   "Core/DoubleEndedPriorityQueue": {
     "status": "ported",
@@ -254,9 +264,23 @@
     "status": "ported",
     "rust": "core::geometry::GeometryAttributes"
   },
+  "Core/GeometryInstance": {
+    "status": "ported",
+    "rust": "core::geometry_instance",
+    "note": "id is an Option<String>; pickPrimitive is a Scene concern and is not ported."
+  },
+  "Core/GeometryInstanceAttribute": {
+    "status": "ported",
+    "rust": "core::geometry_instance_attribute"
+  },
   "Core/GeometryOffsetAttribute": {
     "status": "ported",
     "rust": "core::geometry::GeometryOffsetAttribute"
+  },
+  "Core/GeometryPipeline": {
+    "status": "ported",
+    "rust": "core::geometry_pipeline",
+    "note": "Functions take &mut Geometry / &mut GeometryInstance and return None where Cesium throws or reads past its arrays. Plain-array outputs become Float64 values and Uint32 indices."
   },
   "Core/GeometryType": {
     "status": "ported",
@@ -416,6 +440,11 @@
     "status": "ported",
     "rust": "core::occluder"
   },
+  "Core/OffsetGeometryInstanceAttribute": {
+    "status": "ported",
+    "rust": "core::offset_geometry_instance_attribute",
+    "note": "Converts into GeometryInstanceAttribute with From."
+  },
   "Core/OrientedBoundingBox": {
     "status": "ported",
     "rust": "core::oriented_bounding_box"
@@ -513,6 +542,11 @@
   "Core/ScreenSpaceEventType": {
     "status": "ported",
     "rust": "core::screen_space_event_type"
+  },
+  "Core/ShowGeometryInstanceAttribute": {
+    "status": "ported",
+    "rust": "core::show_geometry_instance_attribute",
+    "note": "Converts into GeometryInstanceAttribute with From."
   },
   "Core/Simon1994PlanetaryPositions": {
     "status": "ported",

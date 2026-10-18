@@ -116,6 +116,51 @@ impl GeometryAttributes {
         self.iter().find(|(n, _)| *n == name).map(|(_, a)| a)
     }
 
+    fn is_standard(name: &str) -> bool {
+        matches!(name, "position" | "normal" | "st" | "bitangent" | "tangent" | "color")
+    }
+
+    fn standard_mut(&mut self, name: &str) -> Option<&mut Option<GeometryAttribute>> {
+        Some(match name {
+            "position" => &mut self.position,
+            "normal" => &mut self.normal,
+            "st" => &mut self.st,
+            "bitangent" => &mut self.bitangent,
+            "tangent" => &mut self.tangent,
+            "color" => &mut self.color,
+            _ => return None,
+        })
+    }
+
+    pub fn get_mut(&mut self, name: &str) -> Option<&mut GeometryAttribute> {
+        if Self::is_standard(name) {
+            return self.standard_mut(name).and_then(|slot| slot.as_mut());
+        }
+        self.others.iter_mut().find(|(n, _)| n == name).map(|(_, a)| a)
+    }
+
+    /// Sets an attribute by name, standard or not (`attributes[name] = ...`).
+    pub fn set(&mut self, name: &str, attribute: GeometryAttribute) {
+        match self.standard_mut(name) {
+            Some(slot) => *slot = Some(attribute),
+            None => self.set_other(name, attribute),
+        }
+    }
+
+    /// Removes an attribute by name (`delete attributes[name]`).
+    pub fn remove(&mut self, name: &str) -> Option<GeometryAttribute> {
+        if let Some(slot) = self.standard_mut(name) {
+            return slot.take();
+        }
+        let i = self.others.iter().position(|(n, _)| n == name)?;
+        Some(self.others.remove(i).1)
+    }
+
+    /// Attribute names in iteration order.
+    pub fn names(&self) -> Vec<String> {
+        self.iter().map(|(n, _)| n.to_string()).collect()
+    }
+
     pub fn set_other(&mut self, name: &str, attribute: GeometryAttribute) {
         match self.others.iter_mut().find(|(n, _)| n == name) {
             Some(slot) => slot.1 = attribute,

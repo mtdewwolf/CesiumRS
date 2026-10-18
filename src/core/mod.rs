@@ -65,6 +65,7 @@ pub mod geographic_projection;
 pub mod geometry;
 pub mod geometry_instance;
 pub mod geometry_instance_attribute;
+pub mod geometry_pipeline;
 pub mod get_string_from_typed_array;
 pub mod gregorian_date;
 pub mod heading_pitch_range;

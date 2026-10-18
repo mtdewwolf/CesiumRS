@@ -58,5 +58,11 @@
     "date": "2026-10-18",
     "percent": 13.86,
     "ported": 172
+  },
+  {
+    "milestone": "GeometryPipeline",
+    "date": "2026-10-18",
+    "percent": 14.95,
+    "ported": 179
   }
 ]
