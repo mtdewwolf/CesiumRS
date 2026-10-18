@@ -597,7 +597,8 @@ pub fn compute_normal(geometry: &mut Geometry) -> Option<()> {
 }
 
 /// Computes tangents and bitangents from positions, normals and texture
-/// coordinates.
+/// coordinates. Returns `None` without replacing attributes if the texture
+/// coordinates or normals cannot produce finite tangent vectors.
 pub fn compute_tangent_and_bitangent(geometry: &mut Geometry) -> Option<()> {
     let indices = geometry.indices.as_ref()?.to_f64_vec();
     let attributes = &geometry.attributes;
@@ -638,8 +639,14 @@ pub fn compute_tangent_and_bitangent(geometry: &mut Geometry) -> Option<()> {
         let t = Cartesian3::new(tan1[i03], tan1[i03 + 1], tan1[i03 + 2]);
         let scalar = n.dot(t);
         let t = t.subtract(n.multiply_by_scalar(scalar)).normalize();
+        if ![t.x, t.y, t.z].iter().all(|v| v.is_finite()) {
+            return None;
+        }
         tangents.extend([t.x, t.y, t.z]);
         let b = n.cross(t).normalize();
+        if ![b.x, b.y, b.z].iter().all(|v| v.is_finite()) {
+            return None;
+        }
         bitangents.extend([b.x, b.y, b.z]);
     }
     geometry.attributes.tangent = Some(GeometryAttribute::floats(3, &tangents));

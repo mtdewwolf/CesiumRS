@@ -1,6 +1,8 @@
 //! Vincenty ellipsoid geodesic. Ported from CesiumJS `EllipsoidGeodesic`.
+//! Near antipodes use a deterministic great-circle approximation, with a
+//! spherical distance, since Vincenty's inverse method may not converge.
 
-use crate::ellipsoid::{cartographic_to_cartesian, Ellipsoid};
+use crate::ellipsoid::Ellipsoid;
 use crate::math::{Vec3, EPSILON12, PI};
 
 #[derive(Clone, Copy, Debug)]
@@ -61,25 +63,45 @@ fn compute_delta_lambda(
 fn slerp(a: Vec3, b: Vec3, t: f64) -> Vec3 {
     let a = a.normalize();
     let b = b.normalize();
+    if t <= 0.0 {
+        return a;
+    }
+    if t >= 1.0 {
+        return b;
+    }
     let d = a.dot(b).clamp(-1.0, 1.0);
     if d > 0.9995 {
         return a.lerp(b, t).normalize();
     }
-    let theta = d.acos();
-    let s = theta.sin();
-    if s.abs() < 1e-12 {
-        return a;
-    }
-    a * (((1.0 - t) * theta).sin() / s) + b * ((t * theta).sin() / s)
+    let tangent = b - a * d;
+    let length = tangent.magnitude();
+    let tangent = if length > 1e-12 {
+        tangent / length
+    } else {
+        // Antipodes have infinitely many great circles. Choose a stable
+        // perpendicular axis, rather than collapsing the path to its start.
+        let axis = if a.x.abs() <= a.y.abs() && a.x.abs() <= a.z.abs() {
+            Vec3::UNIT_X
+        } else if a.y.abs() <= a.z.abs() {
+            Vec3::UNIT_Y
+        } else {
+            Vec3::UNIT_Z
+        };
+        (axis - a * a.dot(axis)).normalize()
+    };
+    let angle = length.atan2(d) * t;
+    (a * angle.cos() + tangent * angle.sin()).normalize()
 }
 
 impl Geodesic {
     pub fn new(ellipsoid: &Ellipsoid, start_lon: f64, start_lat: f64, end_lon: f64, end_lat: f64) -> Self {
-        let start = cartographic_to_cartesian(ellipsoid, start_lon, start_lat, 0.0);
-        let end = cartographic_to_cartesian(ellipsoid, end_lon, end_lat, 0.0);
-        let start_dir = start.normalize();
-        let end_dir = end.normalize();
-        let angle = start_dir.dot(end_dir).clamp(-1.0, 1.0).acos();
+        // The fallback interpolates geodetic latitude on an auxiliary sphere.
+        // Normalized ECEF positions instead encode geocentric latitude and
+        // would move even a repeated endpoint away from its input latitude.
+        let direction = |lon: f64, lat: f64| Vec3::new(lat.cos() * lon.cos(), lat.cos() * lon.sin(), lat.sin());
+        let start_dir = direction(start_lon, start_lat);
+        let end_dir = direction(end_lon, end_lat);
+        let angle = start_dir.cross(end_dir).magnitude().atan2(start_dir.dot(end_dir));
 
         if angle < 1e-12 || (angle - PI).abs() < 0.0125 {
             let distance = angle * ellipsoid.maximum_radius;
