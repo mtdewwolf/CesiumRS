@@ -457,6 +457,11 @@
     "status": "ported",
     "rust": "core::polygon_hierarchy"
   },
+  "Core/PolygonPipeline": {
+    "status": "ported",
+    "rust": "core::polygon_pipeline",
+    "note": "Triangulates with core::earcut, a port of earcut 3.2.4 whose triangle order matches the JS library. Subdivision returns None where Cesium would read past its arrays."
+  },
   "Core/PrimitiveType": {
     "status": "ported",
     "rust": "core::primitive_type"

@@ -52,5 +52,11 @@
     "date": "2026-10-18",
     "percent": 13.7,
     "ported": 171
+  },
+  {
+    "milestone": "PolygonPipeline + earcut",
+    "date": "2026-10-18",
+    "percent": 13.86,
+    "ported": 172
   }
 ]

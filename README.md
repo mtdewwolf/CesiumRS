@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 12.8% of CesiumJS ported** (125 fully ported and 1 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core, the math, geometry and time foundation, is past the halfway mark at 50.1%.** [PORTING.md](PORTING.md) lists every module with its status.
+**Status: 13.9% of CesiumJS ported** (172 fully ported and 1 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core, the math, geometry and time foundation, is at 54.1%, on the way to a 75% milestone.** [PORTING.md](PORTING.md) lists every module with its status.
 
 ## What is ported
 
@@ -28,6 +28,9 @@ All of these live in `src/core`, one Rust module per Cesium module:
 | Tiling | `TilingScheme` (trait), `GeographicTilingScheme`, `WebMercatorTilingScheme`, `Stereographic` |
 | Mesh data | `ComponentDatatype`, `IndexDatatype`, `PrimitiveType` (typed arrays as one `TypedArray` enum), `Tipsify`, `WireframeIndexGenerator`, `Intersections2D` |
 | Geometries | `Geometry`, `GeometryAttribute(s)`, `GeometryType`, `GeometryOffsetAttribute`, `VertexFormat`; `BoxGeometry`, `PlaneGeometry`, `EllipsoidGeometry`, `SphereGeometry`, `CylinderGeometry`, `FrustumGeometry` and their outlines; `EllipseOutlineGeometry`, `CircleOutlineGeometry`, `EllipseGeometryLibrary`. Full vertex and index buffers are compared with CesiumJS. |
+| Polygons | `PolygonPipeline` (area, winding order, triangulation, chord and rhumb-line subdivision, geodetic height scaling) on `earcut`, a line-for-line port of earcut 3.2.4 whose triangle order matches the JavaScript library |
+| Geometry instances | `GeometryInstance`, `GeometryInstanceAttribute`, `ColorGeometryInstanceAttribute`, `ShowGeometryInstanceAttribute`, `OffsetGeometryInstanceAttribute`, `DistanceDisplayConditionGeometryInstanceAttribute` (written; fixtures follow with `GeometryPipeline`) |
+| Utilities | Queues, linked lists, merge sort, associative and managed arrays, typed-array strings, URI parsing and helpers, query strings, GUIDs, `PixelFormat`, `PixelDatatype`, and Core's enums |
 | Frames | `Transforms`: local frames, heading-pitch-roll, window coordinates, 2D model matrices, and the time-dependent TEME, ICRF and Moon-fixed frames |
 | Time | `JulianDate` (with Cesium's runtime-extendable leap-second table), `GregorianDate`, `LeapSecond`, `Iso8601`, `TimeInterval`, `TimeIntervalCollection`, `TimeStandard`, `TimeConstants`, `Clock`, `ClockStep`, `ClockRange`, `Event` |
 | Astronomy and Earth orientation | `Simon1994PlanetaryPositions` (Sun and Moon positions), `EarthOrientationParameters`, `Iau2006XysData` (Cesium's XYS tables are in `assets/IAU2006_XYS`; the `bundled-xys` feature compiles them in), `Iau2000Orientation`, `IauOrientationAxes`, `IauOrientationParameters` |
@@ -44,7 +47,7 @@ All of these live in `src/core`, one Rust module per Cesium module:
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The `tests/core_*.rs` suites replay all **20,062 cases** through the Rust port and compare the results within a relative and absolute tolerance of 1e-12. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, so nothing is skipped by accident.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The `tests/core_*.rs` suites replay all **21,081 cases** through the Rust port and compare the results within a relative and absolute tolerance of 1e-12. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, so nothing is skipped by accident.
 
 ```bash
 cargo test                                   # unit tests + all CesiumJS fixtures
@@ -72,7 +75,7 @@ The viewer still uses the first-generation modules in `src/` (`camera`, `ellipso
 
 ## Roadmap
 
-1. **Core algorithms:** `PolygonPipeline` and earcut, `GeometryPipeline`, and Hilbert levels above 32.
+1. **Core algorithms:** `GeometryPipeline` (in progress) and Hilbert levels above 32.
 2. **Core geometry:** filled ellipses and circles, rectangles, polygons, polylines, corridors and walls (these need `GeometryPipeline` and `PolygonPipeline`), plus terrain.
 3. **Moving the viewer onto `src/core`,** then redeploying it.
 4. **Renderer, Scene, DataSources, Workers and Shaders,** the rest of the way to 100%.
