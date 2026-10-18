@@ -1,9 +1,11 @@
 //! CesiumJS `JulianDate`: a whole day number and seconds into the day, in TAI.
 //!
-//! Two deliberate differences from Cesium: times in ISO 8601 strings without
-//! an offset are read as UTC (Cesium uses the machine's time zone), and the
-//! leap-second table is a constant instead of the mutable
-//! `JulianDate.leapSeconds` array.
+//! One deliberate difference from Cesium: times in ISO 8601 strings without
+//! an offset are read as UTC (Cesium uses the machine's time zone).
+//!
+//! The leap-second table is process-wide, like Cesium's mutable
+//! `JulianDate.leapSeconds`: it starts as [`DEFAULT_LEAP_SECONDS`] and
+//! [`JulianDate::add_leap_second`] extends it (as Earth orientation data does).
 
 use super::binary_search::binary_search;
 use super::gregorian_date::GregorianDate;
@@ -12,6 +14,7 @@ use super::leap_second::LeapSecond;
 use super::math::{js_number_to_string, js_to_fixed, to_int32};
 use super::time_constants::{SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MILLISECOND, SECONDS_PER_MINUTE};
 use super::time_standard::TimeStandard;
+use std::sync::{LazyLock, RwLock};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct JulianDate {
@@ -49,7 +52,7 @@ const fn leap(day: f64, seconds: f64, offset: f64) -> LeapSecond {
 }
 
 /// TAI − UTC from 1972 on, as in Cesium (`JulianDate.leapSeconds`).
-pub const LEAP_SECONDS: [LeapSecond; 28] = [
+pub const DEFAULT_LEAP_SECONDS: [LeapSecond; 28] = [
     leap(2441317.0, 43210.0, 10.0), // January 1, 1972
     leap(2441499.0, 43211.0, 11.0), // July 1, 1972
     leap(2441683.0, 43212.0, 12.0), // January 1, 1973
@@ -83,8 +86,16 @@ pub const LEAP_SECONDS: [LeapSecond; 28] = [
 const DAYS_IN_MONTH: [f64; 12] = [31.0, 28.0, 31.0, 30.0, 31.0, 30.0, 31.0, 31.0, 30.0, 31.0, 30.0, 31.0];
 const DAYS_IN_LEAP_FEBRUARY: f64 = 29.0;
 
-fn leap_index(date: &JulianDate) -> isize {
-    binary_search(&LEAP_SECONDS, date, |l, d| JulianDate::compare(&l.julian_date, d))
+static LEAP_SECONDS: LazyLock<RwLock<Vec<LeapSecond>>> = LazyLock::new(|| RwLock::new(DEFAULT_LEAP_SECONDS.to_vec()));
+
+/// Runs `f` with the current leap-second table.
+fn with_leap_seconds<R>(f: impl FnOnce(&[LeapSecond]) -> R) -> R {
+    let table = LEAP_SECONDS.read().unwrap_or_else(|e| e.into_inner());
+    f(&table)
+}
+
+fn leap_index(table: &[LeapSecond], date: &JulianDate) -> isize {
+    binary_search(table, date, |l, d| JulianDate::compare(&l.julian_date, d))
 }
 
 fn set_components(mut whole_days: f64, mut seconds_of_day: f64) -> JulianDate {
@@ -99,17 +110,21 @@ fn set_components(mut whole_days: f64, mut seconds_of_day: f64) -> JulianDate {
 }
 
 fn convert_utc_to_tai(date: JulianDate) -> JulianDate {
-    let mut index = leap_index(&date);
+    with_leap_seconds(|table| convert_utc_to_tai_with(table, date))
+}
+
+fn convert_utc_to_tai_with(table: &[LeapSecond], date: JulianDate) -> JulianDate {
+    let mut index = leap_index(table, &date);
     if index < 0 {
         index = !index;
     }
-    let mut index = (index as usize).min(LEAP_SECONDS.len() - 1);
-    let mut offset = LEAP_SECONDS[index].offset;
+    let mut index = (index as usize).min(table.len() - 1);
+    let mut offset = table[index].offset;
     if index > 0 {
-        let difference = JulianDate::seconds_difference(&LEAP_SECONDS[index].julian_date, &date);
+        let difference = JulianDate::seconds_difference(&table[index].julian_date, &date);
         if difference > offset {
             index -= 1;
-            offset = LEAP_SECONDS[index].offset;
+            offset = table[index].offset;
         }
     }
     date.add_seconds(offset)
@@ -117,25 +132,29 @@ fn convert_utc_to_tai(date: JulianDate) -> JulianDate {
 
 /// `None` during a leap second, which UTC dates cannot hold.
 fn convert_tai_to_utc(date: &JulianDate) -> Option<JulianDate> {
-    let mut index = leap_index(date);
+    with_leap_seconds(|table| convert_tai_to_utc_with(table, date))
+}
+
+fn convert_tai_to_utc_with(table: &[LeapSecond], date: &JulianDate) -> Option<JulianDate> {
+    let mut index = leap_index(table, date);
     if index < 0 {
         index = !index;
     }
     let index = index as usize;
     if index == 0 {
-        return Some(date.add_seconds(-LEAP_SECONDS[0].offset));
+        return Some(date.add_seconds(-table[0].offset));
     }
-    if index >= LEAP_SECONDS.len() {
-        return Some(date.add_seconds(-LEAP_SECONDS[index - 1].offset));
+    if index >= table.len() {
+        return Some(date.add_seconds(-table[index - 1].offset));
     }
-    let difference = JulianDate::seconds_difference(&LEAP_SECONDS[index].julian_date, date);
+    let difference = JulianDate::seconds_difference(&table[index].julian_date, date);
     if difference == 0.0 {
-        return Some(date.add_seconds(-LEAP_SECONDS[index].offset));
+        return Some(date.add_seconds(-table[index].offset));
     }
     if difference <= 1.0 {
         return None;
     }
-    Some(date.add_seconds(-LEAP_SECONDS[index - 1].offset))
+    Some(date.add_seconds(-table[index - 1].offset))
 }
 
 /// Day number and seconds of day (from noon) for UTC calendar fields.
@@ -690,15 +709,39 @@ impl JulianDate {
 
     /// TAI − UTC at this date, in seconds.
     pub fn compute_tai_minus_utc(&self) -> f64 {
-        let mut index = leap_index(self);
-        if index < 0 {
-            index = !index;
-            index -= 1;
+        with_leap_seconds(|table| {
+            let mut index = leap_index(table, self);
             if index < 0 {
-                index = 0;
+                index = !index;
+                index -= 1;
+                if index < 0 {
+                    index = 0;
+                }
             }
+            table[index as usize].offset
+        })
+    }
+
+    /// A copy of the current leap-second table (Cesium's `JulianDate.leapSeconds`).
+    pub fn leap_seconds() -> Vec<LeapSecond> {
+        with_leap_seconds(|table| table.to_vec())
+    }
+
+    /// Inserts a leap second in date order unless one already exists at that
+    /// date. Returns whether it was added.
+    pub fn add_leap_second(leap_second: LeapSecond) -> bool {
+        let mut table = LEAP_SECONDS.write().unwrap_or_else(|e| e.into_inner());
+        let index = leap_index(&table, &leap_second.julian_date);
+        if index >= 0 {
+            return false;
         }
-        LEAP_SECONDS[index as usize].offset
+        table.insert((!index) as usize, leap_second);
+        true
+    }
+
+    /// Restores [`DEFAULT_LEAP_SECONDS`].
+    pub fn reset_leap_seconds() {
+        *LEAP_SECONDS.write().unwrap_or_else(|e| e.into_inner()) = DEFAULT_LEAP_SECONDS.to_vec();
     }
 
     pub fn add_seconds(&self, seconds: f64) -> Self {

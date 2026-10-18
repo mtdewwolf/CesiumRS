@@ -77,6 +77,15 @@
     "status": "n/a",
     "note": "Panics on programmer error, Result for recoverable errors."
   },
+  "Core/EarthOrientationParameters": {
+    "status": "ported",
+    "rust": "core::earth_orientation_parameters",
+    "note": "fromUrl is replaced by from_json on text the caller fetched. NONE is EarthOrientationParameters::none()."
+  },
+  "Core/EarthOrientationParametersSample": {
+    "status": "ported",
+    "rust": "core::earth_orientation_parameters::EarthOrientationParametersSample"
+  },
   "Core/Ellipsoid": {
     "status": "ported",
     "rust": "core::ellipsoid",
@@ -139,7 +148,29 @@
   "Core/HilbertOrder": {
     "status": "partial",
     "rust": "core::hilbert_order",
-    "note": "Levels 1\u201332 checked against CesiumJS, including Number precision and signed-bit quirks. Higher levels are not supported yet."
+    "note": "Levels 1–32 checked against CesiumJS, including Number precision and signed-bit quirks. Higher levels are not supported yet."
+  },
+  "Core/Iau2000Orientation": {
+    "status": "ported",
+    "rust": "core::iau2000_orientation"
+  },
+  "Core/Iau2006XysData": {
+    "status": "ported",
+    "rust": "core::iau2006_xys_data",
+    "note": "Chunks are not downloaded: needed chunks are recorded (take_requested_chunks) and supplied with add_chunk_json. The bundled-xys feature compiles in all of them."
+  },
+  "Core/Iau2006XysSample": {
+    "status": "ported",
+    "rust": "core::iau2006_xys_data::Iau2006XysSample"
+  },
+  "Core/IauOrientationAxes": {
+    "status": "ported",
+    "rust": "core::iau_orientation_axes",
+    "note": "The compute function is a fn pointer; the default is the Moon."
+  },
+  "Core/IauOrientationParameters": {
+    "status": "ported",
+    "rust": "core::iau_orientation_parameters"
   },
   "Core/Intersect": {
     "status": "ported",
@@ -160,7 +191,7 @@
   "Core/JulianDate": {
     "status": "ported",
     "rust": "core::julian_date",
-    "note": "fromIso8601 returns Err where Cesium throws; JulianDate.leapSeconds is a const table, not a mutable array."
+    "note": "fromIso8601 returns Err where Cesium throws. The leap-second table is process-wide and mutable, like JulianDate.leapSeconds (leap_seconds, add_leap_second, reset_leap_seconds)."
   },
   "Core/LeapSecond": {
     "status": "ported",
@@ -297,9 +328,9 @@
     "rust": "core::time_standard"
   },
   "Core/Transforms": {
-    "status": "partial",
+    "status": "ported",
     "rust": "core::transforms",
-    "note": "Local frames, HPR frames, window coordinates, 2D bases done; ICRF/TEME/Moon frames need JulianDate, EOP, and IAU 2006 data."
+    "note": "The EOP and XYS data that Cesium keeps in Transforms globals are passed as arguments."
   },
   "Core/TranslationRotationScale": {
     "status": "ported",

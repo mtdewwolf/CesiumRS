@@ -28,5 +28,11 @@
     "date": "2026-10-17",
     "percent": 9.14,
     "ported": 73
+  },
+  {
+    "milestone": "Earth & Moon frames",
+    "date": "2026-10-18",
+    "percent": 9.6,
+    "ported": 81
   }
 ]

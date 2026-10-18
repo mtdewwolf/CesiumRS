@@ -18,5 +18,9 @@ codegen-units = 1
 panic = "abort"
 strip = "symbols"
 
-[dev-dependencies]
+[dependencies]
 serde_json = { version = "1", features = ["float_roundtrip"] }
+
+[features]
+# Compiles Cesium's IAU 2006 XYS tables (about 1.8 MB) into Iau2006XysData::bundled().
+bundled-xys = []
