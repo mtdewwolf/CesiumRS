@@ -527,6 +527,16 @@
     "rust": "core::polygon_pipeline",
     "note": "Triangulates with core::earcut, a port of earcut 3.2.4 whose triangle order matches the JS library. Subdivision returns None where Cesium would read past its arrays."
   },
+  "Core/PolylineGeometry": {
+    "status": "ported",
+    "rust": "core::polyline_geometry",
+    "note": "Rhumb lines with colors return None where Cesium throws a RangeError."
+  },
+  "Core/PolylinePipeline": {
+    "status": "ported",
+    "rust": "core::polyline_pipeline",
+    "note": "Geodesic arcs use WGS84 whatever the ellipsoid, as Cesium module-level geodesic does. Heights are a PolylineHeight (constant or per position)."
+  },
   "Core/PrimitiveType": {
     "status": "ported",
     "rust": "core::primitive_type"
@@ -601,6 +611,11 @@
     "status": "ported",
     "rust": "core::simon1994_planetary_positions",
     "note": "Orbit-element checks are unreachable for the Earth/Moon elements and are not ported."
+  },
+  "Core/SimplePolylineGeometry": {
+    "status": "ported",
+    "rust": "core::simple_polyline_geometry",
+    "note": "Rhumb lines with per-segment colors return None where Cesium throws a RangeError."
   },
   "Core/SphereGeometry": {
     "status": "ported",
@@ -696,6 +711,20 @@
     "status": "ported",
     "rust": "core::vulkan_constants",
     "note": "Generated from the CesiumJS object."
+  },
+  "Core/WallGeometry": {
+    "status": "ported",
+    "rust": "core::wall_geometry",
+    "note": "Keeps the scratch aliasing that bends tangents after a normal recompute. Cesium carries its scratch tangent between calls; here it starts at zero."
+  },
+  "Core/WallGeometryLibrary": {
+    "status": "ported",
+    "rust": "core::wall_geometry_library",
+    "note": "Heights are read by the index after duplicate positions are removed, as in Cesium."
+  },
+  "Core/WallOutlineGeometry": {
+    "status": "ported",
+    "rust": "core::wall_outline_geometry"
   },
   "Core/WebGLConstants": {
     "status": "ported",

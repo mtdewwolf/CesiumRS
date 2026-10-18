@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 17.1% of CesiumJS ported** (190 fully ported and 1 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core, the math, geometry and time foundation, is at 66.8%, on the way to a 75% milestone** (about 8,000 more lines). [PORTING.md](PORTING.md) lists every module with its status, and its [Plan](PORTING.md#plan) section lists the batches to 75% Core.
+**Status: 17.9% of CesiumJS ported** (196 fully ported and 1 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core, the math, geometry and time foundation, is at 69.8%, on the way to a 75% milestone** (about 5,100 more lines). [PORTING.md](PORTING.md) lists every module with its status, and its [Plan](PORTING.md#plan) section lists the batches to 75% Core.
 
 ## What is ported
 
@@ -16,7 +16,7 @@ All of these live in `src/core`, one Rust module per Cesium module:
 | --- | --- |
 | Math | `Math` (incl. `MersenneTwister` random numbers), `Cartesian2/3/4`, `Matrix2/3/4`, `Quaternion`, `HeadingPitchRoll`, `HeadingPitchRange`, `Spherical`, `Cartographic`, `TranslationRotationScale`, `Color` (CSS parsing, named colors) |
 | Ellipsoid and projections | `Ellipsoid` (WGS84, Moon, Mars, unit sphere), `scaleToGeodeticSurface`, `Rectangle`, `GeographicProjection`, `WebMercatorProjection`, `MapProjection`, `EllipsoidTangentPlane` |
-| Curves | `EllipsoidGeodesic` (Vincenty), `EllipsoidRhumbLine` |
+| Curves | `EllipsoidGeodesic` (Vincenty), `EllipsoidRhumbLine`, `PolylinePipeline` (geodesic and rhumb densification, antimeridian wrapping) |
 | Animation and interpolation | `Spline` (shared trait and time operations), `ConstantSpline`, `LinearSpline`, `SteppedSpline`, `QuaternionSpline`, `MorphWeightSpline`, `HermiteSpline` (incl. natural and clamped cubics), `CatmullRomSpline`, `TridiagonalSystemSolver`, `EasingFunction`, `LagrangePolynomialApproximation`, `LinearApproximation`, `HermitePolynomialApproximation` |
 | Intersections | `Ray`, `Plane`, `IntersectionTests`, `Intersect`, `Interval`, `QuadraticRealPolynomial`, `CubicRealPolynomial`, `QuarticRealPolynomial` |
 | Spatial ordering | `MortonOrder` (2D/3D Z-order encode/decode), `HilbertOrder` (2D encode/decode through level 32; higher levels remain unported) |
@@ -26,7 +26,7 @@ All of these live in `src/core`, one Rust module per Cesium module:
 | Enums and helpers | `ArcType`, `CornerType`, `ReferenceFrame`, `isBitSet`, `NearFarScalar`, `DistanceDisplayCondition`, `WebGLConstants` |
 | Tiling | `TilingScheme` (trait), `GeographicTilingScheme`, `WebMercatorTilingScheme`, `Stereographic` |
 | Mesh data | `ComponentDatatype`, `IndexDatatype`, `PrimitiveType` (typed arrays as one `TypedArray` enum), `Tipsify`, `WireframeIndexGenerator`, `Intersections2D` |
-| Geometries | `Geometry`, `GeometryAttribute(s)`, `GeometryType`, `GeometryOffsetAttribute`, `VertexFormat`; `BoxGeometry`, `PlaneGeometry`, `EllipsoidGeometry`, `SphereGeometry`, `CylinderGeometry`, `FrustumGeometry` and their outlines; `EllipseGeometry`, `CircleGeometry`, `EllipseOutlineGeometry`, `CircleOutlineGeometry`, `EllipseGeometryLibrary`; `RectangleGeometry`, `RectangleOutlineGeometry`, `RectangleGeometryLibrary`; `PolygonGeometry`, `PolygonOutlineGeometry`, `PolygonGeometryLibrary` (holes, extrusion, per-position heights, rhumb lines, equator splitting), `CoplanarPolygonGeometry`, `CoplanarPolygonOutlineGeometry`, `CoplanarPolygonGeometryLibrary`. Full vertex and index buffers are compared with CesiumJS. |
+| Geometries | `Geometry`, `GeometryAttribute(s)`, `GeometryType`, `GeometryOffsetAttribute`, `VertexFormat`; `BoxGeometry`, `PlaneGeometry`, `EllipsoidGeometry`, `SphereGeometry`, `CylinderGeometry`, `FrustumGeometry` and their outlines; `EllipseGeometry`, `CircleGeometry`, `EllipseOutlineGeometry`, `CircleOutlineGeometry`, `EllipseGeometryLibrary`; `RectangleGeometry`, `RectangleOutlineGeometry`, `RectangleGeometryLibrary`; `PolygonGeometry`, `PolygonOutlineGeometry`, `PolygonGeometryLibrary` (holes, extrusion, per-position heights, rhumb lines, equator splitting), `CoplanarPolygonGeometry`, `CoplanarPolygonOutlineGeometry`, `CoplanarPolygonGeometryLibrary`; `PolylineGeometry`, `SimplePolylineGeometry`; `WallGeometry`, `WallOutlineGeometry`, `WallGeometryLibrary`. Full vertex and index buffers are compared with CesiumJS. |
 | Polygons | `PolygonPipeline` (area, winding order, triangulation, chord and rhumb-line subdivision, geodetic height scaling) on `earcut`, a line-for-line port of earcut 3.2.4 whose triangle order matches the JavaScript library |
 | Geometry instances and pipeline | `GeometryInstance`, `GeometryInstanceAttribute`, `ColorGeometryInstanceAttribute`, `ShowGeometryInstanceAttribute`, `OffsetGeometryInstanceAttribute`, `DistanceDisplayConditionGeometryInstanceAttribute`; `GeometryPipeline` (wireframes, vertex-cache reordering, 16-bit index splitting, 2D projection, high/low encoding, world transforms, combining instances, normals and tangents, vertex compression, and splitting triangles, lines and polylines at the antimeridian) |
 | Utilities | `Heap`, `DoubleEndedPriorityQueue`, `Queue`, `DoublyLinkedList`, `mergeSort`, associative and managed arrays, typed-array strings, URI parsing and helpers, query strings, GUIDs, `PixelFormat`, `PixelDatatype`, and Core's enums |
@@ -48,7 +48,7 @@ All of these live in `src/core`, one Rust module per Cesium module:
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The `tests/core_*.rs` suites replay all **21,666 cases** through the Rust port and compare the results within a relative and absolute tolerance of 1e-12. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, so nothing is skipped by accident.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The `tests/core_*.rs` suites replay all **21,953 cases** through the Rust port and compare the results within a relative and absolute tolerance of 1e-12. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, so nothing is skipped by accident.
 
 ```bash
 cargo test                                   # unit tests + all CesiumJS fixtures
@@ -78,7 +78,7 @@ The viewer still uses the first-generation modules in `src/` (`camera`, `ellipso
 
 ## Roadmap
 
-1. **Core geometry:** polylines, corridors, walls and polyline volumes, plus terrain.
+1. **Core geometry:** corridors and polyline volumes, plus terrain.
 2. **Core algorithms:** Hilbert levels above 32.
 3. **Moving the viewer onto `src/core`,** then redeploying it.
 4. **Renderer, Scene, DataSources, Workers and Shaders,** the rest of the way to 100%.
