@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 20.1% of CesiumJS ported** (212 fully ported and 1 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core, the math, geometry and time foundation, is at 78.3%, working toward 100% Core** (21,300 more lines). [PORTING.md](PORTING.md) lists every module with its status, and its [Plan](PORTING.md#plan) section lists the roadmap to 100% Core.
+**Status: 20.3% of CesiumJS ported** (214 fully ported and 0 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core, the math, geometry and time foundation, is at 79.1%, working toward 100% Core** (20,508 more lines). [PORTING.md](PORTING.md) lists every module with its status, and its [Plan](PORTING.md#plan) section lists the roadmap to 100% Core.
 
 ## What is ported
 
@@ -19,7 +19,7 @@ All of these live in `src/core`, one Rust module per Cesium module:
 | Curves | `EllipsoidGeodesic` (Vincenty), `EllipsoidRhumbLine`, `PolylinePipeline` (geodesic and rhumb densification, antimeridian wrapping) |
 | Animation and interpolation | `Spline` (shared trait and time operations), `ConstantSpline`, `LinearSpline`, `SteppedSpline`, `QuaternionSpline`, `MorphWeightSpline`, `HermiteSpline` (incl. natural and clamped cubics), `CatmullRomSpline`, `TridiagonalSystemSolver`, `EasingFunction`, `LagrangePolynomialApproximation`, `LinearApproximation`, `HermitePolynomialApproximation` |
 | Intersections | `Ray`, `Plane`, `IntersectionTests`, `Intersect`, `Interval`, `QuadraticRealPolynomial`, `CubicRealPolynomial`, `QuarticRealPolynomial` |
-| Spatial ordering | `MortonOrder` (2D/3D Z-order encode/decode), `HilbertOrder` (2D encode/decode through level 32; higher levels remain unported) |
+| Spatial ordering | `MortonOrder` (2D/3D Z-order encode/decode), `HilbertOrder` (Number-coordinate encode through level 1023, BigInt/decimal decode through level 511), `S2Cell` (64-bit IDs/tokens, ancestry, geodetic centers and vertices) |
 | Vertex packing | `AttributeCompression` (oct normals, texture coordinates, ZigZag terrain decoding, dequantization, RGB), `EncodedCartesian3` (high/low position splitting) |
 | Bounding volumes and culling | `BoundingSphere`, `BoundingRectangle`, `AxisAlignedBoundingBox`, `OrientedBoundingBox`, `CullingVolume`, `Occluder`, `EllipsoidalOccluder`, `Visibility` |
 | Frustums | `PerspectiveFrustum`, `PerspectiveOffCenterFrustum`, `OrthographicFrustum`, `OrthographicOffCenterFrustum` |
@@ -43,7 +43,7 @@ All of these live in `src/core`, one Rust module per Cesium module:
 - Checks that only exist in Cesium's debug builds (`DeveloperError`) are not ported. Rust behaves like Cesium's release build, except where the check prevents a crash or an endless loop; those cases return `Option`.
 - Cesium's quirks are kept on purpose and documented where they occur. For example, `Date.UTC` maps years 0–99 to 1900–1999, `fastSlerp` rounds to `Float32Array`, and the cubic root solver has a known bug.
 - Quantized component types are native Rust integer slices. Dequantized attributes and RGB565 colors return `Vec<f32>` to preserve `Float32Array` rounding. Buffer writes return `None` on invalid lengths or offsets without modifying the buffer.
-- `HilbertOrder` preserves Cesium's large-index Number rounding and signed bitwise behavior; at high levels its encode/decode pair does not always round-trip. Its supported level range is currently 1–32.
+- `HilbertOrder` preserves Cesium's Number rounding, NaN and signed bitwise behavior; its encode/decode pair does not always round-trip. Number-coordinate encoding supports levels 1–1023; arbitrary-precision/decimal decoding supports levels 1–511, where Cesium's range check stays finite. The original integer decode convenience method supports levels 1–32. `S2Cell` uses native 64-bit IDs and preserves Cesium's level-zero face-construction quirk.
 - Where Cesium builds attributes or indices in plain JavaScript arrays (such as `PolygonPipeline`'s subdivisions), Rust stores the values as `Float64` and the indices as `Uint32`, so no precision is lost.
 - Terrain providers use associated data, request and credit types, with futures replacing promises and `None` indicating throttled requests or unknown availability. Cached terrain topology is shared through immutable `Arc` values per thread, and heightmap quality is an explicit argument. `TileAvailability` preserves Cesium's range insertion order and shared-boundary quirks.
 - Terrain picker refinement runs synchronously in Rust using the same triangle-distribution calculation as Cesium's worker. The reference fixtures execute that worker through a message adapter and wait for refinement between picks. Terrain buffers are borrowed by the picker, so meshes need no duplicate storage.
@@ -52,7 +52,7 @@ All of these live in `src/core`, one Rust module per Cesium module:
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The `tests/core_*.rs` suites load all **23,083 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The `tests/core_*.rs` suites load all **24,600 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
 
 ```bash
 cargo test                                   # unit tests + all CesiumJS fixtures
@@ -85,7 +85,7 @@ Near-antipodal routes use a deterministic great-circle approximation when Vincen
 
 ## Roadmap
 
-1. **Finish Core to 100%:** terrain data/picking, spatial algorithms (including Hilbert levels above 32), assets, resources, providers and host interfaces. The terrain foundation and `HeightmapTerrainData` are ported; quantized terrain data and remaining spatial algorithms are next.
+1. **Finish Core to 100%:** terrain data/picking, remaining spatial algorithms, assets, resources, providers and host interfaces. The terrain foundation and `HeightmapTerrainData` are ported; S2 cells and higher Hilbert levels are also ported; quantized terrain data and the remaining spatial algorithms are next.
 2. **Move the viewer onto `src/core` after Core is complete,** then redeploy it.
 3. **Renderer, Scene, DataSources, Workers and Shaders,** the rest of the way to 100% overall.
 
