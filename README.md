@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 21.8% of CesiumJS ported** (220 fully ported and 33 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core, the math, geometry and time foundation, is at 83.8%, working toward 100% Core** (15,878 more lines). [PORTING.md](PORTING.md) lists every module with its status, and its [Plan](PORTING.md#plan) section lists the roadmap to 100% Core.
+**Status: 21.9% of CesiumJS ported** (220 fully ported and 36 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core, the math, geometry and time foundation, is at 83.9%, working toward 100% Core** (15,779 more lines). [PORTING.md](PORTING.md) lists every module with its status, and its [Plan](PORTING.md#plan) section lists the roadmap to 100% Core.
 
 ## What is ported
 
@@ -38,7 +38,7 @@ All of these live in `src/core`, one Rust module per Cesium module:
 
 ### Core work awaiting validation
 
-The next Core batch implements resource URLs and HTTP transport/retries, request scheduling and cancellation, terrain sampling, geocoder requests and response parsing, texture packing, collision checks, binary decoders, and shared packing/interpolation/geometry traits. Credits, images, video and worker tasks expose explicit host adapters.
+The next Core batch implements resource URLs and HTTP transport/retries, request scheduling and cancellation, terrain sampling, geocoder requests and response parsing, texture packing, collision checks, binary decoders, and shared packing/interpolation/geometry traits. KTX2 parsing handles uncompressed mipmaps and cubemaps, and selects Basis target formats; a concrete Basis backend is still needed for compressed data. Credits, images, video and worker tasks expose explicit host adapters.
 
 These additions are **partial** in the tracker. Tests and fixture generation were not run for this batch, as requested; compilation does not establish CesiumJS parity. The tracker notes the remaining behavior and adapter work for each module. Previously validated ports retain their status.
 

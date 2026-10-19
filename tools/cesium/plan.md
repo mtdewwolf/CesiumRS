@@ -39,6 +39,6 @@ Core remains the priority through 100% of applicable modules. Progress requires 
 ### Current batch: implementation ahead of validation
 
 - Resource/query/template construction, proxying, requests, priority/server scheduling, retry/error state, trusted servers and task processing have native implementations. Resource browser APIs, credit propagation, full URI normalization and runtime integrations remain.
-- Texture buffers/packing, collision checks, vector/GEE binary decoding and GEE tile information are implemented. KTX2/Basis, ground polylines, network terrain clients and 3D Tiles terrain processing remain.
+- Texture buffers/packing, collision checks, vector/GEE binary decoding and GEE tile information are implemented. KTX2 header/uncompressed parsing and Basis target selection are implemented; concrete Basis codec integration, ground polylines, network terrain clients and 3D Tiles terrain processing remain.
 - Packing, interpolation and geometry interfaces connect to the existing ports. Terrain sampling, geocoder parsing, credit metadata, image adapters and video synchronization are implemented; host integrations and parity work remain as noted in individual tracker rows.
 - This batch is marked partial: no tests or fixture generation were run at the user's request. Compile checks only establish that the library builds. Resume reference validation before promoting these rows to ported or claiming 100% Core.

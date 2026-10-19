@@ -1196,5 +1196,20 @@
     "status": "partial",
     "rust": "core::sample_terrain::sample_terrain_most_detailed",
     "note": "Availability grouping, root loading and changed-level resampling implemented. Dynamic provider availability integration and validation remain."
+  },
+  "Core/KTX2Transcoder": {
+    "status": "partial",
+    "rust": "core::ktx2_transcoder",
+    "note": "Native KTX2 header/level parsing, raw RGB/RGBA/half/float mip and cubemap buffers, Basis target selection and output collapsing implemented. BasisTranscoder supplies codec initialization/entropy decoding; concrete backend, metadata edge cases and validation remain."
+  },
+  "Core/loadKTX2": {
+    "status": "partial",
+    "rust": "core::ktx2_transcoder::load_ktx2",
+    "note": "Buffers and host resource futures feed the transcoder, preserving optional request deferral. Concrete Resource loader/Basis backends and reference validation remain."
+  },
+  "Workers/transcodeKTX2": {
+    "status": "partial",
+    "rust": "core::ktx2_transcoder",
+    "note": "Native uncompressed parser and ETC1S/UASTC target-selection paths implemented. Basis entropy decoding, module initialization and task execution require concrete host backends; validation pending."
   }
 }

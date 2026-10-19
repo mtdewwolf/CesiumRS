@@ -115,6 +115,7 @@ pub mod iso8601;
 pub mod js_math;
 pub mod julian_date;
 pub mod keyboard_event_modifier;
+pub mod ktx2_transcoder;
 pub mod lagrange_polynomial_approximation;
 pub mod leap_second;
 pub mod linear_approximation;
@@ -407,3 +408,8 @@ pub use video_synchronizer::{VideoElement, VideoSynchronizer};
 
 pub use image_helpers::{ImageDecodeOptions, ImageHost, RgbaImage};
 pub use task_processor::{ProcessedTask, TaskFuture, TaskProcessor, TaskWorker, WebAssemblyOptions};
+
+pub use ktx2_transcoder::{
+    BasisFormat, BasisInfo, BasisTranscoder, Ktx2Header, Ktx2Loader, Ktx2Source, Ktx2Texture, Ktx2Transcoder,
+    SupportedTextureFormats,
+};
