@@ -1,4 +1,9 @@
 {
+  "Core/ApproximateTerrainHeights": {
+    "status": "ported",
+    "rust": "core::approximate_terrain_heights",
+    "note": "Bundled pinned Cesium height table or caller-supplied JSON; initialized state, cached loading, curvature-adjusted min/max and bounding spheres. Owned/thread-safe scratch state preserves out-of-scheme coordinate behavior; 268 reference cases."
+  },
   "Core/ArcType": {
     "status": "ported",
     "rust": "core::arc_type"
@@ -141,6 +146,11 @@
     "status": "ported",
     "rust": "core::culling_volume"
   },
+  "Core/CustomHeightmapTerrainProvider": {
+    "status": "ported",
+    "rust": "core::custom_heightmap_terrain_provider",
+    "note": "Callback trait with optional futures, typed/number-array samples, typed host credits, scheme precedence, geometric errors and callback rejection propagation. None defers requests. 44 reference cases plus a genuinely pending native future test."
+  },
   "Core/CylinderGeometry": {
     "status": "ported",
     "rust": "core::cylinder_geometry"
@@ -231,6 +241,11 @@
   "Core/EllipsoidTangentPlane": {
     "status": "ported",
     "rust": "core::ellipsoid_tangent_plane"
+  },
+  "Core/EllipsoidTerrainProvider": {
+    "status": "ported",
+    "rust": "core::ellipsoid_terrain_provider",
+    "note": "Zero-height 16x16 tiles, shared errors and scheme/ellipsoid precedence. Ready native futures and explicit quality replace promises/global quality. Preserves signed level-shift errors; 15 reference cases."
   },
   "Core/EllipsoidalOccluder": {
     "status": "ported",

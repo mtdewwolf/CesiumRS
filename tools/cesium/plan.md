@@ -25,11 +25,13 @@ Along the way, `core::js_math` made the port's `sin`, `cos`, `log` and the other
    - ✅ `QuantizedMeshTerrainData` and native quantized mesh creation/upsampling
    - ⬜ 3D Tiles and Google Earth Enterprise terrain data/processors (service-client batches below)
 7. ⬜ **Remaining spatial algorithms:**
-   - ✅ `S2Cell` and Hilbert levels above 32, through Cesium's finite numeric bounds
-   - ⬜ `RectangleCollisionChecker`, `ApproximateTerrainHeights`, `GroundPolylineGeometry`
+   - ✅ `S2Cell`, Hilbert levels above 32 through Cesium's finite numeric bounds, and `ApproximateTerrainHeights` with the pinned lookup table
+   - ⬜ `RectangleCollisionChecker`, `GroundPolylineGeometry`
 8. ⬜ **Asset and texture processing:** compressed texture buffers, KTX2 transcoding/loading, texture packing, vector and Google Earth Enterprise decoding, and image/canvas helpers through explicit host adapters where needed.
 9. ⬜ **Resource and execution infrastructure:** requests, errors, scheduling, resources, trusted servers, task processing, proxy contracts and credits. Inject I/O and host capabilities so behavior remains testable in native Rust and WebAssembly.
-10. ⬜ **Terrain providers and service clients:** heightmap/ellipsoid/quantized and 3D Tiles terrain providers, Google Earth Enterprise metadata and terrain, Ion resources, geocoders, platform clients and world-terrain factories. Validate parsing, request construction and response/error behavior using deterministic fixtures.
+10. ⬜ **Terrain providers and service clients:**
+   - ✅ `EllipsoidTerrainProvider`, `CustomHeightmapTerrainProvider`
+   - ⬜ network heightmap/quantized and 3D Tiles terrain providers, Google Earth Enterprise metadata and terrain, Ion resources, geocoders, platform clients and world-terrain factories. Validate parsing, request construction and response/error behavior using deterministic fixtures.
 11. ⬜ **Remaining contracts and host behavior:** interpolation and packing interfaces, geometry factories, screen-space events and video synchronization, plus terrain sampling APIs. Audit every remaining Core tracker row before claiming completion.
 
 Core remains the priority through 100% of applicable modules. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. After Core, migrate the viewer and proceed to Renderer and Scene.
