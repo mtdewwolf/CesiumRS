@@ -6,11 +6,7 @@ mod common;
 
 use cesium_rs::core::component_datatype::ComponentDatatype;
 use cesium_rs::core::*;
-use cesium_rs::core::{
-    hermite_polynomial_approximation as hermite_approx, intersections_2d,
-    lagrange_polynomial_approximation as lagrange, linear_approximation as linear, tipsify, tridiagonal_system_solver,
-    wireframe_index_generator as wireframe,
-};
+use cesium_rs::core::{intersections_2d, tipsify, tridiagonal_system_solver, wireframe_index_generator as wireframe};
 use common::*;
 use serde_json::{json, Value};
 
@@ -219,25 +215,25 @@ fn polynomial_approximation() {
         "PolynomialApproximation",
         |_| TIGHT,
         |f, a| {
-            let x = || n(&a[0]);
-            let stride = || n(&a[3]) as usize;
-            match f {
-                "lagrange" => ok(lagrange::interpolate_order_zero(x(), &nums(&a[1]), &nums(&a[2]), stride())),
-                "hermiteOrderZero" => {
-                    ok(hermite_approx::interpolate_order_zero(x(), &nums(&a[1]), &nums(&a[2]), stride()))
-                }
-                "linear" => ok(linear::interpolate_order_zero(x(), &nums(&a[1]), &nums(&a[2]), stride())),
-                "hermite" => ok(hermite_approx::interpolate(
-                    x(),
-                    &nums(&a[1]),
-                    &nums(&a[2]),
-                    stride(),
-                    n(&a[4]) as usize,
-                    n(&a[5]) as usize,
-                )),
-                "requiredLagrange" => ok(lagrange::get_required_data_points(n(&a[0]))),
-                "requiredHermite" => ok(hermite_approx::get_required_data_points(n(&a[0]), n(&a[1]))),
-                _ => None,
+            use cesium_rs::core::interpolation_algorithm::{
+                HermitePolynomialApproximation, LagrangePolynomialApproximation, LinearApproximation,
+            };
+            let algorithm: &dyn InterpolationAlgorithm = match f {
+                "linear" => &LinearApproximation,
+                "lagrange" | "requiredLagrange" => &LagrangePolynomialApproximation,
+                _ => &HermitePolynomialApproximation,
+            };
+            if f.starts_with("required") {
+                return ok(algorithm.get_required_data_points(n(&a[0]), a.get(1).map(n).unwrap_or(0.0)));
+            }
+            let x_table = nums(&a[1]);
+            let y_table = nums(&a[2]);
+            let samples =
+                InterpolationSamples { x: n(&a[0]), x_table: &x_table, y_table: &y_table, y_stride: n(&a[3]) as usize };
+            if f == "hermite" {
+                ok(algorithm.interpolate(&samples, n(&a[4]) as usize, n(&a[5]) as usize))
+            } else {
+                ok(algorithm.interpolate_order_zero(&samples))
             }
         },
     );

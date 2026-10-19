@@ -127,6 +127,7 @@ where
             }
         }
         let mut index = 0;
+        let mut first_error = None;
         while index < active.len() {
             let result = active[index].1.as_mut().poll(cx);
             match result {
@@ -137,8 +138,13 @@ where
                         Ok(()) => {}
                         Err(error) => {
                             if reject_on_tile_fail {
-                                positions.copy_from_slice(&working.borrow());
-                                return Poll::Ready(Err(error));
+                                // Promise callbacks for other ready tiles run
+                                // even when one tile rejects. Poll the complete
+                                // batch before returning its first error.
+                                if first_error.is_none() {
+                                    first_error = Some(error);
+                                }
+                                continue;
                             }
                             for index in indices {
                                 working.borrow_mut()[index].height = f64::NAN;
@@ -149,7 +155,9 @@ where
             }
         }
         positions.copy_from_slice(&working.borrow());
-        if groups.is_empty() && active.is_empty() {
+        if let Some(error) = first_error {
+            Poll::Ready(Err(error))
+        } else if groups.is_empty() && active.is_empty() {
             Poll::Ready(Ok(()))
         } else {
             Poll::Pending
@@ -225,11 +233,30 @@ where
                 result
             }
         });
-        let mut samples = Box::pin(futures_util::future::try_join_all(jobs));
+        let mut samples: Vec<Option<SamplingFuture<'_, P::Error>>> =
+            jobs.map(|job| Some(Box::pin(job) as SamplingFuture<'_, P::Error>)).collect();
         poll_fn(|cx| {
-            let result = samples.as_mut().poll(cx);
+            let mut first_error = None;
+            for job in &mut samples {
+                if let Some(future) = job {
+                    if let Poll::Ready(result) = future.as_mut().poll(cx) {
+                        *job = None;
+                        if let Err(error) = result {
+                            if first_error.is_none() {
+                                first_error = Some(error);
+                            }
+                        }
+                    }
+                }
+            }
             positions.copy_from_slice(&working.borrow());
-            result
+            if let Some(error) = first_error {
+                Poll::Ready(Err(error))
+            } else if samples.iter().all(Option::is_none) {
+                Poll::Ready(Ok(()))
+            } else {
+                Poll::Pending
+            }
         })
         .await?;
         pending = pending

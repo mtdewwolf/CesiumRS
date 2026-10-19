@@ -1,0 +1,1 @@
+{"module":"CompressedTextureBuffer","cesium":"23.0.0","cases":[{"f":"clone","a":[33776,5121,4,8,[0,1,255]],"r":[33776,5121,4,8,[0,1,255],true]},{"f":"clone","a":[6408,null,1,1,[]],"r":[6408,null,1,1,[],true]}]}

@@ -1033,219 +1033,183 @@
     "note": "Native two-axis triangle clipping, recursive vertex keys, oct-normal interpolation, edge remapping, re-quantization and bounds. 16 direct worker cases and all four children in terrain-data lifecycle fixtures preserve order and source horizon-center behavior."
   },
   "Core/BingMapsGeocoderService": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::geocoder_service::BingMapsGeocoderService",
-    "note": "JSONP requests, culture/API-key parameters, bounds, credits and ResourceClient transport.",
-    "validation": "deferred-by-user-request"
+    "note": "JSONP requests, culture/API-key parameters, bounds, credits and ResourceClient transport. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/CartographicGeocoderService": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::geocoder_service::CartographicGeocoderService",
-    "note": "ECMAScript whitespace/number grammar, arbitrary-length radix strings, compass regex and Cartesian destinations.",
-    "validation": "deferred-by-user-request"
+    "note": "ECMAScript whitespace/number grammar, arbitrary-length radix strings, compass regex and Cartesian destinations. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/CompressedTextureBuffer": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::compressed_texture_buffer",
-    "note": "Immutable shared byte views with shallow Clone and optional pixel datatype.",
-    "validation": "deferred-by-user-request"
+    "note": "Immutable shared byte views with shallow Clone and optional pixel datatype. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/Credit": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::credit",
-    "note": "HTML IDs and equality, clone-specific element identity, Ion attribution; BrowserCreditRenderer sanitizes with pinned DOMPurify and caches per instance.",
-    "validation": "deferred-by-user-request"
+    "note": "HTML IDs and equality, clone-specific element identity, Ion attribution; BrowserCreditRenderer sanitizes with pinned DOMPurify and caches per instance. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/DefaultProxy": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::proxy::DefaultProxy",
-    "note": "Cesium encodeURIComponent escaping and query-prefix rules.",
-    "validation": "deferred-by-user-request"
+    "note": "Cesium encodeURIComponent escaping and query-prefix rules. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/GeocoderService": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::geocoder_service::GeocoderService",
-    "note": "Asynchronous service trait, point/rectangle results, attribution credits and ResourceClient host.",
-    "validation": "deferred-by-user-request"
+    "note": "Asynchronous service trait, point/rectangle results, attribution credits and ResourceClient host. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/GeometryFactory": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::geometry_factory",
-    "note": "Shared construction trait for all existing geometry descriptions and closures.",
-    "validation": "deferred-by-user-request"
+    "note": "Shared construction trait for all existing geometry descriptions and closures. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/GoogleEarthEnterpriseTileInformation": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::google_earth_enterprise_tile_information",
-    "note": "Protocol fields, child/subtree/imagery/terrain flags, parent inheritance quirk and cloning.",
-    "validation": "deferred-by-user-request"
+    "note": "Protocol fields, child/subtree/imagery/terrain flags, parent inheritance quirk and cloning. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/GoogleGeocoderService": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::geocoder_service::GoogleGeocoderService",
-    "note": "Key/address requests, status errors, viewport destinations, singular attribution and ResourceClient transport.",
-    "validation": "deferred-by-user-request"
+    "note": "Key/address requests, status errors, viewport destinations, singular attribution and ResourceClient transport. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/InterpolationAlgorithm": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::interpolation_algorithm",
-    "note": "Shared linear, Lagrange and Hermite interfaces, including Hermite derivative interpolation.",
-    "validation": "deferred-by-user-request"
+    "note": "Shared linear, Lagrange and Hermite interfaces, including Hermite derivative interpolation. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/OpenCageGeocoderService": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::geocoder_service::OpenCageGeocoderService",
-    "note": "Request parameter precedence, point/bounds destinations, credits and ResourceClient transport.",
-    "validation": "deferred-by-user-request"
+    "note": "Request parameter precedence, point/bounds destinations, credits and ResourceClient transport. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/Packable": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::packable::Packable",
-    "note": "Native fixed-size numeric packing contract implemented by the existing codecs.",
-    "validation": "deferred-by-user-request"
+    "note": "Native fixed-size numeric packing contract implemented by the existing codecs. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/PackableForInterpolation": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::packable::PackableForInterpolation",
-    "note": "Quaternion interpolation packing and inverse conversion contract.",
-    "validation": "deferred-by-user-request"
+    "note": "Quaternion interpolation packing and inverse conversion contract. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/PeliasGeocoderService": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::geocoder_service::PeliasGeocoderService",
-    "note": "Search/autocomplete endpoints, point/bounds results, attributions and ResourceClient transport.",
-    "validation": "deferred-by-user-request"
+    "note": "Search/autocomplete endpoints, point/bounds results, attributions and ResourceClient transport. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/Proxy": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::proxy::Proxy",
-    "note": "Native URL-rewriting interface with DefaultProxy implementation.",
-    "validation": "deferred-by-user-request"
+    "note": "Native URL-rewriting interface with DefaultProxy implementation. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/RectangleCollisionChecker": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::rectangle_collision_checker",
-    "note": "Native rbush insertion/splitting and ID-removal traversal; inclusive bounds, literal antimeridian intervals and duplicate-ID ordering.",
-    "validation": "deferred-by-user-request"
+    "note": "Native rbush insertion/splitting and ID-removal traversal; inclusive bounds, literal antimeridian intervals and duplicate-ID ordering. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/Request": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::request",
-    "note": "Callback/priority options, cancellation flag and clone/reset lifecycle without requiring Clone response types.",
-    "validation": "deferred-by-user-request"
+    "note": "Callback/priority options, cancellation flag and clone/reset lifecycle without requiring Clone response types. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/RequestErrorEvent": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::request_error_event",
-    "note": "Typed response body, optional HTTP status, parsed response headers and display contract.",
-    "validation": "deferred-by-user-request"
+    "note": "Typed response body, optional HTTP status, parsed response headers and display contract. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/RequestScheduler": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::request_scheduler",
-    "note": "Priority heap, limits/overrides, cancellation, completion events and statistics logging; per-instance state and host-polled futures replace browser frames.",
-    "validation": "deferred-by-user-request"
+    "note": "Priority heap, limits/overrides, cancellation, completion events and statistics logging; per-instance state and host-polled futures replace browser frames. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/Resource": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::resource",
-    "note": "URL/query/template/credit cloning, all HTTP verbs, typed/optional results, retries through the scheduler, data URIs, text charsets, XML, JSONP and image execution. Native/browser transports are supplied.",
-    "validation": "deferred-by-user-request"
+    "note": "URL/query/template/credit cloning, all HTTP verbs, typed/optional results, retries through the scheduler, data URIs, text charsets, XML, JSONP and image execution. Native/browser transports are supplied. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/TaskProcessor": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::task_processor",
-    "note": "Concurrency, task IDs, shared initialization, cancellation and completion events; native cooperative worker threads and browser module-worker transport supplied.",
-    "validation": "deferred-by-user-request"
+    "note": "Concurrency, task IDs, shared initialization, cancellation and completion events; native cooperative worker threads and browser module-worker transport supplied. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/TexturePacker": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::texture_packer",
-    "note": "Binary atlas subdivision, stable placement and border padding.",
-    "validation": "deferred-by-user-request"
+    "note": "Binary atlas subdivision, stable placement and border padding. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/TileProviderError": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::tile_provider_error",
-    "note": "Retry/success counts, mutable retry-policy events and provider-name logging through TileErrorReporter.",
-    "validation": "deferred-by-user-request"
+    "note": "Retry/success counts, mutable retry-policy events and provider-name logging through TileErrorReporter. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/TrustedServers": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::trusted_servers",
-    "note": "Explicit registry/page protocol; URI.js-compatible Punycode, IPv6 presentation, case and default-port normalization.",
-    "validation": "deferred-by-user-request"
+    "note": "Explicit registry/page protocol; URI.js-compatible Punycode, IPv6 presentation, case and default-port normalization. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/VideoSynchronizer": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::video_synchronizer",
-    "note": "Playback/seek logic and negative-wrap quirk; BrowserVideoBinding manages clock and seek subscriptions, replacement and destruction.",
-    "validation": "deferred-by-user-request"
+    "note": "Playback/seek logic and negative-wrap quirk; BrowserVideoBinding manages clock and seek subscriptions, replacement and destruction. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/decodeGoogleEarthEnterpriseData": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::decode_google_earth_enterprise_data",
-    "note": "In-place rotating-key XOR decoding, compressed-magic bypass and checked malformed-input errors.",
-    "validation": "deferred-by-user-request"
+    "note": "In-place rotating-key XOR decoding, compressed-magic bypass and checked malformed-input errors. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/decodeVectorPolylinePositions": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::decode_vector_polyline_positions",
-    "note": "In-place ZigZag streams, quantized interpolation and ellipsoid Cartesian reconstruction.",
-    "validation": "deferred-by-user-request"
+    "note": "In-place ZigZag streams, quantized interpolation and ellipsoid Cartesian reconstruction. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/getImageFromTypedArray": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::image_helpers::get_image_from_typed_array",
-    "note": "RGBA construction with concrete browser canvas host; view overload preserves whole-backing-buffer behavior.",
-    "validation": "deferred-by-user-request"
+    "note": "RGBA construction with concrete browser canvas host; view overload preserves whole-backing-buffer behavior. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/getImagePixels": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::image_helpers::get_image_pixels",
-    "note": "Cached browser canvas copy/readback and optional target dimensions.",
-    "validation": "deferred-by-user-request"
+    "note": "Cached browser canvas copy/readback and optional target dimensions. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/loadImageFromTypedArray": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::image_helpers::load_image_from_typed_array",
-    "note": "Concrete browser bitmap-option probe, decode/color flags, HTML-image fallback and object-URL cleanup.",
-    "validation": "deferred-by-user-request"
+    "note": "Concrete browser bitmap-option probe, decode/color flags, HTML-image fallback and object-URL cleanup. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/resizeImageToNextPowerOfTwo": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::image_helpers::resize_image_to_next_power_of_two",
-    "note": "Native dimension calculation and concrete browser canvas resampling.",
-    "validation": "deferred-by-user-request"
+    "note": "Native dimension calculation and concrete browser canvas resampling. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/sampleTerrain": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::sample_terrain::sample_terrain",
-    "note": "Concurrent grouped requests, asynchronous backoff, mesh fallback, pre-failure height mutations and error policy. NaN represents an undefined height.",
-    "validation": "deferred-by-user-request"
+    "note": "Concurrent grouped requests, asynchronous backoff, mesh fallback, pre-failure height mutations and error policy. NaN represents an undefined height. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/sampleTerrainMostDetailed": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::sample_terrain::sample_terrain_most_detailed",
-    "note": "Concurrent availability/level groups, dynamically updated availability and changed-level resampling; availability uses interior tree locks.",
-    "validation": "deferred-by-user-request"
+    "note": "Concurrent availability/level groups, dynamically updated availability and changed-level resampling; availability uses interior tree locks. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md."
   },
   "Core/KTX2Transcoder": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::ktx2_transcoder",
-    "note": "Native KTX2 mip/cubemap parsing and output shaping; RustBasisTranscoder supplies ETC1S/UASTC/Zstd decoding and all Cesium target-format choices on native and Wasm.",
-    "validation": "deferred-by-user-request"
+    "note": "Native KTX2 mip/cubemap parsing and output shaping; RustBasisTranscoder supplies ETC1S/UASTC/Zstd decoding and all Cesium target-format choices on native and Wasm. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md. Preserves Cesium Basis flip bits, PVRTC padding, BC7 filter flags and legacy ASTC CEM12 output."
   },
   "Core/loadKTX2": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::ktx2_transcoder::load_ktx2",
-    "note": "Raw buffers and ResourceClient loading feed the supplied portable transcoder, with request deferral preserved.",
-    "validation": "deferred-by-user-request"
+    "note": "Raw buffers and ResourceClient loading feed the supplied portable transcoder, with request deferral preserved. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md. Preserves Cesium Basis flip bits, PVRTC padding, BC7 filter flags and legacy ASTC CEM12 output."
   },
   "Workers/transcodeKTX2": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "core::ktx2_transcoder",
-    "note": "Native uncompressed parsing and portable Basis decoding; Rust tasks replace worker message serialization.",
-    "validation": "deferred-by-user-request"
+    "note": "Native uncompressed parsing and portable Basis decoding; Rust tasks replace worker message serialization. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md. Preserves Cesium Basis flip bits, PVRTC padding, BC7 filter flags and legacy ASTC CEM12 output."
   }
 }

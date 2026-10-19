@@ -3,6 +3,9 @@
 //! Uncompressed images are decoded natively. ETC1S/UASTC entropy decoding is
 //! supplied by a Basis backend, which may use native code or WebAssembly.
 
+#[path = "ktx2_basis_legacy.rs"]
+mod basis_legacy;
+
 use super::compressed_texture_buffer::CompressedTextureBufferOptions;
 use super::{CompressedTextureBuffer, PixelDatatype, PixelFormat, Resource, RuntimeError};
 use std::{future::Future, pin::Pin, sync::Arc};
@@ -80,11 +83,34 @@ impl BasisTranscoder for RustBasisTranscoder {
                 BasisFormat::Astc4x4Rgba => T::Astc4x4Rgba,
                 BasisFormat::Bc7Rgba => T::Bc7Rgba,
             };
+            let etc1s = Ktx2Header::parse(data)?.basis_color_model() == Some(BasisColorModel::Etc1s);
             (0..texture.level_count())
                 .map(|level| {
+                    if etc1s && format == BasisFormat::Astc4x4Rgba {
+                        return basis_legacy::transcode(&texture, level);
+                    }
                     texture
-                        .transcode_image(level, 0, 0, target, DecodeFlags::NONE)
+                        .transcode_image(level, 0, 0, target, DecodeFlags::NO_ETC1S_CHROMA_FILTERING)
                         .map_err(|_| RuntimeError::new("transcodeImage() failed."))
+                        .map(|mut bytes| {
+                            // Basis' reference encoder sets the ETC1S flip bit.
+                            // Its two subblocks have identical endpoints/tables,
+                            // so this canonicalization does not change pixels.
+                            if etc1s && matches!(format, BasisFormat::Etc1Rgb | BasisFormat::Etc2Rgba) {
+                                let stride = if format == BasisFormat::Etc2Rgba { 16 } else { 8 };
+                                for block in bytes.chunks_exact_mut(stride) {
+                                    block[stride - 5] |= 1;
+                                }
+                            }
+                            if matches!(format, BasisFormat::Pvrtc1Rgb4 | BasisFormat::Pvrtc1Rgba4) {
+                                // PVRTC1 allocates at least an 8x8 footprint.
+                                // The reference leaves the unused tail zeroed.
+                                let (w, h) = texture.base_dimensions();
+                                let length = ((w >> level).max(8) as usize * (h >> level).max(8) as usize) / 2;
+                                bytes.resize(length, 0);
+                            }
+                            bytes
+                        })
                 })
                 .collect()
         })

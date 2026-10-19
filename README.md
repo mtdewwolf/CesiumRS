@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 22.8% implemented; 21.0% validated** (220 validated modules, 36 implemented awaiting validation, and 0 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core implementation is at 87.2%, working toward 100% Core; validated coverage is 80.6%** (12,531 more implementation lines). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan) to 100% Core.
+**Status: 22.8% implemented; 22.8% validated** (256 validated modules, 0 implemented awaiting validation, and 0 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core implementation is at 87.2%, working toward 100% Core; validated coverage is 87.2%** (12,531 more implementation lines). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan) to 100% Core.
 
 ## What is ported
 
@@ -36,11 +36,11 @@ All of these live in `src/core`, one Rust module per Cesium module:
 | Time | `JulianDate` (with Cesium's runtime-extendable leap-second table), `GregorianDate`, `LeapSecond`, `Iso8601`, `TimeInterval`, `TimeIntervalCollection`, `TimeStandard`, `TimeConstants`, `Clock`, `ClockStep`, `ClockRange`, `Event` |
 | Astronomy and Earth orientation | `Simon1994PlanetaryPositions` (Sun and Moon positions), `EarthOrientationParameters`, `Iau2006XysData` (Cesium's XYS tables are in `assets/IAU2006_XYS`; the `bundled-xys` feature compiles them in), `Iau2000Orientation`, `IauOrientationAxes`, `IauOrientationParameters` |
 
-### Completed implementations awaiting validation
+### Validated Core foundations
 
 The 35 formerly partial Core modules now have their missing implementation and backend work: resource execution/retries, all HTTP verbs, JSONP/XML/image loading, request statistics, dynamic terrain sampling, geocoder transport/parsing, R-tree collision behavior, IDN normalization, credits, image/video/task adapters, and portable Basis decoding for KTX2. Packing, interpolation and geometry contracts connect to the existing numeric and geometry codecs.
 
-They are **implemented, unchecked** in the tracker. Tests and fixture generation were not run, as requested. Native/WebAssembly compilation and browser-package generation do not establish CesiumJS parity; validated coverage is reported separately. Twenty Core modules remain unstarted.
+These 35 Core modules and the KTX2 worker calculation now pass reference and runtime checks: 617 new CesiumJS cases, native HTTP/worker lifecycle tests and 23 Chromium checks. Validation fixed GEE decoding, Basis output/configuration differences and terrain error propagation. [Validation details and commands](docs/core-validation.md) record the coverage and host adaptations. Twenty Core modules remain unstarted.
 
 Native applications enable `native-host` for `NativeTransport`, `NativeTimer` and cooperative worker threads. `ResourceClient` drives its shared scheduler when a response future is polled. `Resource` fetch methods return an optional future for scheduling deferral and an optional result for no-content or deferred retries. Missing sampled terrain heights use NaN because `Cartographic.height` is numeric.
 
@@ -72,10 +72,11 @@ The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The `tests/core_*.rs` suites load all **25,016 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The `tests/core_*.rs` suites load all **25,633 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
 
 ```bash
-cargo test                                   # unit tests + all CesiumJS fixtures
+cargo test --all-features                    # all fixtures + native host integration
+bash scripts/check-browser-core.sh          # build and validate browser WASM in Chromium
 cd tools/cesium && npm ci && npm run fixtures   # regenerate fixtures from CesiumJS
 npm run tracker                              # refresh README metrics, PORTING.md and charts
 npm run milestone -- "Name"                  # same, starting a new point on the history chart

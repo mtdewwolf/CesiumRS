@@ -16,3 +16,8 @@ The optional browser credit renderer includes DOMPurify (Apache-2.0):
     DOMPurify - https://github.com/cure53/DOMPurify
     Cure53 and other contributors (see the vendored source header)
     Distribution and license: web/host/vendor/
+
+The KTX2 codec compatibility path follows Basis Universal 1.16.4
+(Apache-2.0), preserving the encoder configuration used by CesiumJS:
+    Basis Universal - https://github.com/BinomialLLC/basis_universal
+    Copyright 2019-2021 Binomial LLC

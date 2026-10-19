@@ -154,7 +154,7 @@ fn tile_availability() {
                         opt(&o["y"]).unwrap_or(1.0) as i32,
                     ))
                 };
-                let mut availability = TileAvailability::from_boxed(scheme, u(&a[1]));
+                let availability = TileAvailability::from_boxed(scheme, u(&a[1]));
                 let mut result = vec![availability_queries(&availability, &a[3], &a[4], &a[5])];
                 for r in a[2].as_array().unwrap() {
                     availability.add_available_tile_range(u(&r[0]), u(&r[1]), u(&r[2]), u(&r[3]), u(&r[4]))?;
@@ -261,7 +261,7 @@ fn provider_contract_supports_throttling_futures_and_shared_error_events() {
             Poll::Pending => panic!("ready test future was pending"),
         }
     }
-    let mut availability = TileAvailability::new(GeographicTilingScheme::default(), 4);
+    let availability = TileAvailability::new(GeographicTilingScheme::default(), 4);
     availability.add_available_tile_range(0, 0, 0, 1, 0).unwrap();
     let provider = Provider {
         errors: Arc::new(Mutex::new(Event::new())),
