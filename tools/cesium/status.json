@@ -584,6 +584,11 @@
     "status": "ported",
     "rust": "core::quadratic_real_polynomial"
   },
+  "Core/QuantizedMeshTerrainData": {
+    "status": "ported",
+    "rust": "core::quantized_mesh_terrain_data",
+    "note": "Generic credits, sorted edges, raw/mesh interpolation, meshing, child masks, buffer release and clipped descendant upsampling. Native synchronous calculations with ready futures. Preserves post-mesh UV scale quirk; 56 full lifecycle reference cases."
+  },
   "Core/QuarticRealPolynomial": {
     "status": "ported",
     "rust": "core::quartic_real_polynomial"
@@ -997,9 +1002,19 @@
     "rust": "core::heightmap_processor",
     "note": "Native tessellation and LERC1/2 first-band processing through lerc-reader. Preserves encoded dimensions, masked defaults, trailing-byte and later-band error behavior. Browser serialization/transfers replaced by owned results; validated through HeightmapTerrainData lifecycle fixtures."
   },
+  "Workers/createVerticesFromQuantizedTerrainMesh": {
+    "status": "ported",
+    "rust": "core::quantized_terrain_processor",
+    "note": "Native ENU bounds, vertex quantization, normals/Mercator/exaggeration fields, skirt offsets, edge ordering, indices and horizon metadata. 17 direct worker cases include antimeridian bounds and skirt-induced Uint32 promotion; also checked through terrain-data lifecycles."
+  },
   "Workers/incrementallyBuildTerrainPicker": {
     "status": "ported",
     "rust": "core::terrain_picker::distribute_triangles",
     "note": "Pure native worker calculation replaces message serialization and transfers. Transformed/clamped triangle AABBs distributed to child boxes; 40 reference worker cases plus repeated Core picker sequences."
+  },
+  "Workers/upsampleQuantizedTerrainMesh": {
+    "status": "ported",
+    "rust": "core::quantized_terrain_upsample",
+    "note": "Native two-axis triangle clipping, recursive vertex keys, oct-normal interpolation, edge remapping, re-quantization and bounds. 16 direct worker cases and all four children in terrain-data lifecycle fixtures preserve order and source horizon-center behavior."
   }
 }
