@@ -23,14 +23,10 @@ fn hilbert_cesium_fixtures() {
     run(
         "core",
         "HilbertOrder",
-        |_| TIGHT,
+        |_| EXACT,
         |f, a| match f {
-            "encode2D" => {
-                ok(HilbertOrder::encode_2d(u(&a[0]), n(&a[1]) as u64, n(&a[2]) as u64).map(|v| v.to_string()))
-            }
-            "decode2D" => {
-                ok(HilbertOrder::decode_2d(u(&a[0]), s(&a[1]).parse().unwrap()).map(|(x, y)| [x as f64, y as f64]))
-            }
+            "encode2D" => ok(HilbertOrder::encode_2d_number(u(&a[0]), n(&a[1]), n(&a[2])).map(|v| v.to_string())),
+            "decode2D" => ok(HilbertOrder::decode_2d_decimal(u(&a[0]), s(&a[1])).map(|(x, y)| [x, y])),
             _ => None,
         },
     );
@@ -81,6 +77,11 @@ fn hilbert_order_rejects_invalid_inputs_and_preserves_cesium_precision_quirks() 
     assert_eq!(HilbertOrder::encode_2d(2, 4, 0), None);
     assert_eq!(HilbertOrder::decode_2d(2, 16), None);
     assert_eq!(HilbertOrder::decode_2d(33, 0), None);
+    assert_eq!(HilbertOrder::decode_2d_decimal(33, "0"), Some((0.0, 0.0)));
+    assert!(HilbertOrder::decode_2d_decimal(512, "0").is_none());
+    assert!(HilbertOrder::decode_2d_decimal(33, "-1").is_none());
+    assert!(HilbertOrder::encode_2d_number(1024, 0.0, 0.0).is_none());
+    assert!(HilbertOrder::encode_2d_number(33, f64::INFINITY, 0.0).is_none());
     // Cesium converts the large index to Number before testing its low bits.
     let index = HilbertOrder::encode_2d(27, 134_217_727, 134_217_727).unwrap();
     assert_eq!(index, 12_009_599_006_321_322);

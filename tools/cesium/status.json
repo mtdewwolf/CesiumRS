@@ -1,4 +1,9 @@
 {
+  "Core/ApproximateTerrainHeights": {
+    "status": "ported",
+    "rust": "core::approximate_terrain_heights",
+    "note": "Bundled pinned Cesium height table or caller-supplied JSON; initialized state, cached loading, curvature-adjusted min/max and bounding spheres. Owned/thread-safe scratch state preserves out-of-scheme coordinate behavior; 268 reference cases."
+  },
   "Core/ArcType": {
     "status": "ported",
     "rust": "core::arc_type"
@@ -141,6 +146,11 @@
     "status": "ported",
     "rust": "core::culling_volume"
   },
+  "Core/CustomHeightmapTerrainProvider": {
+    "status": "ported",
+    "rust": "core::custom_heightmap_terrain_provider",
+    "note": "Callback trait with optional futures, typed/number-array samples, typed host credits, scheme precedence, geometric errors and callback rejection propagation. None defers requests. 44 reference cases plus a genuinely pending native future test."
+  },
   "Core/CylinderGeometry": {
     "status": "ported",
     "rust": "core::cylinder_geometry"
@@ -231,6 +241,11 @@
   "Core/EllipsoidTangentPlane": {
     "status": "ported",
     "rust": "core::ellipsoid_tangent_plane"
+  },
+  "Core/EllipsoidTerrainProvider": {
+    "status": "ported",
+    "rust": "core::ellipsoid_terrain_provider",
+    "note": "Zero-height 16x16 tiles, shared errors and scheme/ellipsoid precedence. Ready native futures and explicit quality replace promises/global quality. Preserves signed level-shift errors; 15 reference cases."
   },
   "Core/EllipsoidalOccluder": {
     "status": "ported",
@@ -343,6 +358,11 @@
     "status": "ported",
     "rust": "core::heightmap_encoding"
   },
+  "Core/HeightmapTerrainData": {
+    "status": "ported",
+    "rust": "core::heightmap_terrain_data",
+    "note": "Typed sample layouts, raw/mesh height interpolation, child masks, mesh creation and descendant upsampling. Synchronous native calculations with ready futures; explicit quality; source buffers freed after successful meshing. LERC1/2 via pure Rust lerc-reader; 86 reference lifecycle/error cases."
+  },
   "Core/HeightmapTessellator": {
     "status": "ported",
     "rust": "core::heightmap_tessellator",
@@ -358,9 +378,9 @@
     "note": "createNaturalCubic and createClampedCubic return a CubicSpline enum (Hermite or, for two points, Linear)."
   },
   "Core/HilbertOrder": {
-    "status": "partial",
+    "status": "ported",
     "rust": "core::hilbert_order",
-    "note": "Levels 1–32 checked against CesiumJS, including Number precision and signed-bit quirks. Higher levels are not supported yet."
+    "note": "Number-coordinate encode through level 1023 and BigUint/decimal decode through level 511 (Cesium finite numeric bounds). Preserves signed bitwise tests, NaN and Number rounding. Exact higher-level fixture replay; integer decode convenience API remains limited to level 32."
   },
   "Core/Iau2000Orientation": {
     "status": "ported",
@@ -579,6 +599,11 @@
     "status": "ported",
     "rust": "core::quadratic_real_polynomial"
   },
+  "Core/QuantizedMeshTerrainData": {
+    "status": "ported",
+    "rust": "core::quantized_mesh_terrain_data",
+    "note": "Generic credits, sorted edges, raw/mesh interpolation, meshing, child masks, buffer release and clipped descendant upsampling. Native synchronous calculations with ready futures. Preserves post-mesh UV scale quirk; 56 full lifecycle reference cases."
+  },
   "Core/QuarticRealPolynomial": {
     "status": "ported",
     "rust": "core::quartic_real_polynomial"
@@ -632,6 +657,11 @@
     "status": "ported",
     "rust": "core::runtime_error"
   },
+  "Core/S2Cell": {
+    "status": "ported",
+    "rust": "core::s2_cell",
+    "note": "Native u64 IDs/tokens, hierarchy, geodetic centers and vertices through level 30. Direct Hilbert orientation transitions replace lookup tables. Preserves level-zero face-construction quirk; 721 reference cases across all faces and three ellipsoids."
+  },
   "Core/ScreenSpaceEventType": {
     "status": "ported",
     "rust": "core::screen_space_event_type"
@@ -676,6 +706,11 @@
   "Core/Stereographic": {
     "status": "ported",
     "rust": "core::stereographic"
+  },
+  "Core/TerrainData": {
+    "status": "ported",
+    "rust": "core::terrain_data",
+    "note": "Native trait with associated credit/water-mask types, retryable optional futures for meshes/upsampling, tile/request records and default task limit. Heightmap implementation and contract/ownership tests validate the interface; native synchronous tasks are always ready."
   },
   "Core/TerrainEncoding": {
     "status": "ported",
@@ -977,9 +1012,240 @@
     "status": "ported",
     "rust": "core::pixel_datatype"
   },
+  "Workers/createVerticesFromHeightmap": {
+    "status": "ported",
+    "rust": "core::heightmap_processor",
+    "note": "Native tessellation and LERC1/2 first-band processing through lerc-reader. Preserves encoded dimensions, masked defaults, trailing-byte and later-band error behavior. Browser serialization/transfers replaced by owned results; validated through HeightmapTerrainData lifecycle fixtures."
+  },
+  "Workers/createVerticesFromQuantizedTerrainMesh": {
+    "status": "ported",
+    "rust": "core::quantized_terrain_processor",
+    "note": "Native ENU bounds, vertex quantization, normals/Mercator/exaggeration fields, skirt offsets, edge ordering, indices and horizon metadata. 17 direct worker cases include antimeridian bounds and skirt-induced Uint32 promotion; also checked through terrain-data lifecycles."
+  },
   "Workers/incrementallyBuildTerrainPicker": {
     "status": "ported",
     "rust": "core::terrain_picker::distribute_triangles",
     "note": "Pure native worker calculation replaces message serialization and transfers. Transformed/clamped triangle AABBs distributed to child boxes; 40 reference worker cases plus repeated Core picker sequences."
+  },
+  "Workers/upsampleQuantizedTerrainMesh": {
+    "status": "ported",
+    "rust": "core::quantized_terrain_upsample",
+    "note": "Native two-axis triangle clipping, recursive vertex keys, oct-normal interpolation, edge remapping, re-quantization and bounds. 16 direct worker cases and all four children in terrain-data lifecycle fixtures preserve order and source horizon-center behavior."
+  },
+  "Core/BingMapsGeocoderService": {
+    "status": "implemented",
+    "rust": "core::geocoder_service::BingMapsGeocoderService",
+    "note": "JSONP requests, culture/API-key parameters, bounds, credits and ResourceClient transport.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/CartographicGeocoderService": {
+    "status": "implemented",
+    "rust": "core::geocoder_service::CartographicGeocoderService",
+    "note": "ECMAScript whitespace/number grammar, arbitrary-length radix strings, compass regex and Cartesian destinations.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/CompressedTextureBuffer": {
+    "status": "implemented",
+    "rust": "core::compressed_texture_buffer",
+    "note": "Immutable shared byte views with shallow Clone and optional pixel datatype.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/Credit": {
+    "status": "implemented",
+    "rust": "core::credit",
+    "note": "HTML IDs and equality, clone-specific element identity, Ion attribution; BrowserCreditRenderer sanitizes with pinned DOMPurify and caches per instance.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/DefaultProxy": {
+    "status": "implemented",
+    "rust": "core::proxy::DefaultProxy",
+    "note": "Cesium encodeURIComponent escaping and query-prefix rules.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/GeocoderService": {
+    "status": "implemented",
+    "rust": "core::geocoder_service::GeocoderService",
+    "note": "Asynchronous service trait, point/rectangle results, attribution credits and ResourceClient host.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/GeometryFactory": {
+    "status": "implemented",
+    "rust": "core::geometry_factory",
+    "note": "Shared construction trait for all existing geometry descriptions and closures.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/GoogleEarthEnterpriseTileInformation": {
+    "status": "implemented",
+    "rust": "core::google_earth_enterprise_tile_information",
+    "note": "Protocol fields, child/subtree/imagery/terrain flags, parent inheritance quirk and cloning.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/GoogleGeocoderService": {
+    "status": "implemented",
+    "rust": "core::geocoder_service::GoogleGeocoderService",
+    "note": "Key/address requests, status errors, viewport destinations, singular attribution and ResourceClient transport.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/InterpolationAlgorithm": {
+    "status": "implemented",
+    "rust": "core::interpolation_algorithm",
+    "note": "Shared linear, Lagrange and Hermite interfaces, including Hermite derivative interpolation.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/OpenCageGeocoderService": {
+    "status": "implemented",
+    "rust": "core::geocoder_service::OpenCageGeocoderService",
+    "note": "Request parameter precedence, point/bounds destinations, credits and ResourceClient transport.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/Packable": {
+    "status": "implemented",
+    "rust": "core::packable::Packable",
+    "note": "Native fixed-size numeric packing contract implemented by the existing codecs.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/PackableForInterpolation": {
+    "status": "implemented",
+    "rust": "core::packable::PackableForInterpolation",
+    "note": "Quaternion interpolation packing and inverse conversion contract.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/PeliasGeocoderService": {
+    "status": "implemented",
+    "rust": "core::geocoder_service::PeliasGeocoderService",
+    "note": "Search/autocomplete endpoints, point/bounds results, attributions and ResourceClient transport.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/Proxy": {
+    "status": "implemented",
+    "rust": "core::proxy::Proxy",
+    "note": "Native URL-rewriting interface with DefaultProxy implementation.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/RectangleCollisionChecker": {
+    "status": "implemented",
+    "rust": "core::rectangle_collision_checker",
+    "note": "Native rbush insertion/splitting and ID-removal traversal; inclusive bounds, literal antimeridian intervals and duplicate-ID ordering.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/Request": {
+    "status": "implemented",
+    "rust": "core::request",
+    "note": "Callback/priority options, cancellation flag and clone/reset lifecycle without requiring Clone response types.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/RequestErrorEvent": {
+    "status": "implemented",
+    "rust": "core::request_error_event",
+    "note": "Typed response body, optional HTTP status, parsed response headers and display contract.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/RequestScheduler": {
+    "status": "implemented",
+    "rust": "core::request_scheduler",
+    "note": "Priority heap, limits/overrides, cancellation, completion events and statistics logging; per-instance state and host-polled futures replace browser frames.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/Resource": {
+    "status": "implemented",
+    "rust": "core::resource",
+    "note": "URL/query/template/credit cloning, all HTTP verbs, typed/optional results, retries through the scheduler, data URIs, text charsets, XML, JSONP and image execution. Native/browser transports are supplied.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/TaskProcessor": {
+    "status": "implemented",
+    "rust": "core::task_processor",
+    "note": "Concurrency, task IDs, shared initialization, cancellation and completion events; native cooperative worker threads and browser module-worker transport supplied.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/TexturePacker": {
+    "status": "implemented",
+    "rust": "core::texture_packer",
+    "note": "Binary atlas subdivision, stable placement and border padding.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/TileProviderError": {
+    "status": "implemented",
+    "rust": "core::tile_provider_error",
+    "note": "Retry/success counts, mutable retry-policy events and provider-name logging through TileErrorReporter.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/TrustedServers": {
+    "status": "implemented",
+    "rust": "core::trusted_servers",
+    "note": "Explicit registry/page protocol; URI.js-compatible Punycode, IPv6 presentation, case and default-port normalization.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/VideoSynchronizer": {
+    "status": "implemented",
+    "rust": "core::video_synchronizer",
+    "note": "Playback/seek logic and negative-wrap quirk; BrowserVideoBinding manages clock and seek subscriptions, replacement and destruction.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/decodeGoogleEarthEnterpriseData": {
+    "status": "implemented",
+    "rust": "core::decode_google_earth_enterprise_data",
+    "note": "In-place rotating-key XOR decoding, compressed-magic bypass and checked malformed-input errors.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/decodeVectorPolylinePositions": {
+    "status": "implemented",
+    "rust": "core::decode_vector_polyline_positions",
+    "note": "In-place ZigZag streams, quantized interpolation and ellipsoid Cartesian reconstruction.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/getImageFromTypedArray": {
+    "status": "implemented",
+    "rust": "core::image_helpers::get_image_from_typed_array",
+    "note": "RGBA construction with concrete browser canvas host; view overload preserves whole-backing-buffer behavior.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/getImagePixels": {
+    "status": "implemented",
+    "rust": "core::image_helpers::get_image_pixels",
+    "note": "Cached browser canvas copy/readback and optional target dimensions.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/loadImageFromTypedArray": {
+    "status": "implemented",
+    "rust": "core::image_helpers::load_image_from_typed_array",
+    "note": "Concrete browser bitmap-option probe, decode/color flags, HTML-image fallback and object-URL cleanup.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/resizeImageToNextPowerOfTwo": {
+    "status": "implemented",
+    "rust": "core::image_helpers::resize_image_to_next_power_of_two",
+    "note": "Native dimension calculation and concrete browser canvas resampling.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/sampleTerrain": {
+    "status": "implemented",
+    "rust": "core::sample_terrain::sample_terrain",
+    "note": "Concurrent grouped requests, asynchronous backoff, mesh fallback, pre-failure height mutations and error policy. NaN represents an undefined height.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/sampleTerrainMostDetailed": {
+    "status": "implemented",
+    "rust": "core::sample_terrain::sample_terrain_most_detailed",
+    "note": "Concurrent availability/level groups, dynamically updated availability and changed-level resampling; availability uses interior tree locks.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/KTX2Transcoder": {
+    "status": "implemented",
+    "rust": "core::ktx2_transcoder",
+    "note": "Native KTX2 mip/cubemap parsing and output shaping; RustBasisTranscoder supplies ETC1S/UASTC/Zstd decoding and all Cesium target-format choices on native and Wasm.",
+    "validation": "deferred-by-user-request"
+  },
+  "Core/loadKTX2": {
+    "status": "implemented",
+    "rust": "core::ktx2_transcoder::load_ktx2",
+    "note": "Raw buffers and ResourceClient loading feed the supplied portable transcoder, with request deferral preserved.",
+    "validation": "deferred-by-user-request"
+  },
+  "Workers/transcodeKTX2": {
+    "status": "implemented",
+    "rust": "core::ktx2_transcoder",
+    "note": "Native uncompressed parsing and portable Basis decoding; Rust tasks replace worker message serialization.",
+    "validation": "deferred-by-user-request"
   }
 }

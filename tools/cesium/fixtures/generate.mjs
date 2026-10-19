@@ -28,12 +28,16 @@ import coreCorridors from "./core-corridors.mjs";
 import coreTerrain from "./core-terrain.mjs";
 import coreTerrainProvider from "./core-terrain-provider.mjs";
 import coreTerrainMesh from "./core-terrain-mesh.mjs";
+import coreHeightmapData from "./core-heightmap-data.mjs";
+import coreS2 from "./core-s2.mjs";
+import coreQuantizedTerrain from "./core-quantized-terrain.mjs";
+import coreTerrainBoundsProviders from "./core-terrain-bounds-providers.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = join(here, "../../../tests/fixtures");
 const version = JSON.parse(readFileSync(join(here, "../node_modules/@cesium/engine/package.json"), "utf8")).version;
 
-const packages = { core: [...coreMath(), ...coreGeometry(), ...coreBounds(), ...coreTime(), ...corePacking(), ...coreSplines(), ...coreAlgorithms(), ...coreGeometries(), ...coreUtilities(), ...corePolygon(), ...corePipeline(), ...coreSurfaces(), ...coreLines(), ...coreCorridors(), ...coreTerrain(), ...coreTerrainProvider(), ...await coreTerrainMesh(), ...coreAstronomy()] };
+const packages = { core: [...coreMath(), ...coreGeometry(), ...coreBounds(), ...coreTime(), ...corePacking(), ...coreSplines(), ...coreAlgorithms(), ...coreGeometries(), ...coreUtilities(), ...corePolygon(), ...corePipeline(), ...coreSurfaces(), ...coreLines(), ...coreCorridors(), ...coreTerrain(), ...coreTerrainProvider(), ...await coreTerrainMesh(), ...await coreHeightmapData(), ...coreS2(), ...await coreQuantizedTerrain(), ...await coreTerrainBoundsProviders(), ...coreAstronomy()] };
 // coreAstronomy runs last: loading EOP data adds leap seconds to JulianDate.leapSeconds.
 
 // Optional module names avoid rewriting unrelated fixtures during porting.

@@ -112,5 +112,43 @@
     "date": "2026-10-19",
     "percent": 19.83,
     "ported": 209
+  },
+  {
+    "milestone": "Heightmap terrain data and LERC",
+    "date": "2026-10-19",
+    "percent": 20.11,
+    "ported": 212
+  },
+  {
+    "milestone": "S2 cells and higher Hilbert levels",
+    "date": "2026-10-19",
+    "percent": 20.31,
+    "ported": 214
+  },
+  {
+    "milestone": "Quantized terrain meshes and upsampling",
+    "date": "2026-10-19",
+    "percent": 20.83,
+    "ported": 217
+  },
+  {
+    "milestone": "Terrain bounds and concrete providers",
+    "date": "2026-10-19",
+    "percent": 21.02,
+    "ported": 220
+  },
+  {
+    "milestone": "Core resource foundations (validation deferred)",
+    "date": "2026-10-19",
+    "percent": 21.91,
+    "ported": 220
+  },
+  {
+    "milestone": "Complete partial Core implementations; validation deferred",
+    "date": "2026-10-19",
+    "percent": 22.79,
+    "ported": 220,
+    "implemented": 36,
+    "validatedPercent": 21.02
   }
 ]

@@ -30,9 +30,31 @@ lto = "thin"
 codegen-units = 16
 
 [dependencies]
+basisu = "0.1.0"
+base64 = "0.22"
+encoding_rs = "0.8"
+futures-channel = "0.3"
+futures-util = { version = "0.3", default-features = false, features = ["std", "async-await"] }
+lerc-reader = { version = "0.5.0", default-features = false }
 libm = "0.2"
+num-bigint = "0.4"
+num-traits = "0.2"
+punycode = "0.4.1"
+regex = "1"
+roxmltree = "0.21"
 serde_json = { version = "1", features = ["float_roundtrip"] }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+ureq = { version = "3.4", optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = { version = "0.2", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+js-sys = { version = "0.3", optional = true }
+web-sys = { version = "0.3", optional = true, features = ["HtmlVideoElement", "HtmlMediaElement", "Event", "EventTarget"] }
+
 [features]
+native-host = ["dep:ureq"]
+browser = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures", "dep:js-sys", "dep:web-sys"]
 # Compiles Cesium's IAU 2006 XYS tables (about 1.8 MB) into Iau2006XysData::bundled().
 bundled-xys = []

@@ -343,12 +343,13 @@ impl Uri {
             *p = p.to_ascii_lowercase();
         }
         if let Some(h) = &mut self.hostname {
-            *h = h.to_ascii_lowercase();
+            *h = normalize_hostname(h);
         }
         let default_port = match self.protocol.as_deref() {
             Some("http") | Some("ws") => Some("80"),
             Some("https") | Some("wss") => Some("443"),
             Some("ftp") => Some("21"),
+            Some("gopher") => Some("70"),
             _ => None,
         };
         if self.port.is_some() && self.port.as_deref() == default_port {
@@ -448,4 +449,49 @@ impl std::fmt::Display for Uri {
         }
         f.write_str(&t)
     }
+}
+
+/// URI.js normalizes IDNs with raw Punycode, before lowercasing ASCII.
+/// This deliberately avoids UTS-46 mappings that would change URI.js names.
+pub fn normalize_hostname(host: &str) -> String {
+    if !host.is_ascii() {
+        return host
+            .replace(['\u{3002}', '\u{ff0e}', '\u{ff61}'], ".")
+            .split('.')
+            .map(|label| {
+                if label.is_ascii() {
+                    label.to_string()
+                } else {
+                    punycode::encode(label)
+                        .map(|encoded| format!("xn--{encoded}"))
+                        .unwrap_or_else(|_| label.to_string())
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(".")
+            .to_lowercase();
+    }
+    // Match URI.js's embedded IPv4 preservation rather than Rust's choice to
+    // print IPv4-mapped addresses in dotted decimal in every case.
+    if host.contains(':') {
+        let (address, zone) = host.split_once('%').map_or((host, None), |(a, z)| (a, Some(z)));
+        if let Ok(ip) = address.parse::<std::net::Ipv6Addr>() {
+            let mut normalized = ip.to_string();
+            if !address.contains('.') && normalized.contains('.') {
+                let segments = ip.segments();
+                normalized = format!(
+                    "{}:{:x}:{:x}",
+                    if segments[..5].iter().all(|s| *s == 0) && segments[5] == 0xffff { "::ffff" } else { "::" },
+                    segments[6],
+                    segments[7]
+                );
+            }
+            if let Some(zone) = zone {
+                normalized.push('%');
+                normalized.push_str(zone);
+            }
+            return normalized.to_lowercase();
+        }
+    }
+    host.to_lowercase()
 }

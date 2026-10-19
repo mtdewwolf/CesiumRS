@@ -26,6 +26,15 @@ pub struct ClockOptions {
     pub should_animate: Option<bool>,
 }
 
+/// Full clock state at a tick, for media adapters that cannot borrow the
+/// clock again while it is dispatching its date-only event.
+#[derive(Clone, Copy, Debug)]
+pub struct ClockTick {
+    pub current_time: JulianDate,
+    pub multiplier: f64,
+    pub should_animate: bool,
+}
+
 pub struct Clock {
     pub start_time: JulianDate,
     pub stop_time: JulianDate,
@@ -33,6 +42,7 @@ pub struct Clock {
     pub can_animate: bool,
     /// Raised after every tick with the new current time.
     pub on_tick: Event<JulianDate>,
+    pub on_tick_state: Event<ClockTick>,
     /// Raised when the clock reaches its stop time.
     pub on_stop: Event<JulianDate>,
     current_time: JulianDate,
@@ -68,6 +78,7 @@ impl Clock {
             clock_range: options.clock_range.unwrap_or(ClockRange::Unbounded),
             can_animate: options.can_animate.unwrap_or(true),
             on_tick: Event::new(),
+            on_tick_state: Event::new(),
             on_stop: Event::new(),
             current_time,
             multiplier: options.multiplier.unwrap_or(1.0),
@@ -183,6 +194,11 @@ impl Clock {
         self.current_time = current_time;
         self.last_system_time = current_system_time;
         self.on_tick.raise_event(&current_time);
+        self.on_tick_state.raise_event(&ClockTick {
+            current_time,
+            multiplier: self.multiplier,
+            should_animate: self.should_animate,
+        });
         current_time
     }
 }
