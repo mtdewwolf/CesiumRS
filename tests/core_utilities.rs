@@ -362,24 +362,28 @@ fn guids_events_headers_and_origins() {
     assert!("89ab".contains(&guid[19..20]));
     assert_ne!(guid, cesium_rs::core::create_guid::create_guid());
 
-    use std::cell::{Cell, RefCell};
-    use std::rc::Rc;
-    let event = Rc::new(RefCell::new(Event::<i32>::new()));
-    let hits = Rc::new(Cell::new(0));
+    use std::sync::atomic::{AtomicI32, Ordering};
+    use std::sync::{Arc, Mutex};
+    let event = Arc::new(Mutex::new(Event::<i32>::new()));
+    let hits = Arc::new(AtomicI32::new(0));
     let mut helper = EventHelper::new();
     let h = hits.clone();
-    let remove_one = helper.add(&event, move |_| h.set(h.get() + 1));
+    let remove_one = helper.add(&event, move |_| {
+        h.fetch_add(1, Ordering::SeqCst);
+    });
     let h = hits.clone();
-    let _keep = helper.add(&event, move |_| h.set(h.get() + 10));
-    event.borrow_mut().raise_event(&0);
-    assert_eq!(hits.get(), 11);
+    let _keep = helper.add(&event, move |_| {
+        h.fetch_add(10, Ordering::SeqCst);
+    });
+    event.lock().unwrap().raise_event(&0);
+    assert_eq!(hits.load(Ordering::SeqCst), 11);
     remove_one();
-    event.borrow_mut().raise_event(&0);
-    assert_eq!(hits.get(), 21);
+    event.lock().unwrap().raise_event(&0);
+    assert_eq!(hits.load(Ordering::SeqCst), 21);
     helper.remove_all();
-    event.borrow_mut().raise_event(&0);
-    assert_eq!(hits.get(), 21);
-    assert_eq!(event.borrow().number_of_listeners(), 0);
+    event.lock().unwrap().raise_event(&0);
+    assert_eq!(hits.load(Ordering::SeqCst), 21);
+    assert_eq!(event.lock().unwrap().number_of_listeners(), 0);
 
     let headers =
         parse_response_headers("Content-Type: text/plain\r\nX-1: a\r\nbad line\r\nContent-Type: json\r\n2: b");
@@ -400,28 +404,33 @@ fn guids_events_headers_and_origins() {
 #[test]
 fn js_math_matches_v8_bit_for_bit() {
     use cesium_rs::core::js_math::JsMath;
-    run("core", "JsMath", |_| EXACT, |f, a| {
-        let xs = nums(&a[0]);
-        let map = |op: fn(f64) -> f64| ok(xs.iter().map(|&x| op(x)).collect::<Vec<_>>());
-        match f {
-            "sin" => map(f64::js_sin),
-            "cos" => map(f64::js_cos),
-            "tan" => map(f64::js_tan),
-            "atan" => map(f64::js_atan),
-            "exp" => map(f64::js_exp),
-            "log" => map(f64::js_ln),
-            "asin" => map(f64::js_asin),
-            "acos" => map(f64::js_acos),
-            "cosh" => map(f64::js_cosh),
-            "atan2" => {
-                let x = nums(&a[1]);
-                ok(xs.iter().zip(&x).map(|(&y, &x)| y.js_atan2(x)).collect::<Vec<_>>())
+    run(
+        "core",
+        "JsMath",
+        |_| EXACT,
+        |f, a| {
+            let xs = nums(&a[0]);
+            let map = |op: fn(f64) -> f64| ok(xs.iter().map(|&x| op(x)).collect::<Vec<_>>());
+            match f {
+                "sin" => map(f64::js_sin),
+                "cos" => map(f64::js_cos),
+                "tan" => map(f64::js_tan),
+                "atan" => map(f64::js_atan),
+                "exp" => map(f64::js_exp),
+                "log" => map(f64::js_ln),
+                "asin" => map(f64::js_asin),
+                "acos" => map(f64::js_acos),
+                "cosh" => map(f64::js_cosh),
+                "atan2" => {
+                    let x = nums(&a[1]);
+                    ok(xs.iter().zip(&x).map(|(&y, &x)| y.js_atan2(x)).collect::<Vec<_>>())
+                }
+                "special" => ok(xs
+                    .iter()
+                    .flat_map(|&x| [x.js_sin(), x.js_cos(), x.abs().js_ln(), x.js_atan()])
+                    .collect::<Vec<_>>()),
+                _ => None,
             }
-            "special" => ok(xs
-                .iter()
-                .flat_map(|&x| [x.js_sin(), x.js_cos(), x.abs().js_ln(), x.js_atan()])
-                .collect::<Vec<_>>()),
-            _ => None,
-        }
-    });
+        },
+    );
 }

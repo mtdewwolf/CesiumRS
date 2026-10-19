@@ -12,8 +12,7 @@ use super::typed_array::TypedArray;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::future::Future;
-use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// Host-independent equivalent of Cesium's abstract provider interface.
 /// Implementations supply transport, credits, request tokens and terrain data;
@@ -30,7 +29,10 @@ pub trait TerrainProvider {
     where
         Self: 'a;
 
-    fn error_event(&self) -> Rc<RefCell<Event<Self::Error>>>;
+    /// The provider's shared error event. `Arc<Mutex<_>>` (not the
+    /// `Rc<RefCell<_>>` this once returned) so providers and their listeners
+    /// can be shared between threads; [`Event`] listeners are `Send`.
+    fn error_event(&self) -> Arc<Mutex<Event<Self::Error>>>;
     fn credit(&self) -> Option<&Self::Credit>;
     fn tiling_scheme(&self) -> &dyn TilingScheme;
     fn has_water_mask(&self) -> bool;
@@ -79,6 +81,11 @@ pub struct TerrainGridIndices {
 
 type GridCache = HashMap<(usize, usize), Arc<TypedArray>>;
 type GridEdgeCache = HashMap<(usize, usize), Arc<TerrainGridIndices>>;
+// Per-thread caches of immutable, `Arc`-shared index buffers, keyed by grid
+// size. Thread-local on purpose: the cached values are never mutated after
+// construction, so each thread keeps its own small cache instead of paying
+// for locking on every tile request; memory duplication across threads is
+// bounded by the number of distinct grid sizes actually used.
 thread_local! {
     static GRID: RefCell<GridCache> = RefCell::new(HashMap::new());
     static EDGES: RefCell<GridEdgeCache> = RefCell::new(HashMap::new());

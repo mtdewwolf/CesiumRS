@@ -191,13 +191,12 @@ fn skirt_failures_are_atomic_and_cached_data_is_immutable() {
 
 #[test]
 fn provider_contract_supports_throttling_futures_and_shared_error_events() {
-    use std::cell::RefCell;
     use std::future::{ready, Future, Ready};
     use std::pin::Pin;
-    use std::rc::Rc;
+    use std::sync::Mutex;
     use std::task::{Context, Poll, Waker};
     struct Provider {
-        errors: Rc<RefCell<Event<&'static str>>>,
+        errors: Arc<Mutex<Event<&'static str>>>,
         scheme: GeographicTilingScheme,
         availability: TileAvailability,
         credit: &'static str,
@@ -215,7 +214,7 @@ fn provider_contract_supports_throttling_futures_and_shared_error_events() {
             = Ready<Result<(), Self::Error>>
         where
             Self: 'a;
-        fn error_event(&self) -> Rc<RefCell<Event<Self::Error>>> {
+        fn error_event(&self) -> Arc<Mutex<Event<Self::Error>>> {
             self.errors.clone()
         }
         fn credit(&self) -> Option<&Self::Credit> {
@@ -265,7 +264,7 @@ fn provider_contract_supports_throttling_futures_and_shared_error_events() {
     let mut availability = TileAvailability::new(GeographicTilingScheme::default(), 4);
     availability.add_available_tile_range(0, 0, 0, 1, 0).unwrap();
     let provider = Provider {
-        errors: Rc::new(RefCell::new(Event::new())),
+        errors: Arc::new(Mutex::new(Event::new())),
         scheme: GeographicTilingScheme::default(),
         availability,
         credit: "test credit",
@@ -282,9 +281,11 @@ fn provider_contract_supports_throttling_futures_and_shared_error_events() {
     assert!(!provider.has_water_mask() && provider.has_vertex_normals());
     assert_eq!(provider.tiling_scheme().get_number_of_x_tiles_at_level(0), 2);
     assert!(provider.availability().is_some());
-    let seen = Rc::new(RefCell::new(Vec::new()));
+    let seen = Arc::new(Mutex::new(Vec::new()));
     let captured = seen.clone();
-    provider.error_event().borrow_mut().add_event_listener(move |error| captured.borrow_mut().push(*error));
-    provider.errors.borrow_mut().raise_event(&"provider error");
-    assert_eq!(*seen.borrow(), vec!["provider error"]);
+    provider.error_event().lock().unwrap().add_event_listener(move |error| captured.lock().unwrap().push(*error));
+    // The shared error event can be raised from another thread.
+    let shared = provider.error_event();
+    std::thread::spawn(move || shared.lock().unwrap().raise_event(&"provider error")).join().unwrap();
+    assert_eq!(*seen.lock().unwrap(), vec!["provider error"]);
 }

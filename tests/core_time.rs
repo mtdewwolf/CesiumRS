@@ -3,9 +3,6 @@
 
 mod common;
 
-use std::cell::Cell;
-use std::rc::Rc;
-
 use cesium_rs::core::clock::ClockOptions;
 use cesium_rs::core::time_interval_collection::DateArrayOptions;
 use cesium_rs::core::*;
@@ -171,9 +168,11 @@ fn time_interval() {
 /// collection, each removal's result, and how often `changed_event` fired.
 fn build(ops: &Value) -> (TimeIntervalCollection<f64>, Vec<bool>, u32) {
     let mut c = TimeIntervalCollection::new();
-    let changed = Rc::new(Cell::new(0));
+    let changed = std::sync::Arc::new(std::sync::atomic::AtomicU32::new(0));
     let counter = changed.clone();
-    c.changed_event.add_event_listener(move |_| counter.set(counter.get() + 1));
+    c.changed_event.add_event_listener(move |_| {
+        counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    });
     let mut removed = Vec::new();
     for op in ops.as_array().unwrap() {
         let i = interval(&op[1]);
@@ -183,7 +182,7 @@ fn build(ops: &Value) -> (TimeIntervalCollection<f64>, Vec<bool>, u32) {
             removed.push(c.remove_interval(&i));
         }
     }
-    (c, removed, changed.get())
+    (c, removed, changed.load(std::sync::atomic::Ordering::SeqCst))
 }
 
 #[test]
@@ -299,11 +298,17 @@ fn clock_tick() {
             "tick" => {
                 let mut now = 1000.0;
                 let mut c = clock(&a[0], now);
-                let stops = Rc::new(Cell::new(0));
-                let ticks = Rc::new(Cell::new(0));
+                use std::sync::atomic::{AtomicU32, Ordering};
+                use std::sync::Arc;
+                let stops = Arc::new(AtomicU32::new(0));
+                let ticks = Arc::new(AtomicU32::new(0));
                 let (st, tk) = (stops.clone(), ticks.clone());
-                c.on_stop.add_event_listener(move |_| st.set(st.get() + 1));
-                c.on_tick.add_event_listener(move |_| tk.set(tk.get() + 1));
+                c.on_stop.add_event_listener(move |_| {
+                    st.fetch_add(1, Ordering::SeqCst);
+                });
+                c.on_tick.add_event_listener(move |_| {
+                    tk.fetch_add(1, Ordering::SeqCst);
+                });
                 let out: Vec<Value> = a[1]
                     .as_array()
                     .unwrap()
@@ -313,7 +318,7 @@ fn clock_tick() {
                         c.tick_at(now).enc()
                     })
                     .collect();
-                ok(json!([out, stops.get(), ticks.get(), clock_state(&c)]))
+                ok(json!([out, stops.load(Ordering::SeqCst), ticks.load(Ordering::SeqCst), clock_state(&c)]))
             }
             "setters" => {
                 let mut c = clock(&a[0], 0.0);

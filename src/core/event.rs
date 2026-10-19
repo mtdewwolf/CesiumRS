@@ -2,10 +2,16 @@
 //!
 //! JavaScript identifies a listener by its function and `this`; here
 //! [`Event::add_event_listener`] returns an id to remove it with.
+//!
+//! Listeners must be `Send`, so an `Event` itself is `Send` and can be
+//! shared between threads behind an `Arc<Mutex<_>>` — that is how
+//! `TerrainProvider::error_event` and [`super::EventHelper`] share events.
+//! An `Event` is deliberately not `Sync`: raising one needs `&mut` (or the
+//! mutex), because listeners are `FnMut`.
 
 pub type ListenerId = u64;
 
-type Listener<A> = Box<dyn FnMut(&A)>;
+type Listener<A> = Box<dyn FnMut(&A) + Send>;
 
 pub struct Event<A> {
     listeners: Vec<(ListenerId, Listener<A>)>,
@@ -33,7 +39,7 @@ impl<A> Event<A> {
         self.listeners.len()
     }
 
-    pub fn add_event_listener(&mut self, listener: impl FnMut(&A) + 'static) -> ListenerId {
+    pub fn add_event_listener(&mut self, listener: impl FnMut(&A) + Send + 'static) -> ListenerId {
         let id = self.next_id;
         self.next_id += 1;
         self.listeners.push((id, Box::new(listener)));
@@ -52,5 +58,17 @@ impl<A> Event<A> {
         for (_, l) in &mut self.listeners {
             l(args);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Event;
+
+    #[test]
+    fn events_are_send() {
+        fn assert_send<T: Send>() {}
+        assert_send::<Event<String>>();
+        assert_send::<Event<crate::core::JulianDate>>();
     }
 }

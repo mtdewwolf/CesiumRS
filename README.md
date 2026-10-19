@@ -74,6 +74,7 @@ This leaves other fixture files untouched.
 
 ```bash
 scripts/build-web.sh          # cargo build --target wasm32-unknown-unknown, embedded into web/
+scripts/check-generated.sh    # fail if web/client/generated is stale vs a fresh build
 node scripts/check-web.mjs    # exercise the bundled wasm geodesic API
 cd web && npx lakebed dev
 ```
@@ -86,6 +87,22 @@ Near-antipodal routes use a deterministic great-circle approximation when Vincen
 
 1. **Finish Core to 100%:** terrain data/picking, spatial algorithms (including Hilbert levels above 32), assets, resources, providers and host interfaces. `TerrainEncoding`, `HeightmapTessellator`, `TerrainProvider`, `TileAvailability`, `TerrainPicker` and `TerrainMesh` are ported; terrain-data implementations are next.
 2. **Renderer, Scene, DataSources, Workers and Shaders,** the rest of the way to 100% overall.
+
+## Examples and benchmarks
+
+`examples/` runs against the public API: `geodesic_route` (Vincenty routes and the near-antipodal fallback), `camera_and_picking` (the viewer camera), and `benchmark` (a dependency-free timing harness). Native numbers should use the bench profile — the release profile is size-tuned for the wasm viewer:
+
+```
+cargo run --example geodesic_route
+cargo run --profile bench --example benchmark
+```
+
+## Conventions for new ports
+
+- Mirror Cesium's API shape first; the fixture suites are the contract.
+- A function taking more than four parameters, or several same-typed parameters that are easy to transpose, gets an options struct (several geometry ports already do this). Existing multi-argument functions keep their shape until their Cesium counterpart changes or they are touched for another reason — no flag-day rewrites.
+- Global state follows the contracts in the crate-level docs ("Global state and threading"): Cesium's semantics, explicit synchronization, per-thread where Cesium's single global would be a footgun in Rust.
+- The crate is deliberately not published to crates.io yet (`publish = false`): the API is still moving toward 100% Core. Versions are marked with git tags and GitHub releases instead; see `CHANGELOG.md`.
 
 ## License
 

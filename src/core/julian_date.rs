@@ -6,6 +6,12 @@
 //! The leap-second table is process-wide, like Cesium's mutable
 //! `JulianDate.leapSeconds`: it starts as [`DEFAULT_LEAP_SECONDS`] and
 //! [`JulianDate::add_leap_second`] extends it (as Earth orientation data does).
+//!
+//! Threading contract: the table lives behind an `RwLock`, reads are
+//! poison-tolerant, inserts keep it date-ordered and de-duplicated, and
+//! [`JulianDate::reset_leap_seconds`] restores the defaults — so tests that
+//! add a leap second can (and must) reset it rather than leaking state into
+//! other tests. `JulianDate` itself is a plain `Copy` value: `Send + Sync`.
 
 use super::binary_search::binary_search;
 use super::gregorian_date::GregorianDate;

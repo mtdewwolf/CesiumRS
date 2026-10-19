@@ -11,6 +11,29 @@
 //! tile-level heuristics, and the no-EOP sun rotation fallback — is kept in
 //! those viewer modules and documented there.
 //!
+//! ## Global state and threading
+//!
+//! CesiumJS is single-threaded and keeps several pieces of process-wide
+//! state; the port keeps the same *semantics* with explicit threading
+//! contracts instead of pretending the state is not there:
+//!
+//! - **Leap seconds** (`core::JulianDate`): one process-wide table behind an
+//!   `RwLock`, mirroring Cesium's mutable `JulianDate.leapSeconds`. Inserts
+//!   are date-ordered and de-duplicated; `reset_leap_seconds` restores the
+//!   defaults, and tests that add a second must reset it.
+//! - **Random numbers** (`core::math`): a per-thread Mersenne Twister behind
+//!   `next_random_number`, seeded per thread via `set_random_number_seed`
+//!   (Cesium's `Math.setRandomNumberSeed` seeds one global generator; here
+//!   each thread has its own, so parallel tests do not interleave draws).
+//! - **Terrain grid caches** (`core::TerrainProvider` helpers): per-thread
+//!   caches of immutable `Arc` index buffers keyed by grid size.
+//! - **Events** (`core::Event`): listeners must be `Send`; shared events
+//!   travel as `Arc<Mutex<Event<_>>>` (see `TerrainProvider::error_event`
+//!   and `core::EventHelper`), so providers work across threads.
+//! - Small items: the GUID counter is an `AtomicU64`, `core::Clock`'s start
+//!   instant is a per-thread monotonic anchor, and the C ABI scratch buffers
+//!   in [`api`] are per-thread (the wasm host is single-threaded).
+//!
 //! This is not a binding to the JavaScript library and it is not affiliated
 //! with Cesium GS, Inc. CesiumJS is Apache-2.0; see `LICENSE` and `NOTICE`.
 

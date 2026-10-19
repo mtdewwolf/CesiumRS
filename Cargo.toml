@@ -11,12 +11,23 @@ readme = "README.md"
 name = "cesium_rs"
 crate-type = ["cdylib", "rlib"]
 
+# The release profile is tuned for the wasm viewer (size first): it is what
+# scripts/build-web.sh ships. Native performance work should use the bench
+# profile below instead of changing these settings.
 [profile.release]
 opt-level = "s"
 lto = true
 codegen-units = 1
 panic = "abort"
 strip = "symbols"
+
+# Native-speed profile for examples/benchmark.rs and ad-hoc profiling:
+# `cargo run --profile bench --example benchmark`. Without it, the
+# size-tuned release profile would understate native throughput.
+[profile.bench]
+opt-level = 3
+lto = "thin"
+codegen-units = 16
 
 [dependencies]
 libm = "0.2"

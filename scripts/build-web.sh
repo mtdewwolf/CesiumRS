@@ -9,7 +9,9 @@ cd "$root"
 cargo build --release --target wasm32-unknown-unknown
 wasm="target/wasm32-unknown-unknown/release/cesium_rs.wasm"
 earth="assets/natural-earth-ii-2048.jpg"
-out="web/client/generated"
+# Optional output directory (scripts/check-generated.sh builds elsewhere
+# and compares, so freshness can be checked without touching the tree).
+out="${1:-web/client/generated}"
 mkdir -p "$out"
 
 emit() {
