@@ -363,9 +363,9 @@
     "note": "createNaturalCubic and createClampedCubic return a CubicSpline enum (Hermite or, for two points, Linear)."
   },
   "Core/HilbertOrder": {
-    "status": "partial",
+    "status": "ported",
     "rust": "core::hilbert_order",
-    "note": "Levels 1–32 checked against CesiumJS, including Number precision and signed-bit quirks. Higher levels are not supported yet."
+    "note": "Number-coordinate encode through level 1023 and BigUint/decimal decode through level 511 (Cesium finite numeric bounds). Preserves signed bitwise tests, NaN and Number rounding. Exact higher-level fixture replay; integer decode convenience API remains limited to level 32."
   },
   "Core/Iau2000Orientation": {
     "status": "ported",
@@ -636,6 +636,11 @@
   "Core/RuntimeError": {
     "status": "ported",
     "rust": "core::runtime_error"
+  },
+  "Core/S2Cell": {
+    "status": "ported",
+    "rust": "core::s2_cell",
+    "note": "Native u64 IDs/tokens, hierarchy, geodetic centers and vertices through level 30. Direct Hilbert orientation transitions replace lookup tables. Preserves level-zero face-construction quirk; 721 reference cases across all faces and three ellipsoids."
   },
   "Core/ScreenSpaceEventType": {
     "status": "ported",

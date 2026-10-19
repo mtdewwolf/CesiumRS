@@ -118,5 +118,11 @@
     "date": "2026-10-19",
     "percent": 20.11,
     "ported": 212
+  },
+  {
+    "milestone": "S2 cells and higher Hilbert levels",
+    "date": "2026-10-19",
+    "percent": 20.31,
+    "ported": 214
   }
 ]

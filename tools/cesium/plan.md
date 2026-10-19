@@ -23,7 +23,9 @@ Along the way, `core::js_math` made the port's `sin`, `cos`, `log` and the other
    - ✅ `TerrainPicker`, `TerrainMesh`, and native incremental picker refinement
    - ✅ `TerrainData`, `HeightmapTerrainData`, LERC decoding and native heightmap mesh processing
    - ⬜ `QuantizedMeshTerrainData` and the remaining terrain geometry processors
-7. ⬜ **Remaining spatial algorithms:** `S2Cell`, `RectangleCollisionChecker`, `ApproximateTerrainHeights`, `GroundPolylineGeometry`, and Hilbert levels above 32.
+7. ⬜ **Remaining spatial algorithms:**
+   - ✅ `S2Cell` and Hilbert levels above 32, through Cesium's finite numeric bounds
+   - ⬜ `RectangleCollisionChecker`, `ApproximateTerrainHeights`, `GroundPolylineGeometry`
 8. ⬜ **Asset and texture processing:** compressed texture buffers, KTX2 transcoding/loading, texture packing, vector and Google Earth Enterprise decoding, and image/canvas helpers through explicit host adapters where needed.
 9. ⬜ **Resource and execution infrastructure:** requests, errors, scheduling, resources, trusted servers, task processing, proxy contracts and credits. Inject I/O and host capabilities so behavior remains testable in native Rust and WebAssembly.
 10. ⬜ **Terrain providers and service clients:** heightmap/ellipsoid/quantized and 3D Tiles terrain providers, Google Earth Enterprise metadata and terrain, Ion resources, geocoders, platform clients and world-terrain factories. Validate parsing, request construction and response/error behavior using deterministic fixtures.
