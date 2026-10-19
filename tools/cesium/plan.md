@@ -22,7 +22,8 @@ Along the way, `core::js_math` made the port's `sin`, `cos`, `log` and the other
    - ✅ `TerrainProvider` contract, cached grid/edge/skirt indices and geometric errors; `TileAvailability` quadtree ranges and coverage queries
    - ✅ `TerrainPicker`, `TerrainMesh`, and native incremental picker refinement
    - ✅ `TerrainData`, `HeightmapTerrainData`, LERC decoding and native heightmap mesh processing
-   - ⬜ `QuantizedMeshTerrainData` and the remaining terrain geometry processors
+   - ✅ `QuantizedMeshTerrainData` and native quantized mesh creation/upsampling
+   - ⬜ 3D Tiles and Google Earth Enterprise terrain data/processors (service-client batches below)
 7. ⬜ **Remaining spatial algorithms:**
    - ✅ `S2Cell` and Hilbert levels above 32, through Cesium's finite numeric bounds
    - ⬜ `RectangleCollisionChecker`, `ApproximateTerrainHeights`, `GroundPolylineGeometry`

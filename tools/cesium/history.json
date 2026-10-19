@@ -124,5 +124,11 @@
     "date": "2026-10-19",
     "percent": 20.31,
     "ported": 214
+  },
+  {
+    "milestone": "Quantized terrain meshes and upsampling",
+    "date": "2026-10-19",
+    "percent": 20.83,
+    "ported": 217
   }
 ]
