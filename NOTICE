@@ -1,0 +1,13 @@
+CesiumRS
+Copyright 2026 Steven Groves
+
+This project is a Rust port of CesiumJS (@cesium/engine 23.0.0, CesiumJS 1.139),
+which is licensed under the Apache License, Version 2.0:
+
+    CesiumJS - https://github.com/CesiumGS/cesium
+    Copyright 2011-2026 Cesium GS, Inc. and Contributors
+
+This project is not affiliated with Cesium GS, Inc.
+
+The viewer uses Natural Earth II imagery, which is in the public domain:
+    Natural Earth - https://www.naturalearthdata.com
