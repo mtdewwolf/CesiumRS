@@ -682,9 +682,19 @@
     "rust": "core::terrain_encoding",
     "note": "Native f32 slices, typed vertex/layout records and Clone. Missing optional fields return None; invalid writes and layout conversions leave buffers unchanged."
   },
+  "Core/TerrainProvider": {
+    "status": "ported",
+    "rust": "core::terrain_provider",
+    "note": "Native trait with associated data/request/credit types and futures replaces the abstract JS contract. Grid/edge/skirt indices use immutable per-thread Arc caches; explicit quality replaces the mutable global. 166 reference cases plus provider-contract and atomic-write tests."
+  },
   "Core/TerrainQuantization": {
     "status": "ported",
     "rust": "core::terrain_quantization"
+  },
+  "Core/TileAvailability": {
+    "status": "ported",
+    "rust": "core::tile_availability",
+    "note": "Owned tiling scheme and quadtree ranges; position, rectangle coverage, tile queries and child masks. Preserves insertion order, sparse-child boundary and maximum-level mask quirks. Checked native coordinates; 50 reference cases with snapshots after every insertion."
   },
   "Core/TileEdge": {
     "status": "ported",
