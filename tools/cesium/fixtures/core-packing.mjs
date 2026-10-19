@@ -40,6 +40,25 @@ function hilbertSuite() {
     const max = (4n ** BigInt(level) - 1n).toString();
     s.add("decode2D", [level, max], (l, i) => HilbertOrder.decode2D(l, BigInt(i)));
   }
+  for(const level of [33,40,53,54,63,64,100,256,511,512,1023]) {
+    const n=2**level,last=level<=53?n-1:n*(1-Number.EPSILON/2);
+    const points=[[0,0],[last,last],[last,0],[0,last],[.25,.75],[1,2],[NaN,0],[0,NaN],[NaN,5]];
+    for(let i=0;i<20;i++)points.push([Math.floor(g.rng()*n),Math.floor(g.rng()*n)]);
+    for(const p of points) {
+      s.add("encode2D",[level,...p],(...args)=>HilbertOrder.encode2D(...args).toString());
+      if(level<=511){const index=HilbertOrder.encode2D(level,...p).toString();s.add("decode2D",[level,index],(l,i)=>HilbertOrder.decode2D(l,BigInt(i)));}
+    }
+    if(level<=511){
+      const limit=1n<<BigInt(2*level);
+      const indices=[limit-1n,limit/2n,limit/2n-1n,limit/2n+1n];
+      for(let i=0;i<20;i++){
+        let index=0n;
+        for(let j=0;j<Math.ceil(2*level/32);j++)index=(index<<32n)|BigInt(Math.floor(g.rng()*2**32));
+        indices.push(index%limit);
+      }
+      for(const index of indices)s.add("decode2D",[level,index.toString()],(l,i)=>HilbertOrder.decode2D(l,BigInt(i)));
+    }
+  }
   return s;
 }
 

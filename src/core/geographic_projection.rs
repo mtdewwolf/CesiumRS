@@ -27,6 +27,9 @@ impl GeographicProjection {
 }
 
 impl MapProjection for GeographicProjection {
+    fn is_geographic(&self) -> bool {
+        true
+    }
     fn ellipsoid(&self) -> &Ellipsoid {
         &self.ellipsoid
     }
