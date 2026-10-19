@@ -21,7 +21,8 @@ Along the way, `core::js_math` made the port's `sin`, `cos`, `log` and the other
 6. ⬜ **Terrain data and picking:**
    - ✅ `TerrainProvider` contract, cached grid/edge/skirt indices and geometric errors; `TileAvailability` quadtree ranges and coverage queries
    - ✅ `TerrainPicker`, `TerrainMesh`, and native incremental picker refinement
-   - ⬜ `HeightmapTerrainData`, `QuantizedMeshTerrainData`, `TerrainData` and the terrain geometry processors
+   - ✅ `TerrainData`, `HeightmapTerrainData`, LERC decoding and native heightmap mesh processing
+   - ⬜ `QuantizedMeshTerrainData` and the remaining terrain geometry processors
 7. ⬜ **Remaining spatial algorithms:** `S2Cell`, `RectangleCollisionChecker`, `ApproximateTerrainHeights`, `GroundPolylineGeometry`, and Hilbert levels above 32.
 8. ⬜ **Asset and texture processing:** compressed texture buffers, KTX2 transcoding/loading, texture packing, vector and Google Earth Enterprise decoding, and image/canvas helpers through explicit host adapters where needed.
 9. ⬜ **Resource and execution infrastructure:** requests, errors, scheduling, resources, trusted servers, task processing, proxy contracts and credits. Inject I/O and host capabilities so behavior remains testable in native Rust and WebAssembly.

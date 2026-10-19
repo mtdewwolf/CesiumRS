@@ -99,7 +99,7 @@ fn terrain_mesh() {
                     center: c3(&a[0]["center"]),
                     vertices,
                     indices: topology.indices.as_ref().clone(),
-                    index_count_without_skirts: 24,
+                    index_count_without_skirts: Some(24),
                     vertex_count_without_skirts: 9,
                     minimum_height: n(&a[0]["minimum"]),
                     maximum_height: n(&a[0]["maximum"]),

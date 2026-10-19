@@ -343,6 +343,11 @@
     "status": "ported",
     "rust": "core::heightmap_encoding"
   },
+  "Core/HeightmapTerrainData": {
+    "status": "ported",
+    "rust": "core::heightmap_terrain_data",
+    "note": "Typed sample layouts, raw/mesh height interpolation, child masks, mesh creation and descendant upsampling. Synchronous native calculations with ready futures; explicit quality; source buffers freed after successful meshing. LERC1/2 via pure Rust lerc-reader; 86 reference lifecycle/error cases."
+  },
   "Core/HeightmapTessellator": {
     "status": "ported",
     "rust": "core::heightmap_tessellator",
@@ -677,6 +682,11 @@
     "status": "ported",
     "rust": "core::stereographic"
   },
+  "Core/TerrainData": {
+    "status": "ported",
+    "rust": "core::terrain_data",
+    "note": "Native trait with associated credit/water-mask types, retryable optional futures for meshes/upsampling, tile/request records and default task limit. Heightmap implementation and contract/ownership tests validate the interface; native synchronous tasks are always ready."
+  },
   "Core/TerrainEncoding": {
     "status": "ported",
     "rust": "core::terrain_encoding",
@@ -976,6 +986,11 @@
   "Renderer/PixelDatatype": {
     "status": "ported",
     "rust": "core::pixel_datatype"
+  },
+  "Workers/createVerticesFromHeightmap": {
+    "status": "ported",
+    "rust": "core::heightmap_processor",
+    "note": "Native tessellation and LERC1/2 first-band processing through lerc-reader. Preserves encoded dimensions, masked defaults, trailing-byte and later-band error behavior. Browser serialization/transfers replaced by owned results; validated through HeightmapTerrainData lifecycle fixtures."
   },
   "Workers/incrementallyBuildTerrainPicker": {
     "status": "ported",
