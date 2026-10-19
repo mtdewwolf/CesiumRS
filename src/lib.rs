@@ -1,43 +1,51 @@
-//! Rust port of the CesiumJS 1.139 geospatial core.
+//! Rust port of the CesiumJS 1.139 geospatial core, plus the Lakebed
+//! viewer that runs on it.
 //!
-//! The formulas follow CesiumJS (`Ellipsoid`, `EllipsoidGeodesic`,
-//! `WebMercatorProjection`, `IntersectionTests.rayEllipsoid`,
-//! `Transforms.eastNorthUpToFixedFrame`, and `Camera` heading/pitch/range),
-//! which is Apache-2.0. This is not a binding to the JavaScript library and
-//! it is not affiliated with Cesium GS, Inc.
+//! The ported CesiumJS Core modules live in [`core`] — one Rust module per
+//! Cesium module, checked against CesiumJS fixtures. The viewer layer
+//! ([`camera`], [`geodesic`], [`mesh`], [`sun`], and the C ABI in [`api`])
+//! is built entirely on `core`: there are no separate first-generation
+//! implementations of the ellipsoid, geodesic, projection, or intersection
+//! math. Viewer-only behaviour that Core does not have — the
+//! heading/pitch/range camera offset, the near-antipodal geodesic fallback,
+//! tile-level heuristics, and the no-EOP sun rotation fallback — is kept in
+//! those viewer modules and documented there.
+//!
+//! This is not a binding to the JavaScript library and it is not affiliated
+//! with Cesium GS, Inc. CesiumJS is Apache-2.0; see `LICENSE` and `NOTICE`.
 
 pub mod api;
 pub mod camera;
 pub mod core;
-pub mod ellipsoid;
 pub mod geodesic;
-pub mod intersect;
-pub mod math;
 pub mod mesh;
-pub mod projection;
 pub mod sun;
 
-pub use camera::look_at;
-pub use ellipsoid::{cartesian_to_cartographic, cartographic_to_cartesian, Ellipsoid};
+pub use camera::{look_at, pick_ray, CameraFrame, Pick};
 pub use geodesic::Geodesic;
-pub use intersect::{pick_ray, ray_ellipsoid};
-pub use projection::{project, unproject};
 pub use sun::sun_direction_ecef;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::camera::{enu_axes, offset_from_heading_pitch_range};
-    use crate::math::{to_radians, PI, PI_OVER_TWO};
-    use crate::projection::{geographic_tile_rectangle, maximum_latitude, mercator_angle_to_geodetic_latitude};
+    use crate::camera::{offset_from_heading_pitch_range, ray_from_ndc};
+    use crate::core::math::{to_radians, PI, PI_OVER_TWO};
+    use crate::core::{
+        Cartesian3, Cartographic, Ellipsoid, GeographicTilingScheme, MapProjection, TilingScheme, Transforms,
+        WebMercatorProjection,
+    };
 
     fn wgs84() -> Ellipsoid {
-        Ellipsoid::wgs84()
+        Ellipsoid::WGS84
+    }
+
+    fn to_cartesian(e: &Ellipsoid, lon: f64, lat: f64, h: f64) -> Cartesian3 {
+        e.cartographic_to_cartesian(&Cartographic::new(lon, lat, h))
     }
 
     #[test]
     fn equator_prime_meridian_is_semimajor_axis() {
-        let p = cartographic_to_cartesian(&wgs84(), 0.0, 0.0, 0.0);
+        let p = to_cartesian(&wgs84(), 0.0, 0.0, 0.0);
         assert!((p.x - 6_378_137.0).abs() < 1e-6);
         assert!(p.y.abs() < 1e-6);
         assert!(p.z.abs() < 1e-6);
@@ -45,7 +53,7 @@ mod tests {
 
     #[test]
     fn north_pole_is_semiminor_axis() {
-        let p = cartographic_to_cartesian(&wgs84(), 0.0, PI_OVER_TWO, 0.0);
+        let p = to_cartesian(&wgs84(), 0.0, PI_OVER_TWO, 0.0);
         assert!(p.x.abs() < 1e-4);
         assert!(p.y.abs() < 1e-4);
         assert!((p.z - 6_356_752.314_245_179_3).abs() < 1e-4);
@@ -60,18 +68,29 @@ mod tests {
             (0.4, -0.7, 250_000.0),
         ];
         for (lon, lat, h) in samples {
-            let p = cartographic_to_cartesian(&wgs84(), lon, lat, h);
-            let c = cartesian_to_cartographic(&wgs84(), p).unwrap();
+            let e = wgs84();
+            let p = to_cartesian(&e, lon, lat, h);
+            let c = e.cartesian_to_cartographic(p).unwrap();
             assert!((c.longitude - lon).abs() < 1e-10, "lon {lon}");
             assert!((c.latitude - lat).abs() < 1e-10, "lat {lat}");
             assert!((c.height - h).abs() < 1e-3, "height {}", c.height - h);
         }
     }
 
+    fn enu_columns(origin: Cartesian3, e: &Ellipsoid) -> (Cartesian3, Cartesian3, Cartesian3) {
+        let m = Transforms::east_north_up_to_fixed_frame(origin, e);
+        (
+            Cartesian3::new(m.0[0], m.0[1], m.0[2]),
+            Cartesian3::new(m.0[4], m.0[5], m.0[6]),
+            Cartesian3::new(m.0[8], m.0[9], m.0[10]),
+        )
+    }
+
     #[test]
     fn enu_at_equator() {
-        let origin = cartographic_to_cartesian(&wgs84(), 0.0, 0.0, 0.0);
-        let (east, north, up) = enu_axes(origin, &wgs84());
+        let e = wgs84();
+        let origin = to_cartesian(&e, 0.0, 0.0, 0.0);
+        let (east, north, up) = enu_columns(origin, &e);
         assert!(east.y > 0.999);
         assert!(north.z > 0.999);
         assert!(up.x > 0.999);
@@ -79,8 +98,9 @@ mod tests {
 
     #[test]
     fn enu_at_north_pole() {
-        let origin = cartographic_to_cartesian(&wgs84(), 0.0, PI_OVER_TWO, 0.0);
-        let (east, north, up) = enu_axes(origin, &wgs84());
+        let e = wgs84();
+        let origin = to_cartesian(&e, 0.0, PI_OVER_TWO, 0.0);
+        let (east, north, up) = enu_columns(origin, &e);
         assert!((east.y - 1.0).abs() < 1e-8);
         assert!((north.x + 1.0).abs() < 1e-6);
         assert!((up.z - 1.0).abs() < 1e-8);
@@ -90,7 +110,7 @@ mod tests {
     fn nadir_camera_sits_above_focus() {
         let e = wgs84();
         let frame = look_at(&e, 0.0, 0.0, 0.0, 0.0, -PI_OVER_TWO, 1_000.0, to_radians(60.0), 1.0, 1.0, 10_000_000.0);
-        let focus = cartographic_to_cartesian(&e, 0.0, 0.0, 0.0);
+        let focus = to_cartesian(&e, 0.0, 0.0, 0.0);
         let offset = frame.eye - focus;
         assert!((offset.magnitude() - 1_000.0).abs() < 1e-4);
         assert!(offset.x > 999.0);
@@ -107,8 +127,8 @@ mod tests {
     #[test]
     fn ray_from_outside_hits_equator() {
         let e = wgs84();
-        let origin = cartographic_to_cartesian(&e, 0.0, 0.0, 2_000_000.0);
-        let hit = pick_ray(origin, crate::math::Vec3::new(-1.0, 0.0, 0.0), &e).unwrap();
+        let origin = to_cartesian(&e, 0.0, 0.0, 2_000_000.0);
+        let hit = pick_ray(origin, Cartesian3::new(-1.0, 0.0, 0.0), &e).unwrap();
         assert!(hit.longitude.abs() < 1e-6);
         assert!(hit.latitude.abs() < 1e-6);
         assert!(hit.height.abs() < 1e-2);
@@ -135,22 +155,23 @@ mod tests {
 
     #[test]
     fn web_mercator_roundtrip_and_max_latitude() {
-        let max_lat = maximum_latitude();
-        assert!((max_lat - mercator_angle_to_geodetic_latitude(PI)).abs() < 1e-15);
+        let max_lat = WebMercatorProjection::maximum_latitude();
+        assert!((max_lat - WebMercatorProjection::mercator_angle_to_geodetic_latitude(PI)).abs() < 1e-15);
         assert!((max_lat.to_degrees() - 85.051_128_78).abs() < 1e-6);
-        let a = wgs84().maximum_radius;
-        let (x, y, z) = project(0.5, 0.4, 12.0, a);
-        let (lon, lat, h) = unproject(x, y, z, a);
-        assert!((lon - 0.5).abs() < 1e-12);
-        assert!((lat - 0.4).abs() < 1e-12);
-        assert!((h - 12.0).abs() < 1e-9);
-        let (ox, oy, _) = project(0.0, 0.0, 0.0, a);
-        assert!(ox.abs() < 1e-6 && oy.abs() < 1e-6);
+        let projection = WebMercatorProjection::new(wgs84());
+        let p = projection.project(&Cartographic::new(0.5, 0.4, 12.0));
+        let c = projection.unproject(p);
+        assert!((c.longitude - 0.5).abs() < 1e-12);
+        assert!((c.latitude - 0.4).abs() < 1e-12);
+        assert!((c.height - 12.0).abs() < 1e-9);
+        let o = projection.project(&Cartographic::new(0.0, 0.0, 0.0));
+        assert!(o.x.abs() < 1e-6 && o.y.abs() < 1e-6);
     }
 
     #[test]
     fn geographic_level_zero_northwest_tile() {
-        let r = geographic_tile_rectangle(0, 0, 0);
+        let scheme = GeographicTilingScheme::new(wgs84(), crate::core::Rectangle::MAX_VALUE, 2, 1);
+        let r = scheme.tile_xy_to_rectangle(0.0, 0.0, 0);
         assert!((r.west + PI).abs() < 1e-12);
         assert!(r.east.abs() < 1e-12);
         assert!((r.north - PI_OVER_TWO).abs() < 1e-12);
@@ -159,13 +180,14 @@ mod tests {
 
     #[test]
     fn sun_direction_is_unit_and_seasonal() {
+        let e = wgs84();
         let d = sun_direction_ecef(2_460_230.5);
         assert!((d.magnitude() - 1.0).abs() < 1e-9);
-        let p = cartesian_to_cartographic(&wgs84(), d * wgs84().maximum_radius).unwrap();
-        assert!(p.latitude.abs() < 0.45);
+        let p = e.cartesian_to_cartographic(d.multiply_by_scalar(e.maximum_radius)).unwrap();
+        assert!(p.latitude.abs() < 0.45, "subsolar latitude {}", p.latitude);
     }
 
-    fn to_ndc(m: &[f64; 16], p: crate::math::Vec3) -> (f64, f64) {
+    fn to_ndc(m: &[f64; 16], p: Cartesian3) -> (f64, f64) {
         let x = m[0] * p.x + m[4] * p.y + m[8] * p.z + m[12];
         let y = m[1] * p.x + m[5] * p.y + m[9] * p.z + m[13];
         let w = m[3] * p.x + m[7] * p.y + m[11] * p.z + m[15];
@@ -179,10 +201,10 @@ mod tests {
             let (lon, lat) = (to_radians(lon), to_radians(lat));
             for &pitch in &[-PI_OVER_TWO, to_radians(-45.0)] {
                 let f = look_at(&e, lon, lat, 0.0, 0.0, pitch, 2.0e7, 0.8, 1.5, 1.0, 1.0e9);
-                let (cx, cy) = to_ndc(&f.view_projection, f.focus);
+                let (cx, cy) = to_ndc(&f.view_projection.0, f.focus);
                 let d = to_radians(5.0);
-                let (nx, ny) = to_ndc(&f.view_projection, cartographic_to_cartesian(&e, lon, lat + d, 0.0));
-                let (ex, _) = to_ndc(&f.view_projection, cartographic_to_cartesian(&e, lon + d, lat, 0.0));
+                let (nx, ny) = to_ndc(&f.view_projection.0, to_cartesian(&e, lon, lat + d, 0.0));
+                let (ex, _) = to_ndc(&f.view_projection.0, to_cartesian(&e, lon + d, lat, 0.0));
                 assert!(cx.abs() < 1e-6 && cy.abs() < 1e-6);
                 assert!(ny > cy && (nx - cx).abs() < 1e-6, "north must be up");
                 assert!(ex > cx, "east must be right");
@@ -212,7 +234,7 @@ mod tests {
         let mesh = crate::mesh::build_globe(&wgs84(), 8, 16);
         let p = |i: u32| {
             let v = &mesh.vertices[i as usize * 8..][..3];
-            crate::math::Vec3::new(f64::from(v[0]), f64::from(v[1]), f64::from(v[2]))
+            Cartesian3::new(f64::from(v[0]), f64::from(v[1]), f64::from(v[2]))
         };
         for t in mesh.indices.chunks(3) {
             let (a, b, c) = (p(t[0]), p(t[1]), p(t[2]));
@@ -229,11 +251,39 @@ mod tests {
         let e = wgs84();
         let (lon, lat) = (to_radians(-86.71), to_radians(30.05));
         let f = look_at(&e, lon, lat, 0.0, 0.0, -PI_OVER_TWO, 2.0e7, 0.8, 1.5, 1.0, 1.0e9);
-        let (o, d) = crate::camera::ray_from_ndc(&f, 0.0, 0.2);
+        let (o, d) = ray_from_ndc(&f, 0.0, 0.2);
         let up = pick_ray(o, d, &e).unwrap();
-        let (o, d) = crate::camera::ray_from_ndc(&f, 0.2, 0.0);
+        let (o, d) = ray_from_ndc(&f, 0.2, 0.0);
         let right = pick_ray(o, d, &e).unwrap();
         assert!(up.latitude > lat);
         assert!(right.longitude > lon);
+    }
+    #[test]
+    fn tile_grids_are_finite_and_clamp_mercator_focus() {
+        let e = wgs84();
+        // Geographic level 1 is 4 x 2 tiles; each tile is 4 edges of 2
+        // segments, 6 floats per segment.
+        let geo = crate::mesh::build_tile_grid(&e, 1, 0, 0.3, 0.2, 0, 2);
+        assert_eq!(geo.len(), 8 * 4 * 2 * 6);
+        assert!(geo.iter().all(|v| v.is_finite()));
+        // Web Mercator level 1 is 2 x 2 tiles; a focus beyond the maximum
+        // latitude is clamped into the scheme instead of drawing nothing.
+        let wm = crate::mesh::build_tile_grid(&e, 1, 1, 0.3, 1.5, 0, 2);
+        assert_eq!(wm.len(), 4 * 4 * 2 * 6);
+        assert!(wm.iter().all(|v| v.is_finite()));
+        // A windowed grid around the focus draws (2w+1)^2 tiles at most.
+        let win = crate::mesh::build_tile_grid(&e, 5, 0, 0.3, 0.2, 1, 2);
+        assert_eq!(win.len(), 9 * 4 * 2 * 6);
+        assert!(win.iter().all(|v| v.is_finite()));
+    }
+
+    #[test]
+    fn graticule_and_stars_are_finite_and_deterministic() {
+        let e = wgs84();
+        let graticule = crate::mesh::build_graticule(&e, 30.0, 8);
+        assert!(!graticule.is_empty() && graticule.iter().all(|v| v.is_finite()));
+        let stars = crate::mesh::build_stars(16, 42);
+        assert_eq!(stars.len(), 16 * 4);
+        assert_eq!(stars, crate::mesh::build_stars(16, 42));
     }
 }

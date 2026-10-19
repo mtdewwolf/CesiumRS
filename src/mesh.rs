@@ -1,12 +1,19 @@
-//! Globe, graticule, geodesic, and tile meshes in ECEF.
+//! Globe, graticule, geodesic, and tile meshes in ECEF, built on `core`:
+//! positions and normals from `Ellipsoid`, tile rectangles and lookup from
+//! the `GeographicTilingScheme` / `WebMercatorTilingScheme` implementations
+//! of Core's `TilingScheme` trait.
 
-use crate::ellipsoid::{cartographic_to_cartesian, geodetic_surface_normal_cartographic, Ellipsoid};
-use crate::geodesic::Geodesic;
-use crate::math::{to_radians, PI, PI_OVER_TWO, TAU};
-use crate::projection::{
-    geographic_tile_count, geographic_tile_of, geographic_tile_rectangle, web_mercator_tile_count,
-    web_mercator_tile_rectangle,
+use crate::core::math::to_radians;
+use crate::core::{
+    Cartesian3, Cartographic, Ellipsoid, GeographicTilingScheme, Rectangle, TilingScheme, WebMercatorProjection,
+    WebMercatorTilingScheme,
 };
+use crate::geodesic::Geodesic;
+use std::f64::consts::{FRAC_PI_2, PI, TAU};
+
+fn to_cartesian(ellipsoid: &Ellipsoid, lon: f64, lat: f64) -> Cartesian3 {
+    ellipsoid.cartographic_to_cartesian(&Cartographic::new(lon, lat, 0.0))
+}
 
 #[derive(Clone, Debug)]
 pub struct GlobeMesh {
@@ -28,12 +35,12 @@ pub fn build_globe(ellipsoid: &Ellipsoid, lat_segments: u32, lon_segments: u32) 
     let mut vertices = Vec::with_capacity((rows * cols) as usize * 8);
     for row in 0..rows {
         let v = f64::from(row) / f64::from(lat_segments);
-        let lat = PI_OVER_TWO - v * PI;
+        let lat = FRAC_PI_2 - v * PI;
         for col in 0..cols {
             let u = f64::from(col) / f64::from(lon_segments);
             let lon = -PI + u * TAU;
-            let p = cartographic_to_cartesian(ellipsoid, lon, lat, 0.0);
-            let n = geodetic_surface_normal_cartographic(lon, lat);
+            let p = to_cartesian(ellipsoid, lon, lat);
+            let n = ellipsoid.geodetic_surface_normal_cartographic(&Cartographic::new(lon, lat, 0.0));
             vertices.extend_from_slice(&[
                 p.x as f32, p.y as f32, p.z as f32, n.x as f32, n.y as f32, n.z as f32, u as f32, v as f32,
             ]);
@@ -59,8 +66,8 @@ pub fn build_graticule(ellipsoid: &Ellipsoid, step_deg: f64, segments: u32) -> V
         push_meridian(&mut out, ellipsoid, lon, segments);
         lon += step;
     }
-    let mut lat = -PI_OVER_TWO + step;
-    while lat < PI_OVER_TWO - 1e-8 {
+    let mut lat = -FRAC_PI_2 + step;
+    while lat < FRAC_PI_2 - 1e-8 {
         push_parallel(&mut out, ellipsoid, lat, segments * 2);
         lat += step;
     }
@@ -68,26 +75,26 @@ pub fn build_graticule(ellipsoid: &Ellipsoid, step_deg: f64, segments: u32) -> V
 }
 
 fn push_meridian(out: &mut Vec<f32>, ellipsoid: &Ellipsoid, lon: f64, segments: u32) {
-    let mut prev = cartographic_to_cartesian(ellipsoid, lon, -PI_OVER_TWO, 0.0);
+    let mut prev = to_cartesian(ellipsoid, lon, -FRAC_PI_2);
     for i in 1..=segments {
-        let lat = -PI_OVER_TWO + PI * f64::from(i) / f64::from(segments);
-        let p = cartographic_to_cartesian(ellipsoid, lon, lat, 0.0);
+        let lat = -FRAC_PI_2 + PI * f64::from(i) / f64::from(segments);
+        let p = to_cartesian(ellipsoid, lon, lat);
         push_seg(out, prev, p);
         prev = p;
     }
 }
 
 fn push_parallel(out: &mut Vec<f32>, ellipsoid: &Ellipsoid, lat: f64, segments: u32) {
-    let mut prev = cartographic_to_cartesian(ellipsoid, -PI, lat, 0.0);
+    let mut prev = to_cartesian(ellipsoid, -PI, lat);
     for i in 1..=segments {
         let lon = -PI + TAU * f64::from(i) / f64::from(segments);
-        let p = cartographic_to_cartesian(ellipsoid, lon, lat, 0.0);
+        let p = to_cartesian(ellipsoid, lon, lat);
         push_seg(out, prev, p);
         prev = p;
     }
 }
 
-fn push_seg(out: &mut Vec<f32>, a: crate::math::Vec3, b: crate::math::Vec3) {
+fn push_seg(out: &mut Vec<f32>, a: Cartesian3, b: Cartesian3) {
     out.extend_from_slice(&[a.x as f32, a.y as f32, a.z as f32, b.x as f32, b.y as f32, b.z as f32]);
 }
 
@@ -102,14 +109,22 @@ pub fn build_geodesic_arc(
     let segments = segments.max(2);
     let geo = Geodesic::new(ellipsoid, lon1, lat1, lon2, lat2);
     let mut out = Vec::with_capacity(segments as usize * 6);
-    let mut prev = cartographic_to_cartesian(ellipsoid, lon1, lat1, 0.0);
+    let mut prev = to_cartesian(ellipsoid, lon1, lat1);
     for i in 1..=segments {
         let (lon, lat) = geo.interpolate(f64::from(i) / f64::from(segments));
-        let p = cartographic_to_cartesian(ellipsoid, lon, lat, 0.0);
+        let p = to_cartesian(ellipsoid, lon, lat);
         push_seg(&mut out, prev, p);
         prev = p;
     }
     out
+}
+
+/// Coarser tile level when the camera is far. Capped so a globe view stays
+/// readable. A viewer heuristic; Core has no equivalent.
+pub fn suggested_tile_level(range: f64, semimajor: f64) -> u32 {
+    let ratio = (semimajor / range.max(1.0)).max(0.25);
+    let level = ratio.log2().floor().max(0.0) as u32;
+    level.min(5)
 }
 
 /// `scheme` 0 = geographic, 1 = web mercator.
@@ -125,29 +140,34 @@ pub fn build_tile_grid(
 ) -> Vec<f32> {
     let level = level.min(6);
     let edge_segments = edge_segments.max(1);
-    let (nx, ny) = if scheme == 1 { web_mercator_tile_count(level) } else { geographic_tile_count(level) };
-    let (cx, cy) = if scheme == 0 {
-        geographic_tile_of(focus_lon, focus_lat, level)
+    let geographic = GeographicTilingScheme::new(*ellipsoid, Rectangle::MAX_VALUE, 2, 1);
+    let mercator = WebMercatorTilingScheme::new(*ellipsoid, 1, 1, None);
+    let tiling: &dyn TilingScheme = if scheme == 1 { &mercator } else { &geographic };
+    let nx = tiling.get_number_of_x_tiles_at_level(level).max(0) as u32;
+    let ny = tiling.get_number_of_y_tiles_at_level(level).max(0) as u32;
+
+    // The Web Mercator scheme has no tiles beyond its maximum latitude;
+    // clamp the focus into it, as the viewer always draws around the focus.
+    let focus_lat = if scheme == 1 {
+        let max_lat = WebMercatorProjection::maximum_latitude();
+        focus_lat.clamp(-max_lat, max_lat)
     } else {
-        let n = f64::from(nx);
-        let x = ((focus_lon + PI) / TAU * n).floor() as u32;
-        let max_lat = crate::projection::maximum_latitude();
-        let lat = focus_lat.clamp(-max_lat, max_lat);
-        let y_m = crate::projection::geodetic_latitude_to_mercator_angle(lat) * ellipsoid.maximum_radius;
-        let north = PI * ellipsoid.maximum_radius;
-        let span = TAU * ellipsoid.maximum_radius;
-        let y = ((north - y_m) / (span / n)).floor() as u32;
-        (x.min(nx - 1), y.min(ny - 1))
+        focus_lat.clamp(-FRAC_PI_2, FRAC_PI_2)
+    };
+    let focus = Cartographic::new(focus_lon, focus_lat, 0.0);
+    let (cx, cy) = match tiling.position_to_tile_xy(&focus, level) {
+        Some(xy) => (xy.x.max(0.0) as u32, xy.y.max(0.0) as u32),
+        None => (0, 0),
     };
 
     let mut out = Vec::new();
-    let (x0, _x1, y0, y1) = if window == 0 || nx * ny <= 64 {
-        (0, nx, 0, ny)
+    let (x0, y0, y1) = if window == 0 || nx * ny <= 64 {
+        (0, 0, ny)
     } else {
         let w = window;
         let y_start = cy.saturating_sub(w);
         let y_end = (cy + w + 1).min(ny);
-        (cx.wrapping_sub(w), cx.wrapping_add(w + 1), y_start, y_end)
+        (cx.wrapping_sub(w), y_start, y_end)
     };
     let mut y = y0;
     while y < y1 {
@@ -155,11 +175,7 @@ pub fn build_tile_grid(
         let count = if window == 0 || nx * ny <= 64 { nx } else { window * 2 + 1 };
         for _ in 0..count {
             let tx = x % nx;
-            let rect = if scheme == 1 {
-                web_mercator_tile_rectangle(tx, y, level, ellipsoid.maximum_radius)
-            } else {
-                geographic_tile_rectangle(tx, y, level)
-            };
+            let rect = tiling.tile_xy_to_rectangle(f64::from(tx), f64::from(y), level);
             push_rect(&mut out, ellipsoid, rect, edge_segments);
             x = x.wrapping_add(1);
         }
@@ -168,7 +184,7 @@ pub fn build_tile_grid(
     out
 }
 
-fn push_rect(out: &mut Vec<f32>, ellipsoid: &Ellipsoid, rect: crate::projection::Rectangle, segments: u32) {
+fn push_rect(out: &mut Vec<f32>, ellipsoid: &Ellipsoid, rect: Rectangle, segments: u32) {
     push_edge(out, ellipsoid, rect.west, rect.south, rect.east, rect.south, segments);
     push_edge(out, ellipsoid, rect.east, rect.south, rect.east, rect.north, segments);
     push_edge(out, ellipsoid, rect.east, rect.north, rect.west, rect.north, segments);
@@ -176,10 +192,10 @@ fn push_rect(out: &mut Vec<f32>, ellipsoid: &Ellipsoid, rect: crate::projection:
 }
 
 fn push_edge(out: &mut Vec<f32>, ellipsoid: &Ellipsoid, lon0: f64, lat0: f64, lon1: f64, lat1: f64, segments: u32) {
-    let mut prev = cartographic_to_cartesian(ellipsoid, lon0, lat0, 0.0);
+    let mut prev = to_cartesian(ellipsoid, lon0, lat0);
     for i in 1..=segments {
         let t = f64::from(i) / f64::from(segments);
-        let p = cartographic_to_cartesian(ellipsoid, lon0 + (lon1 - lon0) * t, lat0 + (lat1 - lat0) * t, 0.0);
+        let p = to_cartesian(ellipsoid, lon0 + (lon1 - lon0) * t, lat0 + (lat1 - lat0) * t);
         push_seg(out, prev, p);
         prev = p;
     }

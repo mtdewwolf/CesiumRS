@@ -1,9 +1,10 @@
+use cesium_rs::core::{Cartographic, Ellipsoid};
 use cesium_rs::mesh::build_geodesic_arc;
-use cesium_rs::{Ellipsoid, Geodesic};
+use cesium_rs::Geodesic;
 
 #[test]
 fn spherical_fallback_preserves_endpoints_and_draws_antipodal_routes() {
-    let e = Ellipsoid::wgs84();
+    let e = Ellipsoid::WGS84;
     for (lon, lat, end_lon, end_lat) in [
         (0.0, 0.0, std::f64::consts::PI, 0.0),
         (0.3, 0.7, 0.3 + std::f64::consts::PI, -0.7),
@@ -19,7 +20,7 @@ fn spherical_fallback_preserves_endpoints_and_draws_antipodal_routes() {
         }
         let arc = build_geodesic_arc(&e, lon, lat, end_lon, end_lat, 32);
         assert!(arc.iter().all(|v| v.is_finite()));
-        let expected = cesium_rs::cartographic_to_cartesian(&e, end_lon, end_lat, 0.0);
+        let expected = e.cartographic_to_cartesian(&Cartographic::new(end_lon, end_lat, 0.0));
         for (actual, expected) in arc[arc.len() - 3..].iter().zip([expected.x, expected.y, expected.z]) {
             assert!((f64::from(*actual) - expected).abs() < 0.5);
         }

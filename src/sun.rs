@@ -1,21 +1,26 @@
-//! Approximate solar direction in ECEF. A compact stand-in for Cesium's Simon 1994 ephemeris.
+//! Solar direction in Earth-fixed coordinates, from Core's Simon1994
+//! ephemeris (`Simon1994PlanetaryPositions`) rotated from ICRF to the fixed
+//! frame with Core's `Transforms`.
+//!
+//! The full ICRF-to-fixed rotation needs Earth orientation parameters and
+//! IAU 2006 XYS data, which the viewer does not load; with neither supplied,
+//! `Transforms::compute_icrf_to_central_body_fixed_matrix` falls back to the
+//! TEME-to-pseudo-fixed rotation — the same fallback Cesium itself uses when
+//! that data is unavailable. The result is a lighting direction, not a
+//! precision ephemeris.
 
-use crate::math::Vec3;
+use crate::core::simon1994_planetary_positions::compute_sun_position_in_earth_inertial_frame;
+use crate::core::{Cartesian3, EarthOrientationParameters, Iau2006XysData, JulianDate, TimeStandard, Transforms};
 
-/// Unit vector from the geocenter toward the sun, in Earth-fixed coordinates.
-/// `jd` is the Julian date (UTC).
-pub fn sun_direction_ecef(jd: f64) -> Vec3 {
-    let n = jd - 2_451_545.0;
-    let mean_longitude = (280.460 + 0.985_647_4 * n).rem_euclid(360.0);
-    let mean_anomaly = (357.528 + 0.985_600_3 * n).rem_euclid(360.0).to_radians();
-    let lambda = (mean_longitude + 1.915 * mean_anomaly.sin() + 0.020 * (2.0 * mean_anomaly).sin()).to_radians();
-    let obliquity = (23.439 - 0.000_000_4 * n).to_radians();
-
-    let x = lambda.cos();
-    let y = obliquity.cos() * lambda.sin();
-    let z = obliquity.sin() * lambda.sin();
-
-    let gmst = (280.460_618_37 + 360.985_647_366_29 * n).rem_euclid(360.0).to_radians();
-    let (c, s) = (gmst.cos(), gmst.sin());
-    Vec3::new(c * x + s * y, -s * x + c * y, z).normalize()
+/// Unit vector from the geocenter toward the sun, in Earth-fixed
+/// coordinates. `jd` is the Julian date (UTC); it may carry a day fraction.
+pub fn sun_direction_ecef(jd: f64) -> Cartesian3 {
+    let date = JulianDate::new(jd, 0.0, TimeStandard::Utc);
+    let inertial = compute_sun_position_in_earth_inertial_frame(&date);
+    let rotation = Transforms::compute_icrf_to_central_body_fixed_matrix(
+        &date,
+        &EarthOrientationParameters::none(),
+        &Iau2006XysData::default(),
+    );
+    rotation.multiply_by_vector(inertial).normalize()
 }

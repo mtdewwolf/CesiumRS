@@ -78,15 +78,14 @@ node scripts/check-web.mjs    # exercise the bundled wasm geodesic API
 cd web && npx lakebed dev
 ```
 
-The viewer still uses the first-generation modules in `src/` (`camera`, `ellipsoid`, `geodesic`, `intersect`, `projection`, `mesh`, `sun`). Moving it onto `src/core` is on the roadmap.
+The viewer runs on `src/core`: its camera, picking, geodesics, tile grids, and sun direction are thin layers (`src/camera.rs`, `src/geodesic.rs`, `src/mesh.rs`, `src/sun.rs`) over the ported Core modules — `Transforms`, `Matrix4`, `Ellipsoid`, `EllipsoidGeodesic`, the tiling schemes, `IntersectionTests`, and the Simon1994 ephemeris. There are no separate first-generation implementations. The live build still needs a redeploy to pick this up.
 
 Near-antipodal routes use a deterministic great-circle approximation when Vincenty's method is unsuitable. These fallback distances are spherical approximations; interpolation preserves the geodetic endpoints, including repeated points.
 
 ## Roadmap
 
 1. **Finish Core to 100%:** terrain data/picking, spatial algorithms (including Hilbert levels above 32), assets, resources, providers and host interfaces. `TerrainEncoding`, `HeightmapTessellator`, `TerrainProvider`, `TileAvailability`, `TerrainPicker` and `TerrainMesh` are ported; terrain-data implementations are next.
-2. **Move the viewer onto `src/core` after Core is complete,** then redeploy it.
-3. **Renderer, Scene, DataSources, Workers and Shaders,** the rest of the way to 100% overall.
+2. **Renderer, Scene, DataSources, Workers and Shaders,** the rest of the way to 100% overall.
 
 ## License
 

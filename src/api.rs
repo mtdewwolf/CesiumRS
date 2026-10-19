@@ -1,13 +1,13 @@
 //! C ABI used by the browser globe. Pointers are valid until the next call
 //! that writes the same buffer.
 
-use crate::camera::{look_at, ray_from_ndc, CameraFrame};
-use crate::ellipsoid::{cartesian_to_cartographic, cartographic_to_cartesian, Ellipsoid};
+use crate::camera::{look_at, pick_ray, ray_from_ndc, CameraFrame};
+use crate::core::math::to_radians;
+use crate::core::{Cartesian3, Cartographic, Ellipsoid};
 use crate::geodesic::Geodesic;
-use crate::intersect::pick_ray;
-use crate::math::{to_radians, Vec3};
-use crate::mesh::{build_geodesic_arc, build_globe, build_graticule, build_stars, build_tile_grid};
-use crate::projection::suggested_tile_level;
+use crate::mesh::{
+    build_geodesic_arc, build_globe, build_graticule, build_stars, build_tile_grid, suggested_tile_level,
+};
 use crate::sun::sun_direction_ecef;
 use std::cell::RefCell;
 
@@ -28,7 +28,7 @@ thread_local! {
 }
 
 fn ellipsoid() -> Ellipsoid {
-    Ellipsoid::wgs84()
+    Ellipsoid::WGS84
 }
 
 fn write_f64(values: &[f64]) {
@@ -91,9 +91,9 @@ pub extern "C" fn camera_look_at(
     SCRATCH.with(|s| {
         let mut s = s.borrow_mut();
         s.f64s.clear();
-        pack_mat(&mut s.f64s, &frame.view);
-        pack_mat(&mut s.f64s, &frame.projection);
-        pack_mat(&mut s.f64s, &frame.view_projection);
+        pack_mat(&mut s.f64s, &frame.view.0);
+        pack_mat(&mut s.f64s, &frame.projection.0);
+        pack_mat(&mut s.f64s, &frame.view_projection.0);
         s.f64s.extend_from_slice(&[
             frame.eye.x,
             frame.eye.y,
@@ -140,13 +140,13 @@ pub extern "C" fn pick_ndc(ndc_x: f64, ndc_y: f64) {
 
 #[no_mangle]
 pub extern "C" fn llh_to_ecef(lon: f64, lat: f64, height: f64) {
-    let p = cartographic_to_cartesian(&ellipsoid(), lon, lat, height);
+    let p = ellipsoid().cartographic_to_cartesian(&Cartographic::new(lon, lat, height));
     write_f64(&[p.x, p.y, p.z]);
 }
 
 #[no_mangle]
 pub extern "C" fn ecef_to_llh(x: f64, y: f64, z: f64) {
-    match cartesian_to_cartographic(&ellipsoid(), Vec3::new(x, y, z)) {
+    match ellipsoid().cartesian_to_cartographic(Cartesian3::new(x, y, z)) {
         Some(c) => write_f64(&[1.0, c.longitude, c.latitude, c.height]),
         None => write_f64(&[0.0]),
     }
@@ -161,8 +161,8 @@ pub extern "C" fn geodesic_info(lon1: f64, lat1: f64, lon2: f64, lat2: f64) {
 #[no_mangle]
 pub extern "C" fn sun_direction(jd: f64) {
     let d = sun_direction_ecef(jd);
-    let p = d * ellipsoid().maximum_radius;
-    match cartesian_to_cartographic(&ellipsoid(), p) {
+    let p = d.multiply_by_scalar(ellipsoid().maximum_radius);
+    match ellipsoid().cartesian_to_cartographic(p) {
         Some(c) => write_f64(&[d.x, d.y, d.z, c.longitude, c.latitude]),
         None => write_f64(&[d.x, d.y, d.z, 0.0, 0.0]),
     }
