@@ -682,6 +682,16 @@
     "rust": "core::terrain_encoding",
     "note": "Native f32 slices, typed vertex/layout records and Clone. Missing optional fields return None; invalid writes and layout conversions leave buffers unchanged."
   },
+  "Core/TerrainMesh": {
+    "status": "ported",
+    "rust": "core::terrain_mesh",
+    "note": "Owned metadata and buffers, 3D/projected transforms, cached picking and explicit invalidation. Native terrain scene-mode enum; unused update arguments omitted. 48 reference lifecycle sequences."
+  },
+  "Core/TerrainPicker": {
+    "status": "ported",
+    "rust": "core::terrain_picker",
+    "note": "Borrowed terrain buffers; incremental quadtree refinement runs synchronously instead of on browser workers. Preserves depth, first-hit traversal, culling, exaggeration, projections and antimeridian wrapping; 36 multi-pick reference cases."
+  },
   "Core/TerrainProvider": {
     "status": "ported",
     "rust": "core::terrain_provider",
@@ -966,5 +976,10 @@
   "Renderer/PixelDatatype": {
     "status": "ported",
     "rust": "core::pixel_datatype"
+  },
+  "Workers/incrementallyBuildTerrainPicker": {
+    "status": "ported",
+    "rust": "core::terrain_picker::distribute_triangles",
+    "note": "Pure native worker calculation replaces message serialization and transfers. Transformed/clamped triangle AABBs distributed to child boxes; 40 reference worker cases plus repeated Core picker sequences."
   }
 }
