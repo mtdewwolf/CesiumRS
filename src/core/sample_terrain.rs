@@ -27,7 +27,7 @@ pub enum TerrainSamplingError<E> {
     MissingAvailability,
 }
 
-type SamplingResult<E> = Result<Vec<(usize, Option<f64>)>, TerrainSamplingError<E>>;
+type SamplingResult<E> = Result<(), TerrainSamplingError<E>>;
 type SamplingFuture<'a, E> = Pin<Box<dyn Future<Output = SamplingResult<E>> + 'a>>;
 
 struct TileGroup {
@@ -70,6 +70,7 @@ where
             groups.push_back(TileGroup { x, y, positions: vec![(index, *position)] });
         }
     }
+    let working = std::rc::Rc::new(std::cell::RefCell::new(positions.to_vec()));
     let mut active: Vec<(Vec<usize>, SamplingFuture<'_, P::Error>)> = Vec::new();
     let mut delay: Option<Pin<Box<H::Delay<'_>>>> = None;
     poll_fn(|cx| {
@@ -91,10 +92,10 @@ where
                 };
                 let group = groups.pop_front().unwrap();
                 let indices = group.positions.iter().map(|(index, _)| *index).collect();
+                let working = working.clone();
                 let task = async move {
                     let mut data = request.await.map_err(TerrainSamplingError::Provider)?;
                     let rectangle = scheme.tile_xy_to_rectangle(group.x as f64, group.y as f64, level);
-                    let mut heights = Vec::with_capacity(group.positions.len());
                     let mut mesh_required = false;
                     for (index, p) in &group.positions {
                         let height = data.interpolate_height(&rectangle, p.longitude, p.latitude);
@@ -102,7 +103,9 @@ where
                             mesh_required = true;
                             break;
                         }
-                        heights.push((*index, height));
+                        if let Some(height) = height {
+                            working.borrow_mut()[*index].height = height;
+                        }
                     }
                     if mesh_required {
                         let mut options =
@@ -112,12 +115,13 @@ where
                             .ok_or(TerrainSamplingError::MeshDeferred)?
                             .await
                             .map_err(TerrainSamplingError::Mesh)?;
-                        heights.clear();
                         for (index, p) in &group.positions {
-                            heights.push((*index, data.interpolate_height(&rectangle, p.longitude, p.latitude)));
+                            if let Some(height) = data.interpolate_height(&rectangle, p.longitude, p.latitude) {
+                                working.borrow_mut()[*index].height = height;
+                            }
                         }
                     }
-                    Ok(heights)
+                    Ok(())
                 };
                 active.push((indices, Box::pin(task)));
             }
@@ -130,25 +134,21 @@ where
                 Poll::Ready(result) => {
                     let (indices, _) = active.remove(index);
                     match result {
-                        Ok(heights) => {
-                            for (index, height) in heights {
-                                if let Some(height) = height {
-                                    positions[index].height = height;
-                                }
-                            }
-                        }
+                        Ok(()) => {}
                         Err(error) => {
                             if reject_on_tile_fail {
+                                positions.copy_from_slice(&working.borrow());
                                 return Poll::Ready(Err(error));
                             }
                             for index in indices {
-                                positions[index].height = f64::NAN;
+                                working.borrow_mut()[index].height = f64::NAN;
                             }
                         }
                     }
                 }
             }
         }
+        positions.copy_from_slice(&working.borrow());
         if groups.is_empty() && active.is_empty() {
             Poll::Ready(Ok(()))
         } else {
@@ -178,13 +178,14 @@ where
     while !pending.is_empty() {
         let mut levels = Vec::with_capacity(pending.len());
         let mut by_level: std::collections::BTreeMap<u32, Vec<usize>> = Default::default();
+        let mut availability_requests = Vec::new();
         for &index in &pending {
             let level = provider.availability().unwrap().compute_maximum_level_at_position(&positions[index]);
             levels.push(level);
             if level == 0 {
                 if let Some(xy) = provider.tiling_scheme().position_to_tile_xy(&positions[index], 1) {
                     if let Some(request) = provider.load_tile_data_availability(xy.x as u32, xy.y as u32, 1) {
-                        request.await.map_err(TerrainSamplingError::Provider)?;
+                        availability_requests.push(Box::pin(request));
                     }
                 }
             }
@@ -192,13 +193,45 @@ where
                 by_level.entry(level as u32).or_default().push(index);
             }
         }
-        for (level, indices) in by_level {
-            let mut subset: Vec<_> = indices.iter().map(|&i| positions[i]).collect();
-            sample_terrain(provider, &mut subset, SampleTerrainOptions { level, reject_on_tile_fail }, host).await?;
-            for (index, position) in indices.into_iter().zip(subset) {
-                positions[index] = position;
+        poll_fn(|cx| {
+            let mut index = 0;
+            while index < availability_requests.len() {
+                match availability_requests[index].as_mut().poll(cx) {
+                    Poll::Pending => index += 1,
+                    Poll::Ready(Ok(())) => {
+                        drop(availability_requests.remove(index));
+                    }
+                    Poll::Ready(Err(error)) => return Poll::Ready(Err(TerrainSamplingError::Provider(error))),
+                }
             }
-        }
+            if availability_requests.is_empty() {
+                Poll::Ready(Ok(()))
+            } else {
+                Poll::Pending
+            }
+        })
+        .await?;
+        let working = std::rc::Rc::new(std::cell::RefCell::new(positions.to_vec()));
+        let jobs = by_level.into_iter().map(|(level, indices)| {
+            let working = working.clone();
+            let mut subset: Vec<_> = indices.iter().map(|&i| working.borrow()[i]).collect();
+            async move {
+                let result =
+                    sample_terrain(provider, &mut subset, SampleTerrainOptions { level, reject_on_tile_fail }, host)
+                        .await;
+                for (index, position) in indices.into_iter().zip(subset) {
+                    working.borrow_mut()[index] = position;
+                }
+                result
+            }
+        });
+        let mut samples = Box::pin(futures_util::future::try_join_all(jobs));
+        poll_fn(|cx| {
+            let result = samples.as_mut().poll(cx);
+            positions.copy_from_slice(&working.borrow());
+            result
+        })
+        .await?;
         pending = pending
             .into_iter()
             .zip(levels)

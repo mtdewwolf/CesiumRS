@@ -13,7 +13,6 @@ pub type RequestFuture<T> = Pin<Box<dyn Future<Output = Result<T, RequestErrorEv
 pub type RequestCallback<T> = Rc<dyn Fn() -> RequestFuture<T>>;
 pub type RequestHandle<T> = Rc<RefCell<Request<T>>>;
 
-#[derive(Clone)]
 pub struct RequestOptions<T> {
     pub url: String,
     pub request_function: Option<RequestCallback<T>>,
@@ -24,6 +23,22 @@ pub struct RequestOptions<T> {
     pub throttle_by_server: bool,
     pub request_type: RequestType,
     pub server_key: Option<String>,
+}
+
+impl<T> Clone for RequestOptions<T> {
+    fn clone(&self) -> Self {
+        Self {
+            url: self.url.clone(),
+            request_function: self.request_function.clone(),
+            cancel_function: self.cancel_function.clone(),
+            priority_function: self.priority_function.clone(),
+            priority: self.priority,
+            throttle: self.throttle,
+            throttle_by_server: self.throttle_by_server,
+            request_type: self.request_type,
+            server_key: self.server_key.clone(),
+        }
+    }
 }
 
 impl<T> Default for RequestOptions<T> {
@@ -51,18 +66,7 @@ pub struct Request<T> {
 
 impl<T> Clone for Request<T> {
     fn clone(&self) -> Self {
-        let o = &self.options;
-        Self::new(RequestOptions {
-            url: o.url.clone(),
-            request_function: o.request_function.clone(),
-            cancel_function: o.cancel_function.clone(),
-            priority_function: o.priority_function.clone(),
-            priority: o.priority,
-            throttle: o.throttle,
-            throttle_by_server: o.throttle_by_server,
-            request_type: o.request_type,
-            server_key: o.server_key.clone(),
-        })
+        Self::new(self.options.clone())
     }
 }
 

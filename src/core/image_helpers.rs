@@ -25,6 +25,14 @@ pub struct ImageDecodeOptions {
     pub skip_color_space_conversion: bool,
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+pub struct FetchImageOptions {
+    pub prefer_blob: bool,
+    pub prefer_image_bitmap: bool,
+    pub flip_y: bool,
+    pub skip_color_space_conversion: bool,
+}
+
 pub type ImageFuture<'a, I> = Pin<Box<dyn Future<Output = Result<I, RuntimeError>> + 'a>>;
 
 pub trait ImageHost {
@@ -43,6 +51,34 @@ pub trait ImageHost {
         mime_type: &'a str,
         options: ImageDecodeOptions,
     ) -> Option<ImageFuture<'a, Self::Image>>;
+
+    /// Browser hosts can load directly into an HTMLImageElement (or fetch a
+    /// blob for a requested bitmap), preserving Resource's image semantics.
+    fn load_resource_url<'a>(
+        &'a self,
+        _url: &'a str,
+        _with_credentials: bool,
+        _options: FetchImageOptions,
+    ) -> Option<ImageFuture<'a, Self::Image>> {
+        None
+    }
+
+    fn decode_resource_image<'a>(
+        &'a self,
+        bytes: &'a [u8],
+        mime_type: &'a str,
+        options: FetchImageOptions,
+        _attach_blob: bool,
+    ) -> Option<ImageFuture<'a, Self::Image>> {
+        self.decode_image(
+            bytes,
+            mime_type,
+            ImageDecodeOptions {
+                flip_y: options.flip_y,
+                skip_color_space_conversion: options.skip_color_space_conversion,
+            },
+        )
+    }
 }
 
 pub fn get_image_from_typed_array<H: ImageHost>(
@@ -54,6 +90,26 @@ pub fn get_image_from_typed_array<H: ImageHost>(
     let image = RgbaImage::new(width, height, bytes.to_vec())
         .ok_or_else(|| RuntimeError::new("Invalid RGBA image dimensions or buffer length."))?;
     host.image_from_rgba(image)
+}
+
+/// A JS typed-array view names a backing buffer as well as a visible range.
+/// Cesium's helper constructs ImageData from the whole backing buffer, ignoring
+/// byteOffset/byteLength. This overload retains that observable behavior.
+pub struct PixelArrayView<'a> {
+    pub buffer: &'a [u8],
+    pub byte_offset: usize,
+    pub byte_length: usize,
+}
+pub fn get_image_from_typed_array_view<H: ImageHost>(
+    host: &H,
+    view: PixelArrayView<'_>,
+    width: u32,
+    height: u32,
+) -> Result<H::Image, RuntimeError> {
+    if view.byte_offset.checked_add(view.byte_length).is_none_or(|end| end > view.buffer.len()) {
+        return Err(RuntimeError::new("Invalid typed-array view."));
+    }
+    get_image_from_typed_array(host, view.buffer, width, height)
 }
 pub fn get_image_pixels<H: ImageHost>(
     host: &H,

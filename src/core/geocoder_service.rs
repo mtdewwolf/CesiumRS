@@ -99,66 +99,78 @@ fn attribution(value: &Value) -> Result<Attribution, RuntimeError> {
 #[derive(Clone, Copy, Debug, Default)]
 pub struct CartographicGeocoderService;
 
+fn js_space(c: char) -> bool {
+    matches!(c, '\u{0009}'..='\u{000d}' | '\u{0020}' | '\u{00a0}' | '\u{1680}' | '\u{2000}'..='\u{200a}' | '\u{2028}' | '\u{2029}' | '\u{202f}' | '\u{205f}' | '\u{3000}' | '\u{feff}')
+}
 fn js_number(value: &str) -> f64 {
-    let v = value.trim();
+    use num_traits::ToPrimitive;
+    let v = value.trim_matches(js_space);
     if v.is_empty() {
         return 0.0;
     }
-    if let Some(hex) = v.strip_prefix("0x").or_else(|| v.strip_prefix("0X")) {
-        return u64::from_str_radix(hex, 16).map_or(f64::NAN, |n| n as f64);
+    for (lower, upper, radix) in [("0x", "0X", 16), ("0b", "0B", 2), ("0o", "0O", 8)] {
+        if let Some(digits) = v.strip_prefix(lower).or_else(|| v.strip_prefix(upper)) {
+            if digits.is_empty()
+                || !digits.bytes().all(|b| match radix {
+                    16 => b.is_ascii_hexdigit(),
+                    8 => matches!(b, b'0'..=b'7'),
+                    2 => matches!(b, b'0' | b'1'),
+                    _ => false,
+                })
+            {
+                return f64::NAN;
+            }
+            return num_bigint::BigUint::parse_bytes(digits.as_bytes(), radix)
+                .map_or(f64::NAN, |n| n.to_f64().unwrap_or(f64::INFINITY));
+        }
     }
-    if let Some(bin) = v.strip_prefix("0b").or_else(|| v.strip_prefix("0B")) {
-        return u64::from_str_radix(bin, 2).map_or(f64::NAN, |n| n as f64);
+    match v {
+        "Infinity" | "+Infinity" => return f64::INFINITY,
+        "-Infinity" => return f64::NEG_INFINITY,
+        _ => {}
     }
-    if let Some(oct) = v.strip_prefix("0o").or_else(|| v.strip_prefix("0O")) {
-        return u64::from_str_radix(oct, 8).map_or(f64::NAN, |n| n as f64);
+    static DECIMAL: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    let grammar = DECIMAL
+        .get_or_init(|| regex::Regex::new(r"^[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$").unwrap());
+    if grammar.is_match(v) {
+        v.parse().unwrap_or(f64::NAN)
+    } else {
+        f64::NAN
     }
-    if matches!(v, "Infinity" | "+Infinity") {
-        return f64::INFINITY;
-    }
-    if v == "-Infinity" {
-        return f64::NEG_INFINITY;
-    }
-    if v.eq_ignore_ascii_case("inf") {
-        return f64::NAN;
-    }
-    v.parse().unwrap_or(f64::NAN)
 }
 
 impl CartographicGeocoderService {
-    pub fn geocode_coordinates(&self, query: &str) -> Vec<GeocoderResult> {
-        let parts: Vec<_> = query.split(|c: char| c.is_whitespace() || c == ',').filter(|s| !s.is_empty()).collect();
+    pub fn geocode_coordinates(&self, query: &str) -> Result<Vec<GeocoderResult>, RuntimeError> {
+        let parts: Vec<_> = query.split(|c: char| js_space(c) || c == ',').filter(|s| !s.is_empty()).collect();
+        if parts.is_empty() {
+            return Err(RuntimeError::new("Cannot read properties of null (reading 'length')"));
+        }
         if parts.len() != 2 && parts.len() != 3 {
-            return Vec::new();
+            return Ok(Vec::new());
         }
         let mut lon = js_number(parts[0]);
         let mut lat = js_number(parts[1]);
         let height = if parts.len() == 3 { js_number(parts[2]) } else { 300.0 };
         if lon.is_nan() && lat.is_nan() {
+            static COORD: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+            let pattern = COORD.get_or_init(|| regex::Regex::new(r"^([0-9]+.?[0-9]*)([nNsSeEwW])").unwrap());
             for part in &parts {
-                if !part.as_bytes().first().is_some_and(u8::is_ascii_digit) {
-                    continue;
-                }
-                if let Some((index, direction)) = part.char_indices().find(|(_, c)| "nsewNSEW".contains(*c)) {
-                    let prefix = &part[..index];
-                    if prefix.chars().filter(|c| !c.is_ascii_digit()).count() > 1 {
-                        continue;
-                    }
-                    let value = js_number(prefix);
-                    match direction.to_ascii_lowercase() {
-                        'n' => lat = value,
-                        's' => lat = -value,
-                        'e' => lon = value,
-                        'w' => lon = -value,
+                if let Some(captures) = pattern.captures(part) {
+                    let value = js_number(&captures[1]);
+                    match captures[2].to_ascii_lowercase().as_str() {
+                        "n" => lat = value,
+                        "s" => lat = -value,
+                        "e" => lon = value,
+                        "w" => lon = -value,
                         _ => {}
                     }
                 }
             }
         }
         if lon.is_nan() || lat.is_nan() || height.is_nan() {
-            return Vec::new();
+            return Ok(Vec::new());
         }
-        vec![GeocoderResult::new(query.into(), point(lon, lat, height))]
+        Ok(vec![GeocoderResult::new(query.into(), point(lon, lat, height))])
     }
 }
 
@@ -172,7 +184,7 @@ impl GeocoderService for CartographicGeocoderService {
         _: GeocodeType,
         _: &'a dyn GeocoderHost,
     ) -> GeocoderFuture<'a, Vec<GeocoderResult>> {
-        Box::pin(async move { Ok(self.geocode_coordinates(query)) })
+        Box::pin(async move { self.geocode_coordinates(query) })
     }
 }
 
@@ -372,8 +384,8 @@ impl GoogleGeocoderService {
         if response["status"] != "OK" {
             return Err(RuntimeError::new(format!(
                 "GoogleGeocoderService got a bad response {}: {}",
-                response["status"].as_str().unwrap_or("undefined"),
-                response["error_message"].as_str().unwrap_or("undefined")
+                js_display(response.get("status")),
+                js_display(response.get("error_message"))
             )));
         }
         array(&response["results"])?
@@ -404,5 +416,21 @@ impl GeocoderService for GoogleGeocoderService {
         host: &'a dyn GeocoderHost,
     ) -> GeocoderFuture<'a, Vec<GeocoderResult>> {
         Box::pin(async move { Self::parse_response(&host.fetch_json(self.request(query)?, None).await?) })
+    }
+}
+
+fn js_display(value: Option<&Value>) -> String {
+    match value {
+        None => "undefined".into(),
+        Some(Value::Null) => "null".into(),
+        Some(Value::String(s)) => s.clone(),
+        Some(Value::Object(_)) => "[object Object]".into(),
+        Some(Value::Array(values)) => values
+            .iter()
+            .map(|v| if v.is_null() { String::new() } else { js_display(Some(v)) })
+            .collect::<Vec<_>>()
+            .join(","),
+        Some(Value::Number(n)) => n.as_f64().map_or_else(|| n.to_string(), |n| n.to_string()),
+        Some(Value::Bool(b)) => b.to_string(),
     }
 }

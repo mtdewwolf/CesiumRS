@@ -54,6 +54,49 @@ pub trait BasisTranscoder {
     fn transcode<'a>(&'a self, data: &'a [u8], format: BasisFormat) -> Ktx2Future<'a, Vec<Vec<u8>>>;
 }
 
+/// Portable, pure-Rust Basis Universal implementation. No external module or
+/// caller-provided codec is needed on native or WebAssembly targets.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct RustBasisTranscoder;
+impl BasisTranscoder for RustBasisTranscoder {
+    fn inspect<'a>(&'a self, data: &'a [u8]) -> Ktx2Future<'a, BasisInfo> {
+        Box::pin(async move {
+            let texture = basisu::Transcoder::new(data).map_err(|_| RuntimeError::new("Invalid KTX2 file"))?;
+            let (width, height) = texture.base_dimensions();
+            Ok(BasisInfo { width, height, levels: texture.level_count(), has_alpha: texture.has_alpha() })
+        })
+    }
+    fn transcode<'a>(&'a self, data: &'a [u8], format: BasisFormat) -> Ktx2Future<'a, Vec<Vec<u8>>> {
+        Box::pin(async move {
+            use basisu::{DecodeFlags, TargetFormat as T};
+            let texture = basisu::Transcoder::new(data).map_err(|_| RuntimeError::new("startTranscoding() failed"))?;
+            let target = match format {
+                BasisFormat::Etc1Rgb => T::Etc1Rgb,
+                BasisFormat::Etc2Rgba => T::Etc2Rgba,
+                BasisFormat::Bc1Rgb => T::Bc1Rgb,
+                BasisFormat::Bc3Rgba => T::Bc3Rgba,
+                BasisFormat::Pvrtc1Rgb4 => T::Pvrtc1_4Rgb,
+                BasisFormat::Pvrtc1Rgba4 => T::Pvrtc1_4Rgba,
+                BasisFormat::Astc4x4Rgba => T::Astc4x4Rgba,
+                BasisFormat::Bc7Rgba => T::Bc7Rgba,
+            };
+            (0..texture.level_count())
+                .map(|level| {
+                    texture
+                        .transcode_image(level, 0, 0, target, DecodeFlags::NONE)
+                        .map_err(|_| RuntimeError::new("transcodeImage() failed."))
+                })
+                .collect()
+        })
+    }
+}
+
+impl Default for Ktx2Transcoder<RustBasisTranscoder> {
+    fn default() -> Self {
+        Self { supported_formats: SupportedTextureFormats::default(), basis: RustBasisTranscoder }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CubeFace {
     PositiveX,

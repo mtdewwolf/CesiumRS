@@ -1,12 +1,15 @@
 //! CesiumJS `TileAvailability`: quadtree-indexed availability rectangles.
 //! Add root tiles before finer levels. Earlier ranges are not replayed when
 //! roots are added later, matching Cesium's insertion-order behavior.
+//! Availability ranges can be added through shared references while provider
+//! futures load metadata. Each tree operation uses an interior read/write lock.
 
 use super::cartographic::Cartographic;
 use super::math::{js_max, js_min, PI};
 use super::rectangle::Rectangle;
 use super::tiling_scheme::TilingScheme;
 use std::collections::BTreeMap;
+use std::sync::RwLock;
 
 #[derive(Clone, Copy, Debug)]
 struct AvailableRectangle {
@@ -99,7 +102,7 @@ impl Node {
 pub struct TileAvailability {
     tiling_scheme: Box<dyn TilingScheme>,
     maximum_level: u32,
-    roots: Vec<Node>,
+    roots: RwLock<Vec<Node>>,
 }
 
 impl std::fmt::Debug for TileAvailability {
@@ -117,7 +120,7 @@ impl TileAvailability {
     }
 
     pub fn from_boxed(tiling_scheme: Box<dyn TilingScheme>, maximum_level: u32) -> Self {
-        Self { tiling_scheme, maximum_level, roots: Vec::new() }
+        Self { tiling_scheme, maximum_level, roots: RwLock::new(Vec::new()) }
     }
 
     pub fn tiling_scheme(&self) -> &dyn TilingScheme {
@@ -131,7 +134,7 @@ impl TileAvailability {
     /// quadtree. Availability beyond maximum_level is stored as in Cesium;
     /// maximum_level limits tree depth and child-mask queries.
     pub fn add_available_tile_range(
-        &mut self,
+        &self,
         level: u32,
         start_x: u32,
         start_y: u32,
@@ -142,11 +145,12 @@ impl TileAvailability {
             return None;
         }
         let scheme = &*self.tiling_scheme;
+        let mut roots = self.roots.write().unwrap_or_else(|e| e.into_inner());
         if level == 0 {
             for y in start_y..=end_y {
                 for x in start_x..=end_x {
-                    if !self.roots.iter().any(|r| r.x == x && r.y == y) {
-                        self.roots.push(Node::new(scheme, 0, x, y));
+                    if !roots.iter().any(|r| r.x == x && r.y == y) {
+                        roots.push(Node::new(scheme, 0, x, y));
                     }
                 }
             }
@@ -154,7 +158,7 @@ impl TileAvailability {
         let start = scheme.tile_xy_to_rectangle(start_x as f64, start_y as f64, level);
         let end = scheme.tile_xy_to_rectangle(end_x as f64, end_y as f64, level);
         let r = AvailableRectangle { level, extent: Rectangle::new(start.west, end.south, end.east, start.north) };
-        for root in &mut self.roots {
+        for root in &mut *roots {
             if overlaps(&root.extent, &r.extent) {
                 root.insert(scheme, self.maximum_level, r)?;
             }
@@ -165,7 +169,12 @@ impl TileAvailability {
     /// -1 if no root contains the position. Longitude is tested literally,
     /// without Rectangle::contains's antimeridian normalization.
     pub fn compute_maximum_level_at_position(&self, position: &Cartographic) -> i64 {
-        self.roots.iter().find(|r| contains_position(&r.extent, position)).map_or(-1, |r| r.maximum_at(position) as i64)
+        self.roots
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .iter()
+            .find(|r| contains_position(&r.extent, position))
+            .map_or(-1, |r| r.maximum_at(position) as i64)
     }
 
     pub fn compute_best_available_level_over_rectangle(&self, rectangle: &Rectangle) -> u32 {
@@ -178,7 +187,7 @@ impl TileAvailability {
             vec![*rectangle]
         };
         let mut remaining = BTreeMap::new();
-        for root in &self.roots {
+        for root in &*self.roots.read().unwrap_or_else(|e| e.into_inner()) {
             root.update_coverage(&mut remaining, &query);
         }
         remaining.iter().rev().find_map(|(&level, r)| r.is_empty().then_some(level)).unwrap_or(0)

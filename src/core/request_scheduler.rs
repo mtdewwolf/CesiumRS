@@ -21,6 +21,7 @@ pub struct RequestStatistics {
     pub number_of_cancelled_active_requests: usize,
     pub number_of_failed_requests: usize,
     pub number_of_active_requests_ever: usize,
+    pub last_number_of_active_requests: usize,
 }
 
 fn compare<T>(a: &RequestHandle<T>, b: &RequestHandle<T>) -> std::cmp::Ordering {
@@ -39,6 +40,8 @@ pub struct RequestScheduler<T> {
     pub requests_by_server: HashMap<String, usize>,
     pub throttle_requests: bool,
     pub page_url: String,
+    pub debug_show_statistics: bool,
+    pub statistics_log: Option<Box<dyn FnMut(&str)>>,
     pub statistics: RequestStatistics,
     pub request_completed_event: Event<Option<RequestErrorEvent>>,
     heap: Heap<RequestHandle<T>, fn(&RequestHandle<T>, &RequestHandle<T>) -> std::cmp::Ordering>,
@@ -57,6 +60,8 @@ impl<T> Default for RequestScheduler<T> {
             requests_by_server: HashMap::new(),
             throttle_requests: true,
             page_url: String::new(),
+            debug_show_statistics: false,
+            statistics_log: Some(Box::new(default_statistics_log)),
             statistics: RequestStatistics::default(),
             request_completed_event: Event::new(),
             heap,
@@ -226,7 +231,10 @@ impl<T> RequestScheduler<T> {
                             }
                         }
                     }
-                    r.borrow_mut().state = if result.is_ok() { RequestState::Received } else { RequestState::Failed };
+                    if !active.local {
+                        r.borrow_mut().state =
+                            if result.is_ok() { RequestState::Received } else { RequestState::Failed };
+                    }
                     let deferred = r.borrow_mut().deferred.take();
                     if let Some(d) = deferred {
                         d.borrow_mut().complete(result);
@@ -250,9 +258,33 @@ impl<T> RequestScheduler<T> {
             self.start(r, false);
             filled += 1;
         }
+        self.update_statistics();
         if filled > 0 {
             cx.waker().wake_by_ref();
         }
+    }
+
+    fn update_statistics(&mut self) {
+        if !self.debug_show_statistics {
+            return;
+        }
+        let s = &mut self.statistics;
+        if s.number_of_active_requests == 0 && s.last_number_of_active_requests > 0 {
+            for (name, count) in [
+                ("Number of attempted requests", &mut s.number_of_attempted_requests),
+                ("Number of cancelled requests", &mut s.number_of_cancelled_requests),
+                ("Number of cancelled active requests", &mut s.number_of_cancelled_active_requests),
+                ("Number of failed requests", &mut s.number_of_failed_requests),
+            ] {
+                if *count > 0 {
+                    if let Some(log) = &mut self.statistics_log {
+                        log(&format!("{name}: {count}"));
+                    }
+                    *count = 0;
+                }
+            }
+        }
+        s.last_number_of_active_requests = s.number_of_active_requests;
     }
 
     pub fn clear(&mut self) {
@@ -291,4 +323,22 @@ pub(crate) fn authority(uri: &Uri) -> String {
         }
     }
     result
+}
+
+fn default_statistics_log(message: &str) {
+    #[cfg(all(feature = "browser", target_arch = "wasm32"))]
+    {
+        use wasm_bindgen::JsCast;
+        if let Ok(console) = js_sys::Reflect::get(&js_sys::global(), &"console".into()) {
+            if let Ok(log) =
+                js_sys::Reflect::get(&console, &"log".into()).and_then(|value| value.dyn_into::<js_sys::Function>())
+            {
+                let _ = log.call1(&console, &message.into());
+            }
+        }
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    println!("{message}");
+    #[cfg(all(target_arch = "wasm32", not(feature = "browser")))]
+    let _ = message; // raw C-ABI hosts supply statistics_log explicitly.
 }

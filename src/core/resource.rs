@@ -1,8 +1,8 @@
 //! CesiumJS resource URL construction and host-supplied HTTP transport.
 //!
 //! HTTP futures are scheduled by `RequestScheduler`; no browser globals or
-//! native runtime are embedded. Image, XML and JSONP host integration is not
-//! implemented here. Clones own their configuration and reset request state.
+//! native runtime are embedded. ResourceClient supplies typed fetch, retry,
+//! image, XML and JSONP execution. Clones reset request state.
 
 use super::{
     proxy::Proxy,
@@ -42,6 +42,8 @@ impl HttpResponse {
 
 #[derive(Clone, Debug)]
 pub struct HttpRequest {
+    pub id: u64,
+    pub kind: RequestKind,
     pub url: String,
     pub method: String,
     pub headers: Vec<(String, String)>,
@@ -56,7 +58,18 @@ pub trait ResourceTransport {
     fn cancel(&self, _request: &HttpRequest) {}
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default)]
+pub enum RequestKind {
+    #[default]
+    Http,
+    Jsonp {
+        callback_parameter: String,
+        function_name: String,
+    },
+    Image,
+}
+
+#[derive(Clone)]
 pub struct ResourceOptions {
     pub url: String,
     pub query_parameters: QueryParameters,
@@ -65,6 +78,24 @@ pub struct ResourceOptions {
     pub proxy: Option<Arc<dyn Proxy>>,
     pub retry_callback: Option<RetryCallback>,
     pub retry_attempts: usize,
+    pub credits: Option<Vec<super::Credit>>,
+    pub parse_url: bool,
+}
+
+impl Default for ResourceOptions {
+    fn default() -> Self {
+        Self {
+            url: String::new(),
+            query_parameters: Vec::new(),
+            template_values: Vec::new(),
+            headers: Vec::new(),
+            proxy: None,
+            retry_callback: None,
+            retry_attempts: 0,
+            credits: None,
+            parse_url: true,
+        }
+    }
 }
 
 #[derive(Clone, Default)]
@@ -86,6 +117,7 @@ pub struct FetchOptions {
     pub headers: Vec<(String, String)>,
     pub body: Option<Vec<u8>>,
     pub page_protocol: String,
+    pub kind: RequestKind,
 }
 
 pub struct Resource {
@@ -143,6 +175,11 @@ fn combine_queries(first: &QueryParameters, second: &QueryParameters, preserve: 
 }
 
 impl Resource {
+    /// Native counterpart to Resource.DEFAULT: page state is supplied explicitly.
+    pub fn default_for_page(page_url: &str) -> Self {
+        Self::new(page_url.split('?').next().unwrap_or("")).expect("page URI")
+    }
+
     pub fn new(url: impl Into<String>) -> Option<Self> {
         Self::from_options(ResourceOptions { url: url.into(), ..Default::default() })
     }
@@ -154,7 +191,9 @@ impl Resource {
             retry_count: Rc::new(RefCell::new(0)),
             request: Request::new(RequestOptions::default()).into_handle(),
         };
-        resource.parse_url(&url, true, true, None)?;
+        if resource.options.borrow().parse_url {
+            resource.parse_url(&url, true, true, None)?;
+        }
         Some(resource)
     }
 
@@ -188,6 +227,10 @@ impl Resource {
     pub fn append_forward_slash(&self) {
         let mut o = self.options.borrow_mut();
         o.url = uri_helpers::append_forward_slash(&o.url);
+    }
+
+    pub(crate) fn share(&self) -> Self {
+        Self { options: self.options.clone(), retry_count: self.retry_count.clone(), request: self.request.clone() }
     }
 
     // Request callbacks must not hold their own request alive through an Rc cycle.
@@ -333,58 +376,148 @@ impl Resource {
         retry
     }
 
-    /// All HTTP verbs share this path. Returned bytes can be read as text or JSON
-    /// using `HttpResponse`; HEAD retains response headers.
     pub fn fetch(
+        &self,
+        client: &super::resource_client::ResourceClient,
+        options: FetchOptions,
+    ) -> Option<super::resource_client::ResourceFuture<Option<HttpResponse>>> {
+        client.fetch_optional(self, options)
+    }
+
+    pub fn fetch_array_buffer(&self, client: &super::ResourceClient) -> Option<super::ResourceFuture<Option<Vec<u8>>>> {
+        client.fetch_array_buffer_optional(self)
+    }
+    pub fn fetch_text(&self, client: &super::ResourceClient) -> Option<super::ResourceFuture<Option<String>>> {
+        client.fetch_text_optional(self)
+    }
+    pub fn fetch_json(
+        &self,
+        client: &super::ResourceClient,
+    ) -> Option<super::ResourceFuture<Option<serde_json::Value>>> {
+        client.fetch_json_optional(self)
+    }
+    pub fn fetch_blob(
+        &self,
+        client: &super::ResourceClient,
+    ) -> Option<super::ResourceFuture<Option<super::ResourceBlob>>> {
+        client.fetch_blob_optional(self)
+    }
+    pub fn fetch_xml(
+        &self,
+        client: &super::ResourceClient,
+    ) -> Option<super::ResourceFuture<Option<super::XmlDocument>>> {
+        client.fetch_xml_optional(self)
+    }
+    pub fn fetch_jsonp(
+        &self,
+        client: &super::ResourceClient,
+        parameter: Option<&str>,
+    ) -> Option<super::ResourceFuture<Option<serde_json::Value>>> {
+        client.fetch_jsonp_optional(self, parameter)
+    }
+
+    pub fn fetch_image<H: super::ImageHost + 'static>(
+        &self,
+        client: &super::ResourceClient,
+        host: Rc<H>,
+        options: super::image_helpers::FetchImageOptions,
+    ) -> Option<super::ResourceFuture<Option<H::Image>>> {
+        client.fetch_image(self, host, options)
+    }
+    pub fn head(&self, client: &super::ResourceClient) -> Option<super::ResourceFuture<Vec<(String, String)>>> {
+        client.fetch_headers(self, "HEAD")
+    }
+    pub fn options_request(
+        &self,
+        client: &super::ResourceClient,
+    ) -> Option<super::ResourceFuture<Vec<(String, String)>>> {
+        client.fetch_headers(self, "OPTIONS")
+    }
+    pub fn delete(&self, client: &super::ResourceClient) -> Option<super::ResourceFuture<Option<HttpResponse>>> {
+        client.fetch_optional(self, FetchOptions { method: "DELETE".into(), ..Default::default() })
+    }
+    pub fn post(
+        &self,
+        client: &super::ResourceClient,
+        body: Vec<u8>,
+    ) -> Option<super::ResourceFuture<Option<HttpResponse>>> {
+        client.fetch_optional(self, FetchOptions { method: "POST".into(), body: Some(body), ..Default::default() })
+    }
+    pub fn put(
+        &self,
+        client: &super::ResourceClient,
+        body: Vec<u8>,
+    ) -> Option<super::ResourceFuture<Option<HttpResponse>>> {
+        client.fetch_optional(self, FetchOptions { method: "PUT".into(), body: Some(body), ..Default::default() })
+    }
+    pub fn patch(
+        &self,
+        client: &super::ResourceClient,
+        body: Vec<u8>,
+    ) -> Option<super::ResourceFuture<Option<HttpResponse>>> {
+        client.fetch_optional(self, FetchOptions { method: "PATCH".into(), body: Some(body), ..Default::default() })
+    }
+
+    pub fn credits(&self) -> Option<Vec<super::Credit>> {
+        self.options.borrow().credits.clone()
+    }
+
+    /// Mirrors createIfNeeded: copy configuration but retain the caller's request.
+    pub fn create_if_needed(&self) -> Self {
+        let mut resource = self.clone();
+        resource.request = self.request.clone();
+        resource
+    }
+
+    pub(crate) fn fetch_once(
         &self,
         scheduler: &mut RequestScheduler<HttpResponse>,
         transport: Rc<dyn ResourceTransport>,
         trusted: Rc<RefCell<TrustedServers>>,
         options: FetchOptions,
-    ) -> Option<ScheduledRequest<HttpResponse>> {
+        id: u64,
+    ) -> Result<Option<ScheduledRequest<HttpResponse>>, RequestErrorEvent> {
         if matches!(self.request.borrow().state, RequestState::Issued | RequestState::Active) {
-            return None;
+            return Err(super::resource_client::request_error("The Resource is already being fetched."));
         }
         {
             let mut r = self.request.borrow_mut();
             r.state = RequestState::Unissued;
-            r.cancelled = false;
             r.deferred = None;
             r.options.url = self.url();
         }
         let context = self.weak_context();
-        let cancel_context = self.weak_context();
+        let captured_url = self.url();
+        let cancel_request = Rc::new(RefCell::new(None));
+        let cancel_capture = cancel_request.clone();
         let cancel_transport = transport.clone();
-        let cancel_options = options.clone();
-        let cancel_trusted = trusted.clone();
         self.request.borrow_mut().options.request_function = Some(Rc::new(move || {
             let context = context();
-            let transport = transport.clone();
-            let trusted = trusted.clone();
-            let options = options.clone();
-            Box::pin(async move {
-                loop {
-                    let request = context.http_request(&options, &trusted.borrow());
-                    match transport.execute(request).await {
-                        Ok(response) => return Ok(response),
-                        Err(error) => {
-                            if !context.retry_on_error(&error).await {
-                                return Err(error);
-                            }
-                        }
-                    }
-                }
-            })
+            let mut request = context.http_request(&options, &trusted.borrow());
+            request.id = id;
+            request.url = captured_url.clone();
+            *cancel_capture.borrow_mut() = Some(request.clone());
+            let uri = (super::uri_helpers::is_data_uri(&request.url) && !matches!(request.kind, RequestKind::Image))
+                .then(|| super::resource_client::data_uri_response(&request.url));
+            if let Some(result) = uri {
+                Box::pin(std::future::ready(result))
+            } else {
+                transport.execute(request)
+            }
         }));
         self.request.borrow_mut().options.cancel_function = Some(Rc::new(move || {
-            cancel_transport.cancel(&cancel_context().http_request(&cancel_options, &cancel_trusted.borrow()));
+            if let Some(request) = &*cancel_request.borrow() {
+                cancel_transport.cancel(request);
+            }
         }));
-        scheduler.request(self.request.clone())
+        Ok(scheduler.request(self.request.clone()))
     }
 
     fn http_request(&self, options: &FetchOptions, trusted: &TrustedServers) -> HttpRequest {
         let url = self.url();
         HttpRequest {
+            id: 0,
+            kind: options.kind.clone(),
             with_credentials: trusted.contains(&url, &options.page_protocol),
             url,
             method: if options.method.is_empty() { "GET".into() } else { options.method.clone() },
@@ -397,5 +530,11 @@ impl Resource {
 impl std::fmt::Display for Resource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.url())
+    }
+}
+
+impl Default for Resource {
+    fn default() -> Self {
+        Self::new("").expect("empty relative URI")
     }
 }

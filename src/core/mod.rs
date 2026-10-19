@@ -23,6 +23,8 @@ pub mod bounding_rectangle;
 pub mod bounding_sphere;
 pub mod box_geometry;
 pub mod box_outline_geometry;
+#[cfg(all(feature = "browser", target_arch = "wasm32"))]
+pub mod browser_host;
 pub mod cartesian2;
 pub mod cartesian3;
 pub mod cartesian4;
@@ -129,6 +131,8 @@ pub mod matrix4;
 pub mod merge_sort;
 pub mod morph_weight_spline;
 pub mod morton_order;
+#[cfg(all(feature = "native-host", not(target_arch = "wasm32")))]
+pub mod native_host;
 pub mod near_far_scalar;
 pub mod occluder;
 pub mod offset_geometry_instance_attribute;
@@ -176,6 +180,7 @@ pub mod request_scheduler;
 pub mod request_state;
 pub mod request_type;
 pub mod resource;
+pub mod resource_client;
 pub mod runtime_error;
 pub mod s2_cell;
 pub mod sample_terrain;
@@ -413,3 +418,10 @@ pub use ktx2_transcoder::{
     BasisFormat, BasisInfo, BasisTranscoder, Ktx2Header, Ktx2Loader, Ktx2Source, Ktx2Texture, Ktx2Transcoder,
     SupportedTextureFormats,
 };
+
+pub use resource_client::{ResourceBlob, ResourceClient, ResourceFuture, XmlDocument};
+
+pub use clock::ClockTick;
+pub use image_helpers::{FetchImageOptions, PixelArrayView};
+pub use ktx2_transcoder::RustBasisTranscoder;
+pub use tile_provider_error::{MutableErrorEvent, TileErrorReporter};

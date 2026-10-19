@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Complete the missing implementation/backend work in all 35 previously partial Core modules. Add concrete native/browser resource clients, dynamic terrain sampling, browser credit/image/video/task lifecycles, native R-tree collision behavior, ECMAScript coordinate parsing, URI normalization, and portable Rust Basis decoding.
+- Separate completed but unchecked implementations from validated ports in the tracker, README and progress charts. Tests remain deferred by request; implementation progress does not assert parity.
+- Add an optional wasm-bindgen browser package with BrowserCore entry points and vendored DOMPurify sanitization; preserve the raw C-ABI viewer build.
+
 - Bring the stacked heightmap/LERC, S2/Hilbert, quantized terrain and terrain-provider ports onto current main while retaining the Core-backed viewer and release tooling.
 - Add native resource/request foundations, terrain sampling, geocoder request/parsing logic, texture and binary utilities, shared contracts, and image/video/worker host interfaces. These additions remain partial pending reference validation and the integration work listed in PORTING.md; no tests were run for this batch.
 - Add native KTX2 uncompressed mipmap/cubemap parsing and Basis target selection, with explicit codec/loader backend contracts; validation remains deferred.

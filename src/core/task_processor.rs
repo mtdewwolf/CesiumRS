@@ -99,17 +99,26 @@ impl<P: 'static, R: 'static> TaskProcessor<P, R> {
         initialization
     }
     pub fn destroy(&mut self) {
-        if self.state.destroyed.replace(true) {
-            return;
-        }
-        self.worker.terminate();
-        let wakers: Vec<_> = self.state.wakers.borrow_mut().drain().map(|(_, w)| w).collect();
-        for waker in wakers {
-            waker.wake();
-        }
-        if let Some(initialization) = &self.initialization {
-            initialization.reject_destroyed();
-        }
+        shutdown(self);
+    }
+}
+
+fn shutdown<P, R>(processor: &mut TaskProcessor<P, R>) {
+    if processor.state.destroyed.replace(true) {
+        return;
+    }
+    processor.worker.terminate();
+    let wakers: Vec<_> = processor.state.wakers.borrow_mut().drain().map(|(_, w)| w).collect();
+    for waker in wakers {
+        waker.wake();
+    }
+    if let Some(initialization) = &processor.initialization {
+        initialization.reject_destroyed();
+    }
+}
+impl<P, R> Drop for TaskProcessor<P, R> {
+    fn drop(&mut self) {
+        shutdown(self);
     }
 }
 

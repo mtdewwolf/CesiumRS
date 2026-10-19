@@ -142,5 +142,13 @@
     "date": "2026-10-19",
     "percent": 21.91,
     "ported": 220
+  },
+  {
+    "milestone": "Complete partial Core implementations; validation deferred",
+    "date": "2026-10-19",
+    "percent": 22.79,
+    "ported": 220,
+    "implemented": 36,
+    "validatedPercent": 21.02
   }
 ]

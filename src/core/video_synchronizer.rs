@@ -63,6 +63,13 @@ impl<V: VideoElement> VideoSynchronizer<V> {
     }
 
     pub fn on_tick(&mut self, clock: &Clock) {
+        self.on_tick_state(&super::clock::ClockTick {
+            current_time: clock.current_time(),
+            multiplier: clock.multiplier(),
+            should_animate: clock.should_animate(),
+        });
+    }
+    pub fn on_tick_state(&mut self, clock: &super::clock::ClockTick) {
         if self.destroyed {
             return;
         }
@@ -72,7 +79,7 @@ impl<V: VideoElement> VideoSynchronizer<V> {
         if element.ready_state() < 2 {
             return;
         }
-        let should_animate = clock.should_animate();
+        let should_animate = clock.should_animate;
         if should_animate == element.paused() {
             if should_animate {
                 element.play();
@@ -84,14 +91,14 @@ impl<V: VideoElement> VideoSynchronizer<V> {
             self.first_tick_after_seek = false;
             return;
         }
-        let rate = clock.multiplier();
+        let rate = clock.multiplier;
         if self.last_playback_rate != Some(rate) {
             if element.set_playback_rate(rate).is_err() {
                 let _ = element.set_playback_rate(0.0);
             }
             self.last_playback_rate = Some(rate);
         }
-        let mut video_time = JulianDate::seconds_difference(&clock.current_time(), &self.epoch);
+        let mut video_time = JulianDate::seconds_difference(&clock.current_time, &self.epoch);
         let duration = element.duration();
         let desired_time = if element.looping() {
             video_time %= duration;

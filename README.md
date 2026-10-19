@@ -1,12 +1,12 @@
 # CesiumRS
 
-A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is a rewrite, not a binding to the JavaScript library, and each ported module is checked against real CesiumJS output.
+A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is a rewrite, not a binding to the JavaScript library, with validated modules checked against real CesiumJS output. Implementations awaiting those checks are listed separately.
 
 ![Port progress by package](docs/progress.svg)
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 21.9% of CesiumJS ported** (220 fully ported and 36 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core, the math, geometry and time foundation, is at 83.9%, working toward 100% Core** (15,779 more lines). [PORTING.md](PORTING.md) lists every module with its status, and its [Plan](PORTING.md#plan) section lists the roadmap to 100% Core.
+**Status: 22.8% implemented; 21.0% validated** (220 validated modules, 36 implemented awaiting validation, and 0 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core implementation is at 87.2%, working toward 100% Core; validated coverage is 80.6%** (12,531 more implementation lines). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan) to 100% Core.
 
 ## What is ported
 
@@ -36,11 +36,22 @@ All of these live in `src/core`, one Rust module per Cesium module:
 | Time | `JulianDate` (with Cesium's runtime-extendable leap-second table), `GregorianDate`, `LeapSecond`, `Iso8601`, `TimeInterval`, `TimeIntervalCollection`, `TimeStandard`, `TimeConstants`, `Clock`, `ClockStep`, `ClockRange`, `Event` |
 | Astronomy and Earth orientation | `Simon1994PlanetaryPositions` (Sun and Moon positions), `EarthOrientationParameters`, `Iau2006XysData` (Cesium's XYS tables are in `assets/IAU2006_XYS`; the `bundled-xys` feature compiles them in), `Iau2000Orientation`, `IauOrientationAxes`, `IauOrientationParameters` |
 
-### Core work awaiting validation
+### Completed implementations awaiting validation
 
-The next Core batch implements resource URLs and HTTP transport/retries, request scheduling and cancellation, terrain sampling, geocoder requests and response parsing, texture packing, collision checks, binary decoders, and shared packing/interpolation/geometry traits. KTX2 parsing handles uncompressed mipmaps and cubemaps, and selects Basis target formats; a concrete Basis backend is still needed for compressed data. Credits, images, video and worker tasks expose explicit host adapters.
+The 35 formerly partial Core modules now have their missing implementation and backend work: resource execution/retries, all HTTP verbs, JSONP/XML/image loading, request statistics, dynamic terrain sampling, geocoder transport/parsing, R-tree collision behavior, IDN normalization, credits, image/video/task adapters, and portable Basis decoding for KTX2. Packing, interpolation and geometry contracts connect to the existing numeric and geometry codecs.
 
-These additions are **partial** in the tracker. Tests and fixture generation were not run for this batch, as requested; compilation does not establish CesiumJS parity. The tracker notes the remaining behavior and adapter work for each module. Previously validated ports retain their status.
+They are **implemented, unchecked** in the tracker. Tests and fixture generation were not run, as requested. Native/WebAssembly compilation and browser-package generation do not establish CesiumJS parity; validated coverage is reported separately. Twenty Core modules remain unstarted.
+
+Native applications enable `native-host` for `NativeTransport`, `NativeTimer` and cooperative worker threads. `ResourceClient` drives its shared scheduler when a response future is polled. `Resource` fetch methods return an optional future for scheduling deferral and an optional result for no-content or deferred retries. Missing sampled terrain heights use NaN because `Cartographic.height` is numeric.
+
+The `browser` feature supplies concrete canvas/image, DOMPurify credit, media-event, HTTP/JSONP and module-worker adapters. It is optional so the existing raw C-ABI viewer keeps its build path. Browser bindings are packaged with:
+
+```bash
+cargo install wasm-bindgen-cli --version 0.2.129 --locked
+scripts/build-browser-core.sh  # writes target/browser-core, including JS modules
+```
+
+The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases and native KTX2 transcoding. Rust applications can use the individual adapters, including `BrowserVideoBinding` for automatic clock/seek subscriptions. See [Core host adapters](docs/core-hosts.md) for usage and threading contracts.
 
 ### Mapping CesiumJS to Rust
 

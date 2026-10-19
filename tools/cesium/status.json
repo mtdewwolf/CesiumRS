@@ -1033,183 +1033,219 @@
     "note": "Native two-axis triangle clipping, recursive vertex keys, oct-normal interpolation, edge remapping, re-quantization and bounds. 16 direct worker cases and all four children in terrain-data lifecycle fixtures preserve order and source horizon-center behavior."
   },
   "Core/BingMapsGeocoderService": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::geocoder_service::BingMapsGeocoderService",
-    "note": "Request parameters, JSONP host contract, bounds parsing and credits implemented; host transport and validation pending."
+    "note": "JSONP requests, culture/API-key parameters, bounds, credits and ResourceClient transport.",
+    "validation": "deferred-by-user-request"
   },
   "Core/CartographicGeocoderService": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::geocoder_service::CartographicGeocoderService",
-    "note": "Coordinate and compass-direction queries implemented. Full JavaScript numeric/regex edge cases and reference validation remain."
+    "note": "ECMAScript whitespace/number grammar, arbitrary-length radix strings, compass regex and Cartesian destinations.",
+    "validation": "deferred-by-user-request"
   },
   "Core/CompressedTextureBuffer": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::compressed_texture_buffer",
-    "note": "Shared byte storage and shallow clones; parity validation pending."
+    "note": "Immutable shared byte views with shallow Clone and optional pixel datatype.",
+    "validation": "deferred-by-user-request"
   },
   "Core/Credit": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::credit",
-    "note": "Credit IDs, equality and Ion attributions implemented; sanitized DOM rendering/caching is supplied by CreditRenderer. Validation pending."
+    "note": "HTML IDs and equality, clone-specific element identity, Ion attribution; BrowserCreditRenderer sanitizes with pinned DOMPurify and caches per instance.",
+    "validation": "deferred-by-user-request"
   },
   "Core/DefaultProxy": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::proxy::DefaultProxy",
-    "note": "URL escaping and query-prefix behavior implemented; parity validation pending."
+    "note": "Cesium encodeURIComponent escaping and query-prefix rules.",
+    "validation": "deferred-by-user-request"
   },
   "Core/GeocoderService": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::geocoder_service::GeocoderService",
-    "note": "Native asynchronous interface, destinations and attribution credits implemented; validation pending."
+    "note": "Asynchronous service trait, point/rectangle results, attribution credits and ResourceClient host.",
+    "validation": "deferred-by-user-request"
   },
   "Core/GeometryFactory": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::geometry_factory",
-    "note": "Native geometry creation trait implemented by existing geometry descriptions and closures; validation pending."
+    "note": "Shared construction trait for all existing geometry descriptions and closures.",
+    "validation": "deferred-by-user-request"
   },
   "Core/GoogleEarthEnterpriseTileInformation": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::google_earth_enterprise_tile_information",
-    "note": "Flags, child masks, parent terrain inheritance and cloning implemented; validation pending."
+    "note": "Protocol fields, child/subtree/imagery/terrain flags, parent inheritance quirk and cloning.",
+    "validation": "deferred-by-user-request"
   },
   "Core/GoogleGeocoderService": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::geocoder_service::GoogleGeocoderService",
-    "note": "API-key requests, status/error handling, viewport parsing and singular attribution implemented; host transport and validation pending."
+    "note": "Key/address requests, status errors, viewport destinations, singular attribution and ResourceClient transport.",
+    "validation": "deferred-by-user-request"
   },
   "Core/InterpolationAlgorithm": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::interpolation_algorithm",
-    "note": "Native interface backed by the existing linear, Lagrange and Hermite implementations; validation pending."
+    "note": "Shared linear, Lagrange and Hermite interfaces, including Hermite derivative interpolation.",
+    "validation": "deferred-by-user-request"
   },
   "Core/OpenCageGeocoderService": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::geocoder_service::OpenCageGeocoderService",
-    "note": "API-key/query parameters, points/bounds and credits implemented; host transport and validation pending."
+    "note": "Request parameter precedence, point/bounds destinations, credits and ResourceClient transport.",
+    "validation": "deferred-by-user-request"
   },
   "Core/Packable": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::packable::Packable",
-    "note": "Native trait implemented for existing numeric codecs; trait integration validation pending."
+    "note": "Native fixed-size numeric packing contract implemented by the existing codecs.",
+    "validation": "deferred-by-user-request"
   },
   "Core/PackableForInterpolation": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::packable::PackableForInterpolation",
-    "note": "Native trait connected to quaternion interpolation codecs; validation pending."
+    "note": "Quaternion interpolation packing and inverse conversion contract.",
+    "validation": "deferred-by-user-request"
   },
   "Core/PeliasGeocoderService": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::geocoder_service::PeliasGeocoderService",
-    "note": "Search/autocomplete requests, points/bounds and attribution parsing implemented; host transport and validation pending."
+    "note": "Search/autocomplete endpoints, point/bounds results, attributions and ResourceClient transport.",
+    "validation": "deferred-by-user-request"
   },
   "Core/Proxy": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::proxy::Proxy",
-    "note": "Native URL-rewriting trait, implemented by DefaultProxy; validation pending."
+    "note": "Native URL-rewriting interface with DefaultProxy implementation.",
+    "validation": "deferred-by-user-request"
   },
   "Core/RectangleCollisionChecker": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::rectangle_collision_checker",
-    "note": "Linear bounding-box index with inclusive collisions; rbush removal edge cases and reference validation remain."
+    "note": "Native rbush insertion/splitting and ID-removal traversal; inclusive bounds, literal antimeridian intervals and duplicate-ID ordering.",
+    "validation": "deferred-by-user-request"
   },
   "Core/Request": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::request",
-    "note": "Callbacks, priorities, cancellation flag and clone/reset semantics implemented; validation pending."
+    "note": "Callback/priority options, cancellation flag and clone/reset lifecycle without requiring Clone response types.",
+    "validation": "deferred-by-user-request"
   },
   "Core/RequestErrorEvent": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::request_error_event",
-    "note": "Typed response bodies, header parsing and display implemented; validation pending."
+    "note": "Typed response body, optional HTTP status, parsed response headers and display contract.",
+    "validation": "deferred-by-user-request"
   },
   "Core/RequestScheduler": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::request_scheduler",
-    "note": "Priority heap, server limits, cancellation, completion events and host-polled futures implemented. Browser timing/statistics logging and parity validation remain."
+    "note": "Priority heap, limits/overrides, cancellation, completion events and statistics logging; per-instance state and host-polled futures replace browser frames.",
+    "validation": "deferred-by-user-request"
   },
   "Core/Resource": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::resource",
-    "note": "URL/query/template derivation, proxying, headers, HTTP transport and retry callbacks implemented. Browser image/XML/JSONP APIs, credit propagation, retry scheduling parity and reference validation remain."
+    "note": "URL/query/template/credit cloning, all HTTP verbs, typed/optional results, retries through the scheduler, data URIs, text charsets, XML, JSONP and image execution. Native/browser transports are supplied.",
+    "validation": "deferred-by-user-request"
   },
   "Core/TaskProcessor": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::task_processor",
-    "note": "Task IDs, concurrency limits, completion events, shared module initialization and destruction implemented. TaskWorker supplies runtime/worker behavior; validation pending."
+    "note": "Concurrency, task IDs, shared initialization, cancellation and completion events; native cooperative worker threads and browser module-worker transport supplied.",
+    "validation": "deferred-by-user-request"
   },
   "Core/TexturePacker": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::texture_packer",
-    "note": "Recursive atlas splitting and border padding implemented; validation pending."
+    "note": "Binary atlas subdivision, stable placement and border padding.",
+    "validation": "deferred-by-user-request"
   },
   "Core/TileProviderError": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::tile_provider_error",
-    "note": "Retry counts, success reset and mutable host reporting callback implemented. Host event/log integration and validation remain."
+    "note": "Retry/success counts, mutable retry-policy events and provider-name logging through TileErrorReporter.",
+    "validation": "deferred-by-user-request"
   },
   "Core/TrustedServers": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::trusted_servers",
-    "note": "Explicit registry with port, protocol and authority handling. Full URI/IDN normalization and reference validation remain."
+    "note": "Explicit registry/page protocol; URI.js-compatible Punycode, IPv6 presentation, case and default-port normalization.",
+    "validation": "deferred-by-user-request"
   },
   "Core/VideoSynchronizer": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::video_synchronizer",
-    "note": "Playback/seek timing implemented through VideoElement. Clock/media event wiring belongs to the host; validation pending."
+    "note": "Playback/seek logic and negative-wrap quirk; BrowserVideoBinding manages clock and seek subscriptions, replacement and destruction.",
+    "validation": "deferred-by-user-request"
   },
   "Core/decodeGoogleEarthEnterpriseData": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::decode_google_earth_enterprise_data",
-    "note": "In-place packet decoding, magic bypass and checked key reads implemented; validation pending."
+    "note": "In-place rotating-key XOR decoding, compressed-magic bypass and checked malformed-input errors.",
+    "validation": "deferred-by-user-request"
   },
   "Core/decodeVectorPolylinePositions": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::decode_vector_polyline_positions",
-    "note": "In-place ZigZag streams and Cartesian reconstruction implemented; validation pending."
+    "note": "In-place ZigZag streams, quantized interpolation and ellipsoid Cartesian reconstruction.",
+    "validation": "deferred-by-user-request"
   },
   "Core/getImageFromTypedArray": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::image_helpers::get_image_from_typed_array",
-    "note": "RGBA buffer construction and ImageHost integration implemented; browser backing-buffer quirks and validation remain."
+    "note": "RGBA construction with concrete browser canvas host; view overload preserves whole-backing-buffer behavior.",
+    "validation": "deferred-by-user-request"
   },
   "Core/getImagePixels": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::image_helpers::get_image_pixels",
-    "note": "Default dimensions and explicit ImageHost pixel extraction implemented; concrete canvas adapter and validation remain."
+    "note": "Cached browser canvas copy/readback and optional target dimensions.",
+    "validation": "deferred-by-user-request"
   },
   "Core/loadImageFromTypedArray": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::image_helpers::load_image_from_typed_array",
-    "note": "Decode flags, typed byte input and optional host futures implemented; concrete browser decoder and validation remain."
+    "note": "Concrete browser bitmap-option probe, decode/color flags, HTML-image fallback and object-URL cleanup.",
+    "validation": "deferred-by-user-request"
   },
   "Core/resizeImageToNextPowerOfTwo": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::image_helpers::resize_image_to_next_power_of_two",
-    "note": "Power-of-two dimensions and host resampling implemented; concrete canvas adapter and validation remain."
+    "note": "Native dimension calculation and concrete browser canvas resampling.",
+    "validation": "deferred-by-user-request"
   },
   "Core/sampleTerrain": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::sample_terrain::sample_terrain",
-    "note": "Concurrent tile grouping, host backoff, mesh fallback and error handling implemented. Missing heights map to NaN; mutation/error timing and reference validation remain."
+    "note": "Concurrent grouped requests, asynchronous backoff, mesh fallback, pre-failure height mutations and error policy. NaN represents an undefined height.",
+    "validation": "deferred-by-user-request"
   },
   "Core/sampleTerrainMostDetailed": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::sample_terrain::sample_terrain_most_detailed",
-    "note": "Availability grouping, root loading and changed-level resampling implemented. Dynamic provider availability integration and validation remain."
+    "note": "Concurrent availability/level groups, dynamically updated availability and changed-level resampling; availability uses interior tree locks.",
+    "validation": "deferred-by-user-request"
   },
   "Core/KTX2Transcoder": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::ktx2_transcoder",
-    "note": "Native KTX2 header/level parsing, raw RGB/RGBA/half/float mip and cubemap buffers, Basis target selection and output collapsing implemented. BasisTranscoder supplies codec initialization/entropy decoding; concrete backend, metadata edge cases and validation remain."
+    "note": "Native KTX2 mip/cubemap parsing and output shaping; RustBasisTranscoder supplies ETC1S/UASTC/Zstd decoding and all Cesium target-format choices on native and Wasm.",
+    "validation": "deferred-by-user-request"
   },
   "Core/loadKTX2": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::ktx2_transcoder::load_ktx2",
-    "note": "Buffers and host resource futures feed the transcoder, preserving optional request deferral. Concrete Resource loader/Basis backends and reference validation remain."
+    "note": "Raw buffers and ResourceClient loading feed the supplied portable transcoder, with request deferral preserved.",
+    "validation": "deferred-by-user-request"
   },
   "Workers/transcodeKTX2": {
-    "status": "partial",
+    "status": "implemented",
     "rust": "core::ktx2_transcoder",
-    "note": "Native uncompressed parser and ETC1S/UASTC target-selection paths implemented. Basis entropy decoding, module initialization and task execution require concrete host backends; validation pending."
+    "note": "Native uncompressed parsing and portable Basis decoding; Rust tasks replace worker message serialization.",
+    "validation": "deferred-by-user-request"
   }
 }

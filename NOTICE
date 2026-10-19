@@ -11,3 +11,8 @@ This project is not affiliated with Cesium GS, Inc.
 
 The viewer uses Natural Earth II imagery, which is in the public domain:
     Natural Earth - https://www.naturalearthdata.com
+
+The optional browser credit renderer includes DOMPurify (Apache-2.0):
+    DOMPurify - https://github.com/cure53/DOMPurify
+    Cure53 and other contributors (see the vendored source header)
+    Distribution and license: web/host/vendor/
