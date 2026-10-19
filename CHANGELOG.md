@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Bring the stacked heightmap/LERC, S2/Hilbert, quantized terrain and terrain-provider ports onto current main while retaining the Core-backed viewer and release tooling.
+- Add native resource/request foundations, terrain sampling, geocoder request/parsing logic, texture and binary utilities, shared contracts, and image/video/worker host interfaces. These additions remain partial pending reference validation and the integration work listed in PORTING.md; no tests were run for this batch.
+- Adapt restored terrain providers to the current shared `Arc<Mutex<Event<_>>>` error-event contract.
+
 ## v0.1.0 — 2026-10-18
 
 First tagged release. A Rust port of CesiumJS 1.139 (`@cesium/engine` 23.0.0), checked module by module against fixtures generated from the real CesiumJS: 22,997 cases across 93 fixture files, all passing.

@@ -48,7 +48,7 @@ fn provider_meta<P: TerrainProvider>(p: &P, credit: Value) -> Value {
         p.tiling_scheme().ellipsoid().radii.enc(),
         p.tiling_scheme().get_number_of_x_tiles_at_level(0),
         p.tiling_scheme().get_number_of_y_tiles_at_level(0),
-        Rc::ptr_eq(&p.error_event(), &p.error_event()),
+        std::sync::Arc::ptr_eq(&p.error_event(), &p.error_event()),
         ([0, 1, 5, 30, 31, 32, 33, 64].map(|l| p.get_level_maximum_geometric_error(l)).to_vec().enc()),
         p.get_tile_data_available(1, 2, 3),
         p.load_tile_data_availability(1, 2, 3).map(|_| true)

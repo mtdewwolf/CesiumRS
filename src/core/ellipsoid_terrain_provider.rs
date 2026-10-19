@@ -8,14 +8,13 @@ use super::terrain_provider::{self, TerrainProvider};
 use super::tile_availability::TileAvailability;
 use super::tiling_scheme::{GeographicTilingScheme, TilingScheme};
 use super::typed_array::TypedArray;
-use std::cell::RefCell;
 use std::future::{ready, Ready};
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 pub struct EllipsoidTerrainProvider {
     tiling_scheme: Box<dyn TilingScheme>,
     level_zero_maximum_geometric_error: f64,
-    errors: Rc<RefCell<Event<RuntimeError>>>,
+    errors: Arc<Mutex<Event<RuntimeError>>>,
 }
 impl Default for EllipsoidTerrainProvider {
     fn default() -> Self {
@@ -42,7 +41,7 @@ impl EllipsoidTerrainProvider {
             tiling_scheme.get_number_of_x_tiles_at_level(0) as f64,
             quality,
         );
-        Self { tiling_scheme, level_zero_maximum_geometric_error: error, errors: Rc::new(RefCell::new(Event::new())) }
+        Self { tiling_scheme, level_zero_maximum_geometric_error: error, errors: Arc::new(Mutex::new(Event::new())) }
     }
 }
 impl TerrainProvider for EllipsoidTerrainProvider {
@@ -52,7 +51,7 @@ impl TerrainProvider for EllipsoidTerrainProvider {
     type Request = ();
     type GeometryFuture<'a> = Ready<Result<HeightmapTerrainData, RuntimeError>>;
     type AvailabilityFuture<'a> = Ready<Result<(), RuntimeError>>;
-    fn error_event(&self) -> Rc<RefCell<Event<RuntimeError>>> {
+    fn error_event(&self) -> Arc<Mutex<Event<RuntimeError>>> {
         self.errors.clone()
     }
     fn credit(&self) -> Option<&()> {

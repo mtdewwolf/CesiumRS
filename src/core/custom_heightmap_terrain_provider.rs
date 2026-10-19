@@ -8,10 +8,9 @@ use super::terrain_provider::{self, TerrainProvider};
 use super::tile_availability::TileAvailability;
 use super::tiling_scheme::{GeographicTilingScheme, TilingScheme};
 use super::typed_array::TypedArray;
-use std::cell::RefCell;
 use std::future::{Future, Ready};
 use std::pin::Pin;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum HeightmapSamples {
@@ -69,7 +68,7 @@ pub struct CustomHeightmapTerrainProvider<F, C = String> {
     tiling_scheme: Box<dyn TilingScheme>,
     credit: Option<C>,
     level_zero_maximum_geometric_error: f64,
-    errors: Rc<RefCell<Event<RuntimeError>>>,
+    errors: Arc<Mutex<Event<RuntimeError>>>,
 }
 impl<F: HeightmapCallback, C> CustomHeightmapTerrainProvider<F, C> {
     pub fn new(callback: F, options: CustomHeightmapTerrainProviderOptions<C>) -> Option<Self> {
@@ -98,7 +97,7 @@ impl<F: HeightmapCallback, C> CustomHeightmapTerrainProvider<F, C> {
             tiling_scheme,
             credit: options.credit,
             level_zero_maximum_geometric_error: error,
-            errors: Rc::new(RefCell::new(Event::new())),
+            errors: Arc::new(Mutex::new(Event::new())),
         })
     }
     pub fn width(&self) -> usize {
@@ -121,7 +120,7 @@ impl<F: HeightmapCallback, C> TerrainProvider for CustomHeightmapTerrainProvider
         = Ready<Result<(), RuntimeError>>
     where
         Self: 'a;
-    fn error_event(&self) -> Rc<RefCell<Event<RuntimeError>>> {
+    fn error_event(&self) -> Arc<Mutex<Event<RuntimeError>>> {
         self.errors.clone()
     }
     fn credit(&self) -> Option<&C> {

@@ -1031,5 +1031,170 @@
     "status": "ported",
     "rust": "core::quantized_terrain_upsample",
     "note": "Native two-axis triangle clipping, recursive vertex keys, oct-normal interpolation, edge remapping, re-quantization and bounds. 16 direct worker cases and all four children in terrain-data lifecycle fixtures preserve order and source horizon-center behavior."
+  },
+  "Core/BingMapsGeocoderService": {
+    "status": "partial",
+    "rust": "core::geocoder_service::BingMapsGeocoderService",
+    "note": "Request parameters, JSONP host contract, bounds parsing and credits implemented; host transport and validation pending."
+  },
+  "Core/CartographicGeocoderService": {
+    "status": "partial",
+    "rust": "core::geocoder_service::CartographicGeocoderService",
+    "note": "Coordinate and compass-direction queries implemented. Full JavaScript numeric/regex edge cases and reference validation remain."
+  },
+  "Core/CompressedTextureBuffer": {
+    "status": "partial",
+    "rust": "core::compressed_texture_buffer",
+    "note": "Shared byte storage and shallow clones; parity validation pending."
+  },
+  "Core/Credit": {
+    "status": "partial",
+    "rust": "core::credit",
+    "note": "Credit IDs, equality and Ion attributions implemented; sanitized DOM rendering/caching is supplied by CreditRenderer. Validation pending."
+  },
+  "Core/DefaultProxy": {
+    "status": "partial",
+    "rust": "core::proxy::DefaultProxy",
+    "note": "URL escaping and query-prefix behavior implemented; parity validation pending."
+  },
+  "Core/GeocoderService": {
+    "status": "partial",
+    "rust": "core::geocoder_service::GeocoderService",
+    "note": "Native asynchronous interface, destinations and attribution credits implemented; validation pending."
+  },
+  "Core/GeometryFactory": {
+    "status": "partial",
+    "rust": "core::geometry_factory",
+    "note": "Native geometry creation trait implemented by existing geometry descriptions and closures; validation pending."
+  },
+  "Core/GoogleEarthEnterpriseTileInformation": {
+    "status": "partial",
+    "rust": "core::google_earth_enterprise_tile_information",
+    "note": "Flags, child masks, parent terrain inheritance and cloning implemented; validation pending."
+  },
+  "Core/GoogleGeocoderService": {
+    "status": "partial",
+    "rust": "core::geocoder_service::GoogleGeocoderService",
+    "note": "API-key requests, status/error handling, viewport parsing and singular attribution implemented; host transport and validation pending."
+  },
+  "Core/InterpolationAlgorithm": {
+    "status": "partial",
+    "rust": "core::interpolation_algorithm",
+    "note": "Native interface backed by the existing linear, Lagrange and Hermite implementations; validation pending."
+  },
+  "Core/OpenCageGeocoderService": {
+    "status": "partial",
+    "rust": "core::geocoder_service::OpenCageGeocoderService",
+    "note": "API-key/query parameters, points/bounds and credits implemented; host transport and validation pending."
+  },
+  "Core/Packable": {
+    "status": "partial",
+    "rust": "core::packable::Packable",
+    "note": "Native trait implemented for existing numeric codecs; trait integration validation pending."
+  },
+  "Core/PackableForInterpolation": {
+    "status": "partial",
+    "rust": "core::packable::PackableForInterpolation",
+    "note": "Native trait connected to quaternion interpolation codecs; validation pending."
+  },
+  "Core/PeliasGeocoderService": {
+    "status": "partial",
+    "rust": "core::geocoder_service::PeliasGeocoderService",
+    "note": "Search/autocomplete requests, points/bounds and attribution parsing implemented; host transport and validation pending."
+  },
+  "Core/Proxy": {
+    "status": "partial",
+    "rust": "core::proxy::Proxy",
+    "note": "Native URL-rewriting trait, implemented by DefaultProxy; validation pending."
+  },
+  "Core/RectangleCollisionChecker": {
+    "status": "partial",
+    "rust": "core::rectangle_collision_checker",
+    "note": "Linear bounding-box index with inclusive collisions; rbush removal edge cases and reference validation remain."
+  },
+  "Core/Request": {
+    "status": "partial",
+    "rust": "core::request",
+    "note": "Callbacks, priorities, cancellation flag and clone/reset semantics implemented; validation pending."
+  },
+  "Core/RequestErrorEvent": {
+    "status": "partial",
+    "rust": "core::request_error_event",
+    "note": "Typed response bodies, header parsing and display implemented; validation pending."
+  },
+  "Core/RequestScheduler": {
+    "status": "partial",
+    "rust": "core::request_scheduler",
+    "note": "Priority heap, server limits, cancellation, completion events and host-polled futures implemented. Browser timing/statistics logging and parity validation remain."
+  },
+  "Core/Resource": {
+    "status": "partial",
+    "rust": "core::resource",
+    "note": "URL/query/template derivation, proxying, headers, HTTP transport and retry callbacks implemented. Browser image/XML/JSONP APIs, credit propagation, retry scheduling parity and reference validation remain."
+  },
+  "Core/TaskProcessor": {
+    "status": "partial",
+    "rust": "core::task_processor",
+    "note": "Task IDs, concurrency limits, completion events, shared module initialization and destruction implemented. TaskWorker supplies runtime/worker behavior; validation pending."
+  },
+  "Core/TexturePacker": {
+    "status": "partial",
+    "rust": "core::texture_packer",
+    "note": "Recursive atlas splitting and border padding implemented; validation pending."
+  },
+  "Core/TileProviderError": {
+    "status": "partial",
+    "rust": "core::tile_provider_error",
+    "note": "Retry counts, success reset and mutable host reporting callback implemented. Host event/log integration and validation remain."
+  },
+  "Core/TrustedServers": {
+    "status": "partial",
+    "rust": "core::trusted_servers",
+    "note": "Explicit registry with port, protocol and authority handling. Full URI/IDN normalization and reference validation remain."
+  },
+  "Core/VideoSynchronizer": {
+    "status": "partial",
+    "rust": "core::video_synchronizer",
+    "note": "Playback/seek timing implemented through VideoElement. Clock/media event wiring belongs to the host; validation pending."
+  },
+  "Core/decodeGoogleEarthEnterpriseData": {
+    "status": "partial",
+    "rust": "core::decode_google_earth_enterprise_data",
+    "note": "In-place packet decoding, magic bypass and checked key reads implemented; validation pending."
+  },
+  "Core/decodeVectorPolylinePositions": {
+    "status": "partial",
+    "rust": "core::decode_vector_polyline_positions",
+    "note": "In-place ZigZag streams and Cartesian reconstruction implemented; validation pending."
+  },
+  "Core/getImageFromTypedArray": {
+    "status": "partial",
+    "rust": "core::image_helpers::get_image_from_typed_array",
+    "note": "RGBA buffer construction and ImageHost integration implemented; browser backing-buffer quirks and validation remain."
+  },
+  "Core/getImagePixels": {
+    "status": "partial",
+    "rust": "core::image_helpers::get_image_pixels",
+    "note": "Default dimensions and explicit ImageHost pixel extraction implemented; concrete canvas adapter and validation remain."
+  },
+  "Core/loadImageFromTypedArray": {
+    "status": "partial",
+    "rust": "core::image_helpers::load_image_from_typed_array",
+    "note": "Decode flags, typed byte input and optional host futures implemented; concrete browser decoder and validation remain."
+  },
+  "Core/resizeImageToNextPowerOfTwo": {
+    "status": "partial",
+    "rust": "core::image_helpers::resize_image_to_next_power_of_two",
+    "note": "Power-of-two dimensions and host resampling implemented; concrete canvas adapter and validation remain."
+  },
+  "Core/sampleTerrain": {
+    "status": "partial",
+    "rust": "core::sample_terrain::sample_terrain",
+    "note": "Concurrent tile grouping, host backoff, mesh fallback and error handling implemented. Missing heights map to NaN; mutation/error timing and reference validation remain."
+  },
+  "Core/sampleTerrainMostDetailed": {
+    "status": "partial",
+    "rust": "core::sample_terrain::sample_terrain_most_detailed",
+    "note": "Availability grouping, root loading and changed-level resampling implemented. Dynamic provider availability integration and validation remain."
   }
 }

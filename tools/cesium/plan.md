@@ -27,11 +27,18 @@ Along the way, `core::js_math` made the port's `sin`, `cos`, `log` and the other
 7. ⬜ **Remaining spatial algorithms:**
    - ✅ `S2Cell`, Hilbert levels above 32 through Cesium's finite numeric bounds, and `ApproximateTerrainHeights` with the pinned lookup table
    - ⬜ `RectangleCollisionChecker`, `GroundPolylineGeometry`
-8. ⬜ **Asset and texture processing:** compressed texture buffers, KTX2 transcoding/loading, texture packing, vector and Google Earth Enterprise decoding, and image/canvas helpers through explicit host adapters where needed.
-9. ⬜ **Resource and execution infrastructure:** requests, errors, scheduling, resources, trusted servers, task processing, proxy contracts and credits. Inject I/O and host capabilities so behavior remains testable in native Rust and WebAssembly.
+8. 🟡 **Asset and texture processing:** compressed texture buffers, KTX2 transcoding/loading, texture packing, vector and Google Earth Enterprise decoding, and image/canvas helpers through explicit host adapters where needed.
+9. 🟡 **Resource and execution infrastructure:** requests, errors, scheduling, resources, trusted servers, task processing, proxy contracts and credits. Inject I/O and host capabilities so behavior remains testable in native Rust and WebAssembly.
 10. ⬜ **Terrain providers and service clients:**
    - ✅ `EllipsoidTerrainProvider`, `CustomHeightmapTerrainProvider`
    - ⬜ network heightmap/quantized and 3D Tiles terrain providers, Google Earth Enterprise metadata and terrain, Ion resources, geocoders, platform clients and world-terrain factories. Validate parsing, request construction and response/error behavior using deterministic fixtures.
-11. ⬜ **Remaining contracts and host behavior:** interpolation and packing interfaces, geometry factories, screen-space events and video synchronization, plus terrain sampling APIs. Audit every remaining Core tracker row before claiming completion.
+11. 🟡 **Remaining contracts and host behavior:** interpolation and packing interfaces, geometry factories, screen-space events and video synchronization, plus terrain sampling APIs. Audit every remaining Core tracker row before claiming completion.
 
 Core remains the priority through 100% of applicable modules. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. The viewer already runs on Core — it was migrated ahead of 100% Core so the two implementations could not drift apart. After Core, proceed to Renderer and Scene.
+
+### Current batch: implementation ahead of validation
+
+- Resource/query/template construction, proxying, requests, priority/server scheduling, retry/error state, trusted servers and task processing have native implementations. Resource browser APIs, credit propagation, full URI normalization and runtime integrations remain.
+- Texture buffers/packing, collision checks, vector/GEE binary decoding and GEE tile information are implemented. KTX2/Basis, ground polylines, network terrain clients and 3D Tiles terrain processing remain.
+- Packing, interpolation and geometry interfaces connect to the existing ports. Terrain sampling, geocoder parsing, credit metadata, image adapters and video synchronization are implemented; host integrations and parity work remain as noted in individual tracker rows.
+- This batch is marked partial: no tests or fixture generation were run at the user's request. Compile checks only establish that the library builds. Resume reference validation before promoting these rows to ported or claiming 100% Core.

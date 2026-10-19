@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 21.0% of CesiumJS ported** (220 fully ported and 0 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core, the math, geometry and time foundation, is at 80.6%, working toward 100% Core** (19,026 more lines). [PORTING.md](PORTING.md) lists every module with its status, and its [Plan](PORTING.md#plan) section lists the roadmap to 100% Core.
+**Status: 21.8% of CesiumJS ported** (220 fully ported and 33 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core, the math, geometry and time foundation, is at 83.8%, working toward 100% Core** (15,878 more lines). [PORTING.md](PORTING.md) lists every module with its status, and its [Plan](PORTING.md#plan) section lists the roadmap to 100% Core.
 
 ## What is ported
 
@@ -35,6 +35,12 @@ All of these live in `src/core`, one Rust module per Cesium module:
 | Frames | `Transforms`: local frames, heading-pitch-roll, window coordinates, 2D model matrices, and the time-dependent TEME, ICRF and Moon-fixed frames |
 | Time | `JulianDate` (with Cesium's runtime-extendable leap-second table), `GregorianDate`, `LeapSecond`, `Iso8601`, `TimeInterval`, `TimeIntervalCollection`, `TimeStandard`, `TimeConstants`, `Clock`, `ClockStep`, `ClockRange`, `Event` |
 | Astronomy and Earth orientation | `Simon1994PlanetaryPositions` (Sun and Moon positions), `EarthOrientationParameters`, `Iau2006XysData` (Cesium's XYS tables are in `assets/IAU2006_XYS`; the `bundled-xys` feature compiles them in), `Iau2000Orientation`, `IauOrientationAxes`, `IauOrientationParameters` |
+
+### Core work awaiting validation
+
+The next Core batch implements resource URLs and HTTP transport/retries, request scheduling and cancellation, terrain sampling, geocoder requests and response parsing, texture packing, collision checks, binary decoders, and shared packing/interpolation/geometry traits. Credits, images, video and worker tasks expose explicit host adapters.
+
+These additions are **partial** in the tracker. Tests and fixture generation were not run for this batch, as requested; compilation does not establish CesiumJS parity. The tracker notes the remaining behavior and adapter work for each module. Previously validated ports retain their status.
 
 ### Mapping CesiumJS to Rust
 
