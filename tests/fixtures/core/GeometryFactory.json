@@ -1,0 +1,1 @@
+{"module":"GeometryFactory","cesium":"23.0.0","cases":[{"f":"create","a":["Box"],"r":[4,36,72,2.692582403567252]},{"f":"create","a":["Plane"],"r":[4,6,12,1.4142135623730951]},{"f":"create","a":["Sphere"],"r":[4,120,168,2]},{"f":"create","a":["Cylinder"],"r":[4,84,96,2.5]}]}

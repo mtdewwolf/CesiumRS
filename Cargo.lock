@@ -75,7 +75,6 @@ dependencies = [
  "basisu",
  "encoding_rs",
  "futures-channel",
- "futures-util",
  "js-sys",
  "lerc-reader",
  "libm",

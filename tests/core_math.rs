@@ -363,13 +363,22 @@ fn quaternion() {
                     for (i, v) in qs.iter().enumerate() {
                         v.pack(&mut packed, i * 4);
                     }
-                    ok(Quaternion::convert_packed_array_for_interpolation(&packed, 0, qs.len() - 1))
+                    ok(<Quaternion as PackableForInterpolation>::convert_packed_array_for_interpolation(
+                        &packed,
+                        0,
+                        qs.len() - 1,
+                    ))
                 }
                 "unpackInterpolationResult" => {
                     let v = c3(&a[0]);
                     let mut source = [0.0; 4];
                     x(1).pack(&mut source, 0);
-                    ok(Quaternion::unpack_interpolation_result(&[v.x, v.y, v.z], &source, 0, 0))
+                    ok(<Quaternion as PackableForInterpolation>::unpack_interpolation_result(
+                        &[v.x, v.y, v.z],
+                        &source,
+                        0,
+                        0,
+                    ))
                 }
                 _ => None,
             }

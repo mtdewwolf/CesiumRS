@@ -10,5 +10,9 @@
   },
   "dependencies": {
     "@cesium/engine": "23.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "playwright-core": "1.58.2"
   }
 }

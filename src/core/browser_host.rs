@@ -125,10 +125,11 @@ impl ResourceTransport for BrowserTransport {
         };
         self.active.borrow_mut().insert(request.id, job.clone());
         let guard = BrowserJob { id: request.id, job: job.clone(), active: self.active.clone() };
+        // Register the rejection handler before returning the Rust future:
+        // cancellation may happen before the caller ever polls it.
+        let response = field(&job, "promise").dyn_into::<Promise>().map(JsFuture::from).map_err(request_error);
         Box::pin(async move {
-            let result = JsFuture::from(field(&job, "promise").dyn_into::<Promise>().map_err(request_error)?)
-                .await
-                .map_err(request_error)?;
+            let result = response?.await.map_err(request_error)?;
             let response = HttpResponse {
                 status: field(&result, "status").as_f64().unwrap_or(0.0) as u16,
                 body: Uint8Array::new(&field(&result, "body")).to_vec(),
@@ -177,11 +178,13 @@ impl ImageHost for BrowserImageHost {
         with_credentials: bool,
         options: FetchImageOptions,
     ) -> Option<ImageFuture<'a, JsValue>> {
-        let job = start_image_request(url, with_credentials, &image_options(options, false));
+        let guard = match start_image_request(url, with_credentials, &image_options(options, false)) {
+            Ok(job) => ImageJob(job),
+            Err(value) => return Some(Box::pin(std::future::ready(Err(error(value))))),
+        };
+        let response = field(&guard.0, "promise").dyn_into::<Promise>().map(JsFuture::from).map_err(error);
         Some(Box::pin(async move {
-            let guard = ImageJob(job.map_err(error)?);
-            let promise = field(&guard.0, "promise").dyn_into::<Promise>().map_err(error)?;
-            let result = JsFuture::from(promise).await.map_err(error);
+            let result = response?.await.map_err(error);
             drop(guard);
             result
         }))
@@ -295,9 +298,9 @@ impl TaskWorker<serde_json::Value, serde_json::Value> for BrowserTaskWorker {
             args.push(&json(&parameters).map_err(error)?);
             method(&worker, "run", &args).map_err(error)
         })();
+        let response = result.and_then(|value| value.dyn_into::<Promise>().map(JsFuture::from).map_err(error));
         Box::pin(async move {
-            let promise = result?.dyn_into::<Promise>().map_err(error)?;
-            let value = JsFuture::from(promise).await.map_err(error)?;
+            let value = response?.await.map_err(error)?;
             let text = js_sys::JSON::stringify(&value).map_err(error)?.as_string().unwrap_or_else(|| "null".into());
             serde_json::from_str(&text).map_err(|e| RuntimeError::new(e.to_string()))
         })
@@ -319,9 +322,9 @@ impl TaskWorker<serde_json::Value, serde_json::Value> for BrowserTaskWorker {
             args.push(&json(&config.into()).map_err(error)?);
             method(&worker, "initialize", &args).map_err(error)
         })();
+        let response = result.and_then(|value| value.dyn_into::<Promise>().map(JsFuture::from).map_err(error));
         Box::pin(async move {
-            let promise = result?.dyn_into::<Promise>().map_err(error)?;
-            let value = JsFuture::from(promise).await.map_err(error)?;
+            let value = response?.await.map_err(error)?;
             let text = js_sys::JSON::stringify(&value).map_err(error)?.as_string().unwrap_or_else(|| "null".into());
             serde_json::from_str(&text).map_err(|e| RuntimeError::new(e.to_string()))
         })

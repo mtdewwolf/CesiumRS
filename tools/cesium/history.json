@@ -150,5 +150,13 @@
     "ported": 220,
     "implemented": 36,
     "validatedPercent": 21.02
+  },
+  {
+    "milestone": "Validate Core foundations and browser/native hosts",
+    "date": "2026-10-19",
+    "percent": 22.79,
+    "ported": 256,
+    "implemented": 0,
+    "validatedPercent": 22.79
   }
 ]
