@@ -62,3 +62,11 @@ pub mod shader_precision;
 
 pub mod multisample_framebuffer;
 pub use multisample_framebuffer::{MultisampleFramebuffer, MultisampleFramebufferOptions};
+pub mod sync;
+pub use sync::Sync;
+pub mod viewport_quad;
+pub use viewport_quad::{ViewportQuad, VIEWPORT_QUAD_VERTEX_SHADER};
+pub mod compute;
+pub use compute::{ComputeCommand, ComputeEngine, ComputePostExecute, ComputePreExecute};
+pub mod framebuffer_manager;
+pub use framebuffer_manager::{FramebufferManager, FramebufferManagerOptions};

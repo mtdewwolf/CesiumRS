@@ -1,4 +1,4 @@
-# Renderer resources and shaders
+# Renderer resources, targets and compute
 
 `src/renderer` ports CesiumJS Renderer (`@cesium/engine` 23.0.0 / CesiumJS 1.139)
 with an executable WebGL2 browser adapter and a native `Gl` host interface.
@@ -12,6 +12,10 @@ The continuation closes eight of the original nine partial modules:
 integration work remains explicitly partial, as do the new uniform-state paths
 that still need complete Scene frame updates.
 
+The next batch adds complete `FramebufferManager`, `ComputeCommand`,
+`ComputeEngine` and `Sync` ports. `ViewportQuad` provides the shared geometry and
+shader source used by compute execution through an explicit Rust owner.
+
 ## API and ownership
 
 | Rust API | Supported behavior |
@@ -20,6 +24,9 @@ that still need complete Scene frame updates.
 | `VertexArray`, `VertexAttribute`, `GeometryUploadOptions` | Buffered/constant/normalized/instanced layouts; geometry conversion, double-to-float conversion, interleaving with alignment/padding and index promotion; constant and layout updates |
 | `Framebuffer`, `FramebufferOptions`, `Attachment` | Color textures/renderbuffers, depth/stencil attachments, status, draw/read binding, explicit attachment ownership and blitting |
 | `Renderbuffer`, `RenderbufferOptions`, `MultisampleFramebuffer` | Storage formats/default dimensions, multisample allocation and paired render/resolve targets |
+| `FramebufferManager`, `FramebufferManagerOptions` | Owned or borrowed attachments, dirty checks, reuse, resizing, multiple color targets, depth/stencil resources, multisample resolve, clear routing and reusable destruction |
+| `ComputeCommand`, `ComputeEngine`, `ViewportQuad` | Fullscreen fragment-shader compute, custom geometry/programs, callback uniforms/textures, pre/post/cancel callbacks, persistence and output texture ownership |
+| `Sync` | GPU fence allocation/status/destruction and asynchronous polling with host-supplied scheduling, retry budget and timeout errors |
 | `ShaderSource`, `PickColorQualifier`, `demodernize_shader` | GLSL source assembly, builtin dependency graph/cycle detection, automatic declarations, picking, cache keys, varying helpers and WebGL1 source rewriting |
 | `ShaderBuilder`, `ShaderFunction`, `ShaderStruct`, `ShaderDestination` | Attribute location accounting, stage-specific defines/uniforms/varyings, structs/functions, source generation and independent clones |
 | `ShaderProgram`, `ShaderVariable`, `UniformValue` | Compile/link/validate diagnostics, attribute/uniform reflection, sampler unit assignment, cached uniform locations/values, vectors/matrices/arrays and low-precision uniform renaming |
@@ -36,6 +43,26 @@ failed explicit deletions can be retried. Drop cannot return errors. A VAO keeps
 its buffers alive. A framebuffer defaults to destroying its attachments, matching
 Cesium; disable that with `destroy_attachments: false` or
 `set_destroy_attachments(false)` when another owner manages them.
+
+Framebuffer managers destroy only attachments they create. External attachments
+remain valid when a manager is resized or destroyed. `destroy_framebuffer`
+releases target objects while retaining attachments; `destroy` also releases
+owned attachments and permits a later `update`, as in Cesium. Updates build a
+candidate before releasing the current target, so failed construction preserves
+the previous valid framebuffer and caller-owned resources.
+
+Compute pre-execution callbacks can update resources or replace/remove themselves
+before validation. Post-execution runs after submission and transient cleanup.
+Nonpersistent commands destroy their program and caller-supplied vertex array;
+output textures remain alive. Use `persists: true` to reuse those resources. The
+engine owns its default quad and shader cache explicitly and releases them on
+destruction, replacing Cesium's implicit Context cache ownership. Cancellation is
+invoked by the host/Scene through `ComputeCommand::cancel`.
+
+Sync polling awaits the supplied scheduler before every status query, including
+the first. A retry budget of N permits N+1 polls; the default budget is 10.
+Scheduler, host and timeout errors propagate to the caller. Browser hosts can
+schedule on animation frames or timers; native hosts supply their own future.
 
 Rust cache leases are `Rc` handles. Dropping a shader or texture lease releases
 it; `destroy_released_shader_programs` / `destroy_released_textures` collect entries
@@ -81,8 +108,8 @@ Resources stay on their context's owning thread.
 ## Validation by batch
 
 The original foundation's 187 portable cases and 173 GPU assertions continue to
-pass. The extended suite has **358 portable Renderer reference cases** and
-**307 Chromium GPU assertions**, plus native ownership/cache/failure tests.
+pass. The extended suite has **387 portable Renderer reference cases** and
+**352 Chromium GPU assertions**, plus native ownership/cache/failure tests.
 
 1. **Targets, textures and state:** GPU comparison covers command/pass target
    precedence, renderbuffer/depth attachment metadata/status, framebuffer copies,
@@ -103,7 +130,17 @@ pass. The extended suite has **358 portable Renderer reference cases** and
 3. **Lifetime and commands:** native regressions cover buffer/VAO sharing,
    destruction/retry, injected setup failures, derived shader replacement and
    release, texture cache leases, per-draw callbacks, command dirty tracking and
-   clones. All 234 Rust tests and 63 existing Core Chromium checks pass.
+   clones. All 241 Rust tests and 63 existing Core Chromium checks pass.
+4. **Managed targets, compute and fences:** GPU comparisons cover target reuse,
+   resizing, multiple color attachments, depth/depth-stencil texture/renderbuffer
+   choices, multisample resolve, clear-command preservation and destruction.
+   Compute comparisons check exact pixels across output sizes, discard/clear
+   behavior, input textures and per-execution uniforms, default/custom geometry
+   and programs, callback order and persistence. Real fences complete through a
+   scheduled asynchronous wait. The 29 new portable cases compare command/manager
+   defaults, the viewport shader and exact fence polling/timeout counts. Native
+   regressions inject construction, submission, scheduling and deletion failures,
+   and check external ownership and callbacks that remove themselves.
 
 Preserved reference details include constant attributes being context state,
 index offsets measured in indices and converted to bytes, count clamping against
@@ -146,6 +183,6 @@ astronomical lighting, fog/atmosphere and environment texture population. Curren
 3D transform calculations and explicit host-provided values are executable and
 reference-validated; they do not claim full Scene integration.
 
-Further modules still include cube/3D textures, atlases, framebuffer managers,
-vertex-array facades, compute commands/engine, shared contexts and synchronization.
+Further modules still include cube/3D textures, atlases, vertex-array facades,
+shared contexts and remaining uniform/render-state helper modules.
 The tracker lists each outstanding module without treating it as completed.

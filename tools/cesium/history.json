@@ -190,5 +190,13 @@
     "ported": 304,
     "implemented": 0,
     "validatedPercent": 28.16
+  },
+  {
+    "milestone": "Renderer targets and compute",
+    "date": "2026-10-20",
+    "percent": 29.1,
+    "ported": 308,
+    "implemented": 0,
+    "validatedPercent": 28.38
   }
 ]
