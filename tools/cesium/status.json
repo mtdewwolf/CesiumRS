@@ -1311,5 +1311,105 @@
     "status": "ported",
     "rust": "core::write_text_to_canvas",
     "note": "Font metrics, whitespace, stroke/padding sizing and raster drawing through CanvasHost; exact Chromium pixel/metrics comparisons with CesiumJS."
+  },
+  "Renderer/BufferUsage": {
+    "status": "ported",
+    "rust": "renderer::enums::BufferUsage",
+    "note": "Typed constants and validation checked against pinned CesiumJS fixtures."
+  },
+  "Renderer/TextureWrap": {
+    "status": "ported",
+    "rust": "renderer::enums::TextureWrap",
+    "note": "Typed constants and validation checked against pinned CesiumJS fixtures."
+  },
+  "Renderer/TextureMinificationFilter": {
+    "status": "ported",
+    "rust": "renderer::enums::TextureMinificationFilter",
+    "note": "Typed constants and validation checked against pinned CesiumJS fixtures."
+  },
+  "Renderer/TextureMagnificationFilter": {
+    "status": "ported",
+    "rust": "renderer::enums::TextureMagnificationFilter",
+    "note": "Typed constants and validation checked against pinned CesiumJS fixtures."
+  },
+  "Renderer/MipmapHint": {
+    "status": "ported",
+    "rust": "renderer::enums::MipmapHint",
+    "note": "Typed constants and validation checked against pinned CesiumJS fixtures."
+  },
+  "Renderer/Pass": {
+    "status": "ported",
+    "rust": "renderer::enums::Pass",
+    "note": "All 13 pass values checked against pinned CesiumJS fixtures."
+  },
+  "Renderer/ShaderFunction": {
+    "status": "ported",
+    "rust": "renderer::shader::ShaderFunction",
+    "note": "GLSL generation or destination flags checked against pinned CesiumJS fixtures; owned Rust values replace JS mutable objects."
+  },
+  "Renderer/ShaderStruct": {
+    "status": "ported",
+    "rust": "renderer::shader::ShaderStruct",
+    "note": "GLSL generation or destination flags checked against pinned CesiumJS fixtures; owned Rust values replace JS mutable objects."
+  },
+  "Renderer/ShaderDestination": {
+    "status": "ported",
+    "rust": "renderer::shader::ShaderDestination",
+    "note": "GLSL generation or destination flags checked against pinned CesiumJS fixtures; owned Rust values replace JS mutable objects."
+  },
+  "Renderer/Sampler": {
+    "status": "ported",
+    "rust": "renderer::texture::Sampler",
+    "note": "Wrap/filter defaults, NEAREST, equality and anisotropy; pinned fixtures and real WebGL2 sampling checks."
+  },
+  "Renderer/Buffer": {
+    "status": "ported",
+    "rust": "renderer::buffer",
+    "note": "Vertex/index/pixel-pack buffers, allocation/writes, nonoverlapping GPU copies and byte readback; all index widths checked in Chromium against CesiumJS. Shared ownership/drop replaces vertexArrayDestroyable; explicit destroy invalidates aliases. See docs/renderer-foundation.md."
+  },
+  "Renderer/VertexArray": {
+    "status": "partial",
+    "rust": "renderer::vertex_array",
+    "note": "Buffered/interleaved/normalized/constant attributes, indices and instancing; Chromium byte/pixel parity and native lifetime checks. Geometry conversion and mutable attributes remain."
+  },
+  "Renderer/ShaderSource": {
+    "status": "partial",
+    "rust": "renderer::shader::ShaderSource",
+    "note": "WebGL2 source/define/version/extension/precision assembly and main replacement; exact fixtures. Builtin dependencies, pick shaders, WebGL1 and remaining source helpers remain."
+  },
+  "Renderer/ShaderProgram": {
+    "status": "partial",
+    "rust": "renderer::shader::ShaderProgram",
+    "note": "Compile/link diagnostics, attribute locations, cached uniform locations, float/int vectors and matrices; Chromium pixel/error parity. Reflection, uniform arrays/uints, automatic uniforms and cache integration remain."
+  },
+  "Renderer/Texture": {
+    "status": "partial",
+    "rust": "renderer::texture::Texture",
+    "note": "Uncompressed 2D byte/float/half/packed uploads, row flipping, subimages, sampler and mipmaps; Chromium pixel parity, including packed-flip quirk. DOM/compressed/framebuffer sources, integer color formats and supplied mip chains remain."
+  },
+  "Renderer/RenderState": {
+    "status": "partial",
+    "rust": "renderer::render_state::RenderState",
+    "note": "All fixed-function state/defaults and pass overrides, validated by fixtures, pixels and 38 GL parameters. Global interning and differential-application cache remain; full state reapplied per draw."
+  },
+  "Renderer/PassState": {
+    "status": "partial",
+    "rust": "renderer::render_state::PassState",
+    "note": "Viewport fallback and blending/scissor overrides; Chromium state/pixel parity. Framebuffer override remains."
+  },
+  "Renderer/Context": {
+    "status": "partial",
+    "rust": "renderer::context",
+    "note": "Explicit context identity, WebGL2 host boundary and concrete browser adapter; executable draw/clear/readback with Chromium parity. Framebuffers, WebGL1, full capability/limit APIs, caches and native GPU adapter remain."
+  },
+  "Renderer/DrawCommand": {
+    "status": "partial",
+    "rust": "renderer::draw_command::DrawCommand",
+    "note": "Executable indexed/non-indexed/instanced commands with explicit uniforms/textures and Cesium offset/count behavior; Chromium pixel parity. Scene metadata, dirty/derived tracking and framebuffer selection remain."
+  },
+  "Renderer/ClearCommand": {
+    "status": "partial",
+    "rust": "renderer::draw_command::ClearCommand",
+    "note": "Optional color/depth/stencil clear, ALL defaults and render-state/pass masks/scissor; Chromium pixel parity. Framebuffer selection and Scene ownership/pass metadata remain."
   }
 }

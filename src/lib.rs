@@ -1,5 +1,8 @@
-//! Rust port of the CesiumJS 1.139 geospatial core, plus the Lakebed
-//! viewer that runs on it.
+//! Rust port of the CesiumJS 1.139 geospatial core and renderer foundations,
+//! plus the Lakebed viewer that runs on Core.
+//!
+//! The [`renderer`] module provides an executable WebGL2 foundation with
+//! explicit host, resource-lifetime and validation contracts.
 //!
 //! The ported CesiumJS Core modules live in [`core`] — one Rust module per
 //! Cesium module, checked against CesiumJS fixtures. The viewer layer
@@ -42,6 +45,7 @@ pub mod camera;
 pub mod core;
 pub mod geodesic;
 pub mod mesh;
+pub mod renderer;
 pub mod sun;
 
 pub use camera::{look_at, pick_ray, CameraFrame, Pick};
