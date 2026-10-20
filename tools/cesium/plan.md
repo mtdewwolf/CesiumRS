@@ -35,10 +35,28 @@ Along the way, `core::js_math` made the port's `sin`, `cos`, `log` and the other
    - ✅ network heightmap/quantized and 3D Tiles terrain providers, Google Earth Enterprise metadata and terrain, world-terrain factories. Ion resources/geocoding and platform clients are now validated. Bing, Google, Pelias, OpenCage and coordinate geocoders pass deterministic parsing, request construction, attribution and error fixtures.
 11. ✅ **Contracts and host behavior:** interpolation/packing interfaces, geometry factories, video bindings, terrain sampling, screen-space gestures and canvas text/pin rendering validated.
 
-Core remains the priority through 100% of applicable modules. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. The viewer already runs on Core — it was migrated ahead of 100% Core so the two implementations could not drift apart. After Core, proceed to Renderer and Scene.
+Core has reached 100% of applicable modules; Renderer is the current milestone. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. The viewer already runs on Core — it was migrated ahead of 100% Core so the two implementations could not drift apart. After Core, proceed to Renderer and Scene.
 
 ### Validated partial-module batch
 
 All 35 formerly partial Core implementations and the native KTX2 worker calculation now pass validation. The batch adds 617 pinned CesiumJS cases, native lifecycle/HTTP checks and 23 Chromium checks, including Rust video/worker bindings and packaged WASM codec output. Validation found and fixed short GEE packet decoding, Basis codec configuration/output differences and lost ready terrain results on tile/level errors. See [validation details](docs/core-validation.md).
 
 The final 20 Core modules are implemented and validated. This batch adds 199 pinned reference cases, native terrain/input integration and exact Chromium text/pin and gesture comparisons. Core has 270 validated applicable modules and no remaining partial or todo entries. The 18 n/a entries retain explicit Rust replacement notes. Renderer and Scene are the next package milestones.
+
+
+### Renderer foundation
+
+The first executable Renderer slice lives in `src/renderer`, with a concrete
+WebGL2 browser adapter and a native host interface. Buffer/VAO, shader/state and
+texture/draw batches pass pinned CesiumJS validation: 187 portable cases,
+Chromium GPU byte/pixel/state comparisons and native ownership/failure tests.
+See [Renderer API, validation and remaining work](docs/renderer-foundation.md).
+Large modules stay partial where geometry conversion, automatic uniforms,
+shader/cache helpers, texture sources, framebuffers or Scene integration remain.
+
+Next batches, in dependency order:
+
+1. Framebuffers/renderbuffers, capability/limit handling and texture source paths.
+2. Shader builders, builtin dependencies, reflection and automatic uniform state.
+3. Geometry-to-VAO conversion, caches, derived commands and compute execution.
+4. Scene integration, followed by the remaining Renderer and Scene modules.
