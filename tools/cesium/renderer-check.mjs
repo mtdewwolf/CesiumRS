@@ -6,8 +6,8 @@ import {readFile} from 'node:fs/promises';
 import {resolve,extname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=resolve(fileURLToPath(new URL('../..',import.meta.url)));
-const names=['Buffer','BufferUsage','VertexArray','Context','ShaderProgram','ShaderSource','Texture','Sampler','RenderState','DrawCommand','ClearCommand','PassState'];
-const core=['ComponentDatatype','IndexDatatype','PrimitiveType','Color','WebGLConstants'];
+const names=['Buffer','BufferUsage','VertexArray','Context','ShaderProgram','ShaderSource','Texture','Sampler','RenderState','DrawCommand','ClearCommand','PassState','Framebuffer','Renderbuffer','RenderbufferFormat','ShaderBuilder','ShaderCache','ContextLimits'];
+const core=['ComponentDatatype','IndexDatatype','PrimitiveType','Color','WebGLConstants','Geometry','GeometryAttributes','GeometryAttribute','Cartesian2','Cartesian3','Cartesian4','Matrix2','Matrix3','Matrix4'];
 const contents=[...names.map(n=>`export {default as ${n}} from '@cesium/engine/Source/Renderer/${n}.js';`),...core.map(n=>`export {default as ${n}} from '@cesium/engine/Source/Core/${n}.js';`)].join('\n');
 const bundle=await build({stdin:{contents,resolveDir:fileURLToPath(new URL('.',import.meta.url))},bundle:true,write:false,format:'esm',platform:'browser'});
 const server=createServer(async(req,res)=>{try{
@@ -23,7 +23,7 @@ try {
  browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH??'/usr/bin/chromium',headless:true,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(`http://127.0.0.1:${server.address().port}/`);
- const checks=await page.evaluate(async()=>{
+ const checks=await page.evaluate(async()=>{try{
   const wasm=await import('/target/renderer-validation/renderer.js');await wasm.default();const ref=await import('/reference.mjs'),passed=[];
   const canvas=()=>{const c=document.createElement('canvas');c.width=8;c.height=8;return c;};
   const gl=canvas().getContext('webgl2',{antialias:false,alpha:true,stencil:true});if(!gl)throw Error('WebGL2 unavailable');
@@ -48,7 +48,7 @@ try {
   eq(context._gl.getError(),gl.NO_ERROR,'Cesium buffers leave no GL errors');
   va.destroy();target.destroy();
 
-  const drawRef=config=>{
+  const drawRef=(config,image)=>{
     const indexed=!!config.indexed,instanced=!!config.instanced,textured=!!config.textured;
     const positions=indexed?[-1,-1,1,-1,1,1,-1,1]:[-1,-1,-1,-1,-1,-1,-1,-1,1,-1,1,1,-1,-1,1,1,-1,1];
     const vertex=ref.Buffer.createVertexBuffer({context,usage:ref.BufferUsage.STATIC_DRAW,typedArray:new Float32Array(positions)});
@@ -57,10 +57,12 @@ try {
     if(instanced)attributes.push({index:2,componentsPerAttribute:2,instanceDivisor:1,vertexBuffer:ref.Buffer.createVertexBuffer({context,usage:ref.BufferUsage.STATIC_DRAW,typedArray:new Float32Array([-.5,0,.5,0])})});else attributes.push({index:2,value:[0,0]});
     const va=new ref.VertexArray({context,attributes,indexBuffer});
     const vertexShaderSource=`in vec2 position; in vec4 color; in vec2 offset; out vec4 v_color; out vec2 v_uv; uniform mat4 transform; void main() { gl_Position = transform * vec4(position * vec2(${instanced?'0.5':'1.0'},1.0) + offset,0.,1.); v_color=color; v_uv=position*.5+.5; }`;
-    const fragmentShaderSource=`in vec4 v_color; in vec2 v_uv; uniform vec4 tint; uniform int enabled; ${textured?'uniform sampler2D image;':''} void main(){out_FragColor= (enabled==1 ? tint : vec4(0.)) * v_color ${textured?'* texture(image,v_uv)':''};}`;
+    const fragmentShaderSource=`in vec4 v_color; in vec2 v_uv; uniform vec4 tint; uniform int enabled; ${textured?'uniform sampler2D image;':''} void main(){out_FragColor= (enabled==1 ? tint : vec4(0.)) * v_color ${textured?(config.lod===undefined?'* texture(image,v_uv)':`* textureLod(image,v_uv,${config.lod}.0)`):''};}`;
     const program=ref.ShaderProgram.fromCache({context,vertexShaderSource,fragmentShaderSource,attributeLocations:{position:0,color:1,offset:2}});
     let texture;
-    if(textured){const bytes=new Uint8Array(config.pixels??[255,0,0,255,0,255,0,255,0,0,255,255,255,255,255,255]);const datatype=config.textureDatatype??5121;const arrayBufferView=datatype===5126?new Float32Array(bytes.buffer):[5123,32819,32820,33635,36193].includes(datatype)?new Uint16Array(bytes.buffer):datatype===5125?new Uint32Array(bytes.buffer):bytes;texture=new ref.Texture({context,pixelFormat:config.textureFormat??6408,pixelDatatype:datatype,source:{width:config.textureWidth??2,height:config.textureHeight??2,arrayBufferView},flipY:config.flipY??true,sampler:config.linear?new ref.Sampler():ref.Sampler.NEAREST});if(config.update)texture.copyFrom({source:{width:1,height:1,arrayBufferView:new Uint8Array([255,255,0,255])},xOffset:1,yOffset:0});if(config.mipmap)texture.generateMipmap();}
+    if(textured){const bytes=new Uint8Array(config.pixels??[255,0,0,255,0,255,0,255,0,0,255,255,255,255,255,255]);const datatype=config.textureDatatype??5121;const arrayBufferView=datatype===5126?new Float32Array(bytes.buffer):[5123,32819,32820,33635,36193].includes(datatype)?new Uint16Array(bytes.buffer):datatype===5125?new Uint32Array(bytes.buffer):bytes;const sampler=config.linear?new ref.Sampler():config.samplerMips?new ref.Sampler({minificationFilter:9984,magnificationFilter:9728}):ref.Sampler.NEAREST;
+      const opts={context,width:config.textureWidth??2,height:config.textureHeight??2,pixelFormat:config.textureFormat??6408,pixelDatatype:datatype,source:{width:config.textureWidth??2,height:config.textureHeight??2,arrayBufferView,mipLevels:config.mipLevels?.map(a=>new Uint8Array(a))},flipY:config.flipY??true,sampler,preMultiplyAlpha:config.preMultiplyAlpha??false,skipColorSpaceConversion:config.skipColorSpaceConversion??false};
+      if(config.sourceKind==='image')opts.source=image;if(config.sourceKind==='imageSub')delete opts.source;texture=new ref.Texture(opts);if(config.sourceKind==='imageSub')texture.copyFrom({source:image,skipColorSpaceConversion:config.skipColorSpaceConversion??false});if(config.update)texture.copyFrom({source:{width:1,height:1,arrayBufferView:new Uint8Array([255,255,0,255])},xOffset:1,yOffset:0});if(config.mipmap)texture.generateMipmap();}
     const pass=new ref.PassState(context);Object.assign(pass,config.pass??{});
     new ref.ClearCommand({color:new ref.Color(.1,.2,.3,1),depth:1,stencil:0}).execute(context);
     const uniformMap={tint:()=>new ref.Color(1,1,1,.5),enabled:()=>1,transform:()=>[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]};
@@ -93,8 +95,13 @@ try {
     cases.push({textured:true,flipY,textureFormat:6403,pixels:[255,64,128,0]});
     cases.push({textured:true,flipY,textureFormat:33319,pixels:[255,0,64,255,128,32,0,128]});
   }
+
+  for(const sourceKind of ['image','imageSub'])for(const flipY of [false,true])for(const preMultiplyAlpha of [false,true])for(const skipColorSpaceConversion of [false,true])cases.push({textured:true,sourceKind,flipY,preMultiplyAlpha,skipColorSpaceConversion});
+  for(const lod of [0,1,2])cases.push({textured:true,sourceKind:'mipmaps',samplerMips:true,lod,textureWidth:4,textureHeight:4,pixels:Array(16).fill([255,0,0,255]).flat(),mipLevels:[Array(4).fill([0,255,0,255]).flat(),[0,0,255,255]]});
+  for(const lod of [0,1,2])cases.push({textured:true,sourceKind:'compressed',samplerMips:true,lod,textureFormat:33776,textureWidth:4,textureHeight:4,pixels:[0,248,0,248,0,0,0,0],mipLevels:[[224,7,224,7,0,0,0,0],[31,0,31,0,0,0,0,0]]});
+  const image=canvas();image.width=2;image.height=2;image.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray([255,0,0,128,0,255,0,255,0,0,255,64,255,255,255,255]),2,2),0,0);
   for(const config of cases){
-    const expected=drawRef(config),actual=JSON.parse(wasm.renderer_draw(gl,JSON.stringify(config)));
+    const expected=drawRef(config,image),actual=JSON.parse(wasm.renderer_draw(gl,JSON.stringify(config),image));
     eq(actual,expected,'draw pixels '+JSON.stringify(config));eq(gl.getError(),gl.NO_ERROR,'Rust draw GL status '+JSON.stringify(config));eq(context._gl.getError(),gl.NO_ERROR,'Cesium draw GL status '+JSON.stringify(config));
   }
   const rejected=(vertexShaderSource,fragmentShaderSource)=>{const p=ref.ShaderProgram.fromCache({context,vertexShaderSource,fragmentShaderSource});try{p._bind();return false;}catch(e){return e.name==='RuntimeError'&&e.message.length>0;}finally{p.destroy();}};
@@ -109,6 +116,44 @@ try {
     eq(JSON.parse(wasm.renderer_clear(gl,JSON.stringify(state),JSON.stringify(pass))),Array.from(context.readPixels({width:8,height:8})),'masked/scissored clear '+JSON.stringify({state,pass}));
     eq(gl.getError(),gl.NO_ERROR,'Rust clear GL status');eq(context._gl.getError(),gl.NO_ERROR,'Cesium clear GL status');
   }
+
+  for(const mode of [0,1,2]){
+    const make=()=>new ref.Framebuffer({context,colorTextures:[new ref.Texture({context,width:4,height:4,sampler:ref.Sampler.NEAREST})],destroyAttachments:false});
+    const a=make(),b=make(),pass=new ref.PassState(context);pass.framebuffer=a;
+    new ref.ClearCommand({color:new ref.Color(1,0,0,1)}).execute(context,pass);
+    new ref.ClearCommand({color:new ref.Color(0,1,0,1),framebuffer:b}).execute(context,pass);
+    const pixels=f=>Array.from(context.readPixels({framebuffer:f,width:4,height:4}));
+    const result={status:a.status,count:a.numberOfColorAttachments,depth:a.hasDepthAttachment,a:pixels(a),b:pixels(b)};
+    const pbo=context.readPixelsToPBO({framebuffer:b,width:4,height:4});const bytes=new Uint8Array(64);pbo.getBufferData(bytes);result.pbo=Array.from(bytes);pbo.destroy();
+    const copied=ref.Texture.fromFramebuffer({context,pixelFormat:6408,width:4,height:4,framebuffer:a}),cf=new ref.Framebuffer({context,colorTextures:[copied]});result.copy=pixels(cf);cf.destroy();
+    if(mode>0){const color=new ref.Renderbuffer({context,format:ref.RenderbufferFormat.RGBA8,width:4,height:4,numSamples:mode===2?4:1}),depth=new ref.Renderbuffer({context,format:ref.RenderbufferFormat.DEPTH_COMPONENT16,width:4,height:4,numSamples:mode===2?4:1});const f=new ref.Framebuffer({context,colorRenderbuffers:[color],depthRenderbuffer:depth});new ref.ClearCommand({color:new ref.Color(.2,.4,.6,1),framebuffer:f}).execute(context);f.bindRead();b.bindDraw();context._gl.blitFramebuffer(0,0,4,4,0,0,4,4,context._gl.COLOR_BUFFER_BIT,context._gl.NEAREST);context._gl.bindFramebuffer(context._gl.FRAMEBUFFER,null);context._currentFramebuffer=undefined;result.resolved=pixels(b);result.depth=f.hasDepthAttachment;result.status=f.status;result.renderbuffer=[color.format,color.width,color.height];f.destroy();}
+    eq(JSON.parse(wasm.renderer_framebuffers(gl,mode)),result,'framebuffer routing, PBO, copy and resolve mode '+mode);eq(gl.getError(),gl.NO_ERROR,'Rust framebuffer GL status');eq(context._gl.getError(),gl.NO_ERROR,'Cesium framebuffer GL status');
+    a.getColorTexture(0).destroy();b.getColorTexture(0).destroy();a.destroy();b.destroy();context._currentFramebuffer=undefined;
+  }
+
+  for(const interleave of [false,true]){
+    const position=new ref.GeometryAttribute({componentDatatype:5130,componentsPerAttribute:2,values:new Float64Array([-1,-1,1,-1,1,1,-1,1])}),color=new ref.GeometryAttribute({componentDatatype:5121,componentsPerAttribute:4,normalize:true,values:new Uint8Array([255,128,64,255,255,128,64,255,255,128,64,255,255,128,64,255])}),weight=new ref.GeometryAttribute({componentDatatype:5123,componentsPerAttribute:2,values:new Uint16Array([1,2,3,4,5,6,7,8])});
+    const va=ref.VertexArray.fromGeometry({context,geometry:new ref.Geometry({attributes:{position,color,weight},indices:new Uint16Array([0,1,2,0,2,3]),primitiveType:4}),attributeLocations:{position:0,color:1,weight:2},interleave});
+    const layouts=Array.from({length:va.numberOfAttributes},(_,i)=>{const a=va.getAttribute(i);return[a.index,a.componentsPerAttribute,a.componentDatatype,a.normalize,a.offsetInBytes,a.strideInBytes,read(a.vertexBuffer,0,a.vertexBuffer.sizeInBytes)];});
+    const geometryCache=new ref.ShaderCache(context);const program=geometryCache.getShaderProgram({vertexShaderSource:'in vec2 position;in vec4 color;out vec4 v_color;void main(){gl_Position=czm_modelViewProjection*vec4(position,0.,1.);v_color=color;}',fragmentShaderSource:'in vec4 v_color;void main(){out_FragColor=v_color;}',attributeLocations:{position:0,color:1}});
+    ref.ClearCommand.ALL.execute(context);new ref.DrawCommand({vertexArray:va,shaderProgram:program}).execute(context);
+    const attributes=Object.values(program.vertexAttributes).map(v=>({name:v.name,datatype:v.type,size:1})).sort((a,b)=>a.name.localeCompare(b.name));
+    const expected={layouts,indices:read(va.indexBuffer,0,12),pixels:Array.from(context.readPixels({width:8,height:8})),attributes,programs:geometryCache.numberOfShaders};
+    eq(JSON.parse(wasm.renderer_geometry(gl,interleave)),expected,'geometry upload, builtin automatic matrix, reflection and shader cache interleave='+interleave);eq(gl.getError(),gl.NO_ERROR,'Rust geometry GL status');eq(context._gl.getError(),gl.NO_ERROR,'Cesium geometry GL status');va.destroy();program.destroy();geometryCache.destroy();context._currentFramebuffer=undefined;
+  }
+  const specs=[],declarations=[],terms=[];
+  for(const kind of ['float','int','bool'])for(let components=1;components<=4;components++){
+    const name=(kind==='float'?'f':kind==='int'?'i':'b')+components,datatype=components===1?kind:(kind==='float'?'vec':kind==='int'?'ivec':'bvec')+components,values=Array.from({length:components*2},(_,i)=>kind==='bool'?i%2:i+1);specs.push({name,kind,components,values});declarations.push(`uniform ${datatype} ${name}[2];`);terms.push(components===1?(kind==='bool'?`float(${name}[0])+float(${name}[1])`:`float(${name}[0]+${name}[1])`):`dot(vec${components}(${name}[0])+vec${components}(${name}[1]),vec${components}(1))`);
+  }
+  for(const components of [2,3,4]){const name='m'+components,values=Array.from({length:components*components*2},(_,i)=>i+1);specs.push({name,kind:'matrix',components,values});declarations.push(`uniform mat${components} ${name}[2];`);terms.push(`${name}[0][0][0]+${name}[1][0][0]`);}
+  const vertex='#version 300 es\nvoid main(){gl_Position=vec4(0.);}',fragment='#version 300 es\nprecision highp float;\n'+declarations.join('\n')+`\nvoid main(){out_FragColor=vec4((${terms.join('+')})*.001);}`;
+  const program=ref.ShaderProgram.fromCache({context,vertexShaderSource:vertex,fragmentShaderSource:fragment}),uniformMap={};
+  for(const spec of specs){const {kind,components:n,values}=spec,width=kind==='matrix'?n*n:n;const array=[values.slice(0,width),values.slice(width)];uniformMap[spec.name]=()=>n===1?values:array.map(a=>kind==='matrix'?ref['Matrix'+n].fromArray(a):new ref['Cartesian'+n](...a));}
+  program._bind();program._setUniforms(uniformMap,context.uniformState);const uniformExpected={};for(const spec of specs)uniformExpected[spec.name]=[0,1].map(i=>{const v=context._gl.getUniform(program._program,context._gl.getUniformLocation(program._program,`${spec.name}[${i}]`));return ArrayBuffer.isView(v)?Array.from(v):v;});
+  eq(JSON.parse(wasm.renderer_uniform_arrays(gl,vertex,fragment.replaceAll('out_FragColor','result').replace('void main()','out vec4 result;\nvoid main()'),JSON.stringify(specs))),uniformExpected,'float/int/bool/vector/matrix uniform arrays');eq(gl.getError(),gl.NO_ERROR,'Rust uniform arrays GL status');eq(context._gl.getError(),gl.NO_ERROR,'Cesium uniform arrays GL status');program.destroy();
+  const limitNames=['maximumCombinedTextureImageUnits','maximumCubeMapSize','maximumFragmentUniformVectors','maximumTextureImageUnits','maximumRenderbufferSize','maximumTextureSize','maximum3DTextureSize','maximumVaryingVectors','maximumVertexAttributes','maximumVertexTextureImageUnits','maximumVertexUniformVectors','minimumAliasedLineWidth','maximumAliasedLineWidth','minimumAliasedPointSize','maximumAliasedPointSize','maximumViewportWidth','maximumViewportHeight','maximumTextureFilterAnisotropy','maximumDrawBuffers','maximumColorAttachments','maximumSamples','highpFloatSupported','highpIntSupported'];
+  const actualLimits=JSON.parse(wasm.renderer_limits(gl));if('maximum3dTextureSize'in actualLimits){actualLimits.maximum3DTextureSize=actualLimits.maximum3dTextureSize;delete actualLimits.maximum3dTextureSize;}
+  eq(actualLimits,Object.fromEntries(limitNames.map(n=>[n,ref.ContextLimits[n]])),'all context limits');
   const parameters=['FRONT_FACE','CULL_FACE','CULL_FACE_MODE','LINE_WIDTH','POLYGON_OFFSET_FILL','POLYGON_OFFSET_FACTOR','POLYGON_OFFSET_UNITS','DEPTH_RANGE','DEPTH_TEST','DEPTH_FUNC','COLOR_WRITEMASK','DEPTH_WRITEMASK','STENCIL_WRITEMASK','BLEND','BLEND_COLOR','BLEND_EQUATION_RGB','BLEND_EQUATION_ALPHA','BLEND_SRC_RGB','BLEND_SRC_ALPHA','BLEND_DST_RGB','BLEND_DST_ALPHA','STENCIL_TEST','STENCIL_FUNC','STENCIL_BACK_FUNC','STENCIL_REF','STENCIL_VALUE_MASK','STENCIL_FAIL','STENCIL_PASS_DEPTH_FAIL','STENCIL_PASS_DEPTH_PASS','STENCIL_BACK_FAIL','STENCIL_BACK_PASS_DEPTH_FAIL','STENCIL_BACK_PASS_DEPTH_PASS','SAMPLE_COVERAGE','SAMPLE_COVERAGE_VALUE','SAMPLE_COVERAGE_INVERT','SCISSOR_TEST','SCISSOR_BOX','VIEWPORT'];
   const snapshot=g=>Object.fromEntries(parameters.map(n=>{const v=g.getParameter(g[n]);return [n,ArrayBuffer.isView(v)?Array.from(v):v];}));
   // Compare active state after alternating nondefault/default/pass settings.
@@ -121,7 +166,7 @@ try {
   }
   context.destroy();
   return passed;
- });
+ }catch(e){throw new Error(String(e.message??e)+"\n"+String(e.stack??""));}});
  if(errors.length)throw Error(errors.join('\n'));
  for(const check of checks)console.log('PASS '+check);console.log(`${checks.length} renderer checks passed`);
 } finally {await browser?.close();await new Promise(resolve=>server.close(resolve));}

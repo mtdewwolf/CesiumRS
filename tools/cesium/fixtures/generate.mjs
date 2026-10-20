@@ -10,6 +10,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import rendererExtended from "./renderer-extended.mjs";
 import rendererFoundations from "./renderer-foundations.mjs";
 import coreBounds from "./core-bounds.mjs";
 import coreGeometry from "./core-geometry.mjs";
@@ -56,7 +57,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const out = join(here, "../../../tests/fixtures");
 const version = JSON.parse(readFileSync(join(here, "../node_modules/@cesium/engine/package.json"), "utf8")).version;
 
-const packages = { renderer: rendererFoundations(), core: [...await coreGroundPolyline(), ...await coreTilesProvider(), ...await coreTilesTerrain(), ...await coreGee(), ...await coreNetworkTerrain(), ...await corePlatforms(), ...coreContracts(), ...await coreRequests(), ...await coreServices(), ...await coreTextures(), ...coreFoundations(), ...coreMath(), ...coreGeometry(), ...coreBounds(), ...coreTime(), ...corePacking(), ...coreSplines(), ...coreAlgorithms(), ...coreGeometries(), ...coreUtilities(), ...corePolygon(), ...corePipeline(), ...coreSurfaces(), ...coreLines(), ...coreCorridors(), ...coreTerrain(), ...coreTerrainProvider(), ...await coreTerrainMesh(), ...await coreHeightmapData(), ...coreS2(), ...await coreQuantizedTerrain(), ...await coreTerrainBoundsProviders(), ...coreAstronomy()] };
+const packages = { renderer: [...rendererFoundations(), ...rendererExtended()], core: [...await coreGroundPolyline(), ...await coreTilesProvider(), ...await coreTilesTerrain(), ...await coreGee(), ...await coreNetworkTerrain(), ...await corePlatforms(), ...coreContracts(), ...await coreRequests(), ...await coreServices(), ...await coreTextures(), ...coreFoundations(), ...coreMath(), ...coreGeometry(), ...coreBounds(), ...coreTime(), ...corePacking(), ...coreSplines(), ...coreAlgorithms(), ...coreGeometries(), ...coreUtilities(), ...corePolygon(), ...corePipeline(), ...coreSurfaces(), ...coreLines(), ...coreCorridors(), ...coreTerrain(), ...coreTerrainProvider(), ...await coreTerrainMesh(), ...await coreHeightmapData(), ...coreS2(), ...await coreQuantizedTerrain(), ...await coreTerrainBoundsProviders(), ...coreAstronomy()] };
 // coreAstronomy runs last: loading EOP data adds leap seconds to JulianDate.leapSeconds.
 
 // Optional module names avoid rewriting unrelated fixtures during porting.

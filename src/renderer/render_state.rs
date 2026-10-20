@@ -1,6 +1,6 @@
 //! CesiumJS RenderState defaults and full application, including pass overrides.
-//! States are owned Rust values. Every draw reapplies state; Cesium's global
-//! interning and differential-application cache are deliberately not assumed.
+//! Owned immutable caches and sparse transition application live in
+//! render_state_cache; direct apply remains available for host integration.
 use super::context::*;
 use crate::core::webgl_constants as gl;
 use serde::{Deserialize, Serialize};
@@ -194,13 +194,31 @@ impl Default for RenderState {
     }
 }
 /// Pass viewport is used when the command state has no viewport; blending and
-/// scissor, when set, override command state. Framebuffers are deferred.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
-pub struct PassState {
+/// scissor, when set, override command state. A command framebuffer takes
+/// precedence over the pass framebuffer.
+#[derive(Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase", bound = "")]
+pub struct PassState<G: Gl> {
+    #[serde(skip)]
+    pub framebuffer: Option<std::rc::Rc<super::Framebuffer<G>>>,
     pub viewport: Option<Viewport>,
     pub blending_enabled: Option<bool>,
     pub scissor_test: Option<ScissorTest>,
+}
+impl<G: Gl> Default for PassState<G> {
+    fn default() -> Self {
+        Self { viewport: None, blending_enabled: None, scissor_test: None, framebuffer: None }
+    }
+}
+impl<G: Gl> Clone for PassState<G> {
+    fn clone(&self) -> Self {
+        Self {
+            viewport: self.viewport,
+            blending_enabled: self.blending_enabled,
+            scissor_test: self.scissor_test.clone(),
+            framebuffer: self.framebuffer.clone(),
+        }
+    }
 }
 impl RenderState {
     /// Checks independent of hardware limits. GL validates implementation limits
@@ -269,65 +287,73 @@ impl RenderState {
         }
         Ok(())
     }
-    pub fn apply<G: Gl>(&self, context: &Context<G>, pass: &PassState, drawing_size: [u32; 2]) -> Result<()> {
+    pub fn apply<G: Gl>(&self, context: &Context<G>, pass: &PassState<G>, drawing_size: [u32; 2]) -> Result<()> {
+        self.apply_masked(context, pass, drawing_size, u32::MAX)
+    }
+    pub(crate) fn apply_masked<G: Gl>(
+        &self,
+        context: &Context<G>,
+        pass: &PassState<G>,
+        drawing_size: [u32; 2],
+        mask: u32,
+    ) -> Result<()> {
         self.validate()?;
-        let toggle =
-            |cap: u32, enabled| context.call(if enabled { "enable" } else { "disable" }, &[cap.into()]).map(|_| ());
-        context.call("frontFace", &[self.front_face.into()])?;
+        let call = |name: &str, args: &[GlValue<G::Object>]| -> Result<GlValue<G::Object>> {
+            if super::render_state_cache::call_group(name, args) & mask != 0 {
+                context.call(name, args)
+            } else {
+                Ok(GlValue::Null)
+            }
+        };
+        let toggle = |cap: u32, enabled| call(if enabled { "enable" } else { "disable" }, &[cap.into()]).map(|_| ());
+        call("frontFace", &[self.front_face.into()])?;
         toggle(gl::CULL_FACE, self.cull.enabled)?;
         if self.cull.enabled {
-            context.call("cullFace", &[self.cull.face.into()])?;
+            call("cullFace", &[self.cull.face.into()])?;
         }
-        context.call("lineWidth", &[self.line_width.into()])?;
+        call("lineWidth", &[self.line_width.into()])?;
         toggle(gl::POLYGON_OFFSET_FILL, self.polygon_offset.enabled)?;
         if self.polygon_offset.enabled {
-            context.call("polygonOffset", &[self.polygon_offset.factor.into(), self.polygon_offset.units.into()])?;
+            call("polygonOffset", &[self.polygon_offset.factor.into(), self.polygon_offset.units.into()])?;
         }
-        context.call("depthRange", &[self.depth_range.near.into(), self.depth_range.far.into()])?;
+        call("depthRange", &[self.depth_range.near.into(), self.depth_range.far.into()])?;
         toggle(gl::DEPTH_TEST, self.depth_test.enabled)?;
         if self.depth_test.enabled {
-            context.call("depthFunc", &[self.depth_test.func.into()])?;
+            call("depthFunc", &[self.depth_test.func.into()])?;
         }
         let c = &self.color_mask;
-        context.call("colorMask", &[c.red.into(), c.green.into(), c.blue.into(), c.alpha.into()])?;
-        context.call("depthMask", &[self.depth_mask.into()])?;
-        context.call("stencilMask", &[(self.stencil_mask as u32).into()])?;
+        call("colorMask", &[c.red.into(), c.green.into(), c.blue.into(), c.alpha.into()])?;
+        call("depthMask", &[self.depth_mask.into()])?;
+        call("stencilMask", &[(self.stencil_mask as u32).into()])?;
         let s = &self.stencil_test;
         toggle(gl::STENCIL_TEST, s.enabled)?;
         if s.enabled {
-            context.call("stencilFunc", &[s.front_function.into(), s.reference.into(), (s.mask as u32).into()])?;
+            call("stencilFunc", &[s.front_function.into(), s.reference.into(), (s.mask as u32).into()])?;
             for (face, func, op) in
                 [(gl::BACK, s.back_function, &s.back_operation), (gl::FRONT, s.front_function, &s.front_operation)]
             {
-                context.call(
-                    "stencilFuncSeparate",
-                    &[face.into(), func.into(), s.reference.into(), (s.mask as u32).into()],
-                )?;
-                context
-                    .call("stencilOpSeparate", &[face.into(), op.fail.into(), op.z_fail.into(), op.z_pass.into()])?;
+                call("stencilFuncSeparate", &[face.into(), func.into(), s.reference.into(), (s.mask as u32).into()])?;
+                call("stencilOpSeparate", &[face.into(), op.fail.into(), op.z_fail.into(), op.z_pass.into()])?;
             }
         }
         let s = &self.sample_coverage;
         toggle(gl::SAMPLE_COVERAGE, s.enabled)?;
         if s.enabled {
-            context.call("sampleCoverage", &[s.value.into(), s.invert.into()])?;
+            call("sampleCoverage", &[s.value.into(), s.invert.into()])?;
         }
         let s = pass.scissor_test.as_ref().unwrap_or(&self.scissor_test);
         toggle(gl::SCISSOR_TEST, s.enabled)?;
         if s.enabled {
             let v = s.rectangle;
-            context.call("scissor", &[v.x.into(), v.y.into(), v.width.into(), v.height.into()])?;
+            call("scissor", &[v.x.into(), v.y.into(), v.width.into(), v.height.into()])?;
         }
         let b = &self.blending;
         let enabled = pass.blending_enabled.unwrap_or(b.enabled);
         toggle(gl::BLEND, enabled)?;
         if enabled {
-            context.call(
-                "blendColor",
-                &[b.color.red.into(), b.color.green.into(), b.color.blue.into(), b.color.alpha.into()],
-            )?;
-            context.call("blendEquationSeparate", &[b.equation_rgb.into(), b.equation_alpha.into()])?;
-            context.call(
+            call("blendColor", &[b.color.red.into(), b.color.green.into(), b.color.blue.into(), b.color.alpha.into()])?;
+            call("blendEquationSeparate", &[b.equation_rgb.into(), b.equation_alpha.into()])?;
+            call(
                 "blendFuncSeparate",
                 &[
                     b.function_source_rgb.into(),
@@ -343,7 +369,7 @@ impl RenderState {
             width: drawing_size[0],
             height: drawing_size[1],
         });
-        context.call("viewport", &[v.x.into(), v.y.into(), v.width.into(), v.height.into()])?;
+        call("viewport", &[v.x.into(), v.y.into(), v.width.into(), v.height.into()])?;
         Ok(())
     }
 }

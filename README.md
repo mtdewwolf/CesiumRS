@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 27.2% implemented; 26.3% validated** (287 validated modules, 0 implemented awaiting validation, and 9 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
+**Status: 28.9% implemented; 28.2% validated** (304 validated modules, 0 implemented awaiting validation, and 3 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
 
 ## What is ported
 
@@ -36,20 +36,20 @@ The Core modules below live in `src/core`, one Rust module per Cesium module:
 | Time | `JulianDate` (with Cesium's runtime-extendable leap-second table), `GregorianDate`, `LeapSecond`, `Iso8601`, `TimeInterval`, `TimeIntervalCollection`, `TimeStandard`, `TimeConstants`, `Clock`, `ClockStep`, `ClockRange`, `Event` |
 | Astronomy and Earth orientation | `Simon1994PlanetaryPositions` (Sun and Moon positions), `EarthOrientationParameters`, `Iau2006XysData` (Cesium's XYS tables are in `assets/IAU2006_XYS`; the `bundled-xys` feature compiles them in), `Iau2000Orientation`, `IauOrientationAxes`, `IauOrientationParameters` |
 
-### Renderer foundation
+### Renderer resources and shaders
 
-`src/renderer` now provides GPU buffers, vertex arrays, shader compilation and
-explicit uniforms, uncompressed 2D textures, render state, and executable draw
-and clear commands. The `browser` feature includes a concrete WebGL2 adapter;
-other hosts can implement `Gl`. Rust ownership handles resource lifetime and
-cross-context checks.
+`src/renderer` now includes buffers and geometry-to-VAO upload, shader builtin
+resolution/builders/reflection/caches, typed/DOM/compressed/framebuffer texture
+sources, offscreen and multisample targets, cached render-state transitions,
+and executable draw/clear commands with callbacks and Scene metadata. The
+`browser` feature supplies a WebGL2 adapter; native hosts implement `Gl`.
 
-The foundation passes 187 pinned CesiumJS cases, native lifecycle/failure tests
-and real Chromium byte, pixel and GL-state comparisons. Large Renderer modules
-remain partial where features are still missing, including framebuffers,
-automatic uniforms, shader caches, additional texture sources and Scene
-integration. [Renderer API and validation](docs/renderer-foundation.md) documents
-the supported paths and next batches.
+Eight of the original nine partial modules are now complete. Renderer validation
+covers 358 pinned CesiumJS cases, native lifecycle/cache/failure tests and 258
+Chromium GPU assertions. Context backend/lifecycle helpers and complete Scene
+frame updates in UniformState/AutomaticUniforms remain partial.
+[Renderer API, validation and remaining work](docs/renderer-foundation.md) records
+the supported behavior and Rust ownership adaptations.
 
 ### Ion and platform clients
 
@@ -63,7 +63,7 @@ to the host. The Core tracker now has 270 validated modules and 18 documented n/
 
 The 35 formerly partial Core modules now have their missing implementation and backend work: resource execution/retries, all HTTP verbs, JSONP/XML/image loading, request statistics, dynamic terrain sampling, geocoder transport/parsing, R-tree collision behavior, IDN normalization, credits, image/video/task adapters, and portable Basis decoding for KTX2. Packing, interpolation and geometry contracts connect to the existing numeric and geometry codecs.
 
-These 35 Core modules and the KTX2 worker calculation now pass reference and runtime checks: 617 new CesiumJS cases, native HTTP/worker lifecycle tests and browser runtime checks. Validation fixed GEE decoding, Basis output/configuration differences and terrain error propagation. [Validation details and commands](docs/core-validation.md) record the coverage and host adaptations. The final 20 Core modules are also complete: network terrain/GEE/3D Tiles processing, Ion/platform clients, ground polylines, screen-space events and text/pin rendering. The full suite now covers 227 Rust tests, 63 Core Chromium checks and 173 Renderer Chromium assertions.
+These 35 Core modules and the KTX2 worker calculation now pass reference and runtime checks: 617 new CesiumJS cases, native HTTP/worker lifecycle tests and browser runtime checks. Validation fixed GEE decoding, Basis output/configuration differences and terrain error propagation. [Validation details and commands](docs/core-validation.md) record the coverage and host adaptations. The final 20 Core modules are also complete: network terrain/GEE/3D Tiles processing, Ion/platform clients, ground polylines, screen-space events and text/pin rendering. The full suite now covers 232 Rust tests, 63 Core Chromium checks and 258 Renderer Chromium assertions.
 
 Native applications enable `native-host` for `NativeTransport`, `NativeTimer` and cooperative worker threads. `ResourceClient` drives its shared scheduler when a response future is polled. `Resource` fetch methods return an optional future for scheduling deferral and an optional result for no-content or deferred retries. Missing sampled terrain heights use NaN because `Cartographic.height` is numeric.
 
@@ -95,7 +95,7 @@ The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **26,019 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **26,190 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
 
 ```bash
 cargo test --all-features                    # all fixtures + native host integration
@@ -132,7 +132,7 @@ Near-antipodal routes use a deterministic great-circle approximation when Vincen
 ## Roadmap
 
 1. ✅ **Core at 100%:** all 270 applicable modules implemented and validated; 18 JavaScript idioms have documented Rust replacements.
-2. **Renderer foundation in progress:** executable WebGL2 buffers, vertex arrays, shaders, textures, render state and commands; finish the remaining paths listed in [Renderer validation](docs/renderer-foundation.md).
+2. **Renderer resources and shaders:** eight original partials completed; finish Context/Scene uniform state, remaining texture/target modules and compute paths listed in [Renderer validation](docs/renderer-foundation.md).
 3. **Scene, DataSources, Workers and Shaders,** the rest of the way to 100% overall.
 
 ## Examples and benchmarks

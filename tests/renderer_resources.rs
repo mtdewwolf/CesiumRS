@@ -183,3 +183,144 @@ fn draw_dispatch_keeps_cesium_count_and_offset_semantics() {
         assert!(matches!(arg,GlValue::Number(v) if *v==n));
     }
 }
+
+#[test]
+fn render_states_intern_and_reuse_sparse_transitions() {
+    let host = Host::default();
+    let ctx = Context::new_webgl2(host.clone());
+    let va = VertexArray::new(&ctx, vec![VertexAttribute::buffer(0, buffer(&ctx), 3)], None).unwrap();
+    let p = ShaderProgram::new(&ctx, "vs", "fs", &[]).unwrap();
+    let mut command = DrawCommand::new(&va, &p);
+    command.execute(&ctx, &PassState::default()).unwrap();
+    let first = host.count("frontFace");
+    command.execute(&ctx, &PassState::default()).unwrap();
+    assert_eq!(host.count("frontFace"), first);
+    command.render_state.depth_mask = false;
+    command.execute(&ctx, &PassState::default()).unwrap();
+    assert_eq!(host.count("frontFace"), first);
+    assert_eq!(host.count("depthMask"), 2);
+    command.render_state.depth_mask = true;
+    command.execute(&ctx, &PassState::default()).unwrap();
+    assert_eq!(host.count("depthMask"), 3);
+    ctx.invalidate_render_state();
+    command.execute(&ctx, &PassState::default()).unwrap();
+    assert_eq!(host.count("frontFace"), first + 1);
+    let evaluations = Rc::new(Cell::new(0));
+    let count = evaluations.clone();
+    command.uniform_map = Some(Rc::new(move || {
+        count.set(count.get() + 1);
+        Ok(vec![])
+    }));
+    command.execute(&ctx, &PassState::default()).unwrap();
+    command.execute(&ctx, &PassState::default()).unwrap();
+    assert_eq!(evaluations.get(), 2);
+    command.set_dirty(false);
+    assert!(!command.dirty());
+    command.metadata.receive_shadows = true;
+    assert!(command.dirty());
+    let cloned = command.shallow_clone();
+    assert!(cloned.dirty());
+    assert!(cloned.metadata.receive_shadows);
+    assert_eq!(cloned.last_dirty_time, 0.);
+}
+#[test]
+fn shader_and_texture_cache_lifetimes_and_derived_programs() {
+    let host = Host::default();
+    let ctx = Context::new_webgl2(host.clone());
+    let mut cache = ShaderCache::new(&ctx);
+    let options = ShaderProgramOptions {
+        vertex_shader_source: ShaderSource::new("void main(){gl_Position=vec4(0.);}"),
+        fragment_shader_source: ShaderSource::new("void main(){out_FragColor=vec4(1.);}"),
+        attribute_locations: Default::default(),
+    };
+    let a = cache.get_shader_program(&options).unwrap();
+    let b = cache.get_shader_program(&options).unwrap();
+    assert!(Rc::ptr_eq(&a, &b));
+    assert_eq!(cache.number_of_shaders(), 1);
+    assert_eq!(host.count("createProgram"), 1);
+    let derived = cache.create_derived_shader_program(&a, "pick", &options).unwrap();
+    let replacement = cache.replace_derived_shader_program(&a, "pick", &options).unwrap();
+    assert!(derived.is_destroyed());
+    assert!(!replacement.is_destroyed());
+    drop(a);
+    drop(b);
+    cache.destroy_released_shader_programs().unwrap();
+    assert!(replacement.is_destroyed());
+    assert_eq!(cache.number_of_shaders(), 0);
+    assert_eq!(host.count("deleteProgram"), 3);
+    let mut textures = TextureCache::default();
+    let t = Rc::new(Texture::new(&ctx, TextureOptions::rgba(2, 2), None).unwrap());
+    textures.add_texture("test", t.clone()).unwrap();
+    drop(t);
+    let lease = textures.get_texture("test").unwrap();
+    textures.destroy_released_textures().unwrap();
+    assert!(!lease.is_destroyed());
+    drop(lease);
+    textures.destroy_released_textures().unwrap();
+    assert_eq!(textures.number_of_textures(), 0);
+    assert_eq!(host.count("deleteTexture"), 1);
+    let root = cache.get_shader_program(&options).unwrap();
+    let child = cache.create_derived_shader_program(&root, "replacement", &options).unwrap();
+    root.destroy().unwrap();
+    let replacement = cache.get_shader_program(&options).unwrap();
+    assert!(!Rc::ptr_eq(&root, &replacement));
+    assert!(child.is_destroyed());
+    assert!(!replacement.is_destroyed());
+    cache.destroy().unwrap();
+}
+#[test]
+fn framebuffer_attachment_ownership_and_cross_context_rejection() {
+    let host = Host::default();
+    let ctx = Context::new_webgl2(host.clone());
+    let t = Rc::new(Texture::new(&ctx, TextureOptions::rgba(2, 2), None).unwrap());
+    let f = Framebuffer::new(
+        &ctx,
+        FramebufferOptions {
+            colors: vec![Attachment::Texture(t.clone())],
+            destroy_attachments: false,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    f.destroy().unwrap();
+    assert!(!t.is_destroyed());
+    let foreign = Context::new_webgl2(host.clone());
+    assert!(Framebuffer::new(
+        &foreign,
+        FramebufferOptions { colors: vec![Attachment::Texture(t.clone())], ..Default::default() }
+    )
+    .is_err());
+    let owned = Framebuffer::new(
+        &ctx,
+        FramebufferOptions { colors: vec![Attachment::Texture(t.clone())], ..Default::default() },
+    )
+    .unwrap();
+    owned.destroy().unwrap();
+    assert!(t.is_destroyed());
+    assert_eq!(host.count("deleteTexture"), 1);
+    let rb = Rc::new(
+        Renderbuffer::new(
+            &ctx,
+            RenderbufferOptions { format: RenderbufferFormat::Rgba8, width: Some(2), height: Some(2), num_samples: 4 },
+        )
+        .unwrap(),
+    );
+    let texture = Rc::new(Texture::new(&ctx, TextureOptions::rgba(2, 2), None).unwrap());
+    host.fail(Some("framebufferTexture2D"));
+    assert!(MultisampleFramebuffer::new(
+        &ctx,
+        MultisampleFramebufferOptions {
+            width: 2,
+            height: 2,
+            color_renderbuffers: vec![rb.clone()],
+            color_textures: vec![texture.clone()],
+            depth_stencil_texture: None,
+            depth_stencil_renderbuffer: None,
+            destroy_attachments: true
+        }
+    )
+    .is_err());
+    host.fail(None);
+    assert!(!rb.is_destroyed());
+    assert!(!texture.is_destroyed());
+}

@@ -1,6 +1,6 @@
 //! GLSL generation and executable programs. Shader compilation/link errors retain
-//! driver diagnostics. Programs accept explicit uniforms; automatic scene
-//! uniforms and Cesium's builtin dependency injection are a later layer.
+//! driver diagnostics. Reflection, explicit/callback uniforms, shader caches
+//! and automatic uniform providers share this executable program layer.
 use super::context::*;
 use crate::core::{webgl_constants as gl, RuntimeError};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -67,13 +67,18 @@ impl ShaderStruct {
         v
     }
 }
-/// Explicit GLSL sources, without the builtin/automatic-uniform dependency
-/// table. It supports Cesium's source/define/precision/version assembly for
-/// WebGL2. Callers supply declarations for every referenced `czm_` symbol.
-#[derive(Clone, Debug, Default)]
+/// GLSL sources with Cesium builtin dependency and picking support.
+#[derive(Clone, Debug)]
 pub struct ShaderSource {
     pub sources: Vec<String>,
     pub defines: Vec<String>,
+    pub include_built_ins: bool,
+    pub pick_color_qualifier: Option<super::shader_source::PickColorQualifier>,
+}
+impl Default for ShaderSource {
+    fn default() -> Self {
+        Self { sources: vec![], defines: vec![], include_built_ins: true, pick_color_qualifier: None }
+    }
 }
 #[derive(Clone, Copy, Debug, Default)]
 pub struct ShaderCapabilities {
@@ -82,7 +87,7 @@ pub struct ShaderCapabilities {
 }
 impl ShaderSource {
     pub fn new(source: impl Into<String>) -> Self {
-        Self { sources: vec![source.into()], defines: vec![] }
+        Self { sources: vec![source.into()], ..Default::default() }
     }
     pub fn replace_main(source: &str, renamed: &str) -> String {
         regex::Regex::new(r"void\s+main\s*\(\s*(?:void)?\s*\)")
@@ -91,53 +96,19 @@ impl ShaderSource {
             .into_owned()
     }
     pub fn combine_webgl2(&self, fragment: bool, capabilities: ShaderCapabilities) -> Result<String> {
-        let source = self.sources.iter().map(|s| format!("\n#line 0\n{s}")).collect::<String>();
-        let source = regex::Regex::new(r"//[^\r\n]*").unwrap().replace_all(&source, "");
-        let source = regex::Regex::new(r"(?s)/\*\*.*?\*/")
-            .unwrap()
-            .replace_all(&source, |c: &regex::Captures<'_>| "\n".repeat(c[0].bytes().filter(|b| *b == b'\n').count()));
-        let version_re = regex::Regex::new(r"#version\s+(.*?)\n").unwrap();
-        let versions: Vec<_> = version_re.captures_iter(&source).map(|c| c[1].to_string()).collect();
-        ensure(versions.windows(2).all(|p| p[0] == p[1]), "Inconsistent GLSL versions")?;
-        let source = version_re.replace_all(&source, "\n");
-        let ext_re = regex::Regex::new(r"#extension[^\r\n]*\n").unwrap();
-        let extensions = ext_re.find_iter(&source).map(|m| m.as_str()).collect::<String>();
-        let source = ext_re.replace_all(&source, "\n");
-        let source = regex::Regex::new(r"precision\s(lowp|mediump|highp)\s(float|int);").unwrap().replace(&source, "");
-        let mut result = format!("#version 300 es\n{extensions}");
-        if fragment {
-            result.push_str("\n#ifdef GL_FRAGMENT_PRECISION_HIGH\n    precision highp float;\n    precision highp int;\n#else\n    precision mediump float;\n    precision mediump int;\n    #define highp mediump\n#endif\n");
-        }
-        result.push_str("precision highp sampler3D;\n\n");
-        for define in &self.defines {
-            if !define.is_empty() {
-                result.push_str(&format!("#define {define}\n"));
-            }
-        }
-        if capabilities.texture_float_linear {
-            result.push_str("#define OES_texture_float_linear\n\n");
-        }
-        if capabilities.floating_point_texture {
-            result.push_str("#define OES_texture_float\n\n");
-        }
-        result.push_str("\n#line 0\n");
-        if fragment
-            && !regex::Regex::new(r"layout\s*\(location\s*=\s*0\)\s*out\s+vec4\s+out_FragColor;")
-                .unwrap()
-                .is_match(&source)
-            && !source.contains("czm_out_FragColor")
-            && source.contains("out_FragColor")
-        {
-            result.push_str("layout(location = 0) out vec4 out_FragColor;\n\n");
-        }
-        result.push_str(&source);
-        Ok(result)
+        self.combine(fragment, capabilities, true)
     }
 }
 
 pub struct ShaderProgram<G: Gl> {
     pub(crate) resource: Rc<Resource<G>>,
     locations: RefCell<HashMap<String, GlValue<G::Object>>>,
+    attributes: Vec<ShaderVariable>,
+    uniforms: Vec<ShaderVariable>,
+    vertex_source: String,
+    fragment_source: String,
+    duplicate_uniforms: HashMap<String, String>,
+    uniform_values: RefCell<HashMap<String, UniformValue>>,
 }
 fn status<G: Gl>(context: &Context<G>, method: &str, resource: &Resource<G>, pname: u32, log: &str) -> Result<()> {
     match context.call(method, &[resource.value()?, pname.into()])? {
@@ -155,6 +126,20 @@ impl<G: Gl> ShaderProgram<G> {
     /// Sources must be complete GLSL ES 3.00 shaders; use ShaderSource to assemble
     /// source fragments. Attribute bindings are applied before linking.
     pub fn new(context: &Context<G>, vertex: &str, fragment: &str, attributes: &[(&str, u32)]) -> Result<Self> {
+        let precision = |datatype: u32| -> Result<bool> {
+            match context.call("getShaderPrecisionFormat", &[gl::FRAGMENT_SHADER.into(), datatype.into()])? {
+                GlValue::Record(v) => {
+                    Ok(v["precision"].as_f64().unwrap_or(0.) > 0. || v["rangeMax"].as_f64().unwrap_or(0.) > 0.)
+                }
+                _ => Ok(true),
+            }
+        };
+        let (fragment_text, duplicate_uniforms) = super::shader_precision::handle_uniform_precision_mismatches(
+            vertex,
+            fragment,
+            precision(gl::HIGH_FLOAT)?,
+            precision(gl::HIGH_INT)?,
+        );
         let compile = |datatype, source: &str| -> Result<Resource<G>> {
             let shader =
                 Resource::create(context, "createShader", &[GlValue::Number(datatype as f64)], "deleteShader")?;
@@ -164,7 +149,7 @@ impl<G: Gl> ShaderProgram<G> {
             Ok(shader)
         };
         let vs = compile(gl::VERTEX_SHADER, vertex)?;
-        let fs = compile(gl::FRAGMENT_SHADER, fragment)?;
+        let fs = compile(gl::FRAGMENT_SHADER, &fragment_text)?;
         let resource = Rc::new(Resource::create(context, "createProgram", &[], "deleteProgram")?);
         context.call("attachShader", &[resource.value()?, vs.value()?])?;
         context.call("attachShader", &[resource.value()?, fs.value()?])?;
@@ -175,7 +160,115 @@ impl<G: Gl> ShaderProgram<G> {
         status(context, "getProgramParameter", &resource, gl::LINK_STATUS, "getProgramInfoLog")?;
         context.call("detachShader", &[resource.value()?, vs.value()?])?;
         context.call("detachShader", &[resource.value()?, fs.value()?])?;
-        Ok(Self { resource, locations: RefCell::new(HashMap::new()) })
+        let reflect = |count_pname, method: &str| -> Result<Vec<ShaderVariable>> {
+            let count =
+                match context.call("getProgramParameter", &[resource.value()?, GlValue::Number(count_pname as f64)])? {
+                    GlValue::Number(n) => n as u32,
+                    _ => 0,
+                };
+            let mut result = vec![];
+            for i in 0..count {
+                if let GlValue::Record(v) = context.call(method, &[resource.value()?, i.into()])? {
+                    result.push(ShaderVariable {
+                        name: v["name"].as_str().unwrap_or("").into(),
+                        datatype: v["type"].as_u64().or_else(|| v["type"].as_f64().map(|n| n as u64)).unwrap_or(0)
+                            as u32,
+                        size: v["size"].as_u64().or_else(|| v["size"].as_f64().map(|n| n as u64)).unwrap_or(0) as usize,
+                    });
+                }
+            }
+            Ok(result)
+        };
+        let attributes = reflect(gl::ACTIVE_ATTRIBUTES, "getActiveAttrib")?;
+        let uniforms = reflect(gl::ACTIVE_UNIFORMS, "getActiveUniform")?;
+        let result = Self {
+            resource,
+            locations: RefCell::new(HashMap::new()),
+            attributes,
+            uniforms,
+            vertex_source: vertex.into(),
+            fragment_source: fragment_text,
+            duplicate_uniforms,
+            uniform_values: RefCell::new(HashMap::new()),
+        };
+        let mut unit = 0;
+        for uniform in result.uniforms() {
+            if matches!(
+                uniform.datatype,
+                35678
+                    | 35679
+                    | 35680
+                    | 35682
+                    | 36289
+                    | 36292
+                    | 36293
+                    | 36298
+                    | 36299
+                    | 36300
+                    | 36303
+                    | 36306
+                    | 36307
+                    | 36308
+                    | 36311
+            ) {
+                let values = (unit..unit + uniform.size).map(|v| v as i32).collect();
+                result.set_uniform(
+                    uniform.name.strip_suffix("[0]").unwrap_or(&uniform.name),
+                    &UniformValue::IntArray { components: 1, values },
+                )?;
+                unit += uniform.size;
+            }
+        }
+        if unit > 0 {
+            context.call("useProgram", &[GlValue::Null])?;
+        }
+        Ok(result)
+    }
+    pub fn maximum_texture_unit_index(&self) -> usize {
+        self.uniforms
+            .iter()
+            .filter(|v| {
+                matches!(
+                    v.datatype,
+                    35678
+                        | 35680
+                        | 35679
+                        | 35682
+                        | 36289
+                        | 36292
+                        | 36293
+                        | 36298
+                        | 36299
+                        | 36300
+                        | 36303
+                        | 36306
+                        | 36307
+                        | 36308
+                        | 36311
+                )
+            })
+            .map(|v| v.size)
+            .sum()
+    }
+    pub fn vertex_attributes(&self) -> &[ShaderVariable] {
+        &self.attributes
+    }
+    pub fn uniforms(&self) -> &[ShaderVariable] {
+        &self.uniforms
+    }
+    pub fn vertex_shader_source(&self) -> &str {
+        &self.vertex_source
+    }
+    pub fn fragment_shader_source(&self) -> &str {
+        &self.fragment_source
+    }
+    pub fn number_of_vertex_attributes(&self) -> usize {
+        self.attributes.len()
+    }
+    pub fn validate(&self) -> Result<()> {
+        let c = &self.resource.context;
+        c.call("validateProgram", &[self.resource.value()?])?;
+        status(c, "getProgramParameter", &self.resource, gl::VALIDATE_STATUS, "getProgramInfoLog")
     }
     pub fn bind(&self) -> Result<()> {
         self.resource.context.call("useProgram", &[self.resource.value()?]).map(|_| ())
@@ -197,7 +290,35 @@ impl<G: Gl> ShaderProgram<G> {
     }
     /// The program is bound here so uniforms can never accidentally target a
     /// different program. Inactive uniforms are ignored as in WebGL.
+    pub fn invalidate_uniform_cache(&self) {
+        self.uniform_values.borrow_mut().clear();
+    }
+    pub fn get_uniform(&self, name: &str) -> Result<GlValue<G::Object>> {
+        let location = self.location(name)?;
+        self.resource.context.call("getUniform", &[self.resource.value()?, location])
+    }
+    pub fn original_uniform_name<'a>(&'a self, name: &'a str) -> &'a str {
+        self.duplicate_uniforms.get(name).map(String::as_str).unwrap_or(name)
+    }
     pub fn set_uniform(&self, name: &str, value: &UniformValue) -> Result<()> {
+        self.set_uniform_cached(name, value)?;
+        for (duplicate, original) in &self.duplicate_uniforms {
+            if original == name {
+                self.set_uniform_cached(duplicate, value)?;
+            }
+        }
+        Ok(())
+    }
+    fn set_uniform_cached(&self, name: &str, value: &UniformValue) -> Result<()> {
+        self.resource.value()?;
+        if self.uniform_values.borrow().get(name) == Some(value) {
+            return Ok(());
+        }
+        self.set_uniform_location(name, value)?;
+        self.uniform_values.borrow_mut().insert(name.into(), value.clone());
+        Ok(())
+    }
+    fn set_uniform_location(&self, name: &str, value: &UniformValue) -> Result<()> {
         let location = self.location(name)?;
         if matches!(location, GlValue::Null) {
             return Ok(());
@@ -211,6 +332,44 @@ impl<G: Gl> ShaderProgram<G> {
             UniformValue::Int(v) => {
                 ensure((1..=4).contains(&v.len()), "Uniform vector length must be 1 through 4")?;
                 (format!("uniform{}iv", v.len()), GlValue::Ints(v.clone()))
+            }
+            UniformValue::FloatArray { components, values } => {
+                ensure(
+                    (1..=4).contains(components) && values.len() % *components as usize == 0,
+                    "Invalid float uniform array",
+                )?;
+                (format!("uniform{components}fv"), GlValue::Floats(values.clone()))
+            }
+            UniformValue::IntArray { components, values } => {
+                ensure(
+                    (1..=4).contains(components) && values.len() % *components as usize == 0,
+                    "Invalid int uniform array",
+                )?;
+                (format!("uniform{components}iv"), GlValue::Ints(values.clone()))
+            }
+            UniformValue::UIntArray { components, values } => {
+                ensure(
+                    (1..=4).contains(components) && values.len() % *components as usize == 0,
+                    "Invalid uint uniform array",
+                )?;
+                (format!("uniform{components}uiv"), GlValue::UInts(values.clone()))
+            }
+            UniformValue::MatrixArray { columns, rows, values } => {
+                ensure(
+                    (2..=4).contains(columns)
+                        && (2..=4).contains(rows)
+                        && values.len() % (*columns * *rows) as usize == 0,
+                    "Invalid matrix uniform array",
+                )?;
+                let dimensions = if columns == rows { columns.to_string() } else { format!("{columns}x{rows}") };
+                return self
+                    .resource
+                    .context
+                    .call(
+                        &format!("uniformMatrix{dimensions}fv"),
+                        &[location, false.into(), GlValue::Floats(values.clone())],
+                    )
+                    .map(|_| ());
             }
             UniformValue::Matrix { dimension, values } => {
                 ensure(
@@ -236,9 +395,20 @@ impl<G: Gl> ShaderProgram<G> {
         self.resource.destroy()
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum UniformValue {
+    FloatArray { components: u32, values: Vec<f32> },
+    IntArray { components: u32, values: Vec<i32> },
+    UIntArray { components: u32, values: Vec<u32> },
+    MatrixArray { columns: u32, rows: u32, values: Vec<f32> },
     Float(Vec<f32>),
     Int(Vec<i32>),
     Matrix { dimension: u32, values: Vec<f32> },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
+pub struct ShaderVariable {
+    pub name: String,
+    pub datatype: u32,
+    pub size: usize,
 }

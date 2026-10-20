@@ -159,7 +159,12 @@ fn shader_helpers() {
         |f, a| match f {
             "replaceMain" => ok(ShaderSource::replace_main(s(&a[0]), s(&a[1]))),
             "combine" => {
-                let src = ShaderSource { sources: list(&a[0], |v| s(v).into()), defines: list(&a[1], |v| s(v).into()) };
+                let src = ShaderSource {
+                    sources: list(&a[0], |v| s(v).into()),
+                    defines: list(&a[1], |v| s(v).into()),
+                    include_built_ins: false,
+                    ..Default::default()
+                };
                 ok(src
                     .combine_webgl2(
                         a[2].as_bool().unwrap(),

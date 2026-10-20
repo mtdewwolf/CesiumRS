@@ -11,10 +11,14 @@ pub enum GlValue<O> {
     Null,
     Number(f64),
     Bool(bool),
+    Bools(Vec<bool>),
     String(String),
     Bytes(Vec<u8>),
     Floats(Vec<f32>),
     Ints(Vec<i32>),
+    UInts(Vec<u32>),
+    Numbers(Vec<f64>),
+    Record(serde_json::Value),
     Object(O),
     Pixels { bytes: Vec<u8>, datatype: crate::core::PixelDatatype },
 }
@@ -56,17 +60,31 @@ pub trait Gl {
 
 pub struct Context<G: Gl> {
     pub(crate) gl: Rc<G>,
+    pub(crate) uniform_state: Rc<RefCell<super::UniformState>>,
+    pub(crate) frame_texture_units: Rc<std::cell::Cell<u32>>,
+    pub(crate) state_driver: Rc<RefCell<super::render_state_cache::RenderStateDriver>>,
 }
 impl<G: Gl> Clone for Context<G> {
     fn clone(&self) -> Self {
-        Self { gl: self.gl.clone() }
+        Self {
+            gl: self.gl.clone(),
+            uniform_state: self.uniform_state.clone(),
+            frame_texture_units: self.frame_texture_units.clone(),
+            state_driver: self.state_driver.clone(),
+        }
     }
 }
 impl<G: Gl> Context<G> {
     pub fn new_webgl2(gl: G) -> Self {
-        Self { gl: Rc::new(gl) }
+        Self {
+            uniform_state: Rc::new(RefCell::new(Default::default())),
+            frame_texture_units: Rc::new(std::cell::Cell::new(0)),
+            gl: Rc::new(gl),
+            state_driver: Rc::new(RefCell::new(Default::default())),
+        }
     }
-    /// Direct access is for host integration. State is reapplied on every draw.
+    /// Direct access is for host integration. Call `invalidate_render_state`
+    /// after changing fixed-function GL state outside the renderer.
     pub fn host(&self) -> &G {
         &self.gl
     }
@@ -132,5 +150,11 @@ impl<G: Gl> Resource<G> {
 impl<G: Gl> Drop for Resource<G> {
     fn drop(&mut self) {
         let _ = self.destroy();
+    }
+}
+
+impl<G: Gl> Context<G> {
+    pub fn uniform_state(&self) -> std::cell::RefMut<'_, super::UniformState> {
+        self.uniform_state.borrow_mut()
     }
 }

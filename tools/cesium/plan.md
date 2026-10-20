@@ -44,19 +44,20 @@ All 35 formerly partial Core implementations and the native KTX2 worker calculat
 The final 20 Core modules are implemented and validated. This batch adds 199 pinned reference cases, native terrain/input integration and exact Chromium text/pin and gesture comparisons. Core has 270 validated applicable modules and no remaining partial or todo entries. The 18 n/a entries retain explicit Rust replacement notes. Renderer and Scene are the next package milestones.
 
 
-### Renderer foundation
+### Renderer resources and shaders
 
-The first executable Renderer slice lives in `src/renderer`, with a concrete
-WebGL2 browser adapter and a native host interface. Buffer/VAO, shader/state and
-texture/draw batches pass pinned CesiumJS validation: 187 portable cases,
-Chromium GPU byte/pixel/state comparisons and native ownership/failure tests.
-See [Renderer API, validation and remaining work](docs/renderer-foundation.md).
-Large modules stay partial where geometry conversion, automatic uniforms,
-shader/cache helpers, texture sources, framebuffers or Scene integration remain.
+The Renderer continuation closes eight original partial modules: vertex arrays,
+shader sources/programs, textures, render state, pass state and draw/clear
+commands. It adds framebuffers/renderbuffers/multisample targets, hardware limits,
+shader builders/caches and texture caches. Validation now covers 358 portable
+Renderer cases, 258 Chromium GPU assertions and native ownership, cache, callback
+and failure regressions. See [Renderer API and validation](docs/renderer-foundation.md).
 
-Next batches, in dependency order:
+Remaining batches, in dependency order:
 
-1. Framebuffers/renderbuffers, capability/limit handling and texture source paths.
-2. Shader builders, builtin dependencies, reflection and automatic uniform state.
-3. Geometry-to-VAO conversion, caches, derived commands and compute execution.
-4. Scene integration, followed by the remaining Renderer and Scene modules.
+1. Complete Context backend/lifecycle, picking and default texture/quad helpers.
+2. Complete Scene frame updates in UniformState/AutomaticUniforms, including
+   2D/Columbus View, eye/ENU, lighting/atmosphere and environment textures.
+3. Cube/3D textures, atlases and framebuffer managers; vertex-array facades,
+   compute execution, synchronization and shared contexts.
+4. Scene integration, followed by remaining Renderer and Scene modules.

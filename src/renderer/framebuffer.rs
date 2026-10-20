@@ -1,0 +1,398 @@
+//! CesiumJS Framebuffer: texture/renderbuffer attachments and explicit ownership.
+use super::{context::*, Renderbuffer, Texture};
+use crate::core::{webgl_constants as gl, PixelDatatype, PixelFormat, RuntimeError};
+use std::rc::Rc;
+pub enum Attachment<G: Gl> {
+    Texture(Rc<Texture<G>>),
+    Renderbuffer(Rc<Renderbuffer<G>>),
+}
+impl<G: Gl> Clone for Attachment<G> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Texture(v) => Self::Texture(v.clone()),
+            Self::Renderbuffer(v) => Self::Renderbuffer(v.clone()),
+        }
+    }
+}
+impl<G: Gl> Attachment<G> {
+    fn resource(&self) -> &Resource<G> {
+        match self {
+            Self::Texture(v) => &v.resource,
+            Self::Renderbuffer(v) => &v.resource,
+        }
+    }
+    pub fn width(&self) -> u32 {
+        match self {
+            Self::Texture(v) => v.width(),
+            Self::Renderbuffer(v) => v.width(),
+        }
+    }
+    pub fn height(&self) -> u32 {
+        match self {
+            Self::Texture(v) => v.height(),
+            Self::Renderbuffer(v) => v.height(),
+        }
+    }
+    fn attach(&self, context: &Context<G>, attachment: u32) -> Result<()> {
+        context.same(&self.resource().context)?;
+        match self {
+            Self::Texture(t) => {
+                context.call(
+                    "framebufferTexture2D",
+                    &[gl::FRAMEBUFFER.into(), attachment.into(), gl::TEXTURE_2D.into(), t.resource.value()?, 0.into()],
+                )?;
+            }
+            Self::Renderbuffer(r) => {
+                context.call(
+                    "framebufferRenderbuffer",
+                    &[gl::FRAMEBUFFER.into(), attachment.into(), gl::RENDERBUFFER.into(), r.resource.value()?],
+                )?;
+            }
+        }
+        Ok(())
+    }
+}
+pub struct FramebufferOptions<G: Gl> {
+    pub colors: Vec<Attachment<G>>,
+    pub depth: Option<Attachment<G>>,
+    pub stencil: Option<Rc<Renderbuffer<G>>>,
+    pub depth_stencil: Option<Attachment<G>>,
+    pub destroy_attachments: bool,
+}
+impl<G: Gl> Default for FramebufferOptions<G> {
+    fn default() -> Self {
+        Self { colors: vec![], depth: None, stencil: None, depth_stencil: None, destroy_attachments: true }
+    }
+}
+pub struct Framebuffer<G: Gl> {
+    pub(crate) resource: Resource<G>,
+    options: FramebufferOptions<G>,
+    destroy_attachments: std::cell::Cell<bool>,
+}
+impl<G: Gl> Framebuffer<G> {
+    pub fn new(context: &Context<G>, options: FramebufferOptions<G>) -> Result<Self> {
+        ensure(
+            !(options.depth.is_some() && options.depth_stencil.is_some()),
+            "Cannot attach both depth and depth-stencil",
+        )?;
+        ensure(
+            options.stencil.is_none() || options.depth.is_none() && options.depth_stencil.is_none(),
+            "Cannot combine stencil with depth/depth-stencil",
+        )?;
+        ensure(
+            options.colors.iter().all(|a| matches!(a, Attachment::Texture(_)))
+                || options.colors.iter().all(|a| matches!(a, Attachment::Renderbuffer(_))),
+            "Cannot mix color textures and renderbuffers",
+        )?;
+        if let GlValue::Number(max) = context.call("getParameter", &[gl::MAX_COLOR_ATTACHMENTS.into()])? {
+            ensure(options.colors.len() as f64 <= max, "Too many color attachments")?;
+        }
+        for a in options.colors.iter().chain(options.depth.iter()).chain(options.depth_stencil.iter()) {
+            context.same(&a.resource().context)?;
+            a.resource().value()?;
+        }
+        for a in &options.colors {
+            if let Attachment::Texture(t) = a {
+                ensure(t.pixel_format().is_color_format(), "Color texture requires a color pixel format")?;
+                if matches!(t.pixel_datatype(), PixelDatatype::Float | PixelDatatype::HalfFloat) {
+                    ensure(
+                        !matches!(context.call("getExtension", &["EXT_color_buffer_float".into()])?, GlValue::Null),
+                        "Float color attachment requires EXT_color_buffer_float",
+                    )?;
+                }
+            }
+        }
+        if let Some(Attachment::Texture(t)) = &options.depth {
+            ensure(t.pixel_format() == PixelFormat::DepthComponent, "Depth texture must use DEPTH_COMPONENT")?;
+        }
+        if let Some(Attachment::Texture(t)) = &options.depth_stencil {
+            ensure(t.pixel_format() == PixelFormat::DepthStencil, "Depth-stencil texture must use DEPTH_STENCIL")?;
+        }
+        if let Some(r) = &options.stencil {
+            context.same(&r.resource.context)?;
+            r.resource.value()?;
+        }
+        let resource = Resource::create(context, "createFramebuffer", &[], "deleteFramebuffer")?;
+        context.call("bindFramebuffer", &[gl::FRAMEBUFFER.into(), resource.value()?])?;
+        let setup = (|| {
+            for (i, a) in options.colors.iter().enumerate() {
+                a.attach(context, gl::COLOR_ATTACHMENT0 + i as u32)?;
+            }
+            if let Some(a) = &options.depth {
+                a.attach(context, gl::DEPTH_ATTACHMENT)?;
+            }
+            if let Some(r) = &options.stencil {
+                Attachment::Renderbuffer(r.clone()).attach(context, gl::STENCIL_ATTACHMENT)?;
+            }
+            if let Some(a) = &options.depth_stencil {
+                a.attach(context, gl::DEPTH_STENCIL_ATTACHMENT)?;
+            }
+            Ok(())
+        })();
+        context.call("bindFramebuffer", &[gl::FRAMEBUFFER.into(), GlValue::Null])?;
+        setup?;
+        let destroy_attachments = std::cell::Cell::new(options.destroy_attachments);
+        Ok(Self { resource, options, destroy_attachments })
+    }
+    /// Snapshot of the attachment set and current ownership policy.
+    pub fn options(&self) -> FramebufferOptions<G> {
+        FramebufferOptions {
+            colors: self.options.colors.clone(),
+            depth: self.options.depth.clone(),
+            stencil: self.options.stencil.clone(),
+            depth_stencil: self.options.depth_stencil.clone(),
+            destroy_attachments: self.destroy_attachments.get(),
+        }
+    }
+    pub fn number_of_color_attachments(&self) -> usize {
+        self.options.colors.len()
+    }
+    pub fn color_texture(&self, index: usize) -> Option<&Rc<Texture<G>>> {
+        match self.options.colors.get(index)? {
+            Attachment::Texture(t) => Some(t),
+            _ => None,
+        }
+    }
+    pub fn color_renderbuffer(&self, index: usize) -> Option<&Rc<Renderbuffer<G>>> {
+        match self.options.colors.get(index)? {
+            Attachment::Renderbuffer(r) => Some(r),
+            _ => None,
+        }
+    }
+    pub fn has_depth_attachment(&self) -> bool {
+        self.options.depth.is_some() || self.options.depth_stencil.is_some()
+    }
+    pub fn dimensions(&self) -> Option<[u32; 2]> {
+        self.options
+            .colors
+            .first()
+            .or(self.options.depth.as_ref())
+            .or(self.options.depth_stencil.as_ref())
+            .map(|a| [a.width(), a.height()])
+            .or_else(|| self.options.stencil.as_ref().map(|r| [r.width(), r.height()]))
+    }
+    pub fn active_color_attachments(&self) -> Vec<i32> {
+        (0..self.options.colors.len()).map(|i| (gl::COLOR_ATTACHMENT0 + i as u32) as i32).collect()
+    }
+    fn validate_resources(&self) -> Result<()> {
+        self.resource.value()?;
+        for a in self.options.colors.iter().chain(self.options.depth.iter()).chain(self.options.depth_stencil.iter()) {
+            a.resource().value()?;
+        }
+        if let Some(r) = &self.options.stencil {
+            r.resource.value()?;
+        }
+        Ok(())
+    }
+    pub fn bind(&self) -> Result<()> {
+        self.validate_resources()?;
+        self.resource.context.call("bindFramebuffer", &[gl::FRAMEBUFFER.into(), self.resource.value()?]).map(|_| ())
+    }
+    pub fn bind_draw(&self) -> Result<()> {
+        self.validate_resources()?;
+        self.resource
+            .context
+            .call("bindFramebuffer", &[gl::DRAW_FRAMEBUFFER.into(), self.resource.value()?])
+            .map(|_| ())
+    }
+    pub fn bind_read(&self) -> Result<()> {
+        self.validate_resources()?;
+        self.resource
+            .context
+            .call("bindFramebuffer", &[gl::READ_FRAMEBUFFER.into(), self.resource.value()?])
+            .map(|_| ())
+    }
+    pub fn status(&self) -> Result<u32> {
+        self.bind()?;
+        let c = &self.resource.context;
+        let status = c.call("checkFramebufferStatus", &[gl::FRAMEBUFFER.into()]);
+        c.call("bindFramebuffer", &[gl::FRAMEBUFFER.into(), GlValue::Null])?;
+        match status? {
+            GlValue::Number(n) => Ok(n as u32),
+            _ => Err(RuntimeError::new("Invalid framebuffer status from host")),
+        }
+    }
+    pub fn destroy_attachments(&self) -> bool {
+        self.destroy_attachments.get()
+    }
+    pub fn set_destroy_attachments(&self, destroy: bool) {
+        self.destroy_attachments.set(destroy);
+    }
+    pub fn depth_texture(&self) -> Option<&Rc<Texture<G>>> {
+        match self.options.depth.as_ref()? {
+            Attachment::Texture(t) => Some(t),
+            _ => None,
+        }
+    }
+    pub fn depth_renderbuffer(&self) -> Option<&Rc<Renderbuffer<G>>> {
+        match self.options.depth.as_ref()? {
+            Attachment::Renderbuffer(r) => Some(r),
+            _ => None,
+        }
+    }
+    pub fn depth_stencil_texture(&self) -> Option<&Rc<Texture<G>>> {
+        match self.options.depth_stencil.as_ref()? {
+            Attachment::Texture(t) => Some(t),
+            _ => None,
+        }
+    }
+    pub fn depth_stencil_renderbuffer(&self) -> Option<&Rc<Renderbuffer<G>>> {
+        match self.options.depth_stencil.as_ref()? {
+            Attachment::Renderbuffer(r) => Some(r),
+            _ => None,
+        }
+    }
+    pub fn stencil_renderbuffer(&self) -> Option<&Rc<Renderbuffer<G>>> {
+        self.options.stencil.as_ref()
+    }
+    pub fn is_destroyed(&self) -> bool {
+        self.resource.is_destroyed()
+    }
+    pub fn destroy(&self) -> Result<()> {
+        if self.is_destroyed() {
+            return Ok(());
+        }
+        if self.destroy_attachments.get() {
+            for a in
+                self.options.colors.iter().chain(self.options.depth.iter()).chain(self.options.depth_stencil.iter())
+            {
+                a.resource().destroy()?;
+            }
+            if let Some(r) = &self.options.stencil {
+                r.destroy()?;
+            }
+        }
+        self.resource.destroy()
+    }
+}
+impl<G: Gl> Drop for Framebuffer<G> {
+    fn drop(&mut self) {
+        let _ = self.destroy();
+    }
+}
+impl<G: Gl> Context<G> {
+    pub(crate) fn bind_framebuffer(&self, framebuffer: Option<&Framebuffer<G>>) -> Result<()> {
+        if let Some(f) = framebuffer {
+            self.same(&f.resource.context)?;
+            f.bind()?;
+            self.call("drawBuffers", &[GlValue::Ints(f.active_color_attachments())])?;
+        } else {
+            self.call("bindFramebuffer", &[gl::FRAMEBUFFER.into(), GlValue::Null])?;
+            self.call("drawBuffers", &[GlValue::Ints(vec![gl::BACK as i32])])?;
+        }
+        Ok(())
+    }
+}
+
+/// Explicit read options shared by typed readback and pixel-pack transfers.
+pub struct ReadState<'a, G: Gl> {
+    pub region: super::TextureRegion,
+    pub framebuffer: Option<&'a Framebuffer<G>>,
+}
+#[derive(Clone, Debug)]
+pub struct PixelReadback {
+    pub bytes: Vec<u8>,
+    pub pixel_format: PixelFormat,
+    pub pixel_datatype: PixelDatatype,
+}
+impl<G: Gl> Context<G> {
+    pub fn read_pixels_from(&self, read: ReadState<'_, G>) -> Result<PixelReadback> {
+        let region = read.region;
+        let dimensions =
+            read.framebuffer.and_then(Framebuffer::dimensions).unwrap_or(self.host().drawing_buffer_size()?);
+        range(region.x as usize, region.width as usize, dimensions[0] as usize)?;
+        range(region.y as usize, region.height as usize, dimensions[1] as usize)?;
+        let (format, datatype) = read
+            .framebuffer
+            .and_then(|f| f.color_texture(0))
+            .map(|t| (t.pixel_format(), t.pixel_datatype()))
+            .unwrap_or((PixelFormat::Rgba, PixelDatatype::UnsignedByte));
+        let length = (region.width as usize)
+            .checked_mul(region.height as usize)
+            .and_then(|n| n.checked_mul(format.components_length()))
+            .and_then(|n| n.checked_mul(datatype.size_in_bytes()))
+            .ok_or_else(|| RuntimeError::new("Pixel readback overflow"))?;
+        size::<G::Object>(length)?;
+        self.bind_framebuffer(read.framebuffer)?;
+        self.call("bindBuffer", &[gl::PIXEL_PACK_BUFFER.into(), GlValue::Null])?;
+        self.call("pixelStorei", &[gl::PACK_ALIGNMENT.into(), 1.into()])?;
+        match self.call(
+            "readPixels",
+            &[
+                region.x.into(),
+                region.y.into(),
+                region.width.into(),
+                region.height.into(),
+                gl::RGBA.into(),
+                datatype.to_webgl_constant(true).into(),
+                GlValue::Pixels { bytes: vec![0; length], datatype },
+            ],
+        )? {
+            GlValue::Bytes(bytes) if bytes.len() == length => {
+                Ok(PixelReadback { bytes, pixel_format: format, pixel_datatype: datatype })
+            }
+            _ => Err(RuntimeError::new("Invalid pixel readback from host")),
+        }
+    }
+    pub fn read_pixels_to_pbo(&self, read: ReadState<'_, G>) -> Result<super::Buffer<G>> {
+        let r = read.region;
+        let (format, datatype) = read
+            .framebuffer
+            .and_then(|f| f.color_texture(0))
+            .map(|t| (t.pixel_format(), t.pixel_datatype()))
+            .unwrap_or((PixelFormat::Rgba, PixelDatatype::UnsignedByte));
+        let length = format.texture_size_in_bytes(datatype, r.width as f64, r.height as f64) as usize;
+        let buffer = super::Buffer::new(
+            self,
+            super::BufferKind::PixelPack,
+            super::BufferUsage::DynamicRead,
+            super::BufferData::Size(length),
+        )?;
+        self.bind_framebuffer(read.framebuffer)?;
+        self.call("bindBuffer", &[gl::PIXEL_PACK_BUFFER.into(), buffer.resource.value()?])?;
+        self.call("pixelStorei", &[gl::PACK_ALIGNMENT.into(), 1.into()])?;
+        let result = self.call(
+            "readPixels",
+            &[
+                r.x.into(),
+                r.y.into(),
+                r.width.into(),
+                r.height.into(),
+                (format as u32).into(),
+                datatype.to_webgl_constant(true).into(),
+                0.into(),
+            ],
+        );
+        self.call("bindBuffer", &[gl::PIXEL_PACK_BUFFER.into(), GlValue::Null])?;
+        result?;
+        Ok(buffer)
+    }
+}
+impl<G: Gl> Framebuffer<G> {
+    pub fn blit_to(&self, destination: &Self, mask: u32) -> Result<()> {
+        self.resource.context.same(&destination.resource.context)?;
+        let [sw, sh] = self.dimensions().ok_or_else(|| RuntimeError::new("Source framebuffer has no attachments"))?;
+        let [dw, dh] =
+            destination.dimensions().ok_or_else(|| RuntimeError::new("Destination framebuffer has no attachments"))?;
+        self.bind_read()?;
+        destination.bind_draw()?;
+        let c = &self.resource.context;
+        let result = c.call(
+            "blitFramebuffer",
+            &[
+                0.into(),
+                0.into(),
+                sw.into(),
+                sh.into(),
+                0.into(),
+                0.into(),
+                dw.into(),
+                dh.into(),
+                mask.into(),
+                gl::NEAREST.into(),
+            ],
+        );
+        c.bind_framebuffer(None)?;
+        result.map(|_| ())
+    }
+}

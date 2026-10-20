@@ -61,6 +61,9 @@ impl<G: Gl> Buffer<G> {
         result?;
         Ok(Self { resource, kind, usage, size: length })
     }
+    pub fn same_allocation(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.resource, &other.resource)
+    }
     pub fn size_in_bytes(&self) -> usize {
         self.size
     }

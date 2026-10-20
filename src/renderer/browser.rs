@@ -40,10 +40,14 @@ impl Gl for BrowserGl {
                 GlValue::Null => JsValue::NULL,
                 GlValue::Number(n) => (*n).into(),
                 GlValue::Bool(b) => (*b).into(),
+                GlValue::Bools(b) => b.iter().map(|v| JsValue::from_bool(*v)).collect::<Array>().into(),
                 GlValue::String(s) => s.into(),
                 GlValue::Bytes(b) => Uint8Array::from(b.as_slice()).into(),
                 GlValue::Floats(b) => Float32Array::from(b.as_slice()).into(),
                 GlValue::Ints(b) => Int32Array::from(b.as_slice()).into(),
+                GlValue::UInts(b) => js_sys::Uint32Array::from(b.as_slice()).into(),
+                GlValue::Numbers(b) => js_sys::Float64Array::from(b.as_slice()).into(),
+                GlValue::Record(v) => js_sys::JSON::parse(&v.to_string()).map_err(error)?,
                 GlValue::Object(o) => o.clone(),
                 GlValue::Pixels { bytes, datatype } => {
                     let array = Uint8Array::from(bytes.as_slice());
@@ -66,7 +70,40 @@ impl Gl for BrowserGl {
         let result = f.apply(&self.gl, &array).map_err(error)?;
         if method == "getBufferSubData" || method == "readPixels" {
             let index = if method == "getBufferSubData" { 2 } else { 6 };
-            return Ok(GlValue::Bytes(Uint8Array::new(&array.get(index)).to_vec()));
+            if matches!(args.get(index), Some(GlValue::Bytes(_) | GlValue::Pixels { .. })) {
+                let target = array.get(index as u32);
+                let buffer = Reflect::get(&target, &"buffer".into()).map_err(error)?;
+                return Ok(GlValue::Bytes(Uint8Array::new(&buffer).to_vec()));
+            }
+        }
+        if !result.is_null()
+            && !result.is_undefined()
+            && matches!(method, "getActiveAttrib" | "getActiveUniform" | "getShaderPrecisionFormat")
+        {
+            let keys = if method == "getShaderPrecisionFormat" {
+                vec!["rangeMin", "rangeMax", "precision"]
+            } else {
+                vec!["name", "type", "size"]
+            };
+            let mut values = serde_json::Map::new();
+            for key in keys {
+                let value = Reflect::get(&result, &key.into()).map_err(error)?;
+                values.insert(
+                    key.into(),
+                    if let Some(s) = value.as_string() {
+                        serde_json::json!(s)
+                    } else {
+                        serde_json::json!(value.as_f64())
+                    },
+                );
+            }
+            return Ok(GlValue::Record(values.into()));
+        }
+        if Array::is_array(&result) && Array::from(&result).iter().all(|v| v.as_bool().is_some()) {
+            return Ok(GlValue::Bools(Array::from(&result).iter().map(|v| v.as_bool().unwrap()).collect()));
+        }
+        if Array::is_array(&result) || js_sys::ArrayBuffer::is_view(&result) {
+            return Ok(GlValue::Numbers(Array::from(&result).iter().map(|v| v.as_f64().unwrap_or(f64::NAN)).collect()));
         }
         Ok(if result.is_null() || result.is_undefined() {
             GlValue::Null
