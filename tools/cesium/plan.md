@@ -18,22 +18,22 @@ Along the way, `core::js_math` made the port's `sin`, `cos`, `log` and the other
    - ✅ `CorridorGeometryLibrary`, `CorridorOutlineGeometry`
    - ✅ filled `CorridorGeometry`, including extrusion, surface frames, bounds and shadow volumes
 5. ✅ **Terrain helpers:** `TerrainEncoding` and `HeightmapTessellator`, passing the 75% Core checkpoint
-6. ⬜ **Terrain data and picking:**
+6. ✅ **Terrain data and picking:**
    - ✅ `TerrainProvider` contract, cached grid/edge/skirt indices and geometric errors; `TileAvailability` quadtree ranges and coverage queries
    - ✅ `TerrainPicker`, `TerrainMesh`, and native incremental picker refinement
    - ✅ `TerrainData`, `HeightmapTerrainData`, LERC decoding and native heightmap mesh processing
    - ✅ `QuantizedMeshTerrainData` and native quantized mesh creation/upsampling
-   - ⬜ 3D Tiles and Google Earth Enterprise terrain data/processors (service-client batches below)
-7. ⬜ **Remaining spatial algorithms:**
+   - ✅ 3D Tiles and Google Earth Enterprise terrain data/processors
+7. ✅ **Remaining spatial algorithms:**
    - ✅ `S2Cell`, Hilbert levels above 32 through Cesium's finite numeric bounds, and `ApproximateTerrainHeights` with the pinned lookup table
    - ✅ `RectangleCollisionChecker`, including multi-level R-tree insertion/removal reference cases
-   - ⬜ `GroundPolylineGeometry`
+   - ✅ `GroundPolylineGeometry`
 8. ✅ **Asset and texture processing:** compressed texture buffers, portable KTX2/Basis decoding/loading, texture packing, vector/GEE decoding and concrete browser image/canvas adapters. Reference fixtures and real Chromium checks pass.
 9. ✅ **Resource and execution infrastructure:** requests/errors, scheduling/statistics, resources and typed HTTP operations/retries, trusted servers, workers, proxies and sanitized credits. Reference scheduler fixtures, native HTTP/worker integration and Chromium lifecycle checks pass.
-10. ⬜ **Terrain providers and service clients:**
+10. ✅ **Terrain providers and service clients:**
    - ✅ `EllipsoidTerrainProvider`, `CustomHeightmapTerrainProvider`
-   - ⬜ network heightmap/quantized and 3D Tiles terrain providers, Google Earth Enterprise metadata and terrain, Ion resources/geocoding, platform clients and world-terrain factories. Bing, Google, Pelias, OpenCage and coordinate geocoders pass deterministic parsing, request construction, attribution and error fixtures.
-11. **Contracts and host behavior:** ✅ interpolation/packing interfaces, geometry factories, video bindings and terrain sampling validated; ⬜ screen-space events and text/pin rendering remain. Audit every remaining Core tracker row and validate implementations before claiming 100% Core.
+   - ✅ network heightmap/quantized and 3D Tiles terrain providers, Google Earth Enterprise metadata and terrain, world-terrain factories. Ion resources/geocoding and platform clients are now validated. Bing, Google, Pelias, OpenCage and coordinate geocoders pass deterministic parsing, request construction, attribution and error fixtures.
+11. ✅ **Contracts and host behavior:** interpolation/packing interfaces, geometry factories, video bindings, terrain sampling, screen-space gestures and canvas text/pin rendering validated.
 
 Core remains the priority through 100% of applicable modules. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. The viewer already runs on Core — it was migrated ahead of 100% Core so the two implementations could not drift apart. After Core, proceed to Renderer and Scene.
 
@@ -41,4 +41,4 @@ Core remains the priority through 100% of applicable modules. Progress requires 
 
 All 35 formerly partial Core implementations and the native KTX2 worker calculation now pass validation. The batch adds 617 pinned CesiumJS cases, native lifecycle/HTTP checks and 23 Chromium checks, including Rust video/worker bindings and packaged WASM codec output. Validation found and fixed short GEE packet decoding, Basis codec configuration/output differences and lost ready terrain results on tile/level errors. See [validation details](docs/core-validation.md).
 
-The remaining 20 Core modules are network terrain providers and metadata/3D Tiles processing, Ion/platform clients and world factories, ground polylines, screen-space input, pins and text rendering. These remain todo; browser adapter work is not used to mark unrelated Core modules complete.
+The final 20 Core modules are implemented and validated. This batch adds 199 pinned reference cases, native terrain/input integration and exact Chromium text/pin and gesture comparisons. Core has 270 validated applicable modules and no remaining partial or todo entries. The 18 n/a entries retain explicit Rust replacement notes. Renderer and Scene are the next package milestones.

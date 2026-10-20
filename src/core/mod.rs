@@ -425,3 +425,61 @@ pub use clock::ClockTick;
 pub use image_helpers::{FetchImageOptions, PixelArrayView};
 pub use ktx2_transcoder::RustBasisTranscoder;
 pub use tile_provider_error::{MutableErrorEvent, TileErrorReporter};
+
+pub mod google_maps;
+pub mod ion;
+pub mod ion_geocoder_service;
+pub mod ion_resource;
+pub mod itwin_platform;
+pub use google_maps::GoogleMaps;
+pub use ion::Ion;
+pub use ion_geocoder_service::{IonGeocoderOptions, IonGeocoderService};
+pub use ion_resource::{IonAssetOptions, IonResource};
+pub use itwin_platform::ITwinPlatform;
+pub mod network_terrain;
+pub use network_terrain::NetworkTerrainData;
+pub mod arcgis_tiled_elevation_terrain_provider;
+pub use arcgis_tiled_elevation_terrain_provider::{ArcGISTiledElevationTerrainProvider, ArcGisTerrainOptions};
+pub mod vr_the_world_terrain_provider;
+pub use vr_the_world_terrain_provider::{VRTheWorldOptions, VRTheWorldTerrainProvider};
+pub mod cesium_terrain_provider;
+pub mod world_terrain;
+pub use cesium_terrain_provider::{CesiumTerrainOptions, CesiumTerrainProvider};
+pub use world_terrain::{create_world_bathymetry_async, create_world_terrain_async};
+pub mod gee_packet;
+
+pub mod google_earth_enterprise_metadata;
+pub use google_earth_enterprise_metadata::GoogleEarthEnterpriseMetadata;
+
+pub mod google_earth_enterprise_terrain_data;
+pub use google_earth_enterprise_terrain_data::GoogleEarthEnterpriseTerrainData;
+
+pub mod google_earth_enterprise_terrain_provider;
+pub use google_earth_enterprise_terrain_provider::GoogleEarthEnterpriseTerrainProvider;
+
+pub mod cesium_3d_tiles_terrain_geometry_processor;
+pub use cesium_3d_tiles_terrain_geometry_processor::{Cesium3DTilesTerrainGeometryProcessor, TerrainGltf};
+
+pub mod cesium_3d_tiles_terrain_data;
+pub use cesium_3d_tiles_terrain_data::{Cesium3DTilesTerrainData, Cesium3DTilesTerrainDataOptions};
+
+pub mod cesium_3d_tiles_terrain_provider;
+pub use cesium_3d_tiles_terrain_provider::Cesium3DTilesTerrainProvider;
+
+pub mod screen_space_event_handler;
+pub use screen_space_event_handler::{ScreenInput, ScreenInputKind, ScreenSpaceEventHandler, ScreenSpaceInputEvent};
+
+pub mod canvas;
+pub mod pin_builder;
+pub mod write_text_to_canvas;
+pub use canvas::{CanvasCommand, CanvasHost, CanvasTextMetrics};
+pub use pin_builder::PinBuilder;
+pub use write_text_to_canvas::{write_text_to_canvas, TextCanvas, WriteTextOptions};
+
+#[cfg(all(target_arch = "wasm32", feature = "browser"))]
+pub mod browser_canvas;
+
+pub mod ground_polyline_geometry;
+pub use ground_polyline_geometry::GroundPolylineGeometry;
+
+mod meshopt_vertex;

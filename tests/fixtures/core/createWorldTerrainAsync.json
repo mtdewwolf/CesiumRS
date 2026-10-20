@@ -1,0 +1,1 @@
+{"module":"createWorldTerrainAsync","cesium":"23.0.0","cases":[{"f":"factory","a":[false,false],"r":[1,false,false]},{"f":"factory","a":[false,true],"r":[1,false,true]},{"f":"factory","a":[true,false],"r":[1,true,false]},{"f":"factory","a":[true,true],"r":[1,true,true]}]}

@@ -7,7 +7,7 @@ import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {resolve,extname} from 'node:path';
 const root=resolve(fileURLToPath(new URL('../..',import.meta.url)));
-const bundle=await build({stdin:{contents:`export {default as Credit} from '@cesium/engine/Source/Core/Credit.js'; export {default as getImageFromTypedArray} from '@cesium/engine/Source/Core/getImageFromTypedArray.js'; export {default as getImagePixels} from '@cesium/engine/Source/Core/getImagePixels.js'; export {default as resizeImageToNextPowerOfTwo} from '@cesium/engine/Source/Core/resizeImageToNextPowerOfTwo.js'; export {default as loadImageFromTypedArray} from '@cesium/engine/Source/Core/loadImageFromTypedArray.js';`,resolveDir:fileURLToPath(new URL('.',import.meta.url))},bundle:true,write:false,format:'esm',platform:'browser'});
+const bundle=await build({stdin:{contents:`export {default as PinBuilder} from '@cesium/engine/Source/Core/PinBuilder.js'; export {default as writeTextToCanvas} from '@cesium/engine/Source/Core/writeTextToCanvas.js'; export {default as ScreenSpaceEventHandler} from '@cesium/engine/Source/Core/ScreenSpaceEventHandler.js'; export {default as Color} from '@cesium/engine/Source/Core/Color.js'; export {default as Credit} from '@cesium/engine/Source/Core/Credit.js'; export {default as getImageFromTypedArray} from '@cesium/engine/Source/Core/getImageFromTypedArray.js'; export {default as getImagePixels} from '@cesium/engine/Source/Core/getImagePixels.js'; export {default as resizeImageToNextPowerOfTwo} from '@cesium/engine/Source/Core/resizeImageToNextPowerOfTwo.js'; export {default as loadImageFromTypedArray} from '@cesium/engine/Source/Core/loadImageFromTypedArray.js';`,resolveDir:fileURLToPath(new URL('.',import.meta.url))},bundle:true,write:false,format:'esm',platform:'browser'});
 const server=createServer(async(req,res)=>{try{
  const url=new URL(req.url,'http://localhost');
  if(url.pathname==='/json'){res.setHeader('Content-Type','application/json');res.end('{"hello":"é","n":2}');return;}
@@ -30,7 +30,8 @@ try{
  const checks=await page.evaluate(async()=>{
   const {default:init,BrowserCore}=await import('/target/browser-core/cesium_rs.js');await init();const core=new BrowserCore();
   const host=await import('/web/host/core.mjs'),ref=await import('/reference.mjs'),passed=[];
-  const eq=(a,b,label)=>{if(JSON.stringify(a)!==JSON.stringify(b))throw Error(label+': '+JSON.stringify(a)+' != '+JSON.stringify(b));passed.push(label);};
+  const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
+  const eq=(a,b,label)=>{if(JSON.stringify(canonical(a))!==JSON.stringify(canonical(b)))throw Error(label+': '+JSON.stringify(a)+' != '+JSON.stringify(b));passed.push(label);};
   eq(await core.fetchJson('/json'),{hello:'é',n:2},'HTTP JSON through Rust scheduler');
   eq(await core.fetchJson('data:application/json,%7B%22n%22%3A3%7D'),{n:3},'data URI through Rust');
   eq(await core.fetchJson('/empty'),undefined,'HTTP 204 optional result');
@@ -61,6 +62,33 @@ try{
   const video=()=>{const v=document.createElement('video');Object.defineProperties(v,{readyState:{value:2},duration:{value:20},currentTime:{value:0,writable:true}});return v;};
   await lifecycle.validate_dropped_io(location.href);passed.push('unpolled HTTP/image futures abort without unhandled rejections');
   lifecycle.validate_video(video(),video());passed.push('Rust video clock, seek events, replacement and subscription cleanup');
+  const api=await import('/target/browser-core/cesium_rs.js');
+  const imageMeta=c=>c===undefined?null:[c.width,c.height,Array.from(host.imagePixels(c,c.width,c.height))];
+  for(const text of ['Hello','Åy g','  ','','中文'])for(const stroke of [false,true]){
+    const opts={font:'bold 24px sans-serif',stroke,strokeWidth:3,padding:4,backgroundColor:[.1,.2,.3,.5],fillColor:[1,.5,.2,1]};
+    const actual=api.writeTextToCanvas(text,opts),expected=ref.writeTextToCanvas(text,{...opts,backgroundColor:new ref.Color(...opts.backgroundColor),fillColor:new ref.Color(...opts.fillColor)});
+    eq(imageMeta(actual),imageMeta(expected),'text canvas pixels '+JSON.stringify(text)+' stroke='+stroke);
+    eq(actual?.dimensions,expected?.dimensions,'text metrics '+JSON.stringify(text)+' stroke='+stroke);
+  }
+  const pins=new api.BrowserPinBuilder(),referencePins=new ref.PinBuilder();
+  for(const size of [24,48,65])for(const label of [null,'A','12']){
+    const c=[.2,.6,.8,.7],color=new ref.Color(...c);
+    const actual=label===null?pins.fromColor(c,size):pins.fromText(label,c,size),expected=label===null?referencePins.fromColor(color,size):referencePins.fromText(label,color,size);
+    eq(imageMeta(actual),imageMeta(expected),'pin canvas '+size+' '+label);
+    eq(actual=== (label===null?pins.fromColor(c,size):pins.fromText(label,c,size)),true,'pin cache identity '+size+' '+label);
+  }
+  const pinUrl=canvas.toDataURL(),urlPin=await pins.fromUrl(pinUrl,[1,0,0,1],48),urlRef=await referencePins.fromUrl(pinUrl,new ref.Color(1,0,0,1),48);
+  eq(imageMeta(urlPin),imageMeta(urlRef),'pin Resource image and aspect ratio');pins.free();
+  const gesture=async Factory=>{
+    const element=document.createElement('canvas');document.body.appendChild(element);element.setPointerCapture=()=>{};
+    const handler=new Factory(element),events=[];
+    for(const kind of [0,1,2,3,5,6,7,10,11,12,15,16,17,18,19])for(const modifier of [undefined,0,1,2])handler.setInputAction(e=>events.push([kind,modifier??null,e===undefined?null:structuredClone(e)]),kind,modifier);
+    const send=(type,values={})=>{const event=new Event(type,{cancelable:true,bubbles:true});Object.assign(event,{DOM_DELTA_PIXEL:0,DOM_DELTA_LINE:1,DOM_DELTA_PAGE:2,clientX:40,clientY:50,button:0,pointerType:'mouse',pointerId:1,...values});element.dispatchEvent(event);return event.defaultPrevented;};
+    const prevented=[];for(const [type,values]of [['pointerdown',{}],['pointermove',{clientX:42}],['pointerup',{clientX:42}],['dblclick',{}],['wheel',{deltaY:2,deltaMode:1}],['pointerdown',{button:2,shiftKey:true,ctrlKey:true}],['pointerup',{button:2,shiftKey:true}],['pointerdown',{pointerType:'touch',pointerId:11}],['pointerdown',{pointerType:'touch',pointerId:12,clientX:80}],['pointermove',{pointerType:'touch',pointerId:12,clientX:90,clientY:70}],['pointerup',{pointerType:'touch',pointerId:11}],['pointerup',{pointerType:'touch',pointerId:12}],['pointerdown',{pointerType:'touch',pointerId:13}],['pointermove',{pointerType:'touch',pointerId:13,clientX:41}],['pointerup',{pointerType:'touch',pointerId:13}]])prevented.push(send(type,values));
+    send('pointerdown',{pointerType:'touch',pointerId:14});await new Promise(r=>setTimeout(r,1550));send('pointerup',{pointerType:'touch',pointerId:14});
+    handler.destroy();const before=events.length;send('pointerdown');const destroyed=[handler.isDestroyed(),events.length===before];handler.free?.();element.remove();return[events,prevented,destroyed];
+  };
+  eq(await gesture(api.BrowserScreenSpaceEventHandler),await gesture(ref.ScreenSpaceEventHandler),'mouse, wheel, multi-touch, pinch, hold and destroy');
   core.free();return passed;
  });
  await page.waitForTimeout(50);if(runtimeErrors.length)throw Error('Unhandled browser errors: '+runtimeErrors.join('; '));

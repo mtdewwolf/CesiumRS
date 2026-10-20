@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 22.8% implemented; 22.8% validated** (256 validated modules, 0 implemented awaiting validation, and 0 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core implementation is at 87.2%, working toward 100% Core; validated coverage is 87.2%** (12,531 more implementation lines). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan) to 100% Core.
+**Status: 26.1% implemented; 26.1% validated** (276 validated modules, 0 implemented awaiting validation, and 0 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
 
 ## What is ported
 
@@ -26,9 +26,9 @@ All of these live in `src/core`, one Rust module per Cesium module:
 | Enums and helpers | `ArcType`, `CornerType`, `ReferenceFrame`, `isBitSet`, `NearFarScalar`, `DistanceDisplayCondition`, `WebGLConstants` |
 | Tiling | `TilingScheme` (trait), `GeographicTilingScheme`, `WebMercatorTilingScheme`, `Stereographic` |
 | Terrain | `TerrainEncoding` (12-bit and uncompressed vertex codecs, optional normals/Mercator coordinates, layout descriptors, exaggeration), `HeightmapTessellator` (all numeric sample types, packed sample layouts, geographic and Mercator grids, edge skirts, bounds and horizon culling), `TerrainProvider` (native asynchronous contract, cached grid/edge/skirt indices, geometric error), `TileAvailability` (quadtree ranges, position and rectangle coverage, child masks), `TerrainMesh`, `TerrainPicker` (incremental quadtree picking, culling, exaggeration, 3D/2D/Columbus View transforms and antimeridian wrapping), `TerrainData` (native contract), `HeightmapTerrainData` (raw/mesh interpolation, packed samples, LERC1/2 decoding, mesh creation and upsampling), `QuantizedMeshTerrainData` (mesh creation, skirt bounds, clipping and normal interpolation during upsampling, typed credits and child masks), `ApproximateTerrainHeights` (bundled height table, curvature bounds and bounding spheres) |
-| Terrain providers | `EllipsoidTerrainProvider` (zero-height tiles), `CustomHeightmapTerrainProvider` (typed samples, callbacks, deferred/error futures and typed host credits) |
+| Terrain providers | `EllipsoidTerrainProvider` (zero-height tiles), `CustomHeightmapTerrainProvider` (typed samples, callbacks, deferred/error futures and typed host credits); ArcGIS, VR-TheWorld, Cesium heightmap/quantized mesh, Google Earth Enterprise and implicit 3D Tiles terrain, with world terrain/bathymetry factories |
 | Mesh data | `ComponentDatatype`, `IndexDatatype`, `PrimitiveType` (typed arrays as one `TypedArray` enum), `Tipsify`, `WireframeIndexGenerator`, `Intersections2D` |
-| Geometries | `Geometry`, `GeometryAttribute(s)`, `GeometryType`, `GeometryOffsetAttribute`, `VertexFormat`; `BoxGeometry`, `PlaneGeometry`, `EllipsoidGeometry`, `SphereGeometry`, `CylinderGeometry`, `FrustumGeometry` and their outlines; `EllipseGeometry`, `CircleGeometry`, `EllipseOutlineGeometry`, `CircleOutlineGeometry`, `EllipseGeometryLibrary`; `RectangleGeometry`, `RectangleOutlineGeometry`, `RectangleGeometryLibrary`; `PolygonGeometry`, `PolygonOutlineGeometry`, `PolygonGeometryLibrary` (holes, extrusion, per-position heights, rhumb lines, equator splitting), `CoplanarPolygonGeometry`, `CoplanarPolygonOutlineGeometry`, `CoplanarPolygonGeometryLibrary`; `PolylineGeometry`, `SimplePolylineGeometry`; `WallGeometry`, `WallOutlineGeometry`, `WallGeometryLibrary`; `PolylineVolumeGeometry`, `PolylineVolumeOutlineGeometry`, `PolylineVolumeGeometryLibrary`; `CorridorGeometryLibrary`, `CorridorGeometry`, `CorridorOutlineGeometry` (rounded, mitered and beveled corners, surface frames, texture coordinates, extrusion, offsets, bounds and shadow volumes). Full vertex and index buffers are compared with CesiumJS. |
+| Geometries | `Geometry`, `GeometryAttribute(s)`, `GeometryType`, `GeometryOffsetAttribute`, `VertexFormat`; `BoxGeometry`, `PlaneGeometry`, `EllipsoidGeometry`, `SphereGeometry`, `CylinderGeometry`, `FrustumGeometry` and their outlines; `EllipseGeometry`, `CircleGeometry`, `EllipseOutlineGeometry`, `CircleOutlineGeometry`, `EllipseGeometryLibrary`; `RectangleGeometry`, `RectangleOutlineGeometry`, `RectangleGeometryLibrary`; `PolygonGeometry`, `PolygonOutlineGeometry`, `PolygonGeometryLibrary` (holes, extrusion, per-position heights, rhumb lines, equator splitting), `CoplanarPolygonGeometry`, `CoplanarPolygonOutlineGeometry`, `CoplanarPolygonGeometryLibrary`; `PolylineGeometry`, `SimplePolylineGeometry`, `GroundPolylineGeometry` (terrain-bounded volumes, geodesic/rhumb subdivision, miter breaks and 2D attributes); `WallGeometry`, `WallOutlineGeometry`, `WallGeometryLibrary`; `PolylineVolumeGeometry`, `PolylineVolumeOutlineGeometry`, `PolylineVolumeGeometryLibrary`; `CorridorGeometryLibrary`, `CorridorGeometry`, `CorridorOutlineGeometry` (rounded, mitered and beveled corners, surface frames, texture coordinates, extrusion, offsets, bounds and shadow volumes). Full vertex and index buffers are compared with CesiumJS. |
 | Polygons | `PolygonPipeline` (area, winding order, triangulation, chord and rhumb-line subdivision, geodetic height scaling) on `earcut`, a line-for-line port of earcut 3.2.4 whose triangle order matches the JavaScript library |
 | Geometry instances and pipeline | `GeometryInstance`, `GeometryInstanceAttribute`, `ColorGeometryInstanceAttribute`, `ShowGeometryInstanceAttribute`, `OffsetGeometryInstanceAttribute`, `DistanceDisplayConditionGeometryInstanceAttribute`; `GeometryPipeline` (wireframes, vertex-cache reordering, 16-bit index splitting, 2D projection, high/low encoding, world transforms, combining instances, normals and tangents, vertex compression, and splitting triangles, lines and polylines at the antimeridian) |
 | Utilities | `Heap`, `DoubleEndedPriorityQueue`, `Queue`, `DoublyLinkedList`, `mergeSort`, associative and managed arrays, typed-array strings, URI parsing and helpers, query strings, GUIDs, `PixelFormat`, `PixelDatatype`, and Core's enums |
@@ -36,11 +36,19 @@ All of these live in `src/core`, one Rust module per Cesium module:
 | Time | `JulianDate` (with Cesium's runtime-extendable leap-second table), `GregorianDate`, `LeapSecond`, `Iso8601`, `TimeInterval`, `TimeIntervalCollection`, `TimeStandard`, `TimeConstants`, `Clock`, `ClockStep`, `ClockRange`, `Event` |
 | Astronomy and Earth orientation | `Simon1994PlanetaryPositions` (Sun and Moon positions), `EarthOrientationParameters`, `Iau2006XysData` (Cesium's XYS tables are in `assets/IAU2006_XYS`; the `bundled-xys` feature compiles them in), `Iau2000Orientation`, `IauOrientationAxes`, `IauOrientationParameters` |
 
+### Ion and platform clients
+
+`Ion`, `IonResource`, `IonGeocoderService`, `GoogleMaps` and `ITwinPlatform` now
+have Rust implementations checked against CesiumJS. Configuration is owned by
+instances. Ion assets refresh credentials through the shared resource client and
+restrict bearer headers to their asset domain; static geocoder credits are handed
+to the host. The Core tracker now has 270 validated modules and 18 documented n/a entries.
+
 ### Validated Core foundations
 
 The 35 formerly partial Core modules now have their missing implementation and backend work: resource execution/retries, all HTTP verbs, JSONP/XML/image loading, request statistics, dynamic terrain sampling, geocoder transport/parsing, R-tree collision behavior, IDN normalization, credits, image/video/task adapters, and portable Basis decoding for KTX2. Packing, interpolation and geometry contracts connect to the existing numeric and geometry codecs.
 
-These 35 Core modules and the KTX2 worker calculation now pass reference and runtime checks: 617 new CesiumJS cases, native HTTP/worker lifecycle tests and 23 Chromium checks. Validation fixed GEE decoding, Basis output/configuration differences and terrain error propagation. [Validation details and commands](docs/core-validation.md) record the coverage and host adaptations. Twenty Core modules remain unstarted.
+These 35 Core modules and the KTX2 worker calculation now pass reference and runtime checks: 617 new CesiumJS cases, native HTTP/worker lifecycle tests and browser runtime checks. Validation fixed GEE decoding, Basis output/configuration differences and terrain error propagation. [Validation details and commands](docs/core-validation.md) record the coverage and host adaptations. The final 20 Core modules are also complete: network terrain/GEE/3D Tiles processing, Ion/platform clients, ground polylines, screen-space events and text/pin rendering. The full suite now covers 217 Rust tests and 63 Chromium checks.
 
 Native applications enable `native-host` for `NativeTransport`, `NativeTimer` and cooperative worker threads. `ResourceClient` drives its shared scheduler when a response future is polled. `Resource` fetch methods return an optional future for scheduling deferral and an optional result for no-content or deferred retries. Missing sampled terrain heights use NaN because `Cartographic.height` is numeric.
 
@@ -51,7 +59,7 @@ cargo install wasm-bindgen-cli --version 0.2.129 --locked
 scripts/build-browser-core.sh  # writes target/browser-core, including JS modules
 ```
 
-The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases and native KTX2 transcoding. Rust applications can use the individual adapters, including `BrowserVideoBinding` for automatic clock/seek subscriptions. See [Core host adapters](docs/core-hosts.md) for usage and threading contracts.
+The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases and native KTX2 transcoding, plus `writeTextToCanvas`, `BrowserPinBuilder` and `BrowserScreenSpaceEventHandler`. Rust applications can use the individual adapters, including `BrowserVideoBinding` for automatic clock/seek subscriptions. See [Core host adapters](docs/core-hosts.md) for usage and threading contracts.
 
 ### Mapping CesiumJS to Rust
 
@@ -72,7 +80,7 @@ The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The `tests/core_*.rs` suites load all **25,633 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The `tests/core_*.rs` suites load all **25,832 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
 
 ```bash
 cargo test --all-features                    # all fixtures + native host integration
@@ -107,7 +115,7 @@ Near-antipodal routes use a deterministic great-circle approximation when Vincen
 
 ## Roadmap
 
-1. **Finish Core to 100%:** remaining spatial algorithms, assets, resources, network providers and host interfaces. Heightmap and quantized terrain, S2 cells, higher Hilbert levels, approximate terrain bounds and the ellipsoid/custom heightmap providers are ported.
+1. ✅ **Core at 100%:** all 270 applicable modules implemented and validated; 18 JavaScript idioms have documented Rust replacements.
 2. **Renderer, Scene, DataSources, Workers and Shaders,** the rest of the way to 100% overall.
 
 ## Examples and benchmarks
@@ -124,7 +132,7 @@ cargo run --profile bench --example benchmark
 - Mirror Cesium's API shape first; the fixture suites are the contract.
 - A function taking more than four parameters, or several same-typed parameters that are easy to transpose, gets an options struct (several geometry ports already do this). Existing multi-argument functions keep their shape until their Cesium counterpart changes or they are touched for another reason — no flag-day rewrites.
 - Global state follows the contracts in the crate-level docs ("Global state and threading"): Cesium's semantics, explicit synchronization, per-thread where Cesium's single global would be a footgun in Rust.
-- The crate is deliberately not published to crates.io yet (`publish = false`): the API is still moving toward 100% Core. Versions are marked with git tags and GitHub releases instead; see `CHANGELOG.md`.
+- The crate is deliberately not published to crates.io yet (`publish = false`): the native and browser API is still evolving. Versions are marked with git tags and GitHub releases instead; see `CHANGELOG.md`.
 
 ## License
 

@@ -158,5 +158,21 @@
     "ported": 256,
     "implemented": 0,
     "validatedPercent": 22.79
+  },
+  {
+    "milestone": "Ion and platform clients",
+    "date": "2026-10-19",
+    "percent": 23.05,
+    "ported": 261,
+    "implemented": 0,
+    "validatedPercent": 23.05
+  },
+  {
+    "milestone": "Complete and validate all applicable Core modules",
+    "date": "2026-10-20",
+    "percent": 26.06,
+    "ported": 276,
+    "implemented": 0,
+    "validatedPercent": 26.06
   }
 ]
