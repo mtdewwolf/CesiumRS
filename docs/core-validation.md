@@ -1,9 +1,15 @@
-# Core foundations validation
+# Core validation
 
-The 35 formerly partial Core modules and `Workers/transcodeKTX2` were validated
-against `@cesium/engine` 23.0.0 (CesiumJS 1.139). The batch adds **617 reference
-cases** across 24 fixture files. The full Rust suite passes **197 tests**, and
-Chromium passes **23 runtime checks**.
+All **270 applicable Core modules** are implemented and validated against
+`@cesium/engine` 23.0.0 (CesiumJS 1.139). The 18 n/a entries describe JavaScript
+idioms replaced by Rust ownership, traits or explicit host configuration.
+
+The final 20 modules add **199 reference cases**: platform/Ion requests, terrain
+metadata and binary tiles, GEE packets/meshes, meshopt v0/v1 glTF terrain, implicit
+subtree metadata and ground polyline volumes. The complete fixture corpus has
+**25,832 cases**. The full Rust suite passes **217 tests**; Chromium passes
+**63 runtime checks**. These checks establish the tracked Core milestone, not
+completion of Renderer, Scene or the rest of Cesium.
 
 Reference fixtures cover resource URL/query inheritance, proxies, trusted
 servers, credits, tile information, texture packing, multi-level R-tree
@@ -66,5 +72,27 @@ Terrain borrows positions for the lifetime of its future; returning an error dro
 still-pending Rust jobs, while preserving already-ready results. Runtime checks
 use local deterministic responses; they do not call paid geocoding services.
 
-Core remains at **87.2%** by applicable source lines, now validated as well as
-implemented. Twenty Core modules remain todo; this batch does not claim 100% Core.
+Core is **100% implemented and validated** by applicable source lines. Overall
+Cesium coverage is **26.1%**; Renderer and Scene remain separate milestones.
+
+Final-module checks additionally cover:
+
+- Ion endpoint refresh failures, external assets and domain-scoped credentials;
+  geocoder provider transitions, iTwin request headers and signed URL paths.
+- ArcGIS/VR metadata and tile URLs, Cesium binary heightmaps/quantized meshes,
+  normals/water extensions, attribution and world factory asset IDs/defaults.
+- GEE dbRoot protobuf fields, quadtree packets, quadkeys, negative elevations,
+  complete mesh/skirt/upsample buffers and parent/child terrain cache fan-out.
+- 3D Tiles GLB and meshopt v0/v1 attributes/indices, filled-corner skirts,
+  complete child clipping buffers, implicit subtrees, metadata semantics and
+  cached availability queries.
+- Ground polyline packing and complete geometry attributes for geodesic/rhumb
+  paths, loops, duplicate points, antimeridian splits and both projections.
+- Exact browser text metrics/pixels and pin pixels/cache identity; mouse,
+  wheel, modifier priority, pointer/touch, pinch, long press and destruction.
+
+Reference comparisons fixed operation-order differences at GEE mesh boundaries
+and a signed-zero antimeridian split that changed the terrain-height lookup.
+Native terrain tasks calculate synchronously behind futures. Canvas fonts,
+image rasterization and DOM delivery use explicit host capabilities; network
+checks use deterministic local/mock responses rather than live service tokens.

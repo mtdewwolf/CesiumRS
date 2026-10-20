@@ -2,14 +2,12 @@
 
 ## Unreleased
 
-- Complete the missing implementation/backend work in all 35 previously partial Core modules. Add concrete native/browser resource clients, dynamic terrain sampling, browser credit/image/video/task lifecycles, native R-tree collision behavior, ECMAScript coordinate parsing, URI normalization, and portable Rust Basis decoding.
-- Separate completed but unchecked implementations from validated ports in the tracker, README and progress charts. Tests remain deferred by request; implementation progress does not assert parity.
-- Add an optional wasm-bindgen browser package with BrowserCore entry points and vendored DOMPurify sanitization; preserve the raw C-ABI viewer build.
-
-- Bring the stacked heightmap/LERC, S2/Hilbert, quantized terrain and terrain-provider ports onto current main while retaining the Core-backed viewer and release tooling.
-- Add native resource/request foundations, terrain sampling, geocoder request/parsing logic, texture and binary utilities, shared contracts, and image/video/worker host interfaces. These additions remain partial pending reference validation and the integration work listed in PORTING.md; no tests were run for this batch.
-- Add native KTX2 uncompressed mipmap/cubemap parsing and Basis target selection, with explicit codec/loader backend contracts; validation remains deferred.
-- Adapt restored terrain providers to the current shared `Arc<Mutex<Event<_>>>` error-event contract.
+- Reach **100% validated Core coverage**: all 270 applicable Core modules are ported; 18 JavaScript-specific entries retain documented Rust replacements.
+- Complete the final 20 modules: Ion/platform clients, ArcGIS/VR/Cesium/GEE/implicit 3D Tiles terrain and metadata, world terrain/bathymetry factories, ground polylines, screen-space gestures and canvas text/pins.
+- Add native GEE protobuf/packet processing, meshopt v0/v1 terrain decoding, terrain cache/availability integration and concrete browser canvas/input adapters.
+- Validate 25,832 pinned CesiumJS cases, 217 Rust tests and 63 Chromium checks, including full terrain meshes/upsampling, geometry attributes, exact canvas pixels and gesture lifecycle behavior.
+- Complete and validate all 35 formerly partial Core modules and portable KTX2/Basis processing; fix decoder/configuration differences, asynchronous error propagation and dropped browser/native task cleanup.
+- Keep README, PORTING.md, progress charts and host/validation documentation synchronized. The optional wasm-bindgen package and raw C-ABI viewer both build.
 
 ## v0.1.0 — 2026-10-18
 

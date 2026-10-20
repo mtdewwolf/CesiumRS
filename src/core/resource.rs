@@ -21,6 +21,9 @@ use std::{
 };
 
 pub type QueryParameters = Vec<(String, Option<QueryValue>)>;
+pub type FallibleRetryCallback = Rc<dyn Fn(&Resource, &RequestErrorEvent) -> super::ResourceFuture<bool>>;
+pub type RequestTransform = Rc<dyn Fn(&mut HttpRequest)>;
+
 pub type RetryCallback =
     Rc<dyn Fn(&Resource, &RequestErrorEvent) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>>>;
 
@@ -80,6 +83,8 @@ pub struct ResourceOptions {
     pub retry_attempts: usize,
     pub credits: Option<Vec<super::Credit>>,
     pub parse_url: bool,
+    pub request_transform: Option<RequestTransform>,
+    pub fallible_retry_callback: Option<FallibleRetryCallback>,
 }
 
 impl Default for ResourceOptions {
@@ -94,6 +99,8 @@ impl Default for ResourceOptions {
             retry_attempts: 0,
             credits: None,
             parse_url: true,
+            request_transform: None,
+            fallible_retry_callback: None,
         }
     }
 }
@@ -363,17 +370,19 @@ impl Resource {
     }
 
     pub async fn retry_on_error(&self, error: &RequestErrorEvent) -> bool {
-        let o = self.options.borrow();
-        if *self.retry_count.borrow() >= o.retry_attempts {
-            return false;
-        }
-        let Some(callback) = o.retry_callback.clone() else {
-            return false;
+        self.retry_on_error_result(error).await.unwrap_or(false)
+    }
+    pub async fn retry_on_error_result(&self, error: &RequestErrorEvent) -> Result<bool, RequestErrorEvent> {
+        let (callback, fallible) = {
+            let o = self.options.borrow();
+            if *self.retry_count.borrow() >= o.retry_attempts { return Ok(false); }
+            (o.retry_callback.clone(), o.fallible_retry_callback.clone())
         };
-        drop(o);
-        let retry = callback(self, error).await;
+        let retry = if let Some(callback) = fallible { callback(self, error).await? }
+            else if let Some(callback) = callback { callback(self, error).await }
+            else { return Ok(false); };
         *self.retry_count.borrow_mut() += 1;
-        retry
+        Ok(retry)
     }
 
     pub fn fetch(
@@ -515,7 +524,7 @@ impl Resource {
 
     fn http_request(&self, options: &FetchOptions, trusted: &TrustedServers) -> HttpRequest {
         let url = self.url();
-        HttpRequest {
+        let mut request = HttpRequest {
             id: 0,
             kind: options.kind.clone(),
             with_credentials: trusted.contains(&url, &options.page_protocol),
@@ -523,7 +532,9 @@ impl Resource {
             method: if options.method.is_empty() { "GET".into() } else { options.method.clone() },
             headers: combine(&options.headers, &self.options.borrow().headers),
             body: options.body.clone(),
-        }
+        };
+        if let Some(transform) = &self.options.borrow().request_transform { transform(&mut request); }
+        request
     }
 }
 

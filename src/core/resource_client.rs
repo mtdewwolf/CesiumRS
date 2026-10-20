@@ -118,7 +118,7 @@ impl ResourceClient {
                     }
                     Err(error) => {
                         if resource.request.borrow().state != RequestState::Failed
-                            || !resource.retry_on_error(&error).await
+                            || !resource.retry_on_error_result(&error).await?
                         {
                             return Err(error);
                         }

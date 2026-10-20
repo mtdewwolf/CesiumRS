@@ -31,9 +31,13 @@ codegen-units = 16
 
 [dependencies]
 basisu = "=0.1.0"
+flate2 = "1"
+meshopt-rs = { version = "=0.1.2", features = ["experimental"] }
 base64 = "0.22"
 encoding_rs = "0.8"
 futures-channel = "0.3"
+futures-util = { version = "0.3", default-features = false, features = ["std", "async-await"] }
+url = "2"
 lerc-reader = { version = "0.5.0", default-features = false }
 libm = "0.2"
 num-bigint = "0.4"

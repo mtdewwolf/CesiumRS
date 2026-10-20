@@ -182,3 +182,30 @@ export function startImageRequest(url, credentials, options) {
   })();
   return {promise, abort() { cancelled = true; active?.abort(); }};
 }
+
+// Canvas primitives. Layout and pin geometry are calculated by Rust.
+export function createCanvas(width, height) { return canvas(width, height); }
+export function canvasContext(image) { return image.getContext('2d', {willReadFrequently:true}); }
+export function measureCanvasText(image, text, font) {
+  image.style.font = font; image.style.visibility = 'hidden'; document.body.appendChild(image);
+  try { const m=canvasContext(image).measureText(text); return [m.width,m.actualBoundingBoxAscent,m.actualBoundingBoxDescent,m.actualBoundingBoxLeft]; }
+  finally { image.remove(); image.style.visibility=''; }
+}
+export function screenListeners(element, callback) {
+  element ??= document;
+  const alternate=element.disableRootEvents===undefined?document:element;
+  const removals=[];let timer,closed=false;
+  const fire=(kind,e={})=>{
+    if(closed)return;
+    const rect=element===document?{left:0,top:0}:element.getBoundingClientRect();
+    const result=callback({kind,now:performance.now(),x:e.clientX??0,y:e.clientY??0,left:rect.left,top:rect.top,button:e.button??0,shift:!!e.shiftKey,ctrl:!!e.ctrlKey,alt:!!e.altKey,pointerId:e.pointerId??0,pointerTouch:e.pointerType==='touch',touches:Array.from(e.changedTouches??[],t=>[t.identifier,t.clientX,t.clientY]),deltaY:e.deltaY,deltaMode:e.deltaMode??0,detail:e.detail,wheelDelta:e.wheelDelta});
+    if(result.preventDefault)e.preventDefault?.();
+    clearTimeout(timer);if(result.holdDeadline!==undefined)timer=setTimeout(()=>fire('hold'),Math.max(0,result.holdDeadline-performance.now()));
+  };
+  const on=(target,type,kind)=>{const f=e=>{if(kind==='pointerdown')e.target.setPointerCapture(e.pointerId);fire(kind,e);};target.addEventListener(type,f,{capture:false,passive:false});removals.push(()=>target.removeEventListener(type,f,false));};
+  if(globalThis.PointerEvent){for(const type of['pointerdown','pointerup','pointermove'])on(element,type,type);on(element,'pointercancel','pointerup');}
+  else{on(element,'mousedown','mousedown');on(alternate,'mouseup','mouseup');on(alternate,'mousemove','mousemove');on(element,'touchstart','touchstart');on(alternate,'touchend','touchend');on(alternate,'touchmove','touchmove');on(alternate,'touchcancel','touchend');}
+  on(element,'dblclick','dblclick');on(element,'onwheel'in element?'wheel':document.onmousewheel!==undefined?'mousewheel':'DOMMouseScroll','wheel');
+  return {destroy(){closed=true;clearTimeout(timer);for(const remove of removals)remove();}};
+}
+export function removeScreenListeners(job) { job.destroy(); }

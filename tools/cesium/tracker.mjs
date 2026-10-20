@@ -125,7 +125,7 @@ writeFileSync(join(here, "../../PORTING.md"), md);
   const core = summary(rows.filter((r) => r.pkg === "Core"));
   const remaining = Math.max(0, Math.ceil(((100 - core.percent) / 100) * core.lines));
   const count = (n) => n.toLocaleString("en-US");
-  const status = `**Status: ${all.percent.toFixed(1)}% implemented; ${all.validatedPercent.toFixed(1)}% validated** (${count(all.ported)} validated modules, ${count(all.implemented)} implemented awaiting validation, and ${count(all.partial)} partial of ${count(all.modules - all.na)} applicable modules, weighted by JavaScript lines). **Core implementation is at ${core.percent.toFixed(1)}%, working toward 100% Core; validated coverage is ${core.validatedPercent.toFixed(1)}%** (${count(remaining)} more implementation lines). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan) to 100% Core.`;
+  const status = `**Status: ${all.percent.toFixed(1)}% implemented; ${all.validatedPercent.toFixed(1)}% validated** (${count(all.ported)} validated modules, ${count(all.implemented)} implemented awaiting validation, and ${count(all.partial)} partial of ${count(all.modules - all.na)} applicable modules, weighted by JavaScript lines). **Core: ${core.percent.toFixed(1)}% implemented; ${core.validatedPercent.toFixed(1)}% validated** (${core.ported} validated applicable modules${remaining ? `; ${count(remaining)} implementation lines remain` : "; no remaining partial or todo modules"}). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).`;
   function fixtureCount(dir) {
     let total = 0;
     for (const entry of readdirSync(dir, { withFileTypes: true })) {

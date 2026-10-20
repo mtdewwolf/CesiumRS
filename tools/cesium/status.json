@@ -1211,5 +1211,105 @@
     "status": "ported",
     "rust": "core::ktx2_transcoder",
     "note": "Native uncompressed parsing and portable Basis decoding; Rust tasks replace worker message serialization. Validated by CesiumJS fixtures and/or native/browser contract checks; see docs/core-validation.md. Preserves Cesium Basis flip bits, PVRTC padding, BC7 filter flags and legacy ASTC CEM12 output."
+  },
+  "Core/Ion": {
+    "status": "ported",
+    "rust": "core::ion",
+    "note": "Instance-owned pinned defaults, default-token credits and client headers. Pinned reference fixtures and native refresh/credential regression tests."
+  },
+  "Core/GoogleMaps": {
+    "status": "ported",
+    "rust": "core::google_maps",
+    "note": "Map Tiles/Street View defaults, independent keys and required Google credit. Pinned reference fixtures and native refresh/credential regression tests."
+  },
+  "Core/IonResource": {
+    "status": "ported",
+    "rust": "core::ion_resource",
+    "note": "Asset endpoints, external asset validation, domain-scoped bearer headers, derived resources, credits and shared fallible credential refresh. Pinned reference fixtures and native refresh/credential regression tests."
+  },
+  "Core/IonGeocoderService": {
+    "status": "ported",
+    "rust": "core::ion_geocoder_service",
+    "note": "Pelias delegation, token/server configuration, provider setter semantics and host-owned static credits. Pinned reference fixtures and native refresh/credential regression tests."
+  },
+  "Core/ITwinPlatform": {
+    "status": "ported",
+    "rust": "core::itwin_platform",
+    "note": "Share-key precedence, exports/reality metadata/readaccess requests, signed URL path handling and status errors. Pinned reference fixtures and native refresh/credential regression tests."
+  },
+  "Core/ArcGISTiledElevationTerrainProvider": {
+    "status": "ported",
+    "rust": "core::arcgis_tiled_elevation_terrain_provider",
+    "note": "EPSG metadata, LERC heightmaps, shared tilemap availability, tile requests and child masks; metadata fixtures and request contracts."
+  },
+  "Core/VRTheWorldTerrainProvider": {
+    "status": "ported",
+    "rust": "core::vr_the_world_terrain_provider",
+    "note": "XML/SRS/extents, TIFF/RGB height decoding through ImageHost, flipped tile URLs, child coverage and errors; reference metadata and tile URL fixtures."
+  },
+  "Core/CesiumTerrainProvider": {
+    "status": "ported",
+    "rust": "core::cesium_terrain_provider",
+    "note": "Layer chains, ion assets, heightmap and quantized mesh decoding, extensions, availability discovery, requests and attribution; binary tile and metadata reference fixtures."
+  },
+  "Core/createWorldTerrainAsync": {
+    "status": "ported",
+    "rust": "core::world_terrain::create_world_terrain_async",
+    "note": "Pinned world terrain asset ID and normals/water defaults; reference factory fixtures and endpoint/layer transport checks."
+  },
+  "Core/createWorldBathymetryAsync": {
+    "status": "ported",
+    "rust": "core::world_terrain::create_world_bathymetry_async",
+    "note": "Pinned bathymetry asset ID and normals defaults; reference factory fixtures and endpoint/layer transport checks."
+  },
+  "Core/GoogleEarthEnterpriseMetadata": {
+    "status": "ported",
+    "rust": "core::google_earth_enterprise_metadata",
+    "note": "Native dbRoot protobuf, XOR/inflation, quadtree packets, quadkeys, subtree sharing and parent terrain inheritance; reference packet/schema/coordinate fixtures."
+  },
+  "Core/GoogleEarthEnterpriseTerrainData": {
+    "status": "ported",
+    "rust": "core::google_earth_enterprise_terrain_data",
+    "note": "Four-quadrant native decoding, duplicate vertices, negative elevations, skirts, bounds, raw/mesh interpolation and quantized child upsampling; full worker buffer fixtures."
+  },
+  "Core/GoogleEarthEnterpriseTerrainProvider": {
+    "status": "ported",
+    "rust": "core::google_earth_enterprise_terrain_provider",
+    "note": "Parent/child packet fan-out, expiring one-shot cache, availability/state transitions, cancellation and provider credits; reference availability fixtures and compressed packet/cache integration."
+  },
+  "Core/Cesium3DTilesTerrainGeometryProcessor": {
+    "status": "ported",
+    "rust": "core::cesium_3d_tiles_terrain_geometry_processor",
+    "note": "glTF/GLB attributes and indices, meshopt vertex v0/v1, node transforms, terrain encoding, filled skirt corners and barycentric child clipping; full mesh/child reference fixtures."
+  },
+  "Core/Cesium3DTilesTerrainData": {
+    "status": "ported",
+    "rust": "core::cesium_3d_tiles_terrain_data",
+    "note": "Native mesh construction, height interpolation, masks/credits/water masks and mesh-backed child upsampling; full lifecycle reference fixtures."
+  },
+  "Core/Cesium3DTilesTerrainProvider": {
+    "status": "ported",
+    "rust": "core::cesium_3d_tiles_terrain_provider",
+    "note": "Two geographic implicit roots, binary/JSON subtrees, availability bitstreams, metadata semantics/property buffers, GLB loading and ImageHost water masks; metadata, request and cache fixtures."
+  },
+  "Core/GroundPolylineGeometry": {
+    "status": "ported",
+    "rust": "core::ground_polyline_geometry",
+    "note": "Geodesic/rhumb subdivision, antimeridian splits/nudges, miter breaks, terrain bounds, 3D/2D attributes and packing; 40 complete geometry reference cases."
+  },
+  "Core/ScreenSpaceEventHandler": {
+    "status": "ported",
+    "rust": "core::screen_space_event_handler",
+    "note": "Mouse/wheel/pointer/touch gestures, modifiers, click tolerances, long press, pinch and destruction; concrete DOM adapter, Chromium reference comparison and native timing/state checks."
+  },
+  "Core/PinBuilder": {
+    "status": "ported",
+    "rust": "core::pin_builder",
+    "note": "Cached pin paths, colors, text, resource images and Maki URLs through CanvasHost; browser exports and exact Chromium pixel/cache comparisons."
+  },
+  "Core/writeTextToCanvas": {
+    "status": "ported",
+    "rust": "core::write_text_to_canvas",
+    "note": "Font metrics, whitespace, stroke/padding sizing and raster drawing through CanvasHost; exact Chromium pixel/metrics comparisons with CesiumJS."
   }
 }

@@ -15,3 +15,5 @@ wasm-bindgen --target web --out-dir "$out" --out-name cesium_rs target/wasm32-un
 cp LICENSE "$out/LICENSE"
 cp NOTICE "$out/NOTICE"
 cp web/host/vendor/DOMPurify-LICENSE "$out/DOMPurify-LICENSE"
+
+cp assets/Meshoptimizer-LICENSE.md "$out/Meshoptimizer-LICENSE.md"

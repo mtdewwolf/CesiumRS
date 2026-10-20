@@ -60,3 +60,48 @@ Credits are sanitized by the pinned DOMPurify distribution and rendered as inlin
 Sampling groups positions by tile, starts requests concurrently, backs off asynchronously on throttling, and creates a non-exaggerated mesh when raw interpolation is unavailable. Heights assigned before a mesh/request failure are retained when rejecting; the default non-rejecting policy marks failed tile heights as NaN. Rust's numeric Cartographic height uses NaN where JavaScript sets undefined. Positions outside the tiling scheme remain unchanged.
 
 TileAvailability permits range insertion through shared references using an interior tree lock. Provider futures can therefore discover availability while sampling is in progress. Most-detailed sampling snapshots levels, awaits availability loads, samples level groups concurrently and revisits points whose maximum available level changed.
+
+## Text, pins and input
+
+The browser package exports the Rust implementations directly:
+
+```javascript
+import { writeTextToCanvas, BrowserPinBuilder, BrowserScreenSpaceEventHandler } from './cesium_rs.js';
+const label = writeTextToCanvas('Hello', {font: '24px sans-serif', padding: 2});
+const pins = new BrowserPinBuilder();
+const pin = pins.fromText('A', [0.2, 0.6, 0.8, 1.0], 48);
+const handler = new BrowserScreenSpaceEventHandler(document.querySelector('canvas'));
+handler.setInputAction(event => console.log(event.position), 2); // LEFT_CLICK
+handler.destroy(); // unregisters listeners and cancels a pending hold timer
+handler.free();
+pins.free();
+```
+
+Canvas color options use `[red, green, blue, alpha]` arrays. Text returns a canvas
+with Cesium-compatible `dimensions`. Pin URL methods return promises and share
+cached images; `fromMakiIconId` takes an explicit Cesium asset base URL.
+`BrowserImageHost` implements `CanvasHost`: Rust calculates text layout, pin
+paths, compositing commands and gestures; the host supplies canvas primitives,
+font measurement, DOM listeners, pointer capture and timers. Native applications
+can implement `CanvasHost` for their renderer or feed `ScreenInput` to the input
+state machine. Input callbacks receive owned snapshots rather than reused JS
+scratch objects.
+
+## Network terrain
+
+All network providers accept a `ResourceClient`, keeping request scheduling,
+credentials, mocks and host transport explicit. Ion and platform defaults are
+instance-owned. `IonResource` shares refreshed endpoints across derived assets
+and restricts bearer headers to their asset authority.
+
+`NetworkTerrainData` carries heightmaps, quantized meshes, GEE terrain or glTF
+terrain. GEE packets and meshopt v0/v1 decode in Rust on native and WASM targets.
+GEE upsampling returns quantized terrain; 3D Tiles children retain their meshes.
+ArcGIS and Cesium availability requests share pending jobs and update their
+native availability views; GEE availability queries advance pending metadata.
+
+VR-TheWorld requires an `ImageHost` for TIFF decoding. For embedded PNG water
+masks, call `Cesium3DTilesTerrainProvider::set_image_host`; browser Rust callers
+can supply `BrowserImageHost`. The native terrain water-mask buffer then contains
+RGBA pixels from that host. Service tests use local fixtures and do not require
+accounts or billable requests.

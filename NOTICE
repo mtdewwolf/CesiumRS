@@ -21,3 +21,7 @@ The KTX2 codec compatibility path follows Basis Universal 1.16.4
 (Apache-2.0), preserving the encoder configuration used by CesiumJS:
     Basis Universal - https://github.com/BinomialLLC/basis_universal
     Copyright 2019-2021 Binomial LLC
+
+The portable meshoptimizer vertex codec decoder is adapted from meshoptimizer
+Copyright (c) 2016-2026 Arseny Kapoulkine, licensed under the MIT License.
+See assets/Meshoptimizer-LICENSE.md.
