@@ -1415,7 +1415,7 @@
   "Renderer/Framebuffer": {
     "status": "ported",
     "rust": "renderer::framebuffer",
-    "note": "Texture/renderbuffer color/depth/stencil attachments, status/getters/read/draw binding, ownership and blits; Chromium target, copy, PBO and multisample checks plus native ownership/cross-context regressions."
+    "note": "Texture/renderbuffer color/depth/stencil attachments, status/getters/read/draw binding, ownership and blits; Chromium target, converted RGBA typed/PBO reads, copy and multisample checks plus native ownership/cross-context regressions. RG and unsigned integer attachments are supported; readback corrects pinned Cesium non-RGBA allocation/debug-check inconsistencies."
   },
   "Renderer/Renderbuffer": {
     "status": "ported",

@@ -80,7 +80,7 @@ The Renderer continuation closes eight original partial modules: vertex arrays,
 shader sources/programs, textures, render state, pass state and draw/clear
 commands. It adds framebuffers/renderbuffers/multisample targets, hardware limits,
 shader builders/caches and texture caches. Validation now covers 358 portable
-Renderer cases, 258 Chromium GPU assertions and native ownership, cache, callback
+Renderer cases, 307 Chromium GPU assertions and native ownership, cache, callback
 and failure regressions. See [Renderer API and validation](docs/renderer-foundation.md).
 
 Remaining batches, in dependency order:
@@ -1000,7 +1000,7 @@ Remaining batches, in dependency order:
 | CubeMap | 687 | ⬜ todo |  |  |
 | CubeMapFace | 416 | ⬜ todo |  |  |
 | DrawCommand | 645 | ✅ ported | `renderer::draw_command` | Submission, framebuffer precedence, static and per-draw callback uniforms/textures, model transform, Scene metadata/flags, dirty snapshots, shallow clones and derived-command maps; GPU and native contracts. |
-| Framebuffer | 448 | ✅ ported | `renderer::framebuffer` | Texture/renderbuffer color/depth/stencil attachments, status/getters/read/draw binding, ownership and blits; Chromium target, copy, PBO and multisample checks plus native ownership/cross-context regressions. |
+| Framebuffer | 448 | ✅ ported | `renderer::framebuffer` | Texture/renderbuffer color/depth/stencil attachments, status/getters/read/draw binding, ownership and blits; Chromium target, converted RGBA typed/PBO reads, copy and multisample checks plus native ownership/cross-context regressions. RG and unsigned integer attachments are supported; readback corrects pinned Cesium non-RGBA allocation/debug-check inconsistencies. |
 | FramebufferManager | 490 | ⬜ todo |  |  |
 | MipmapHint | 20 | ✅ ported | `renderer::enums::MipmapHint` | Typed constants and validation checked against pinned CesiumJS fixtures. |
 | MultisampleFramebuffer | 137 | ✅ ported | `renderer::multisample_framebuffer` | Paired render/resolve attachments, getters, color/depth/stencil blit selection and destruction; Chromium resolve path validated against CesiumJS. |

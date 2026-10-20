@@ -56,8 +56,12 @@ compatibility. After external fixed-function GL changes, call
 A command framebuffer overrides the pass framebuffer. An absent framebuffer
 selects the default target. A command viewport overrides the pass viewport, then
 falls back to drawing-buffer dimensions. Pass scissor/blending override command
-state. Typed readback returns bytes with pixel format/datatype metadata; PBO
-readback returns a `Buffer` that supports `get_buffer_data`.
+state. Typed readback returns bytes with output pixel format/datatype metadata;
+PBO readback returns a `Buffer` that supports `get_buffer_data`. Both return four
+components per pixel: RGBA bytes for normalized/packed colors, RGBA float32 for
+float/half-float colors, or RGBA_INTEGER uint32 for unsigned integer colors.
+Missing channels use WebGL's default components. RG and integer color textures
+are accepted as framebuffer attachments.
 
 Shader uniform maps are evaluated for every submission. Static uniforms and
 texture bindings remain available. Automatic matrices use the current command
@@ -78,7 +82,7 @@ Resources stay on their context's owning thread.
 
 The original foundation's 187 portable cases and 173 GPU assertions continue to
 pass. The extended suite has **358 portable Renderer reference cases** and
-**258 Chromium GPU assertions**, plus native ownership/cache/failure tests.
+**307 Chromium GPU assertions**, plus native ownership/cache/failure tests.
 
 1. **Targets, textures and state:** GPU comparison covers command/pass target
    precedence, renderbuffer/depth attachment metadata/status, framebuffer copies,
@@ -99,7 +103,7 @@ pass. The extended suite has **358 portable Renderer reference cases** and
 3. **Lifetime and commands:** native regressions cover buffer/VAO sharing,
    destruction/retry, injected setup failures, derived shader replacement and
    release, texture cache leases, per-draw callbacks, command dirty tracking and
-   clones. All 232 Rust tests and 63 existing Core Chromium checks pass.
+   clones. All 234 Rust tests and 63 existing Core Chromium checks pass.
 
 Preserved reference details include constant attributes being context state,
 index offsets measured in indices and converted to bytes, count clamping against
@@ -108,6 +112,16 @@ being uploaded without row reversal and retaining base-level unpack alignment,
 nearest filtering for depth textures and
 unsupported float-linear filtering, and `floor(base * 4 / 3)` mip memory accounting.
 The inverse-normal uniform uses the transpose of model-view, matching Cesium.
+
+Review regressions cover RGB/RED/RG/RGBA, integer, float, half-float and packed
+texture readback through typed arrays and PBOs, including allocation and output
+metadata. These cases use Cesium texture allocation and explicit WebGL reads:
+pinned `Context.readPixels` underallocates non-RGBA outputs, and its framebuffer
+debug check omits RG/integer formats. Rust corrects those inconsistencies.
+Compressed dimensions are rejected before allocation when zero, above hardware
+limits or outside signed GL sizes. Anisotropy metadata and applied GL values are
+compared at 1, 1.5 and 2; Rust preserves pinned Cesium's `texParameteri` conversion
+of fractional values.
 
 ```bash
 cargo test --all-features

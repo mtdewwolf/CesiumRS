@@ -260,6 +260,49 @@ mod browser {
     }
 
     #[wasm_bindgen]
+    pub fn renderer_readback(gl: JsValue, config: &str) -> Result<String, JsValue> {
+        use std::rc::Rc;
+        let c: serde_json::Value = serde_json::from_str(config).map_err(error)?;
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let mut options = TextureOptions::rgba(3, 2);
+        options.pixel_format = PixelFormat::from_value(c["format"].as_u64().unwrap() as u32).unwrap();
+        options.pixel_datatype = PixelDatatype::from_value(c["datatype"].as_u64().unwrap() as u32).unwrap();
+        options.flip_y = false;
+        options.sampler = Sampler::NEAREST;
+        let bytes: Vec<u8> = serde_json::from_value(c["bytes"].clone()).map_err(error)?;
+        let texture = Rc::new(Texture::new(&ctx, options, Some(&bytes)).map_err(error)?);
+        let framebuffer = Framebuffer::new(
+            &ctx,
+            FramebufferOptions { colors: vec![Attachment::Texture(texture)], ..Default::default() },
+        )
+        .map_err(error)?;
+        let read =
+            || ReadState { region: TextureRegion { x: 0, y: 0, width: 3, height: 2 }, framebuffer: Some(&framebuffer) };
+        let pixels = ctx.read_pixels_from(read()).map_err(error)?;
+        let pbo = ctx.read_pixels_to_pbo(read()).map_err(error)?;
+        Ok(json!({"bytes":pixels.bytes,"format":pixels.pixel_format as u32,"datatype":pixels.pixel_datatype as u32,
+            "pbo":pbo.get_buffer_data(0,pbo.size_in_bytes()).map_err(error)?,"status":framebuffer.status().map_err(error)?}).to_string())
+    }
+
+    #[wasm_bindgen]
+    pub fn renderer_anisotropy(gl: JsValue, maximum: f64) -> Result<String, JsValue> {
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let mut options = TextureOptions::rgba(1, 1);
+        options.sampler.maximum_anisotropy = maximum;
+        let texture = Texture::new(&ctx, options, None).map_err(error)?;
+        texture.bind(0).map_err(error)?;
+        let applied = match ctx
+            .host()
+            .invoke("getTexParameter", &[webgl_constants::TEXTURE_2D.into(), 0x84FE_u32.into()])
+            .map_err(error)?
+        {
+            GlValue::Number(n) => n,
+            _ => return Err(error("Missing anisotropy value")),
+        };
+        Ok(json!([texture.sampler().maximum_anisotropy, applied]).to_string())
+    }
+
+    #[wasm_bindgen]
     pub fn renderer_framebuffers(gl: JsValue, mode: u32) -> Result<String, JsValue> {
         use std::rc::Rc;
         let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);

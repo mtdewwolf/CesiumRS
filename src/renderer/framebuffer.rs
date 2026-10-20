@@ -93,7 +93,18 @@ impl<G: Gl> Framebuffer<G> {
         }
         for a in &options.colors {
             if let Attachment::Texture(t) = a {
-                ensure(t.pixel_format().is_color_format(), "Color texture requires a color pixel format")?;
+                ensure(
+                    t.pixel_format().is_color_format()
+                        || matches!(
+                            t.pixel_format(),
+                            PixelFormat::Rg
+                                | PixelFormat::RedInteger
+                                | PixelFormat::RgInteger
+                                | PixelFormat::RgbInteger
+                                | PixelFormat::RgbaInteger
+                        ),
+                    "Color texture requires a color pixel format",
+                )?;
                 if matches!(t.pixel_datatype(), PixelDatatype::Float | PixelDatatype::HalfFloat) {
                     ensure(
                         !matches!(context.call("getExtension", &["EXT_color_buffer_float".into()])?, GlValue::Null),
@@ -290,29 +301,52 @@ pub struct ReadState<'a, G: Gl> {
     pub framebuffer: Option<&'a Framebuffer<G>>,
 }
 #[derive(Clone, Debug)]
+/// Four-component output, converted from the attachment: RGBA/UNSIGNED_BYTE
+/// for normalized colors, RGBA/FLOAT for floats, or RGBA_INTEGER/UNSIGNED_INT.
+/// Missing source channels receive WebGL's default components.
 pub struct PixelReadback {
     pub bytes: Vec<u8>,
     pub pixel_format: PixelFormat,
     pub pixel_datatype: PixelDatatype,
 }
 impl<G: Gl> Context<G> {
-    pub fn read_pixels_from(&self, read: ReadState<'_, G>) -> Result<PixelReadback> {
+    // WebGL guarantees RGBA reads for normalized/float color attachments and
+    // RGBA_INTEGER/UNSIGNED_INT for unsigned integer color attachments. The
+    // output layout, allocation and metadata must describe the same conversion.
+    fn readback_layout(&self, read: &ReadState<'_, G>) -> Result<(PixelFormat, PixelDatatype, usize)> {
         let region = read.region;
         let dimensions =
             read.framebuffer.and_then(Framebuffer::dimensions).unwrap_or(self.host().drawing_buffer_size()?);
         range(region.x as usize, region.width as usize, dimensions[0] as usize)?;
         range(region.y as usize, region.height as usize, dimensions[1] as usize)?;
-        let (format, datatype) = read
+        let (attachment_format, attachment_datatype) = read
             .framebuffer
             .and_then(|f| f.color_texture(0))
             .map(|t| (t.pixel_format(), t.pixel_datatype()))
             .unwrap_or((PixelFormat::Rgba, PixelDatatype::UnsignedByte));
+        let (format, datatype) = match attachment_format {
+            PixelFormat::RedInteger | PixelFormat::RgInteger | PixelFormat::RgbInteger | PixelFormat::RgbaInteger => {
+                (PixelFormat::RgbaInteger, PixelDatatype::UnsignedInt)
+            }
+            _ => (
+                PixelFormat::Rgba,
+                match attachment_datatype {
+                    PixelDatatype::Float | PixelDatatype::HalfFloat => PixelDatatype::Float,
+                    _ => PixelDatatype::UnsignedByte,
+                },
+            ),
+        };
         let length = (region.width as usize)
             .checked_mul(region.height as usize)
             .and_then(|n| n.checked_mul(format.components_length()))
             .and_then(|n| n.checked_mul(datatype.size_in_bytes()))
             .ok_or_else(|| RuntimeError::new("Pixel readback overflow"))?;
         size::<G::Object>(length)?;
+        Ok((format, datatype, length))
+    }
+    pub fn read_pixels_from(&self, read: ReadState<'_, G>) -> Result<PixelReadback> {
+        let (format, datatype, length) = self.readback_layout(&read)?;
+        let region = read.region;
         self.bind_framebuffer(read.framebuffer)?;
         self.call("bindBuffer", &[gl::PIXEL_PACK_BUFFER.into(), GlValue::Null])?;
         self.call("pixelStorei", &[gl::PACK_ALIGNMENT.into(), 1.into()])?;
@@ -323,7 +357,7 @@ impl<G: Gl> Context<G> {
                 region.y.into(),
                 region.width.into(),
                 region.height.into(),
-                gl::RGBA.into(),
+                (format as u32).into(),
                 datatype.to_webgl_constant(true).into(),
                 GlValue::Pixels { bytes: vec![0; length], datatype },
             ],
@@ -335,13 +369,8 @@ impl<G: Gl> Context<G> {
         }
     }
     pub fn read_pixels_to_pbo(&self, read: ReadState<'_, G>) -> Result<super::Buffer<G>> {
+        let (format, datatype, length) = self.readback_layout(&read)?;
         let r = read.region;
-        let (format, datatype) = read
-            .framebuffer
-            .and_then(|f| f.color_texture(0))
-            .map(|t| (t.pixel_format(), t.pixel_datatype()))
-            .unwrap_or((PixelFormat::Rgba, PixelDatatype::UnsignedByte));
-        let length = format.texture_size_in_bytes(datatype, r.width as f64, r.height as f64) as usize;
         let buffer = super::Buffer::new(
             self,
             super::BufferKind::PixelPack,

@@ -131,6 +131,47 @@ try {
     a.getColorTexture(0).destroy();b.getColorTexture(0).destroy();a.destroy();b.destroy();context._currentFramebuffer=undefined;
   }
 
+  // Cesium's typed readPixels allocates using the attachment format but asks
+  // GL for RGBA, which underallocates non-RGBA outputs. Compare the corrected
+  // Rust layout to explicit, guaranteed WebGL read formats on Cesium targets.
+  gl.getExtension('EXT_color_buffer_float');
+  const readbackCases=[
+    [gl.RGB,gl.UNSIGNED_BYTE,new Uint8Array(Array(6).fill([32,64,128]).flat())],
+    [gl.RED,gl.UNSIGNED_BYTE,new Uint8Array(Array(6).fill(32))],
+    [gl.RG,gl.UNSIGNED_BYTE,new Uint8Array(Array(6).fill([32,64]).flat())],
+    [gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array(Array(6).fill([32,64,128,255]).flat())],
+    [gl.RED_INTEGER,gl.UNSIGNED_INT,new Uint32Array(Array(6).fill(70000))],
+    [gl.RG_INTEGER,gl.UNSIGNED_INT,new Uint32Array(Array(6).fill([70000,80000]).flat())],
+    [gl.RGBA_INTEGER,gl.UNSIGNED_INT,new Uint32Array(Array(6).fill([70000,80000,90000,100000]).flat())],
+    [gl.RED,gl.FLOAT,new Float32Array(Array(6).fill(.5))],
+    [gl.RGBA,5131,new Uint16Array(Array(6).fill([0x3800,0x3400,0x3c00,0x3c00]).flat())],
+    [gl.RGB,gl.UNSIGNED_SHORT_5_6_5,new Uint16Array(Array(6).fill(0xf800))],
+  ];
+  for(const [format,type,values] of readbackCases){
+    const datatype=type===5131?36193:type,integer=[gl.RED_INTEGER,gl.RG_INTEGER,gl.RGBA_INTEGER].includes(format),floating=[gl.FLOAT,5131].includes(type);
+    const texture=new ref.Texture({context,width:3,height:2,pixelFormat:format,pixelDatatype:datatype,source:{arrayBufferView:values},flipY:false,sampler:ref.Sampler.NEAREST});
+    // Cesium's debug isColorFormat also omits RG and integer attachments;
+    // attach its texture directly for these WebGL2 regression cases.
+    const framebuffer=context._gl.createFramebuffer();context._gl.bindFramebuffer(gl.FRAMEBUFFER,framebuffer);
+    context._gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texture._texture,0);
+    const output=integer?new Uint32Array(24):floating?new Float32Array(24):new Uint8Array(24),outputFormat=integer?gl.RGBA_INTEGER:gl.RGBA,outputType=integer?gl.UNSIGNED_INT:floating?gl.FLOAT:gl.UNSIGNED_BYTE;
+    context._gl.bindBuffer(gl.PIXEL_PACK_BUFFER,null);context._gl.pixelStorei(gl.PACK_ALIGNMENT,1);
+    context._gl.readPixels(0,0,3,2,outputFormat,outputType,output);
+    const expected={bytes:Array.from(new Uint8Array(output.buffer)),format:outputFormat,datatype:outputType,pbo:Array.from(new Uint8Array(output.buffer)),status:context._gl.checkFramebufferStatus(gl.FRAMEBUFFER)};
+    eq(expected.status,gl.FRAMEBUFFER_COMPLETE,'reference readback target complete');
+    const actual=JSON.parse(wasm.renderer_readback(gl,JSON.stringify({format,datatype,bytes:Array.from(new Uint8Array(values.buffer))})));
+    eq(actual,expected,'converted typed/PBO readback '+format+'/'+type);
+    eq(gl.getError(),gl.NO_ERROR,'Rust readback GL status');eq(context._gl.getError(),gl.NO_ERROR,'reference readback GL status');context._gl.bindFramebuffer(gl.FRAMEBUFFER,null);context._gl.deleteFramebuffer(framebuffer);texture.destroy();context._currentFramebuffer=undefined;
+  }
+  const anisotropy=context._gl.getExtension('EXT_texture_filter_anisotropic');
+  if(!anisotropy||!gl.getExtension('EXT_texture_filter_anisotropic'))throw Error('Anisotropy regression requires the extension');
+  for(const maximumAnisotropy of [1,1.5,2]){
+    const texture=new ref.Texture({context,width:1,height:1,sampler:new ref.Sampler({maximumAnisotropy})});context._gl.bindTexture(gl.TEXTURE_2D,texture._texture);
+    const applied=context._gl.getTexParameter(gl.TEXTURE_2D,anisotropy.TEXTURE_MAX_ANISOTROPY_EXT);
+    eq(JSON.parse(wasm.renderer_anisotropy(gl,maximumAnisotropy)),[texture.sampler.maximumAnisotropy,applied],'Cesium anisotropy metadata and GL conversion '+maximumAnisotropy);
+    eq(gl.getError(),gl.NO_ERROR,'Rust anisotropy GL status');eq(context._gl.getError(),gl.NO_ERROR,'Cesium anisotropy GL status');texture.destroy();
+  }
+
   for(const interleave of [false,true]){
     const position=new ref.GeometryAttribute({componentDatatype:5130,componentsPerAttribute:2,values:new Float64Array([-1,-1,1,-1,1,1,-1,1])}),color=new ref.GeometryAttribute({componentDatatype:5121,componentsPerAttribute:4,normalize:true,values:new Uint8Array([255,128,64,255,255,128,64,255,255,128,64,255,255,128,64,255])}),weight=new ref.GeometryAttribute({componentDatatype:5123,componentsPerAttribute:2,values:new Uint16Array([1,2,3,4,5,6,7,8])});
     const va=ref.VertexArray.fromGeometry({context,geometry:new ref.Geometry({attributes:{position,color,weight},indices:new Uint16Array([0,1,2,0,2,3]),primitiveType:4}),attributeLocations:{position:0,color:1,weight:2},interleave});

@@ -79,10 +79,20 @@ pub struct Texture<G: Gl> {
     id: String,
 }
 impl<G: Gl> Texture<G> {
-    pub fn new(context: &Context<G>, options: TextureOptions, pixels: Option<&[u8]>) -> Result<Self> {
+    fn validate_dimensions(context: &Context<G>, options: &TextureOptions) -> Result<()> {
         ensure(options.width > 0 && options.height > 0, "Texture dimensions must be positive")?;
         size::<G::Object>(options.width as usize)?;
         size::<G::Object>(options.height as usize)?;
+        if let GlValue::Number(max) = context.call("getParameter", &[gl::MAX_TEXTURE_SIZE.into()])? {
+            ensure(
+                options.width as f64 <= max && options.height as f64 <= max,
+                "Texture dimensions exceed MAX_TEXTURE_SIZE",
+            )?;
+        }
+        Ok(())
+    }
+    pub fn new(context: &Context<G>, options: TextureOptions, pixels: Option<&[u8]>) -> Result<Self> {
+        Self::validate_dimensions(context, &options)?;
         options.sampler.validate()?;
         // Typed and blank allocation. DOM, compressed and framebuffer source
         // constructors below share the same texture metadata and ownership.
@@ -117,12 +127,6 @@ impl<G: Gl> Texture<G> {
         }
         if let Some(p) = pixels {
             ensure(p.len() == bytes, "Texture source byte length does not match its dimensions")?;
-        }
-        if let GlValue::Number(max) = context.call("getParameter", &[gl::MAX_TEXTURE_SIZE.into()])? {
-            ensure(
-                options.width as f64 <= max && options.height as f64 <= max,
-                "Texture dimensions exceed MAX_TEXTURE_SIZE",
-            )?;
         }
         let sampler = options.sampler;
         let resource = Rc::new(Resource::create(context, "createTexture", &[], "deleteTexture")?);
@@ -256,6 +260,8 @@ impl<G: Gl> Texture<G> {
                 c.call("texParameteri", &[gl::TEXTURE_2D.into(), pname.into(), value.into()])?;
             }
             if !matches!(c.call("getExtension", &["EXT_texture_filter_anisotropic".into()])?, GlValue::Null) {
+                // Pinned Cesium Texture.setupSampler uses texParameteri, even
+                // for fractional maximumAnisotropy; retain its GL conversion.
                 c.call(
                     "texParameteri",
                     &[gl::TEXTURE_2D.into(), 0x84FE_u32.into(), sampler.maximum_anisotropy.into()],
@@ -373,11 +379,9 @@ impl<G: Gl> Texture<G> {
         Ok(texture)
     }
     pub fn compressed(context: &Context<G>, options: TextureOptions, base: &[u8], levels: &[Vec<u8>]) -> Result<Self> {
+        Self::validate_dimensions(context, &options)?;
         let f = options.pixel_format;
-        ensure(
-            f.is_compressed_format() && options.width > 0 && options.height > 0,
-            "Compressed texture requires a compressed format and positive dimensions",
-        )?;
+        ensure(f.is_compressed_format(), "Compressed texture requires a compressed pixel format")?;
         let extension = if f.is_dxt_format() {
             Some("WEBGL_compressed_texture_s3tc")
         } else if f.is_pvrtc_format() {

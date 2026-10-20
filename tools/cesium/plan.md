@@ -50,7 +50,7 @@ The Renderer continuation closes eight original partial modules: vertex arrays,
 shader sources/programs, textures, render state, pass state and draw/clear
 commands. It adds framebuffers/renderbuffers/multisample targets, hardware limits,
 shader builders/caches and texture caches. Validation now covers 358 portable
-Renderer cases, 258 Chromium GPU assertions and native ownership, cache, callback
+Renderer cases, 307 Chromium GPU assertions and native ownership, cache, callback
 and failure regressions. See [Renderer API and validation](docs/renderer-foundation.md).
 
 Remaining batches, in dependency order:
