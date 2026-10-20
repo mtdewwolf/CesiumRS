@@ -182,5 +182,13 @@
     "ported": 287,
     "implemented": 0,
     "validatedPercent": 26.32
+  },
+  {
+    "milestone": "Renderer resources and shaders",
+    "date": "2026-10-20",
+    "percent": 28.88,
+    "ported": 304,
+    "implemented": 0,
+    "validatedPercent": 28.16
   }
 ]

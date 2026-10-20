@@ -78,11 +78,11 @@ mod browser {
     pub fn renderer_state(gl: JsValue, state: &str, pass: &str) -> Result<(), JsValue> {
         let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
         let state: RenderState = serde_json::from_str(state).map_err(error)?;
-        let pass: PassState = serde_json::from_str(pass).map_err(error)?;
+        let pass: PassState<BrowserGl> = serde_json::from_str(pass).map_err(error)?;
         state.apply(&ctx, &pass, ctx.host().drawing_buffer_size().map_err(error)?).map_err(error)
     }
     #[wasm_bindgen]
-    pub fn renderer_draw(gl: JsValue, config: &str) -> Result<String, JsValue> {
+    pub fn renderer_draw(gl: JsValue, config: &str, image: Option<JsValue>) -> Result<String, JsValue> {
         let c: serde_json::Value = serde_json::from_str(config).map_err(error)?;
         let flag = |name: &str| c[name].as_bool().unwrap_or(false);
         let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
@@ -128,7 +128,7 @@ mod browser {
         }
         let va = VertexArray::new(&ctx, attributes, index).map_err(error)?;
         let vs = format!("#version 300 es\nprecision highp float;\nin vec2 position; in vec4 color; in vec2 offset; out vec4 v_color; out vec2 v_uv; uniform mat4 transform; void main() {{ gl_Position = transform * vec4(position * vec2({}, 1.0) + offset,0.,1.); v_color=color; v_uv=position*.5+.5; }}",if instanced {"0.5"} else {"1.0"});
-        let fs = format!("#version 300 es\nprecision highp float;\nin vec4 v_color; in vec2 v_uv; uniform vec4 tint; uniform int enabled; {}out vec4 result; void main() {{result= (enabled==1 ? tint : vec4(0.)) * v_color {};}}", if textured {"uniform sampler2D image; "} else {""},if textured {"* texture(image,v_uv)"} else {""});
+        let fs = format!("#version 300 es\nprecision highp float;\nin vec4 v_color; in vec2 v_uv; uniform vec4 tint; uniform int enabled; {}out vec4 result; void main() {{result= (enabled==1 ? tint : vec4(0.)) * v_color {};}}", if textured {"uniform sampler2D image; "} else {""},if textured {if c["lod"].as_u64()==Some(1){"* textureLod(image,v_uv,1.0)"}else if c["lod"].as_u64()==Some(2){"* textureLod(image,v_uv,2.0)"}else{"* texture(image,v_uv)"}} else {""});
         let program =
             ShaderProgram::new(&ctx, &vs, &fs, &[("position", 0), ("color", 1), ("offset", 2)]).map_err(error)?;
         assert_eq!(program.vertex_attribute_location("position").map_err(error)?, 0);
@@ -152,7 +152,36 @@ mod browser {
                 .get("pixels")
                 .map(|v| v.as_array().unwrap().iter().map(|v| v.as_u64().unwrap() as u8).collect::<Vec<_>>())
                 .unwrap_or(vec![255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255]);
-            let t = Texture::new(&ctx, opts, Some(&pixels)).map_err(error)?;
+            opts.pre_multiply_alpha = flag("preMultiplyAlpha");
+            opts.skip_color_space_conversion = flag("skipColorSpaceConversion");
+            if flag("samplerMips") {
+                opts.sampler.minification_filter = TextureMinificationFilter::NearestMipmapNearest;
+            }
+            let mips: Vec<Vec<u8>> = c
+                .get("mipLevels")
+                .map(|v| {
+                    v.as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|a| a.as_array().unwrap().iter().map(|v| v.as_u64().unwrap() as u8).collect())
+                        .collect()
+                })
+                .unwrap_or_default();
+            let t = match c["sourceKind"].as_str() {
+                Some("image") => Texture::from_image(&ctx, opts, image.clone().unwrap()).map_err(error)?,
+                Some("imageSub") => {
+                    let t = Texture::new(&ctx, opts, None).map_err(error)?;
+                    t.copy_from_image(
+                        image.clone().unwrap(),
+                        TextureRegion { x: 0, y: 0, width: t.width(), height: t.height() },
+                    )
+                    .map_err(error)?;
+                    t
+                }
+                Some("compressed") => Texture::compressed(&ctx, opts, &pixels, &mips).map_err(error)?,
+                Some("mipmaps") => Texture::with_mipmaps(&ctx, opts, &pixels, &mips).map_err(error)?,
+                _ => Texture::new(&ctx, opts, Some(&pixels)).map_err(error)?,
+            };
             if flag("update") {
                 t.copy_from(&[255, 255, 0, 255], TextureRegion { x: 1, y: 0, width: 1, height: 1 }).map_err(error)?;
             }
@@ -163,7 +192,8 @@ mod browser {
         } else {
             None
         };
-        let pass: PassState = serde_json::from_value(c.get("pass").cloned().unwrap_or(json!({}))).map_err(error)?;
+        let pass: PassState<BrowserGl> =
+            serde_json::from_value(c.get("pass").cloned().unwrap_or(json!({}))).map_err(error)?;
         let state: RenderState = serde_json::from_value(c.get("state").cloned().unwrap_or(json!({}))).map_err(error)?;
         ClearCommand { color: Some([0.1, 0.2, 0.3, 1.]), depth: Some(1.), stencil: Some(0), ..Default::default() }
             .execute(&ctx, &PassState::default())
@@ -212,15 +242,326 @@ mod browser {
     pub fn renderer_clear(gl: JsValue, state: &str, pass: &str) -> Result<String, JsValue> {
         let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
         let state: RenderState = serde_json::from_str(state).map_err(error)?;
-        let pass: PassState = serde_json::from_str(pass).map_err(error)?;
+        let pass: PassState<BrowserGl> = serde_json::from_str(pass).map_err(error)?;
         ClearCommand { color: Some([0.1, 0.2, 0.3, 1.]), ..Default::default() }
             .execute(&ctx, &PassState::default())
             .map_err(error)?;
-        ClearCommand { color: Some([1., 0.5, 0., 0.25]), depth: Some(0.5), stencil: Some(3), render_state: state }
-            .execute(&ctx, &pass)
-            .map_err(error)?;
+        ClearCommand {
+            color: Some([1., 0.5, 0., 0.25]),
+            depth: Some(0.5),
+            stencil: Some(3),
+            render_state: state,
+            ..Default::default()
+        }
+        .execute(&ctx, &pass)
+        .map_err(error)?;
         Ok(serde_json::to_string(&ctx.read_pixels(TextureRegion { x: 0, y: 0, width: 8, height: 8 }).map_err(error)?)
             .unwrap())
+    }
+
+    #[wasm_bindgen]
+    pub fn renderer_readback(gl: JsValue, config: &str) -> Result<String, JsValue> {
+        use std::rc::Rc;
+        let c: serde_json::Value = serde_json::from_str(config).map_err(error)?;
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let mut options = TextureOptions::rgba(3, 2);
+        options.pixel_format = PixelFormat::from_value(c["format"].as_u64().unwrap() as u32).unwrap();
+        options.pixel_datatype = PixelDatatype::from_value(c["datatype"].as_u64().unwrap() as u32).unwrap();
+        options.flip_y = false;
+        options.sampler = Sampler::NEAREST;
+        let bytes: Vec<u8> = serde_json::from_value(c["bytes"].clone()).map_err(error)?;
+        let texture = Rc::new(Texture::new(&ctx, options, Some(&bytes)).map_err(error)?);
+        let framebuffer = Framebuffer::new(
+            &ctx,
+            FramebufferOptions { colors: vec![Attachment::Texture(texture)], ..Default::default() },
+        )
+        .map_err(error)?;
+        let read =
+            || ReadState { region: TextureRegion { x: 0, y: 0, width: 3, height: 2 }, framebuffer: Some(&framebuffer) };
+        let pixels = ctx.read_pixels_from(read()).map_err(error)?;
+        let pbo = ctx.read_pixels_to_pbo(read()).map_err(error)?;
+        Ok(json!({"bytes":pixels.bytes,"format":pixels.pixel_format as u32,"datatype":pixels.pixel_datatype as u32,
+            "pbo":pbo.get_buffer_data(0,pbo.size_in_bytes()).map_err(error)?,"status":framebuffer.status().map_err(error)?}).to_string())
+    }
+
+    #[wasm_bindgen]
+    pub fn renderer_anisotropy(gl: JsValue, maximum: f64) -> Result<String, JsValue> {
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let mut options = TextureOptions::rgba(1, 1);
+        options.sampler.maximum_anisotropy = maximum;
+        let texture = Texture::new(&ctx, options, None).map_err(error)?;
+        texture.bind(0).map_err(error)?;
+        let applied = match ctx
+            .host()
+            .invoke("getTexParameter", &[webgl_constants::TEXTURE_2D.into(), 0x84FE_u32.into()])
+            .map_err(error)?
+        {
+            GlValue::Number(n) => n,
+            _ => return Err(error("Missing anisotropy value")),
+        };
+        Ok(json!([texture.sampler().maximum_anisotropy, applied]).to_string())
+    }
+
+    #[wasm_bindgen]
+    pub fn renderer_framebuffers(gl: JsValue, mode: u32) -> Result<String, JsValue> {
+        use std::rc::Rc;
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let make = || -> Result<Rc<Framebuffer<BrowserGl>>, JsValue> {
+            let mut options = TextureOptions::rgba(4, 4);
+            options.sampler = Sampler::NEAREST;
+            let t = Rc::new(Texture::new(&ctx, options, None).map_err(error)?);
+            Ok(Rc::new(
+                Framebuffer::new(
+                    &ctx,
+                    FramebufferOptions {
+                        colors: vec![Attachment::Texture(t)],
+                        destroy_attachments: false,
+                        ..Default::default()
+                    },
+                )
+                .map_err(error)?,
+            ))
+        };
+        let a = make()?;
+        let b = make()?;
+        let mut pass = PassState::default();
+        pass.framebuffer = Some(a.clone());
+        ClearCommand { color: Some([1., 0., 0., 1.]), ..Default::default() }.execute(&ctx, &pass).map_err(error)?;
+        ClearCommand { color: Some([0., 1., 0., 1.]), framebuffer: Some(b.clone()), ..Default::default() }
+            .execute(&ctx, &pass)
+            .map_err(error)?;
+        let mut result = json!({"status":a.status().map_err(error)?,"count":a.number_of_color_attachments(),"depth":a.has_depth_attachment()});
+        let region = TextureRegion { x: 0, y: 0, width: 4, height: 4 };
+        let pixels = |f: &Framebuffer<BrowserGl>| {
+            ctx.read_pixels_from(ReadState { region, framebuffer: Some(f) }).map_err(error).map(|p| p.bytes)
+        };
+        result["a"] = json!(pixels(&a)?);
+        result["b"] = json!(pixels(&b)?);
+        let pbo = ctx.read_pixels_to_pbo(ReadState { region, framebuffer: Some(&b) }).map_err(error)?;
+        result["pbo"] = json!(pbo.get_buffer_data(0, 64).map_err(error)?);
+        let copied = Rc::new(
+            Texture::from_framebuffer(
+                &ctx,
+                TextureOptions::rgba(4, 4),
+                FramebufferCopy { framebuffer: Some(&a), source: region, destination: [0, 0] },
+            )
+            .map_err(error)?,
+        );
+        let cf = Framebuffer::new(
+            &ctx,
+            FramebufferOptions { colors: vec![Attachment::Texture(copied)], ..Default::default() },
+        )
+        .map_err(error)?;
+        result["copy"] = json!(pixels(&cf)?);
+        if mode > 0 {
+            let color = Rc::new(
+                Renderbuffer::new(
+                    &ctx,
+                    RenderbufferOptions {
+                        format: RenderbufferFormat::Rgba8,
+                        width: Some(4),
+                        height: Some(4),
+                        num_samples: if mode == 2 { 4 } else { 1 },
+                    },
+                )
+                .map_err(error)?,
+            );
+            let depth = Rc::new(
+                Renderbuffer::new(
+                    &ctx,
+                    RenderbufferOptions {
+                        format: RenderbufferFormat::DepthComponent16,
+                        width: Some(4),
+                        height: Some(4),
+                        num_samples: if mode == 2 { 4 } else { 1 },
+                    },
+                )
+                .map_err(error)?,
+            );
+            let f = Rc::new(
+                Framebuffer::new(
+                    &ctx,
+                    FramebufferOptions {
+                        colors: vec![Attachment::Renderbuffer(color.clone())],
+                        depth: Some(Attachment::Renderbuffer(depth)),
+                        ..Default::default()
+                    },
+                )
+                .map_err(error)?,
+            );
+            ClearCommand { color: Some([0.2, 0.4, 0.6, 1.]), framebuffer: Some(f.clone()), ..Default::default() }
+                .execute(&ctx, &PassState::default())
+                .map_err(error)?;
+            if mode == 2 {
+                let multisample = MultisampleFramebuffer::new(
+                    &ctx,
+                    MultisampleFramebufferOptions {
+                        width: 4,
+                        height: 4,
+                        color_textures: vec![b.color_texture(0).unwrap().clone()],
+                        color_renderbuffers: vec![color.clone()],
+                        depth_stencil_texture: None,
+                        depth_stencil_renderbuffer: None,
+                        destroy_attachments: false,
+                    },
+                )
+                .map_err(error)?;
+                multisample.blit_framebuffers(false).map_err(error)?;
+                multisample.destroy().map_err(error)?;
+            } else {
+                f.blit_to(&b, webgl_constants::COLOR_BUFFER_BIT).map_err(error)?;
+            }
+            result["resolved"] = json!(pixels(&b)?);
+            result["depth"] = json!(f.has_depth_attachment());
+            result["status"] = json!(f.status().map_err(error)?);
+            result["renderbuffer"] = json!([color.format() as u32, color.width(), color.height()]);
+            f.destroy().map_err(error)?;
+            assert!(color.is_destroyed());
+        }
+        let t = a.color_texture(0).unwrap().clone();
+        a.destroy().map_err(error)?;
+        assert!(!t.is_destroyed());
+        Ok(result.to_string())
+    }
+
+    #[wasm_bindgen]
+    pub fn renderer_geometry(gl: JsValue, interleave: bool) -> Result<String, JsValue> {
+        use std::{
+            collections::{BTreeMap, HashMap},
+            rc::Rc,
+        };
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let mut attributes = GeometryAttributes::default();
+        attributes.position = Some(GeometryAttribute::doubles(2, vec![-1., -1., 1., -1., 1., 1., -1., 1.]));
+        let mut color = GeometryAttribute::new(
+            ComponentDatatype::UnsignedByte,
+            4,
+            TypedArray::Uint8(vec![255, 128, 64, 255].repeat(4)),
+        );
+        color.normalize = true;
+        attributes.color = Some(color);
+        attributes.others.push((
+            "weight".into(),
+            GeometryAttribute::new(
+                ComponentDatatype::UnsignedShort,
+                2,
+                TypedArray::Uint16(vec![1, 2, 3, 4, 5, 6, 7, 8]),
+            ),
+        ));
+        let geometry =
+            Geometry::new(attributes, Some(TypedArray::Uint16(vec![0, 1, 2, 0, 2, 3])), PrimitiveType::Triangles);
+        let va = VertexArray::from_geometry(
+            &ctx,
+            &geometry,
+            GeometryUploadOptions {
+                interleave,
+                attribute_locations: HashMap::from([("position".into(), 0), ("color".into(), 1), ("weight".into(), 2)]),
+                ..Default::default()
+            },
+        )
+        .map_err(error)?;
+        let mut layouts = vec![];
+        for a in va.attributes() {
+            if let AttributeSource::Buffer(b) = &a.source {
+                layouts.push(json!([
+                    a.index,
+                    a.components,
+                    a.datatype as u32,
+                    a.normalize,
+                    a.offset,
+                    a.stride,
+                    b.get_buffer_data(0, b.size_in_bytes()).map_err(error)?
+                ]));
+            }
+        }
+        let mut cache = ShaderCache::new(&ctx);
+        let options=ShaderProgramOptions{vertex_shader_source:ShaderSource::new("in vec2 position;in vec4 color;out vec4 v_color;void main(){gl_Position=czm_modelViewProjection*vec4(position,0.,1.);v_color=color;}"),fragment_shader_source:ShaderSource::new("in vec4 v_color;void main(){out_FragColor=v_color;}"),attribute_locations:BTreeMap::from([("position".into(),0),("color".into(),1)])};
+        let p = cache.get_shader_program(&options).map_err(error)?;
+        let q = cache.get_shader_program(&options).map_err(error)?;
+        assert!(Rc::ptr_eq(&p, &q));
+        let mut command = DrawCommand::new(&va, &p);
+        command.set_dirty(false);
+        assert!(!command.dirty());
+        command.metadata.cull = false;
+        assert!(command.dirty());
+        let cloned = command.shallow_clone();
+        assert!(cloned.dirty());
+        assert!(!cloned.metadata.cull);
+        ClearCommand::all().execute(&ctx, &PassState::default()).map_err(error)?;
+        command.execute(&ctx, &PassState::default()).map_err(error)?;
+        let pixels = ctx.read_pixels(TextureRegion { x: 0, y: 0, width: 8, height: 8 }).map_err(error)?;
+        let mut info = p.vertex_attributes().to_vec();
+        info.sort_by(|a, b| a.name.cmp(&b.name));
+        let result = json!({"layouts":layouts,"indices":va.index_buffer().unwrap().get_buffer_data(0,12).map_err(error)?,"pixels":pixels,"attributes":info,"programs":cache.number_of_shaders()});
+        let derived = cache.create_derived_shader_program(&p, "derived", &options).map_err(error)?;
+        assert!(Rc::ptr_eq(&derived, &cache.get_derived_shader_program(&p, "derived").unwrap()));
+        let replacement = cache.replace_derived_shader_program(&p, "derived", &options).map_err(error)?;
+        assert!(derived.is_destroyed());
+        drop(cloned);
+        drop(command);
+        drop(p);
+        drop(q);
+        cache.destroy_released_shader_programs().map_err(error)?;
+        assert!(replacement.is_destroyed());
+        assert_eq!(cache.number_of_shaders(), 0);
+        ctx.end_frame().map_err(error)?;
+        Ok(result.to_string())
+    }
+    #[wasm_bindgen]
+    pub fn renderer_uniform_arrays(
+        gl: JsValue,
+        vertex: &str,
+        fragment: &str,
+        specifications: &str,
+    ) -> Result<String, JsValue> {
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let p = ShaderProgram::new(&ctx, vertex, fragment, &[]).map_err(error)?;
+        let specs: Vec<serde_json::Value> = serde_json::from_str(specifications).map_err(error)?;
+        let mut result = serde_json::Map::new();
+        for s in specs {
+            let name = s["name"].as_str().unwrap();
+            let components = s["components"].as_u64().unwrap_or(1) as u32;
+            let v = s["values"].as_array().unwrap();
+            let value = match s["kind"].as_str().unwrap() {
+                "float" => UniformValue::FloatArray {
+                    components,
+                    values: v.iter().map(|v| v.as_f64().unwrap() as f32).collect(),
+                },
+                "int" | "bool" => UniformValue::IntArray {
+                    components,
+                    values: v.iter().map(|v| v.as_i64().unwrap() as i32).collect(),
+                },
+                "uint" => UniformValue::UIntArray {
+                    components,
+                    values: v.iter().map(|v| v.as_u64().unwrap() as u32).collect(),
+                },
+                "matrix" => UniformValue::MatrixArray {
+                    columns: components,
+                    rows: components,
+                    values: v.iter().map(|v| v.as_f64().unwrap() as f32).collect(),
+                },
+                _ => unreachable!(),
+            };
+            p.set_uniform(name, &value).map_err(error)?;
+            let mut entries = vec![];
+            for i in 0..2 {
+                let value = p.get_uniform(&format!("{name}[{i}]")).map_err(error)?;
+                entries.push(match value {
+                    GlValue::Numbers(v) => json!(v),
+                    GlValue::Number(v) => json!(v),
+                    GlValue::Bool(v) => json!(v),
+                    GlValue::Bools(v) => json!(v),
+                    _ => panic!("Unexpected uniform value"),
+                });
+            }
+            result.insert(name.into(), json!(entries));
+        }
+        Ok(serde_json::Value::Object(result).to_string())
+    }
+    #[wasm_bindgen]
+    pub fn renderer_limits(gl: JsValue) -> Result<String, JsValue> {
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        Ok(serde_json::to_string(&ctx.limits().map_err(error)?).unwrap())
     }
     #[wasm_bindgen]
     pub fn renderer_shader_errors(gl: JsValue) -> Result<String, JsValue> {

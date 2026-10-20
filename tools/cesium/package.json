@@ -6,7 +6,8 @@
   "scripts": {
     "fixtures": "TZ=UTC node fixtures/generate.mjs",
     "tracker": "node tracker.mjs",
-    "milestone": "node tracker.mjs --milestone"
+    "milestone": "node tracker.mjs --milestone",
+    "renderer-assets": "node generate-renderer-assets.mjs"
   },
   "dependencies": {
     "@cesium/engine": "23.0.0"

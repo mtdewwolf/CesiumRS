@@ -169,3 +169,56 @@ impl<G: Gl> VertexArray<G> {
         self.resource.destroy()
     }
 }
+
+impl<G: Gl> Clone for AttributeSource<G> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Buffer(b) => Self::Buffer(b.clone()),
+            Self::Constant(v) => Self::Constant(v.clone()),
+        }
+    }
+}
+impl<G: Gl> Clone for VertexAttribute<G> {
+    fn clone(&self) -> Self {
+        Self {
+            index: self.index,
+            enabled: self.enabled,
+            source: self.source.clone(),
+            components: self.components,
+            datatype: self.datatype,
+            normalize: self.normalize,
+            offset: self.offset,
+            stride: self.stride,
+            instance_divisor: self.instance_divisor,
+        }
+    }
+}
+impl<G: Gl> VertexArray<G> {
+    pub fn number_of_attributes(&self) -> usize {
+        self.attributes.len()
+    }
+    pub fn get_attribute(&self, index: usize) -> Option<&VertexAttribute<G>> {
+        self.attributes.get(index)
+    }
+    pub fn set_constant_value(&mut self, index: usize, value: Vec<f32>) -> Result<()> {
+        let attribute =
+            self.attributes.get_mut(index).ok_or_else(|| crate::core::RuntimeError::new("Invalid attribute index"))?;
+        ensure(value.len() == attribute.components as usize, "Constant component count cannot change")?;
+        match &mut attribute.source {
+            AttributeSource::Constant(v) => {
+                *v = value;
+                Ok(())
+            }
+            _ => Err(crate::core::RuntimeError::new("Attribute is backed by a buffer")),
+        }
+    }
+    /// Replace a layout atomically. GPU storage survives through its Rust owners.
+    pub fn replace_attribute(&mut self, index: usize, attribute: VertexAttribute<G>) -> Result<()> {
+        ensure(index < self.attributes.len(), "Invalid attribute index")?;
+        let mut attributes = self.attributes.clone();
+        attributes[index] = attribute;
+        let replacement = Self::new(&self.resource.context, attributes, self.index_buffer.clone())?;
+        *self = replacement;
+        Ok(())
+    }
+}

@@ -1,7 +1,7 @@
 //! Host-boundary and ownership regressions. Actual GPU behavior is tested by
 //! scripts/check-renderer.sh; this host injects deterministic allocation errors.
 use cesium_rs::{
-    core::{ComponentDatatype, IndexDatatype, RuntimeError},
+    core::{ComponentDatatype, IndexDatatype, PixelDatatype, PixelFormat, RuntimeError},
     renderer::*,
 };
 use std::{
@@ -32,11 +32,81 @@ impl Gl for Host {
             return Ok(GlValue::Object(id));
         }
         Ok(match name {
+            "readPixels" => match &args[6] {
+                GlValue::Pixels { bytes, .. } => GlValue::Bytes(bytes.clone()),
+                _ => GlValue::Null,
+            },
             "getShaderParameter" | "getProgramParameter" => GlValue::Bool(true),
             "getParameter" => GlValue::Number(16384.),
+            "getExtension" => GlValue::Object(0),
             _ => GlValue::Null,
         })
     }
+}
+
+#[test]
+fn readback_layout_matches_gl_allocation_and_metadata() {
+    let host = Host::default();
+    let ctx = Context::new_webgl2(host.clone());
+    for (format, datatype, expected_format, expected_datatype) in [
+        (PixelFormat::Rgb, PixelDatatype::UnsignedByte, PixelFormat::Rgba, PixelDatatype::UnsignedByte),
+        (PixelFormat::Red, PixelDatatype::UnsignedByte, PixelFormat::Rgba, PixelDatatype::UnsignedByte),
+        (PixelFormat::Rg, PixelDatatype::UnsignedByte, PixelFormat::Rgba, PixelDatatype::UnsignedByte),
+        (PixelFormat::RedInteger, PixelDatatype::UnsignedInt, PixelFormat::RgbaInteger, PixelDatatype::UnsignedInt),
+        (PixelFormat::RgInteger, PixelDatatype::UnsignedInt, PixelFormat::RgbaInteger, PixelDatatype::UnsignedInt),
+        (PixelFormat::Rgba, PixelDatatype::HalfFloat, PixelFormat::Rgba, PixelDatatype::Float),
+        (PixelFormat::Rgb, PixelDatatype::UnsignedShort5_6_5, PixelFormat::Rgba, PixelDatatype::UnsignedByte),
+    ] {
+        let mut options = TextureOptions::rgba(3, 2);
+        options.pixel_format = format;
+        options.pixel_datatype = datatype;
+        let framebuffer = Framebuffer::new(
+            &ctx,
+            FramebufferOptions {
+                colors: vec![Attachment::Texture(Rc::new(Texture::new(&ctx, options, None).unwrap()))],
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let read =
+            || ReadState { region: TextureRegion { x: 0, y: 0, width: 3, height: 2 }, framebuffer: Some(&framebuffer) };
+        let pixels = ctx.read_pixels_from(read()).unwrap();
+        let length = 3 * 2 * 4 * expected_datatype.size_in_bytes();
+        assert_eq!(pixels.pixel_format, expected_format);
+        assert_eq!(pixels.pixel_datatype, expected_datatype);
+        assert_eq!(pixels.bytes.len(), length);
+        let pbo = ctx.read_pixels_to_pbo(read()).unwrap();
+        assert_eq!(pbo.size_in_bytes(), length);
+        let calls = host.0.calls.borrow();
+        for (_, args) in calls.iter().rev().filter(|(n, _)| n == "readPixels").take(2) {
+            assert!(matches!(args[4], GlValue::Number(v) if v == expected_format as u32 as f64));
+            assert!(matches!(args[5], GlValue::Number(v) if v == expected_datatype.to_webgl_constant(true) as f64));
+        }
+        drop(calls);
+        let before = host.count("createBuffer");
+        assert!(ctx
+            .read_pixels_to_pbo(ReadState {
+                region: TextureRegion { x: 3, y: 0, width: 1, height: 1 },
+                framebuffer: Some(&framebuffer)
+            })
+            .is_err());
+        assert_eq!(host.count("createBuffer"), before);
+    }
+}
+
+#[test]
+fn compressed_dimensions_are_rejected_before_allocation_or_upload() {
+    let host = Host::default();
+    let ctx = Context::new_webgl2(host.clone());
+    for (width, height) in [(0, 4), (4, 0), (16385, 4), (4, 16385), (u32::MAX, 4), (4, u32::MAX)] {
+        let mut options = TextureOptions::rgba(width, height);
+        options.pixel_format = PixelFormat::RgbDxt1;
+        let error = Texture::compressed(&ctx, options, &[], &[]).err().expect("invalid dimensions");
+        assert!(error.to_string().contains("dimensions") || error.to_string().contains("size"));
+    }
+    assert_eq!(host.count("createTexture"), 0);
+    assert_eq!(host.count("compressedTexImage2D"), 0);
+    assert_eq!(host.count("getExtension"), 0);
 }
 impl Host {
     fn count(&self, name: &str) -> usize {
@@ -182,4 +252,145 @@ fn draw_dispatch_keeps_cesium_count_and_offset_semantics() {
     for (arg, n) in args.iter().zip([4., 6., 5125., 8., 3.]) {
         assert!(matches!(arg,GlValue::Number(v) if *v==n));
     }
+}
+
+#[test]
+fn render_states_intern_and_reuse_sparse_transitions() {
+    let host = Host::default();
+    let ctx = Context::new_webgl2(host.clone());
+    let va = VertexArray::new(&ctx, vec![VertexAttribute::buffer(0, buffer(&ctx), 3)], None).unwrap();
+    let p = ShaderProgram::new(&ctx, "vs", "fs", &[]).unwrap();
+    let mut command = DrawCommand::new(&va, &p);
+    command.execute(&ctx, &PassState::default()).unwrap();
+    let first = host.count("frontFace");
+    command.execute(&ctx, &PassState::default()).unwrap();
+    assert_eq!(host.count("frontFace"), first);
+    command.render_state.depth_mask = false;
+    command.execute(&ctx, &PassState::default()).unwrap();
+    assert_eq!(host.count("frontFace"), first);
+    assert_eq!(host.count("depthMask"), 2);
+    command.render_state.depth_mask = true;
+    command.execute(&ctx, &PassState::default()).unwrap();
+    assert_eq!(host.count("depthMask"), 3);
+    ctx.invalidate_render_state();
+    command.execute(&ctx, &PassState::default()).unwrap();
+    assert_eq!(host.count("frontFace"), first + 1);
+    let evaluations = Rc::new(Cell::new(0));
+    let count = evaluations.clone();
+    command.uniform_map = Some(Rc::new(move || {
+        count.set(count.get() + 1);
+        Ok(vec![])
+    }));
+    command.execute(&ctx, &PassState::default()).unwrap();
+    command.execute(&ctx, &PassState::default()).unwrap();
+    assert_eq!(evaluations.get(), 2);
+    command.set_dirty(false);
+    assert!(!command.dirty());
+    command.metadata.receive_shadows = true;
+    assert!(command.dirty());
+    let cloned = command.shallow_clone();
+    assert!(cloned.dirty());
+    assert!(cloned.metadata.receive_shadows);
+    assert_eq!(cloned.last_dirty_time, 0.);
+}
+#[test]
+fn shader_and_texture_cache_lifetimes_and_derived_programs() {
+    let host = Host::default();
+    let ctx = Context::new_webgl2(host.clone());
+    let mut cache = ShaderCache::new(&ctx);
+    let options = ShaderProgramOptions {
+        vertex_shader_source: ShaderSource::new("void main(){gl_Position=vec4(0.);}"),
+        fragment_shader_source: ShaderSource::new("void main(){out_FragColor=vec4(1.);}"),
+        attribute_locations: Default::default(),
+    };
+    let a = cache.get_shader_program(&options).unwrap();
+    let b = cache.get_shader_program(&options).unwrap();
+    assert!(Rc::ptr_eq(&a, &b));
+    assert_eq!(cache.number_of_shaders(), 1);
+    assert_eq!(host.count("createProgram"), 1);
+    let derived = cache.create_derived_shader_program(&a, "pick", &options).unwrap();
+    let replacement = cache.replace_derived_shader_program(&a, "pick", &options).unwrap();
+    assert!(derived.is_destroyed());
+    assert!(!replacement.is_destroyed());
+    drop(a);
+    drop(b);
+    cache.destroy_released_shader_programs().unwrap();
+    assert!(replacement.is_destroyed());
+    assert_eq!(cache.number_of_shaders(), 0);
+    assert_eq!(host.count("deleteProgram"), 3);
+    let mut textures = TextureCache::default();
+    let t = Rc::new(Texture::new(&ctx, TextureOptions::rgba(2, 2), None).unwrap());
+    textures.add_texture("test", t.clone()).unwrap();
+    drop(t);
+    let lease = textures.get_texture("test").unwrap();
+    textures.destroy_released_textures().unwrap();
+    assert!(!lease.is_destroyed());
+    drop(lease);
+    textures.destroy_released_textures().unwrap();
+    assert_eq!(textures.number_of_textures(), 0);
+    assert_eq!(host.count("deleteTexture"), 1);
+    let root = cache.get_shader_program(&options).unwrap();
+    let child = cache.create_derived_shader_program(&root, "replacement", &options).unwrap();
+    root.destroy().unwrap();
+    let replacement = cache.get_shader_program(&options).unwrap();
+    assert!(!Rc::ptr_eq(&root, &replacement));
+    assert!(child.is_destroyed());
+    assert!(!replacement.is_destroyed());
+    cache.destroy().unwrap();
+}
+#[test]
+fn framebuffer_attachment_ownership_and_cross_context_rejection() {
+    let host = Host::default();
+    let ctx = Context::new_webgl2(host.clone());
+    let t = Rc::new(Texture::new(&ctx, TextureOptions::rgba(2, 2), None).unwrap());
+    let f = Framebuffer::new(
+        &ctx,
+        FramebufferOptions {
+            colors: vec![Attachment::Texture(t.clone())],
+            destroy_attachments: false,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    f.destroy().unwrap();
+    assert!(!t.is_destroyed());
+    let foreign = Context::new_webgl2(host.clone());
+    assert!(Framebuffer::new(
+        &foreign,
+        FramebufferOptions { colors: vec![Attachment::Texture(t.clone())], ..Default::default() }
+    )
+    .is_err());
+    let owned = Framebuffer::new(
+        &ctx,
+        FramebufferOptions { colors: vec![Attachment::Texture(t.clone())], ..Default::default() },
+    )
+    .unwrap();
+    owned.destroy().unwrap();
+    assert!(t.is_destroyed());
+    assert_eq!(host.count("deleteTexture"), 1);
+    let rb = Rc::new(
+        Renderbuffer::new(
+            &ctx,
+            RenderbufferOptions { format: RenderbufferFormat::Rgba8, width: Some(2), height: Some(2), num_samples: 4 },
+        )
+        .unwrap(),
+    );
+    let texture = Rc::new(Texture::new(&ctx, TextureOptions::rgba(2, 2), None).unwrap());
+    host.fail(Some("framebufferTexture2D"));
+    assert!(MultisampleFramebuffer::new(
+        &ctx,
+        MultisampleFramebufferOptions {
+            width: 2,
+            height: 2,
+            color_renderbuffers: vec![rb.clone()],
+            color_textures: vec![texture.clone()],
+            depth_stencil_texture: None,
+            depth_stencil_renderbuffer: None,
+            destroy_attachments: true
+        }
+    )
+    .is_err());
+    host.fail(None);
+    assert!(!rb.is_destroyed());
+    assert!(!texture.is_destroyed());
 }

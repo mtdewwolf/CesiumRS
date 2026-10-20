@@ -38,3 +38,14 @@ pub enum Pass {
 impl Pass {
     pub const NUMBER_OF_PASSES: u32 = 13;
 }
+
+gl_enum!(RenderbufferFormat { Rgba4 = RGBA4, Rgba8 = RGBA8, Rgba16F = RGBA16F, Rgba32F = RGBA32F, Rgb5A1 = RGB5_A1, Rgb565 = RGB565, DepthComponent16 = DEPTH_COMPONENT16, StencilIndex8 = STENCIL_INDEX8, DepthStencil = DEPTH_STENCIL, Depth24Stencil8 = DEPTH24_STENCIL8 });
+impl RenderbufferFormat {
+    pub fn get_color_format(datatype: u32) -> Self {
+        match datatype {
+            gl::FLOAT => Self::Rgba32F,
+            gl::HALF_FLOAT_OES => Self::Rgba16F,
+            _ => Self::Rgba8,
+        }
+    }
+}
