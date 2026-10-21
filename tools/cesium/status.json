@@ -1716,5 +1716,30 @@
     "status": "ported",
     "rust": "workers::terrain::decode_google_earth_enterprise_packet",
     "note": "Typed packet kinds; XOR decoding, zlib/gzip inflation with both header byte orders, quadtree metadata, five-mesh terrain splitting and dbRoot buffers. 29 direct worker cases including every header/offset failure and short instance lists."
+  },
+  "Workers/createVectorTilePoints": {
+    "status": "ported",
+    "rust": "workers::vector_tiles::create_vector_tile_points",
+    "note": "Zig-zag delta decoding and cartographic dequantization from the packed height/rectangle/ellipsoid buffer into Float64 positions. 13 direct worker cases over rectangles, ellipsoids, empty and boundary inputs."
+  },
+  "Workers/createVectorTilePolylines": {
+    "status": "ported",
+    "rust": "workers::vector_tiles::create_vector_tile_polylines",
+    "note": "Four-vertex segment expansion with previous/next positions, widths, batch ids and index wrapping; JS typed-array reads/writes past buffers kept (NaN reads, dropped writes). Optional decoded positions/offsets. 15 direct worker cases including the 32-bit index boundary."
+  },
+  "Workers/createVectorTileClampedPolylines": {
+    "status": "ported",
+    "rust": "workers::vector_tiles::create_vector_tile_clamped_polylines",
+    "note": "Consecutive duplicate removal, loop detection, mitered start/end faces with the 150 degree break, eight-vertex volumes and reversed reference indices. 15 direct worker cases including loops, reversals, duplicates and 32-bit indices."
+  },
+  "Workers/createVectorTilePolygons": {
+    "status": "ported",
+    "rust": "workers::vector_tiles::create_vector_tile_polygons",
+    "note": "Color batching in JavaScript object-key order, extruded top/bottom/wall indices, per-polygon heights, oriented bounding boxes and the packed draw-call buffer. Indices are reinterpreted by the packed element size. 13 direct worker cases including 32-bit indices."
+  },
+  "Workers/createVectorTileGeometries": {
+    "status": "ported",
+    "rust": "workers::vector_tiles::create_vector_tile_geometries",
+    "note": "Instanced unit boxes, cylinders, ellipsoids and spheres with Float32 parameters, tile model matrix, bounding spheres and Vector3DTileBatch packing. 15 direct worker cases including 32-bit indices and missing-input behavior."
   }
 }
