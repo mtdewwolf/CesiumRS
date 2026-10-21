@@ -142,7 +142,7 @@ Resources stay on their context's owning thread.
 
 The original foundation's 187 portable cases and 173 GPU assertions continue to
 pass. The full suites have **1,549 portable Renderer reference cases** and
-**1,672 Chromium assertions**, plus native ownership/cache/failure tests.
+**1,720 Chromium assertions**, plus native ownership/cache/failure tests.
 
 1. **Targets, textures and state:** GPU comparison covers command/pass target
    precedence, renderbuffer/depth attachment metadata/status, framebuffer copies,
@@ -163,7 +163,7 @@ pass. The full suites have **1,549 portable Renderer reference cases** and
 3. **Lifetime and commands:** native regressions cover buffer/VAO sharing,
    destruction/retry, injected setup failures, derived shader replacement and
    release, texture cache leases, per-draw callbacks, command dirty tracking and
-   clones. All 258 Rust tests and 63 existing Core Chromium checks pass.
+   clones. All 262 Rust tests and 63 existing Core Chromium checks pass.
 4. **Managed targets, compute and fences:** GPU comparisons cover target reuse,
    resizing, multiple color attachments, depth/depth-stencil texture/renderbuffer
    choices, multisample resolve, clear-command preservation and destruction.
@@ -184,7 +184,7 @@ pass. The full suites have **1,549 portable Renderer reference cases** and
    covering all 83 numeric automatic uniforms across 14 frame configurations:
    3D/2D/Columbus View/morphing, four frusta, Geographic/WebMercator projections,
    Sun/directional lights, ellipsoids, times, depth-distance infinity and camera-
-   or frustum-only updates. Its 1,311 Chromium assertions also compare cube face
+   or frustum-only updates. Its 1,359 Chromium assertions also compare cube face
    pixels, DOM/blank/subimage uploads, generated/supplied LODs, framebuffer/mip
    copies, packed volume data, atlas rectangles/repacking/preserved pixels,
    facade GPU bytes/normalization/subcommits/resize/chunk boundaries, every numeric
@@ -201,12 +201,32 @@ mutable allocation path for generated mips and explicit valid GL allocation for
 packed data. WebGL1 Context avoids the pinned constructor's unconditional
 3D-limit query; the reference test verifies and clears that specific initial
 INVALID_ENUM before enabling debug error checks. Volume `flipY` metadata is
-preserved while typed voxel rows retain the reference ordering. Cube memory uses `floor(base * 4 / 3)` after mip loading/
-generation; volume generation uses `floor(base * 8 / 7)`.
+preserved while typed voxel rows retain the reference ordering. Cube memory uses
+`floor(base * 4 / 3)` after mip loading/generation. Volume memory sums the exact
+sizes of all allocated levels, including complete immutable reservations when a
+caller supplies only a partial chain or a base image.
+
+PR review regressions additionally cover four corrected behaviors:
+
+- Exact 65,532-vertex facade chunks retain their full index count. Tests draw
+  each chunk for one exact chunk, two exact chunks, and a partial final chunk;
+  pinned Cesium's zero final count is corrected in the reference setup.
+- Packed cube faces flip one ushort per pixel for RGBA4444, RGBA5551 and RGB565,
+  including subimage uploads. Reference rows are explicitly flipped before
+  Cesium upload to bypass its component-count bug; RGB readback uses RGBA arrays.
+- Frame updates initialize the viewport from the current drawing surface.
+  Geometric tolerance is derived at lookup from the active draw viewport, so
+  first draws, resizes, portrait surfaces and viewport overrides upload current
+  values. Reference Scene setup explicitly updates its viewport before deriving
+  the expected uniform.
+- Volume memory includes supplied and reserved mip levels with exact clamped
+  dimensions. Tests compare complete/partial/base-only immutable chains against
+  real GL allocation counts and check generated non-cubic, non-power-of-two mips.
 
 Preserved reference details include constant attributes being context state,
 index offsets measured in indices and converted to bytes, count clamping against
-the full allocation, packed-pixel `PixelFormat.flipY` padding, supplied mip levels
+the full allocation, the 2D texture path's legacy packed-pixel `PixelFormat.flipY`
+padding, supplied mip levels
 being uploaded without row reversal and retaining base-level unpack alignment,
 nearest filtering for depth textures and
 unsupported float-linear filtering, and `floor(base * 4 / 3)` mip memory accounting.

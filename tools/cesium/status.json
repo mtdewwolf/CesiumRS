@@ -1400,7 +1400,7 @@
   "Renderer/Context": {
     "status": "ported",
     "rust": "renderer::context",
-    "note": "WebGL1/WebGL2 host dispatch, extension capabilities/limits, targets/readback, picking, cached default textures/cube/quad, viewport commands, debug error/validation controls and deterministic cleanup/retry. Browser extension and software-VAO fallbacks, native lifetime/failure tests and Chromium reference checks; Gl is the native driver boundary."
+    "note": "WebGL1/WebGL2 host dispatch, extension capabilities/limits, targets/readback, picking, cached default textures/cube/quad, viewport commands, debug error/validation controls and deterministic cleanup/retry. Browser extension and software-VAO fallbacks, native lifetime/failure tests and Chromium reference checks; Gl is the native driver boundary. Frame updates seed the viewport from the current surface; geometric tolerance follows per-draw viewport changes."
   },
   "Renderer/DrawCommand": {
     "status": "ported",
@@ -1460,7 +1460,7 @@
   "Renderer/UniformState": {
     "status": "ported",
     "rust": "renderer::uniform_frame",
-    "note": "Typed Scene frame/camera/frustum snapshots; 3D/2D/Columbus View, eye/ellipsoid/ENU, sun/moon and directional lighting, fog/atmosphere, frame values and automatic texture inputs. All 83 numeric uniforms across 14 reference scenarios (1162 fixtures), camera-only updates and real automatic-sampler draws. Core supplies projections, astronomy and optional loaded Earth orientation."
+    "note": "Typed Scene frame/camera/frustum snapshots; 3D/2D/Columbus View, eye/ellipsoid/ENU, sun/moon and directional lighting, fog/atmosphere, frame values and automatic texture inputs. All 83 numeric uniforms across 14 reference scenarios (1162 fixtures), camera-only updates and real automatic-sampler draws. Core supplies projections, astronomy and optional loaded Earth orientation. Viewport-dependent tolerance is derived at lookup; first-frame, resize and custom-viewport GPU regressions pass."
   },
   "Renderer/AutomaticUniforms": {
     "status": "ported",
@@ -1495,7 +1495,7 @@
   "Renderer/CubeMapFace": {
     "status": "ported",
     "rust": "renderer::cube_map::CubeMapFace",
-    "note": "Face views share one resource; full/subimage loads, framebuffer and mip framebuffer copies, format/dimension metadata and explicit invalidation. Exact Chromium face pixels, copies, blank initialization and DOM orientation."
+    "note": "Face views share one resource; full/subimage loads, framebuffer and mip framebuffer copies, format/dimension metadata and explicit invalidation. Exact Chromium face pixels, copies, blank initialization and DOM orientation. Packed ushort row flips and subimages use one packed value per pixel, correcting the pinned component-count bug for all three packed types."
   },
   "Renderer/loadCubeMap": {
     "status": "ported",
@@ -1505,7 +1505,7 @@
   "Renderer/Texture3D": {
     "status": "ported",
     "rust": "renderer::texture_3d",
-    "note": "WebGL2 typed/blank volume allocation, supplied mip chains, subvolume copies, samplers, mip generation and metadata/lifetime. Chromium compares voxel samples and LODs; complete immutable chains and sized packed formats correct pinned allocation bugs, using explicit valid GL reference allocations."
+    "note": "WebGL2 typed/blank volume allocation, supplied mip chains, subvolume copies, samplers, mip generation and metadata/lifetime. Chromium compares voxel samples and LODs; complete immutable chains and sized packed formats correct pinned allocation bugs, using explicit valid GL reference allocations. Memory sums all actually allocated levels, including reserved complete immutable chains and generated non-cubic/NPOT levels."
   },
   "Renderer/TextureAtlas": {
     "status": "ported",
@@ -1515,7 +1515,7 @@
   "Renderer/VertexArrayFacade": {
     "status": "ported",
     "rust": "renderer::vertex_array_facade",
-    "note": "Aligned CPU buffers grouped by usage, typed writers, resize preservation/invalidation, commit/subcommit, precreated buffers, instancing and indexed 65532-vertex chunks. Chromium compares GPU bytes/layouts/pixels and chunk boundaries; native sharing and writer lifecycle tests."
+    "note": "Aligned CPU buffers grouped by usage, typed writers, resize preservation/invalidation, commit/subcommit, precreated buffers, instancing and indexed 65532-vertex chunks. Chromium compares GPU bytes/layouts/pixels and chunk boundaries; native sharing and writer lifecycle tests. Review regressions correct exact-multiple final chunk counts and draw every full/partial chunk."
   },
   "Renderer/SharedContext": {
     "status": "ported",

@@ -232,7 +232,12 @@ impl<G: Gl> VertexArrayFacade<G> {
                 let va = Rc::new(VertexArray::new(&self.context, attributes, index_buffer.clone())?);
                 arrays.push(FacadeVertexArray {
                     vertex_array: va,
-                    indices_count: 1.5 * (if k != count - 1 { CHUNK } else { self.size % CHUNK }) as f64,
+                    indices_count: 1.5
+                        * (if count == 1 && (self.instanced || index_buffer.is_none()) {
+                            self.size
+                        } else {
+                            (self.size - k * CHUNK).min(CHUNK)
+                        }) as f64,
                 });
             }
             self.destroy_arrays()?;

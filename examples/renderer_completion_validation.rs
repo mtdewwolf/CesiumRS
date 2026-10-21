@@ -24,12 +24,30 @@ mod browser {
         if c["packed"].as_bool().unwrap_or(false) {
             options.pixel_datatype = PixelDatatype::UnsignedShort4_4_4_4;
         }
+        let packed_palette = match c["packedType"].as_u64().unwrap_or(0) {
+            32819 => Some([0xf00fu16, 0x0f0f, 0x00ff, 0xffff]),
+            32820 => Some([0xf801u16, 0x07c1, 0x003f, 0xffff]),
+            33635 => Some([0xf800u16, 0x07e0, 0x001f, 0xffff]),
+            _ => None,
+        };
+        if let Some(datatype) = c["packedType"].as_u64() {
+            options.pixel_datatype = PixelDatatype::from_value(datatype as u32).unwrap();
+            if datatype == 33635 {
+                options.pixel_format = PixelFormat::Rgb;
+            }
+        }
         let mut metadata;
         let mut faces = vec![];
         let binding = if cube {
             let source = CubeFace::ALL.map(|face| {
                 if c["dom"].as_bool().unwrap_or(false) {
                     TextureSource::Image { width, height: width, image: image.clone().unwrap() }
+                } else if let Some(palette) = packed_palette {
+                    TextureSource::Pixels {
+                        width,
+                        height: width,
+                        bytes: palette.into_iter().flat_map(u16::to_le_bytes).collect(),
+                    }
                 } else {
                     let i = face.index() as u8;
                     let bytes = (0..width * width)
@@ -44,6 +62,22 @@ mod browser {
                 CubeMap::new(&ctx, options, if c["blank"].as_bool().unwrap_or(false) { None } else { Some(source) })
                     .map_err(error)?,
             );
+            if c["packedPatch"].as_bool().unwrap_or(false) {
+                let mut palette = packed_palette.unwrap();
+                palette.reverse();
+                map.face(CubeFace::PositiveX)
+                    .copy_from(
+                        &TextureSource::Pixels {
+                            width: 2,
+                            height: 2,
+                            bytes: palette.into_iter().flat_map(u16::to_le_bytes).collect(),
+                        },
+                        0,
+                        0,
+                        false,
+                    )
+                    .map_err(error)?;
+            }
             if c["patch"].as_bool().unwrap_or(false) {
                 map.face(CubeFace::PositiveX)
                     .copy_from(
@@ -362,7 +396,9 @@ mod browser {
             VertexArrayFacade::new(&ctx, vec![FacadeAttribute::new(0, 2), color, short, dynamic], size, false)
                 .map_err(error)?;
         for i in 0..size {
-            facade.write(0, i, &[if i == 1 { 3. } else { -1. }, if i == 2 { 3. } else { -1. }]).map_err(error)?;
+            facade
+                .write(0, i, &[if i % 65532 == 1 { 3. } else { -1. }, if i % 65532 == 2 { 3. } else { -1. }])
+                .map_err(error)?;
             facade.write(1, i, &[255., 128., 64., 255.]).map_err(error)?;
             facade.write(2, i, &[i as f64, 1000. + i as f64]).map_err(error)?;
             facade.write(3, i, &[i as f64 + 0.5]).map_err(error)?;
@@ -426,14 +462,27 @@ mod browser {
             }
         }
         let mut pixels = vec![];
+        let mut chunk_pixels = vec![];
+        let program=ctx.with_shader_cache(|cache|cache.get_shader_program(&ShaderProgramOptions{vertex_shader_source:ShaderSource::new("in vec2 position;in vec4 color;out vec4 v;void main(){gl_Position=vec4(position,0.,1.);v=color;}"),fragment_shader_source:ShaderSource::new("in vec4 v;void main(){out_FragColor=v;}"),attribute_locations:std::collections::BTreeMap::from([("position".into(),0),("color".into(),1)])})).map_err(error)?;
         if size < 100 {
-            let program=ctx.with_shader_cache(|cache|cache.get_shader_program(&ShaderProgramOptions{vertex_shader_source:ShaderSource::new("in vec2 position;in vec4 color;out vec4 v;void main(){gl_Position=vec4(position,0.,1.);v=color;}"),fragment_shader_source:ShaderSource::new("in vec4 v;void main(){out_FragColor=v;}"),attribute_locations:std::collections::BTreeMap::from([("position".into(),0),("color".into(),1)])})).map_err(error)?;
             let mut draw = DrawCommand::new(va, &program);
             draw.count = Some(3);
             draw.execute(&ctx, &PassState::default()).map_err(error)?;
             pixels = ctx.read_pixels(TextureRegion { x: 0, y: 0, width: 1, height: 1 }).map_err(error)?;
+        } else {
+            for chunk in facade.vertex_arrays().unwrap() {
+                ClearCommand { color: Some([0., 0., 0., 1.]), ..Default::default() }
+                    .execute(&ctx, &PassState::default())
+                    .map_err(error)?;
+                if chunk.indices_count > 0. {
+                    let mut draw = DrawCommand::new(&chunk.vertex_array, &program);
+                    draw.count = Some(3);
+                    draw.execute(&ctx, &PassState::default()).map_err(error)?;
+                }
+                chunk_pixels.push(ctx.read_pixels(TextureRegion { x: 0, y: 0, width: 1, height: 1 }).map_err(error)?);
+            }
         }
-        Ok(json!({"arrays":arrays,"buffers":buffers,"pixels":pixels}).to_string())
+        Ok(json!({"arrays":arrays,"buffers":buffers,"pixels":pixels,"chunkPixels":chunk_pixels}).to_string())
     }
     #[wasm_bindgen]
     pub fn context_api(gl: JsValue, webgl1: bool) -> Result<String, JsValue> {
@@ -712,6 +761,97 @@ mod browser {
             );
         }
         Ok(json!(pixels).to_string())
+    }
+    #[wasm_bindgen]
+    pub fn volume_memory(gl: JsValue, config: &str) -> Result<String, JsValue> {
+        let c: Value = serde_json::from_str(config).map_err(error)?;
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let width = c["width"].as_u64().unwrap() as u32;
+        let height = c["height"].as_u64().unwrap() as u32;
+        let depth = c["depth"].as_u64().unwrap() as u32;
+        let blank = c["blank"].as_bool().unwrap_or(false);
+        let base = vec![0; (width * height * depth * 4) as usize];
+        let mut dims = [width, height, depth];
+        let mut mips = vec![];
+        for _ in 0..c["mips"].as_u64().unwrap_or(0) {
+            dims = dims.map(|d| (d / 2).max(1));
+            mips.push(vec![0; (dims[0] * dims[1] * dims[2] * 4) as usize]);
+        }
+        let texture = Texture3D::with_mipmaps(
+            &ctx,
+            TextureOptions::rgba(width, height),
+            depth,
+            if blank { None } else { Some(&base) },
+            &mips,
+        )
+        .map_err(error)?;
+        let before = texture.size_in_bytes();
+        if c["generate"].as_bool().unwrap_or(false) {
+            texture.generate_mipmap(MipmapHint::DontCare).map_err(error)?;
+        }
+        texture.bind(0).map_err(error)?;
+        let levels = match ctx
+            .host()
+            .invoke(
+                "getTexParameter",
+                &[webgl_constants::TEXTURE_3D.into(), webgl_constants::TEXTURE_IMMUTABLE_LEVELS.into()],
+            )
+            .map_err(error)?
+        {
+            GlValue::Number(n) => n,
+            _ => return Err(error("Missing immutable level count")),
+        };
+        Ok(json!({"before":before,"after":texture.size_in_bytes(),"immutableLevels":levels}).to_string())
+    }
+    #[wasm_bindgen]
+    pub fn frame_tolerance(gl: JsValue) -> Result<String, JsValue> {
+        use js_sys::Reflect;
+        let canvas = Reflect::get(&gl, &"canvas".into())?;
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let camera = UniformCamera {
+            view: Matrix4::IDENTITY,
+            inverse_view: Matrix4::IDENTITY,
+            position: Cartesian3::new(6379137., 0., 0.),
+            direction: Cartesian3::new(-1., 0., 0.),
+            up: Cartesian3::UNIT_Z,
+            right: Cartesian3::UNIT_Y,
+            cartographic: Some(Cartographic::new(0., 0., 1000.)),
+            frustum: UniformFrustum::Perspective(PerspectiveFrustum::new(1., 1.)),
+        };
+        let mut frame = UniformFrame::new(camera, JulianDate::from_iso8601("2025-01-01T00:00:00Z").map_err(error)?);
+        frame.maximum_screen_space_error = 1.;
+        let mut command = ctx
+            .create_viewport_quad_command(
+                ShaderSource::new("void main(){out_FragColor=vec4(czm_geometricToleranceOverMeter,0.,0.,1.);}"),
+                ViewportCommandOptions::default(),
+            )
+            .map_err(error)?;
+        let mut result = vec![];
+        for (width, height, viewport, ortho) in [
+            (8, 8, None, false),
+            (16, 8, None, false),
+            (16, 8, Some((4, 4)), false),
+            (8, 32, None, false),
+            (8, 32, None, true),
+        ] {
+            Reflect::set(&canvas, &"width".into(), &JsValue::from(width))?;
+            Reflect::set(&canvas, &"height".into(), &JsValue::from(height))?;
+            if ortho {
+                frame.camera.frustum = UniformFrustum::Orthographic(OrthographicFrustum::new(10., 1.));
+            }
+            ctx.update_frame(&frame, &FrameTextures::default()).map_err(error)?;
+            let before = ctx.uniform_state().get("czm_geometricToleranceOverMeter").map_err(error)?;
+            command.options.render_state.viewport =
+                viewport.map(|(width, height)| Viewport { x: 0, y: 0, width, height });
+            command.execute(&ctx, &PassState::default()).map_err(error)?;
+            let after = ctx.uniform_state().get("czm_geometricToleranceOverMeter").map_err(error)?;
+            let scalar = |v: Option<UniformValue>| match v {
+                Some(UniformValue::Float(v)) => v[0],
+                _ => panic!("Expected tolerance"),
+            };
+            result.push(json!({"before":scalar(before),"after":scalar(after),"pixels":ctx.read_pixels(TextureRegion{x:0,y:0,width:1,height:1}).map_err(error)?}));
+        }
+        Ok(json!(result).to_string())
     }
 }
 #[allow(dead_code)]

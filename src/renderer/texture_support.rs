@@ -48,7 +48,8 @@ pub(crate) fn flip_pixels(
 ) -> Vec<u8> {
     let mut out = bytes.to_vec();
     if flip && height > 1 {
-        let row = width as usize * format.components_length() * datatype.size_in_bytes();
+        let components = if datatype.is_packed() { 1 } else { format.components_length() };
+        let row = width as usize * components * datatype.size_in_bytes();
         out.resize(row * height as usize, 0);
         for y in 0..height as usize / 2 {
             let (a, b) = out.split_at_mut((height as usize - y - 1) * row);

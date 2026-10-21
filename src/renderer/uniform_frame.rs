@@ -182,7 +182,10 @@ impl<G: Gl> Context<G> {
                 "Invalid automatic texture",
             )?;
         }
-        self.uniform_state.borrow_mut().update(frame, self.drawing_buffer_size()?[0])?;
+        let [width, height] = self.drawing_buffer_size()?;
+        let mut state = self.uniform_state.borrow_mut();
+        state.viewport = Viewport { x: 0, y: 0, width, height };
+        state.update(frame, width)?;
         *cache.automatic_textures.borrow_mut() = bindings;
         Ok(())
     }
@@ -328,9 +331,8 @@ impl UniformState {
                 self.set_scalar(name, value);
             }
         }
-        let pixel_size = camera.frustum.fov().map_or(1., |f| 2. * (f * 0.5).tan())
-            / self.viewport.width.max(self.viewport.height) as f64;
-        self.set_scalar("czm_geometricToleranceOverMeter", pixel_size * frame.maximum_screen_space_error);
+        // This value is derived at lookup so per-draw viewport changes apply too.
+        self.remove("czm_geometricToleranceOverMeter");
         let distance = frame.minimum_disable_depth_test_distance.powi(2);
         self.set_scalar("czm_minimumDisableDepthTestDistance", if distance == f64::INFINITY { -1. } else { distance });
         Ok(())

@@ -193,6 +193,12 @@ impl UniformState {
                     1.,
                 )
             }),
+            "czm_geometricToleranceOverMeter" => {
+                let Some(frame) = self.frame.as_ref() else { return Ok(None) };
+                let pixel_size = frame.camera.frustum.fov().map_or(1., |f| 2. * (0.5 * f).tan())
+                    / self.viewport.width.max(self.viewport.height).max(1) as f64;
+                vec(&[pixel_size * frame.maximum_screen_space_error])
+            }
             "czm_currentFrustum" => vec(&self.frustum),
             "czm_entireFrustum" => vec(&self.entire_frustum),
             "czm_frustumPlanes" => vec(&self.frustum_planes),

@@ -79,13 +79,14 @@ struct Calls {
     next: Cell<u32>,
     calls: RefCell<Vec<(String, Vec<GlValue<u32>>)>>,
     fail: RefCell<Option<String>>,
+    dimensions: Cell<Option<[u32; 2]>>,
 }
 #[derive(Clone, Default)]
 struct Host(Rc<Calls>);
 impl Gl for Host {
     type Object = u32;
     fn drawing_buffer_size(&self) -> Result<[u32; 2], RuntimeError> {
-        Ok([8, 8])
+        Ok(self.0.dimensions.get().unwrap_or([8, 8]))
     }
     fn invoke(&self, name: &str, args: &[GlValue<u32>]) -> Result<GlValue<u32>, RuntimeError> {
         self.0.calls.borrow_mut().push((name.into(), args.to_vec()));
@@ -147,7 +148,7 @@ fn volume_uploads_validate_ranges_and_retain_mip_storage() {
     let ctx = Context::new_webgl2(host.clone());
     let t = Texture3D::new(&ctx, TextureOptions::rgba(2, 2), 2, Some(&[0; 32])).unwrap();
     assert_eq!(host.count("texStorage3D"), 1);
-    assert_eq!(t.size_in_bytes(), 32);
+    assert_eq!(t.size_in_bytes(), 36);
     let before = host.0.calls.borrow().len();
     assert!(t.copy_from(TextureVolume { x: 2, y: 0, z: 0, width: 1, height: 1, depth: 1 }, &[1, 2, 3, 4]).is_err());
     assert_eq!(host.0.calls.borrow().len(), before);
@@ -484,6 +485,7 @@ fn freeze_render_state_keeps_nested_snapshots_immutable() {
     original.blending.enabled = true;
     let frozen = freeze_render_state(original.clone());
     original.blending.enabled = false;
+    assert!(!original.blending.enabled);
     assert!(frozen.blending.enabled);
     let mut copy = frozen.to_owned_state();
     copy.blending.color.red = 1.;
@@ -525,4 +527,107 @@ fn facade_instancing_preserves_precreated_buffers() {
     assert_eq!(va.attributes()[1].instance_divisor, 0);
     facade.destroy().unwrap();
     assert!(!buffer.is_destroyed());
+}
+
+#[test]
+fn facade_counts_full_and_partial_indexed_chunks() {
+    let ctx = Context::new_webgl2(Host::default());
+    let indices = Buffer::new(
+        &ctx,
+        BufferKind::Index(cesium_rs::core::IndexDatatype::UnsignedShort),
+        BufferUsage::StaticDraw,
+        BufferData::Bytes(&[0, 0, 1, 0, 2, 0]),
+    )
+    .unwrap();
+    for (size, expected) in [(65532, vec![98298.]), (131064, vec![98298., 98298.]), (65535, vec![98298., 4.5])] {
+        let mut facade = VertexArrayFacade::new(&ctx, vec![FacadeAttribute::new(0, 1)], size, false).unwrap();
+        facade.write(0, 0, &[1.]).unwrap();
+        facade.commit(Some(indices.clone())).unwrap();
+        assert_eq!(facade.vertex_arrays().unwrap().iter().map(|va| va.indices_count).collect::<Vec<_>>(), expected);
+    }
+}
+#[test]
+fn packed_cube_rows_flip_as_pixels_on_initial_and_subimage_uploads() {
+    for (format, datatype) in [
+        (PixelFormat::Rgba, PixelDatatype::UnsignedShort4_4_4_4),
+        (PixelFormat::Rgba, PixelDatatype::UnsignedShort5_5_5_1),
+        (PixelFormat::Rgb, PixelDatatype::UnsignedShort5_6_5),
+    ] {
+        let host = Host::default();
+        let ctx = Context::new_webgl2(host.clone());
+        let mut options = TextureOptions::rgba(2, 2);
+        options.pixel_format = format;
+        options.pixel_datatype = datatype;
+        let bytes = [0x1234u16, 0x5678, 0x9abc, 0xdef0].into_iter().flat_map(u16::to_le_bytes).collect::<Vec<_>>();
+        let source = || TextureSource::Pixels { width: 2, height: 2, bytes: bytes.clone() };
+        let cube = CubeMap::new(&ctx, options, Some(std::array::from_fn(|_| source()))).unwrap();
+        cube.face(CubeFace::PositiveX).copy_from(&source(), 0, 0, false).unwrap();
+        let expected = [0x9abcu16, 0xdef0, 0x1234, 0x5678].into_iter().flat_map(u16::to_le_bytes).collect::<Vec<_>>();
+        let calls = host.0.calls.borrow();
+        let uploads =
+            calls.iter().filter(|(name, _)| name == "texImage2D" || name == "texSubImage2D").collect::<Vec<_>>();
+        assert_eq!(uploads.len(), 7);
+        for (_, args) in uploads {
+            assert!(matches!(args.last(),Some(GlValue::Pixels{bytes,..})if bytes==&expected));
+        }
+    }
+}
+#[test]
+fn volume_memory_counts_allocated_levels_for_supplied_partial_and_generated_mips() {
+    let ctx = Context::new_webgl2(Host::default());
+    // 8x4x2, 4x2x1, 2x1x1, 1x1x1: immutable storage reserves all levels.
+    let full = Texture3D::with_mipmaps(
+        &ctx,
+        TextureOptions::rgba(8, 4),
+        2,
+        Some(&[0; 256]),
+        &[vec![0; 32], vec![0; 8], vec![0; 4]],
+    )
+    .unwrap();
+    assert_eq!(full.size_in_bytes(), 300);
+    let partial =
+        Texture3D::with_mipmaps(&ctx, TextureOptions::rgba(8, 4), 2, Some(&[0; 256]), &[vec![0; 32]]).unwrap();
+    assert_eq!(partial.size_in_bytes(), 300);
+    let blank = Texture3D::new(&ctx, TextureOptions::rgba(3, 5), 2, None).unwrap();
+    assert_eq!(blank.size_in_bytes(), 120);
+    blank.generate_mipmap(MipmapHint::DontCare).unwrap();
+    assert_eq!(blank.size_in_bytes(), 132);
+}
+#[test]
+fn frame_tolerance_uses_first_surface_resize_and_current_draw_viewport() {
+    use cesium_rs::core::*;
+    let host = Host::default();
+    let ctx = Context::new_webgl2(host.clone());
+    let camera = UniformCamera {
+        view: Matrix4::IDENTITY,
+        inverse_view: Matrix4::IDENTITY,
+        position: Cartesian3::new(6379137., 0., 0.),
+        direction: Cartesian3::new(-1., 0., 0.),
+        right: Cartesian3::UNIT_Y,
+        up: Cartesian3::UNIT_Z,
+        cartographic: Some(Cartographic::new(0., 0., 1000.)),
+        frustum: UniformFrustum::Perspective(PerspectiveFrustum::new(1., 1.)),
+    };
+    let mut frame = UniformFrame::new(camera, JulianDate::from_iso8601("2025-01-01T00:00:00Z").unwrap());
+    frame.maximum_screen_space_error = 3.;
+    let value = || match ctx.uniform_state().get("czm_geometricToleranceOverMeter").unwrap().unwrap() {
+        UniformValue::Float(v) => v[0] as f64,
+        _ => panic!("Expected float"),
+    };
+    let check = |denominator: f64| {
+        let expected = 2. * 0.5f64.tan() * 3. / denominator;
+        assert!((value() - expected).abs() < 1e-7);
+    };
+    ctx.update_frame(&frame, &FrameTextures::default()).unwrap();
+    check(8.);
+    ctx.uniform_state().viewport = Viewport { x: 0, y: 0, width: 4, height: 4 };
+    check(4.);
+    host.0.dimensions.set(Some([32, 16]));
+    ctx.update_frame(&frame, &FrameTextures::default()).unwrap();
+    check(32.);
+    frame.camera.frustum = UniformFrustum::Orthographic(OrthographicFrustum::new(10., 1.));
+    ctx.update_frame(&frame, &FrameTextures::default()).unwrap();
+    assert_eq!(value(), 3. / 32.);
+    ctx.uniform_state().viewport = Viewport::default();
+    assert!(value().is_finite());
 }

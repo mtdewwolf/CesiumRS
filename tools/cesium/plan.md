@@ -52,7 +52,7 @@ face loading, atlases, vertex-array facades, shared contexts, uniform factories
 and immutable render-state helpers. The browser adapter executes WebGL1 and
 WebGL2, including extension dispatch and a software VAO fallback.
 
-Validation covers **1,549 portable Renderer cases**, **1,672 Chromium assertions**
+Validation covers **1,549 portable Renderer cases**, **1,720 Chromium assertions**
 across the original and completion suites, and native lifecycle, async ordering,
 cache, cancellation and failure regressions. All 90 automatic uniforms have value
 providers; 83 numeric values are compared across 14 Scene frame scenarios and

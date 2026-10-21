@@ -24,16 +24,30 @@ try{
   // Cesium's immutable typed volume allocation omits generated mip levels and
   // uses an unsized packed format. Use its mutable path / valid raw allocation
   // for reference pixels in those two corrected allocation cases.
-  const cases=[{kind:'cube',blank:true,patch:true},{kind:'cube',fbCopy:true},{kind:'cube',mip:true,fbMip:true,lod:1},{kind:'volume',generate:true,lod:1},{kind:'volume',packed:true},{kind:'cube'},{kind:'cube',flip:false},{kind:'cube',patch:true},{kind:'cube',copy:true},{kind:'cube',dom:true},{kind:'cube',dom:true,flip:false},{kind:'cube',generate:true},...[0,1,2].map(lod=>({kind:'cube',mip:true,lod})),{kind:'volume'},{kind:'volume',flip:false},{kind:'volume',patch:true},...[0,1,2].map(lod=>({kind:'volume',mip:true,lod}))];
+  const cases=[...[32819,32820,33635].flatMap(packedType=>[{kind:'cube',packedType},{kind:'cube',packedType,flip:false},{kind:'cube',packedType,packedPatch:true}]),{kind:'cube',blank:true,patch:true},{kind:'cube',fbCopy:true},{kind:'cube',mip:true,fbMip:true,lod:1},{kind:'volume',generate:true,lod:1},{kind:'volume',packed:true},{kind:'cube'},{kind:'cube',flip:false},{kind:'cube',patch:true},{kind:'cube',copy:true},{kind:'cube',dom:true},{kind:'cube',dom:true,flip:false},{kind:'cube',generate:true},...[0,1,2].map(lod=>({kind:'cube',mip:true,lod})),{kind:'volume'},{kind:'volume',flip:false},{kind:'volume',patch:true},...[0,1,2].map(lod=>({kind:'volume',mip:true,lod}))];
   for(const config of cases){const cube=config.kind==='cube',width=config.mip?4:2,flipY=config.flip??true;let texture;
    if(cube){const source=Object.fromEntries(faces.map((face,i)=>[face,config.dom?image:{width,height:width,arrayBufferView:new Uint8Array(Array.from({length:width*width},(_,p)=>[16+i*32,255-i*16-Math.floor(p/width)*8,i*20+p%width*8,255]).flat())}]));texture=new ref.CubeMap({context,source:config.blank?undefined:source,width:config.blank?width:undefined,height:config.blank?width:undefined,flipY,sampler:ref.Sampler.NEAREST});
+    if(config.packedType){
+     texture.destroy();
+     const palette=({32819:[0xf00f,0x0f0f,0x00ff,0xffff],32820:[0xf801,0x07c1,0x003f,0xffff],33635:[0xf800,0x07e0,0x001f,0xffff]})[config.packedType];
+     // Avoid Cesium's packed-component flip bug by supplying already flipped
+     // packed rows and disabling the buggy flip during the reference upload.
+     const flip=v=>flipY?[...v.slice(2),...v.slice(0,2)]:v;
+     const packed=values=>({width:2,height:2,arrayBufferView:new Uint16Array(values)});
+     texture=new ref.CubeMap({context,source:Object.fromEntries(faces.map(f=>[f,packed(flip(palette))])),pixelFormat:config.packedType===33635?6407:6408,pixelDatatype:config.packedType,flipY:false,sampler:ref.Sampler.NEAREST});
+     if(config.packedPatch)texture.positiveX.copyFrom({source:packed(flip([...palette].reverse()))});
+     texture._flipY=flipY;
+    }
     if(config.patch)texture.positiveX.copyFrom({source:{width:1,height:1,arrayBufferView:new Uint8Array([255,255,255,255])},xOffset:1,yOffset:1});
     if(config.copy){const t=new ref.Texture({context,source:{width,height:width,arrayBufferView:new Uint8Array(Array(width*width).fill([0,255,255,255]).flat())}});texture.copyFace({context},t,'negativeZ');t.destroy();}
     if(config.mip)texture.loadMipmaps([[2,[0,255,0,255]],[1,[0,0,255,255]]].map(([size,color])=>Object.fromEntries(faces.map(f=>[f,{width:size,height:size,arrayBufferView:new Uint8Array(Array(size*size).fill(color).flat())}]))));if(config.generate)texture.generateMipmap();
-   }else{const data=config.mip?Array(64).fill([255,0,0,255]).flat():Array.from({length:8},(_,i)=>[20+i*20,40+i*10,200-i*10,255]).flat(),mipLevels=config.mip?[new Uint8Array(Array(8).fill([0,255,0,255]).flat()),new Uint8Array([0,0,255,255])]:undefined;if(config.generate||config.packed){const datatype=config.packed?32819:5121,bytes=config.packed?new Uint16Array([0xf00f,0x0f0f,0x00ff,0xffff,0xff0f,0xf0ff,0x0fff,0x888f]):new Uint8Array(data);texture=new ref.Texture3D({context,width,height:width,depth:width,pixelDatatype:config.packed?5121:datatype,flipY,sampler:ref.Sampler.NEAREST});if(config.packed){const driver=context._gl;driver.bindTexture(driver.TEXTURE_3D,texture._texture);driver.texImage3D(driver.TEXTURE_3D,0,driver.RGBA4,width,width,width,0,driver.RGBA,driver.UNSIGNED_SHORT_4_4_4_4,bytes);driver.bindTexture(driver.TEXTURE_3D,null);texture._pixelDatatype=datatype;texture._sizeInBytes=width*width*width*2;}else texture.copyFrom({source:{width,height:width,depth:width,arrayBufferView:bytes}});if(config.generate)texture.generateMipmap();}else texture=new ref.Texture3D({context,source:{width,height:width,depth:width,arrayBufferView:new Uint8Array(data),mipLevels},flipY,sampler:ref.Sampler.NEAREST});if(config.patch)texture.copyFrom({source:{width:1,height:1,depth:1,arrayBufferView:new Uint8Array([255,255,255,255])},xOffset:1,yOffset:1,zOffset:1});}
+   }else{const data=config.mip?Array(64).fill([255,0,0,255]).flat():Array.from({length:8},(_,i)=>[20+i*20,40+i*10,200-i*10,255]).flat(),mipLevels=config.mip?[new Uint8Array(Array(8).fill([0,255,0,255]).flat()),new Uint8Array([0,0,255,255])]:[new Uint8Array(4)];if(config.generate||config.packed){const datatype=config.packed?32819:5121,bytes=config.packed?new Uint16Array([0xf00f,0x0f0f,0x00ff,0xffff,0xff0f,0xf0ff,0x0fff,0x888f]):new Uint8Array(data);texture=new ref.Texture3D({context,width,height:width,depth:width,pixelDatatype:config.packed?5121:datatype,flipY,sampler:ref.Sampler.NEAREST});if(config.packed){const driver=context._gl;driver.bindTexture(driver.TEXTURE_3D,texture._texture);driver.texImage3D(driver.TEXTURE_3D,0,driver.RGBA4,width,width,width,0,driver.RGBA,driver.UNSIGNED_SHORT_4_4_4_4,bytes);driver.texImage3D(driver.TEXTURE_3D,1,driver.RGBA4,1,1,1,0,driver.RGBA,driver.UNSIGNED_SHORT_4_4_4_4,new Uint16Array(1));driver.bindTexture(driver.TEXTURE_3D,null);texture._pixelDatatype=datatype;texture._sizeInBytes=width*width*width*2;}else texture.copyFrom({source:{width,height:width,depth:width,arrayBufferView:bytes}});if(config.generate)texture.generateMipmap();}else texture=new ref.Texture3D({context,source:{width,height:width,depth:width,arrayBufferView:new Uint8Array(data),mipLevels},flipY,sampler:ref.Sampler.NEAREST});if(config.patch)texture.copyFrom({source:{width:1,height:1,depth:1,arrayBufferView:new Uint8Array([255,255,255,255])},xOffset:1,yOffset:1,zOffset:1});}
    if(config.fbCopy||config.fbMip){new ref.ClearCommand({color:new ref.Color(0,1,1,1)}).execute(context);if(config.fbCopy)texture.positiveX.copyFromFramebuffer(0,0,0,0,width,width);else for(const face of faces)texture[face].copyMipmapFromFramebuffer(0,0,2,2,1);}
    const result={dimensions:cube?[width,width]:[width,width,width],bytes:texture.sizeInBytes,flip:texture.flipY,premultiply:texture.preMultiplyAlpha,faces:[],pixels:[]};
-   if(cube)for(const face of faces){const f=new ref.Framebuffer({context,colorTextures:[texture[face]],destroyAttachments:false});result.faces.push(Array.from(context.readPixels({framebuffer:f,width,height:width})));f.destroy();context._currentFramebuffer=undefined;}
+   // The Rust volume reserves a complete immutable chain; sum those actual
+   // allocated levels instead of Cesium's base-only metadata / 8/7 estimate.
+   if(!cube){result.bytes=0;for(let dimension=width;dimension>=1;dimension=Math.floor(dimension/2))result.bytes+=dimension**3*(config.packed?2:4);}
+   if(cube)for(const face of faces){const f=new ref.Framebuffer({context,colorTextures:[texture[face]],destroyAttachments:false});if(config.packedType){const driver=context._gl,pixels=new Uint8Array(width*width*4);driver.bindFramebuffer(driver.FRAMEBUFFER,f._framebuffer);driver.readPixels(0,0,width,width,driver.RGBA,driver.UNSIGNED_BYTE,pixels);result.faces.push(Array.from(pixels));}else result.faces.push(Array.from(context.readPixels({framebuffer:f,width,height:width})));f.destroy();context._currentFramebuffer=undefined;}
    const shader=ref.ShaderProgram.fromCache({context,vertexShaderSource:ref.ViewportQuadVS,fragmentShaderSource:`uniform ${cube?'samplerCube':'sampler3D'} image;uniform vec3 coordinate;uniform float lod;void main(){out_FragColor=textureLod(image,coordinate,lod);}`,attributeLocations:{position:0,textureCoordinates:1}}),coords=cube?directions:Array.from({length:8},(_,i)=>[i&1?.75:.25,i&2?.75:.25,i&4?.75:.25]);
    for(const coordinate of coords){const command=new ref.DrawCommand({vertexArray:context.getViewportQuadVertexArray(),shaderProgram:shader,uniformMap:{image:()=>texture,coordinate:()=>new ref.Cartesian3(...coordinate),lod:()=>config.lod??0}});command.execute(context);result.pixels.push(Array.from(context.readPixels({width:1,height:1})));}
    eq(JSON.parse(wasm.textures(gl,JSON.stringify(config),image)),result,'cube/volume textures '+JSON.stringify(config));eq(gl.getError(),gl.NO_ERROR,'Rust texture GL status '+JSON.stringify(config));eq(context._gl.getError(),gl.NO_ERROR,'Cesium texture GL status '+JSON.stringify(config));shader.destroy();texture.destroy();context._currentFramebuffer=undefined;
@@ -70,17 +84,23 @@ try{
    const result={indices,coords:Array.from({length:atlas.numberOfImages},(_,i)=>{const r=atlas.computeTextureCoordinates(i);return [r.x,r.y,r.width,r.height];}),size:[texture.width,texture.height],bytes:atlas.sizeInBytes,pixels:Array.from(context.readPixels({framebuffer:f,width:texture.width,height:texture.height}))};
    eq(JSON.parse(await wasm.atlas(gl)),result,'TextureAtlas packing, repacking, subregions and preserved GPU pixels');f.destroy();atlas.destroy();context._currentFramebuffer=undefined;
   }
-  for(const config of [{},{subcommit:true},{resize:true},{indexed:true},{indexed:true,size:65532},{indexed:true,size:65535}]){
+  for(const config of [{},{subcommit:true},{resize:true},{indexed:true},{indexed:true,size:65532},{indexed:true,size:131064},{indexed:true,size:65535}]){
    const size=config.size??3,facade=new ref.VertexArrayFacade(context,[{index:0,componentsPerAttribute:2},{index:1,componentsPerAttribute:4,componentDatatype:5121,normalize:true},{index:2,componentsPerAttribute:2,componentDatatype:5123},{index:3,componentsPerAttribute:1,usage:35048}],size);
-   const write=()=>{for(let i=0;i<size;i++){facade.writers[0](i,i===1?3:-1,i===2?3:-1);facade.writers[1](i,255,128,64,255);facade.writers[2](i,i,1000+i);facade.writers[3](i,i+.5);}};write();
+   const write=()=>{for(let i=0;i<size;i++){facade.writers[0](i,i%65532===1?3:-1,i%65532===2?3:-1);facade.writers[1](i,255,128,64,255);facade.writers[2](i,i,1000+i);facade.writers[3](i,i+.5);}};write();
    const indices=config.indexed?ref.Buffer.createIndexBuffer({context,typedArray:new Uint16Array([0,1,2]),usage:35044,indexDatatype:5123}):undefined;facade.commit(indices);
    if(config.subcommit){facade.writers[1](1,0,255,255,255);facade.subCommit(1,1);facade.endSubCommits();facade.commit(indices);}
    if(config.resize){facade.resize(size*2);facade.writers[0](size,0,0);facade.commit(indices);}
+   // Cesium's last exact chunk reports zero; retain its GPU layouts but
+   // correct the expected count so a complete final chunk remains drawable.
+   for(let k=0;k<facade.va.length;k++)facade.va[k].indicesCount=1.5*(config.indexed?Math.min(65532,facade._size-k*65532):facade._size);
    const arrays=facade.va.map(({va,indicesCount})=>({count:indicesCount,attributes:Array.from({length:va.numberOfAttributes},(_,i)=>{const a=va.getAttribute(i);return [a.index,a.componentsPerAttribute,a.componentDatatype,a.normalize,a.offsetInBytes,a.strideInBytes,a.instanceDivisor];})})),va=facade.va[0].va,buffers=[];
    for(let i=0;i<va.numberOfAttributes;i++){const a=va.getAttribute(i);if(a.offsetInBytes===0 && size<100){const bytes=new Uint8Array(a.vertexBuffer.sizeInBytes);a.vertexBuffer.getBufferData(bytes);buffers.push(Array.from(bytes));}}
-   let pixels=[];
-   if(size<100){const shader=ref.ShaderProgram.fromCache({context,vertexShaderSource:'in vec2 position;in vec4 color;out vec4 v;void main(){gl_Position=vec4(position,0.,1.);v=color;}',fragmentShaderSource:'in vec4 v;void main(){out_FragColor=v;}',attributeLocations:{position:0,color:1}});new ref.DrawCommand({vertexArray:va,shaderProgram:shader,count:3}).execute(context);pixels=Array.from(context.readPixels({width:1,height:1}));shader.destroy();}
-   eq(JSON.parse(wasm.facade(gl,JSON.stringify(config))),{arrays,buffers,pixels},'VertexArrayFacade '+JSON.stringify(config));facade.destroy();if(indices && !indices.isDestroyed())indices.destroy();
+   let pixels=[],chunkPixels=[];
+   const shader=ref.ShaderProgram.fromCache({context,vertexShaderSource:'in vec2 position;in vec4 color;out vec4 v;void main(){gl_Position=vec4(position,0.,1.);v=color;}',fragmentShaderSource:'in vec4 v;void main(){out_FragColor=v;}',attributeLocations:{position:0,color:1}});
+   if(size<100){new ref.DrawCommand({vertexArray:va,shaderProgram:shader,count:3}).execute(context);pixels=Array.from(context.readPixels({width:1,height:1}));}
+   else for(const chunk of facade.va){new ref.ClearCommand({color:ref.Color.BLACK}).execute(context);if(chunk.indicesCount>0)new ref.DrawCommand({vertexArray:chunk.va,shaderProgram:shader,count:3}).execute(context);chunkPixels.push(Array.from(context.readPixels({width:1,height:1})));}
+   shader.destroy();
+   eq(JSON.parse(wasm.facade(gl,JSON.stringify(config))),{arrays,buffers,pixels,chunkPixels},'VertexArrayFacade '+JSON.stringify(config));facade.destroy();if(indices && !indices.isDestroyed())indices.destroy();
   }
   for(const webgl1 of [false,true]) {
    const rc=canvas(),reference=new ref.Context(rc,{...options,requestWebgl1:webgl1}),raw=canvas().getContext(webgl1?'webgl':'webgl2',options.webgl);
@@ -134,6 +154,39 @@ try{
    eq(JSON.parse(await wasm.cube_loader(gl,image.toDataURL(),skip)),pixels,'loadCubeMap Resource decode, face order and ImageBitmap flip '+skip);cube.destroy();
   }
   let rejected=false;try{await wasm.cube_loader(gl,location.origin+'/missing-cube.png',false);}catch{rejected=true;}eq(rejected,true,'loadCubeMap image errors reject');
+  for(const config of [{width:8,height:4,depth:2,mips:3},{width:8,height:4,depth:2,mips:1},{width:8,height:4,depth:2,mips:0},{width:3,height:5,depth:2,blank:true,generate:true}]) {
+   const {width,height,depth}=config,driver=context._gl;
+   let dims=[width,height,depth],mipLevels=[];
+   while(dims.some(n=>n>1)){dims=dims.map(n=>Math.max(1,Math.floor(n/2)));mipLevels.push(new Uint8Array(dims.reduce((a,b)=>a*b,4)));}
+   // Match the corrected complete immutable reservation, including unpopulated
+   // levels for a partial chain. Query the real driver for its allocation count.
+   const texture=new ref.Texture3D({context,width,height,depth,source:config.blank?undefined:{width,height,depth,arrayBufferView:new Uint8Array(width*height*depth*4),mipLevels}});
+   driver.bindTexture(driver.TEXTURE_3D,texture._texture);const immutableLevels=driver.getTexParameter(driver.TEXTURE_3D,driver.TEXTURE_IMMUTABLE_LEVELS);driver.bindTexture(driver.TEXTURE_3D,null);
+   const memory=levels=>{let dimensions=[width,height,depth],bytes=0;for(let i=0;i<levels;i++){bytes+=dimensions.reduce((a,b)=>a*b,4);dimensions=dimensions.map(n=>Math.max(1,Math.floor(n/2)));}return bytes;};
+   const before=memory(immutableLevels||1);if(config.generate)texture.generateMipmap();
+   eq(JSON.parse(wasm.volume_memory(gl,JSON.stringify(config))),{before,after:memory(immutableLevels||(config.generate?mipLevels.length+1:1)),immutableLevels},'Texture3D allocated memory '+JSON.stringify(config));
+   eq(gl.getError(),0,'Texture3D memory GL status');texture.destroy();
+  }
+  {
+   const date=ref.JulianDate.fromIso8601('2025-01-01T00:00:00Z'),camera={viewMatrix:ref.Matrix4.IDENTITY,inverseViewMatrix:ref.Matrix4.IDENTITY,positionWC:new ref.Cartesian3(6379137,0,0),directionWC:new ref.Cartesian3(-1,0,0),rightWC:ref.Cartesian3.UNIT_Y,upWC:ref.Cartesian3.UNIT_Z,positionCartographic:new ref.Cartographic(0,0,1000),frustum:new ref.PerspectiveFrustum({fov:1,aspectRatio:1})};
+   const frame={context,camera,time:date,mode:3,mapProjection:new ref.GeographicProjection(),pixelRatio:1,frameNumber:0,morphTime:1,fog:{density:0,visualDensityScalar:1,minimumBrightness:.03},backgroundColor:ref.Color.BLACK,invertClassificationColor:ref.Color.WHITE,splitPosition:.5,maximumScreenSpaceError:1,minimumDisableDepthTestDistance:0};
+   const expected=[];
+   for(const [width,height,viewport,ortho]of [[8,8,null,false],[16,8,null,false],[16,8,[4,4],false],[8,32,null,false],[8,32,null,true]]){
+    context.canvas.width=width;context.canvas.height=height;context._currentRenderState=context._defaultRenderState;ref.RenderState.apply(context._gl,context._defaultRenderState,new ref.PassState(context));context._currentFramebuffer=undefined;
+    if(ortho)camera.frustum=new ref.OrthographicFrustum({width:10,aspectRatio:1});
+    const state=context.uniformState;state.viewport=new ref.BoundingRectangle(0,0,width,height);state.update(frame);const before=Math.fround(state.geometricToleranceOverMeter);
+    if(viewport){state.viewport=new ref.BoundingRectangle(0,0,...viewport);state.update(frame);}
+    const command=context.createViewportQuadCommand('void main(){out_FragColor=vec4(czm_geometricToleranceOverMeter,0.,0.,1.);}',{renderState:ref.RenderState.fromCache(viewport?{viewport:new ref.BoundingRectangle(0,0,...viewport)}:{})});command.execute(context);
+    expected.push({before,after:Math.fround(state.geometricToleranceOverMeter),pixels:Array.from(context.readPixels({width:1,height:1}))});command.shaderProgram.destroy();
+   }
+   const actual=JSON.parse(wasm.frame_tolerance(gl));
+   for(let i=0;i<expected.length;i++){
+    near([actual[i].before,actual[i].after],[expected[i].before,expected[i].after],'Viewport-dependent frame values '+i);
+    eq(actual[i].pixels,expected[i].pixels,'Viewport-dependent automatic upload '+i);
+   }
+   eq(gl.getError(),0,'Viewport-dependent Rust GL status');eq(context._gl.getError(),0,'Viewport-dependent reference GL status');
+  }
+
   return passed;
  }catch(e){throw Error(String(e?.message??e)+'\n'+e?.stack+'\nLast check: '+window.lastCheck);}});
  console.log(checks.map(s=>'PASS '+s).join('\n'));console.log(`${checks.length} Renderer completion checks passed`);

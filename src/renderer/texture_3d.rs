@@ -19,7 +19,7 @@ pub struct Texture3D<G: Gl> {
     options: TextureOptions,
     depth: u32,
     sampler: RefCell<Sampler>,
-    has_mipmap: Cell<bool>,
+    allocated_levels: Cell<u32>,
     id: String,
 }
 impl<G: Gl> Texture3D<G> {
@@ -78,8 +78,14 @@ impl<G: Gl> Texture3D<G> {
         let resource = Rc::new(Resource::create(context, "createTexture", &[], "deleteTexture")?);
         let id = options.id.clone().unwrap_or_else(crate::core::create_guid::create_guid);
         let sampler = options.sampler;
-        let texture =
-            Self { resource, options, depth, sampler: RefCell::new(sampler), has_mipmap: Cell::new(false), id };
+        let texture = Self {
+            resource,
+            options,
+            depth,
+            sampler: RefCell::new(sampler),
+            allocated_levels: Cell::new(if bytes.is_some() { max_levels } else { 1 }),
+            id,
+        };
         texture.bind(0)?;
         let result = (|| {
             support::pixel_store(
@@ -219,7 +225,7 @@ impl<G: Gl> Texture3D<G> {
         })();
         c.call("bindTexture", &[gl::TEXTURE_3D.into(), GlValue::Null])?;
         r?;
-        self.has_mipmap.set(true);
+        self.allocated_levels.set(32 - self.dimensions().into_iter().max().unwrap().leading_zeros());
         Ok(())
     }
     pub fn id(&self) -> &str {
@@ -253,12 +259,12 @@ impl<G: Gl> Texture3D<G> {
         *self.sampler.borrow()
     }
     pub fn size_in_bytes(&self) -> usize {
-        let n = support::pixels_size(self.pixel_format(), self.pixel_datatype(), &self.dimensions()).unwrap();
-        if self.has_mipmap.get() {
-            (n as u64 * 8 / 7) as usize
-        } else {
-            n
-        }
+        (0..self.allocated_levels.get())
+            .map(|level| {
+                let dimensions = self.dimensions().map(|n| (n >> level).max(1));
+                support::pixels_size(self.pixel_format(), self.pixel_datatype(), &dimensions).unwrap()
+            })
+            .sum()
     }
     pub fn destroy(&self) -> Result<()> {
         self.resource.destroy()
