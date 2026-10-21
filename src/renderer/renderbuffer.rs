@@ -23,7 +23,8 @@ pub struct Renderbuffer<G: Gl> {
 }
 impl<G: Gl> Renderbuffer<G> {
     pub fn new(context: &Context<G>, options: RenderbufferOptions) -> Result<Self> {
-        let drawing = context.host().drawing_buffer_size()?;
+        ensure(context.webgl2() || options.num_samples <= 1, "Multisample renderbuffers require WebGL2")?;
+        let drawing = context.drawing_buffer_size()?;
         let width = options.width.unwrap_or(drawing[0]);
         let height = options.height.unwrap_or(drawing[1]);
         ensure(width > 0 && height > 0, "Renderbuffer dimensions must be positive")?;

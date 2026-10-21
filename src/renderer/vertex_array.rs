@@ -61,6 +61,10 @@ impl<G: Gl> VertexArray<G> {
         let mut number = None;
         for a in &attributes {
             ensure(indices.insert(a.index), "Duplicate vertex attribute index")?;
+            ensure(
+                a.instance_divisor == 0 || context.webgl2() || context.extension_supported("ANGLE_instanced_arrays")?,
+                "Instanced arrays unsupported",
+            )?;
             ensure((1..=4).contains(&a.components), "Attribute components must be in [1,4]")?;
             ensure(a.stride <= 255, "Attribute stride exceeds WebGL's 255-byte limit")?;
             size::<G::Object>(a.offset)?;

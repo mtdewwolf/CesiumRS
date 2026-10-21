@@ -87,7 +87,12 @@ impl<'a, G: Gl> DrawCommand<'a, G> {
             pass: self.pass,
             uniforms: self.uniforms.clone(),
             uniform_map: self.uniform_map.as_ref().map_or(0, |p| Rc::as_ptr(p) as *const () as usize),
-            textures: self.textures.iter().map(|(n, t)| (n.clone(), *t as *const _ as usize)).collect(),
+            textures: self
+                .textures
+                .iter()
+                .map(|(n, t)| (n.clone(), *t as *const _ as usize))
+                .chain(self.samplers.iter().map(|(n, t)| (n.clone(), *t as *const _ as *const () as usize)))
+                .collect(),
         }
     }
     /// Rust fields are compared with the last clean snapshot. This catches both
@@ -118,6 +123,7 @@ impl<'a, G: Gl> DrawCommand<'a, G> {
             uniforms: self.uniforms.clone(),
             uniform_map: self.uniform_map.clone(),
             textures: self.textures.clone(),
+            samplers: self.samplers.clone(),
             metadata: self.metadata.clone(),
             last_dirty_time: 0.,
             derived_commands: HashMap::new(),

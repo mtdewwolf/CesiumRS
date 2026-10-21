@@ -1,20 +1,16 @@
-# Renderer resources, targets and compute
+# Renderer implementation and validation
 
-`src/renderer` ports CesiumJS Renderer (`@cesium/engine` 23.0.0 / CesiumJS 1.139)
-with an executable WebGL2 browser adapter and a native `Gl` host interface.
-Resource management, geometry packing, shader construction and command execution
-run in Rust. The raw C-ABI viewer has not yet migrated to this API, and a native
-GPU driver adapter is not included.
+All 46 CesiumJS Renderer modules (`@cesium/engine` 23.0.0 / CesiumJS 1.139)
+have Rust implementations and reference validation. Resource management,
+geometry packing, shader construction, frame uniforms and command execution run
+in Rust. The browser adapter executes WebGL1/WebGL2 calls, extension entrypoints
+and software VAOs when OES vertex arrays are absent. Native applications implement
+`Gl`; a concrete native GPU driver is outside this port. The raw C-ABI viewer
+still awaits migration to the Renderer API.
 
-The continuation closes eight of the original nine partial modules:
-`VertexArray`, `ShaderSource`, `ShaderProgram`, `Texture`, `RenderState`,
-`PassState`, `DrawCommand` and `ClearCommand`. Context-level legacy and Scene
-integration work remains explicitly partial, as do the new uniform-state paths
-that still need complete Scene frame updates.
-
-The next batch adds complete `FramebufferManager`, `ComputeCommand`,
-`ComputeEngine` and `Sync` ports. `ViewportQuad` provides the shared geometry and
-shader source used by compute execution through an explicit Rust owner.
+The final 13 modules complete Context, UniformState and AutomaticUniforms and
+add CubeMap, CubeMapFace, loadCubeMap, Texture3D, TextureAtlas, VertexArrayFacade,
+SharedContext, createUniform, createUniformArray and freezeRenderState.
 
 ## API and ownership
 
@@ -34,8 +30,14 @@ shader source used by compute execution through an explicit Rust owner.
 | `Texture`, `TextureOptions`, `TextureRegion`, `FramebufferCopy` | Typed, compressed, DOM/image and framebuffer sources; supplied mip chains, subimages, samplers, mip generation, IDs/dimensions and memory accounting |
 | `RenderState`, `RenderStateCache`, `CachedRenderState`, `PassState` | Immutable state interning, acquire/release, cached sparse transitions, full application and viewport/blending/scissor/pass framebuffer precedence |
 | `DrawCommand`, `DrawMetadata`, `UniformMap`, `ClearCommand`, `Pass` | Indexed/non-indexed/instanced submission, per-draw callbacks, texture binding, Scene metadata/flags, dirty tracking, shallow clones/derived maps and masked/scissored clears |
-| `Context`, `ContextLimits`, `ContextCapabilities`, `ReadState`, `PixelReadback` | Target selection, typed and pixel-pack readback, hardware limits/extensions and end-frame cleanup |
-| `UniformState`, `AutomaticUniform`, `automatic_uniforms` | Model/view/projection and normal matrices, camera high/low encoding, viewport/frustum/pass uniforms; descriptors for all 90 uniforms and explicit Scene-host value overrides |
+| `Context`, `ContextLimits`, `ContextCapabilities`, `ReadState`, `PixelReadback`, `PickId`, `ViewportCommand` | WebGL1/WebGL2 capabilities/dispatch, targets/readback, default resources/caches, viewport commands, picking, debug validation and deterministic cleanup |
+| `CubeMap`, `CubeMapFace`, `load_cube_map`, `load_cube_map_resources` | Six typed/DOM/blank faces, uploads/subimages, framebuffer/mip copies, samplers, supplied/generated mips and concurrent Resource/image decoding |
+| `Texture3D`, `TextureVolume`, `SampledTexture`, `TextureBinding` | Typed/blank volumes, subvolume copies and mip chains; common 2D/cube/volume draw and compute sampler bindings |
+| `TextureAtlas`, `AtlasImageRequest` | Async images/Resources/providers, deduplication, completion-ordered packing, subregions, resizing, GPU preservation and cancellation |
+| `VertexArrayFacade`, `FacadeAttribute`, `FacadeWriter` | Usage-grouped aligned buffers, typed writers, resizing, commit/subcommit, instancing/precreated buffers and indexed chunks |
+| `SharedContext`, `SceneContext`, `SharedSurfaceHost` | Independent scene surfaces and dimensions, shared resources, growth/cropped presentation and optional teardown after the last scene |
+| `UniformBinding`, `create_uniform`, `create_uniform_array`, `FrozenRenderState` | Typed cached uniform factories and sampler leases; structural deep render-state immutability |
+| `UniformState`, `UniformFrame`, `UniformCamera`, `UniformFrustum`, `FrameTextures`, `AutomaticUniform` | All 90 descriptors/providers: geometry, camera/ellipsoid/ENU, 2D/Columbus View, astronomy/lighting, fog/atmosphere, frame values and automatic textures |
 
 GPU objects use context-local shared ownership (`Rc`). Last-owner drop deletes
 resources. Explicit `destroy()` invalidates aliases and reports host errors;
@@ -95,11 +97,37 @@ float/half-float colors, or RGBA_INTEGER uint32 for unsigned integer colors.
 Missing channels use WebGL's default components. RG and integer color textures
 are accepted as framebuffer attachments.
 
-Shader uniform maps are evaluated for every submission. Static uniforms and
-texture bindings remain available. Automatic matrices use the current command
-model matrix and context uniform state. Scene hosts must provide lighting,
-atmosphere and other missing values through `UniformState::set`; a missing active
-automatic value is an error. Full Scene frame-state updates are still pending.
+Shader uniform maps are evaluated for every submission. `Context::update_frame`
+accepts a typed `UniformFrame` and `FrameTextures`: camera/frustum snapshots,
+Core map projection/time, lighting, atmosphere and image-based lighting inputs.
+Renderer computes 2D/Columbus View transforms, eye/ellipsoid/ENU values,
+sun/moon directions, fog/atmosphere and the remaining automatic values. The
+TEME fallback is used without loaded Earth orientation; `use_earth_orientation`
+selects Core's loaded ICRF transform, and a supplied celestial rotation supports
+other central bodies. `frame_state`, camera-only and frustum-only updates are
+available independently.
+
+Automatic samplers hold context-owned texture leases without resource/cache
+cycles. The environment defaults to the white cube; optional depth/edge/BRDF/
+specular inputs must be supplied when a shader uses them. Explicit named numeric
+overrides remain available. Draws allocate automatic texture units after their
+explicit samplers, avoiding collisions. Model matrices, viewport and pass values
+continue to come from the current command.
+
+Context owns cached default textures/cube/quad, shaders and textures. Explicit
+destruction invalidates retained GPU handles and clears picks/caches; failed
+host deletions can be retried. Dropping the last public context releases its
+caches without cycles. Shared scene contexts retain the same GPU identity but
+use their own surface sizes. Call `SceneContext::begin_frame` before rendering
+and `end_frame` to present. `BrowserSharedSurfaceHost` performs the actual 2D
+canvas blit with the bottom-aligned crop used by Cesium.
+
+Atlas image futures begin polling when registered and progress during `update`.
+Completed images enter packing in completion order, then descending area, as in
+Cesium. IDs share requests, subregions wait for parents, and destruction resolves
+unfinished additions to -1. Decode, bounds and host-reported GPU errors propagate instead of
+leaving callers waiting indefinitely. Facade writers become stale after resize;
+managed bytes survive resizing and precreated buffers retain external ownership.
 
 Buffers use byte slices, avoiding JS typed-array offset ambiguity. Base texture
 pixels are tightly packed little-endian elements; supplied mip rows retain the
@@ -113,8 +141,8 @@ Resources stay on their context's owning thread.
 ## Validation by batch
 
 The original foundation's 187 portable cases and 173 GPU assertions continue to
-pass. The extended suite has **387 portable Renderer reference cases** and
-**361 Chromium GPU assertions**, plus native ownership/cache/failure tests.
+pass. The full suites have **1,549 portable Renderer reference cases** and
+**1,672 Chromium assertions**, plus native ownership/cache/failure tests.
 
 1. **Targets, textures and state:** GPU comparison covers command/pass target
    precedence, renderbuffer/depth attachment metadata/status, framebuffer copies,
@@ -135,7 +163,7 @@ pass. The extended suite has **387 portable Renderer reference cases** and
 3. **Lifetime and commands:** native regressions cover buffer/VAO sharing,
    destruction/retry, injected setup failures, derived shader replacement and
    release, texture cache leases, per-draw callbacks, command dirty tracking and
-   clones. All 243 Rust tests and 63 existing Core Chromium checks pass.
+   clones. All 258 Rust tests and 63 existing Core Chromium checks pass.
 4. **Managed targets, compute and fences:** GPU comparisons cover target reuse,
    resizing, multiple color attachments, depth/depth-stencil texture/renderbuffer
    choices, multisample resolve, clear-command preservation and destruction.
@@ -151,6 +179,30 @@ pass. The extended suite has **387 portable Renderer reference cases** and
    multisampling leaves the previous framebuffer usable. These fix two inherited
    Cesium manager bugs; the reference MRT setup explicitly preserves its dirty
    flag to obtain the intended replacement pixels.
+
+5. **The final 13 modules:** the completion suite adds 1,162 portable cases
+   covering all 83 numeric automatic uniforms across 14 frame configurations:
+   3D/2D/Columbus View/morphing, four frusta, Geographic/WebMercator projections,
+   Sun/directional lights, ellipsoids, times, depth-distance infinity and camera-
+   or frustum-only updates. Its 1,311 Chromium assertions also compare cube face
+   pixels, DOM/blank/subimage uploads, generated/supplied LODs, framebuffer/mip
+   copies, packed volume data, atlas rectangles/repacking/preserved pixels,
+   facade GPU bytes/normalization/subcommits/resize/chunk boundaries, every numeric
+   uniform factory and array, all seven automatic samplers, Context defaults/
+   picking/viewport helpers, WebGL1 software VAOs, shared canvas crops and
+   Resource-backed cube loading/errors. Native regressions cover ownership,
+   cleanup retry, async completion order/failures/cancellation, stale writers,
+   precreated instanced buffers and immutable nested render-state snapshots.
+
+The completion tests correct two additional pinned Texture3D allocation defects:
+immutable typed volumes allocate all mip levels so generation can succeed, and
+packed storage uses sized internal formats. Reference sampling uses Cesium's
+mutable allocation path for generated mips and explicit valid GL allocation for
+packed data. WebGL1 Context avoids the pinned constructor's unconditional
+3D-limit query; the reference test verifies and clears that specific initial
+INVALID_ENUM before enabling debug error checks. Volume `flipY` metadata is
+preserved while typed voxel rows retain the reference ordering. Cube memory uses `floor(base * 4 / 3)` after mip loading/
+generation; volume generation uses `floor(base * 8 / 7)`.
 
 Preserved reference details include constant attributes being context state,
 index offsets measured in indices and converted to bytes, count clamping against
@@ -173,26 +225,17 @@ of fractional values.
 ```bash
 cargo test --all-features
 scripts/check-renderer.sh        # wasm32, wasm-bindgen-cli 0.2.129, Chromium
+scripts/check-renderer-completion.sh
 bash scripts/check-browser-core.sh
 node tools/cesium/generate-renderer-assets.mjs
 cd tools/cesium
-npm run fixtures -- RendererAdvanced
+npm run fixtures -- RendererAdvanced RendererCompletion
 npm run tracker
 ```
 
-## Remaining Renderer work
+## Next milestone
 
-`Context` remains partial: WebGL1/extension fallback execution, picking IDs,
-default texture/viewport-quad helpers, native GPU adapter and the remaining
-Context/Scene lifecycle integration are not implemented. WebGL1 **shader source
-rewriting** is implemented and validated independently of backend execution.
-
-`UniformState` and `AutomaticUniforms` remain partial for complete Scene frame
-updates: 2D/Columbus View camera conversion, eye/ellipsoid/ENU calculations,
-astronomical lighting, fog/atmosphere and environment texture population. Current
-3D transform calculations and explicit host-provided values are executable and
-reference-validated; they do not claim full Scene integration.
-
-Further modules still include cube/3D textures, atlases, vertex-array facades,
-shared contexts and remaining uniform/render-state helper modules.
-The tracker lists each outstanding module without treating it as completed.
+Renderer has no remaining partial or todo modules. Scene remains unported and
+will supply the typed frame inputs and command scheduling. Migrating the existing
+raw viewer and adding a concrete native GPU driver are separate integrations;
+the Renderer host traits already support native applications and tests.

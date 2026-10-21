@@ -11,6 +11,7 @@ pub struct ComputeCommand<G: Gl> {
     pub uniform_map: Option<UniformMap>,
     /// Explicit texture leases accompany sampler uniforms in the Rust API.
     pub textures: Vec<(String, Rc<Texture<G>>)>,
+    pub samplers: Vec<(String, TextureBinding<G>)>,
     pub output_texture: Option<Rc<Texture<G>>>,
     pub pre_execute: Option<ComputePreExecute<G>>,
     pub post_execute: Option<ComputePostExecute<G>>,
@@ -26,6 +27,7 @@ impl<G: Gl> Default for ComputeCommand<G> {
             shader_program: None,
             uniform_map: None,
             textures: vec![],
+            samplers: vec![],
             output_texture: None,
             pre_execute: None,
             post_execute: None,
@@ -114,6 +116,7 @@ impl<G: Gl> ComputeEngine<G> {
         draw.render_state = state;
         draw.uniform_map = command.uniform_map.clone();
         draw.textures = command.textures.iter().map(|(n, t)| (n.clone(), t.as_ref())).collect();
+        draw.samplers = command.samplers.iter().map(|(n, t)| (n.clone(), t.sampled())).collect();
         draw.execute(&self.context, &PassState::default())?;
         framebuffer.destroy()?;
         if !command.persists {

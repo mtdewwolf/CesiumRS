@@ -11,7 +11,7 @@ cd "$root"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-scripts/build-web.sh "$tmp" >/dev/null
+bash scripts/build-web.sh "$tmp" >/dev/null
 
 stale=0
 for f in wasm.ts earth.ts; do

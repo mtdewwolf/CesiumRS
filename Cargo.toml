@@ -73,3 +73,8 @@ required-features = ["browser"]
 name = "renderer_validation"
 crate-type = ["cdylib"]
 required-features = ["browser"]
+
+[[example]]
+name = "renderer_completion_validation"
+crate-type = ["cdylib"]
+required-features = ["browser"]

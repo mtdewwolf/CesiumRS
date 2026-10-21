@@ -198,5 +198,13 @@
     "ported": 308,
     "implemented": 0,
     "validatedPercent": 28.38
+  },
+  {
+    "milestone": "Renderer complete",
+    "date": "2026-10-21",
+    "percent": 31.01,
+    "ported": 321,
+    "implemented": 0,
+    "validatedPercent": 31.01
   }
 ]
