@@ -74,6 +74,10 @@ struct Applied {
     blending: bool,
     viewport: Viewport,
 }
+/// Interned states the driver keeps before starting over; ids keep
+/// increasing across a reset, so stale transitions never match.
+const MAX_DRIVER_STATES: usize = 4096;
+
 #[derive(Default)]
 pub(crate) struct RenderStateDriver {
     cache: RenderStateCache,
@@ -91,7 +95,19 @@ impl RenderStateDriver {
         pass: &PassState<G>,
         clear: bool,
     ) -> Result<()> {
-        let cached = self.cache.intern(state.clone(), false)?;
+        let cached = match &self.previous {
+            // Consecutive draws usually share a state; skip the serialization.
+            Some(prev) if **prev.state == *state => prev.state.clone(),
+            _ => {
+                // States that differ per frame (an animated viewport) would
+                // otherwise grow the cache and transition table forever.
+                if self.cache.len() >= MAX_DRIVER_STATES {
+                    self.cache.clear_cache();
+                    self.transitions.clear();
+                }
+                self.cache.intern(state.clone(), false)?
+            }
+        };
         let dimensions = context.drawing_buffer_size()?;
         let viewport = state.viewport.or(pass.viewport).unwrap_or(Viewport {
             x: 0,
@@ -180,5 +196,45 @@ impl<G: Gl> Context<G> {
     }
     pub(crate) fn apply_render_state(&self, state: &RenderState, pass: &PassState<G>, clear: bool) -> Result<()> {
         self.state_driver.borrow_mut().apply(self, state, pass, clear)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::RuntimeError;
+    use std::cell::Cell;
+
+    #[derive(Default)]
+    struct CountingGl(Cell<usize>);
+    impl Gl for CountingGl {
+        type Object = u32;
+        fn drawing_buffer_size(&self) -> std::result::Result<[u32; 2], RuntimeError> {
+            Ok([8, 8])
+        }
+        fn invoke(&self, _: &str, _: &[GlValue<u32>]) -> std::result::Result<GlValue<u32>, RuntimeError> {
+            self.0.set(self.0.get() + 1);
+            Ok(GlValue::Null)
+        }
+    }
+
+    #[test]
+    fn driver_reuses_the_previous_state_and_stays_bounded() {
+        let ctx = Context::new_webgl2(CountingGl::default());
+        let pass = PassState::default();
+        let state = RenderState::default();
+        ctx.apply_render_state(&state, &pass, false).unwrap();
+        let calls = ctx.gl.0.get();
+        ctx.apply_render_state(&state, &pass, false).unwrap();
+        assert_eq!(ctx.gl.0.get(), calls, "an unchanged state issues no GL calls");
+        // A new viewport every frame used to add a cache entry forever.
+        for i in 0..(MAX_DRIVER_STATES as u32 + 100) {
+            let mut s = state.clone();
+            s.viewport = Some(Viewport { x: 0, y: 0, width: 1 + i, height: 1 });
+            ctx.apply_render_state(&s, &pass, false).unwrap();
+        }
+        let driver = ctx.state_driver.borrow();
+        assert!(driver.cache.len() <= MAX_DRIVER_STATES);
+        assert!(driver.transitions.len() <= MAX_DRIVER_STATES);
     }
 }

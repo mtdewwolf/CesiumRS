@@ -45,6 +45,8 @@ impl<V: VideoElement> VideoSynchronizer<V> {
     pub fn element_mut(&mut self) -> Option<&mut V> {
         self.element.as_mut()
     }
+    /// Keeps the last playback rate, as Cesium does: a new element gets the
+    /// clock's rate when the multiplier next changes.
     pub fn set_element(&mut self, element: Option<V>) {
         self.element = element;
         self.seeking = false;

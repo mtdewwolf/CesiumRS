@@ -3,7 +3,7 @@
 //! the `GeographicTilingScheme` / `WebMercatorTilingScheme` implementations
 //! of Core's `TilingScheme` trait.
 
-use crate::core::math::to_radians;
+use crate::core::math::{negative_pi_to_pi, to_radians};
 use crate::core::{
     Cartesian3, Cartographic, Ellipsoid, GeographicTilingScheme, Rectangle, TilingScheme, WebMercatorProjection,
     WebMercatorTilingScheme,
@@ -154,7 +154,9 @@ pub fn build_tile_grid(
     } else {
         focus_lat.clamp(-FRAC_PI_2, FRAC_PI_2)
     };
-    let focus = Cartographic::new(focus_lon, focus_lat, 0.0);
+    // Wrap the longitude too: just past ±π, the tile lookup below finds no
+    // tile and the window would jump to tile (0, 0).
+    let focus = Cartographic::new(negative_pi_to_pi(focus_lon), focus_lat, 0.0);
     let (cx, cy) = match tiling.position_to_tile_xy(&focus, level) {
         Some(xy) => (xy.x.max(0.0) as u32, xy.y.max(0.0) as u32),
         None => (0, 0),
