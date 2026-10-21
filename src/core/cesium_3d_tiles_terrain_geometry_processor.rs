@@ -168,6 +168,22 @@ pub struct TilesTerrainMeshOptions<'a> {
     pub exaggeration: f64,
     pub exaggeration_relative_height: f64,
 }
+/// The parent mesh fields Cesium's `upsampleMesh` and its worker receive.
+#[derive(Clone, Copy)]
+pub struct TilesTerrainUpsampleOptions<'a> {
+    pub is_east_child: bool,
+    pub is_north_child: bool,
+    pub parent_vertices: &'a [f32],
+    pub parent_indices: &'a TypedArray,
+    pub parent_vertex_count_without_skirts: usize,
+    pub parent_index_count_without_skirts: usize,
+    pub parent_minimum_height: f64,
+    pub parent_maximum_height: f64,
+    pub parent_encoding: &'a TerrainEncoding,
+    pub rectangle: Rectangle,
+    pub ellipsoid: Ellipsoid,
+    pub skirt_height: f64,
+}
 pub struct Cesium3DTilesTerrainGeometryProcessor;
 impl Cesium3DTilesTerrainGeometryProcessor {
     pub fn create_mesh(o: TilesTerrainMeshOptions<'_>) -> Result<TerrainMesh, RuntimeError> {
@@ -259,9 +275,28 @@ impl Cesium3DTilesTerrainGeometryProcessor {
         north: bool,
         skirt_height: f64,
     ) -> Result<TerrainMesh, RuntimeError> {
-        let count = parent.vertex_count_without_skirts;
-        let indices = parent.indices.to_f64_vec();
-        let index_count = parent.index_count_without_skirts.unwrap_or(indices.len());
+        Self::upsample(TilesTerrainUpsampleOptions {
+            is_east_child: east,
+            is_north_child: north,
+            parent_vertices: &parent.vertices,
+            parent_indices: &parent.indices,
+            parent_vertex_count_without_skirts: parent.vertex_count_without_skirts,
+            parent_index_count_without_skirts: parent.index_count_without_skirts.unwrap_or(parent.indices.len()),
+            parent_minimum_height: parent.minimum_height,
+            parent_maximum_height: parent.maximum_height,
+            parent_encoding: &parent.encoding,
+            rectangle,
+            ellipsoid,
+            skirt_height,
+        })
+    }
+    /// Cesium's `upsampleMesh(options)`, taking the parent fields the worker receives.
+    pub fn upsample(o: TilesTerrainUpsampleOptions<'_>) -> Result<TerrainMesh, RuntimeError> {
+        let (east, north, rectangle, ellipsoid, skirt_height) =
+            (o.is_east_child, o.is_north_child, o.rectangle, o.ellipsoid, o.skirt_height);
+        let count = o.parent_vertex_count_without_skirts;
+        let indices = o.parent_indices.to_f64_vec();
+        let index_count = o.parent_index_count_without_skirts.min(indices.len());
         let min = Cartesian2::new(if east { 0.5 } else { 0. }, if north { 0.5 } else { 0. });
         let max = Cartesian2::new(min.x + 0.5, min.y + 0.5);
         let start = if east {
@@ -289,7 +324,7 @@ impl Cesium3DTilesTerrainGeometryProcessor {
                 .iter()
                 .enumerate()
                 .map(|(j, &i)| {
-                    let uv = parent.encoding.decode_texture_coordinates(&parent.vertices, i).unwrap();
+                    let uv = o.parent_encoding.decode_texture_coordinates(o.parent_vertices, i).unwrap();
                     let mut b = [0.; 3];
                     b[j] = 1.;
                     (uv, b)
@@ -372,16 +407,15 @@ impl Cesium3DTilesTerrainGeometryProcessor {
                     let mut height = 0.;
                     let mut normal = Cartesian3::ZERO;
                     for j in 0..3 {
-                        height += parent
-                            .encoding
-                            .decode_height(&parent.vertices, ids[j])
+                        height += o
+                            .parent_encoding
+                            .decode_height(o.parent_vertices, ids[j])
                             .ok_or_else(|| error("Invalid terrain height."))?
                             * weights[j];
-                        if parent.encoding.has_vertex_normals {
+                        if o.parent_encoding.has_vertex_normals {
                             normal = normal.add(
-                                parent
-                                    .encoding
-                                    .decode_normal(&parent.vertices, ids[j])
+                                o.parent_encoding
+                                    .decode_normal(o.parent_vertices, ids[j])
                                     .unwrap()
                                     .multiply_by_scalar(weights[j]),
                             );
@@ -395,7 +429,7 @@ impl Cesium3DTilesTerrainGeometryProcessor {
                         height,
                     );
                     let mut v = TerrainVertex::new(ellipsoid.cartographic_to_cartesian(&c), uv, height);
-                    if parent.encoding.has_vertex_normals {
+                    if o.parent_encoding.has_vertex_normals {
                         v.normal_to_pack = Some(AttributeCompression::oct_encode(normal.normalize()));
                     }
                     set_fields(
@@ -403,8 +437,8 @@ impl Cesium3DTilesTerrainGeometryProcessor {
                         c.latitude,
                         &rectangle,
                         &ellipsoid,
-                        parent.encoding.has_web_mercator_t,
-                        parent.encoding.exaggeration,
+                        o.parent_encoding.has_web_mercator_t,
+                        o.parent_encoding.exaggeration,
                     );
                     if uv.x == 0. {
                         edge[0].push(i);
@@ -445,7 +479,7 @@ impl Cesium3DTilesTerrainGeometryProcessor {
             north_indices_west_to_east: north,
         };
         let mut c = rectangle.center();
-        c.height = (parent.minimum_height + parent.maximum_height) * 0.5;
+        c.height = (o.parent_minimum_height + o.parent_maximum_height) * 0.5;
         let center = ellipsoid.cartographic_to_cartesian(&c);
         build_mesh(
             samples,
@@ -458,10 +492,10 @@ impl Cesium3DTilesTerrainGeometryProcessor {
             [hmin, hmax],
             None,
             skirt_height,
-            parent.encoding.has_vertex_normals,
-            parent.encoding.has_web_mercator_t,
-            parent.encoding.exaggeration,
-            parent.encoding.exaggeration_relative_height,
+            o.parent_encoding.has_vertex_normals,
+            o.parent_encoding.has_web_mercator_t,
+            o.parent_encoding.exaggeration,
+            o.parent_encoding.exaggeration_relative_height,
         )
     }
 }

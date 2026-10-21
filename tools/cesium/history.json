@@ -214,5 +214,29 @@
     "ported": 353,
     "implemented": 0,
     "validatedPercent": 31.15
+  },
+  {
+    "milestone": "Workers terrain and packet boundaries",
+    "date": "2026-10-21",
+    "percent": 31.42,
+    "ported": 357,
+    "implemented": 0,
+    "validatedPercent": 31.42
+  },
+  {
+    "milestone": "Workers vector tiles",
+    "date": "2026-10-21",
+    "percent": 31.85,
+    "ported": 362,
+    "implemented": 0,
+    "validatedPercent": 31.85
+  },
+  {
+    "milestone": "Workers Gaussian splats",
+    "date": "2026-10-21",
+    "percent": 31.87,
+    "ported": 364,
+    "implemented": 0,
+    "validatedPercent": 31.87
   }
 ]

@@ -1696,5 +1696,60 @@
     "status": "ported",
     "rust": "workers::create_geometry",
     "note": "Owned typed/packed/ready subtasks, reusable built-in/custom async module registry, concurrent start, ordered output and prompt batch failure. Explicit host registration replaces dynamic import. Exact PrimitivePipeline create-result wire layout; nine direct worker cases plus native thread, async ordering/reuse/failure and corrupt-buffer regressions."
+  },
+  "Workers/createVerticesFromCesium3DTilesTerrain": {
+    "status": "ported",
+    "rust": "workers::terrain::create_vertices_from_cesium_3d_tiles_terrain",
+    "note": "TerrainMeshProxy with owned vertices, sized index/edge buffers, skirt counts and full encoding from the native glTF/meshopt processor. 37 direct worker cases over grids, normals, meshopt, levels, exaggeration and a rejected glTF."
+  },
+  "Workers/upsampleVerticesFromCesium3DTilesTerrain": {
+    "status": "ported",
+    "rust": "workers::terrain::upsample_vertices_from_cesium_3d_tiles_terrain",
+    "note": "Worker options (parent vertices/indices/counts/heights/encoding) replace a TerrainMesh argument; child proxy with heights, bounds and Cesium's always-undefined horizon point. 144 direct worker cases fed by the creation worker's own output, all four quadrants."
+  },
+  "Workers/createVerticesFromGoogleEarthEnterpriseBuffer": {
+    "status": "ported",
+    "rust": "core::google_earth_enterprise_terrain_processor",
+    "note": "Faithful quad parsing, epsilon border deduplication, skirts, Web Mercator/geodetic-normal encoding and DataView/array-length failures; GoogleEarthEnterpriseTerrainData now uses it. Required geographic rectangle replaces Cesium's throwing native-rectangle path. 24 direct worker cases including malformed tiles."
+  },
+  "Workers/decodeGoogleEarthEnterprisePacket": {
+    "status": "ported",
+    "rust": "workers::terrain::decode_google_earth_enterprise_packet",
+    "note": "Typed packet kinds; XOR decoding, zlib/gzip inflation with both header byte orders, quadtree metadata, five-mesh terrain splitting and dbRoot buffers. 29 direct worker cases including every header/offset failure and short instance lists."
+  },
+  "Workers/createVectorTilePoints": {
+    "status": "ported",
+    "rust": "workers::vector_tiles::create_vector_tile_points",
+    "note": "Zig-zag delta decoding and cartographic dequantization from the packed height/rectangle/ellipsoid buffer into Float64 positions. 13 direct worker cases over rectangles, ellipsoids, empty and boundary inputs."
+  },
+  "Workers/createVectorTilePolylines": {
+    "status": "ported",
+    "rust": "workers::vector_tiles::create_vector_tile_polylines",
+    "note": "Four-vertex segment expansion with previous/next positions, widths, batch ids and index wrapping; JS typed-array reads/writes past buffers kept (NaN reads, dropped writes). Optional decoded positions/offsets. 15 direct worker cases including the 32-bit index boundary."
+  },
+  "Workers/createVectorTileClampedPolylines": {
+    "status": "ported",
+    "rust": "workers::vector_tiles::create_vector_tile_clamped_polylines",
+    "note": "Consecutive duplicate removal, loop detection, mitered start/end faces with the 150 degree break, eight-vertex volumes and reversed reference indices. 15 direct worker cases including loops, reversals, duplicates and 32-bit indices."
+  },
+  "Workers/createVectorTilePolygons": {
+    "status": "ported",
+    "rust": "workers::vector_tiles::create_vector_tile_polygons",
+    "note": "Color batching in JavaScript object-key order, extruded top/bottom/wall indices, per-polygon heights, oriented bounding boxes and the packed draw-call buffer. Indices are reinterpreted by the packed element size. 13 direct worker cases including 32-bit indices."
+  },
+  "Workers/createVectorTileGeometries": {
+    "status": "ported",
+    "rust": "workers::vector_tiles::create_vector_tile_geometries",
+    "note": "Instanced unit boxes, cylinders, ellipsoids and spheres with Float32 parameters, tile model matrix, bounding spheres and Vector3DTileBatch packing. 15 direct worker cases including 32-bit indices and missing-input behavior."
+  },
+  "Workers/gaussianSplatSorter": {
+    "status": "ported",
+    "rust": "workers::gaussian_splats::gaussian_splat_sorter",
+    "note": "Native port of @cesium/wasm-splats radix_sort_gaussians_indexes: view-depth quantization, saturating casts, wrapping offset and four stable 8-bit passes. No Wasm module is compiled, so the initialization message has no counterpart. 19 direct worker cases against the real Wasm, including saturated depth ranges, NaN, ties and length errors."
+  },
+  "Workers/gaussianSplatTextureGenerator": {
+    "status": "ported",
+    "rust": "workers::gaussian_splats::gaussian_splat_texture_generator",
+    "note": "Native port of @cesium/wasm-splats generate_splat_texture: Float32 position bits, ILM half-float covariance and RGBA8 colors in a 2048-wide RGBA32UI texture. 14 direct worker cases against the real Wasm, including row boundaries, denormal/overflow/NaN covariances and unnormalized rotations."
   }
 }

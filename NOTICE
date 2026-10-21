@@ -25,3 +25,8 @@ The KTX2 codec compatibility path follows Basis Universal 1.16.4
 The portable meshoptimizer vertex codec decoder is adapted from meshoptimizer
 Copyright (c) 2016-2026 Arseny Kapoulkine, licensed under the MIT License.
 See assets/Meshoptimizer-LICENSE.md.
+
+The Gaussian splat sorter and texture generator follow @cesium/wasm-splats
+0.1.0-alpha.2 (Apache-2.0):
+    cesium-wasm-utils - https://github.com/CesiumGS/cesium-wasm-utils
+    Copyright Cesium GS, Inc.
