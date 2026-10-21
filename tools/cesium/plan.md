@@ -52,7 +52,7 @@ commands. It adds framebuffers/renderbuffers/multisample targets, hardware limit
 shader builders/caches and texture caches. The next completed batch adds
 FramebufferManager, ComputeCommand, ComputeEngine and Sync, plus the explicitly
 owned viewport quad. Validation now covers 387 portable
-Renderer cases, 352 Chromium GPU assertions and native ownership, cache, callback
+Renderer cases, 361 Chromium GPU assertions and native ownership, cache, callback
 and failure regressions. See [Renderer API and validation](docs/renderer-foundation.md).
 
 Remaining batches, in dependency order:

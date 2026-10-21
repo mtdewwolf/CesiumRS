@@ -1470,7 +1470,7 @@
   "Renderer/FramebufferManager": {
     "status": "ported",
     "rust": "renderer::framebuffer_manager",
-    "note": "Owned/borrowed attachments, dirty/reuse/resize, MRT, depth/stencil textures/renderbuffers, MSAA resolve, clear routing and reusable destruction. Exact GPU pixels/metadata plus native ownership and atomic failure regressions; failed updates preserve the previous target."
+    "note": "Owned/borrowed attachments, dirty/reuse/resize, MRT, depth/stencil textures/renderbuffers, MSAA resolve, clear routing and reusable destruction. Exact GPU pixels/metadata plus native ownership and atomic failure regressions; failed updates preserve the previous target. Dirty state accumulates across setters; ordinary-depth MSAA is rejected before mutation (use paired depth-stencil resources), correcting inherited Cesium behavior."
   },
   "Renderer/ComputeCommand": {
     "status": "ported",

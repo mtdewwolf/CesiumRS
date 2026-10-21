@@ -50,6 +50,11 @@ releases target objects while retaining attachments; `destroy` also releases
 owned attachments and permits a later `update`, as in Cesium. Updates build a
 candidate before releasing the current target, so failed construction preserves
 the previous valid framebuffer and caller-owned resources.
+Attachment changes remain dirty until a successful update, even if a later setter
+receives an unchanged handle. Ordinary depth attachments require one sample;
+multisampled depth uses the paired depth-stencil path. Requesting ordinary depth
+with multiple samples returns an error before allocating or replacing resources,
+preserving the existing depth-capable target.
 
 Compute pre-execution callbacks can update resources or replace/remove themselves
 before validation. Post-execution runs after submission and transient cleanup.
@@ -109,7 +114,7 @@ Resources stay on their context's owning thread.
 
 The original foundation's 187 portable cases and 173 GPU assertions continue to
 pass. The extended suite has **387 portable Renderer reference cases** and
-**352 Chromium GPU assertions**, plus native ownership/cache/failure tests.
+**361 Chromium GPU assertions**, plus native ownership/cache/failure tests.
 
 1. **Targets, textures and state:** GPU comparison covers command/pass target
    precedence, renderbuffer/depth attachment metadata/status, framebuffer copies,
@@ -130,7 +135,7 @@ pass. The extended suite has **387 portable Renderer reference cases** and
 3. **Lifetime and commands:** native regressions cover buffer/VAO sharing,
    destruction/retry, injected setup failures, derived shader replacement and
    release, texture cache leases, per-draw callbacks, command dirty tracking and
-   clones. All 241 Rust tests and 63 existing Core Chromium checks pass.
+   clones. All 243 Rust tests and 63 existing Core Chromium checks pass.
 4. **Managed targets, compute and fences:** GPU comparisons cover target reuse,
    resizing, multiple color attachments, depth/depth-stencil texture/renderbuffer
    choices, multisample resolve, clear-command preservation and destruction.
@@ -141,6 +146,11 @@ pass. The extended suite has **387 portable Renderer reference cases** and
    defaults, the viewport shader and exact fence polling/timeout counts. Native
    regressions inject construction, submission, scheduling and deletion failures,
    and check external ownership and callbacks that remove themselves.
+   Review regressions also verify every attachment setter preserves pending dirty
+   state, MRT pixels follow replacement attachments, and rejected ordinary-depth
+   multisampling leaves the previous framebuffer usable. These fix two inherited
+   Cesium manager bugs; the reference MRT setup explicitly preserves its dirty
+   flag to obtain the intended replacement pixels.
 
 Preserved reference details include constant attributes being context state,
 index offsets measured in indices and converted to bytes, count clamping against

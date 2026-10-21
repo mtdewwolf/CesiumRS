@@ -66,7 +66,7 @@ macro_rules! depth_accessors {
                 !self.options.create_depth_attachments,
                 "create_depth_attachments must be false to set depth resources",
             )?;
-            self.attachments_dirty = !same_handle(&self.$field, &value);
+            self.attachments_dirty |= !same_handle(&self.$field, &value);
             self.$field = value;
             Ok(())
         }
@@ -145,6 +145,10 @@ impl<G: Gl> FramebufferManager<G> {
         let samples = num_samples.unwrap_or(1);
         ensure(samples > 0, "Sample count must be positive")?;
         ensure(width > 0 && height > 0, "Framebuffer dimensions must be positive")?;
+        ensure(
+            !(self.options.depth && samples > 1),
+            "Ordinary depth attachments do not support multisampling; use depth_stencil",
+        )?;
         let datatype = datatype.or(self.datatype).or(self.options.color.then_some(PixelDatatype::UnsignedByte));
         let format = format.or(self.format).or(self.options.color.then_some(PixelFormat::Rgba));
         if !self.is_dirty(width, height, Some(samples), datatype, format) {
@@ -279,7 +283,7 @@ impl<G: Gl> FramebufferManager<G> {
             "create_color_attachments must be false to set color resources",
         )?;
         ensure(index < self.colors.len(), "Color attachment index out of range")?;
-        self.attachments_dirty = !same_handle(&self.colors[index], &value);
+        self.attachments_dirty |= !same_handle(&self.colors[index], &value);
         self.colors[index] = value;
         Ok(())
     }
@@ -289,7 +293,7 @@ impl<G: Gl> FramebufferManager<G> {
             "create_color_attachments must be false to set color resources",
         )?;
         ensure(index < self.color_buffers.len(), "Color attachment index out of range")?;
-        self.attachments_dirty = !same_handle(&self.color_buffers[index], &value);
+        self.attachments_dirty |= !same_handle(&self.color_buffers[index], &value);
         self.color_buffers[index] = value;
         Ok(())
     }

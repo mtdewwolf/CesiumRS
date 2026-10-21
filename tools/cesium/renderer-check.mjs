@@ -187,6 +187,26 @@ try {
     const retained=color?m.getColorTexture():undefined;m.destroy();const expected={snapshots,destroyed:retained?.isDestroyed()??null,framebufferRemoved:!!(samples>1?!m._multisampleFramebuffer:!m.framebuffer)};
     eq(JSON.parse(wasm.renderer_manager(gl,JSON.stringify(config))),expected,'managed framebuffer reuse, resize, attachments and resolve '+JSON.stringify(config));eq(gl.getError(),gl.NO_ERROR,'Rust managed target GL status');eq(context._gl.getError(),gl.NO_ERROR,'Cesium managed target GL status');context._currentFramebuffer=undefined;
   }
+  // Correct two inherited manager bugs: unsupported ordinary-depth MSAA must
+  // reject before replacing the target, and unchanged setters must not clear
+  // another attachment's pending dirty flag.
+  for(const mode of [0,1]){
+    const m=new ref.FramebufferManager({depth:true,supportsDepthTexture:mode===1});m.update(context,4,2);
+    const original=m.framebuffer;new ref.ClearCommand({color:new ref.Color(1,0,0,1),depth:.5,framebuffer:original}).execute(context);
+    const expected={rejected:true,sameFramebuffer:true,samples:1,depth:original.hasDepthAttachment,pixels:Array.from(context.readPixels({framebuffer:original,width:4,height:2}))};
+    eq(JSON.parse(wasm.renderer_manager_review(gl,mode)),expected,'reject ordinary multisample depth and preserve target '+mode);eq(gl.getError(),gl.NO_ERROR,'Rust rejected depth MSAA GL status');eq(context._gl.getError(),gl.NO_ERROR,'reference single-sample depth GL status');m.destroy();context._currentFramebuffer=undefined;
+  }
+  {
+    const make=()=>new ref.Texture({context,width:4,height:2}),a=make(),b=make(),replacement=make(),depth=new ref.Renderbuffer({context,width:4,height:2,format:ref.RenderbufferFormat.DEPTH_COMPONENT16});
+    const m=new ref.FramebufferManager({colorAttachmentsLength:2,depth:true,createColorAttachments:false,createDepthAttachments:false});m.setColorTexture(a,0);m.setColorTexture(b,1);m.setDepthRenderbuffer(depth);m.update(context,4,2);const original=m.framebuffer;
+    m.clear(context,new ref.ClearCommand({color:new ref.Color(1,0,0,1)}),new ref.PassState(context));m.setColorTexture(replacement,0);m.setColorTexture(b,1);m.setDepthRenderbuffer(depth);
+    // Repair the pinned JS flag to obtain the intended reference pixels.
+    m._attachmentsDirty=true;const dirty=m.isDirty(4,2);m.update(context,4,2);m.clear(context,new ref.ClearCommand({color:new ref.Color(0,0,1,1)}),new ref.PassState(context));
+    const pixels=[a,replacement,b].map(texture=>{const f=new ref.Framebuffer({context,colorTextures:[texture],destroyAttachments:false});const p=Array.from(context.readPixels({framebuffer:f,width:4,height:2}));f.destroy();context._currentFramebuffer=undefined;return p;});
+    const expected={dirty,rebuilt:m.framebuffer!==original,newFramebuffer:m.framebuffer!==original,sameGetterAttachment:m.framebuffer.getColorTexture(0)===replacement,pixels};
+    eq(JSON.parse(wasm.renderer_manager_review(gl,2)),expected,'external attachment dirty state and actual framebuffer pixels');eq(gl.getError(),gl.NO_ERROR,'Rust external attachment replacement GL status');eq(context._gl.getError(),gl.NO_ERROR,'reference external attachment replacement GL status');m.destroy();for(const texture of [a,b,replacement])texture.destroy();depth.destroy();context._currentFramebuffer=undefined;
+  }
+
   for(const custom of [false,true])for(const persists of [false,true]){
     const context=new ref.Context(canvas(),{webgl:{antialias:false,alpha:true,stencil:true}});
     const config={custom,persists},fragmentShaderSource='in vec2 v_textureCoordinates;uniform sampler2D inputTexture;uniform float scale;void main(){if(v_textureCoordinates.x<0.5){discard;}out_FragColor=texture(inputTexture,v_textureCoordinates)*scale;}';

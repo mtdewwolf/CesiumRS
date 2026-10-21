@@ -372,6 +372,92 @@ mod browser {
     }
 
     #[wasm_bindgen]
+    pub fn renderer_manager_review(gl: JsValue, mode: u32) -> Result<String, JsValue> {
+        use std::rc::Rc;
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let make = || Texture::new(&ctx, TextureOptions::rgba(4, 2), None).map(Rc::new).map_err(error);
+        let read = |texture: Rc<Texture<BrowserGl>>| -> Result<Vec<u8>, JsValue> {
+            let f = Framebuffer::new(
+                &ctx,
+                FramebufferOptions {
+                    colors: vec![Attachment::Texture(texture)],
+                    destroy_attachments: false,
+                    ..Default::default()
+                },
+            )
+            .map_err(error)?;
+            Ok(ctx
+                .read_pixels_from(ReadState {
+                    region: TextureRegion { x: 0, y: 0, width: 4, height: 2 },
+                    framebuffer: Some(&f),
+                })
+                .map_err(error)?
+                .bytes)
+        };
+        if mode < 2 {
+            let mut manager = FramebufferManager::new(FramebufferManagerOptions {
+                depth: true,
+                supports_depth_texture: mode == 1,
+                ..Default::default()
+            })
+            .map_err(error)?;
+            manager.update(&ctx, 4, 2, None, None, None).map_err(error)?;
+            let original = manager.framebuffer().unwrap().clone();
+            let result = manager.update(&ctx, 4, 2, Some(4), None, None);
+            let rejected = result.err().is_some_and(|e| e.message.contains("use depth_stencil"));
+            manager
+                .clear(
+                    &ctx,
+                    &ClearCommand { color: Some([1., 0., 0., 1.]), depth: Some(0.5), ..Default::default() },
+                    &PassState::default(),
+                )
+                .map_err(error)?;
+            manager.prepare_textures(false).map_err(error)?;
+            return Ok(json!({"rejected":rejected,"sameFramebuffer":Rc::ptr_eq(&original,manager.framebuffer().unwrap()),"samples":manager.num_samples(),"depth":manager.framebuffer().unwrap().has_depth_attachment(),"pixels":read(manager.color_texture(0).map_err(error)?.unwrap().clone())?}).to_string());
+        }
+        let a = make()?;
+        let b = make()?;
+        let replacement = make()?;
+        let depth = Rc::new(
+            Renderbuffer::new(
+                &ctx,
+                RenderbufferOptions {
+                    format: RenderbufferFormat::DepthComponent16,
+                    width: Some(4),
+                    height: Some(2),
+                    num_samples: 1,
+                },
+            )
+            .map_err(error)?,
+        );
+        let mut manager = FramebufferManager::new(FramebufferManagerOptions {
+            color_attachments_length: 2,
+            depth: true,
+            create_color_attachments: false,
+            create_depth_attachments: false,
+            ..Default::default()
+        })
+        .map_err(error)?;
+        manager.set_color_texture(0, Some(a.clone())).map_err(error)?;
+        manager.set_color_texture(1, Some(b.clone())).map_err(error)?;
+        manager.set_depth_renderbuffer(Some(depth.clone())).map_err(error)?;
+        manager.update(&ctx, 4, 2, None, None, None).map_err(error)?;
+        let original = manager.framebuffer().unwrap().clone();
+        manager
+            .clear(&ctx, &ClearCommand { color: Some([1., 0., 0., 1.]), ..Default::default() }, &PassState::default())
+            .map_err(error)?;
+        manager.set_color_texture(0, Some(replacement.clone())).map_err(error)?;
+        manager.set_color_texture(1, Some(b.clone())).map_err(error)?;
+        manager.set_depth_renderbuffer(Some(depth)).map_err(error)?;
+        let dirty = manager.is_dirty(4, 2, None, None, None);
+        let rebuilt = manager.update(&ctx, 4, 2, None, None, None).map_err(error)?;
+        manager
+            .clear(&ctx, &ClearCommand { color: Some([0., 0., 1., 1.]), ..Default::default() }, &PassState::default())
+            .map_err(error)?;
+        Ok(json!({"dirty":dirty,"rebuilt":rebuilt,"newFramebuffer":!Rc::ptr_eq(&original,manager.framebuffer().unwrap()),"sameGetterAttachment":Rc::ptr_eq(manager.framebuffer().unwrap().color_texture(0).unwrap(),&replacement),"pixels":[read(a)?,read(replacement)?,read(b)?]}).to_string())
+    }
+
+    #[wasm_bindgen]
     pub fn renderer_compute(gl: JsValue, config: &str) -> Result<String, JsValue> {
         use std::{
             cell::{Cell, RefCell},

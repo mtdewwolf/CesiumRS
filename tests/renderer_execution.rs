@@ -243,6 +243,95 @@ fn manager_borrows_external_attachments_and_rejects_foreign_resources() {
     .is_err());
 }
 #[test]
+fn manager_rejects_plain_multisample_depth_before_mutating_resources() {
+    for supports_depth_texture in [false, true] {
+        for create_depth_attachments in [false, true] {
+            let host = Host::default();
+            let ctx = Context::new_webgl2(host.clone());
+            let mut manager = FramebufferManager::new(FramebufferManagerOptions {
+                depth: true,
+                supports_depth_texture,
+                create_depth_attachments,
+                ..Default::default()
+            })
+            .unwrap();
+            if !create_depth_attachments {
+                let depth = Rc::new(
+                    Renderbuffer::new(
+                        &ctx,
+                        RenderbufferOptions {
+                            format: RenderbufferFormat::DepthComponent16,
+                            width: Some(4),
+                            height: Some(2),
+                            num_samples: 1,
+                        },
+                    )
+                    .unwrap(),
+                );
+                manager.set_depth_renderbuffer(Some(depth)).unwrap();
+            }
+            manager.update(&ctx, 4, 2, None, None, None).unwrap();
+            let framebuffer = manager.framebuffer().unwrap().clone();
+            let color = manager.color_texture(0).unwrap().unwrap().clone();
+            let before = host.0.calls.borrow().len();
+            let error = manager.update(&ctx, 4, 2, Some(4), None, None).unwrap_err();
+            assert!(error.message.contains("depth_stencil"));
+            assert_eq!(host.0.calls.borrow().len(), before);
+            assert!(Rc::ptr_eq(&framebuffer, manager.framebuffer().unwrap()));
+            assert!(framebuffer.has_depth_attachment());
+            assert!(!framebuffer.is_destroyed());
+            assert!(!color.is_destroyed());
+            assert_eq!(manager.num_samples(), 1);
+            assert!(!manager.update(&ctx, 4, 2, None, None, None).unwrap());
+        }
+    }
+}
+
+#[test]
+fn manager_dirty_flag_survives_unchanged_attachment_setters() {
+    let host = Host::default();
+    let ctx = Context::new_webgl2(host.clone());
+    let mut manager = FramebufferManager::new(FramebufferManagerOptions {
+        color_attachments_length: 2,
+        create_color_attachments: false,
+        create_depth_attachments: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let texture = || Rc::new(Texture::new(&ctx, TextureOptions::rgba(4, 2), None).unwrap());
+    let a = texture();
+    let b = texture();
+    let replacement = texture();
+    manager.set_color_texture(0, Some(a.clone())).unwrap();
+    manager.set_color_texture(1, Some(b.clone())).unwrap();
+    manager.update(&ctx, 4, 2, None, None, None).unwrap();
+    let original = manager.framebuffer().unwrap().clone();
+    manager.set_color_texture(0, Some(replacement.clone())).unwrap();
+    macro_rules! still_dirty {
+        ($call:expr) => {
+            $call.unwrap();
+            assert!(manager.is_dirty(4, 2, None, None, None));
+        };
+    }
+    still_dirty!(manager.set_color_texture(1, Some(b)));
+    still_dirty!(manager.set_color_renderbuffer(0, None));
+    still_dirty!(manager.set_depth_texture(None));
+    still_dirty!(manager.set_depth_renderbuffer(None));
+    still_dirty!(manager.set_depth_stencil_texture(None));
+    still_dirty!(manager.set_depth_stencil_renderbuffer(None));
+    assert!(manager.update(&ctx, 4, 2, None, None, None).unwrap());
+    assert!(original.is_destroyed());
+    assert!(!a.is_destroyed());
+    assert!(!replacement.is_destroyed());
+    assert!(Rc::ptr_eq(manager.framebuffer().unwrap().color_texture(0).unwrap(), &replacement));
+    assert!(!manager.is_dirty(4, 2, None, None, None));
+    manager.set_color_texture(0, Some(replacement)).unwrap();
+    manager.set_depth_texture(None).unwrap();
+    assert!(!manager.is_dirty(4, 2, None, None, None));
+    assert!(!manager.update(&ctx, 4, 2, None, None, None).unwrap());
+}
+
+#[test]
 fn compute_prepares_before_validation_and_honors_persistence() {
     for persists in [false, true] {
         let host = Host::default();

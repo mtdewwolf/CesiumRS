@@ -82,7 +82,7 @@ commands. It adds framebuffers/renderbuffers/multisample targets, hardware limit
 shader builders/caches and texture caches. The next completed batch adds
 FramebufferManager, ComputeCommand, ComputeEngine and Sync, plus the explicitly
 owned viewport quad. Validation now covers 387 portable
-Renderer cases, 352 Chromium GPU assertions and native ownership, cache, callback
+Renderer cases, 361 Chromium GPU assertions and native ownership, cache, callback
 and failure regressions. See [Renderer API and validation](docs/renderer-foundation.md).
 
 Remaining batches, in dependency order:
@@ -1003,7 +1003,7 @@ Remaining batches, in dependency order:
 | CubeMapFace | 416 | ⬜ todo |  |  |
 | DrawCommand | 645 | ✅ ported | `renderer::draw_command` | Submission, framebuffer precedence, static and per-draw callback uniforms/textures, model transform, Scene metadata/flags, dirty snapshots, shallow clones and derived-command maps; GPU and native contracts. |
 | Framebuffer | 448 | ✅ ported | `renderer::framebuffer` | Texture/renderbuffer color/depth/stencil attachments, status/getters/read/draw binding, ownership and blits; Chromium target, converted RGBA typed/PBO reads, copy and multisample checks plus native ownership/cross-context regressions. RG and unsigned integer attachments are supported; readback corrects pinned Cesium non-RGBA allocation/debug-check inconsistencies. |
-| FramebufferManager | 490 | ✅ ported | `renderer::framebuffer_manager` | Owned/borrowed attachments, dirty/reuse/resize, MRT, depth/stencil textures/renderbuffers, MSAA resolve, clear routing and reusable destruction. Exact GPU pixels/metadata plus native ownership and atomic failure regressions; failed updates preserve the previous target. |
+| FramebufferManager | 490 | ✅ ported | `renderer::framebuffer_manager` | Owned/borrowed attachments, dirty/reuse/resize, MRT, depth/stencil textures/renderbuffers, MSAA resolve, clear routing and reusable destruction. Exact GPU pixels/metadata plus native ownership and atomic failure regressions; failed updates preserve the previous target. Dirty state accumulates across setters; ordinary-depth MSAA is rejected before mutation (use paired depth-stencil resources), correcting inherited Cesium behavior. |
 | MipmapHint | 20 | ✅ ported | `renderer::enums::MipmapHint` | Typed constants and validation checked against pinned CesiumJS fixtures. |
 | MultisampleFramebuffer | 137 | ✅ ported | `renderer::multisample_framebuffer` | Paired render/resolve attachments, getters, color/depth/stencil blit selection and destruction; Chromium resolve path validated against CesiumJS. |
 | Pass | 30 | ✅ ported | `renderer::enums::Pass` | All 13 pass values checked against pinned CesiumJS fixtures. |

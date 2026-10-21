@@ -48,7 +48,7 @@ commands run fragment shaders into output textures with lifecycle callbacks;
 GPU fences support scheduled asynchronous waits.
 
 Eight of the original nine partial modules are now complete. Renderer validation
-covers 387 pinned CesiumJS cases, native lifecycle/cache/failure tests and 352
+covers 387 pinned CesiumJS cases, native lifecycle/cache/failure tests and 361
 Chromium GPU assertions. Context backend/lifecycle helpers and complete Scene
 frame updates in UniformState/AutomaticUniforms remain partial.
 [Renderer API, validation and remaining work](docs/renderer-foundation.md) records
@@ -66,7 +66,7 @@ to the host. The Core tracker now has 270 validated modules and 18 documented n/
 
 The 35 formerly partial Core modules now have their missing implementation and backend work: resource execution/retries, all HTTP verbs, JSONP/XML/image loading, request statistics, dynamic terrain sampling, geocoder transport/parsing, R-tree collision behavior, IDN normalization, credits, image/video/task adapters, and portable Basis decoding for KTX2. Packing, interpolation and geometry contracts connect to the existing numeric and geometry codecs.
 
-These 35 Core modules and the KTX2 worker calculation now pass reference and runtime checks: 617 new CesiumJS cases, native HTTP/worker lifecycle tests and browser runtime checks. Validation fixed GEE decoding, Basis output/configuration differences and terrain error propagation. [Validation details and commands](docs/core-validation.md) record the coverage and host adaptations. The final 20 Core modules are also complete: network terrain/GEE/3D Tiles processing, Ion/platform clients, ground polylines, screen-space events and text/pin rendering. The full suite now covers 241 Rust tests, 63 Core Chromium checks and 352 Renderer Chromium assertions.
+These 35 Core modules and the KTX2 worker calculation now pass reference and runtime checks: 617 new CesiumJS cases, native HTTP/worker lifecycle tests and browser runtime checks. Validation fixed GEE decoding, Basis output/configuration differences and terrain error propagation. [Validation details and commands](docs/core-validation.md) record the coverage and host adaptations. The final 20 Core modules are also complete: network terrain/GEE/3D Tiles processing, Ion/platform clients, ground polylines, screen-space events and text/pin rendering. The full suite now covers 243 Rust tests, 63 Core Chromium checks and 361 Renderer Chromium assertions.
 
 Native applications enable `native-host` for `NativeTransport`, `NativeTimer` and cooperative worker threads. `ResourceClient` drives its shared scheduler when a response future is polled. `Resource` fetch methods return an optional future for scheduling deferral and an optional result for no-content or deferred retries. Missing sampled terrain heights use NaN because `Cartographic.height` is numeric.
 
