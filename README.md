@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 31.0% implemented; 31.0% validated** (321 validated modules, 0 implemented awaiting validation, and 0 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
+**Status: 31.1% implemented; 31.1% validated** (353 validated modules, 0 implemented awaiting validation, and 0 partial of 1,266 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
 
 ## What is ported
 
@@ -50,6 +50,16 @@ facade GPU buffers and shared-canvas presentation. Native hosts implement `Gl`.
 [Renderer API and validation](docs/renderer-foundation.md) documents ownership,
 frame inputs and the remaining viewer/native-driver integration work.
 
+### Workers completion underway
+
+**37 of 53 Workers modules** are now ported. The first completion batch adds all
+31 geometry worker entry points and the `createGeometry` batch dispatcher, with
+typed and offset-packed inputs, asynchronous custom modules, ordered results and
+Cesium-compatible result buffers. **474 direct CesiumJS worker cases** and native
+thread/async regressions validate this batch. The remaining 16 cover vector tiles,
+terrain/packet boundaries, splats, specialized codecs, combination and messaging.
+[Workers API, validation and remaining work](docs/workers.md).
+
 ### Ion and platform clients
 
 `Ion`, `IonResource`, `IonGeocoderService`, `GoogleMaps` and `ITwinPlatform` now
@@ -62,7 +72,7 @@ to the host. The Core tracker now has 270 validated modules and 18 documented n/
 
 The 35 formerly partial Core modules now have their missing implementation and backend work: resource execution/retries, all HTTP verbs, JSONP/XML/image loading, request statistics, dynamic terrain sampling, geocoder transport/parsing, R-tree collision behavior, IDN normalization, credits, image/video/task adapters, and portable Basis decoding for KTX2. Packing, interpolation and geometry contracts connect to the existing numeric and geometry codecs.
 
-These 35 Core modules and the KTX2 worker calculation now pass reference and runtime checks: 617 new CesiumJS cases, native HTTP/worker lifecycle tests and browser runtime checks. Validation fixed GEE decoding, Basis output/configuration differences and terrain error propagation. [Validation details and commands](docs/core-validation.md) record the coverage and host adaptations. The final 20 Core modules are also complete: network terrain/GEE/3D Tiles processing, Ion/platform clients, ground polylines, screen-space events and text/pin rendering. The full suite now covers 262 Rust tests, 63 Core Chromium checks and 1,720 Renderer Chromium assertions.
+These 35 Core modules and the KTX2 worker calculation now pass reference and runtime checks: 617 new CesiumJS cases, native HTTP/worker lifecycle tests and browser runtime checks. Validation fixed GEE decoding, Basis output/configuration differences and terrain error propagation. [Validation details and commands](docs/core-validation.md) record the coverage and host adaptations. The final 20 Core modules are also complete: network terrain/GEE/3D Tiles processing, Ion/platform clients, ground polylines, screen-space events and text/pin rendering. The full suite now covers 300 Rust tests, 63 Core Chromium checks and 1,720 Renderer Chromium assertions.
 
 Native applications enable `native-host` for `NativeTransport`, `NativeTimer` and cooperative worker threads. `ResourceClient` drives its shared scheduler when a response future is polled. `Resource` fetch methods return an optional future for scheduling deferral and an optional result for no-content or deferred retries. Missing sampled terrain heights use NaN because `Cartographic.height` is numeric.
 
@@ -94,7 +104,7 @@ The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **27,381 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **27,855 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
 
 ```bash
 cargo test --all-features                    # all fixtures + native host integration

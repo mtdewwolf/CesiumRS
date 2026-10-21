@@ -66,6 +66,13 @@ pub struct PlaneOutlineGeometry;
 impl PlaneOutlineGeometry {
     pub const PACKED_LENGTH: usize = 0;
 
+    /// Plane outlines have no packed fields.
+    pub fn pack(&self, _array: &mut [f64], _starting_index: usize) {}
+
+    pub fn unpack(_array: &[f64], _starting_index: usize) -> Self {
+        Self
+    }
+
     pub fn create_geometry(&self) -> Geometry {
         let attributes = GeometryAttributes {
             position: Some(GeometryAttribute::doubles(3, POSITIONS.to_vec())),
