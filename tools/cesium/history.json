@@ -206,5 +206,13 @@
     "ported": 321,
     "implemented": 0,
     "validatedPercent": 31.01
+  },
+  {
+    "milestone": "Workers geometry entry points and batch dispatch",
+    "date": "2026-10-21",
+    "percent": 31.15,
+    "ported": 353,
+    "implemented": 0,
+    "validatedPercent": 31.15
   }
 ]

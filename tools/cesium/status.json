@@ -1536,5 +1536,165 @@
     "status": "ported",
     "rust": "renderer::freeze_render_state",
     "note": "Owned FrozenRenderState provides structural deep immutability through shared references; cache bookkeeping stays separate. Native nested snapshot regression and existing Cesium RenderState/cache reference checks."
+  },
+  "Workers/createBoxGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_box_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createBoxOutlineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_box_outline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createCircleGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_circle_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createCircleOutlineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_circle_outline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createCoplanarPolygonGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_coplanar_polygon_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createCoplanarPolygonOutlineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_coplanar_polygon_outline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createCorridorGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_corridor_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createCorridorOutlineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_corridor_outline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createCylinderGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_cylinder_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createCylinderOutlineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_cylinder_outline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createEllipseGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_ellipse_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createEllipseOutlineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_ellipse_outline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createEllipsoidGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_ellipsoid_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createEllipsoidOutlineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_ellipsoid_outline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createFrustumGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_frustum_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createFrustumOutlineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_frustum_outline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createGroundPolylineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_ground_polyline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createPlaneGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_plane_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createPlaneOutlineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_plane_outline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createPolygonGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_polygon_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createPolygonOutlineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_polygon_outline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createPolylineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_polyline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createPolylineVolumeGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_polyline_volume_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createPolylineVolumeOutlineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_polyline_volume_outline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createRectangleGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_rectangle_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createRectangleOutlineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_rectangle_outline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createSimplePolylineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_simple_polyline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createSphereGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_sphere_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createSphereOutlineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_sphere_outline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createWallGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_wall_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createWallOutlineGeometry": {
+    "status": "ported",
+    "rust": "workers::geometry::create_wall_outline_geometry",
+    "note": "Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction."
+  },
+  "Workers/createGeometry": {
+    "status": "ported",
+    "rust": "workers::create_geometry",
+    "note": "Owned typed/packed/ready subtasks, reusable built-in/custom async module registry, concurrent start, ordered output and prompt batch failure. Explicit host registration replaces dynamic import. Exact PrimitivePipeline create-result wire layout; nine direct worker cases plus native thread, async ordering/reuse/failure and corrupt-buffer regressions."
   }
 }

@@ -235,6 +235,23 @@ impl CircleOutlineGeometry {
         self.ellipse_geometry.pack(array, starting_index);
     }
 
+    /// Rebuilds the circle from the packed ellipse's major axis, as Cesium does.
+    pub fn unpack(array: &[f64], starting_index: usize) -> Option<Self> {
+        let e = EllipseOutlineGeometry::unpack(array, starting_index)?;
+        Self::new(
+            e.semi_major_axis,
+            EllipseOutlineOptions {
+                center: e.center,
+                ellipsoid: e.ellipsoid,
+                height: e.height,
+                extruded_height: Some(e.extruded_height),
+                granularity: e.granularity,
+                number_of_vertical_lines: e.number_of_vertical_lines,
+                ..EllipseOutlineOptions::new(e.center, e.semi_major_axis, e.semi_major_axis)
+            },
+        )
+    }
+
     pub fn create_geometry(&self) -> Option<Geometry> {
         self.ellipse_geometry.create_geometry()
     }
