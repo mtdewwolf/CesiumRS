@@ -230,5 +230,13 @@
     "ported": 362,
     "implemented": 0,
     "validatedPercent": 31.85
+  },
+  {
+    "milestone": "Workers Gaussian splats",
+    "date": "2026-10-21",
+    "percent": 31.87,
+    "ported": 364,
+    "implemented": 0,
+    "validatedPercent": 31.87
   }
 ]
