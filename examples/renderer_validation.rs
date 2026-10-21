@@ -303,6 +303,284 @@ mod browser {
     }
 
     #[wasm_bindgen]
+    pub fn renderer_manager(gl: JsValue, config: &str) -> Result<String, JsValue> {
+        use std::rc::Rc;
+        let c: serde_json::Value = serde_json::from_str(config).map_err(error)?;
+        let flag = |s: &str| c[s].as_bool().unwrap_or(false);
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let mut manager = FramebufferManager::new(FramebufferManagerOptions {
+            color: !flag("depthOnly"),
+            depth: flag("depth"),
+            depth_stencil: flag("depthStencil"),
+            supports_depth_texture: flag("depthTexture"),
+            color_attachments_length: c["colors"].as_u64().unwrap_or(1) as usize,
+            ..Default::default()
+        })
+        .map_err(error)?;
+        let samples = c["samples"].as_u64().unwrap_or(1) as u32;
+        let mut snapshots = vec![];
+        for (width, height) in [(4, 2), (3, 4)] {
+            manager.update(&ctx, width, height, Some(samples), None, None).map_err(error)?;
+            let f = manager.framebuffer().unwrap().clone();
+            let unchanged = !manager.update(&ctx, width, height, Some(samples), None, None).map_err(error)?
+                && Rc::ptr_eq(&f, manager.framebuffer().unwrap());
+            let clear = ClearCommand {
+                color: (!flag("depthOnly")).then_some([0.25, 0.5, 0.75, 1.]),
+                depth: Some(0.5),
+                stencil: Some(3),
+                ..Default::default()
+            };
+            manager.clear(&ctx, &clear, &PassState::default()).map_err(error)?;
+            manager.prepare_textures(true).map_err(error)?;
+            let mut pixels = vec![];
+            let mut metadata = vec![];
+            if !flag("depthOnly") {
+                for i in 0..c["colors"].as_u64().unwrap_or(1) as usize {
+                    let texture = manager.color_texture(i).map_err(error)?.unwrap().clone();
+                    metadata.push(json!([
+                        texture.width(),
+                        texture.height(),
+                        texture.pixel_format() as u32,
+                        texture.pixel_datatype() as u32,
+                        texture.sampler().minification_filter as u32,
+                        texture.sampler().magnification_filter as u32
+                    ]));
+                    let read = Framebuffer::new(
+                        &ctx,
+                        FramebufferOptions {
+                            colors: vec![Attachment::Texture(texture)],
+                            destroy_attachments: false,
+                            ..Default::default()
+                        },
+                    )
+                    .map_err(error)?;
+                    pixels.push(
+                        ctx.read_pixels_from(ReadState {
+                            region: TextureRegion { x: 0, y: 0, width, height },
+                            framebuffer: Some(&read),
+                        })
+                        .map_err(error)?
+                        .bytes,
+                    );
+                }
+            }
+            snapshots.push(json!({"status":manager.status().map_err(error)?,"samples":manager.num_samples(),"depth":f.has_depth_attachment(),"depthTexture":manager.depth_texture().is_some(),"depthBuffer":manager.depth_renderbuffer().is_some(),"depthStencilTexture":manager.depth_stencil_texture().is_some(),"depthStencilBuffer":manager.depth_stencil_renderbuffer().is_some(),"unchanged":unchanged,"dirty":manager.is_dirty(width,height,Some(samples),None,None),"preservedClear":clear.framebuffer.is_none(),"metadata":metadata,"pixels":pixels}));
+        }
+        let retained = manager.color_texture(0).map_err(error)?.cloned();
+        manager.destroy().map_err(error)?;
+        Ok(json!({"snapshots":snapshots,"destroyed":retained.map(|t|t.is_destroyed()),"framebufferRemoved":manager.framebuffer().is_none()}).to_string())
+    }
+
+    #[wasm_bindgen]
+    pub fn renderer_manager_review(gl: JsValue, mode: u32) -> Result<String, JsValue> {
+        use std::rc::Rc;
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let make = || Texture::new(&ctx, TextureOptions::rgba(4, 2), None).map(Rc::new).map_err(error);
+        let read = |texture: Rc<Texture<BrowserGl>>| -> Result<Vec<u8>, JsValue> {
+            let f = Framebuffer::new(
+                &ctx,
+                FramebufferOptions {
+                    colors: vec![Attachment::Texture(texture)],
+                    destroy_attachments: false,
+                    ..Default::default()
+                },
+            )
+            .map_err(error)?;
+            Ok(ctx
+                .read_pixels_from(ReadState {
+                    region: TextureRegion { x: 0, y: 0, width: 4, height: 2 },
+                    framebuffer: Some(&f),
+                })
+                .map_err(error)?
+                .bytes)
+        };
+        if mode < 2 {
+            let mut manager = FramebufferManager::new(FramebufferManagerOptions {
+                depth: true,
+                supports_depth_texture: mode == 1,
+                ..Default::default()
+            })
+            .map_err(error)?;
+            manager.update(&ctx, 4, 2, None, None, None).map_err(error)?;
+            let original = manager.framebuffer().unwrap().clone();
+            let result = manager.update(&ctx, 4, 2, Some(4), None, None);
+            let rejected = result.err().is_some_and(|e| e.message.contains("use depth_stencil"));
+            manager
+                .clear(
+                    &ctx,
+                    &ClearCommand { color: Some([1., 0., 0., 1.]), depth: Some(0.5), ..Default::default() },
+                    &PassState::default(),
+                )
+                .map_err(error)?;
+            manager.prepare_textures(false).map_err(error)?;
+            return Ok(json!({"rejected":rejected,"sameFramebuffer":Rc::ptr_eq(&original,manager.framebuffer().unwrap()),"samples":manager.num_samples(),"depth":manager.framebuffer().unwrap().has_depth_attachment(),"pixels":read(manager.color_texture(0).map_err(error)?.unwrap().clone())?}).to_string());
+        }
+        let a = make()?;
+        let b = make()?;
+        let replacement = make()?;
+        let depth = Rc::new(
+            Renderbuffer::new(
+                &ctx,
+                RenderbufferOptions {
+                    format: RenderbufferFormat::DepthComponent16,
+                    width: Some(4),
+                    height: Some(2),
+                    num_samples: 1,
+                },
+            )
+            .map_err(error)?,
+        );
+        let mut manager = FramebufferManager::new(FramebufferManagerOptions {
+            color_attachments_length: 2,
+            depth: true,
+            create_color_attachments: false,
+            create_depth_attachments: false,
+            ..Default::default()
+        })
+        .map_err(error)?;
+        manager.set_color_texture(0, Some(a.clone())).map_err(error)?;
+        manager.set_color_texture(1, Some(b.clone())).map_err(error)?;
+        manager.set_depth_renderbuffer(Some(depth.clone())).map_err(error)?;
+        manager.update(&ctx, 4, 2, None, None, None).map_err(error)?;
+        let original = manager.framebuffer().unwrap().clone();
+        manager
+            .clear(&ctx, &ClearCommand { color: Some([1., 0., 0., 1.]), ..Default::default() }, &PassState::default())
+            .map_err(error)?;
+        manager.set_color_texture(0, Some(replacement.clone())).map_err(error)?;
+        manager.set_color_texture(1, Some(b.clone())).map_err(error)?;
+        manager.set_depth_renderbuffer(Some(depth)).map_err(error)?;
+        let dirty = manager.is_dirty(4, 2, None, None, None);
+        let rebuilt = manager.update(&ctx, 4, 2, None, None, None).map_err(error)?;
+        manager
+            .clear(&ctx, &ClearCommand { color: Some([0., 0., 1., 1.]), ..Default::default() }, &PassState::default())
+            .map_err(error)?;
+        Ok(json!({"dirty":dirty,"rebuilt":rebuilt,"newFramebuffer":!Rc::ptr_eq(&original,manager.framebuffer().unwrap()),"sameGetterAttachment":Rc::ptr_eq(manager.framebuffer().unwrap().color_texture(0).unwrap(),&replacement),"pixels":[read(a)?,read(replacement)?,read(b)?]}).to_string())
+    }
+
+    #[wasm_bindgen]
+    pub fn renderer_compute(gl: JsValue, config: &str) -> Result<String, JsValue> {
+        use std::{
+            cell::{Cell, RefCell},
+            rc::Rc,
+        };
+        let c: serde_json::Value = serde_json::from_str(config).map_err(error)?;
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let persists = c["persists"].as_bool().unwrap_or(false);
+        let custom = c["custom"].as_bool().unwrap_or(false);
+        let fragment=ShaderSource {sources:vec!["in vec2 v_textureCoordinates;uniform sampler2D inputTexture;uniform float scale;void main(){if(v_textureCoordinates.x<0.5){discard;}out_FragColor=texture(inputTexture,v_textureCoordinates)*scale;}".into()],..Default::default()};
+        let mut cache = ShaderCache::new(&ctx);
+        let program = if custom {
+            Some(
+                cache
+                    .get_shader_program(&ViewportQuad::<BrowserGl>::shader_options(fragment.clone()))
+                    .map_err(error)?,
+            )
+        } else {
+            None
+        };
+        let quad = if custom { Some(ViewportQuad::new(&ctx).map_err(error)?) } else { None };
+        let mut input_options = TextureOptions::rgba(1, 1);
+        input_options.sampler = Sampler::NEAREST;
+        let input = Rc::new(Texture::new(&ctx, input_options, Some(&[128, 64, 32, 255])).map_err(error)?);
+        let outputs: Vec<_> = [(4, 2), (2, 3)]
+            .into_iter()
+            .map(|(w, h)| Texture::new(&ctx, TextureOptions::rgba(w, h), None).map(Rc::new))
+            .collect::<Result<_, _>>()
+            .map_err(error)?;
+        let index = Rc::new(Cell::new(0));
+        let events = Rc::new(RefCell::new(vec![]));
+        let pre_index = index.clone();
+        let pre_events = events.clone();
+        let pre_outputs = outputs.clone();
+        let mut command = ComputeCommand {
+            persists,
+            owner: Some("compute".into()),
+            fragment_shader_source: Some(fragment),
+            shader_program: program.clone(),
+            vertex_array: quad.as_ref().map(|q| q.vertex_array().clone()),
+            textures: vec![("inputTexture".into(), input)],
+            pre_execute: Some(Rc::new(move |command| {
+                let i = pre_index.get();
+                pre_events.borrow_mut().push(format!("pre{i}"));
+                command.output_texture = Some(pre_outputs[i].clone());
+                Ok(())
+            })),
+            ..Default::default()
+        };
+        let uniform_index = index.clone();
+        let uniform_events = events.clone();
+        command.uniform_map = Some(Rc::new(move || {
+            let i = uniform_index.get();
+            uniform_events.borrow_mut().push(format!("uniform{i}"));
+            Ok(vec![("scale".into(), UniformValue::Float(vec![if i == 0 { 0.5 } else { 1. }]))])
+        }));
+        let post_index = index.clone();
+        let post_events = events.clone();
+        command.post_execute = Some(Box::new(move |_| {
+            post_events.borrow_mut().push(format!("post{}", post_index.get()));
+            Ok(())
+        }));
+        let cancel_events = events.clone();
+        command.canceled = Some(Box::new(move || {
+            cancel_events.borrow_mut().push("cancel".into());
+            Ok(())
+        }));
+        let mut engine = ComputeEngine::new(&ctx);
+        let mut pixels = vec![];
+        for i in 0..if custom && !persists { 1 } else { 2 } {
+            index.set(i);
+            command.execute(&mut engine).map_err(error)?;
+            let f = Framebuffer::new(
+                &ctx,
+                FramebufferOptions {
+                    colors: vec![Attachment::Texture(outputs[i].clone())],
+                    destroy_attachments: false,
+                    ..Default::default()
+                },
+            )
+            .map_err(error)?;
+            pixels.push(
+                ctx.read_pixels_from(ReadState {
+                    region: TextureRegion { x: 0, y: 0, width: outputs[i].width(), height: outputs[i].height() },
+                    framebuffer: Some(&f),
+                })
+                .map_err(error)?
+                .bytes,
+            );
+        }
+        command.cancel().map_err(error)?;
+        engine.destroy().map_err(error)?;
+        let result = json!({"pixels":pixels,"events":events.borrow().clone(),"programDestroyed":program.map(|p|p.is_destroyed()),"vertexArrayDestroyed":quad.map(|q|q.is_destroyed()),"outputsAlive":outputs.iter().all(|t|!t.is_destroyed()),"engineDestroyed":engine.is_destroyed(),"pass":command.pass() as u32});
+        Ok(result.to_string())
+    }
+
+    #[wasm_bindgen]
+    pub async fn renderer_sync(gl: JsValue, schedule: js_sys::Function) -> Result<String, JsValue> {
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let sync = Sync::new(&ctx).map_err(error)?;
+        ctx.host().invoke("flush", &[]).map_err(error)?;
+        sync.wait_for_signal(
+            || {
+                let schedule = schedule.clone();
+                async move {
+                    let result =
+                        schedule.call0(&JsValue::NULL).map_err(|e| RuntimeError::new(format!("Scheduler: {e:?}")))?;
+                    wasm_bindgen_futures::JsFuture::from(js_sys::Promise::resolve(&result))
+                        .await
+                        .map_err(|e| RuntimeError::new(format!("Scheduler: {e:?}")))?;
+                    Ok(())
+                }
+            },
+            Some(100),
+        )
+        .await
+        .map_err(error)?;
+        let status = sync.status().map_err(error)?;
+        sync.destroy().map_err(error)?;
+        Ok(json!([status, sync.is_destroyed()]).to_string())
+    }
+
+    #[wasm_bindgen]
     pub fn renderer_framebuffers(gl: JsValue, mode: u32) -> Result<String, JsValue> {
         use std::rc::Rc;
         let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);

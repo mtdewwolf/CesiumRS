@@ -44,20 +44,22 @@ All 35 formerly partial Core implementations and the native KTX2 worker calculat
 The final 20 Core modules are implemented and validated. This batch adds 199 pinned reference cases, native terrain/input integration and exact Chromium text/pin and gesture comparisons. Core has 270 validated applicable modules and no remaining partial or todo entries. The 18 n/a entries retain explicit Rust replacement notes. Renderer and Scene are the next package milestones.
 
 
-### Renderer resources and shaders
+### Renderer resources, targets and compute
 
 The Renderer continuation closes eight original partial modules: vertex arrays,
 shader sources/programs, textures, render state, pass state and draw/clear
 commands. It adds framebuffers/renderbuffers/multisample targets, hardware limits,
-shader builders/caches and texture caches. Validation now covers 358 portable
-Renderer cases, 307 Chromium GPU assertions and native ownership, cache, callback
+shader builders/caches and texture caches. The next completed batch adds
+FramebufferManager, ComputeCommand, ComputeEngine and Sync, plus the explicitly
+owned viewport quad. Validation now covers 387 portable
+Renderer cases, 361 Chromium GPU assertions and native ownership, cache, callback
 and failure regressions. See [Renderer API and validation](docs/renderer-foundation.md).
 
 Remaining batches, in dependency order:
 
-1. Complete Context backend/lifecycle, picking and default texture/quad helpers.
+1. Complete Context backend/lifecycle, picking and default texture helpers.
 2. Complete Scene frame updates in UniformState/AutomaticUniforms, including
    2D/Columbus View, eye/ENU, lighting/atmosphere and environment textures.
-3. Cube/3D textures, atlases and framebuffer managers; vertex-array facades,
-   compute execution, synchronization and shared contexts.
+3. Cube/3D textures, atlases, vertex-array facades and shared contexts; remaining
+   uniform/render-state helper modules.
 4. Scene integration, followed by remaining Renderer and Scene modules.

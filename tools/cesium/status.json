@@ -1400,7 +1400,7 @@
   "Renderer/Context": {
     "status": "partial",
     "rust": "renderer::context",
-    "note": "WebGL2 resource identity, targets, typed/PBO reads, hardware limits/extensions, state transitions, automatic transform submission and end-frame cleanup validated in Chromium. WebGL1 execution, picking IDs, default texture/quad helpers, native GPU adapter and remaining lifecycle/Scene integration remain."
+    "note": "WebGL2 resource identity, targets, typed/PBO reads, hardware limits/extensions, state transitions, automatic transform submission and end-frame cleanup validated in Chromium. ViewportQuad provides explicit quad geometry/command ownership. WebGL1 execution, picking IDs, default textures, native GPU adapter and remaining lifecycle/Scene integration remain."
   },
   "Renderer/DrawCommand": {
     "status": "ported",
@@ -1466,5 +1466,25 @@
     "status": "partial",
     "rust": "renderer::uniform_state",
     "note": "All 90 datatype/size/declaration descriptors, transform-derived values and named host value lookup; exact declarations/matrices and automatic GPU upload. Scene-driven value population remains with UniformState."
+  },
+  "Renderer/FramebufferManager": {
+    "status": "ported",
+    "rust": "renderer::framebuffer_manager",
+    "note": "Owned/borrowed attachments, dirty/reuse/resize, MRT, depth/stencil textures/renderbuffers, MSAA resolve, clear routing and reusable destruction. Exact GPU pixels/metadata plus native ownership and atomic failure regressions; failed updates preserve the previous target. Dirty state accumulates across setters; ordinary-depth MSAA is rejected before mutation (use paired depth-stencil resources), correcting inherited Cesium behavior."
+  },
+  "Renderer/ComputeCommand": {
+    "status": "ported",
+    "rust": "renderer::compute::ComputeCommand",
+    "note": "Optional geometry/source/program, uniforms/textures, pre/post/cancel callbacks, persistence, pass/owner and execution. Pinned defaults, GPU pixels/callback order and native failure/lifetime checks; pre callbacks may replace or remove themselves."
+  },
+  "Renderer/ComputeEngine": {
+    "status": "ported",
+    "rust": "renderer::compute::ComputeEngine",
+    "note": "Fullscreen or custom draws into output textures, pre-validation callback, viewport/clear setup, resource persistence and post-execution. GPU reference pixels across sizes and native failures; explicit Rust-owned quad/cache replaces Context-global cache ownership."
+  },
+  "Renderer/Sync": {
+    "status": "ported",
+    "rust": "renderer::sync::Sync",
+    "note": "WebGL2 fence allocation, status, deletion and scheduled asynchronous polling with default/explicit TTL and errors. Exact polling-count fixtures, real Chromium fence wait and native allocation/scheduler/delete failure tests."
   }
 }
