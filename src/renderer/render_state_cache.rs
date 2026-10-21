@@ -5,14 +5,14 @@ use std::{collections::HashMap, ops::Deref, rc::Rc};
 #[derive(Debug)]
 pub struct CachedRenderState {
     id: u64,
-    state: RenderState,
+    state: super::FrozenRenderState,
 }
 impl CachedRenderState {
     pub fn id(&self) -> u64 {
         self.id
     }
     pub fn get_state(&self) -> RenderState {
-        self.state.clone()
+        self.state.to_owned_state()
     }
 }
 impl Deref for CachedRenderState {
@@ -40,7 +40,7 @@ impl RenderStateCache {
         if let Some(v) = self.states.get(&key) {
             return Ok(v.clone());
         }
-        let cached = Rc::new(CachedRenderState { id: self.next_id, state });
+        let cached = Rc::new(CachedRenderState { id: self.next_id, state: super::freeze_render_state(state) });
         self.next_id += 1;
         self.states.insert(key, cached.clone());
         Ok(cached)
@@ -92,7 +92,7 @@ impl RenderStateDriver {
         clear: bool,
     ) -> Result<()> {
         let cached = self.cache.intern(state.clone(), false)?;
-        let dimensions = context.host().drawing_buffer_size()?;
+        let dimensions = context.drawing_buffer_size()?;
         let viewport = state.viewport.or(pass.viewport).unwrap_or(Viewport {
             x: 0,
             y: 0,

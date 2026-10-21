@@ -1,10 +1,19 @@
-//! Concrete WebGL2 host; no renderer algorithms are delegated to JavaScript.
+//! Concrete WebGL host, including WebGL1 extension dispatch and VAO fallback.
 use super::context::*;
 use crate::core::RuntimeError;
 use js_sys::{Array, Float32Array, Function, Int32Array, Reflect, Uint8Array};
+use std::cell::{Cell, RefCell};
 use wasm_bindgen::{JsCast, JsValue};
 pub struct BrowserGl {
     gl: JsValue,
+    webgl2: bool,
+    vaos: RefCell<Vec<(JsValue, VirtualVao)>>,
+    current_vao: Cell<usize>,
+}
+#[derive(Default)]
+struct VirtualVao {
+    calls: Vec<(String, Vec<GlValue<JsValue>>)>,
+    element: Option<JsValue>,
 }
 impl BrowserGl {
     pub fn new(gl: JsValue) -> Result<Self> {
@@ -12,7 +21,20 @@ impl BrowserGl {
             Reflect::get(&gl, &"createVertexArray".into()).map_err(error)?.is_function(),
             "A WebGL2 context is required",
         )?;
-        Ok(Self { gl })
+        Ok(Self { gl, webgl2: true, vaos: RefCell::new(vec![]), current_vao: Cell::new(0) })
+    }
+    pub fn new_webgl1(gl: JsValue) -> Result<Self> {
+        ensure(Reflect::get(&gl, &"getParameter".into()).map_err(error)?.is_function(), "A WebGL context is required")?;
+        let host = Self { gl, webgl2: false, vaos: RefCell::new(vec![]), current_vao: Cell::new(0) };
+        if host.extension("OES_vertex_array_object")?.is_null() {
+            host.vaos.borrow_mut().push((JsValue::NULL, VirtualVao::default()));
+        }
+        Ok(host)
+    }
+    fn extension(&self, name: &str) -> Result<JsValue> {
+        let function =
+            Reflect::get(&self.gl, &"getExtension".into()).map_err(error)?.dyn_into::<Function>().map_err(error)?;
+        function.call1(&self.gl, &name.into()).map_err(error)
     }
     pub fn raw_context(&self) -> &JsValue {
         &self.gl
@@ -34,6 +56,123 @@ impl Gl for BrowserGl {
         Ok([get("drawingBufferWidth")?, get("drawingBufferHeight")?])
     }
     fn invoke(&self, method: &str, args: &[GlValue<JsValue>]) -> Result<GlValue<JsValue>> {
+        // Without OES_vertex_array_object, retain each layout and replay it on
+        // bind. Buffer contents remain in GL; only attribute state is virtual.
+        if !self.vaos.borrow().is_empty() {
+            match method {
+                "createVertexArray" => {
+                    let id: JsValue = js_sys::Object::new().into();
+                    let mut vaos = self.vaos.borrow_mut();
+                    if let Some(slot) = vaos.iter_mut().skip(1).find(|(key, _)| key.is_undefined()) {
+                        *slot = (id.clone(), VirtualVao::default());
+                    } else {
+                        vaos.push((id.clone(), VirtualVao::default()));
+                    }
+                    return Ok(GlValue::Object(id));
+                }
+                "deleteVertexArray" => {
+                    if let Some(GlValue::Object(id)) = args.first() {
+                        let index = self.vaos.borrow().iter().position(|(key, _)| js_sys::Object::is(key, id));
+                        if let Some(index) = index.filter(|i| *i > 0) {
+                            if self.current_vao.get() == index {
+                                self.invoke("bindVertexArray", &[GlValue::Null])?;
+                            }
+                            self.vaos.borrow_mut()[index] = (JsValue::UNDEFINED, VirtualVao::default());
+                        }
+                    }
+                    return Ok(GlValue::Null);
+                }
+                "bindVertexArray" => {
+                    let id = match args.first() {
+                        Some(GlValue::Object(id)) => id.clone(),
+                        _ => JsValue::NULL,
+                    };
+                    let index = self
+                        .vaos
+                        .borrow()
+                        .iter()
+                        .position(|(key, _)| js_sys::Object::is(key, &id))
+                        .ok_or_else(|| RuntimeError::new("Unknown vertex array"))?;
+                    self.current_vao.set(index);
+                    let vaos = self.vaos.borrow();
+                    let (_, vao) = &vaos[index];
+                    let get = Reflect::get(&self.gl, &"getParameter".into())
+                        .map_err(error)?
+                        .dyn_into::<Function>()
+                        .map_err(error)?;
+                    let max = get.call1(&self.gl, &34921u32.into()).map_err(error)?.as_f64().unwrap_or(8.) as u32;
+                    let disable = Reflect::get(&self.gl, &"disableVertexAttribArray".into())
+                        .map_err(error)?
+                        .dyn_into::<Function>()
+                        .map_err(error)?;
+                    for i in 0..max {
+                        disable.call1(&self.gl, &i.into()).map_err(error)?;
+                    }
+                    for (name, values) in &vao.calls {
+                        self.invoke_raw(name, values)?;
+                    }
+                    self.invoke_raw(
+                        "bindBuffer",
+                        &[34963u32.into(), vao.element.clone().map(GlValue::Object).unwrap_or(GlValue::Null)],
+                    )?;
+                    return Ok(GlValue::Null);
+                }
+                "bindBuffer" if matches!(args.first(),Some(GlValue::Number(n)) if *n==34963.) => {
+                    self.vaos.borrow_mut()[self.current_vao.get()].1.element = match args.get(1) {
+                        Some(GlValue::Object(o)) => Some(o.clone()),
+                        _ => None,
+                    };
+                }
+                "vertexAttribPointer"
+                | "enableVertexAttribArray"
+                | "disableVertexAttribArray"
+                | "vertexAttribDivisor" => {
+                    let mut vaos = self.vaos.borrow_mut();
+                    let vao = &mut vaos[self.current_vao.get()].1;
+                    if method == "vertexAttribPointer" {
+                        // Attribute pointers capture the ARRAY_BUFFER binding.
+                        let get = Reflect::get(&self.gl, &"getParameter".into())
+                            .map_err(error)?
+                            .dyn_into::<Function>()
+                            .map_err(error)?;
+                        let buffer = get.call1(&self.gl, &34964u32.into()).map_err(error)?;
+                        vao.calls.push(("bindBuffer".into(), vec![34962u32.into(), GlValue::Object(buffer)]));
+                    }
+                    vao.calls.push((method.into(), args.to_vec()));
+                }
+                _ => {}
+            }
+        }
+        self.invoke_raw(method, args)
+    }
+}
+impl BrowserGl {
+    fn invoke_raw(&self, method: &str, args: &[GlValue<JsValue>]) -> Result<GlValue<JsValue>> {
+        let mut receiver = self.gl.clone();
+        let mut entry = method.to_string();
+        if !self.webgl2 {
+            let extension = match method {
+                "createVertexArray" | "bindVertexArray" | "deleteVertexArray" => {
+                    Some(("OES_vertex_array_object", "OES"))
+                }
+                "vertexAttribDivisor" | "drawArraysInstanced" | "drawElementsInstanced" => {
+                    Some(("ANGLE_instanced_arrays", "ANGLE"))
+                }
+                "drawBuffers" => Some(("WEBGL_draw_buffers", "WEBGL")),
+                _ => None,
+            };
+            if let Some((name, suffix)) = extension {
+                receiver = self.extension(name)?;
+                if receiver.is_null()
+                    && method == "vertexAttribDivisor"
+                    && matches!(args.get(1),Some(GlValue::Number(n)) if *n==0.)
+                {
+                    return Ok(GlValue::Null);
+                }
+                ensure(!receiver.is_null(), "WebGL extension entrypoint unavailable")?;
+                entry.push_str(suffix);
+            }
+        }
         let array = Array::new();
         for a in args {
             array.push(&match a {
@@ -66,8 +205,8 @@ impl Gl for BrowserGl {
                 }
             });
         }
-        let f = Reflect::get(&self.gl, &method.into()).map_err(error)?.dyn_into::<Function>().map_err(error)?;
-        let result = f.apply(&self.gl, &array).map_err(error)?;
+        let f = Reflect::get(&receiver, &entry.into()).map_err(error)?.dyn_into::<Function>().map_err(error)?;
+        let result = f.apply(&receiver, &array).map_err(error)?;
         if method == "getBufferSubData" || method == "readPixels" {
             let index = if method == "getBufferSubData" { 2 } else { 6 };
             if matches!(args.get(index), Some(GlValue::Bytes(_) | GlValue::Pixels { .. })) {

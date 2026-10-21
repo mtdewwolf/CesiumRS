@@ -1,6 +1,6 @@
 //! Automatic uniform declarations and view/model/projection state.
-//! Scene-specific lighting, atmosphere and texture values can be supplied by
-//! name; the renderer computes geometric uniforms from Core matrices.
+//! Scene snapshots drive geometry, lighting, astronomy and atmosphere values.
+//! Explicit named overrides remain available for custom rendering hosts.
 use super::{context::*, *};
 use crate::core::{BoundingRectangle, Cartesian3, EncodedCartesian3, Matrix4, RuntimeError};
 use serde::Deserialize;
@@ -62,6 +62,8 @@ pub struct UniformState {
     pub orthographic_in_3d: bool,
     pub scene_mode: u32,
     values: HashMap<String, UniformValue>,
+    pub(crate) frame: Option<std::rc::Rc<super::UniformFrame>>,
+    pub(crate) frustum_2d_width: f64,
 }
 impl Default for UniformState {
     fn default() -> Self {
@@ -81,6 +83,8 @@ impl Default for UniformState {
             orthographic_in_3d: false,
             scene_mode: 3,
             values: HashMap::new(),
+            frame: None,
+            frustum_2d_width: 0.,
         }
     }
 }
@@ -172,15 +176,29 @@ impl UniformState {
             "czm_inverseNormal" => mat3(mv().get_matrix3().transpose()),
             "czm_inverseNormal3D" => mat3(mv3().get_matrix3().transpose()),
             "czm_viewport" => vec(&[viewport.x, viewport.y, viewport.width, viewport.height]),
-            "czm_viewportTransformation" => mat(Matrix4::compute_viewport_transformation(&viewport, 0., 1.)),
-            "czm_viewportOrthographic" => mat(Matrix4::compute_orthographic_off_center(
-                viewport.x,
-                viewport.x + viewport.width,
-                viewport.y,
-                viewport.y + viewport.height,
-                0.,
-                1.,
-            )),
+            "czm_viewportTransformation" => mat(if self.viewport == Viewport::default() {
+                Matrix4::IDENTITY
+            } else {
+                Matrix4::compute_viewport_transformation(&viewport, 0., 1.)
+            }),
+            "czm_viewportOrthographic" => mat(if self.viewport == Viewport::default() {
+                Matrix4::IDENTITY
+            } else {
+                Matrix4::compute_orthographic_off_center(
+                    viewport.x,
+                    viewport.x + viewport.width,
+                    viewport.y,
+                    viewport.y + viewport.height,
+                    0.,
+                    1.,
+                )
+            }),
+            "czm_geometricToleranceOverMeter" => {
+                let Some(frame) = self.frame.as_ref() else { return Ok(None) };
+                let pixel_size = frame.camera.frustum.fov().map_or(1., |f| 2. * (0.5 * f).tan())
+                    / self.viewport.width.max(self.viewport.height).max(1) as f64;
+                vec(&[pixel_size * frame.maximum_screen_space_error])
+            }
             "czm_currentFrustum" => vec(&self.frustum),
             "czm_entireFrustum" => vec(&self.entire_frustum),
             "czm_frustumPlanes" => vec(&self.frustum_planes),
@@ -200,6 +218,19 @@ impl UniformState {
             "czm_pass" => vec(&[self.pass.map_or(0., |p| p as u32 as f64)]),
             "czm_sceneMode" => vec(&[self.scene_mode as f64]),
             "czm_pixelRatio" => vec(&[1.]),
+            "czm_orthographicIn3D" => vec(&[if self.orthographic_in_3d { 1. } else { 0. }]),
+            "czm_eyeHeight" => vec(&[0.]),
+            "czm_eyeHeight2D" | "czm_eyeEllipsoidCurvature" => vec(&[0.; 2]),
+            "czm_eyeEllipsoidNormalEC" => vec(&[0.; 3]),
+            "czm_modelToEnu" | "czm_enuToModel" => mat(Matrix4::ZERO),
+            "czm_ellipsoidRadii" => {
+                let v = crate::core::Ellipsoid::WGS84.radii;
+                vec(&[v.x, v.y, v.z])
+            }
+            "czm_ellipsoidInverseRadii" => {
+                let v = crate::core::Ellipsoid::WGS84.one_over_radii;
+                vec(&[v.x, v.y, v.z])
+            }
             _ => return Ok(None),
         };
         Ok(Some(value))
@@ -207,15 +238,25 @@ impl UniformState {
 }
 impl<G: Gl> ShaderProgram<G> {
     pub fn set_automatic_uniforms(&self, state: &UniformState) -> Result<()> {
+        self.set_automatic_uniforms_from(state, 0).map(|_| ())
+    }
+    pub(crate) fn set_automatic_uniforms_from(&self, state: &UniformState, mut unit: u32) -> Result<u32> {
+        let cache = self.resource.context.cache_ref.upgrade();
         for uniform in self.uniforms() {
             let name = self.original_uniform_name(uniform.name.strip_suffix("[0]").unwrap_or(&uniform.name));
             if automatic_uniforms().contains_key(name) {
+                if let Some(texture) = cache.as_ref().and_then(|c| c.automatic_textures.borrow().get(name).cloned()) {
+                    texture.sampled().bind(unit)?;
+                    self.set_uniform(name, &UniformValue::Int(vec![unit as i32]))?;
+                    unit += 1;
+                    continue;
+                }
                 let value = state.get(name)?.ok_or_else(|| {
                     RuntimeError::new(format!("Automatic uniform {name} requires a value from the scene host"))
                 })?;
                 self.set_uniform(name, &value)?;
             }
         }
-        Ok(())
+        Ok(unit)
     }
 }

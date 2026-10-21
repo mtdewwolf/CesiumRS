@@ -34,6 +34,12 @@ pub struct ContextLimits {
 #[serde(rename_all = "camelCase")]
 pub struct ContextCapabilities {
     pub webgl2: bool,
+    pub standard_derivatives: bool,
+    pub float_blend: bool,
+    pub blend_minmax: bool,
+    pub supports_texture_lod: bool,
+    pub fragment_depth: bool,
+    pub debug_shaders: bool,
     pub floating_point_texture: bool,
     pub half_floating_point_texture: bool,
     pub texture_float_linear: bool,
@@ -55,27 +61,50 @@ pub struct ContextCapabilities {
 }
 impl<G: Gl> Context<G> {
     pub fn extension_supported(&self, name: &str) -> Result<bool> {
-        Ok(!matches!(self.call("getExtension", &[name.into()])?, GlValue::Null))
+        let names: Vec<&str> = match name {
+            "EXT_texture_filter_anisotropic" => {
+                vec![name, "WEBKIT_EXT_texture_filter_anisotropic", "MOZ_EXT_texture_filter_anisotropic"]
+            }
+            "WEBGL_compressed_texture_s3tc" => {
+                vec![name, "WEBKIT_WEBGL_compressed_texture_s3tc", "MOZ_WEBGL_compressed_texture_s3tc"]
+            }
+            "WEBGL_compressed_texture_pvrtc" => vec![name, "WEBKIT_WEBGL_compressed_texture_pvrtc"],
+            "WEBGL_depth_texture" => vec![name, "WEBKIT_WEBGL_depth_texture", "MOZ_WEBGL_depth_texture"],
+            _ => vec![name],
+        };
+        for name in names {
+            if !matches!(self.call("getExtension", &[name.into()])?, GlValue::Null) {
+                return Ok(true);
+            }
+        }
+        Ok(false)
     }
     pub fn capabilities(&self) -> Result<ContextCapabilities> {
-        let color = self.extension_supported("EXT_color_buffer_float")?;
+        let v = self.webgl2();
+        let color = self.extension_supported(if v { "EXT_color_buffer_float" } else { "WEBGL_color_buffer_float" })?;
         Ok(ContextCapabilities {
-            webgl2: true,
-            floating_point_texture: true,
-            half_floating_point_texture: true,
+            webgl2: v,
+            standard_derivatives: v || self.extension_supported("OES_standard_derivatives")?,
+            float_blend: self.extension_supported("EXT_float_blend")?,
+            blend_minmax: v || self.extension_supported("EXT_blend_minmax")?,
+            supports_texture_lod: v || self.extension_supported("EXT_shader_texture_lod")?,
+            fragment_depth: v || self.extension_supported("EXT_frag_depth")?,
+            debug_shaders: self.extension_supported("WEBGL_debug_shaders")?,
+            floating_point_texture: v || self.extension_supported("OES_texture_float")?,
+            half_floating_point_texture: v || self.extension_supported("OES_texture_half_float")?,
             texture_float_linear: self.extension_supported("OES_texture_float_linear")?,
-            texture_half_float_linear: true,
+            texture_half_float_linear: v || self.extension_supported("OES_texture_half_float_linear")?,
             color_buffer_float: color,
-            color_buffer_half_float: color,
-            depth_texture: true,
-            element_index_uint: true,
-            instanced_arrays: true,
-            vertex_array_object: true,
-            draw_buffers: true,
+            color_buffer_half_float: color || self.extension_supported("EXT_color_buffer_half_float")?,
+            depth_texture: v || self.extension_supported("WEBGL_depth_texture")?,
+            element_index_uint: v || self.extension_supported("OES_element_index_uint")?,
+            instanced_arrays: v || self.extension_supported("ANGLE_instanced_arrays")?,
+            vertex_array_object: v || self.extension_supported("OES_vertex_array_object")?,
+            draw_buffers: v || self.extension_supported("WEBGL_draw_buffers")?,
             s3tc: self.extension_supported("WEBGL_compressed_texture_s3tc")?,
             pvrtc: self.extension_supported("WEBGL_compressed_texture_pvrtc")?,
             astc: self.extension_supported("WEBGL_compressed_texture_astc")?,
-            etc: true,
+            etc: v || self.extension_supported("WEBGL_compressed_texture_etc")?,
             etc1: self.extension_supported("WEBGL_compressed_texture_etc1")?,
             bc7: self.extension_supported("EXT_texture_compression_bptc")?,
             anisotropic: self.extension_supported("EXT_texture_filter_anisotropic")?,
@@ -83,7 +112,7 @@ impl<G: Gl> Context<G> {
     }
     pub fn shader_capabilities(&self) -> Result<ShaderCapabilities> {
         Ok(ShaderCapabilities {
-            floating_point_texture: true,
+            floating_point_texture: self.webgl2() || self.extension_supported("OES_texture_float")?,
             texture_float_linear: self.extension_supported("OES_texture_float_linear")?,
         })
     }
@@ -120,7 +149,7 @@ impl<G: Gl> Context<G> {
             maximum_texture_image_units: number(gl::MAX_TEXTURE_IMAGE_UNITS)?,
             maximum_renderbuffer_size: number(gl::MAX_RENDERBUFFER_SIZE)?,
             maximum_texture_size: number(gl::MAX_TEXTURE_SIZE)?,
-            maximum_3d_texture_size: number(gl::MAX_3D_TEXTURE_SIZE)?,
+            maximum_3d_texture_size: if self.webgl2() { number(gl::MAX_3D_TEXTURE_SIZE)? } else { 0 },
             maximum_varying_vectors: number(gl::MAX_VARYING_VECTORS)?,
             maximum_vertex_attributes: number(gl::MAX_VERTEX_ATTRIBS)?,
             maximum_vertex_texture_image_units: number(gl::MAX_VERTEX_TEXTURE_IMAGE_UNITS)?,
@@ -132,9 +161,17 @@ impl<G: Gl> Context<G> {
             maximum_viewport_width: viewport[0] as u32,
             maximum_viewport_height: viewport[1] as u32,
             maximum_texture_filter_anisotropy: anisotropy,
-            maximum_draw_buffers: number(gl::MAX_DRAW_BUFFERS)?,
-            maximum_color_attachments: number(gl::MAX_COLOR_ATTACHMENTS)?,
-            maximum_samples: number(gl::MAX_SAMPLES)?,
+            maximum_draw_buffers: if self.webgl2() || self.extension_supported("WEBGL_draw_buffers")? {
+                number(gl::MAX_DRAW_BUFFERS)?
+            } else {
+                1
+            },
+            maximum_color_attachments: if self.webgl2() || self.extension_supported("WEBGL_draw_buffers")? {
+                number(gl::MAX_COLOR_ATTACHMENTS)?
+            } else {
+                1
+            },
+            maximum_samples: if self.webgl2() { number(gl::MAX_SAMPLES)? } else { 0 },
             highp_float_supported: precision(gl::HIGH_FLOAT.into())?,
             highp_int_supported: precision(gl::HIGH_INT.into())?,
         })
@@ -147,6 +184,9 @@ impl<G: Gl> Context<G> {
             self.call("activeTexture", &[(gl::TEXTURE0 + unit).into()])?;
             self.call("bindTexture", &[gl::TEXTURE_2D.into(), GlValue::Null])?;
             self.call("bindTexture", &[gl::TEXTURE_CUBE_MAP.into(), GlValue::Null])?;
+            if self.webgl2() {
+                self.call("bindTexture", &[gl::TEXTURE_3D.into(), GlValue::Null])?;
+            }
         }
         self.frame_texture_units.set(0);
         Ok(())

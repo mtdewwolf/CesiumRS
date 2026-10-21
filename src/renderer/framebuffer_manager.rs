@@ -142,7 +142,7 @@ impl<G: Gl> FramebufferManager<G> {
         datatype: Option<PixelDatatype>,
         format: Option<PixelFormat>,
     ) -> Result<bool> {
-        let samples = num_samples.unwrap_or(1);
+        let samples = if context.webgl2() { num_samples.unwrap_or(1) } else { 1 };
         ensure(samples > 0, "Sample count must be positive")?;
         ensure(width > 0 && height > 0, "Framebuffer dimensions must be positive")?;
         ensure(

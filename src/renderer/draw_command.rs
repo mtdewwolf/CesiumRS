@@ -22,6 +22,7 @@ pub struct DrawCommand<'a, G: Gl> {
     /// Evaluated for every submission, matching Cesium uniform-map callbacks.
     pub uniform_map: Option<UniformMap>,
     pub textures: Vec<(String, &'a Texture<G>)>,
+    pub samplers: Vec<(String, &'a dyn SampledTexture<G>)>,
     pub metadata: super::command_metadata::DrawMetadata,
     pub last_dirty_time: f64,
     pub derived_commands: std::collections::HashMap<String, std::rc::Rc<DrawCommand<'a, G>>>,
@@ -42,6 +43,7 @@ impl<'a, G: Gl> DrawCommand<'a, G> {
             uniforms: vec![],
             uniform_map: None,
             textures: vec![],
+            samplers: vec![],
             metadata: Default::default(),
             last_dirty_time: 0.,
             derived_commands: super::command_metadata::empty_derived(),
@@ -115,6 +117,10 @@ impl<G: Gl> Context<G> {
             self.same(&texture.resource.context)?;
             texture.resource.value()?;
         }
+        for (_, texture) in &command.samplers {
+            self.same(texture.context())?;
+            ensure(!texture.is_destroyed(), "Sampler texture is destroyed")?;
+        }
         let mut offset = size(command.offset)?;
         let available =
             va.index_buffer().and_then(Buffer::number_of_indices).unwrap_or_else(|| va.number_of_vertices());
@@ -147,16 +153,21 @@ impl<G: Gl> Context<G> {
             texture.bind(unit as u32)?;
             program.set_uniform(name, &UniformValue::Int(vec![unit as i32]))?;
         }
+        for (i, (name, texture)) in command.samplers.iter().enumerate() {
+            let unit = command.textures.len() + i;
+            texture.bind(unit as u32)?;
+            program.set_uniform(name, &UniformValue::Int(vec![unit as i32]))?;
+        }
         self.frame_texture_units.set(
             self.frame_texture_units
                 .get()
-                .max(command.textures.len() as u32)
+                .max((command.textures.len() + command.samplers.len()) as u32)
                 .max(program.maximum_texture_unit_index() as u32),
         );
         {
             let mut state = self.uniform_state.borrow_mut();
             state.model = command.metadata.model_matrix.unwrap_or(crate::core::Matrix4::IDENTITY);
-            let size = self.host().drawing_buffer_size()?;
+            let size = self.drawing_buffer_size()?;
             state.viewport = command.render_state.viewport.or(pass.viewport).unwrap_or(Viewport {
                 x: 0,
                 y: 0,
@@ -166,9 +177,17 @@ impl<G: Gl> Context<G> {
             if let Some(p) = command.pass {
                 state.update_pass(p);
             }
-            program.set_automatic_uniforms(&state)?;
+            let used = program
+                .set_automatic_uniforms_from(&state, (command.textures.len() + command.samplers.len()) as u32)?;
+            self.frame_texture_units.set(self.frame_texture_units.get().max(used));
         }
         va.bind()?;
+        if self.validate_shader_program.get() {
+            if let Err(error) = program.validate() {
+                self.call("bindVertexArray", &[GlValue::Null])?;
+                return Err(error);
+            }
+        }
         let draw = if let Some(b) = va.index_buffer() {
             let datatype = match b.kind() {
                 BufferKind::Index(d) => d as u32,

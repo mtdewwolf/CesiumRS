@@ -94,6 +94,7 @@ impl<G: Gl> Texture<G> {
     pub fn new(context: &Context<G>, options: TextureOptions, pixels: Option<&[u8]>) -> Result<Self> {
         Self::validate_dimensions(context, &options)?;
         options.sampler.validate()?;
+        super::texture_support::validate_format(context, options.pixel_format, options.pixel_datatype)?;
         // Typed and blank allocation. DOM, compressed and framebuffer source
         // constructors below share the same texture metadata and ownership.
         use PixelDatatype as D;
@@ -106,7 +107,9 @@ impl<G: Gl> Texture<G> {
             F::Rgb => {
                 matches!(options.pixel_datatype, D::UnsignedByte | D::Float | D::HalfFloat | D::UnsignedShort5_6_5)
             }
-            F::Red | F::Rg => matches!(options.pixel_datatype, D::UnsignedByte | D::Float | D::HalfFloat),
+            F::Alpha | F::Luminance | F::LuminanceAlpha | F::Red | F::Rg => {
+                matches!(options.pixel_datatype, D::UnsignedByte | D::Float | D::HalfFloat)
+            }
             F::DepthComponent => {
                 matches!(options.pixel_datatype, D::UnsignedShort | D::UnsignedInt) && pixels.is_none()
             }
@@ -114,10 +117,7 @@ impl<G: Gl> Texture<G> {
             F::RedInteger | F::RgInteger | F::RgbInteger | F::RgbaInteger => options.pixel_datatype == D::UnsignedInt,
             _ => false,
         };
-        ensure(
-            supported,
-            "Unsupported texture format/type or source; use uncompressed WebGL2 color or blank depth textures",
-        )?;
+        ensure(supported, "Unsupported texture format/type or source; use uncompressed color or blank depth textures")?;
         let bytes = byte_length(&options, options.width, options.height)?;
         if pixels.is_some() && options.flip_y && options.height > 1 && options.pixel_datatype.is_packed() {
             let expanded = bytes
@@ -140,12 +140,16 @@ impl<G: Gl> Texture<G> {
                 &[
                     gl::TEXTURE_2D.into(),
                     0.into(),
-                    result.options.pixel_format.to_internal_format(result.options.pixel_datatype, true).into(),
+                    result
+                        .options
+                        .pixel_format
+                        .to_internal_format(result.options.pixel_datatype, context.webgl2())
+                        .into(),
                     result.options.width.into(),
                     result.options.height.into(),
                     0.into(),
                     (result.options.pixel_format as u32).into(),
-                    result.options.pixel_datatype.to_webgl_constant(true).into(),
+                    result.options.pixel_datatype.to_webgl_constant(context.webgl2()).into(),
                     pixels
                         .map(|p| result.pixels(p, result.options.width, result.options.height))
                         .unwrap_or(GlValue::Null),
@@ -170,7 +174,9 @@ impl<G: Gl> Texture<G> {
         c.call("pixelStorei", &[gl::UNPACK_PREMULTIPLY_ALPHA_WEBGL.into(), false.into()])?;
         c.call("pixelStorei", &[gl::UNPACK_FLIP_Y_WEBGL.into(), false.into()])?;
         // An externally bound PBO changes the overload/meaning of texture data.
-        c.call("bindBuffer", &[gl::PIXEL_UNPACK_BUFFER.into(), GlValue::Null])?;
+        if c.webgl2() {
+            c.call("bindBuffer", &[gl::PIXEL_UNPACK_BUFFER.into(), GlValue::Null])?;
+        }
         Ok(())
     }
     fn pixels(&self, bytes: &[u8], width: u32, height: u32) -> GlValue<G::Object> {
@@ -232,43 +238,9 @@ impl<G: Gl> Texture<G> {
     pub fn set_sampler(&self, sampler: Sampler) -> Result<()> {
         sampler.validate()?;
         let c = &self.resource.context;
-        let mut min = sampler.minification_filter as u32;
-        let mut mag = sampler.magnification_filter as u32;
-        if self.options.pixel_datatype == PixelDatatype::Float
-            && matches!(c.call("getExtension", &["OES_texture_float_linear".into()])?, GlValue::Null)
-        {
-            min = if matches!(sampler.minification_filter, Min::Nearest | Min::Linear) {
-                gl::NEAREST
-            } else {
-                gl::NEAREST_MIPMAP_NEAREST
-            };
-            mag = gl::NEAREST;
-        }
-        // Half-float linear filtering is core in WebGL2.
-        if self.options.pixel_format.is_depth_format() {
-            min = gl::NEAREST;
-            mag = gl::NEAREST;
-        }
         self.bind(0)?;
-        let result = (|| {
-            for (pname, value) in [
-                (gl::TEXTURE_MIN_FILTER, min),
-                (gl::TEXTURE_MAG_FILTER, mag),
-                (gl::TEXTURE_WRAP_S, sampler.wrap_s as u32),
-                (gl::TEXTURE_WRAP_T, sampler.wrap_t as u32),
-            ] {
-                c.call("texParameteri", &[gl::TEXTURE_2D.into(), pname.into(), value.into()])?;
-            }
-            if !matches!(c.call("getExtension", &["EXT_texture_filter_anisotropic".into()])?, GlValue::Null) {
-                // Pinned Cesium Texture.setupSampler uses texParameteri, even
-                // for fractional maximumAnisotropy; retain its GL conversion.
-                c.call(
-                    "texParameteri",
-                    &[gl::TEXTURE_2D.into(), 0x84FE_u32.into(), sampler.maximum_anisotropy.into()],
-                )?;
-            }
-            Ok(())
-        })();
+        let result =
+            super::texture_support::sampler(c, gl::TEXTURE_2D, self.pixel_format(), self.pixel_datatype(), sampler);
         c.call("bindTexture", &[gl::TEXTURE_2D.into(), GlValue::Null])?;
         result?;
         *self.sampler.borrow_mut() = sampler;
@@ -311,7 +283,7 @@ impl<G: Gl> Texture<G> {
                     region.width.into(),
                     region.height.into(),
                     (self.options.pixel_format as u32).into(),
-                    self.options.pixel_datatype.to_webgl_constant(true).into(),
+                    self.options.pixel_datatype.to_webgl_constant(self.resource.context.webgl2()).into(),
                     self.pixels(pixels, region.width, region.height),
                 ],
             )
@@ -320,6 +292,10 @@ impl<G: Gl> Texture<G> {
         result.map(|_| ())
     }
     pub fn generate_mipmap(&self, hint: MipmapHint) -> Result<()> {
+        ensure(
+            self.resource.context.webgl2() || (self.width().is_power_of_two() && self.height().is_power_of_two()),
+            "WebGL1 mipmaps require power-of-two dimensions",
+        )?;
         ensure(
             !self.options.pixel_format.is_depth_format() && !self.options.pixel_format.is_compressed_format(),
             "Cannot mipmap depth/compressed textures",
@@ -405,6 +381,7 @@ impl<G: Gl> Texture<G> {
         ensure(base.len() == expected, "Invalid compressed texture byte length")?;
         size::<G::Object>(expected)?;
         options.sampler.validate()?;
+        super::texture_support::validate_format(context, options.pixel_format, options.pixel_datatype)?;
         let id = options.id.clone().unwrap_or_else(crate::core::create_guid::create_guid);
         let resource = Rc::new(Resource::create(context, "createTexture", &[], "deleteTexture")?);
         let sampler = options.sampler;
@@ -485,12 +462,14 @@ impl<G: Gl> Texture<G> {
                         &[
                             gl::TEXTURE_2D.into(),
                             size(level + 1)?,
-                            self.pixel_format().to_internal_format(self.pixel_datatype(), true).into(),
+                            self.pixel_format()
+                                .to_internal_format(self.pixel_datatype(), self.resource.context.webgl2())
+                                .into(),
                             width.into(),
                             height.into(),
                             0.into(),
                             (self.pixel_format() as u32).into(),
-                            self.pixel_datatype().to_webgl_constant(true).into(),
+                            self.pixel_datatype().to_webgl_constant(self.resource.context.webgl2()).into(),
                             GlValue::Pixels { bytes: bytes.clone(), datatype: self.pixel_datatype() },
                         ],
                     )?;
@@ -517,9 +496,9 @@ impl<G: Gl> Texture<G> {
                 &[
                     gl::TEXTURE_2D.into(),
                     0.into(),
-                    t.pixel_format().to_internal_format(t.pixel_datatype(), true).into(),
+                    t.pixel_format().to_internal_format(t.pixel_datatype(), context.webgl2()).into(),
                     (t.pixel_format() as u32).into(),
-                    t.pixel_datatype().to_webgl_constant(true).into(),
+                    t.pixel_datatype().to_webgl_constant(context.webgl2()).into(),
                     GlValue::Object(image),
                 ],
             )
@@ -540,7 +519,9 @@ impl<G: Gl> Texture<G> {
                 if self.options.skip_color_space_conversion { gl::NONE } else { gl::BROWSER_DEFAULT_WEBGL }.into(),
             ],
         )?;
-        c.call("bindBuffer", &[gl::PIXEL_UNPACK_BUFFER.into(), GlValue::Null])?;
+        if c.webgl2() {
+            c.call("bindBuffer", &[gl::PIXEL_UNPACK_BUFFER.into(), GlValue::Null])?;
+        }
         Ok(())
     }
     pub fn copy_from_image(&self, image: G::Object, region: TextureRegion) -> Result<()> {
@@ -562,7 +543,7 @@ impl<G: Gl> Texture<G> {
                     region.x.into(),
                     region.y.into(),
                     (self.pixel_format() as u32).into(),
-                    self.pixel_datatype().to_webgl_constant(true).into(),
+                    self.pixel_datatype().to_webgl_constant(self.resource.context.webgl2()).into(),
                     GlValue::Object(image),
                 ],
             )
@@ -597,8 +578,7 @@ impl<G: Gl> Texture<G> {
         range(x as usize, r.width as usize, self.width() as usize)?;
         range(y as usize, r.height as usize, self.height() as usize)?;
         let c = &self.resource.context;
-        let dimensions =
-            copy.framebuffer.and_then(super::Framebuffer::dimensions).unwrap_or(c.host().drawing_buffer_size()?);
+        let dimensions = copy.framebuffer.and_then(super::Framebuffer::dimensions).unwrap_or(c.drawing_buffer_size()?);
         range(r.x as usize, r.width as usize, dimensions[0] as usize)?;
         range(r.y as usize, r.height as usize, dimensions[1] as usize)?;
         c.bind_framebuffer(copy.framebuffer)?;

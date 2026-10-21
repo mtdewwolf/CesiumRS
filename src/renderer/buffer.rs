@@ -34,6 +34,13 @@ impl<G: Gl> Clone for Buffer<G> {
 }
 impl<G: Gl> Buffer<G> {
     pub fn new(context: &Context<G>, kind: BufferKind, usage: BufferUsage, data: BufferData<'_>) -> Result<Self> {
+        ensure(context.webgl2() || kind != BufferKind::PixelPack, "Pixel pack buffers require WebGL2")?;
+        if kind == BufferKind::Index(IndexDatatype::UnsignedInt) {
+            ensure(
+                context.webgl2() || context.extension_supported("OES_element_index_uint")?,
+                "Unsigned integer indices unsupported",
+            )?;
+        }
         let length = match data {
             BufferData::Bytes(b) => b.len(),
             BufferData::Size(n) => n,
@@ -96,6 +103,7 @@ impl<G: Gl> Buffer<G> {
         write_offset: usize,
         length: usize,
     ) -> Result<()> {
+        ensure(self.resource.context.webgl2(), "Buffer copies require WebGL2")?;
         self.resource.context.same(&source.resource.context)?;
         range(read_offset, length, source.size)?;
         range(write_offset, length, self.size)?;
@@ -132,6 +140,7 @@ impl<G: Gl> Buffer<G> {
     /// Rust readback uses byte offsets and an owned byte vector, avoiding JS's
     /// inconsistent element/byte offset interpretation for typed-array views.
     pub fn get_buffer_data(&self, offset: usize, length: usize) -> Result<Vec<u8>> {
+        ensure(self.resource.context.webgl2(), "Buffer readback requires WebGL2")?;
         range(offset, length, self.size)?;
         let ctx = &self.resource.context;
         ctx.call("bindBuffer", &[gl::COPY_READ_BUFFER.into(), self.resource.value()?])?;

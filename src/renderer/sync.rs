@@ -8,6 +8,7 @@ pub struct Sync<G: Gl> {
 }
 impl<G: Gl> Sync<G> {
     pub fn new(context: &Context<G>) -> Result<Self> {
+        ensure(context.webgl2(), "Sync requires WebGL2")?;
         Ok(Self {
             resource: Resource::create(
                 context,

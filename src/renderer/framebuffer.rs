@@ -1,15 +1,17 @@
 //! CesiumJS Framebuffer: texture/renderbuffer attachments and explicit ownership.
-use super::{context::*, Renderbuffer, Texture};
+use super::{context::*, CubeMapFace, Renderbuffer, Texture};
 use crate::core::{webgl_constants as gl, PixelDatatype, PixelFormat, RuntimeError};
 use std::rc::Rc;
 pub enum Attachment<G: Gl> {
     Texture(Rc<Texture<G>>),
+    CubeFace(CubeMapFace<G>),
     Renderbuffer(Rc<Renderbuffer<G>>),
 }
 impl<G: Gl> Clone for Attachment<G> {
     fn clone(&self) -> Self {
         match self {
             Self::Texture(v) => Self::Texture(v.clone()),
+            Self::CubeFace(v) => Self::CubeFace(v.clone()),
             Self::Renderbuffer(v) => Self::Renderbuffer(v.clone()),
         }
     }
@@ -18,24 +20,39 @@ impl<G: Gl> Attachment<G> {
     fn resource(&self) -> &Resource<G> {
         match self {
             Self::Texture(v) => &v.resource,
+            Self::CubeFace(v) => &v.resource,
             Self::Renderbuffer(v) => &v.resource,
         }
     }
     pub fn width(&self) -> u32 {
         match self {
             Self::Texture(v) => v.width(),
+            Self::CubeFace(v) => v.width(),
             Self::Renderbuffer(v) => v.width(),
         }
     }
     pub fn height(&self) -> u32 {
         match self {
             Self::Texture(v) => v.height(),
+            Self::CubeFace(v) => v.height(),
             Self::Renderbuffer(v) => v.height(),
         }
     }
     fn attach(&self, context: &Context<G>, attachment: u32) -> Result<()> {
         context.same(&self.resource().context)?;
         match self {
+            Self::CubeFace(t) => {
+                context.call(
+                    "framebufferTexture2D",
+                    &[
+                        gl::FRAMEBUFFER.into(),
+                        attachment.into(),
+                        (t.face() as u32).into(),
+                        t.resource.value()?,
+                        0.into(),
+                    ],
+                )?;
+            }
             Self::Texture(t) => {
                 context.call(
                     "framebufferTexture2D",
@@ -50,6 +67,13 @@ impl<G: Gl> Attachment<G> {
             }
         }
         Ok(())
+    }
+    pub fn pixel_format_datatype(&self) -> Option<(PixelFormat, PixelDatatype)> {
+        match self {
+            Self::Texture(t) => Some((t.pixel_format(), t.pixel_datatype())),
+            Self::CubeFace(t) => Some((t.pixel_format(), t.pixel_datatype())),
+            Self::Renderbuffer(_) => None,
+        }
     }
 }
 pub struct FramebufferOptions<G: Gl> {
@@ -80,11 +104,15 @@ impl<G: Gl> Framebuffer<G> {
             "Cannot combine stencil with depth/depth-stencil",
         )?;
         ensure(
-            options.colors.iter().all(|a| matches!(a, Attachment::Texture(_)))
+            options.colors.iter().all(|a| !matches!(a, Attachment::Renderbuffer(_)))
                 || options.colors.iter().all(|a| matches!(a, Attachment::Renderbuffer(_))),
             "Cannot mix color textures and renderbuffers",
         )?;
-        if let GlValue::Number(max) = context.call("getParameter", &[gl::MAX_COLOR_ATTACHMENTS.into()])? {
+        let mrt = context.webgl2() || context.extension_supported("WEBGL_draw_buffers")?;
+        ensure(mrt || options.colors.len() <= 1, "Multiple render targets unsupported")?;
+        if let GlValue::Number(max) =
+            if mrt { context.call("getParameter", &[gl::MAX_COLOR_ATTACHMENTS.into()])? } else { 1u32.into() }
+        {
             ensure(options.colors.len() as f64 <= max, "Too many color attachments")?;
         }
         for a in options.colors.iter().chain(options.depth.iter()).chain(options.depth_stencil.iter()) {
@@ -92,11 +120,11 @@ impl<G: Gl> Framebuffer<G> {
             a.resource().value()?;
         }
         for a in &options.colors {
-            if let Attachment::Texture(t) = a {
+            if let Some((format, datatype)) = a.pixel_format_datatype() {
                 ensure(
-                    t.pixel_format().is_color_format()
+                    format.is_color_format()
                         || matches!(
-                            t.pixel_format(),
+                            format,
                             PixelFormat::Rg
                                 | PixelFormat::RedInteger
                                 | PixelFormat::RgInteger
@@ -105,10 +133,15 @@ impl<G: Gl> Framebuffer<G> {
                         ),
                     "Color texture requires a color pixel format",
                 )?;
-                if matches!(t.pixel_datatype(), PixelDatatype::Float | PixelDatatype::HalfFloat) {
+                if matches!(datatype, PixelDatatype::Float | PixelDatatype::HalfFloat) {
+                    let caps = context.capabilities()?;
                     ensure(
-                        !matches!(context.call("getExtension", &["EXT_color_buffer_float".into()])?, GlValue::Null),
-                        "Float color attachment requires EXT_color_buffer_float",
+                        if datatype == PixelDatatype::Float {
+                            caps.color_buffer_float
+                        } else {
+                            caps.color_buffer_half_float
+                        },
+                        "Floating point color attachments unsupported",
                     )?;
                 }
             }
@@ -164,6 +197,9 @@ impl<G: Gl> Framebuffer<G> {
             _ => None,
         }
     }
+    pub fn color_attachment(&self, index: usize) -> Option<&Attachment<G>> {
+        self.options.colors.get(index)
+    }
     pub fn color_renderbuffer(&self, index: usize) -> Option<&Rc<Renderbuffer<G>>> {
         match self.options.colors.get(index)? {
             Attachment::Renderbuffer(r) => Some(r),
@@ -203,14 +239,26 @@ impl<G: Gl> Framebuffer<G> {
         self.validate_resources()?;
         self.resource
             .context
-            .call("bindFramebuffer", &[gl::DRAW_FRAMEBUFFER.into(), self.resource.value()?])
+            .call(
+                "bindFramebuffer",
+                &[
+                    (if self.resource.context.webgl2() { gl::DRAW_FRAMEBUFFER } else { gl::FRAMEBUFFER }).into(),
+                    self.resource.value()?,
+                ],
+            )
             .map(|_| ())
     }
     pub fn bind_read(&self) -> Result<()> {
         self.validate_resources()?;
         self.resource
             .context
-            .call("bindFramebuffer", &[gl::READ_FRAMEBUFFER.into(), self.resource.value()?])
+            .call(
+                "bindFramebuffer",
+                &[
+                    (if self.resource.context.webgl2() { gl::READ_FRAMEBUFFER } else { gl::FRAMEBUFFER }).into(),
+                    self.resource.value()?,
+                ],
+            )
             .map(|_| ())
     }
     pub fn status(&self) -> Result<u32> {
@@ -286,10 +334,21 @@ impl<G: Gl> Context<G> {
         if let Some(f) = framebuffer {
             self.same(&f.resource.context)?;
             f.bind()?;
-            self.call("drawBuffers", &[GlValue::Ints(f.active_color_attachments())])?;
+            if self.validate_framebuffer.get() {
+                let status = self.call("checkFramebufferStatus", &[gl::FRAMEBUFFER.into()])?;
+                ensure(
+                    matches!(status,GlValue::Number(n) if n==gl::FRAMEBUFFER_COMPLETE as f64),
+                    "Framebuffer is incomplete",
+                )?;
+            }
+            if self.webgl2() || self.extension_supported("WEBGL_draw_buffers")? {
+                self.call("drawBuffers", &[GlValue::Ints(f.active_color_attachments())])?;
+            }
         } else {
             self.call("bindFramebuffer", &[gl::FRAMEBUFFER.into(), GlValue::Null])?;
-            self.call("drawBuffers", &[GlValue::Ints(vec![gl::BACK as i32])])?;
+            if self.webgl2() || self.extension_supported("WEBGL_draw_buffers")? {
+                self.call("drawBuffers", &[GlValue::Ints(vec![gl::BACK as i32])])?;
+            }
         }
         Ok(())
     }
@@ -315,14 +374,13 @@ impl<G: Gl> Context<G> {
     // output layout, allocation and metadata must describe the same conversion.
     fn readback_layout(&self, read: &ReadState<'_, G>) -> Result<(PixelFormat, PixelDatatype, usize)> {
         let region = read.region;
-        let dimensions =
-            read.framebuffer.and_then(Framebuffer::dimensions).unwrap_or(self.host().drawing_buffer_size()?);
+        let dimensions = read.framebuffer.and_then(Framebuffer::dimensions).unwrap_or(self.drawing_buffer_size()?);
         range(region.x as usize, region.width as usize, dimensions[0] as usize)?;
         range(region.y as usize, region.height as usize, dimensions[1] as usize)?;
         let (attachment_format, attachment_datatype) = read
             .framebuffer
-            .and_then(|f| f.color_texture(0))
-            .map(|t| (t.pixel_format(), t.pixel_datatype()))
+            .and_then(|f| f.color_attachment(0))
+            .and_then(Attachment::pixel_format_datatype)
             .unwrap_or((PixelFormat::Rgba, PixelDatatype::UnsignedByte));
         let (format, datatype) = match attachment_format {
             PixelFormat::RedInteger | PixelFormat::RgInteger | PixelFormat::RgbInteger | PixelFormat::RgbaInteger => {
@@ -348,7 +406,9 @@ impl<G: Gl> Context<G> {
         let (format, datatype, length) = self.readback_layout(&read)?;
         let region = read.region;
         self.bind_framebuffer(read.framebuffer)?;
-        self.call("bindBuffer", &[gl::PIXEL_PACK_BUFFER.into(), GlValue::Null])?;
+        if self.webgl2() {
+            self.call("bindBuffer", &[gl::PIXEL_PACK_BUFFER.into(), GlValue::Null])?;
+        }
         self.call("pixelStorei", &[gl::PACK_ALIGNMENT.into(), 1.into()])?;
         match self.call(
             "readPixels",
@@ -358,7 +418,7 @@ impl<G: Gl> Context<G> {
                 region.width.into(),
                 region.height.into(),
                 (format as u32).into(),
-                datatype.to_webgl_constant(true).into(),
+                datatype.to_webgl_constant(self.webgl2()).into(),
                 GlValue::Pixels { bytes: vec![0; length], datatype },
             ],
         )? {
@@ -388,11 +448,13 @@ impl<G: Gl> Context<G> {
                 r.width.into(),
                 r.height.into(),
                 (format as u32).into(),
-                datatype.to_webgl_constant(true).into(),
+                datatype.to_webgl_constant(self.webgl2()).into(),
                 0.into(),
             ],
         );
-        self.call("bindBuffer", &[gl::PIXEL_PACK_BUFFER.into(), GlValue::Null])?;
+        if self.webgl2() {
+            self.call("bindBuffer", &[gl::PIXEL_PACK_BUFFER.into(), GlValue::Null])?;
+        }
         result?;
         Ok(buffer)
     }

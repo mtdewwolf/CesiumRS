@@ -35,31 +35,31 @@ Along the way, `core::js_math` made the port's `sin`, `cos`, `log` and the other
    - ✅ network heightmap/quantized and 3D Tiles terrain providers, Google Earth Enterprise metadata and terrain, world-terrain factories. Ion resources/geocoding and platform clients are now validated. Bing, Google, Pelias, OpenCage and coordinate geocoders pass deterministic parsing, request construction, attribution and error fixtures.
 11. ✅ **Contracts and host behavior:** interpolation/packing interfaces, geometry factories, video bindings, terrain sampling, screen-space gestures and canvas text/pin rendering validated.
 
-Core has reached 100% of applicable modules; Renderer is the current milestone. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. The viewer already runs on Core — it was migrated ahead of 100% Core so the two implementations could not drift apart. After Core, proceed to Renderer and Scene.
+Core and Renderer have reached 100% of applicable modules; Scene is the next milestone. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. The viewer already runs on Core — it was migrated ahead of 100% Core so the two implementations could not drift apart. After Core, proceed to Renderer and Scene.
 
 ### Validated partial-module batch
 
 All 35 formerly partial Core implementations and the native KTX2 worker calculation now pass validation. The batch adds 617 pinned CesiumJS cases, native lifecycle/HTTP checks and 23 Chromium checks, including Rust video/worker bindings and packaged WASM codec output. Validation found and fixed short GEE packet decoding, Basis codec configuration/output differences and lost ready terrain results on tile/level errors. See [validation details](docs/core-validation.md).
 
-The final 20 Core modules are implemented and validated. This batch adds 199 pinned reference cases, native terrain/input integration and exact Chromium text/pin and gesture comparisons. Core has 270 validated applicable modules and no remaining partial or todo entries. The 18 n/a entries retain explicit Rust replacement notes. Renderer and Scene are the next package milestones.
+The final 20 Core modules are implemented and validated. This batch adds 199 pinned reference cases, native terrain/input integration and exact Chromium text/pin and gesture comparisons. Core has 270 validated applicable modules and no remaining partial or todo entries. The 18 n/a entries retain explicit Rust replacement notes. Renderer is now complete; Scene is the next package milestone.
 
 
-### Renderer resources, targets and compute
+### Renderer completion
 
-The Renderer continuation closes eight original partial modules: vertex arrays,
-shader sources/programs, textures, render state, pass state and draw/clear
-commands. It adds framebuffers/renderbuffers/multisample targets, hardware limits,
-shader builders/caches and texture caches. The next completed batch adds
-FramebufferManager, ComputeCommand, ComputeEngine and Sync, plus the explicitly
-owned viewport quad. Validation now covers 387 portable
-Renderer cases, 361 Chromium GPU assertions and native ownership, cache, callback
-and failure regressions. See [Renderer API and validation](docs/renderer-foundation.md).
+All **46 Renderer modules** are implemented and reference-validated. The final
+13 close Context, UniformState and AutomaticUniforms and add cube/volume textures,
+face loading, atlases, vertex-array facades, shared contexts, uniform factories
+and immutable render-state helpers. The browser adapter executes WebGL1 and
+WebGL2, including extension dispatch and a software VAO fallback.
 
-Remaining batches, in dependency order:
+Validation covers **1,549 portable Renderer cases**, **1,720 Chromium assertions**
+across the original and completion suites, and native lifecycle, async ordering,
+cache, cancellation and failure regressions. All 90 automatic uniforms have value
+providers; 83 numeric values are compared across 14 Scene frame scenarios and
+all seven sampler inputs are exercised during draws. See
+[Renderer API and validation](docs/renderer-foundation.md).
 
-1. Complete Context backend/lifecycle, picking and default texture helpers.
-2. Complete Scene frame updates in UniformState/AutomaticUniforms, including
-   2D/Columbus View, eye/ENU, lighting/atmosphere and environment textures.
-3. Cube/3D textures, atlases, vertex-array facades and shared contexts; remaining
-   uniform/render-state helper modules.
-4. Scene integration, followed by remaining Renderer and Scene modules.
+Next milestone: port Scene using the typed frame snapshots, shared resource
+ownership and executable Renderer commands. The raw viewer's migration to this
+API and a concrete native GPU driver remain separate integration work; native
+applications can implement the existing `Gl` host contract.
