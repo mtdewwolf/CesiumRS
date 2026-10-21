@@ -3,9 +3,7 @@ use super::network_terrain::{Reader, TerrainFuture};
 use super::quantized_mesh_terrain_data::QuantizedMeshTerrainDataOptions;
 use super::quantized_terrain_upsample::{upsample_quantized_terrain_mesh, QuantizedTerrainUpsampleRequest};
 use super::terrain_data::{TerrainMeshRequest, TerrainTile};
-use super::terrain_encoding::{TerrainEncodingOptions, TerrainVertex};
 use super::terrain_mesh::TerrainMeshOptions;
-use super::terrain_provider::TerrainEdgeIndices;
 use super::*;
 use std::sync::Arc;
 #[derive(Clone, Debug)]
@@ -20,7 +18,6 @@ pub struct GoogleEarthEnterpriseTerrainData {
     child: Option<QuantizedMeshTerrainData<Credit>>,
 }
 struct Quad {
-    origin: Cartesian2,
     step: Cartesian2,
     points: Vec<(u8, u8, f64)>,
     indices: Vec<u32>,
@@ -31,10 +28,7 @@ fn quads(bytes: &[u8]) -> Result<Vec<Quad>, RuntimeError> {
     for _ in 0..4 {
         let len = r.u32()? as usize;
         let mut q = Reader::new(r.take(len)?);
-        let origin = Cartesian2::new(
-            (q.f64()? * 180.) * (std::f64::consts::PI / 180.),
-            (q.f64()? * 180.) * (std::f64::consts::PI / 180.),
-        );
+        q.take(16)?; // origin
         let step = Cartesian2::new(
             (q.f64()? * 180.) * (std::f64::consts::PI / 180.),
             (q.f64()? * 180.) * (std::f64::consts::PI / 180.),
@@ -50,7 +44,7 @@ fn quads(bytes: &[u8]) -> Result<Vec<Quad>, RuntimeError> {
         if q.pos != len || indices.iter().any(|&i| i as usize >= count) {
             return Err(RuntimeError::new("Invalid terrain tile."));
         }
-        out.push(Quad { origin, step, points, indices });
+        out.push(Quad { step, points, indices });
     }
     Ok(out)
 }
@@ -147,8 +141,7 @@ impl GoogleEarthEnterpriseTerrainData {
         if let Some(m) = &self.mesh {
             return Ok(m.clone());
         }
-        let fail = || RuntimeError::new("Invalid terrain tile.");
-        let qs = quads(self.buffer.as_deref().ok_or_else(fail)?)?;
+        let buffer = self.buffer.as_deref().ok_or_else(|| RuntimeError::new("Invalid terrain tile."))?;
         let r = request.tiling_scheme.tile_xy_to_rectangle(
             request.tile.x as f64,
             request.tile.y as f64,
@@ -156,198 +149,34 @@ impl GoogleEarthEnterpriseTerrainData {
         );
         let e = *request.tiling_scheme.ellipsoid();
         let center = e.cartographic_to_cartesian(&r.center());
-        let from = Transforms::east_north_up_to_fixed_frame(center, &e);
-        let to = from.inverse_transformation();
         self.skirt_height = (40075.16 / 1i32.wrapping_shl(request.tile.level) as f64 * 8.).min(1000.);
-        let mut lon_borders = vec![r.west, r.east];
-        let mut lat_borders = vec![r.south, r.north];
-        for q in &qs {
-            lon_borders.push(q.origin.x);
-            lat_borders.push(q.origin.y);
-        }
-        let mut cartographics: Vec<Cartographic> = vec![];
-        let mut border_points: Vec<(Cartographic, u32)> = vec![];
-        let mut samples = vec![];
-        let mut indices = vec![];
-        let mut borders: [Vec<u32>; 4] = Default::default();
-        let (mut min_h, mut max_h) = (f64::INFINITY, f64::NEG_INFINITY);
-        let (mut min, mut max) = (
-            Cartesian3::new(f64::INFINITY, f64::INFINITY, f64::INFINITY),
-            Cartesian3::new(f64::NEG_INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY),
-        );
-        let south = WebMercatorProjection::geodetic_latitude_to_mercator_angle(r.south);
-        let inv = 1. / (WebMercatorProjection::geodetic_latitude_to_mercator_angle(r.north) - south);
-        for q in qs {
-            let mut mapping = vec![];
-            for (x, y, mut h) in q.points {
-                let lon = q.origin.x + x as f64 * q.step.x;
-                let lat = q.origin.y + y as f64 * q.step.y;
-                if h != 0. && h < self.negative_elevation_threshold {
-                    h *= -2f64.powf(self.negative_altitude_exponent_bias);
-                }
-                h *= 6371010.;
-                let c = Cartographic::new(lon, lat, h);
-                let border = lon_borders.iter().any(|v| (lon - v).abs() <= 1e-12)
-                    || lat_borders.iter().any(|v| (lat - v).abs() <= 1e-12);
-                if border {
-                    if let Some((_, index)) = border_points.iter().find(|(v, _)| {
-                        (v.longitude - lon).abs() <= 1e-12
-                            && (v.latitude - lat).abs() <= 1e-12
-                            && (v.height - h).abs() <= 1e-12
-                    }) {
-                        mapping.push(*index);
-                        continue;
-                    }
-                }
-                let i = samples.len() as u32;
-                mapping.push(i);
-                if border {
-                    border_points.push((c, i));
-                }
-                if (lon - r.west).abs() < q.step.x * 0.5 {
-                    borders[0].push(i);
-                } else if (lon - r.east).abs() < q.step.x * 0.5 {
-                    borders[2].push(i);
-                } else if (lat - r.south).abs() < q.step.y * 0.5 {
-                    borders[1].push(i);
-                } else if (lat - r.north).abs() < q.step.y * 0.5 {
-                    borders[3].push(i);
-                }
-                min_h = min_h.min(h);
-                max_h = max_h.max(h);
-                let pos = e.cartographic_to_cartesian(&c);
-                let enu = to.multiply_by_point(pos);
-                min = min.minimum_by_component(enu);
-                max = max.maximum_by_component(enu);
-                let mut v = TerrainVertex::new(
-                    pos,
-                    Cartesian2::new(
-                        ((lon - r.west) / r.width()).clamp(0., 1.),
-                        ((lat - r.south) / r.height()).clamp(0., 1.),
-                    ),
-                    h,
-                );
-                v.web_mercator_t =
-                    Some((WebMercatorProjection::geodetic_latitude_to_mercator_angle(lat) - south) * inv);
-                if request.exaggeration != 1. {
-                    v.geodetic_surface_normal = e.geodetic_surface_normal(pos);
-                }
-                samples.push(v);
-                cartographics.push(c);
-            }
-            indices.extend(q.indices.iter().map(|&i| mapping[i as usize]));
-        }
-        let vertex_count = samples.len();
-        let index_count = indices.len();
-        borders[0].sort_by(|&a, &b| cartographics[b as usize].latitude.total_cmp(&cartographics[a as usize].latitude));
-        borders[1]
-            .sort_by(|&a, &b| cartographics[a as usize].longitude.total_cmp(&cartographics[b as usize].longitude));
-        borders[2].sort_by(|&a, &b| cartographics[a as usize].latitude.total_cmp(&cartographics[b as usize].latitude));
-        borders[3]
-            .sort_by(|&a, &b| cartographics[b as usize].longitude.total_cmp(&cartographics[a as usize].longitude));
-        let mut last = None;
-        let mut h_min = min_h;
-        for (k, border) in borders.iter().enumerate() {
-            let fudge = match k {
-                0 => -1e-5 * r.width(),
-                1 => -1e-5 * r.height(),
-                2 => 1e-5 * r.width(),
-                _ => 1e-5 * r.height(),
-            };
-            let corner = if k == 0 { -1e-5 * r.height() } else { 1e-5 * r.height() };
-            for (j, &i) in border.iter().enumerate() {
-                let mut c = cartographics[i as usize];
-                c.latitude = c.latitude.clamp(-std::f64::consts::FRAC_PI_2, std::f64::consts::FRAC_PI_2);
-                c.height -= self.skirt_height;
-                h_min = h_min.min(c.height);
-                if k % 2 == 0 {
-                    c.longitude += fudge;
-                    if j == border.len() - 1 {
-                        c.latitude += corner;
-                    } else if j == 0 {
-                        c.latitude -= corner;
-                    }
-                } else {
-                    c.latitude += fudge;
-                }
-                let mut v = samples[i as usize];
-                v.position = e.cartographic_to_cartesian(&c);
-                v.height = c.height;
-                let enu = to.multiply_by_point(v.position);
-                min = min.minimum_by_component(enu);
-                max = max.maximum_by_component(enu);
-                let current = samples.len() as u32;
-                samples.push(v);
-                if let Some(previous) = last {
-                    indices.extend([previous, current - 1, current, current, i, previous]);
-                }
-                last = Some(i);
-            }
-        }
-        if !borders[0].is_empty() && !borders[3].is_empty() {
-            let a = *borders[3].last().unwrap();
-            let b = samples.len() as u32 - 1;
-            let c = vertex_count as u32;
-            indices.extend([a, b, c, c, borders[0][0], a]);
-        }
-        let positions = samples.iter().map(|v| v.position).collect::<Vec<_>>();
-        let sphere = BoundingSphere::from_points(&positions);
-        let obb = OrientedBoundingBox::from_rectangle(&r, min_h, max_h, &e);
-        let horizon = EllipsoidalOccluder::new(&e, None).compute_horizon_culling_point_possibly_under_ellipsoid(
-            center,
-            &positions,
-            Some(min_h),
-        );
-        let encoding = TerrainEncoding::new(TerrainEncodingOptions {
-            center: Some(center),
-            axis_aligned_bounding_box: Some(AxisAlignedBoundingBox::new(min, max, Some(center))),
-            minimum_height: Some(h_min),
-            maximum_height: Some(max_h),
-            from_enu: Some(from),
-            has_web_mercator_t: true,
-            has_geodetic_surface_normals: request.exaggeration != 1.,
+        let result = create_vertices_from_google_earth_enterprise_buffer(GoogleEarthEnterpriseBufferRequest {
+            buffer,
+            relative_to_center: center,
+            ellipsoid: e,
+            rectangle: r,
             exaggeration: request.exaggeration,
             exaggeration_relative_height: request.exaggeration_relative_height,
-            ..Default::default()
-        })
-        .ok_or_else(fail)?;
-        let mut vertices = vec![0.; samples.len() * encoding.stride];
-        let mut offset = 0;
-        for v in samples {
-            offset = encoding.encode(&mut vertices, offset, &v).ok_or_else(fail)?;
-        }
-        for b in &mut borders {
-            b.reverse();
-        }
-        let [west, mut south, east, mut north] = borders;
-        if let (Some(&a), Some(&b)) = (east.last(), west.first()) {
-            south.insert(0, a);
-            south.push(b);
-        }
-        if let (Some(&a), Some(&b)) = (west.last(), east.first()) {
-            north.insert(0, a);
-            north.push(b);
-        }
+            skirt_height: self.skirt_height,
+            include_web_mercator_t: true,
+            negative_altitude_exponent_bias: self.negative_altitude_exponent_bias,
+            negative_elevation_threshold: self.negative_elevation_threshold,
+        })?;
         let mesh = Arc::new(TerrainMesh::new(TerrainMeshOptions {
             center,
-            vertices,
-            indices: TypedArray::Uint16(indices.into_iter().map(|i| i as u16).collect()),
-            index_count_without_skirts: Some(index_count),
-            vertex_count_without_skirts: vertex_count,
-            minimum_height: min_h,
-            maximum_height: max_h,
+            vertices: result.vertices,
+            indices: TypedArray::Uint16(result.indices),
+            index_count_without_skirts: Some(result.index_count_without_skirts),
+            vertex_count_without_skirts: result.vertex_count_without_skirts,
+            minimum_height: result.minimum_height,
+            maximum_height: result.maximum_height,
             rectangle: r,
-            bounding_sphere_3d: sphere,
-            occludee_point_in_scaled_space: horizon,
-            vertex_stride: Some(encoding.stride),
-            oriented_bounding_box: obb,
-            encoding,
-            edges: TerrainEdgeIndices {
-                west_indices_south_to_north: west,
-                south_indices_east_to_west: south,
-                east_indices_north_to_south: east,
-                north_indices_west_to_east: north,
-            },
+            bounding_sphere_3d: result.bounding_sphere_3d,
+            occludee_point_in_scaled_space: result.occludee_point_in_scaled_space,
+            vertex_stride: Some(result.number_of_attributes),
+            oriented_bounding_box: result.oriented_bounding_box,
+            encoding: result.encoding,
+            edges: result.edges,
         }));
         self.buffer = None;
         self.mesh = Some(mesh.clone());

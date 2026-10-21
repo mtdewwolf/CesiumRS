@@ -452,6 +452,11 @@ pub mod google_earth_enterprise_metadata;
 pub use google_earth_enterprise_metadata::GoogleEarthEnterpriseMetadata;
 
 pub mod google_earth_enterprise_terrain_data;
+pub mod google_earth_enterprise_terrain_processor;
+pub use google_earth_enterprise_terrain_processor::{
+    create_vertices_from_google_earth_enterprise_buffer, GoogleEarthEnterpriseBufferRequest,
+    GoogleEarthEnterpriseBufferResult,
+};
 pub use google_earth_enterprise_terrain_data::GoogleEarthEnterpriseTerrainData;
 
 pub mod google_earth_enterprise_terrain_provider;

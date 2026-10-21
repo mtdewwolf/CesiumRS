@@ -1696,5 +1696,25 @@
     "status": "ported",
     "rust": "workers::create_geometry",
     "note": "Owned typed/packed/ready subtasks, reusable built-in/custom async module registry, concurrent start, ordered output and prompt batch failure. Explicit host registration replaces dynamic import. Exact PrimitivePipeline create-result wire layout; nine direct worker cases plus native thread, async ordering/reuse/failure and corrupt-buffer regressions."
+  },
+  "Workers/createVerticesFromCesium3DTilesTerrain": {
+    "status": "ported",
+    "rust": "workers::terrain::create_vertices_from_cesium_3d_tiles_terrain",
+    "note": "TerrainMeshProxy with owned vertices, sized index/edge buffers, skirt counts and full encoding from the native glTF/meshopt processor. 37 direct worker cases over grids, normals, meshopt, levels, exaggeration and a rejected glTF."
+  },
+  "Workers/upsampleVerticesFromCesium3DTilesTerrain": {
+    "status": "ported",
+    "rust": "workers::terrain::upsample_vertices_from_cesium_3d_tiles_terrain",
+    "note": "Worker options (parent vertices/indices/counts/heights/encoding) replace a TerrainMesh argument; child proxy with heights, bounds and Cesium's always-undefined horizon point. 144 direct worker cases fed by the creation worker's own output, all four quadrants."
+  },
+  "Workers/createVerticesFromGoogleEarthEnterpriseBuffer": {
+    "status": "ported",
+    "rust": "core::google_earth_enterprise_terrain_processor",
+    "note": "Faithful quad parsing, epsilon border deduplication, skirts, Web Mercator/geodetic-normal encoding and DataView/array-length failures; GoogleEarthEnterpriseTerrainData now uses it. Required geographic rectangle replaces Cesium's throwing native-rectangle path. 24 direct worker cases including malformed tiles."
+  },
+  "Workers/decodeGoogleEarthEnterprisePacket": {
+    "status": "ported",
+    "rust": "workers::terrain::decode_google_earth_enterprise_packet",
+    "note": "Typed packet kinds; XOR decoding, zlib/gzip inflation with both header byte orders, quadtree metadata, five-mesh terrain splitting and dbRoot buffers. 29 direct worker cases including every header/offset failure and short instance lists."
   }
 }
