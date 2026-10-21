@@ -59,15 +59,20 @@ where
     let SampleTerrainOptions { level, reject_on_tile_fail } = options;
     let scheme = provider.tiling_scheme();
     let mut groups: VecDeque<TileGroup> = VecDeque::new();
+    // Tile -> index into `groups`, which keeps first-seen order as Cesium's
+    // object keys do.
+    let mut by_tile: std::collections::HashMap<(u32, u32), usize> = std::collections::HashMap::new();
     for (index, position) in positions.iter().enumerate() {
         let Some(xy) = scheme.position_to_tile_xy(position, level) else {
             continue;
         };
         let (x, y) = (xy.x as u32, xy.y as u32);
-        if let Some(group) = groups.iter_mut().find(|g| g.x == x && g.y == y) {
-            group.positions.push((index, *position));
-        } else {
-            groups.push_back(TileGroup { x, y, positions: vec![(index, *position)] });
+        match by_tile.entry((x, y)) {
+            std::collections::hash_map::Entry::Occupied(e) => groups[*e.get()].positions.push((index, *position)),
+            std::collections::hash_map::Entry::Vacant(e) => {
+                e.insert(groups.len());
+                groups.push_back(TileGroup { x, y, positions: vec![(index, *position)] });
+            }
         }
     }
     let working = std::rc::Rc::new(std::cell::RefCell::new(positions.to_vec()));

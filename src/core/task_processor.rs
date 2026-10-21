@@ -23,6 +23,10 @@ pub struct WebAssemblyOptions {
 
 /// Implementations initialize a worker lazily and transfer owned Rust buffers
 /// rather than serializing JS transferable-object lists.
+///
+/// A worker serves one [`TaskProcessor`], as each Cesium `TaskProcessor`
+/// owns its web worker: task ids restart at 0 in every processor, and
+/// destroying a processor terminates its worker.
 pub trait TaskWorker<P, R> {
     fn run(&self, id: u64, parameters: P) -> TaskFuture<R>;
     fn init_web_assembly_module(&self, options: WebAssemblyOptions) -> TaskFuture<serde_json::Value>;

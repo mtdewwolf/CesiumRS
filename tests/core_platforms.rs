@@ -154,6 +154,36 @@ fn ion_resource() {
     );
 }
 #[test]
+fn ion_derived_resource_keeps_caller_retry_options() {
+    let t = Rc::new(Transport { response: RefCell::new(json!("ok")), ..Default::default() });
+    let client = ResourceClient::new(t);
+    let ep = IonResource::create_endpoint_resource(
+        42,
+        &Ion::default(),
+        &IonAssetOptions { server: Some(Resource::new("https://ion.test/api/").unwrap()), ..Default::default() },
+    );
+    let endpoint = json!({"url": "https://assets.test/root/tileset.json", "accessToken": "t", "attributions": []});
+    let r = IonResource::new(endpoint, ep, client, Ion::default().client_headers()).unwrap();
+    let callback: cesium_rs::core::resource::RetryCallback = Rc::new(|_, _| Box::pin(async { true }));
+    let d = r
+        .get_derived_resource(DerivedResourceOptions {
+            retry_attempts: Some(5),
+            retry_callback: Some(callback.clone()),
+            ..Default::default()
+        })
+        .unwrap();
+    let o = d.as_resource().options();
+    assert_eq!(o.retry_attempts, 5);
+    assert!(o.fallible_retry_callback.is_none());
+    assert!(Rc::ptr_eq(o.retry_callback.as_ref().unwrap(), &callback));
+    drop(o);
+    // Without overrides, the derived resource keeps the ion token refresh.
+    let plain = r.get_derived_resource(DerivedResourceOptions::default()).unwrap();
+    let o = plain.as_resource().options();
+    assert_eq!(o.retry_attempts, 1);
+    assert!(o.fallible_retry_callback.is_some());
+}
+#[test]
 fn itwin() {
     run(
         "core",

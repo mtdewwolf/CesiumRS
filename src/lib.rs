@@ -303,6 +303,11 @@ mod tests {
         let win = crate::mesh::build_tile_grid(&e, 5, 0, 0.3, 0.2, 1, 2);
         assert_eq!(win.len(), 9 * 4 * 2 * 6);
         assert!(win.iter().all(|v| v.is_finite()));
+        // A focus just past the antimeridian wraps instead of falling back to
+        // tile (0, 0).
+        let past = crate::mesh::build_tile_grid(&e, 5, 0, std::f64::consts::PI + 0.05, 0.2, 1, 2);
+        let wrapped = crate::mesh::build_tile_grid(&e, 5, 0, 0.05 - std::f64::consts::PI, 0.2, 1, 2);
+        assert_eq!(past, wrapped);
     }
 
     #[test]

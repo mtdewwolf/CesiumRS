@@ -205,6 +205,7 @@ impl IonResource {
         credits
     }
     pub fn get_derived_resource(&self, options: DerivedResourceOptions) -> Option<Self> {
+        let (retry_callback, retry_attempts) = (options.retry_callback.clone(), options.retry_attempts);
         let result = Self {
             resource: self.resource.get_derived_resource(options)?,
             root: self.root.clone(),
@@ -212,6 +213,17 @@ impl IonResource {
             refresh_callback: Rc::new(RefCell::new(None)),
         };
         result.install_hooks();
+        // As in Cesium, the caller's retry options override the ion token
+        // refresh that the clone starts with.
+        let mut o = result.resource.options_mut();
+        if let Some(callback) = retry_callback {
+            o.retry_callback = Some(callback);
+            o.fallible_retry_callback = None;
+        }
+        if let Some(attempts) = retry_attempts {
+            o.retry_attempts = attempts;
+        }
+        drop(o);
         Some(result)
     }
     pub fn fetch_image<H: super::ImageHost + 'static>(
