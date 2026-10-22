@@ -97,18 +97,17 @@ applications can implement the existing `Gl` host contract.
 
 ### Workers completion
 
-The first completion batch adds **31 geometry entry points** and
-**`createGeometry`**, bringing Workers to **37/53 validated modules**. Direct
-CesiumJS worker fixtures cover typed/packed inputs and batch/result wire formats;
-474 cases accompany native TaskProcessor thread execution and async ordering,
-module reuse, prompt failure and malformed-result regressions. Ground polylines
-use the bundled height table. Host-registered Rust factories replace dynamic
-module imports. No Scene module is marked complete for the result-packing helpers.
+Workers has **48/53 validated modules**, matching the package table below.
+Direct CesiumJS worker fixtures cover typed/packed inputs and batch/result wire
+formats; geometry, terrain, vector-tile, and Gaussian splat workers are in that
+validated set. Ground polylines use the bundled height table. Host-registered
+Rust factories replace dynamic module imports. No Scene module is marked complete
+for the result-packing helpers.
 
-Finish the remaining **16 modules** in batches: terrain/packet worker boundaries,
-vector tiles, splat sorting/textures, Draco/I3S codecs, and Scene geometry
-combination plus task/transfer messaging. Each stays todo until its implementation
-and direct worker validation are complete. See [Workers details](docs/workers.md).
+The remaining **5 modules** are `combineGeometry`, `createTaskProcessorWorker`,
+`decodeDraco`, `decodeI3S`, and `transferTypedArrayTest`. Each stays todo until
+its implementation and direct worker validation are complete. See
+[Workers details](docs/workers.md).
 
 ## Core
 

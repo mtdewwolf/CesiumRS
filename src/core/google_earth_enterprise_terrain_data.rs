@@ -49,7 +49,7 @@ fn quads(bytes: &[u8]) -> Result<Vec<Quad>, RuntimeError> {
     Ok(out)
 }
 fn interpolate(u: f64, v: f64, points: &[(Cartesian2, f64)], indices: &[u32]) -> Option<f64> {
-    for triangle in indices.chunks_exact(3) {
+    for triangle in indices.as_chunks::<3>().0 {
         let (a, ha) = points[triangle[0] as usize];
         let (b, hb) = points[triangle[1] as usize];
         let (c, hc) = points[triangle[2] as usize];

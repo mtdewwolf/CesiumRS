@@ -86,7 +86,8 @@ impl Cartesian3 {
     /// Longitude and latitude in radians, height in meters.
     pub fn from_radians(longitude: f64, latitude: f64, height: f64, ellipsoid: &Ellipsoid) -> Self {
         let cos_latitude = latitude.js_cos();
-        let n = Self::new(cos_latitude * longitude.js_cos(), cos_latitude * longitude.js_sin(), latitude.js_sin()).normalize();
+        let n = Self::new(cos_latitude * longitude.js_cos(), cos_latitude * longitude.js_sin(), latitude.js_sin())
+            .normalize();
         let k = ellipsoid.radii_squared.multiply_components(n);
         let gamma = n.dot(k).sqrt();
         k.divide_by_scalar(gamma).add(n.multiply_by_scalar(height))
@@ -98,7 +99,7 @@ impl Cartesian3 {
             coordinates.len() >= 2 && coordinates.len().is_multiple_of(2),
             "the number of coordinates must be a multiple of 2 and at least 2"
         );
-        coordinates.chunks_exact(2).map(|c| Self::from_degrees(c[0], c[1], 0.0, ellipsoid)).collect()
+        coordinates.as_chunks::<2>().0.iter().map(|c| Self::from_degrees(c[0], c[1], 0.0, ellipsoid)).collect()
     }
 
     /// `[lon0, lat0, lon1, lat1, ...]` in radians.
@@ -107,7 +108,7 @@ impl Cartesian3 {
             coordinates.len() >= 2 && coordinates.len().is_multiple_of(2),
             "the number of coordinates must be a multiple of 2 and at least 2"
         );
-        coordinates.chunks_exact(2).map(|c| Self::from_radians(c[0], c[1], 0.0, ellipsoid)).collect()
+        coordinates.as_chunks::<2>().0.iter().map(|c| Self::from_radians(c[0], c[1], 0.0, ellipsoid)).collect()
     }
 
     /// `[lon0, lat0, h0, ...]` with degrees and meters.
@@ -116,7 +117,7 @@ impl Cartesian3 {
             coordinates.len() >= 3 && coordinates.len().is_multiple_of(3),
             "the number of coordinates must be a multiple of 3 and at least 3"
         );
-        coordinates.chunks_exact(3).map(|c| Self::from_degrees(c[0], c[1], c[2], ellipsoid)).collect()
+        coordinates.as_chunks::<3>().0.iter().map(|c| Self::from_degrees(c[0], c[1], c[2], ellipsoid)).collect()
     }
 
     /// `[lon0, lat0, h0, ...]` with radians and meters.
@@ -125,6 +126,6 @@ impl Cartesian3 {
             coordinates.len() >= 3 && coordinates.len().is_multiple_of(3),
             "the number of coordinates must be a multiple of 3 and at least 3"
         );
-        coordinates.chunks_exact(3).map(|c| Self::from_radians(c[0], c[1], c[2], ellipsoid)).collect()
+        coordinates.as_chunks::<3>().0.iter().map(|c| Self::from_radians(c[0], c[1], c[2], ellipsoid)).collect()
     }
 }

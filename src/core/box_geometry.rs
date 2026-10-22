@@ -80,12 +80,10 @@ impl BoxGeometry {
             table.iter().map(|&(c, axis)| [corners[c].x, corners[c].y, corners[c].z][axis]).collect()
         };
         let mut attributes = GeometryAttributes::default();
-        let positions;
-        let indices;
-        if vertex_format.position
+        let (positions, indices) = if vertex_format.position
             && (vertex_format.st || vertex_format.normal || vertex_format.tangent || vertex_format.bitangent)
         {
-            positions = select(&FULL_POSITIONS);
+            let positions = select(&FULL_POSITIONS);
             attributes.position = Some(GeometryAttribute::doubles(3, positions.clone()));
             if vertex_format.normal {
                 attributes.normal = Some(GeometryAttribute::floats(3, &NORMALS));
@@ -99,12 +97,12 @@ impl BoxGeometry {
             if vertex_format.bitangent {
                 attributes.bitangent = Some(GeometryAttribute::floats(3, &BITANGENTS));
             }
-            indices = FULL_INDICES.iter().map(|&i| i as u16).collect();
+            (positions, FULL_INDICES.iter().map(|&i| i as u16).collect())
         } else {
-            positions = select(&CORNER_POSITIONS);
+            let positions = select(&CORNER_POSITIONS);
             attributes.position = Some(GeometryAttribute::doubles(3, positions.clone()));
-            indices = CORNER_INDICES.iter().map(|&i| i as u16).collect();
-        }
+            (positions, CORNER_INDICES.iter().map(|&i| i as u16).collect())
+        };
 
         let radius = max.subtract(min).magnitude() * 0.5;
         if let Some(offset) = self.offset_attribute {

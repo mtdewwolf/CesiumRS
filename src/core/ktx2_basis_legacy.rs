@@ -141,7 +141,7 @@ pub(super) fn transcode(texture: &Transcoder<'_>, level: u32) -> Result<Vec<u8>,
         None
     };
     let mut result = Vec::with_capacity(rgb.len() * 2);
-    for (i, c) in rgb.chunks_exact(8).enumerate() {
+    for (i, c) in rgb.as_chunks::<8>().0.iter().enumerate() {
         result.extend_from_slice(&convert(c, alpha.as_ref().map(|a| &a[i * 8..i * 8 + 8])));
     }
     Ok(result)

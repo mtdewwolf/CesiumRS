@@ -46,8 +46,57 @@ jobs:
       - name: wasm build
         run: cargo build --locked --target wasm32-unknown-unknown
 
+      # The browser feature pulls in wasm-bindgen. Same debug target as above.
+      - name: wasm build browser
+        run: cargo build --locked --target wasm32-unknown-unknown --features browser
+
+      # Freshness of web/client/generated against a release wasm build.
+      # Does not need a browser.
+      - name: check generated web bundle
+        run: bash scripts/check-generated.sh
+
+      # scripts/check-browser-core.sh, scripts/check-renderer.sh, and
+      # scripts/check-renderer-completion.sh are omitted. Each release-builds a
+      # browser example, runs the wasm-bindgen 0.2.129 CLI, and drives headless
+      # Chromium through tools/cesium (playwright-core, esbuild, @cesium/engine).
+      # Those npm packages are not installed here, and the scripts launch
+      # /usr/bin/chromium.
+
       - name: Install cargo-audit
         uses: taiki-e/install-action@cargo-audit
 
       - name: cargo audit
         run: cargo audit
+
+  clippy-stable:
+    name: clippy stable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: cargo clippy
+        run: cargo clippy --locked --all-targets --features native-host -- -D warnings
+
+  # Prints a coverage summary. There is no coverage threshold, so the percentage
+  # itself does not fail the job.
+  coverage:
+    name: coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@1.97.0
+        with:
+          components: llvm-tools-preview
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: cargo llvm-cov
+        run: cargo llvm-cov --locked --all-targets --features native-host --summary-only

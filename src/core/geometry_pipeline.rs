@@ -89,7 +89,7 @@ fn add_triangle(lines: &mut [f64], index: usize, i0: f64, i1: f64, i2: f64) {
 fn triangles_to_lines(triangles: &[f64]) -> Option<TypedArray> {
     let count = triangles.len();
     let mut lines = vec![0.0; array_length(count as f64 / 3.0 * 6.0)?];
-    for (t, tri) in triangles.chunks_exact(3).enumerate() {
+    for (t, tri) in triangles.as_chunks::<3>().0.iter().enumerate() {
         add_triangle(&mut lines, t * 6, tri[0], tri[1], tri[2]);
     }
     Some(index_array(count as f64, &lines))
@@ -563,7 +563,7 @@ pub fn compute_normal(geometry: &mut Geometry) -> Option<()> {
     // Each vertex's triangles in order, repeated if it appears twice in one.
     let mut vertex_triangles: Vec<Vec<usize>> = vec![Vec::new(); num_vertices];
     let mut triangle_normals = Vec::with_capacity(indices.len() / 3);
-    for (j, tri) in indices.chunks_exact(3).enumerate() {
+    for (j, tri) in indices.as_chunks::<3>().0.iter().enumerate() {
         let ids = [as_index(tri[0])?, as_index(tri[1])?, as_index(tri[2])?];
         for &i in &ids {
             vertex_triangles.get_mut(i)?.push(j);
@@ -610,7 +610,7 @@ pub fn compute_tangent_and_bitangent(geometry: &mut Geometry) -> Option<()> {
         return None;
     }
     let mut tan1 = vec![0.0; num_vertices * 3];
-    for tri in indices.chunks_exact(3) {
+    for tri in indices.as_chunks::<3>().0 {
         let [i0, i1, i2] = [as_index(tri[0])?, as_index(tri[1])?, as_index(tri[2])?];
         let (i03, i13, i23) = (i0 * 3, i1 * 3, i2 * 3);
         let (i02, i12, i22) = (i0 * 2, i1 * 2, i2 * 2);
