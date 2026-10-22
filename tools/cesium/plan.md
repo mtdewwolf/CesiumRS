@@ -107,3 +107,12 @@ keeps, and it exposes no skip API. Mesh decode, face indices, and the
 mapped-index attribute walk live in `workers::draco`, which `decodeI3S` also
 uses. There is no remaining todo worker module. See
 [Workers details](docs/workers.md).
+
+Shaders is a skeleton. Each `Source/Shaders` subdirectory registers itself
+with two appended lines in `src/shaders/mod.rs` (`pub mod` and one `register`
+call). Shader text is the exact default export of the `@cesium/engine` 23.0.0
+module. `czm_pi` (`Shaders/Builtin/Constants/pi`) is the one wired example.
+The rest of Builtin, Appearances, and Materials stay todo. The root, Model,
+PostProcessStages, and Voxels directories are empty stubs for the other port.
+The renderer still assembles programs from the pinned builtin table. See
+[Shaders](docs/shaders.md).

@@ -278,5 +278,13 @@
     "ported": 367,
     "implemented": 0,
     "validatedPercent": 32.33
+  },
+  {
+    "milestone": "Shaders skeleton",
+    "date": "2026-10-22",
+    "percent": 32.39,
+    "ported": 368,
+    "implemented": 0,
+    "validatedPercent": 32.34
   }
 ]
