@@ -487,44 +487,62 @@ fn is_node_empty(node: &Value) -> Result<bool> {
         && !js::defined(get("extras")))
 }
 
-const MAXIMUM_NODE_DEPTH: usize = 4096;
-
-/// Removes the node from scenes and parents, removing parents it empties.
-fn delete_node(gltf: &mut Value, node_id: &Id, depth: usize) -> Result<()> {
-    if depth > MAXIMUM_NODE_DEPTH {
-        return Err(PipelineError::Range("Maximum call stack size exceeded".into()));
+/// Cesium's recursive `deleteNode`: removes the node from scenes and parents,
+/// then deletes the parents it empties, depth first, before the node itself.
+/// An explicit stack keeps a long chain of emptied parents off the thread's
+/// stack. Each nested JavaScript call walks the node keys present when it
+/// starts; nodes are only ever deleted here, so one snapshot, skipping the
+/// keys deleted since, visits the same parents in the same order.
+fn delete_node(gltf: &mut Value, node_id: &Id) -> Result<()> {
+    /// A node whose parents are being checked.
+    struct Frame {
+        id: Id,
+        next: usize,
     }
-    let id_value = node_id.value();
-    each_mut(gltf, Collection::TopLevel("scenes"), |scene, _| {
-        if let Some(Value::Array(nodes)) = scene.get_mut("nodes") {
-            if let Some(i) = nodes.iter().rposition(|n| js::strict_eq(Some(n), Some(&id_value))) {
-                nodes.remove(i);
-            }
-        }
-        Ok(())
-    })?;
     let nodes = Collection::TopLevel("nodes");
-    for parent_id in for_each::ids(gltf, nodes) {
+    // Removes the node from each scene, then lists the parents to check.
+    let enter = |gltf: &mut Value, id: &Id| -> Result<Frame> {
+        let id_value = id.value();
+        each_mut(gltf, Collection::TopLevel("scenes"), |scene, _| {
+            if let Some(Value::Array(nodes)) = scene.get_mut("nodes") {
+                if let Some(i) = nodes.iter().rposition(|n| js::strict_eq(Some(n), Some(&id_value))) {
+                    nodes.remove(i);
+                }
+            }
+            Ok(())
+        })?;
+        Ok(Frame { id: id.clone(), next: 0 })
+    };
+    let parents = for_each::ids(gltf, nodes);
+    let mut stack = vec![enter(gltf, node_id)?];
+    while let Some(frame) = stack.last_mut() {
+        let Some(parent_id) = parents.get(frame.next).cloned() else {
+            let done = stack.pop().expect("frame");
+            match gltf.get_mut("nodes") {
+                Some(Value::Array(items)) => {
+                    if let Id::Index(i) = done.id {
+                        if let Some(item) = items.get_mut(i) {
+                            // `delete array[i]` leaves a hole, which JSON writes as null.
+                            *item = Value::Null;
+                        }
+                    }
+                }
+                Some(nodes) => js::delete(nodes, &done.id.key()),
+                None => {}
+            }
+            continue;
+        };
+        frame.next += 1;
+        let id_value = frame.id.value();
         let Some(parent) = for_each::get_mut(gltf, nodes, &parent_id) else { continue };
         let parent = js::object_mut(Some(parent), "children")?;
         let Some(Value::Array(children)) = parent.get_mut("children") else { continue };
         let Some(index) = js::index_of(children, Some(&id_value)) else { continue };
         children.remove(index);
         if is_node_empty(parent)? {
-            delete_node(gltf, &parent_id, depth + 1)?;
+            let next = enter(gltf, &parent_id)?;
+            stack.push(next);
         }
-    }
-    match gltf.get_mut("nodes") {
-        Some(Value::Array(items)) => {
-            if let Id::Index(i) = node_id {
-                if let Some(item) = items.get_mut(*i) {
-                    // `delete array[i]` leaves a hole, which JSON writes as null.
-                    *item = Value::Null;
-                }
-            }
-        }
-        Some(nodes) => js::delete(nodes, &node_id.key()),
-        None => {}
     }
     Ok(())
 }
@@ -534,7 +552,7 @@ fn remove_empty_nodes(gltf: &mut Value) -> Result<()> {
     for id in for_each::ids(gltf, nodes) {
         let Some(node) = for_each::get_mut(gltf, nodes, &id) else { continue };
         if is_node_empty(node)? {
-            delete_node(gltf, &id, 0)?;
+            delete_node(gltf, &id)?;
         }
     }
     Ok(())
@@ -1291,4 +1309,34 @@ fn convert_materials_common_to_pbr(gltf: &mut Value) -> Result<()> {
     }
     remove_extension(gltf, "KHR_materials_common");
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn long_chains_of_emptied_parents_do_not_overflow_the_stack() {
+        // n0 -> n1 -> ... -> leaf: deleting the empty leaf empties every
+        // parent. The walk is quadratic, as in Cesium, so the chain is kept
+        // moderate and the thread's stack small instead.
+        let depth = 2_000;
+        let mut nodes = Map::new();
+        for i in 0..depth {
+            nodes.insert(format!("n{i}"), json!({ "children": [format!("n{}", i + 1)] }));
+        }
+        nodes.insert(format!("n{depth}"), json!({}));
+        let mut gltf = json!({ "nodes": nodes, "scenes": { "s": { "nodes": ["n0"] } } });
+        let gltf = std::thread::Builder::new()
+            .stack_size(256 * 1024)
+            .spawn(move || {
+                remove_empty_nodes(&mut gltf).unwrap();
+                gltf
+            })
+            .unwrap()
+            .join()
+            .unwrap();
+        assert_eq!(gltf["nodes"], json!({}));
+        assert_eq!(gltf["scenes"]["s"]["nodes"], json!([]));
+    }
 }

@@ -9,8 +9,6 @@ use common::*;
 use serde_json::{json, Value};
 use std::sync::Arc;
 
-const P: &str = "scene/gltf_pipeline";
-
 /// Replaces `$source` objects with sources of a new document.
 fn decode(value: &Value) -> Gltf {
     let mut gltf = Gltf::default();
@@ -69,9 +67,9 @@ fn id_value(id: &Id) -> Value {
 
 #[test]
 fn extension_lists() {
-    run(P, "usesExtension", |_| EXACT, |_, a| ok(pipeline::uses_extension(&a[0], s(&a[1]))));
+    run("scene/gltf_pipeline", "usesExtension", |_| EXACT, |_, a| ok(pipeline::uses_extension(&a[0], s(&a[1]))));
     run(
-        P,
+        "scene/gltf_pipeline",
         "addExtensionsUsed",
         |_| EXACT,
         |_, a| {
@@ -80,7 +78,7 @@ fn extension_lists() {
         },
     );
     run(
-        P,
+        "scene/gltf_pipeline",
         "addExtensionsRequired",
         |_| EXACT,
         |_, a| {
@@ -89,7 +87,7 @@ fn extension_lists() {
         },
     );
     run(
-        P,
+        "scene/gltf_pipeline",
         "removeExtensionsRequired",
         |_| EXACT,
         |_, a| {
@@ -99,7 +97,7 @@ fn extension_lists() {
         },
     );
     run(
-        P,
+        "scene/gltf_pipeline",
         "removeExtensionsUsed",
         |_| EXACT,
         |_, a| {
@@ -109,7 +107,7 @@ fn extension_lists() {
         },
     );
     run(
-        P,
+        "scene/gltf_pipeline",
         "removeExtension",
         |_| EXACT,
         |_, a| {
@@ -123,7 +121,7 @@ fn extension_lists() {
 #[test]
 fn small_helpers() {
     run(
-        P,
+        "scene/gltf_pipeline",
         "addToArray",
         |_| EXACT,
         |_, a| {
@@ -135,14 +133,19 @@ fn small_helpers() {
         },
     );
     run(
-        P,
+        "scene/gltf_pipeline",
         "numberOfComponentsForType",
         |_| EXACT,
         |_, a| ok(pipeline::number_of_components_for_type(s(&a[0])).map(|c| c as u32)),
     );
-    run(P, "getAccessorByteStride", |_| EXACT, |_, a| out(pipeline::get_accessor_byte_stride(&a[0], &a[1]), num));
     run(
-        P,
+        "scene/gltf_pipeline",
+        "getAccessorByteStride",
+        |_| EXACT,
+        |_, a| out(pipeline::get_accessor_byte_stride(&a[0], &a[1]), num),
+    );
+    run(
+        "scene/gltf_pipeline",
         "addBuffer",
         |_| EXACT,
         |_, a| {
@@ -153,7 +156,7 @@ fn small_helpers() {
         },
     );
     run(
-        P,
+        "scene/gltf_pipeline",
         "addPipelineExtras",
         |_| EXACT,
         |_, a| {
@@ -162,7 +165,7 @@ fn small_helpers() {
         },
     );
     run(
-        P,
+        "scene/gltf_pipeline",
         "removePipelineExtras",
         |_| EXACT,
         |_, a| {
@@ -266,7 +269,7 @@ fn nested_visits(g: &Gltf) -> Value {
 #[test]
 fn for_each() {
     run(
-        P,
+        "scene/gltf_pipeline",
         "ForEach",
         |_| EXACT,
         |f, a| match f {
@@ -331,7 +334,7 @@ fn for_each() {
 #[test]
 fn accessor_readers() {
     run(
-        P,
+        "scene/gltf_pipeline",
         "getComponentReader",
         |_| EXACT,
         |_, a| {
@@ -352,7 +355,7 @@ fn accessor_readers() {
         }
     };
     run(
-        P,
+        "scene/gltf_pipeline",
         "readAccessorPacked",
         |_| EXACT,
         |_, a| {
@@ -361,7 +364,7 @@ fn accessor_readers() {
         },
     );
     run(
-        P,
+        "scene/gltf_pipeline",
         "findAccessorMinMax",
         |_| EXACT,
         |_, a| {
@@ -373,7 +376,7 @@ fn accessor_readers() {
         },
     );
     run(
-        P,
+        "scene/gltf_pipeline",
         "updateAccessorComponentTypes",
         |_| EXACT,
         |_, a| {
@@ -386,7 +389,7 @@ fn accessor_readers() {
 #[test]
 fn materials_and_defaults() {
     run(
-        P,
+        "scene/gltf_pipeline",
         "forEachTextureInMaterial",
         |_| EXACT,
         |f, a| match f {
@@ -406,7 +409,7 @@ fn materials_and_defaults() {
         },
     );
     run(
-        P,
+        "scene/gltf_pipeline",
         "addDefaults",
         |_| EXACT,
         |_, a| {
@@ -419,7 +422,7 @@ fn materials_and_defaults() {
 #[test]
 fn parse_glb() {
     run(
-        P,
+        "scene/gltf_pipeline",
         "parseGlb",
         |_| EXACT,
         |_, a| out(pipeline::parse_glb(&source(&a[0])), |g| g.map_or(Value::Null, |g| document(&g))),
@@ -429,7 +432,7 @@ fn parse_glb() {
 #[test]
 fn techniques_and_cleanup() {
     run(
-        P,
+        "scene/gltf_pipeline",
         "moveTechniqueRenderStates",
         |_| EXACT,
         |_, a| {
@@ -438,7 +441,7 @@ fn techniques_and_cleanup() {
         },
     );
     run(
-        P,
+        "scene/gltf_pipeline",
         "moveTechniquesToExtension",
         |_| EXACT,
         |_, a| {
@@ -447,7 +450,7 @@ fn techniques_and_cleanup() {
         },
     );
     run(
-        P,
+        "scene/gltf_pipeline",
         "removeUnusedElements",
         |_| EXACT,
         |_, a| {
@@ -464,7 +467,7 @@ fn update_version() {
     // TIGHT: the sRGB conversion uses the platform `pow`, which can differ
     // from V8's `Math.pow` in the last bit.
     run(
-        P,
+        "scene/gltf_pipeline",
         "updateVersion",
         |_| TIGHT,
         |_, a| {

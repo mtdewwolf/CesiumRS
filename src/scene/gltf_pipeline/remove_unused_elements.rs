@@ -740,7 +740,7 @@ fn used_node_ids(gltf: &Value) -> Result<HashSet<String>> {
     });
     for id in for_each::ids(gltf, Collection::TopLevel("nodes")) {
         let node_id = id.value();
-        if !node_is_empty(gltf, &node_id, &used, 0)? {
+        if !node_is_empty(gltf, &node_id, &used)? {
             used.insert(id.key());
         }
     }
@@ -749,35 +749,78 @@ fn used_node_ids(gltf: &Value) -> Result<HashSet<String>> {
 
 /// Deep enough for any real node hierarchy; a cycle overflows the stack in
 /// JavaScript.
-const MAXIMUM_NODE_DEPTH: usize = 4096;
-
-fn node_is_empty(gltf: &Value, node_id: &Value, used: &HashSet<String>, depth: usize) -> Result<bool> {
-    if depth > MAXIMUM_NODE_DEPTH {
-        return Err(PipelineError::Range("Maximum call stack size exceeded".into()));
+/// Cesium's recursive `nodeIsEmpty`, with an explicit stack so a deep
+/// hierarchy cannot overflow the thread's stack. A node whose children lead
+/// back to it recurses forever in JavaScript, which throws a `RangeError`.
+fn node_is_empty(gltf: &Value, node_id: &Value, used: &HashSet<String>) -> Result<bool> {
+    /// A node whose children are being evaluated.
+    struct Frame<'a> {
+        key: String,
+        children: &'a [Value],
+        next: usize,
+        empty: bool,
     }
-    let node = js::object(js::index(gltf.get("nodes"), node_id), "mesh")?;
-    let has = |key: &str| js::defined(js::get(Some(node), key));
-    let extensions = js::get(Some(node), "extensions");
-    let non_empty_extensions = js::defined(extensions)
-        && (js::key_count(extensions) != 0 || matches!(extensions, Some(Value::String(s)) if !s.is_empty()));
-    if has("mesh")
-        || has("camera")
-        || has("skin")
-        || has("weights")
-        || has("extras")
-        || non_empty_extensions
-        || used.contains(&js::key(node_id))
-    {
-        return Ok(false);
+    /// The node's own result, or its children to evaluate.
+    enum Visit<'a> {
+        Done(bool),
+        Children(&'a [Value]),
     }
-    let Some(children) = node.get("children").filter(|c| !c.is_null()) else { return Ok(true) };
-    let Value::Array(children) = children else { return Err(type_error("filter")) };
-    // `filter` visits every child, so a bad later child still throws.
-    let mut empty = true;
-    for child in children {
-        empty &= node_is_empty(gltf, child, used, depth + 1)?;
+    let visit = |node_id: &Value| -> Result<Visit<'_>> {
+        let node = js::object(js::index(gltf.get("nodes"), node_id), "mesh")?;
+        let has = |key: &str| js::defined(js::get(Some(node), key));
+        let extensions = js::get(Some(node), "extensions");
+        let non_empty_extensions = js::defined(extensions)
+            && (js::key_count(extensions) != 0 || matches!(extensions, Some(Value::String(s)) if !s.is_empty()));
+        if has("mesh")
+            || has("camera")
+            || has("skin")
+            || has("weights")
+            || has("extras")
+            || non_empty_extensions
+            || used.contains(&js::key(node_id))
+        {
+            return Ok(Visit::Done(false));
+        }
+        match node.get("children").filter(|c| !c.is_null()) {
+            None => Ok(Visit::Done(true)),
+            Some(Value::Array(children)) => Ok(Visit::Children(children)),
+            Some(_) => Err(type_error("filter")),
+        }
+    };
+    let mut on_path = HashSet::new();
+    let mut stack: Vec<Frame> = Vec::new();
+    let mut result = match visit(node_id)? {
+        Visit::Done(empty) => return Ok(empty),
+        Visit::Children(children) => {
+            on_path.insert(js::key(node_id));
+            stack.push(Frame { key: js::key(node_id), children, next: 0, empty: true });
+            None
+        }
+    };
+    while let Some(frame) = stack.last_mut() {
+        if let Some(child_empty) = result.take() {
+            frame.empty &= child_empty;
+        }
+        // `filter` visits every child, so a bad later child still throws.
+        let Some(child) = frame.children.get(frame.next) else {
+            let done = stack.pop().expect("frame");
+            on_path.remove(&done.key);
+            result = Some(done.empty);
+            continue;
+        };
+        frame.next += 1;
+        match visit(child)? {
+            Visit::Done(empty) => result = Some(empty),
+            Visit::Children(children) => {
+                let key = js::key(child);
+                if !on_path.insert(key.clone()) {
+                    return Err(PipelineError::Range("Maximum call stack size exceeded".into()));
+                }
+                stack.push(Frame { key, children, next: 0, empty: true });
+            }
+        }
     }
-    Ok(empty)
+    Ok(result.expect("the root frame produces a result"))
 }
 
 #[cfg(test)]
@@ -790,6 +833,23 @@ mod tests {
         for t in ElementType::ALL {
             assert_eq!(ElementType::from_name(t.name()), Some(t));
         }
+    }
+
+    #[test]
+    fn deep_node_chains_do_not_overflow_the_stack() {
+        // nodeIsEmpty walks the rest of the chain from every node, as in
+        // Cesium, so the chain is kept moderate and the thread's stack small.
+        let depth = 2_000;
+        let mut nodes: Vec<Value> = (1..depth).map(|i| json!({ "children": [i] })).collect();
+        nodes.push(json!({ "mesh": 0 }));
+        let gltf = json!({ "nodes": nodes });
+        let used = std::thread::Builder::new()
+            .stack_size(256 * 1024)
+            .spawn(move || used_node_ids(&gltf).unwrap())
+            .unwrap()
+            .join()
+            .unwrap();
+        assert_eq!(used.len(), depth);
     }
 
     #[test]
