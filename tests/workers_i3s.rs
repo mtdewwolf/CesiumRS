@@ -224,3 +224,63 @@ fn decode_i3s_reference() {
         },
     );
 }
+
+fn wgs84_frame(bytes: Vec<u8>, ordering: Vec<String>) -> I3sDecodeParameters {
+    let ellipsoid = cesium_rs::core::Ellipsoid::WGS84;
+    let center = Cartographic::new(0.0, 0.0, 0.0);
+    I3sDecodeParameters {
+        binary_data: bytes,
+        ordering: Some(ordering),
+        feature_attribute_order: Some(Vec::new()),
+        buffer_attributes: None,
+        geoid_data_list: Vec::new(),
+        cartographic_center: Some(center),
+        cartesian_center: Some(ellipsoid.cartographic_to_cartesian(&center)),
+        parent_rotation: Some(Matrix3::IDENTITY),
+        ellipsoid_radii_square: Some(ellipsoid.radii_squared),
+        url: None,
+        enable_features: true,
+        split_geometry_by_color_transparency: false,
+        calculate_normals: false,
+        symbology: None,
+    }
+}
+
+#[test]
+fn huge_face_range_returns_an_error() {
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(&3u32.to_le_bytes());
+    bytes.extend_from_slice(&1u32.to_le_bytes());
+    bytes.extend_from_slice(&[0u8; 3 * 3 * 4]);
+    bytes.extend_from_slice(&0u32.to_le_bytes());
+    bytes.extend_from_slice(&u32::MAX.to_le_bytes());
+    let decoded = decode_i3s(&wgs84_frame(bytes, vec!["position".to_string(), "faceRange".to_string()]));
+    assert!(decoded.is_err());
+}
+
+#[test]
+fn truncated_draco_payload_does_not_panic() {
+    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/workers/decodeI3S.json");
+    let fixture: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    let cases = fixture["cases"].as_array().unwrap();
+    let draco = cases
+        .iter()
+        .filter_map(|case| {
+            let bytes = case["a"][0].as_array()?;
+            let bytes: Vec<u8> = bytes.iter().map(|value| n(value) as u8).collect();
+            bytes.starts_with(b"DRACO").then_some(bytes)
+        })
+        .max_by_key(Vec::len)
+        .expect("draco fixture");
+    assert!(draco.len() > 8);
+    for length in 0..=draco.len() {
+        let parameters = wgs84_frame(draco[..length].to_vec(), Vec::new());
+        let decoded = std::panic::catch_unwind(|| decode_i3s(&parameters));
+        let decoded = decoded.unwrap_or_else(|_| panic!("decode panicked at {length} bytes"));
+        if length < 5 {
+            assert!(decoded.is_err(), "short header should throw at {length}");
+        } else {
+            assert!(decoded.is_ok(), "malformed draco should not throw at {length}");
+        }
+    }
+}

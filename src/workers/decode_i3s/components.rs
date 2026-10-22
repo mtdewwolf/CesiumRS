@@ -227,11 +227,18 @@ fn other_key(n: f64) -> OtherKey {
     }
 }
 
-/// A JavaScript object used as a map from numbers (and nothing else).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum ExtraKey {
+    /// Object key `"undefined"`, which is not a number and not `"NaN"`.
+    Missing,
+    Number(OtherKey),
+}
+
+/// A JavaScript object used as a map from numbers, plus the `"undefined"` key.
 #[derive(Clone, Debug)]
 pub(super) struct NumMap<T> {
     indices: BTreeMap<u32, T>,
-    others: Vec<(OtherKey, T)>,
+    others: Vec<(ExtraKey, T)>,
 }
 
 impl<T> NumMap<T> {
@@ -243,7 +250,15 @@ impl<T> NumMap<T> {
         if let Some(index) = array_index(key) {
             return self.indices.entry(index).or_insert_with(make);
         }
-        let key = other_key(key);
+        self.extra(ExtraKey::Number(other_key(key)), make)
+    }
+
+    /// The property key produced by indexing an object with `undefined`.
+    pub(super) fn entry_missing<F: FnOnce() -> T>(&mut self, make: F) -> &mut T {
+        self.extra(ExtraKey::Missing, make)
+    }
+
+    fn extra<F: FnOnce() -> T>(&mut self, key: ExtraKey, make: F) -> &mut T {
         if let Some(position) = self.others.iter().position(|(k, _)| *k == key) {
             return &mut self.others[position].1;
         }

@@ -1750,7 +1750,7 @@
   "Workers/decodeI3S": {
     "status": "ported",
     "rust": "workers::decode_i3s::decode_i3s",
-    "note": "Binary schema/bufferInfo walk and a private draco-core decode of DRACO payloads, including i3s scale and attribute-type metadata. Geoid sampling, local ENU transform, UV crop, flat normals, transparency split, feature ids, and object-key outlines. Owned buffers replace blob URLs. Position accessor min/max stay swapped. Wasm init returns true with no module. 21 direct worker cases."
+    "note": "Binary schema/bufferInfo walk and a private draco-core decode of DRACO payloads, including i3s scale and attribute-type metadata. Geoid sampling, local ENU transform, UV crop, flat normals, transparency split, feature ids, and object-key outlines. Owned buffers replace blob URLs. Position accessor min/max stay swapped. Wasm init returns true with no module. 24 direct worker cases."
   },
   "Workers/gaussianSplatTextureGenerator": {
     "status": "ported",

@@ -11,6 +11,7 @@ use super::components::Values;
 use draco_core::geometry_attribute::GeometryAttributeType;
 use draco_core::geometry_indices::PointIndex;
 use draco_core::{DataType, DecoderBuffer, Mesh, MeshDecoder, PointAttribute};
+use std::panic::{catch_unwind, AssertUnwindSafe};
 
 #[derive(Clone, Debug)]
 pub(super) struct DecodedGeometry {
@@ -51,12 +52,28 @@ pub(super) fn decode_geometry(
 }
 
 fn decode_draco(data: &[u8]) -> DecodedGeometry {
-    let mut geometry = empty_draco();
-    let mut buffer = DecoderBuffer::new(data);
-    let mut mesh = Mesh::new();
-    if MeshDecoder::new().decode(&mut buffer, &mut mesh).is_err() {
-        return geometry;
+    // `GetEncodedGeometryType` accepts only TRIANGULAR_MESH (header type byte 1).
+    // Point clouds and buffers shorter than the type byte stay the empty geometry.
+    if data.get(7).copied() != Some(1) {
+        return empty_draco();
     }
+    // A truncated mesh makes draco3d return a failed status. draco-core returns
+    // `Status::Err` for the same prefixes. `catch_unwind` maps an unwind panic
+    // onto that empty geometry. Release and wasm use `panic = "abort"`, so an
+    // assert inside the decoder still aborts the module; this catch does not.
+    let decoded = catch_unwind(AssertUnwindSafe(|| {
+        let mut buffer = DecoderBuffer::new(data);
+        let mut mesh = Mesh::new();
+        if MeshDecoder::new().decode(&mut buffer, &mut mesh).is_err() {
+            None
+        } else {
+            Some(mesh)
+        }
+    }));
+    let Ok(Some(mesh)) = decoded else {
+        return empty_draco();
+    };
+    let mut geometry = empty_draco();
     let vertex_count = mesh.num_points();
     geometry.vertex_count = vertex_count as u32;
     let mut indices = Vec::with_capacity(mesh.num_faces() * 3);
@@ -69,13 +86,18 @@ fn decode_draco(data: &[u8]) -> DecodedGeometry {
         let Ok(attribute) = mesh.try_attribute(attr_index) else {
             continue;
         };
-        let Some(values) = read_draco_attribute(attribute, vertex_count) else {
-            continue;
-        };
         let mut name = semantic_name(attribute.attribute_type());
         if let Some(metadata) = mesh.attribute_metadata_by_unique_id(attribute.unique_id()) {
             apply_metadata(&mut geometry, metadata.metadata(), &mut name);
         }
+        let Some(values) = read_draco_attribute(attribute, vertex_count) else {
+            // INT64, UINT64, and FLOAT64 handlers return undefined, and the
+            // assignment still replaces any previous value of this name.
+            // `featureCount++` runs when that name is `feature-index`, but
+            // decodeI3S never reads that counter after the Draco loop.
+            geometry.attributes.retain(|(existing, _)| existing != &name);
+            continue;
+        };
         if let Some((_, existing)) = geometry.attributes.iter_mut().find(|(n, _)| *n == name) {
             *existing = values;
         } else {
@@ -123,6 +145,7 @@ fn read_draco_attribute(attribute: &PointAttribute, vertex_count: usize) -> Opti
     let components = attribute.num_components() as usize;
     let count = components.checked_mul(vertex_count)?;
     match attribute.data_type() {
+        // The empty handlers for DT_INT64, DT_UINT64, and DT_FLOAT64 return undefined.
         DataType::Invalid | DataType::Int64 | DataType::Uint64 | DataType::Float64 => None,
         DataType::Float32 => Some(Values::F32(read_mapped(attribute, count, read_f32))),
         DataType::Int8 => Some(Values::I8(read_mapped(attribute, count, read_i8))),

@@ -126,7 +126,7 @@ cargo test --test workers_i3s
 TZ=UTC node tools/cesium/fixtures/generate.mjs decodeI3S
 ```
 
-## Remaining 16 modules
+## Remaining modules
 
 The next batches cover:
 

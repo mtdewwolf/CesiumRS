@@ -37,25 +37,7 @@ pub(super) fn build(
     if !parameters.geoid_data_list.is_empty() {
         let center =
             parameters.cartographic_center.ok_or_else(|| RuntimeError::new("cartographicCenter is required"))?;
-        orthometric_to_ellipsoidal(
-            geometry.vertex_count,
-            geometry.get("positions"),
-            geometry.scale_x,
-            geometry.scale_y,
-            center,
-            parameters,
-        )?;
-        // The helper above only reads. Re-borrow mutably for the write.
-        if let Some(positions) = geometry.attributes.iter_mut().find(|(name, _)| name == "positions").map(|(_, v)| v) {
-            orthometric_write(
-                geometry.vertex_count,
-                positions,
-                geometry.scale_x,
-                geometry.scale_y,
-                center,
-                parameters,
-            )?;
-        }
+        apply_geoid(&mut geometry, center, parameters)?;
     }
     transform_to_local(&mut geometry, parameters)?;
     if geometry.get("uv0s").is_some() && geometry.get("uv-region").is_some() {
@@ -72,7 +54,7 @@ pub(super) fn build(
         uv0s: geometry.take("uv0s"),
         colors: geometry.take("colors"),
         indices: geometry.indices.take(),
-        feature_index: feature_index(&geometry, geometry.vertex_count),
+        feature_index: feature_index(&geometry, geometry.vertex_count)?,
     };
     // `faceRange` was consumed by feature_index via geometry.get, so take it only as a borrow above.
     // feature_index reads faceRange before we move channels. It already ran.
@@ -109,11 +91,19 @@ pub(super) fn build(
     Ok(document)
 }
 
-fn feature_index(geometry: &DecodedGeometry, vertex_count: u32) -> Option<FeatureIndex> {
+/// `faceRange` writes `featureIndex[face * 3 + corner]`. An end of `0xFFFFFFFF`
+/// would grow that array without bound and abort the worker while allocating.
+/// Cesium hits the same range before `Float32Array` rejects it. Past this cap
+/// the decode returns an error instead of reserving the slots.
+const MAX_FEATURE_INDEX_LEN: usize = 1 << 24;
+
+fn feature_index(geometry: &DecodedGeometry, vertex_count: u32) -> Result<Option<FeatureIndex>, RuntimeError> {
     if let Some(values) = geometry.get("feature-index") {
-        return Some(FeatureIndex::from_values(values));
+        return Ok(Some(FeatureIndex::from_values(values)));
     }
-    let face_range = geometry.get("faceRange")?;
+    let Some(face_range) = geometry.get("faceRange") else {
+        return Ok(None);
+    };
     let mut values = vec![None; vertex_count as usize];
     let mut range = 0;
     while range + 1 < face_range.len() {
@@ -127,19 +117,22 @@ fn feature_index(geometry: &DecodedGeometry, vertex_count: u32) -> Option<Featur
         };
         let id = (range / 2) as f64;
         if end >= start {
+            let slots = end.checked_mul(3).and_then(|count| count.checked_add(3));
+            let Some(slots) = slots.filter(|slots| *slots <= MAX_FEATURE_INDEX_LEN) else {
+                return Err(RuntimeError::new("faceRange exceeds the feature index limit"));
+            };
+            if slots > values.len() {
+                values.resize(slots, None);
+            }
             for face in start..=end {
                 for corner in 0..3 {
-                    let index = face.saturating_mul(3).saturating_add(corner);
-                    if index >= values.len() {
-                        values.resize(index + 1, None);
-                    }
-                    values[index] = Some(id);
+                    values[face * 3 + corner] = Some(id);
                 }
             }
         }
         range += 2;
     }
-    Some(FeatureIndex::Sparse(values))
+    Ok(Some(FeatureIndex::Sparse(values)))
 }
 
 fn integer_index(value: Option<f64>) -> Option<usize> {
@@ -151,39 +144,28 @@ fn integer_index(value: Option<f64>) -> Option<usize> {
     }
 }
 
-fn orthometric_to_ellipsoidal(
-    vertex_count: u32,
-    positions: Option<&Values>,
-    scale_x: f64,
-    scale_y: f64,
+fn apply_geoid(
+    geometry: &mut DecodedGeometry,
     center: Cartographic,
     parameters: &I3sDecodeParameters,
 ) -> Result<(), RuntimeError> {
-    // Validates inputs the write below will use. Cesium samples the center even
-    // when the vertex loop does not run.
-    let _ = sample_geoid_from_list(center.longitude, center.latitude, parameters)?;
-    if positions.is_none() && vertex_count > 0 {
+    let vertex_count = geometry.vertex_count;
+    let scale_x = geometry.scale_x;
+    let scale_y = geometry.scale_y;
+    let has_positions = geometry.get("positions").is_some();
+    // The center sample runs even when the vertex loop does not.
+    let center_height = sample_geoid_from_list(center.longitude, center.latitude, parameters)?;
+    if !has_positions && vertex_count > 0 {
         return Err(RuntimeError::new("Cannot adjust orthometric heights without positions"));
     }
-    let _ = (scale_x, scale_y);
-    Ok(())
-}
-
-fn orthometric_write(
-    vertex_count: u32,
-    positions: &mut Values,
-    scale_x: f64,
-    scale_y: f64,
-    center: Cartographic,
-    parameters: &I3sDecodeParameters,
-) -> Result<(), RuntimeError> {
-    let center_height = sample_geoid_from_list(center.longitude, center.latitude, parameters)?;
-    for i in 0..vertex_count as usize {
-        let longitude = center.longitude + to_radians(scale_x * positions.get(i * 3).unwrap_or(f64::NAN));
-        let latitude = center.latitude + to_radians(scale_y * positions.get(i * 3 + 1).unwrap_or(f64::NAN));
-        let height = sample_geoid_from_list(longitude, latitude, parameters)?;
-        let z = positions.get(i * 3 + 2).unwrap_or(f64::NAN) + height - center_height;
-        positions.set(i * 3 + 2, z);
+    if let Some(positions) = geometry.attributes.iter_mut().find(|(name, _)| name == "positions").map(|(_, v)| v) {
+        for i in 0..vertex_count as usize {
+            let longitude = center.longitude + to_radians(scale_x * positions.get(i * 3).unwrap_or(f64::NAN));
+            let latitude = center.latitude + to_radians(scale_y * positions.get(i * 3 + 1).unwrap_or(f64::NAN));
+            let height = sample_geoid_from_list(longitude, latitude, parameters)?;
+            let z = positions.get(i * 3 + 2).unwrap_or(f64::NAN) + height - center_height;
+            positions.set(i * 3 + 2, z);
+        }
     }
     Ok(())
 }
@@ -399,14 +381,18 @@ fn generate_normals(source: &Sourced<'_>) -> Option<GeneratedNormals> {
 }
 
 fn write_flat_normals(normals: &mut [f32], vertex_count: usize, positions: &Values) {
+    // The loop steps by three past the last full triangle. Missing corners are
+    // `undefined`, so the normal is NaN. Stores past the typed array are no-ops.
     let mut index = 0;
-    while index + 2 < vertex_count {
+    while index < vertex_count {
         let normal = face_normal(positions, index, index + 1, index + 2);
         for corner in 0..3 {
             let base = (index + corner) * 3;
-            normals[base] = normal.x as f32;
-            normals[base + 1] = normal.y as f32;
-            normals[base + 2] = normal.z as f32;
+            if let Some(slot) = normals.get_mut(base..base + 3) {
+                slot[0] = normal.x as f32;
+                slot[1] = normal.y as f32;
+                slot[2] = normal.z as f32;
+            }
         }
         index += 3;
     }
@@ -451,6 +437,7 @@ fn gltf_document(source: Sourced<'_>, parameters: &I3sDecodeParameters) -> I3sMe
 
     let mut doc = GltfBuilder::default();
     let mut attributes = Vec::new();
+    // `meshPositions.length / 3` can be fractional. This count is that quotient floored.
     let position_count = (end_index * 3).min(positions.len()) / 3;
     let position_bytes = positions.prefix_bytes(position_count * 3);
     let (min, max) = position_bounds(positions, position_count);
@@ -676,21 +663,26 @@ fn generate_outlines(
         symbology.entries.iter().map(|(name, edges)| (FeatureKey::parse_property(name), *edges)).collect();
     let mut features: FeatureMap<FeatureRecord> = FeatureMap::new();
     let mut index = 0;
-    while index + 2 < index_array.len() {
+    while index < index_array.len() {
+        // A partial last triangle still runs. Past-the-end reads are `undefined`.
+        let corner_at = |offset: usize| index_array.get(index + offset).copied();
         let key = match feature_index {
-            Some(values) => FeatureKey::from_value(values.get(index_array[index] as usize)),
+            Some(values) => {
+                let feature = corner_at(0).and_then(|vertex| values.get(vertex as usize));
+                FeatureKey::from_value(feature)
+            }
             None => FeatureKey::Default,
         };
         let record = features.entry(key.clone(), || FeatureRecord::new(has_edges(&symbology, &key)));
         if record.has_outline {
             for corner in 0..3 {
-                record.add_vertex(index_array[index + corner], positions);
+                record.add_vertex(corner_at(corner), positions);
             }
             for corner in 0..3 {
-                let a = index_array[index + corner];
-                let b = index_array[index + (corner + 1) % 3];
-                let unique_a = record.unique(a).unwrap_or(a);
-                let unique_b = record.unique(b).unwrap_or(b);
+                let a = corner_at(corner);
+                let b = corner_at((corner + 1) % 3);
+                let unique_a = record.unique(a);
+                let unique_b = record.unique(b);
                 record.add_edge(a, b, unique_a, unique_b, index as u32);
             }
         }
@@ -739,8 +731,13 @@ impl FeatureRecord {
         Self { unique_of: Vec::new(), coordinates: CoordNode::default(), edges: NumMap::new(), has_outline }
     }
 
-    fn add_vertex(&mut self, vertex: u32, positions: &Values) {
-        if self.unique(vertex).is_some() {
+    fn add_vertex(&mut self, vertex: Option<u32>, positions: &Values) {
+        let Some(vertex) = vertex else {
+            // `undefined * 3` reads `positions[NaN]`, and that object key is `"undefined"`.
+            let _node = descend_undefined(&mut self.coordinates);
+            return;
+        };
+        if self.unique(Some(vertex)).is_some() {
             return;
         }
         let coords = [
@@ -760,16 +757,35 @@ impl FeatureRecord {
         self.unique_of[slot] = Some(unique);
     }
 
-    fn unique(&self, vertex: u32) -> Option<u32> {
-        self.unique_of.get(vertex as usize).copied().flatten()
+    fn unique(&self, vertex: Option<u32>) -> Option<u32> {
+        self.unique_of.get(vertex? as usize).copied().flatten()
     }
 
-    fn add_edge(&mut self, a: u32, b: u32, unique_a: u32, unique_b: u32, normal_index: u32) {
-        let (start, end) = if unique_a < unique_b { (unique_a, unique_b) } else { (unique_b, unique_a) };
-        let edge = self.edges.entry(f64::from(start), NumMap::new).entry(f64::from(end), EdgeData::default);
+    fn add_edge(
+        &mut self,
+        a: Option<u32>,
+        b: Option<u32>,
+        unique_a: Option<u32>,
+        unique_b: Option<u32>,
+        normal_index: u32,
+    ) {
+        // `undefined < n` is false, so a missing unique index takes the else order.
+        let (start, end) = match (unique_a, unique_b) {
+            (Some(left), Some(right)) if left < right => (Some(left), Some(right)),
+            _ => (unique_b, unique_a),
+        };
+        let ends = match start {
+            Some(index) => self.edges.entry(f64::from(index), NumMap::new),
+            None => self.edges.entry_missing(NumMap::new),
+        };
+        let edge = match end {
+            Some(index) => ends.entry(f64::from(index), EdgeData::default),
+            None => ends.entry_missing(EdgeData::default),
+        };
         edge.normals_index.push(normal_index);
         if edge.outlines.is_empty() || a != unique_a || b != unique_b {
-            edge.outlines.extend_from_slice(&[a, b]);
+            // `new Uint32Array` turns `undefined` into 0.
+            edge.outlines.extend_from_slice(&[a.unwrap_or(0), b.unwrap_or(0)]);
         }
     }
 }
@@ -784,6 +800,14 @@ struct EdgeData {
 struct CoordNode {
     children: NumMap<CoordNode>,
     index: Option<u32>,
+}
+
+fn descend_undefined(node: &mut CoordNode) -> &mut CoordNode {
+    let mut node = node;
+    for _ in 0..3 {
+        node = node.children.entry_missing(CoordNode::default);
+    }
+    node
 }
 
 fn descend<'a>(node: &'a mut CoordNode, coords: &[f64]) -> &'a mut CoordNode {
@@ -830,7 +854,11 @@ fn edge_is_smooth(edge: &EdgeData, index_array: &[u32], positions: &Values, norm
 
 fn normal_index(by_position: bool, index_array: &[u32], corner: u32) -> usize {
     if by_position {
-        index_array.get(corner as usize).copied().unwrap_or(0) as usize * 3
+        match index_array.get(corner as usize) {
+            Some(&vertex) => vertex as usize * 3,
+            // `undefined * 3` is NaN, and the normal read misses.
+            None => usize::MAX / 4,
+        }
     } else {
         corner as usize * 3
     }
@@ -850,8 +878,16 @@ fn ensure_face_normal(normals: &mut NormalBuf<'_>, corner: usize, index_array: &
 }
 
 fn face_normal_indexed(positions: &Values, corner: usize, index_array: &[u32]) -> Cartesian3 {
-    let at = |offset: usize| index_array.get(corner + offset).copied().unwrap_or(0) as usize;
-    face_normal(positions, at(0), at(1), at(2))
+    let at = |offset: usize| match index_array.get(corner + offset) {
+        Some(&vertex) => cartesian_at(positions, vertex as usize),
+        None => Cartesian3::new(f64::NAN, f64::NAN, f64::NAN),
+    };
+    let mut normal = at(1).subtract(at(0)).cross(at(2).subtract(at(0)));
+    let magnitude = normal.magnitude();
+    if magnitude != 0.0 {
+        normal = normal.divide_by_scalar(magnitude);
+    }
+    normal
 }
 
 fn pack_normal(normals: &mut NormalBuf<'_>, index: usize, normal: Cartesian3) {
@@ -918,6 +954,7 @@ impl GltfBuilder {
     }
 
     fn push_vec(&mut self, bytes: Vec<u8>, layout: VecLayout) -> usize {
+        // Same floored quotient as the position accessor. JavaScript keeps the fraction.
         let count = if layout.element_size == 0 || layout.components == 0 {
             0
         } else {

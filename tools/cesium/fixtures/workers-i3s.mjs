@@ -341,5 +341,65 @@ export default async function workersI3s() {
   await s.add('decode', [draco, {...frame, enableFeatures: false, calculateNormals: true}], decode);
   await s.add('decode', [new Uint8Array([68, 82, 65, 67, 79, 1, 2, 3, 4]), {...frame}], decode);
 
+  // One vertex past the last full triangle: flat normals for that vertex are NaN,
+  // and outline generation still walks the partial triangle.
+  const partial = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0, 1]);
+  await s.add('decode', [binary(4, 0, [{name: 'position', data: partial}]), {
+    ...frame,
+    ordering: ['position'],
+    featureAttributeOrder: [],
+    calculateNormals: true,
+    symbologyData: {default: {edges: {width: 1}}},
+  }], decode);
+
+  // Projected meters of a vertex near (0°, 0°) land inside the ±2e6 Web Mercator tile.
+  const origin = C.Cartographic.fromRadians(0, 0, 0);
+  const originCartesian = wgs84.cartographicToCartesian(origin);
+  const interior = {
+    cartographicCenter: {longitude: 0, latitude: 0, height: 0},
+    cartesianCenter: {x: originCartesian.x, y: originCartesian.y, z: originCartesian.z},
+    parentRotation: frame.parentRotation,
+    ellipsoidRadiiSquare: frame.ellipsoidRadiiSquare,
+    url: frame.url,
+  };
+  const mercatorHit = {
+    projectionType: 'WebMercator',
+    projection: {_ellipsoid: {_radii: {x: wgs84.radii.x, y: wgs84.radii.y, z: wgs84.radii.z}}},
+    nativeExtent: {west: -2e6, south: -2e6, east: 2e6, north: 2e6},
+    width: 2,
+    height: 2,
+    buffer: [4, 8, 12, 16],
+    scale: 3,
+    offset: -1,
+  };
+  const nearOrigin = new Float32Array([0, 0, 10, 0.2, 0, 10, 0, 0.2, 10]);
+  await s.add('decode', [binary(3, 0, [{name: 'position', data: nearOrigin}]), {
+    ...interior,
+    ordering: ['position'],
+    featureAttributeOrder: [],
+    geoidDataList: [mercatorHit],
+  }], decode);
+
+  await s.add('decode', [await pointCloudBytes(), {...frame}], decode);
+
   return [s];
+}
+
+async function pointCloudBytes() {
+  const draco = await (await import('draco3d/draco_encoder_nodejs.js')).default();
+  const builder = new draco.PointCloudBuilder();
+  const cloud = new draco.PointCloud();
+  const positions = new Float32Array([0, 0, 1, 1, 0, 0, 0, 1, 0]);
+  if (builder.AddFloatAttribute(cloud, draco.POSITION, 3, 3, positions) < 0) {
+    throw new Error('draco point attribute');
+  }
+  const encoder = new draco.Encoder();
+  encoder.SetAttributeQuantization(draco.POSITION, 14);
+  encoder.SetSpeedOptions(5, 5);
+  const encoded = new draco.DracoInt8Array();
+  const length = encoder.EncodePointCloudToDracoBuffer(cloud, false, encoded);
+  if (length <= 0) throw new Error(`draco point cloud encode ${length}`);
+  const bytes = new Uint8Array(length);
+  for (let i = 0; i < length; i++) bytes[i] = encoded.GetValue(i);
+  return bytes;
 }
