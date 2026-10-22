@@ -1,0 +1,352 @@
+//! Delta prediction-scheme transform.
+//!
+//! The simplest residual transform: the correction is `value - prediction`,
+//! stored directly with no range wrapping. Paired with the difference predictor
+//! it is the default scheme when no mesh connectivity is available. Port of
+//! Draco's `prediction_scheme_delta_*_transform`.
+
+use crate::geometry_attribute::GeometryAttributeType;
+use crate::portable_attribute::PredictionParent;
+use crate::prediction_scheme::{
+    PredictionScheme, PredictionSchemeMethod, PredictionSchemeTransformType,
+};
+use std::marker::PhantomData;
+
+#[cfg(feature = "decoder")]
+use std::ops::Add;
+
+#[cfg(feature = "encoder")]
+use std::ops::Sub;
+
+#[cfg(feature = "decoder")]
+use crate::prediction_scheme::{PredictionSchemeDecoder, PredictionSchemeDecodingTransform};
+
+#[cfg(feature = "encoder")]
+use crate::prediction_scheme::{PredictionSchemeEncoder, PredictionSchemeEncodingTransform};
+use crate::status::{DracoError, Status};
+
+#[cfg(feature = "encoder")]
+pub struct PredictionSchemeDeltaEncodingTransform<DataType, CorrType> {
+    num_components: usize,
+    _marker: PhantomData<(DataType, CorrType)>,
+}
+
+#[cfg(feature = "encoder")]
+impl<DataType, CorrType> Default for PredictionSchemeDeltaEncodingTransform<DataType, CorrType> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(feature = "encoder")]
+impl<DataType, CorrType> PredictionSchemeDeltaEncodingTransform<DataType, CorrType> {
+    pub fn new() -> Self {
+        Self {
+            num_components: 0,
+            _marker: PhantomData,
+        }
+    }
+}
+
+#[cfg(feature = "encoder")]
+impl<DataType, CorrType> PredictionSchemeEncodingTransform<DataType, CorrType>
+    for PredictionSchemeDeltaEncodingTransform<DataType, CorrType>
+where
+    DataType: Copy + Sub<Output = CorrType>,
+    CorrType: Copy,
+{
+    fn init(&mut self, _orig_data: &[DataType], _size: usize, num_components: usize) {
+        self.num_components = num_components;
+    }
+
+    fn compute_correction(
+        &self,
+        original_vals: &[DataType],
+        predicted_vals: &[DataType],
+        out_corr_vals: &mut [CorrType],
+    ) {
+        for i in 0..self.num_components {
+            out_corr_vals[i] = original_vals[i] - predicted_vals[i];
+        }
+    }
+
+    fn encode_transform_data(&mut self, _buffer: &mut Vec<u8>) -> Status {
+        Ok(())
+    }
+
+    fn get_type(&self) -> PredictionSchemeTransformType {
+        PredictionSchemeTransformType::Delta
+    }
+}
+
+#[cfg(feature = "decoder")]
+pub struct PredictionSchemeDeltaDecodingTransform<DataType, CorrType> {
+    num_components: usize,
+    _marker: PhantomData<(DataType, CorrType)>,
+}
+
+#[cfg(feature = "decoder")]
+impl<DataType, CorrType> Default for PredictionSchemeDeltaDecodingTransform<DataType, CorrType> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(feature = "decoder")]
+impl<DataType, CorrType> PredictionSchemeDeltaDecodingTransform<DataType, CorrType> {
+    pub fn new() -> Self {
+        Self {
+            num_components: 0,
+            _marker: PhantomData,
+        }
+    }
+}
+
+#[cfg(feature = "decoder")]
+impl<DataType, CorrType> PredictionSchemeDecodingTransform<DataType>
+    for PredictionSchemeDeltaDecodingTransform<DataType, CorrType>
+where
+    DataType: Copy + Add<DataType, Output = DataType>,
+{
+    #[inline]
+    fn init(&mut self, num_components: usize) -> Status {
+        self.num_components = num_components;
+        Ok(())
+    }
+
+    #[inline]
+    fn compute_original_value(&self, predicted_vals: &[DataType], data: &mut [DataType]) {
+        for i in 0..self.num_components {
+            data[i] = predicted_vals[i] + data[i];
+        }
+    }
+
+    fn decode_transform_data(
+        &mut self,
+        _buffer: &mut crate::decoder_buffer::DecoderBuffer,
+    ) -> Status {
+        Ok(())
+    }
+
+    fn get_type(&self) -> PredictionSchemeTransformType {
+        PredictionSchemeTransformType::Delta
+    }
+}
+
+#[cfg(feature = "encoder")]
+pub struct PredictionSchemeDeltaEncoder<DataType, CorrType, Transform> {
+    transform: Transform,
+    threads: usize,
+    _marker: PhantomData<(DataType, CorrType)>,
+}
+
+#[cfg(feature = "encoder")]
+impl<DataType, CorrType, Transform> PredictionSchemeDeltaEncoder<DataType, CorrType, Transform>
+where
+    DataType: Copy + Default,
+    CorrType: Copy + Default,
+    Transform: PredictionSchemeEncodingTransform<DataType, CorrType>,
+{
+    pub fn new(transform: Transform) -> Self {
+        Self {
+            transform,
+            threads: 1,
+            _marker: PhantomData,
+        }
+    }
+
+    /// Threads the transform's passes over the values may use. See
+    /// `PredictionSchemeEncodingTransform::init_with_threads`.
+    pub(crate) fn set_threads(&mut self, threads: usize) {
+        self.threads = threads.max(1);
+    }
+}
+
+#[cfg(feature = "encoder")]
+impl<DataType, CorrType, Transform> PredictionScheme<'static>
+    for PredictionSchemeDeltaEncoder<DataType, CorrType, Transform>
+where
+    Transform: PredictionSchemeEncodingTransform<DataType, CorrType>,
+{
+    fn get_prediction_method(&self) -> PredictionSchemeMethod {
+        PredictionSchemeMethod::Difference
+    }
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn get_num_parent_attributes(&self) -> i32 {
+        0
+    }
+
+    fn get_parent_attribute_type(&self, _i: i32) -> GeometryAttributeType {
+        GeometryAttributeType::Invalid
+    }
+
+    fn set_parent_attribute(&mut self, _parent: PredictionParent<'static>) -> Status {
+        Err(DracoError::invalid_parameter(
+            "The delta prediction scheme takes no parent attribute".to_string(),
+        ))
+    }
+
+    fn get_transform_type(&self) -> PredictionSchemeTransformType {
+        self.transform.get_type()
+    }
+
+    fn are_corrections_positive(&self) -> bool {
+        self.transform.are_corrections_positive()
+    }
+}
+
+#[cfg(feature = "encoder")]
+impl<DataType, CorrType, Transform> PredictionSchemeEncoder<'static, DataType, CorrType>
+    for PredictionSchemeDeltaEncoder<DataType, CorrType, Transform>
+where
+    DataType: Copy + Default,
+    CorrType: Copy + Default,
+    Transform: PredictionSchemeEncodingTransform<DataType, CorrType>,
+{
+    fn compute_correction_values(
+        &mut self,
+        in_data: &[DataType],
+        out_corr: &mut [CorrType],
+        size: usize,
+        num_components: usize,
+        _entry_to_point_id_map: Option<crate::prediction_scheme::EntryToPointIdMap<'_>>,
+    ) -> Status {
+        self.transform
+            .init_with_threads(in_data, size, num_components, self.threads);
+
+        // No values means no entry 0, which the tail encodes unconditionally,
+        // and `size - num_components` below would wrap.
+        if num_components == 0 || !size.is_multiple_of(num_components) {
+            return Err(DracoError::invalid_parameter(format!(
+                "{size} values do not divide into {num_components} components"
+            )));
+        }
+        if size == 0 {
+            return Ok(());
+        }
+
+        // D(i) = D(i) - D(i - 1) for every entry after the first. Each reads
+        // only the input, so the entries are independent and are handed to the
+        // transform as one run.
+        self.transform.compute_corrections_with_threads(
+            &in_data[num_components..size],
+            &in_data[..size - num_components],
+            &mut out_corr[num_components..size],
+            num_components,
+            self.threads,
+        );
+
+        // Encode correction for the first element.
+        // Pre-allocate zero values outside the loop
+        let zero_vals = vec![DataType::default(); num_components];
+        let original = &in_data[0..num_components];
+        let corr = &mut out_corr[0..num_components];
+        self.transform
+            .compute_correction(original, &zero_vals, corr);
+
+        Ok(())
+    }
+
+    fn encode_prediction_data(&mut self, buffer: &mut Vec<u8>) -> Status {
+        self.transform.encode_transform_data(buffer)
+    }
+}
+
+#[cfg(feature = "decoder")]
+pub struct PredictionSchemeDeltaDecoder<DataType, Transform> {
+    transform: Transform,
+    _marker: PhantomData<DataType>,
+}
+
+#[cfg(feature = "decoder")]
+impl<DataType, Transform> PredictionSchemeDeltaDecoder<DataType, Transform>
+where
+    DataType: Copy + Default,
+    Transform: PredictionSchemeDecodingTransform<DataType>,
+{
+    pub fn new(transform: Transform) -> Self {
+        Self {
+            transform,
+            _marker: PhantomData,
+        }
+    }
+}
+
+#[cfg(feature = "decoder")]
+impl<DataType, Transform> PredictionScheme<'static>
+    for PredictionSchemeDeltaDecoder<DataType, Transform>
+where
+    Transform: PredictionSchemeDecodingTransform<DataType>,
+{
+    fn get_prediction_method(&self) -> PredictionSchemeMethod {
+        PredictionSchemeMethod::Difference
+    }
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn get_num_parent_attributes(&self) -> i32 {
+        0
+    }
+
+    fn get_parent_attribute_type(&self, _i: i32) -> GeometryAttributeType {
+        GeometryAttributeType::Invalid
+    }
+
+    fn set_parent_attribute(&mut self, _parent: PredictionParent<'static>) -> Status {
+        Err(DracoError::invalid_parameter(
+            "The delta prediction scheme takes no parent attribute".to_string(),
+        ))
+    }
+
+    fn get_transform_type(&self) -> PredictionSchemeTransformType {
+        self.transform.get_type()
+    }
+
+    fn are_corrections_positive(&self) -> bool {
+        self.transform.are_corrections_positive()
+    }
+}
+
+#[cfg(feature = "decoder")]
+impl<DataType, Transform> PredictionSchemeDecoder<'static, DataType>
+    for PredictionSchemeDeltaDecoder<DataType, Transform>
+where
+    DataType: Copy + Default,
+    Transform: PredictionSchemeDecodingTransform<DataType>,
+{
+    fn compute_original_values(
+        &mut self,
+        data: &mut [DataType],
+        size: usize,
+        num_components: usize,
+        _entry_to_point_id_map: Option<crate::prediction_scheme::EntryToPointIdMap<'_>>,
+    ) -> Status {
+        self.transform.init(num_components)?;
+
+        // The first element has no predecessor, so it predicts from zeros.
+        let zeros = vec![DataType::default(); num_components];
+        self.transform
+            .compute_original_value(&zeros, &mut data[0..num_components]);
+
+        // Decode data from the front using D(i) = D(i) + D(i - 1). The previous
+        // entry is the prediction, and it is already sitting in `data`, so the
+        // transform reconstructs the run in place.
+        self.transform
+            .compute_original_run(&mut data[..size], num_components);
+
+        Ok(())
+    }
+
+    fn decode_prediction_data(
+        &mut self,
+        buffer: &mut crate::decoder_buffer::DecoderBuffer,
+    ) -> Status {
+        self.transform.decode_transform_data(buffer)
+    }
+}

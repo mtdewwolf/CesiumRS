@@ -10,13 +10,18 @@
 //! worker's geometry-type errors, unique-id lookup, and JSON. The walk is the
 //! I3S one. A mapped value past the attribute buffer stays the type's zero,
 //! and `short_value` records that the read was short.
+//!
+//! The vendored `draco-core` adds C++ Draco's `SetSkipAttributeTransform`.
+//! A skipped attribute keeps its portable integers, and [`DracoAttribute::transform`]
+//! records the quantization or octahedral parameters the decode left undone.
 
+use draco_core::attribute_transform::AttributeTransformType;
 use draco_core::geometry_indices::PointIndex;
 use draco_core::{DataType, DecoderBuffer, Mesh, MeshDecoder, PointAttribute, PointCloud, PointCloudDecoder};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
 pub use draco_core::geometry_attribute::GeometryAttributeType;
-pub use draco_core::Metadata;
+pub use draco_core::{Metadata, SkipAttributeTransforms};
 
 /// Header geometry type `POINT_CLOUD`.
 pub const POINT_CLOUD: u8 = 0;
@@ -54,6 +59,17 @@ pub struct DracoAttribute {
     /// A mapped element extended past the attribute buffer.
     pub short_value: bool,
     pub metadata: Option<Metadata>,
+    /// The transform a skipped attribute did not undo.
+    pub transform: Option<SkippedTransform>,
+}
+
+/// Parameters of a skipped attribute transform, as Draco's
+/// `AttributeQuantizationTransform` and `AttributeOctahedronTransform` read
+/// them back with `InitFromAttribute`.
+#[derive(Clone, Debug, PartialEq)]
+pub enum SkippedTransform {
+    Quantization { quantization_bits: i32, min_values: Vec<f32>, range: f32 },
+    Octahedron { quantization_bits: i32 },
 }
 
 /// Numbers produced by the mapped-index walk.
@@ -98,13 +114,27 @@ impl DracoGeometry {
 /// into empty geometry. Release and wasm use `panic = "abort"`, so an assert
 /// inside the decoder still aborts the module; this catch does not.
 pub fn decode_triangular_mesh(data: &[u8]) -> Result<DracoGeometry, DracoDecodeError> {
+    decode_triangular_mesh_skipping(data, SkipAttributeTransforms::default())
+}
+
+/// [`decode_triangular_mesh`] with Draco's `SkipAttributeTransform` set for `skip`.
+pub fn decode_triangular_mesh_skipping(
+    data: &[u8],
+    skip: SkipAttributeTransforms,
+) -> Result<DracoGeometry, DracoDecodeError> {
     if data.get(7).copied() != Some(TRIANGULAR_MESH) {
         return Err(DracoDecodeError::WrongGeometry);
     }
     guard(|| {
         let mut buffer = DecoderBuffer::new(data);
         let mut mesh = Mesh::new();
-        MeshDecoder::new().decode(&mut buffer, &mut mesh).map_err(|error| error.message().to_string())?;
+        let mut decoder = MeshDecoder::new();
+        for kind in SKIPPABLE {
+            if skip.contains(kind) {
+                decoder.set_skip_attribute_transform(kind);
+            }
+        }
+        decoder.decode(&mut buffer, &mut mesh).map_err(|error| error.message().to_string())?;
         Ok(geometry_from_mesh(&mesh))
     })
 }
@@ -116,16 +146,34 @@ pub fn decode_triangular_mesh(data: &[u8]) -> Result<DracoGeometry, DracoDecodeE
 /// catch as the mesh path. `PointCloudDecoder::new` leaves `threads` at 1, so
 /// the point-cloud decoder runs on the calling thread.
 pub fn decode_point_cloud(data: &[u8]) -> Result<DracoGeometry, DracoDecodeError> {
+    decode_point_cloud_skipping(data, SkipAttributeTransforms::default())
+}
+
+/// [`decode_point_cloud`] with Draco's `SkipAttributeTransform` set for `skip`.
+pub fn decode_point_cloud_skipping(
+    data: &[u8],
+    skip: SkipAttributeTransforms,
+) -> Result<DracoGeometry, DracoDecodeError> {
     if data.get(7).copied() != Some(POINT_CLOUD) {
         return Err(DracoDecodeError::WrongGeometry);
     }
     guard(|| {
         let mut buffer = DecoderBuffer::new(data);
         let mut cloud = PointCloud::new();
-        PointCloudDecoder::new().decode(&mut buffer, &mut cloud).map_err(|error| error.message().to_string())?;
+        let mut decoder = PointCloudDecoder::new();
+        decoder.set_skip_attribute_transforms(skip);
+        decoder.decode(&mut buffer, &mut cloud).map_err(|error| error.message().to_string())?;
         Ok(geometry_from_cloud(&cloud))
     })
 }
+
+const SKIPPABLE: [GeometryAttributeType; 5] = [
+    GeometryAttributeType::Position,
+    GeometryAttributeType::Normal,
+    GeometryAttributeType::Color,
+    GeometryAttributeType::TexCoord,
+    GeometryAttributeType::Generic,
+];
 
 fn guard(decode: impl FnOnce() -> Result<DracoGeometry, String>) -> Result<DracoGeometry, DracoDecodeError> {
     match catch_unwind(AssertUnwindSafe(decode)) {
@@ -187,6 +235,26 @@ fn decoded_attribute(cloud: &PointCloud, attribute: &PointAttribute, num_points:
         values,
         short_value,
         metadata,
+        transform: skipped_transform(attribute),
+    }
+}
+
+/// `InitFromAttribute` of the quantization, then the octahedron, transform.
+fn skipped_transform(attribute: &PointAttribute) -> Option<SkippedTransform> {
+    let data = attribute.attribute_transform_data()?;
+    match data.transform_type() {
+        AttributeTransformType::QuantizationTransform => {
+            let quantization_bits = data.get_parameter_value::<i32>(0)?;
+            let components = attribute.num_components() as usize;
+            let min_values =
+                (0..components).map(|i| data.get_parameter_value::<f32>(4 + 4 * i)).collect::<Option<Vec<_>>>()?;
+            let range = data.get_parameter_value::<f32>(4 + 4 * components)?;
+            Some(SkippedTransform::Quantization { quantization_bits, min_values, range })
+        }
+        AttributeTransformType::OctahedronTransform => {
+            Some(SkippedTransform::Octahedron { quantization_bits: data.get_parameter_value::<i32>(0)? })
+        }
+        _ => None,
     }
 }
 

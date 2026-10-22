@@ -1,0 +1,1934 @@
+use crate::compression_config::EncodedGeometryType;
+use crate::decoder_buffer::DecoderBuffer;
+use crate::draco_types::DataType;
+use crate::geometry_attribute::{GeometryAttributeType, PointAttribute};
+use crate::mesh::Mesh;
+use crate::point_cloud_decoder::PointCloudDecoder;
+use crate::prediction_scheme::EntryToPointIdMap;
+use crate::sequential_generic_attribute_decoder::SequentialGenericAttributeDecoder;
+use crate::sequential_integer_attribute_decoder::{
+    PortableExtent, SequentialIntegerAttributeDecoder,
+};
+use crate::sequential_normal_attribute_decoder::SequentialNormalAttributeDecoder;
+use crate::sequential_quantization_attribute_decoder::SequentialQuantizationAttributeDecoder;
+use crate::status::{DracoError, Status};
+
+use crate::attribute_octahedron_transform::AttributeOctahedronTransform;
+use crate::attribute_quantization_transform::AttributeQuantizationTransform;
+use crate::attribute_transform::AttributeTransform;
+use crate::corner_table::CornerTable;
+use crate::geometry_indices::AttributeValueIndex;
+use crate::geometry_indices::{
+    CornerIndex, FaceIndex, PointIndex, VertexIndex, INVALID_CORNER_INDEX, INVALID_VERTEX_INDEX,
+};
+
+use crate::mesh_edgebreaker_decoder::MeshEdgebreakerDecoder;
+use crate::metadata::{GeometryMetadata, METADATA_FLAG_MASK};
+use crate::test_event_log;
+use crate::version::version_at_least;
+
+/// Output of an edgebreaker attribute traversal:
+/// `(point ids in traversal order, processed corners, vertex -> data-id map)`.
+type AttributeTraversalArrays = (Vec<PointIndex>, Vec<u32>, Vec<i32>);
+
+/// The traversal observers' test-log arm, out of line.
+///
+/// [`test_event_log::record_event`] takes an owned `String`, so the two
+/// `format!` calls are built at the call site: argument structs, a formatter
+/// call and an allocation, inline in a closure whose live body is three stores.
+/// An inliner prices the whole body, and both observers were being emitted as
+/// real calls -- `17` instructions of prologue and epilogue on a closure taking
+/// six or seven arguments, once per vertex visited. The log is installed only by
+/// the tests that read it, so this is the cold arm; outlined and marked cold, it
+/// leaves an observer the walk can inline.
+#[cold]
+#[inline(never)]
+fn record_vertex_visit_events(corner: CornerIndex, vertex: VertexIndex, point_id: PointIndex) {
+    test_event_log::record_event(format!("MAP:{}->v{}", corner.0, vertex.0));
+    test_event_log::record_event(format!("MAP_POINT:{}->p{}", corner.0, point_id.0));
+}
+
+fn validate_num_attributes_in_decoder(
+    num_attributes_in_decoder: usize,
+    remaining_bytes: usize,
+) -> Result<(), DracoError> {
+    // Each attribute must have at least type, data type, component count,
+    // normalized flag, unique id, and a decoder type byte. Reject impossible
+    // counts before reserving vectors from untrusted input.
+    const MIN_ATTRIBUTE_BYTES: usize = 6;
+    if num_attributes_in_decoder == 0
+        || num_attributes_in_decoder > remaining_bytes / MIN_ATTRIBUTE_BYTES
+    {
+        return Err(DracoError::general(
+            "Invalid number of attributes".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_num_components(num_components: u8) -> Result<(), DracoError> {
+    if num_components == 0 {
+        return Err(DracoError::general(
+            "Invalid attribute component count".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn copy_point_mapping(
+    source: &PointAttribute,
+    target: &mut PointAttribute,
+    num_points: usize,
+) -> Result<(), DracoError> {
+    // One slice copy when the source's map is already the exact shape asked
+    // for; the per-point loop remains for identity sources and length
+    // mismatches, where mapped_index supplies the per-point answer.
+    if let Some(map) = source.explicit_mapping() {
+        if map.len() == num_points {
+            target.set_explicit_mapping_from(map);
+            return Ok(());
+        }
+    }
+    target.set_explicit_mapping(num_points);
+    for point in 0..num_points {
+        let point_id = PointIndex(point as u32);
+        target.try_set_point_map_entry(point_id, source.mapped_index(point_id))?;
+    }
+    Ok(())
+}
+
+fn build_vertex_to_data_map_from_corner_map(
+    corner_table: &CornerTable,
+    data_to_corner_map: &[u32],
+) -> Result<Vec<i32>, DracoError> {
+    let mut vertex_to_data_map = vec![-1i32; corner_table.num_vertices()];
+    for (i, &corner_id) in data_to_corner_map.iter().enumerate() {
+        let corner = CornerIndex(corner_id);
+        if corner == INVALID_CORNER_INDEX {
+            continue;
+        }
+        if corner.0 as usize >= corner_table.num_corners() {
+            return Err(DracoError::general(
+                "Data-to-corner map references an invalid corner".to_string(),
+            ));
+        }
+        let vertex = corner_table.vertex(corner);
+        if vertex == INVALID_VERTEX_INDEX {
+            continue;
+        }
+        let Some(slot) = vertex_to_data_map.get_mut(vertex.0 as usize) else {
+            return Err(DracoError::general(
+                "Data-to-corner map references an invalid vertex".to_string(),
+            ));
+        };
+        *slot = i as i32;
+    }
+    Ok(vertex_to_data_map)
+}
+
+fn upsert_portable_attribute(
+    portable_attributes_by_id: &mut Vec<(i32, PointAttribute)>,
+    att_id: i32,
+    portable: PointAttribute,
+) {
+    if let Some((_, existing)) = portable_attributes_by_id
+        .iter_mut()
+        .find(|(id, _)| *id == att_id)
+    {
+        *existing = portable;
+    } else {
+        portable_attributes_by_id.push((att_id, portable));
+    }
+}
+
+/// Decoder for Draco triangle mesh bitstreams.
+///
+/// `MeshDecoder` reads a `.drc` bitstream produced by `MeshEncoder` (or C++
+/// Draco) and reconstructs a [`Mesh`]: faces, attributes, and any
+/// metadata. It handles both EdgeBreaker and sequential connectivity and
+/// dequantizes attributes back to their original data types.
+///
+/// A point-cloud bitstream (geometry type 0) is also accepted and decoded into
+/// the mesh's underlying [`PointCloud`](crate::PointCloud) with no faces.
+///
+/// # Examples
+///
+/// ```
+/// use draco_core::{DecoderBuffer, Mesh, MeshDecoder};
+///
+/// # fn decode(drc_bytes: &[u8]) -> Result<(), draco_core::DracoError> {
+/// let mut mesh = Mesh::new();
+/// MeshDecoder::new().decode(&mut DecoderBuffer::new(drc_bytes), &mut mesh)?;
+/// println!("{} faces, {} points", mesh.num_faces(), mesh.num_points());
+/// # Ok(())
+/// # }
+/// ```
+///
+/// A full encode/decode round trip is shown on the `MeshEncoder` type docs.
+pub struct MeshDecoder {
+    geometry_type: EncodedGeometryType,
+    method: u8,
+    flags: u16,
+    version_major: u8,
+    version_minor: u8,
+    corner_table: Option<Box<CornerTable>>,
+    edgebreaker_data_to_corner_map: Option<Vec<u32>>,
+    edgebreaker_attribute_seam_corners: Vec<Vec<u32>>,
+    edgebreaker_attribute_corner_tables: Vec<CornerTable>,
+    edgebreaker_attribute_vertices_on_seam: Vec<Vec<bool>>,
+    edgebreaker_processed_connectivity_corners: Vec<u32>,
+    edgebreaker_vertex_to_corner_map: Vec<u32>,
+    edgebreaker_is_vert_hole: Vec<bool>,
+    traversal_method: u8,
+    #[cfg(feature = "point_cloud_decode")]
+    threads: i32,
+    /// CesiumRS addition: see [`Self::set_skip_attribute_transform`].
+    skip_attribute_transforms: crate::SkipAttributeTransforms,
+}
+
+impl Default for MeshDecoder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl MeshDecoder {
+    /// Creates a mesh decoder with default state.
+    pub fn new() -> Self {
+        Self {
+            geometry_type: EncodedGeometryType::TriangularMesh,
+            method: 0,
+            flags: 0,
+            version_major: 0,
+            version_minor: 0,
+            corner_table: None,
+            edgebreaker_data_to_corner_map: None,
+            edgebreaker_attribute_seam_corners: Vec::new(),
+            edgebreaker_attribute_corner_tables: Vec::new(),
+            edgebreaker_attribute_vertices_on_seam: Vec::new(),
+            edgebreaker_processed_connectivity_corners: Vec::new(),
+            edgebreaker_vertex_to_corner_map: Vec::new(),
+            edgebreaker_is_vert_hole: Vec::new(),
+            traversal_method: 0,
+            #[cfg(feature = "point_cloud_decode")]
+            threads: 1,
+            skip_attribute_transforms: crate::SkipAttributeTransforms::default(),
+        }
+    }
+
+    /// CesiumRS addition, upstream's `Decoder::SetSkipAttributeTransform`:
+    /// attributes of `attribute_type` keep the portable values their decoder
+    /// produced. Quantized and octahedral values keep their parameters in the
+    /// attribute's transform data, and integer values stay `Int32`.
+    pub fn set_skip_attribute_transform(&mut self, attribute_type: GeometryAttributeType) {
+        self.skip_attribute_transforms.insert(attribute_type);
+    }
+
+    /// Caps the threads the decode of a point-cloud stream may use, as
+    /// [`PointCloudDecoder::set_threads`] does: `1`, the default, keeps the
+    /// decode on the calling thread, `0` is as many as the machine has up to
+    /// sixteen. A mesh stream is decoded on the calling thread whatever this is.
+    ///
+    /// [`PointCloudDecoder::set_threads`]: crate::PointCloudDecoder::set_threads
+    #[cfg(feature = "point_cloud_decode")]
+    pub fn set_threads(&mut self, threads: i32) {
+        self.threads = threads;
+    }
+
+    /// Decodes a Draco mesh from `in_buffer` into `out_mesh`.
+    ///
+    /// Reads the header, optional metadata, connectivity, and attributes,
+    /// replacing whatever `out_mesh` held. Point-cloud bitstreams are decoded
+    /// into the mesh's underlying point cloud (no faces).
+    ///
+    /// `out_mesh` need not be empty, and one mesh can serve a whole sequence of
+    /// decodes: it is cleared here, which keeps the face and attribute lists'
+    /// capacity. On error it is left cleared rather than half-written.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the magic/header is invalid, the bitstream version
+    /// is unsupported, the geometry is malformed, or a required feature (such
+    /// as `point_cloud_decode`) is disabled.
+    pub fn decode(&mut self, in_buffer: &mut DecoderBuffer, out_mesh: &mut Mesh) -> Status {
+        // Every stage below adds to the mesh -- attributes are pushed, faces
+        // are written from index zero -- so a mesh that arrives holding a
+        // previous decode would come out carrying both.
+        out_mesh.clear();
+
+        // 1. Decode Header
+        self.decode_header(in_buffer)?;
+
+        // 2. Decode Metadata
+        if version_at_least(
+            self.version_major,
+            self.version_minor,
+            crate::version::VERSION_FLAGS_INTRODUCED,
+        ) && (self.flags & METADATA_FLAG_MASK) != 0
+        {
+            self.decode_metadata(in_buffer, out_mesh)?;
+        }
+
+        if self.geometry_type == EncodedGeometryType::PointCloud {
+            #[cfg(feature = "point_cloud_decode")]
+            {
+                // Point cloud files (geometry_type == 0) have no connectivity.
+                // Delegate to PointCloudDecoder which reads num_points + attributes
+                // directly into the Mesh's underlying PointCloud.
+                let mut pc_decoder = crate::point_cloud_decoder::PointCloudDecoder::new();
+                pc_decoder.set_threads(self.threads);
+                pc_decoder.set_skip_attribute_transforms(self.skip_attribute_transforms);
+                return pc_decoder.decode_after_header(
+                    self.version_major,
+                    self.version_minor,
+                    self.method,
+                    in_buffer,
+                    &mut *out_mesh,
+                );
+            }
+            #[cfg(not(feature = "point_cloud_decode"))]
+            {
+                return Err(DracoError::general(
+                    "Point cloud decode support is disabled".to_string(),
+                ));
+            }
+        }
+
+        // 3. Decode Connectivity
+        {
+            let _phase = crate::decode_phase_probe::PhaseTimer::start(
+                crate::decode_phase_probe::Phase::Connectivity,
+            );
+            self.decode_connectivity(in_buffer, out_mesh)?;
+        }
+
+        // 4. Decode Attributes
+        let _phase = crate::decode_phase_probe::PhaseTimer::start(
+            crate::decode_phase_probe::Phase::Attributes,
+        );
+        self.decode_attributes(in_buffer, out_mesh)
+    }
+
+    /// Test helper: Returns a reference to the decoded corner table (if any).
+    /// This is useful in unit tests that wish to compare encoder/decoder
+    /// corner table structures without accessing internal decoder types.
+    pub fn get_corner_table_ref(&self) -> Option<&crate::corner_table::CornerTable> {
+        self.corner_table.as_deref()
+    }
+
+    fn decode_metadata(
+        &self,
+        in_buffer: &mut DecoderBuffer,
+        out_mesh: &mut Mesh,
+    ) -> Result<(), DracoError> {
+        let metadata = GeometryMetadata::decode(in_buffer)
+            .map_err(|_| DracoError::general("Failed to decode metadata".to_string()))?;
+        out_mesh.set_metadata(Some(metadata));
+        Ok(())
+    }
+
+    fn decode_header(&mut self, buffer: &mut DecoderBuffer) -> Status {
+        let mut magic = [0u8; 5];
+        buffer.decode_bytes(&mut magic)?;
+        if &magic != b"DRACO" {
+            return Err(DracoError::general("Invalid magic".to_string()));
+        }
+
+        self.version_major = buffer.decode_u8()?;
+        self.version_minor = buffer.decode_u8()?;
+        buffer.set_version(self.version_major, self.version_minor);
+
+        let g_type = buffer.decode_u8()?;
+        self.geometry_type = match g_type {
+            0 => EncodedGeometryType::PointCloud,
+            1 => EncodedGeometryType::TriangularMesh,
+            _ => return Err(DracoError::general("Invalid geometry type".to_string())),
+        };
+
+        self.method = buffer.decode_u8()?;
+
+        // Flags field is always present in the binary header (C++ reads unconditionally).
+        // The VERSION_FLAGS_INTRODUCED constant refers to when flag bits gained meaning,
+        // not when the bytes were added to the format.
+        self.flags = buffer
+            .decode_u16()
+            .map_err(|_| DracoError::general("Failed to decode flags".to_string()))?;
+
+        Ok(())
+    }
+
+    fn decode_connectivity(&mut self, buffer: &mut DecoderBuffer, mesh: &mut Mesh) -> Status {
+        if self.method == 1 {
+            let mut eb_decoder = MeshEdgebreakerDecoder::new();
+            eb_decoder.decode_connectivity(buffer, mesh)?;
+
+            // Preserve edgebreaker-derived maps for attribute decoding.
+            self.edgebreaker_data_to_corner_map = eb_decoder.take_data_to_corner_map();
+            self.edgebreaker_attribute_seam_corners = eb_decoder.take_attribute_seam_corners();
+            self.edgebreaker_processed_connectivity_corners =
+                eb_decoder.take_processed_connectivity_corners();
+            self.edgebreaker_vertex_to_corner_map = eb_decoder.take_vertex_to_corner_map();
+            self.edgebreaker_is_vert_hole = eb_decoder.take_is_vert_hole();
+            self.traversal_method = eb_decoder.get_traversal_decoder_type();
+
+            // Use the edgebreaker decoder's corner table with proper opposite mappings
+            // instead of building a new one from mesh faces
+            if let Some(ct) = eb_decoder.take_corner_table() {
+                self.corner_table = Some(Box::new(ct));
+            } else {
+                return Err(DracoError::general(
+                    "Edgebreaker decoder did not provide corner table".to_string(),
+                ));
+            }
+            self.rebuild_edgebreaker_attribute_corner_tables()?;
+            self.assign_edgebreaker_points_to_corners(mesh)?;
+        } else {
+            // Sequential connectivity encoding
+            // C++ MeshSequentialDecoder uses raw u32 for v < 2.2, varint for v >= 2.2
+            let seq_uses_varint = version_at_least(self.version_major, self.version_minor, (2, 2));
+            let (num_faces, num_points) = if !seq_uses_varint {
+                #[cfg(not(feature = "legacy_bitstream_decode"))]
+                {
+                    return Err(DracoError::bitstream_version_unsupported());
+                }
+                #[cfg(feature = "legacy_bitstream_decode")]
+                {
+                    let nf = buffer.decode_u32()? as usize;
+                    let np = buffer.decode_u32()? as usize;
+                    (nf, np)
+                }
+            } else {
+                let nf = buffer.decode_varint()? as usize;
+                let np = buffer.decode_varint()? as usize;
+                (nf, np)
+            };
+            // No bit-budget guard on these counts. Upstream bounds the face
+            // count by `remaining_size() / 3`, but that premise fails for the
+            // compressed-connectivity branch for the same reason the one-bit
+            // premise failed here: the indices are entropy-coded. Adopting it
+            // would import an upstream bug rather than parity. The allocation
+            // budget below bounds the work instead, and it errs on the side of
+            // reading files upstream refuses rather than the reverse.
+            let num_indices = validate_mesh_index_count(num_faces)?;
+            mesh.set_num_points(num_points);
+
+            // The method byte is there whatever the counts say: upstream
+            // writes and reads it unconditionally, so a mesh with no faces
+            // or no points still carries it.
+            let connectivity_method = buffer.decode_u8()?;
+            if connectivity_method == 0 {
+                // Compressed. The symbol count is bounded before the buffer
+                // it fills is sized: the ratio alone lets a 26 KB stream
+                // declare 1,095,910,464 faces and reserve 13 GB for them,
+                // because a ratio scales with the input an attacker
+                // supplies. See `decode_budget::ensure_symbols_are_backed`.
+                crate::decode_budget::ensure_symbols_are_backed(num_indices, buffer.size())?;
+                // Empty on purpose: `decode_symbols` grows it as symbols
+                // arrive, so a count the stream cannot deliver costs one
+                // small reservation instead of the whole array.
+                let mut encoded_indices = Vec::new();
+                let options = crate::symbol_encoding::SymbolEncodingOptions::default();
+                crate::symbol_encoding::decode_symbols(
+                    num_indices,
+                    1,
+                    &options,
+                    buffer,
+                    &mut encoded_indices,
+                )
+                .map_err(|err| {
+                    DracoError::general(format!(
+                        "Failed to decode compressed sequential connectivity: {err}"
+                    ))
+                })?;
+                // Sized from what the decode produced rather than from what
+                // the header claimed: on success the two are equal, and on
+                // failure this line is not reached.
+                let mut indices = make_zeroed_indices(encoded_indices.len())?;
+                let mut last_index_value = 0i32;
+                for (dst, encoded_val) in indices.iter_mut().zip(encoded_indices) {
+                    let mut index_diff = (encoded_val >> 1) as i32;
+                    if (encoded_val & 1) != 0 {
+                        if index_diff > last_index_value {
+                            return Err(DracoError::general(
+                                "Sequential connectivity index underflow".to_string(),
+                            ));
+                        }
+                        index_diff = -index_diff;
+                    } else if index_diff > i32::MAX - last_index_value {
+                        return Err(DracoError::general(
+                            "Sequential connectivity index overflow".to_string(),
+                        ));
+                    }
+                    let index_value = last_index_value + index_diff;
+                    // Not negative: the underflow check above keeps it at zero
+                    // or more.
+                    ensure_index_names_a_point(index_value as u64, num_points)?;
+                    *dst = index_value as u32;
+                    last_index_value = index_value;
+                }
+                set_num_faces_within_limits(mesh, buffer, num_faces)?;
+                mesh.set_faces_from_flat_indices(&indices);
+            } else if connectivity_method == 1 {
+                // Raw - bulk read indices from buffer
+                if num_points < 256 {
+                    let bytes_needed = num_indices;
+                    let bytes = buffer.decode_slice(bytes_needed).map_err(|_| {
+                        DracoError::general("Not enough data for u8 indices".to_string())
+                    })?;
+                    if let Some(&max) = bytes.iter().max() {
+                        ensure_index_names_a_point(max.into(), num_points)?;
+                    }
+                    set_num_faces_within_limits(mesh, buffer, num_faces)?;
+                    mesh.set_faces_from_u8_indices(bytes);
+                } else if num_points < 65536 {
+                    let bytes_needed = num_indices.checked_mul(2).ok_or_else(|| {
+                        DracoError::general("Mesh u16 index byte count overflow".to_string())
+                    })?;
+                    let bytes = buffer.decode_slice(bytes_needed).map_err(|_| {
+                        DracoError::general("Not enough data for u16 indices".to_string())
+                    })?;
+                    if let Some(max) = bytes
+                        .as_chunks::<2>()
+                        .0
+                        .iter()
+                        .map(|b| u16::from_le_bytes(*b))
+                        .max()
+                    {
+                        ensure_index_names_a_point(max.into(), num_points)?;
+                    }
+                    set_num_faces_within_limits(mesh, buffer, num_faces)?;
+                    mesh.set_faces_from_le_u16_indices(bytes);
+                } else if num_points < (1 << 21) && seq_uses_varint {
+                    // Three varints a face, and a varint is at least one
+                    // byte, so a face count past the bytes that remain is
+                    // one this stream cannot deliver. The three branches
+                    // around this one are bounded by the exact byte count
+                    // they read before sizing anything; this one reads
+                    // variable-length indices, so the per-face floor is
+                    // what it can check instead. Without it the count went
+                    // straight into the face array: a 22-byte stream sized
+                    // it for twenty trillion faces and asked for 240 TB,
+                    // which the campaign's AddressSanitizer refused before
+                    // the fallible reservation could report anything.
+                    if num_indices > buffer.remaining_size() {
+                        return Err(DracoError::general(format!(
+                                "Sequential connectivity declares {num_faces} faces, more than the {} bytes left can encode",
+                                buffer.remaining_size()
+                            )));
+                    }
+                    set_num_faces_within_limits(mesh, buffer, num_faces)?;
+                    let mut read_index = || {
+                        let index = buffer.decode_varint()?;
+                        ensure_index_names_a_point(index, num_points)?;
+                        Ok::<_, DracoError>(index as u32)
+                    };
+                    for face_id in 0..num_faces {
+                        let face = [read_index()?, read_index()?, read_index()?];
+                        mesh.set_face_from_indices(face_id, face);
+                    }
+                } else {
+                    let bytes_needed = num_indices.checked_mul(4).ok_or_else(|| {
+                        DracoError::general("Mesh u32 index byte count overflow".to_string())
+                    })?;
+                    let bytes = buffer.decode_slice(bytes_needed).map_err(|_| {
+                        DracoError::general("Not enough data for u32 indices".to_string())
+                    })?;
+                    if let Some(max) = bytes
+                        .as_chunks::<4>()
+                        .0
+                        .iter()
+                        .map(|b| u32::from_le_bytes(*b))
+                        .max()
+                    {
+                        ensure_index_names_a_point(max.into(), num_points)?;
+                    }
+                    set_num_faces_within_limits(mesh, buffer, num_faces)?;
+                    mesh.set_faces_from_le_u32_indices(bytes);
+                }
+            } else {
+                return Err(DracoError::general(format!(
+                    "Unsupported sequential connectivity method: {}",
+                    connectivity_method
+                )));
+            }
+            // If sequential mode uses compressed connectivity, we may need
+            // to remap indices for deduplication. For raw mode above,
+            // face indices match the flat array.
+
+            // Note: Sequential encoding does NOT use a CornerTable.
+            // C++ MeshSequentialDecoder::DecodeConnectivity() just calls mesh->AddFace()
+            // and uses LinearSequencer for attribute decoding (identity mapping).
+            // Corner tables are only needed for Edgebreaker's mesh prediction schemes.
+            // self.corner_table remains None for sequential decoding.
+        }
+
+        Ok(())
+    }
+
+    fn make_attribute_corner_table(
+        base_ct: &CornerTable,
+        seam_corners: &[u32],
+    ) -> Result<(CornerTable, Vec<bool>), DracoError> {
+        // Seam corners come off the wire, so every index gets checked before
+        // it addresses anything; the encoder's own seam detection never needs
+        // this because it can only ever name a corner its own corner table has.
+        let mut is_edge_on_seam = vec![false; base_ct.num_corners()];
+        for &c_u32 in seam_corners {
+            let c = CornerIndex(c_u32);
+            if c == INVALID_CORNER_INDEX {
+                continue;
+            }
+            if c.0 as usize >= base_ct.num_corners() {
+                return Err(DracoError::general(
+                    "Invalid Edgebreaker attribute seam corner".to_string(),
+                ));
+            }
+            is_edge_on_seam[c.0 as usize] = true;
+
+            let opp = base_ct.opposite(c);
+            if opp != INVALID_CORNER_INDEX {
+                if opp.0 as usize >= base_ct.num_corners() {
+                    return Err(DracoError::general(
+                        "Invalid Edgebreaker attribute seam opposite corner".to_string(),
+                    ));
+                }
+                is_edge_on_seam[opp.0 as usize] = true;
+            }
+        }
+
+        crate::mesh_attribute_corner_table::cut_seam_edges_and_recompute_vertices(
+            base_ct,
+            &is_edge_on_seam,
+        )
+    }
+
+    fn rebuild_edgebreaker_attribute_corner_tables(&mut self) -> Status {
+        self.edgebreaker_attribute_corner_tables.clear();
+        self.edgebreaker_attribute_vertices_on_seam.clear();
+        let Some(base_ct) = self.corner_table.as_deref() else {
+            return Ok(());
+        };
+        for seam_corners in &self.edgebreaker_attribute_seam_corners {
+            let (corner_table, vertices_on_seam) =
+                Self::make_attribute_corner_table(base_ct, seam_corners)?;
+            self.edgebreaker_attribute_corner_tables.push(corner_table);
+            self.edgebreaker_attribute_vertices_on_seam
+                .push(vertices_on_seam);
+        }
+        Ok(())
+    }
+
+    fn assign_edgebreaker_points_to_corners(&self, mesh: &mut Mesh) -> Status {
+        if self.edgebreaker_attribute_corner_tables.is_empty() {
+            return Ok(());
+        }
+        let Some(base_ct) = self.corner_table.as_deref() else {
+            return Ok(());
+        };
+
+        let num_corners = base_ct.num_corners();
+        let mut point_to_corner_map: Vec<u32> = Vec::new();
+        let mut corner_to_point_map = vec![u32::MAX; num_corners];
+
+        // The vertex each attribute table gave for the previous corner of the
+        // fan. Walking a fan asks every attribute table for two vertices per
+        // step -- the corner's and its predecessor's -- and the predecessor's
+        // was answered one step earlier by this same walk. One slot per
+        // attribute table, allocated here rather than per vertex: the loop
+        // below runs once per vertex, two hundred thousand times on a mesh the
+        // size of the Bunny.
+        let mut prev_attr_vertex =
+            vec![INVALID_VERTEX_INDEX; self.edgebreaker_attribute_corner_tables.len()];
+
+        for v in 0..base_ct.num_vertices() {
+            let mut c = base_ct.left_most_corner(VertexIndex(v as u32));
+            if c == INVALID_CORNER_INDEX {
+                continue;
+            }
+
+            let mut first_corner = c;
+            let is_vert_hole = self
+                .edgebreaker_is_vert_hole
+                .get(v)
+                .copied()
+                .unwrap_or_else(|| base_ct.is_vertex_on_boundary(VertexIndex(v as u32)));
+            if !is_vert_hole {
+                for (attr_index, attr_ct) in
+                    self.edgebreaker_attribute_corner_tables.iter().enumerate()
+                {
+                    let base_vertex = base_ct.vertex(c);
+                    let Some(vertices_on_seam) =
+                        self.edgebreaker_attribute_vertices_on_seam.get(attr_index)
+                    else {
+                        continue;
+                    };
+                    if base_vertex == crate::geometry_indices::INVALID_VERTEX_INDEX
+                        || !vertices_on_seam
+                            .get(base_vertex.0 as usize)
+                            .copied()
+                            .unwrap_or(false)
+                    {
+                        continue;
+                    }
+                    let vertex_at_first = attr_ct.vertex(c);
+                    let mut act_c = base_ct.swing_right(c);
+                    let mut seam_found = false;
+                    let mut swing_steps = 0usize;
+                    let max_swing_steps = base_ct.num_corners().saturating_add(1);
+                    while act_c != INVALID_CORNER_INDEX && act_c != c {
+                        swing_steps += 1;
+                        if swing_steps > max_swing_steps {
+                            return Err(DracoError::general(
+                                "Edgebreaker seam search traversal did not terminate".to_string(),
+                            ));
+                        }
+                        if attr_ct.vertex(act_c) != vertex_at_first {
+                            first_corner = act_c;
+                            seam_found = true;
+                            break;
+                        }
+                        act_c = base_ct.swing_right(act_c);
+                    }
+                    if seam_found {
+                        break;
+                    }
+                }
+            }
+
+            c = first_corner;
+            corner_to_point_map[c.0 as usize] = point_to_corner_map.len() as u32;
+            point_to_corner_map.push(c.0);
+
+            for (attr_ct, slot) in self
+                .edgebreaker_attribute_corner_tables
+                .iter()
+                .zip(prev_attr_vertex.iter_mut())
+            {
+                *slot = attr_ct.vertex(c);
+            }
+
+            let mut prev_c = c;
+            c = base_ct.swing_right(c);
+            let mut swing_steps = 0usize;
+            let max_swing_steps = base_ct.num_corners().saturating_add(1);
+            while c != INVALID_CORNER_INDEX && c != first_corner {
+                swing_steps += 1;
+                if swing_steps > max_swing_steps {
+                    return Err(DracoError::general(
+                        "Edgebreaker point assignment traversal did not terminate".to_string(),
+                    ));
+                }
+                // Every slot is written on every step, so `fold` rather than
+                // `any`: short-circuiting would leave the later tables' slots
+                // holding a vertex from some earlier corner, and the answer
+                // they gave for this step would go missing from the next one.
+                let attribute_seam = self
+                    .edgebreaker_attribute_corner_tables
+                    .iter()
+                    .zip(prev_attr_vertex.iter_mut())
+                    .fold(false, |seam, (attr_ct, slot)| {
+                        let vertex = attr_ct.vertex(c);
+                        let differs = vertex != *slot;
+                        *slot = vertex;
+                        seam | differs
+                    });
+                if attribute_seam {
+                    corner_to_point_map[c.0 as usize] = point_to_corner_map.len() as u32;
+                    point_to_corner_map.push(c.0);
+                } else {
+                    corner_to_point_map[c.0 as usize] = corner_to_point_map[prev_c.0 as usize];
+                }
+                prev_c = c;
+                c = base_ct.swing_right(c);
+            }
+        }
+
+        for face_id in 0..mesh.num_faces() {
+            let base = face_id * 3;
+            let p0 = corner_to_point_map[base];
+            let p1 = corner_to_point_map[base + 1];
+            let p2 = corner_to_point_map[base + 2];
+            if p0 == u32::MAX || p1 == u32::MAX || p2 == u32::MAX {
+                return Err(DracoError::general(
+                    "Failed to assign Edgebreaker corner point".to_string(),
+                ));
+            }
+            mesh.set_face(
+                FaceIndex(face_id as u32),
+                [PointIndex(p0), PointIndex(p1), PointIndex(p2)],
+            );
+        }
+        mesh.set_num_points(point_to_corner_map.len());
+
+        Ok(())
+    }
+
+    fn decode_attributes(&mut self, buffer: &mut DecoderBuffer, mesh: &mut Mesh) -> Status {
+        // Both MeshSequentialEncoding and MeshEdgebreakerEncoding use a u8 for the number of
+        // attribute decoders.
+        let num_attributes_decoders = buffer.decode_u8()? as usize;
+        let num_points = mesh.num_points();
+        let skip_attribute_transforms = self.skip_attribute_transforms;
+
+        // For Edgebreaker, traversal sequencing is controlled per attribute decoder.
+        // We'll derive the correct (point_ids, data_to_corner_map) later for each decoder payload
+        // based on its traversal_method.
+        // Sequential encoding uses the identity mapping. Keep it symbolic: a
+        // point count comes from the bitstream, and materializing [0, 1, ...]
+        // here would spend four bytes per claimed point before the attributes
+        // have provided any data. EdgeBreaker still builds real traversal
+        // arrays below, because those arrays describe a non-identity order.
+        let point_ids = if self.method == 0 {
+            EntryToPointIdMap::identity(num_points)
+        } else {
+            EntryToPointIdMap::identity(0)
+        };
+        let data_to_corner_map: Option<Vec<u32>> = None;
+
+        // This decoder never read a header of its own -- the mesh path parsed
+        // one -- so it is told the version, which the attribute decoders read
+        // when they bind a prediction parent.
+        let mut pc_decoder = PointCloudDecoder::new();
+        pc_decoder.set_bitstream_version(self.version_major, self.version_minor);
+        let bitstream_version: u16 =
+            crate::version::bitstream_version(self.version_major, self.version_minor);
+
+        struct PendingQuant {
+            att_id: i32,
+            portable: PointAttribute,
+            transform: AttributeQuantizationTransform,
+        }
+
+        struct PendingNormal {
+            att_id: i32,
+            portable: PointAttribute,
+            quantization_bits: u8,
+        }
+
+        // (1) Attribute decoder identifiers.
+        // For Edgebreaker this ties each decoder payload to attribute connectivity data.
+        let mut att_data_id_by_decoder: Vec<u8> = vec![0; num_attributes_decoders];
+        let mut encoder_type_by_decoder: Vec<u8> = vec![0; num_attributes_decoders];
+        let mut traversal_method_by_decoder: Vec<u8> = vec![0; num_attributes_decoders];
+        if self.method == 1 {
+            for i in 0..num_attributes_decoders {
+                att_data_id_by_decoder[i] = buffer.decode_u8()?;
+                encoder_type_by_decoder[i] = buffer.decode_u8()?;
+                // traversal_method was added in v1.2. For older streams, default to
+                // DEPTH_FIRST (0).
+                if bitstream_version >= 0x0102 {
+                    traversal_method_by_decoder[i] = buffer.decode_u8()?;
+                } else if !cfg!(feature = "legacy_bitstream_decode") {
+                    return Err(DracoError::bitstream_version_unsupported());
+                }
+            }
+        }
+
+        // (2) Attribute decoder data.
+        let mut att_ids_by_decoder: Vec<Vec<i32>> = Vec::with_capacity(num_attributes_decoders);
+        let mut decoder_types_by_decoder: Vec<Vec<u8>> =
+            Vec::with_capacity(num_attributes_decoders);
+
+        for _ in 0..num_attributes_decoders {
+            let num_attributes_in_decoder: usize = if bitstream_version < 0x0200 {
+                if !cfg!(feature = "legacy_bitstream_decode") {
+                    return Err(DracoError::bitstream_version_unsupported());
+                }
+                buffer.decode_u32()? as usize
+            } else {
+                buffer.decode_varint()? as usize
+            };
+            if num_attributes_in_decoder == 0 {
+                return Err(DracoError::general(
+                    "Invalid number of attributes".to_string(),
+                ));
+            }
+            validate_num_attributes_in_decoder(num_attributes_in_decoder, buffer.remaining_size())?;
+
+            let mut att_ids: Vec<i32> = Vec::with_capacity(num_attributes_in_decoder);
+            let mut decoder_types: Vec<u8> = Vec::with_capacity(num_attributes_in_decoder);
+
+            for _ in 0..num_attributes_in_decoder {
+                let att_type_val = buffer.decode_u8()?;
+                let att_type = GeometryAttributeType::try_from(att_type_val)?;
+
+                let data_type_val = buffer.decode_u8()?;
+                let data_type = DataType::try_from(data_type_val)?;
+
+                let num_components = buffer.decode_u8()?;
+                validate_num_components(num_components)?;
+                let normalized = buffer.decode_u8()? != 0;
+                let unique_id: u32 = if bitstream_version < 0x0103 {
+                    if !cfg!(feature = "legacy_bitstream_decode") {
+                        return Err(DracoError::bitstream_version_unsupported());
+                    }
+                    buffer.decode_u16()? as u32
+                } else {
+                    buffer.decode_varint()? as u32
+                };
+
+                buffer.admit_attribute(
+                    num_points,
+                    num_components as usize,
+                    data_type.byte_length(),
+                )?;
+                let mut att = PointAttribute::new();
+                att.init_deferred(att_type, num_components, data_type, normalized, num_points)?;
+                att.set_unique_id(unique_id);
+                let att_id = mesh.add_attribute_preserve_unique_id(att);
+                att_ids.push(att_id);
+
+                // No mapping is written here for EdgeBreaker: upstream leaves
+                // it untouched until the traversal sequencer sets the explicit
+                // point-to-value map (the loop over `point_to_value` below),
+                // which overwrites every entry. An identity fill at this point
+                // is one fallible call per point per attribute that the
+                // sequencer then discards.
+            }
+
+            for _ in 0..num_attributes_in_decoder {
+                decoder_types.push(buffer.decode_u8()?);
+            }
+
+            att_ids_by_decoder.push(att_ids);
+            decoder_types_by_decoder.push(decoder_types);
+        }
+
+        // (3) Attribute decoder payloads.
+        let mut portable_attributes_by_id: Vec<(i32, PointAttribute)> = Vec::new();
+        // Every edgebreaker attribute decoder asks for the same seed-free depth-first
+        // traversal of the same corner table, and that walk is a seventh of a decode on
+        // a 69k-face mesh. The corner table is fixed once connectivity is decoded, so
+        // the walk happens once here and the later decoders copy its answer.
+        let mut dfs_traversal: Option<AttributeTraversalArrays> = None;
+        for dec_i in 0..num_attributes_decoders {
+            let att_ids = &att_ids_by_decoder[dec_i];
+            let decoder_types = &decoder_types_by_decoder[dec_i];
+
+            // For edgebreaker, pick the attribute-specific corner table
+            // (seams) if one applies. Corner indices remain stable because
+            // seam-breaking only removes opposite links, and the table is
+            // read-only from here on -- borrowed, not cloned: a clone is a
+            // whole corner table per decoder (three arrays the size of the
+            // corner and vertex counts) for data nothing writes to.
+            let mut attr_corner_table: Option<&CornerTable> = None;
+            if self.method == 1 {
+                let att_data_id = att_data_id_by_decoder[dec_i] as usize;
+                let uses_attribute_connectivity =
+                    att_data_id_by_decoder[dec_i] != u8::MAX && encoder_type_by_decoder[dec_i] != 0;
+                if uses_attribute_connectivity
+                    && att_data_id < self.edgebreaker_attribute_seam_corners.len()
+                {
+                    if let Some(ct) = self.edgebreaker_attribute_corner_tables.get(att_data_id) {
+                        attr_corner_table = Some(ct);
+                    }
+                }
+            }
+
+            // Determine the corner table used for prediction within this decoder.
+            // For edgebreaker, seams may split vertex fans and change the effective
+            // traversal sequence used by predictors.
+            let mut point_ids_for_decoder: Option<Vec<PointIndex>> = None;
+            let mut data_to_corner_map_for_decoder: Option<Vec<u32>> = None;
+            let mut vertex_to_data_map_for_decoder: Option<Vec<i32>> = None;
+            if self.method == 1 {
+                // If we have an attribute-specific seam corner table, recompute vertex
+                // corners after breaking opposites so we can derive the correct number
+                // of entries for this decoder.
+                if let Some(ct) = attr_corner_table {
+                    // A seam-broken table, not the main table this decode
+                    // already validated -- keep the check.
+                    let (ids, map, v_map) =
+                        Self::generate_point_ids_and_corners_dfs_for_table(mesh, ct, &[], false)?;
+                    point_ids_for_decoder = Some(ids);
+                    data_to_corner_map_for_decoder = Some(map);
+                    vertex_to_data_map_for_decoder = Some(v_map);
+                }
+
+                // Note: For edgebreaker, we intentionally do NOT take a traversal
+                // mapping from `MeshEdgebreakerDecoder::assign_points_to_corners()`.
+                // The C++ decoder derives its attribute traversal from
+                // `MeshTraversalSequencer` (with no corner_order set), i.e. from
+                // deterministic traversal over the reconstructed corner table.
+                // Mixing a connectivity-derived map with a separately generated
+                // vertex_to_data_map can desynchronize prediction decoding.
+            }
+
+            let corner_table_for_decoder: Option<&CornerTable> =
+                attr_corner_table.or(self.corner_table.as_deref());
+
+            // Optional vertex_to_data_map derived from the chosen data_to_corner_map.
+            // (Needed by mesh prediction schemes to map corner-table vertices -> data ids.)
+            // For edgebreaker, derive per-decoder traversal sequencing when seams are not
+            // applied (per-vertex attributes). This sequencing must match the bitstream
+            // traversal_method to keep prediction-scheme side streams (e.g. crease flags)
+            // synchronized.
+            let mut sequenced_point_ids: Option<Vec<PointIndex>> = None;
+            let mut sequenced_data_to_corner_map: Option<Vec<u32>> = None;
+            let mut sequenced_vertex_to_data_map: Option<Vec<i32>> = None;
+
+            // Generate point_ids using traversal method.
+            // For Edgebreaker, the decoder should match the encoder's traversal method.
+            // The per-decoder traversal method is stored in traversal_method_by_decoder.
+            // - traversal_method == 1 (PREDICTION_DEGREE): uses MaxPredictionDegree traversal
+            // - traversal_method == 0 (DEPTH_FIRST): uses DFS traversal
+            // Note: self.traversal_method is the edgebreaker decoder type (0=Standard, 1=Predictive, 2=Valence),
+            // which is different from the per-decoder traversal method.
+            if sequenced_point_ids.is_none() {
+                // Get the per-decoder traversal method (Speed 0 uses PREDICTION_DEGREE=1, others use DEPTH_FIRST=0)
+                let per_decoder_traversal =
+                    if self.method == 1 && dec_i < traversal_method_by_decoder.len() {
+                        traversal_method_by_decoder[dec_i]
+                    } else {
+                        0
+                    };
+                // For sequential encoding (method 0), use identity permutation
+                // because the encoder writes positions in point ID order [0, 1, 2, ...].
+                // For edgebreaker (method 1), use DFS/prediction traversal to match encoder.
+                if self.method == 0 {
+                    // Sequential encoding: C++ uses LinearSequencer which generates
+                    // identity mapping [0, 1, 2, ..., num_points-1] and calls
+                    // SetIdentityMapping() for attributes. No corner table or
+                    // data_to_corner_map is needed.
+                    // Use the mesh-wide symbolic identity sequence instead of
+                    // rebuilding an identical vector for each decoder.
+                    // sequenced_data_to_corner_map remains None - not needed for sequential
+                } else {
+                    // Edgebreaker decoding: traversal method depends on the per-decoder
+                    // traversal method written by the encoder.
+                    // - per_decoder_traversal == 1 (PREDICTION_DEGREE): MaxPredictionDegree traversal (speed 0)
+                    // - per_decoder_traversal == 0 (DEPTH_FIRST): DFS traversal (speed >= 1)
+
+                    if per_decoder_traversal == 1 {
+                        // Speed 0: use MaxPredictionDegree traversal
+                        let (ids, map, v_map) = self
+                            .generate_point_ids_and_corners_max_prediction_degree(
+                                mesh,
+                                &self.edgebreaker_processed_connectivity_corners,
+                            )?;
+                        sequenced_point_ids = Some(ids);
+                        sequenced_data_to_corner_map = Some(map);
+                        sequenced_vertex_to_data_map = Some(v_map); // Use directly from traversal
+                    } else {
+                        // Speed >= 1: use DFS with sequential faces. The traversal helper
+                        // already uses CornerIndex(3 * face_id) when no explicit seeds are
+                        // provided, so avoid allocating a temporary seed vector here.
+                        let (ids, map, v_map) = match &dfs_traversal {
+                            Some(cached) => cached.clone(),
+                            None => {
+                                let arrays = self.generate_point_ids_and_corners_dfs(mesh, &[])?;
+                                // The cache exists for later decoders; with
+                                // none left to read it (a single-decoder
+                                // decode, the common case), storing it would
+                                // clone three point-sized arrays for nobody.
+                                if dec_i + 1 < num_attributes_decoders {
+                                    dfs_traversal = Some(arrays.clone());
+                                }
+                                arrays
+                            }
+                        };
+                        sequenced_point_ids = Some(ids);
+                        sequenced_data_to_corner_map = Some(map);
+                        sequenced_vertex_to_data_map = Some(v_map); // Use directly from DFS traversal
+                    }
+                }
+            }
+
+            // Generate vertex_to_data_map from the traversal result (only if not already set).
+            // This is needed by predictors (like Parallelogram) to find references by point index.
+            // Only needed for Edgebreaker (method 1) since sequential encoding uses only
+            // Difference prediction which doesn't need mesh connectivity.
+            if self.method == 1 && sequenced_vertex_to_data_map.is_none() {
+                if let Some(ref map) = sequenced_data_to_corner_map {
+                    let ct = self.corner_table.as_ref().ok_or_else(|| {
+                        DracoError::general(
+                            "Edgebreaker attribute traversal missing corner table".to_string(),
+                        )
+                    })?;
+                    sequenced_vertex_to_data_map =
+                        Some(build_vertex_to_data_map_from_corner_map(ct, map)?);
+                }
+            }
+
+            // Choose which point sequence to use for decoding values in this decoder.
+            // If seams were applied, we derived a per-decoder point id list (possibly
+            // containing repeats). Otherwise, fall back to the mesh-wide sequence.
+            let point_ids_for_values = if let Some(ref ids) = point_ids_for_decoder {
+                EntryToPointIdMap::from_point_indices(ids)
+            } else if let Some(ref ids) = sequenced_point_ids {
+                EntryToPointIdMap::from_point_indices(ids)
+            } else {
+                point_ids
+            };
+            let data_to_corner_map_override_for_values: Option<&[u32]> =
+                if let Some(ref map) = data_to_corner_map_for_decoder {
+                    Some(map.as_slice())
+                } else if let Some(ref map) = sequenced_data_to_corner_map {
+                    Some(map.as_slice())
+                } else {
+                    data_to_corner_map.as_deref()
+                };
+            let vertex_to_data_map_override_for_values: Option<&[i32]> =
+                if point_ids_for_decoder.is_some() {
+                    vertex_to_data_map_for_decoder.as_deref()
+                } else {
+                    sequenced_vertex_to_data_map.as_deref()
+                };
+
+            let mut pending_quant: Vec<PendingQuant> = Vec::new();
+            let mut pending_normals: Vec<PendingNormal> = Vec::new();
+
+            for (local_i, &att_id) in att_ids.iter().enumerate() {
+                let decoder_type = decoder_types[local_i];
+                {
+                    let att = mesh.try_attribute_mut(att_id)?;
+                    if att.size() != point_ids_for_values.len() {
+                        att.resize_unique_entries(point_ids_for_values.len())?;
+                    }
+                }
+                match decoder_type {
+                    0 => {
+                        let mut att_decoder = SequentialGenericAttributeDecoder::new();
+                        att_decoder.init(&pc_decoder, att_id);
+                        {
+                            let _phase = crate::decode_phase_probe::PhaseTimer::start(
+                                crate::decode_phase_probe::Phase::Values,
+                            );
+                            att_decoder.decode_values(mesh, point_ids_for_values, buffer)?;
+                        }
+                    }
+                    1 => {
+                        let mut att_decoder = SequentialIntegerAttributeDecoder::new();
+                        att_decoder.init(&pc_decoder, att_id);
+                        let portable_parent_attribute = {
+                            let pos_att_id =
+                                mesh.named_attribute_id(GeometryAttributeType::Position);
+                            portable_attributes_by_id
+                                .iter()
+                                .find(|(id, _)| *id == pos_att_id)
+                                .map(|(_, att)| att)
+                        };
+                        let mut skipped = {
+                            let att = mesh.try_attribute(att_id)?;
+                            skip_attribute_transforms
+                                .contains(att.attribute_type())
+                                .then(|| {
+                                    crate::skip_transform::integer_portable(
+                                        att,
+                                        point_ids_for_values.len(),
+                                    )
+                                })
+                                .transpose()?
+                        };
+                        {
+                            let _phase = crate::decode_phase_probe::PhaseTimer::start(
+                                crate::decode_phase_probe::Phase::Values,
+                            );
+                            att_decoder.decode_values(
+                                mesh,
+                                point_ids_for_values,
+                                buffer,
+                                corner_table_for_decoder,
+                                data_to_corner_map_override_for_values,
+                                vertex_to_data_map_override_for_values,
+                                skipped.as_mut(),
+                                portable_parent_attribute,
+                                None,
+                            )?;
+                        }
+                        if let Some(portable) = skipped {
+                            mesh.try_attribute_mut(att_id)?.keep_portable(
+                                &portable,
+                                DataType::Int32,
+                                None,
+                            )?;
+                        }
+                    }
+                    2 => {
+                        let mut att_decoder = SequentialQuantizationAttributeDecoder::new();
+                        att_decoder.init(&pc_decoder, mesh, att_id)?;
+                        let portable_parent_attribute = {
+                            let pos_att_id =
+                                mesh.named_attribute_id(GeometryAttributeType::Position);
+                            portable_attributes_by_id
+                                .iter()
+                                .find(|(id, _)| *id == pos_att_id)
+                                .map(|(_, att)| att)
+                        };
+                        let portable = {
+                            let _phase = crate::decode_phase_probe::PhaseTimer::start(
+                                crate::decode_phase_probe::Phase::Values,
+                            );
+                            att_decoder.decode_values(
+                                mesh,
+                                point_ids_for_values,
+                                buffer,
+                                bitstream_version,
+                                PortableExtent::of(point_ids_for_values),
+                                corner_table_for_decoder,
+                                data_to_corner_map_override_for_values,
+                                vertex_to_data_map_override_for_values,
+                                portable_parent_attribute,
+                            )?
+                        };
+                        // Below 2.0, upstream has no separate "portable" concept
+                        // at all: an attribute's own decode dequantizes it in
+                        // place immediately, so a later attribute in this same
+                        // loop that reads `mesh.attribute()` as a prediction
+                        // parent (`MeshPredictionGeometricNormal`,
+                        // `MeshPredictionTexCoordsPortable`) sees real values.
+                        // 2.0+ defers this to a later shared pass instead, which
+                        // is exactly the branch above that reads
+                        // `portable_attributes_by_id` -- so applying it early
+                        // here only where the bitstream cannot describe that
+                        // deferral keeps both paths matching what a version's
+                        // own decoder actually does. Applying it again in the
+                        // later "inverse transforms" pass is redundant but
+                        // harmless: the same input produces the same output.
+                        if bitstream_version < 0x0200 {
+                            let dst = mesh.try_attribute_mut(att_id)?;
+                            if dst.size() != portable.size() {
+                                dst.resize_unique_entries(portable.size())?;
+                            }
+                            att_decoder
+                                .transform()
+                                .inverse_transform_attribute(&portable, dst)?;
+                        }
+                        pending_quant.push(PendingQuant {
+                            att_id,
+                            portable,
+                            transform: att_decoder.into_transform(),
+                        });
+                    }
+                    3 => {
+                        let mut att_decoder = SequentialNormalAttributeDecoder::new();
+                        att_decoder.init(&pc_decoder, mesh, att_id)?;
+                        let portable_parent_attribute = {
+                            let pos_att_id =
+                                mesh.named_attribute_id(GeometryAttributeType::Position);
+                            portable_attributes_by_id
+                                .iter()
+                                .find(|(id, _)| *id == pos_att_id)
+                                .map(|(_, att)| att)
+                        };
+                        let portable = {
+                            let _phase = crate::decode_phase_probe::PhaseTimer::start(
+                                crate::decode_phase_probe::Phase::Values,
+                            );
+                            att_decoder.decode_values(
+                                mesh,
+                                point_ids_for_values,
+                                buffer,
+                                bitstream_version,
+                                PortableExtent::of(point_ids_for_values),
+                                corner_table_for_decoder,
+                                data_to_corner_map_override_for_values,
+                                vertex_to_data_map_override_for_values,
+                                portable_parent_attribute,
+                            )?
+                        };
+                        pending_normals.push(PendingNormal {
+                            att_id,
+                            portable,
+                            quantization_bits: att_decoder.quantization_bits(),
+                        });
+                    }
+                    _ => {
+                        return Err(DracoError::general(format!(
+                            "Unsupported sequential decoder type: {}",
+                            decoder_type
+                        )));
+                    }
+                }
+            }
+
+            // Decode transform data for all attributes.
+            // For C++ files with bitstream version < 2.0, quantization params were already
+            // decoded before integer values (legacy peek-ahead above). For v >= 2.0
+            // (including all Rust-generated files), they are decoded here after all values.
+            for (local_i, &att_id) in att_ids.iter().enumerate() {
+                match decoder_types[local_i] {
+                    2 if bitstream_version >= 0x0200 => {
+                        let idx = pending_quant
+                            .iter()
+                            .position(|p| p.att_id == att_id)
+                            .ok_or_else(|| {
+                                DracoError::general("Missing pending quant entry".to_string())
+                            })?;
+                        let original = mesh.try_attribute(att_id)?;
+                        pending_quant[idx]
+                            .transform
+                            .decode_parameters(original, buffer)
+                            .map_err(|e| {
+                                DracoError::general(format!(
+                                    "Failed to decode quantization parameters: {e}"
+                                ))
+                            })?;
+                    }
+                    3 if bitstream_version >= 0x0200 => {
+                        let idx = pending_normals
+                            .iter()
+                            .position(|p| p.att_id == att_id)
+                            .ok_or_else(|| {
+                                DracoError::general("Missing pending normal entry".to_string())
+                            })?;
+                        let bits = buffer.decode_u8()?;
+                        if !AttributeOctahedronTransform::is_valid_quantization_bits(bits as i32) {
+                            return Err(DracoError::general(
+                                "Invalid normal quantization bits".to_string(),
+                            ));
+                        }
+                        pending_normals[idx].quantization_bits = bits;
+                    }
+                    _ => {}
+                }
+            }
+
+            // Apply inverse transforms.
+            for q in &pending_quant {
+                let dst = mesh.try_attribute_mut(q.att_id)?;
+                if skip_attribute_transforms.contains(dst.attribute_type()) {
+                    crate::skip_transform::keep_quantized(dst, &q.portable, &q.transform)?;
+                    continue;
+                }
+                if dst.size() != q.portable.size() {
+                    dst.resize_unique_entries(q.portable.size())?;
+                }
+                q.transform
+                    .inverse_transform_attribute(&q.portable, dst)
+                    .map_err(|e| {
+                        DracoError::general(format!("Failed to dequantize attribute: {e}"))
+                    })?;
+            }
+            for n in &pending_normals {
+                let mut oct = AttributeOctahedronTransform::new(-1);
+                oct.set_parameters(n.quantization_bits as i32)?;
+                let dst = mesh.try_attribute_mut(n.att_id)?;
+                if skip_attribute_transforms.contains(dst.attribute_type()) {
+                    crate::skip_transform::keep_octahedral(dst, &n.portable, &oct)?;
+                    continue;
+                }
+                if dst.size() != n.portable.size() {
+                    dst.resize_unique_entries(n.portable.size())?;
+                }
+                oct.inverse_transform_attribute(&n.portable, dst)
+                    .map_err(|e| DracoError::general(format!("Failed to decode normals: {e}")))?;
+            }
+
+            let _phase = crate::decode_phase_probe::PhaseTimer::start(
+                crate::decode_phase_probe::Phase::MapFix,
+            );
+            // Apply UpdatePointToAttributeIndexMapping for Edgebreaker (method 1)
+            // This creates the final mapping from mesh points to attribute values,
+            // matching C++ MeshTraversalSequencer::UpdatePointToAttributeIndexMapping.
+            //
+            // The key insight: values are stored in data_id order (determined by DFS).
+            // vertex_to_data_map[v] tells us which data_id holds vertex v's value.
+            // In the decoder, mesh point == corner table vertex (since faces are built from CT).
+            // So point p should get value from data_id = vertex_to_data_map[p].
+            if self.method == 1 {
+                let mapping_v_map = vertex_to_data_map_for_decoder
+                    .as_deref()
+                    .or(sequenced_vertex_to_data_map.as_deref());
+                if let Some(v_map) = mapping_v_map {
+                    let num_points = mesh.num_points();
+                    // The finished map, assembled once and copied into each
+                    // attribute whole. Entries no corner reaches stay INVALID,
+                    // exactly what set_explicit_mapping leaves for a point no
+                    // try_set_point_map_entry call touches.
+                    let mut point_to_value: Vec<AttributeValueIndex> =
+                        vec![crate::geometry_indices::INVALID_ATTRIBUTE_VALUE_INDEX; num_points];
+                    if let Some(ct) = corner_table_for_decoder {
+                        // Corner `c` of the mesh is entry `c` of the corner
+                        // table and entry `c` of the flattened face list, so
+                        // the walk is over two slices side by side rather than
+                        // over faces with a corner index derived from each --
+                        // that derivation was a multiply and an add per corner
+                        // and every read behind it re-proved a bound the
+                        // iterator now carries. Zipping also ends at the
+                        // shorter of the two, which is where the derived form
+                        // stopped anyway: a corner past the table read as the
+                        // invalid vertex and was skipped.
+                        for (&vertex, &point) in ct
+                            .corner_to_vertex_map
+                            .iter()
+                            .zip(mesh.faces().as_flattened())
+                        {
+                            if vertex == INVALID_VERTEX_INDEX {
+                                continue;
+                            }
+                            let Some(&data_id) = v_map.get(vertex.0 as usize) else {
+                                continue;
+                            };
+                            if data_id < 0 {
+                                continue;
+                            }
+                            if let Some(slot) = point_to_value.get_mut(point.0 as usize) {
+                                *slot = AttributeValueIndex(data_id as u32);
+                            }
+                        }
+                    } else {
+                        for p in 0..num_points {
+                            if p < v_map.len() && v_map[p] >= 0 {
+                                point_to_value[p] = AttributeValueIndex(v_map[p] as u32);
+                            }
+                        }
+                    }
+
+                    for &att_id in att_ids {
+                        let att = mesh.try_attribute_mut(att_id)?;
+                        att.set_explicit_mapping_from(&point_to_value);
+                    }
+                }
+            }
+
+            for q in pending_quant {
+                let mut portable = q.portable;
+                copy_point_mapping(
+                    mesh.try_attribute(q.att_id)?,
+                    &mut portable,
+                    mesh.num_points(),
+                )?;
+                upsert_portable_attribute(&mut portable_attributes_by_id, q.att_id, portable);
+            }
+            for n in pending_normals {
+                let mut portable = n.portable;
+                copy_point_mapping(
+                    mesh.try_attribute(n.att_id)?,
+                    &mut portable,
+                    mesh.num_points(),
+                )?;
+                upsert_portable_attribute(&mut portable_attributes_by_id, n.att_id, portable);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Discovery-order traversal: use the order points were created during reconstruction.
+    #[allow(dead_code)]
+    fn generate_point_ids_and_corners_discovery(&self, mesh: &Mesh) -> (Vec<PointIndex>, Vec<u32>) {
+        let num_points = mesh.num_points();
+        let mut point_ids = Vec::with_capacity(num_points);
+        let mut data_to_corner_map = Vec::with_capacity(num_points);
+
+        for i in 0..num_points {
+            let pid = PointIndex(i as u32);
+            point_ids.push(pid);
+            let corner = self
+                .edgebreaker_vertex_to_corner_map
+                .get(i)
+                .cloned()
+                .unwrap_or(u32::MAX);
+            data_to_corner_map.push(if corner == u32::MAX { 0 } else { corner });
+        }
+
+        (point_ids, data_to_corner_map)
+    }
+
+    #[allow(dead_code)]
+    fn generate_point_ids_and_corners_dfs(
+        &self,
+        mesh: &Mesh,
+        processed_connectivity_corners: &[u32],
+    ) -> Result<AttributeTraversalArrays, DracoError> {
+        let corner_table = self.corner_table.as_ref().ok_or_else(|| {
+            DracoError::general(
+                "Edgebreaker DFS attribute traversal missing corner table".to_string(),
+            )
+        })?;
+        // `self.corner_table` was already validated by
+        // `MeshEdgebreakerDecoder::assign_points_to_corners` during connectivity
+        // decode -- the only way this method (`self.method == 1`) reaches this
+        // field is through that call, and it returns before setting the field
+        // if the check fails. Re-scanning it here streams the same 1.67 MB
+        // twice for an answer already known.
+        Self::generate_point_ids_and_corners_dfs_for_table(
+            mesh,
+            corner_table,
+            processed_connectivity_corners,
+            true,
+        )
+    }
+
+    /// `already_validated` -- true when `corner_table` is known consistent from
+    /// an earlier check on this exact table (the main corner table, checked in
+    /// `assign_points_to_corners`); false for a seam-broken clone built fresh
+    /// for one attribute, which has no other check standing in for this one.
+    fn generate_point_ids_and_corners_dfs_for_table(
+        mesh: &Mesh,
+        corner_table: &CornerTable,
+        processed_connectivity_corners: &[u32],
+        already_validated: bool,
+    ) -> Result<AttributeTraversalArrays, DracoError> {
+        let _phase =
+            crate::decode_phase_probe::PhaseTimer::start(crate::decode_phase_probe::Phase::Setup);
+        // Reject an inconsistent (e.g. seam-modified) corner table before the DFS
+        // indexes per-vertex / per-face arrays by table-derived ids.
+        if !already_validated && !corner_table.is_index_consistent() {
+            return Err(DracoError::general(
+                "Inconsistent corner table for attribute traversal".to_string(),
+            ));
+        }
+        let num_vertices = corner_table.num_vertices();
+        let num_faces = corner_table.num_faces();
+
+        // Sized rather than reserved, and cut back to what the walk visited at
+        // the end. `visited_vertices` gates the observer to one call per vertex
+        // and is this long itself, so the walk cannot fill more than this --
+        // which is what lets the observer write by index instead of pushing.
+        // The push carried the reallocation path with it, and that path is what
+        // an inliner priced: outlined, the observer cost `18` instructions of
+        // prologue and epilogue per vertex on top of its three stores.
+        let mut point_ids = vec![PointIndex(0); num_vertices];
+        let mut data_to_corner_map = vec![0u32; num_vertices];
+        let mut num_visited = 0usize;
+        let mut vertex_to_data_map = vec![-1i32; num_vertices];
+        let mut visited_vertices = vec![false; num_vertices];
+        let mut visited_faces = vec![false; num_faces];
+        let event_log_enabled = test_event_log::enabled();
+
+        // Helper to get mesh PointIndex from corner (matches C++ Mesh::CornerToPointId)
+        let corner_to_point_id = |c: CornerIndex| -> PointIndex {
+            if c == INVALID_CORNER_INDEX {
+                return PointIndex(u32::MAX);
+            }
+            let face_id = FaceIndex(c.0 / 3);
+            let corner_offset = (c.0 % 3) as usize;
+            mesh.face(face_id)[corner_offset]
+        };
+
+        // Visit a corner table vertex and record it as a point ID.
+        // This matches C++ MeshAttributeIndicesEncodingObserver::OnNewVertexVisited
+        // which gets point_id from mesh_->face(corner / 3)[corner % 3]
+
+        // Records one newly visited vertex: the point it maps to, its slot in
+        // the attribute data order, and the corner it was discovered through.
+        // C++ MeshAttributeIndicesEncodingObserver::OnNewVertexVisited.
+        let mut on_new_vertex = |vertex: VertexIndex, corner: CornerIndex| {
+            let point_id = corner_to_point_id(corner);
+            vertex_to_data_map[vertex.0 as usize] = num_visited as i32;
+            if event_log_enabled {
+                record_vertex_visit_events(corner, vertex, point_id);
+            }
+            // Reached through `get_mut` rather than indexed so the observer
+            // carries no panic path either: the slot exists by the sizing
+            // above, and what kept this a real call was its size.
+            if let (Some(point_slot), Some(corner_slot)) = (
+                point_ids.get_mut(num_visited),
+                data_to_corner_map.get_mut(num_visited),
+            ) {
+                *point_slot = point_id;
+                *corner_slot = corner.0;
+                num_visited += 1;
+            }
+        };
+
+        // Scratch for the depth-first walk, reused across seeds.
+        let mut corner_stack: Vec<CornerIndex> = Vec::new();
+
+        // Run the traverser in the same way as C++ MeshTraversalSequencer:
+        // - If a corner_order is provided, process only those corners.
+        // - Otherwise, process sequential CornerIndex(3 * face_id).
+        if !processed_connectivity_corners.is_empty() {
+            for &c in processed_connectivity_corners {
+                crate::corner_traversal::traverse_from_corner(
+                    corner_table,
+                    CornerIndex(c),
+                    &mut corner_stack,
+                    &mut visited_faces,
+                    &mut visited_vertices,
+                    &mut on_new_vertex,
+                );
+            }
+        } else {
+            for f in 0..num_faces {
+                if !visited_faces[f] {
+                    crate::corner_traversal::traverse_from_corner(
+                        corner_table,
+                        CornerIndex((f * 3) as u32),
+                        &mut corner_stack,
+                        &mut visited_faces,
+                        &mut visited_vertices,
+                        &mut on_new_vertex,
+                    );
+                }
+            }
+        }
+
+        // Back to the length the pushes would have left: a walk that reaches
+        // fewer vertices than the table holds -- an isolated one, a component
+        // the seeds miss -- must not hand back slots it never wrote.
+        point_ids.truncate(num_visited);
+        data_to_corner_map.truncate(num_visited);
+
+        Ok((point_ids, data_to_corner_map, vertex_to_data_map))
+    }
+
+    #[allow(dead_code)]
+    fn generate_point_ids_and_corners_max_prediction_degree(
+        &self,
+        mesh: &Mesh,
+        _processed_connectivity_corners: &[u32],
+    ) -> Result<AttributeTraversalArrays, DracoError> {
+        let _phase =
+            crate::decode_phase_probe::PhaseTimer::start(crate::decode_phase_probe::Phase::Setup);
+        // Matches C++ MaxPredictionDegreeTraverser (MESH_TRAVERSAL_PREDICTION_DEGREE).
+        let corner_table = self.corner_table.as_ref().ok_or_else(|| {
+            DracoError::general(
+                "Edgebreaker prediction-degree traversal missing corner table".to_string(),
+            )
+        })?;
+        // No consistency check here: this method only ever runs on
+        // `self.corner_table` (never a caller-supplied table), reachable only
+        // when `self.method == 1`, which is exactly the condition under which
+        // `MeshEdgebreakerDecoder::assign_points_to_corners` already checked
+        // this same table during connectivity decode.
+        let num_vertices = corner_table.num_vertices();
+        let num_faces = corner_table.num_faces();
+
+        let mut point_ids = Vec::with_capacity(num_vertices);
+        let mut data_to_corner_map = Vec::with_capacity(num_vertices);
+        // Build vertex_to_data_map during traversal: vertex_to_data_map[vertex_id] = data_id
+        // where data_id is the index into point_ids where this vertex was first visited.
+        let mut vertex_to_data_map: Vec<i32> = vec![-1; num_vertices];
+
+        let mut visited_vertices = vec![false; num_vertices];
+        let mut visited_faces = vec![false; num_faces];
+        let mut prediction_degree: Vec<i32> = vec![0; num_vertices];
+        let event_log_enabled = test_event_log::enabled();
+
+        // Buckets (stacks) for priorities 0..2.
+        let mut stacks: [Vec<CornerIndex>; 3] = [Vec::new(), Vec::new(), Vec::new()];
+        let mut best_priority: usize = 0;
+
+        // Helper to get mesh PointIndex from corner (matches C++ Mesh::CornerToPointId)
+        let corner_to_point_id = |c: CornerIndex| -> PointIndex {
+            if c == INVALID_CORNER_INDEX {
+                return PointIndex(u32::MAX);
+            }
+            let face_id = FaceIndex(c.0 / 3);
+            let corner_offset = (c.0 % 3) as usize;
+            mesh.face(face_id)[corner_offset]
+        };
+
+        let visit_vertex = |v: VertexIndex,
+                            c: CornerIndex,
+                            point_ids: &mut Vec<PointIndex>,
+                            data_to_corner_map: &mut Vec<u32>,
+                            visited_vertices: &mut [bool],
+                            vertex_to_data_map: &mut [i32]| {
+            if v == INVALID_VERTEX_INDEX {
+                return;
+            }
+            let vi = v.0 as usize;
+            if vi >= visited_vertices.len() {
+                return;
+            }
+            if !visited_vertices[vi] {
+                visited_vertices[vi] = true;
+                // Record vertex->data_id mapping BEFORE pushing to point_ids
+                // data_id is current length of point_ids (0-indexed sequence number)
+                vertex_to_data_map[vi] = point_ids.len() as i32;
+                // Use corner_to_point_id to get mesh PointIndex from corner
+                let point_id = corner_to_point_id(c);
+                if event_log_enabled {
+                    record_vertex_visit_events(c, v, point_id);
+                }
+                point_ids.push(point_id);
+                data_to_corner_map.push(c.0);
+            }
+        };
+
+        let compute_priority = |corner_id: CornerIndex,
+                                visited_vertices: &[bool],
+                                prediction_degree: &mut [i32]|
+         -> usize {
+            if corner_id == INVALID_CORNER_INDEX {
+                return 2;
+            }
+            let v_tip = corner_table.vertex(corner_id);
+            if v_tip == INVALID_VERTEX_INDEX {
+                return 2;
+            }
+            let vi = v_tip.0 as usize;
+            if vi < visited_vertices.len() && visited_vertices[vi] {
+                return 0;
+            }
+            if vi < prediction_degree.len() {
+                prediction_degree[vi] += 1;
+                if prediction_degree[vi] > 1 {
+                    1
+                } else {
+                    2
+                }
+            } else {
+                2
+            }
+        };
+
+        let add_corner_to_stack = |ci: CornerIndex,
+                                   priority: usize,
+                                   stacks: &mut [Vec<CornerIndex>; 3],
+                                   best_priority: &mut usize| {
+            let p = priority.min(2);
+            stacks[p].push(ci);
+            if p < *best_priority {
+                *best_priority = p;
+            }
+        };
+
+        let pop_next_corner =
+            |stacks: &mut [Vec<CornerIndex>; 3], best_priority: &mut usize| -> CornerIndex {
+                for p in *best_priority..3 {
+                    if let Some(ci) = stacks[p].pop() {
+                        *best_priority = p;
+                        return ci;
+                    }
+                }
+                INVALID_CORNER_INDEX
+            };
+
+        let traverse_from_corner =
+            |start_corner: CornerIndex,
+             point_ids: &mut Vec<PointIndex>,
+             data_to_corner_map: &mut Vec<u32>,
+             visited_vertices: &mut Vec<bool>,
+             visited_faces: &mut Vec<bool>,
+             prediction_degree: &mut Vec<i32>,
+             stacks: &mut [Vec<CornerIndex>; 3],
+             best_priority: &mut usize,
+             vertex_to_data_map: &mut Vec<i32>| {
+                if corner_table.face(start_corner) == crate::geometry_indices::INVALID_FACE_INDEX {
+                    return;
+                }
+
+                // Deliberately no visited-face guard and no stack reset, matching
+                // upstream MaxPredictionDegreeTraverser::TraverseFromCorner. The
+                // depth-first traverser has both; this one has neither, because a
+                // face is marked visited having visited only one of its vertices,
+                // so the three pre-visits below still have work to do on a face
+                // that was already traversed.
+                stacks[0].push(start_corner);
+                *best_priority = 0;
+
+                // Pre-visit next, prev and tip vertices.
+                let next_c = corner_table.next(start_corner);
+                let prev_c = corner_table.previous(start_corner);
+                visit_vertex(
+                    corner_table.vertex(next_c),
+                    next_c,
+                    point_ids,
+                    data_to_corner_map,
+                    visited_vertices,
+                    vertex_to_data_map,
+                );
+                visit_vertex(
+                    corner_table.vertex(prev_c),
+                    prev_c,
+                    point_ids,
+                    data_to_corner_map,
+                    visited_vertices,
+                    vertex_to_data_map,
+                );
+                visit_vertex(
+                    corner_table.vertex(start_corner),
+                    start_corner,
+                    point_ids,
+                    data_to_corner_map,
+                    visited_vertices,
+                    vertex_to_data_map,
+                );
+
+                loop {
+                    let mut corner_id = pop_next_corner(stacks, best_priority);
+                    if corner_id == INVALID_CORNER_INDEX {
+                        break;
+                    }
+                    let face_id0 = corner_table.face(corner_id);
+                    if face_id0 == crate::geometry_indices::INVALID_FACE_INDEX {
+                        continue;
+                    }
+                    if visited_faces[face_id0.0 as usize] {
+                        continue;
+                    }
+
+                    loop {
+                        let face_id = corner_table.face(corner_id);
+                        if face_id == crate::geometry_indices::INVALID_FACE_INDEX {
+                            break;
+                        }
+                        visited_faces[face_id.0 as usize] = true;
+
+                        let vert_id = corner_table.vertex(corner_id);
+                        if vert_id != INVALID_VERTEX_INDEX {
+                            let vi = vert_id.0 as usize;
+                            if vi < visited_vertices.len() && !visited_vertices[vi] {
+                                visit_vertex(
+                                    vert_id,
+                                    corner_id,
+                                    point_ids,
+                                    data_to_corner_map,
+                                    visited_vertices,
+                                    vertex_to_data_map,
+                                );
+                            }
+                        }
+
+                        let right_corner_id = corner_table.right_corner(corner_id);
+                        let left_corner_id = corner_table.left_corner(corner_id);
+                        let right_face_id = if right_corner_id == INVALID_CORNER_INDEX {
+                            crate::geometry_indices::INVALID_FACE_INDEX
+                        } else {
+                            corner_table.face(right_corner_id)
+                        };
+                        let left_face_id = if left_corner_id == INVALID_CORNER_INDEX {
+                            crate::geometry_indices::INVALID_FACE_INDEX
+                        } else {
+                            corner_table.face(left_corner_id)
+                        };
+
+                        let is_right_face_visited = right_face_id
+                            == crate::geometry_indices::INVALID_FACE_INDEX
+                            || visited_faces[right_face_id.0 as usize];
+                        let is_left_face_visited = left_face_id
+                            == crate::geometry_indices::INVALID_FACE_INDEX
+                            || visited_faces[left_face_id.0 as usize];
+
+                        if !is_left_face_visited {
+                            let priority = compute_priority(
+                                left_corner_id,
+                                visited_vertices,
+                                prediction_degree,
+                            );
+                            if is_right_face_visited && priority <= *best_priority {
+                                corner_id = left_corner_id;
+                                continue;
+                            }
+                            add_corner_to_stack(left_corner_id, priority, stacks, best_priority);
+                        }
+
+                        if !is_right_face_visited {
+                            let priority = compute_priority(
+                                right_corner_id,
+                                visited_vertices,
+                                prediction_degree,
+                            );
+                            if priority <= *best_priority {
+                                corner_id = right_corner_id;
+                                continue;
+                            }
+                            add_corner_to_stack(right_corner_id, priority, stacks, best_priority);
+                        }
+
+                        break;
+                    }
+                }
+            };
+
+        // C++ DECODER traverses faces SEQUENTIALLY (face 0, face 1, face 2, ...)
+        // NOT using processed_connectivity_corners (that's only for the ENCODER)!
+        // See C++ MeshTraversalSequencer::GenerateSequenceInternal() - when corner_order_ is null,
+        // it does: for (int i = 0; i < num_faces; ++i) ProcessCorner(CornerIndex(3 * i));
+        for f in 0..num_faces {
+            let first_corner = corner_table.first_corner(FaceIndex(f as u32));
+            traverse_from_corner(
+                first_corner,
+                &mut point_ids,
+                &mut data_to_corner_map,
+                &mut visited_vertices,
+                &mut visited_faces,
+                &mut prediction_degree,
+                &mut stacks,
+                &mut best_priority,
+                &mut vertex_to_data_map,
+            );
+        }
+
+        Ok((point_ids, data_to_corner_map, vertex_to_data_map))
+    }
+}
+
+fn validate_mesh_index_count(num_faces: usize) -> Result<usize, DracoError> {
+    num_faces
+        .checked_mul(3)
+        .ok_or_else(|| DracoError::general("Mesh face index count overflow".to_string()))
+}
+
+/// Refuses a sequential face index that names no point, as upstream does on
+/// every connectivity path. Accepted, it leaves the mesh with faces past its
+/// points, and whatever follows them by point -- an index buffer written out,
+/// an attribute looked up per corner -- reads past the end. Takes the widest
+/// value a path can read, so a varint is checked before it is narrowed.
+fn ensure_index_names_a_point(index: u64, num_points: usize) -> Status {
+    if index >= num_points as u64 {
+        return Err(DracoError::general(format!(
+            "Sequential connectivity names point {index} of a mesh with {num_points}"
+        )));
+    }
+    Ok(())
+}
+
+/// The index array, sized from a count that already has an array behind it.
+///
+/// Uncharged, and the caller is why: the length handed in is the length of the
+/// symbols the decode actually produced, so this reservation is backed by one
+/// that already exists in memory. The count that *did* come from the header
+/// was bounded before a symbol was read, at one bit each, by
+/// `decode_budget::ensure_symbols_are_backed`. Billing the budget a second
+/// time here would put a ceiling on legitimate meshes -- 256 MiB is 22 million
+/// faces -- for a reservation nothing about it is unbacked.
+fn make_zeroed_indices(num_indices: usize) -> Result<Vec<u32>, DracoError> {
+    let mut indices = Vec::new();
+    indices
+        .try_reserve_exact(num_indices)
+        .map_err(|_| DracoError::general("Failed to allocate mesh indices".to_string()))?;
+    indices.resize(num_indices, 0);
+    Ok(indices)
+}
+
+/// Sizes the face array, after the caller's ceiling has had its say.
+///
+/// The ceiling is checked here rather than where the count is read, and the
+/// order is the point: every structural refusal on the way to this call --
+/// a count no stream that size can carry, an index that overflows, bytes that
+/// are not there -- says the *file* is wrong, and must be what a caller sees.
+/// [`ErrorKind::LimitExceeded`](crate::ErrorKind::LimitExceeded) says the file
+/// may be fine and the caller declined to decode something this large, which
+/// is only a truthful answer once the file has been found coherent.
+#[cfg(feature = "decoder")]
+fn set_num_faces_within_limits(
+    mesh: &mut Mesh,
+    buffer: &DecoderBuffer,
+    num_faces: usize,
+) -> Status {
+    buffer.check_faces(num_faces)?;
+    mesh.try_set_num_faces(num_faces)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn attribute_corner_table_rejects_out_of_range_seam_corner() {
+        let mut corner_table = CornerTable::new(1);
+        corner_table.set_face_vertices(FaceIndex(0), PointIndex(0), PointIndex(1), PointIndex(2));
+
+        let invalid_corner = corner_table.num_corners() as u32;
+        let status = MeshDecoder::make_attribute_corner_table(&corner_table, &[invalid_corner]);
+
+        assert!(status.is_err());
+    }
+
+    #[test]
+    fn vertex_to_data_map_rejects_out_of_range_corner() {
+        let mut corner_table = CornerTable::new(1);
+        corner_table.set_face_vertices(FaceIndex(0), PointIndex(0), PointIndex(1), PointIndex(2));
+
+        let invalid_corner = corner_table.num_corners() as u32;
+        let status = build_vertex_to_data_map_from_corner_map(&corner_table, &[invalid_corner]);
+
+        assert!(status.is_err());
+    }
+}

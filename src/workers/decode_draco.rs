@@ -12,21 +12,22 @@
 //! decode raises `Error decoding draco mesh geometry:` or
 //! `Error decoding draco point cloud:` plus the decoder's message.
 //!
-//! `dequantizeInShader` is not reproduced. Cesium skips
-//! `AttributeQuantizationTransform` / `AttributeOctahedronTransform` and
-//! returns the portable integers plus `{ quantizationBits, minValues, range,
-//! octEncoded }`. `draco-core` 2.3.2 has no skip API: `MeshDecoder` and
-//! `PointCloudDecoder` always inverse-transform, and the decoded attribute's
-//! `attribute_transform_data` is empty, so the integers and the parameters
-//! are gone. This function therefore always returns the dequantized values
-//! and `quantization: null`, which is what the worker returns when the flag
-//! is absent or no transform is skipped. Callers that set the flag still get
-//! that dequantized result. Model's Draco loader turns the flag on by
-//! default (`GltfDracoLoader` sets `dequantizeInShader: true`, as do the
-//! point-cloud and pnts parsers), so the most common production path differs
-//! from CesiumJS.
+//! `dequantizeInShader` skips Draco's attribute transforms through the
+//! vendored decoder's `SetSkipAttributeTransform`: every listed
+//! `attributesToSkipTransform` type on a mesh, and `POSITION` and `NORMAL` on
+//! a point cloud. A skipped quantized or octahedral attribute returns its
+//! portable integers through the worker's `UInt8` / `UInt16` / `Float32` view
+//! (chosen by quantization bits) and `{ quantizationBits, minValues, range,
+//! octEncoded }`; octahedral normals keep two components. A skipped
+//! integer-encoded attribute becomes Draco's `Int32` portable copy, as in
+//! upstream. A name that is not a Draco attribute type reaches
+//! `SkipAttributeTransform` as `undefined`, which Draco receives as 0 and so
+//! skips `POSITION`.
 
-use super::draco::{self, AttributeValues, DracoAttribute, DracoDecodeError, DracoGeometry, GeometryAttributeType};
+use super::draco::{
+    self, AttributeValues, DracoAttribute, DracoDecodeError, DracoGeometry, GeometryAttributeType,
+    SkipAttributeTransforms, SkippedTransform,
+};
 use crate::core::math::SIXTY_FOUR_KILOBYTES;
 use crate::core::{ComponentDatatype, IndexDatatype, RuntimeError};
 use draco_core::DataType;
@@ -66,6 +67,30 @@ fn index_datatype(num_points: usize) -> u32 {
 
 fn defined(value: Option<&Value>) -> bool {
     !matches!(value, None | Some(Value::Null))
+}
+
+/// JavaScript truthiness of a structured-cloned parameter.
+fn truthy(value: Option<&Value>) -> bool {
+    match value {
+        None | Some(Value::Null) => false,
+        Some(Value::Bool(b)) => *b,
+        Some(Value::Number(n)) => n.as_f64().is_some_and(|n| n != 0.0 && !n.is_nan()),
+        Some(Value::String(s)) => !s.is_empty(),
+        Some(_) => true,
+    }
+}
+
+/// `draco[name]` for `SkipAttributeTransform`. `INVALID` (-1) skips nothing;
+/// any other name is `undefined`, which reaches Draco as 0 (`POSITION`).
+fn attribute_type_constant(name: &Value) -> Option<GeometryAttributeType> {
+    match name.as_str() {
+        Some("INVALID") => None,
+        Some("NORMAL") => Some(GeometryAttributeType::Normal),
+        Some("COLOR") => Some(GeometryAttributeType::Color),
+        Some("TEX_COORD") => Some(GeometryAttributeType::TexCoord),
+        Some("GENERIC") => Some(GeometryAttributeType::Generic),
+        _ => Some(GeometryAttributeType::Position),
+    }
 }
 
 fn geometry_type(bytes: &[u8]) -> Option<u8> {
@@ -112,7 +137,19 @@ fn decode_mesh(parameters: &Map<String, Value>) -> Result<Value, RuntimeError> {
     if geometry_type(&bytes) != Some(draco::TRIANGULAR_MESH) {
         return Err(RuntimeError::new("Unsupported draco mesh geometry type."));
     }
-    let mesh = mesh_or_error(draco::decode_triangular_mesh(&bytes))?;
+    let mut skip = SkipAttributeTransforms::default();
+    if truthy(parameters.get("dequantizeInShader")) {
+        let names = parameters
+            .get("attributesToSkipTransform")
+            .and_then(Value::as_array)
+            .ok_or_else(|| RuntimeError::new("Cannot read properties of undefined (reading 'length')"))?;
+        for name in names {
+            if let Some(kind) = attribute_type_constant(name) {
+                skip.insert(kind);
+            }
+        }
+    }
+    let mesh = mesh_or_error(draco::decode_triangular_mesh_skipping(&bytes, skip))?;
 
     let compressed = parameters
         .get("compressedAttributes")
@@ -137,7 +174,12 @@ fn decode_point_cloud(parameters: &Map<String, Value>) -> Result<Value, RuntimeE
     if geometry_type(&bytes) != Some(draco::POINT_CLOUD) {
         return Err(RuntimeError::new("Draco geometry type must be POINT_CLOUD."));
     }
-    let cloud = cloud_or_error(draco::decode_point_cloud(&bytes))?;
+    let mut skip = SkipAttributeTransforms::default();
+    if truthy(parameters.get("dequantizeInShader")) {
+        skip.insert(GeometryAttributeType::Position);
+        skip.insert(GeometryAttributeType::Normal);
+    }
+    let cloud = cloud_or_error(draco::decode_point_cloud_skipping(&bytes, skip))?;
 
     let properties = parameters
         .get("properties")
@@ -193,6 +235,9 @@ fn index_array(mesh: &DracoGeometry) -> Value {
 }
 
 fn attribute_json(attribute: &DracoAttribute, num_points: usize) -> Result<Value, RuntimeError> {
+    if let Some(transform) = &attribute.transform {
+        return quantized_attribute_json(attribute, transform, num_points);
+    }
     let components = attribute.components as usize;
     let datatype = component_datatype(attribute.data_type);
     let stored =
@@ -212,6 +257,70 @@ fn attribute_json(attribute: &DracoAttribute, num_points: usize) -> Result<Value
             "quantization": Value::Null,
         }
     }))
+}
+
+/// `decodeQuantizedDracoTypedArray`: up to 8 bits read through
+/// `GetAttributeUInt8ForAllPoints`, up to 16 through the `UInt16` getter, and
+/// wider values as floats. The integer getters convert each portable value
+/// and stop at the first one out of range, leaving the rest 0.
+fn quantized_attribute_json(
+    attribute: &DracoAttribute,
+    transform: &SkippedTransform,
+    num_points: usize,
+) -> Result<Value, RuntimeError> {
+    let components = attribute.components as usize;
+    let portable: Vec<i64> = match &attribute.values {
+        _ if attribute.short_value => return Err(RuntimeError::new("Draco attribute is shorter than its values")),
+        AttributeValues::I32(values) => values.iter().map(|&v| i64::from(v)).collect(),
+        AttributeValues::U32(values) => values.iter().map(|&v| i64::from(v)).collect(),
+        _ => return Err(RuntimeError::new("Skipped Draco transforms keep 32-bit integer values")),
+    };
+    let quantization = match transform {
+        SkippedTransform::Quantization { quantization_bits, min_values, range } => serde_json::json!({
+            "quantizationBits": quantization_bits,
+            "minValues": min_values.iter().map(|&v| float_value(f64::from(v))).collect::<Vec<_>>(),
+            "range": float_value(f64::from(*range)),
+            "octEncoded": false,
+        }),
+        SkippedTransform::Octahedron { quantization_bits } => serde_json::json!({
+            "quantizationBits": quantization_bits,
+            "octEncoded": true,
+        }),
+    };
+    let bits = match transform {
+        SkippedTransform::Quantization { quantization_bits, .. }
+        | SkippedTransform::Octahedron { quantization_bits } => *quantization_bits,
+    };
+    let length = num_points.saturating_mul(components).min(portable.len());
+    let (datatype, array) = if bits <= 8 {
+        (ComponentDatatype::UnsignedByte, narrowed(&portable[..length], u8::MAX.into()))
+    } else if bits <= 16 {
+        (ComponentDatatype::UnsignedShort, narrowed(&portable[..length], u16::MAX.into()))
+    } else {
+        (ComponentDatatype::Float, portable[..length].iter().map(|&v| float_value(f64::from(v as f32))).collect())
+    };
+    Ok(serde_json::json!({
+        "array": array,
+        "data": {
+            "componentsPerAttribute": components,
+            "componentDatatype": datatype as u32,
+            "byteOffset": 0,
+            "byteStride": datatype.get_size_in_bytes().saturating_mul(components),
+            "normalized": attribute.normalized,
+            "quantization": quantization,
+        }
+    }))
+}
+
+fn narrowed(values: &[i64], max: i64) -> Vec<Value> {
+    let mut failed = false;
+    values
+        .iter()
+        .map(|&value| {
+            failed |= !(0..=max).contains(&value);
+            Value::from(if failed { 0 } else { value })
+        })
+        .collect()
 }
 
 /// Output element type. 64-bit and boolean storage follow the worker, which

@@ -1,0 +1,987 @@
+//! Deprecated texture-coordinate predictor.
+//!
+//! Predicts UV coordinates from the triangle's 3D positions using the original
+//! (pre-portable) floating-point algorithm. Kept only for decoding legacy
+//! bitstreams; new content uses the portable tex-coord predictor. Port of
+//! Draco's `prediction_scheme_tex_coords_*` (deprecated variant).
+
+#[cfg(test)]
+use crate::draco_types::DataType;
+use crate::geometry_attribute::GeometryAttributeType;
+use crate::geometry_indices::{CornerIndex, PointIndex, INVALID_ATTRIBUTE_VALUE_INDEX};
+use crate::mesh_prediction_scheme_data::MeshPredictionSchemeData;
+use crate::portable_attribute::PredictionParent;
+use crate::prediction_scheme::{
+    PredictionScheme, PredictionSchemeMethod, PredictionSchemeTransformType,
+};
+
+#[cfg(feature = "decoder")]
+use crate::decoder_buffer::DecoderBuffer;
+#[cfg(feature = "encoder")]
+use crate::encoder_buffer::EncoderBuffer;
+#[cfg(feature = "decoder")]
+use crate::prediction_scheme::{PredictionSchemeDecoder, PredictionSchemeDecodingTransform};
+#[cfg(feature = "encoder")]
+use crate::prediction_scheme::{PredictionSchemeEncoder, PredictionSchemeEncodingTransform};
+#[cfg(feature = "decoder")]
+use crate::rans_bit_decoder::RAnsBitDecoder;
+#[cfg(feature = "encoder")]
+use crate::rans_bit_encoder::RAnsBitEncoder;
+use crate::status::{DracoError, Status};
+
+#[cfg(feature = "encoder")]
+pub struct MeshPredictionSchemeTexCoordsDeprecatedEncoder<'a, Transform> {
+    transform: Transform,
+    mesh_data: Option<MeshPredictionSchemeData<'a>>,
+    orientations: Vec<bool>,
+    pos_parent: Option<PredictionParent<'a>>,
+    /// Target bitstream, packed as `0xMMmm`; 0 means the newest. Only the
+    /// orientation count's width depends on it.
+    bitstream_version: u16,
+}
+
+#[cfg(feature = "encoder")]
+impl<'a, Transform> MeshPredictionSchemeTexCoordsDeprecatedEncoder<'a, Transform> {
+    /// How many orientation bits the prediction produced. Zero is a stream no
+    /// decoder reads back -- both this crate's and upstream's refuse a count of
+    /// zero before anything else -- so the caller checks this before keeping
+    /// the scheme.
+    pub fn num_orientations(&self) -> usize {
+        self.orientations.len()
+    }
+
+    pub fn new(transform: Transform) -> Self {
+        Self {
+            transform,
+            mesh_data: None,
+            orientations: Vec::new(),
+            pos_parent: None,
+            bitstream_version: 0,
+        }
+    }
+
+    /// Targets a specific bitstream version, which the caller reads off the
+    /// encoder options. Without this the newest layout is written.
+    pub fn set_bitstream_version(&mut self, major: u8, minor: u8) {
+        self.bitstream_version = crate::version::bitstream_version(major, minor);
+    }
+
+    pub fn init(&mut self, mesh_data: &MeshPredictionSchemeData<'a>) {
+        self.mesh_data = Some(mesh_data.clone());
+    }
+
+    fn get_position_for_entry_id(
+        &self,
+        entry_id: i32,
+        entry_to_point_id_map: crate::prediction_scheme::EntryToPointIdMap<'_>,
+    ) -> Option<[f32; 3]> {
+        let point_id = entry_to_point_id_map.get(usize::try_from(entry_id).ok()?)?;
+        let parent = self.pos_parent?;
+        let val_index = parent.mapped_index(PointIndex(point_id));
+        if val_index == INVALID_ATTRIBUTE_VALUE_INDEX {
+            return None;
+        }
+
+        let mut pos = [0.0f32; 3];
+        for (component, out) in pos.iter_mut().enumerate() {
+            *out = parent.read_component_as_f32(val_index.0 as usize, component)?;
+        }
+        Some(pos)
+    }
+
+    fn get_tex_coord_for_entry_id(&self, entry_id: i32, data: &[i32]) -> Option<[f32; 2]> {
+        let offset = usize::try_from(entry_id).ok()?.checked_mul(2)?;
+        Some([*data.get(offset)? as f32, *data.get(offset + 1)? as f32])
+    }
+
+    fn compute_predicted_value(
+        &mut self,
+        corner_id: CornerIndex,
+        data: &[i32],
+        data_id: i32,
+        entry_to_point_id_map: crate::prediction_scheme::EntryToPointIdMap<'_>,
+        predicted_value: &mut [i32; 2],
+    ) -> bool {
+        let Some(mesh_data) = self.mesh_data.as_ref() else {
+            return false;
+        };
+        let Some(corner_table) = mesh_data.corner_table() else {
+            return false;
+        };
+        let Some(vertex_to_data_map) = mesh_data.vertex_to_data_map() else {
+            return false;
+        };
+
+        // next_corner_id/prev_corner_id were never wanted for themselves --
+        // only for the vertex each names, so vertex_after/vertex_before
+        // answer this in one fused lookup instead of computing the neighbour
+        // corner and turning it back into a vertex as a second step.
+        let next_vert_id = corner_table.vertex_after(corner_id).0 as usize;
+        let prev_vert_id = corner_table.vertex_before(corner_id).0 as usize;
+
+        let Some(&next_data_id) = vertex_to_data_map.get(next_vert_id) else {
+            return false;
+        };
+        let Some(&prev_data_id) = vertex_to_data_map.get(prev_vert_id) else {
+            return false;
+        };
+
+        if prev_data_id < data_id && next_data_id < data_id {
+            let Some(n_uv) = self.get_tex_coord_for_entry_id(next_data_id, data) else {
+                return false;
+            };
+            let Some(p_uv) = self.get_tex_coord_for_entry_id(prev_data_id, data) else {
+                return false;
+            };
+
+            if n_uv == p_uv {
+                predicted_value[0] = f32_to_i32_deprecated(p_uv[0], false);
+                predicted_value[1] = f32_to_i32_deprecated(p_uv[1], false);
+                return true;
+            }
+
+            let Some(tip_pos) = self.get_position_for_entry_id(data_id, entry_to_point_id_map)
+            else {
+                return false;
+            };
+            let Some(next_pos) =
+                self.get_position_for_entry_id(next_data_id, entry_to_point_id_map)
+            else {
+                return false;
+            };
+            let Some(prev_pos) =
+                self.get_position_for_entry_id(prev_data_id, entry_to_point_id_map)
+            else {
+                return false;
+            };
+
+            let pn = vec3_sub(prev_pos, next_pos);
+            let cn = vec3_sub(tip_pos, next_pos);
+            let pn_norm2_squared = vec3_squared_norm(pn);
+            let (s, t) = if pn_norm2_squared > 0.0 {
+                let s = vec3_dot(pn, cn) / pn_norm2_squared;
+                let t = (vec3_squared_norm(vec3_sub(cn, vec3_mul_scalar(pn, s)))
+                    / pn_norm2_squared)
+                    .sqrt();
+                (s, t)
+            } else {
+                (0.0, 0.0)
+            };
+
+            let pn_uv = vec2_sub(p_uv, n_uv);
+            let pnus = pn_uv[0] * s + n_uv[0];
+            let pnut = pn_uv[0] * t;
+            let pnvs = pn_uv[1] * s + n_uv[1];
+            let pnvt = pn_uv[1] * t;
+
+            let pred_true = [pnus - pnvt, pnvs + pnut];
+            let pred_false = [pnus + pnvt, pnvs - pnut];
+            let Some(cur_uv) = self.get_tex_coord_for_entry_id(data_id, data) else {
+                return false;
+            };
+            let diff_true = vec2_sub(cur_uv, pred_true);
+            let diff_false = vec2_sub(cur_uv, pred_false);
+            let dist_true = diff_true[0] * diff_true[0] + diff_true[1] * diff_true[1];
+            let dist_false = diff_false[0] * diff_false[0] + diff_false[1] * diff_false[1];
+
+            let predicted_uv = if dist_true < dist_false {
+                self.orientations.push(true);
+                pred_true
+            } else {
+                self.orientations.push(false);
+                pred_false
+            };
+
+            predicted_value[0] = f32_to_i32_deprecated(predicted_uv[0], true);
+            predicted_value[1] = f32_to_i32_deprecated(predicted_uv[1], true);
+            return true;
+        }
+
+        let mut data_offset = 0usize;
+        if prev_data_id < data_id {
+            let Some(offset) = usize::try_from(prev_data_id)
+                .ok()
+                .and_then(|v| v.checked_mul(2))
+            else {
+                return false;
+            };
+            data_offset = offset;
+        }
+        if next_data_id < data_id {
+            let Some(offset) = usize::try_from(next_data_id)
+                .ok()
+                .and_then(|v| v.checked_mul(2))
+            else {
+                return false;
+            };
+            data_offset = offset;
+        } else if prev_data_id >= data_id {
+            if data_id > 0 {
+                let Some(offset) = usize::try_from(data_id - 1)
+                    .ok()
+                    .and_then(|v| v.checked_mul(2))
+                else {
+                    return false;
+                };
+                data_offset = offset;
+            } else {
+                predicted_value[0] = 0;
+                predicted_value[1] = 0;
+                return true;
+            }
+        }
+
+        let Some(&u) = data.get(data_offset) else {
+            return false;
+        };
+        let Some(&v) = data.get(data_offset + 1) else {
+            return false;
+        };
+        predicted_value[0] = u;
+        predicted_value[1] = v;
+        true
+    }
+}
+
+#[cfg(feature = "encoder")]
+impl<'a, Transform> PredictionScheme<'a>
+    for MeshPredictionSchemeTexCoordsDeprecatedEncoder<'a, Transform>
+where
+    Transform: PredictionSchemeEncodingTransform<i32, i32>,
+{
+    fn get_prediction_method(&self) -> PredictionSchemeMethod {
+        PredictionSchemeMethod::MeshPredictionTexCoordsDeprecated
+    }
+
+    fn is_initialized(&self) -> bool {
+        self.pos_parent.is_some() && self.mesh_data.is_some()
+    }
+
+    fn get_num_parent_attributes(&self) -> i32 {
+        1
+    }
+
+    fn get_parent_attribute_type(&self, _i: i32) -> GeometryAttributeType {
+        GeometryAttributeType::Position
+    }
+
+    fn set_parent_attribute(&mut self, parent: PredictionParent<'a>) -> Status {
+        if parent.attribute_type() != GeometryAttributeType::Position
+            || parent.num_components() != 3
+        {
+            return Err(DracoError::invalid_parameter(format!(
+                "Deprecated texture-coordinate prediction needs a 3-component position parent, got {:?} with {} components",
+                parent.attribute_type(),
+                parent.num_components()
+            )));
+        }
+        self.pos_parent = Some(parent);
+        Ok(())
+    }
+
+    fn get_transform_type(&self) -> PredictionSchemeTransformType {
+        self.transform.get_type()
+    }
+}
+
+#[cfg(feature = "encoder")]
+impl<'a, Transform> PredictionSchemeEncoder<'a, i32, i32>
+    for MeshPredictionSchemeTexCoordsDeprecatedEncoder<'a, Transform>
+where
+    Transform: PredictionSchemeEncodingTransform<i32, i32>,
+{
+    fn encode_prediction_data(&mut self, buffer: &mut Vec<u8>) -> Status {
+        let mut temp_buffer = EncoderBuffer::new();
+        // Propagate the target version, as the constrained-multi-parallelogram
+        // encoder does: the orientation rANS stream's size prefix is a u32
+        // pre-2.2 and a varint after, and `RAnsBitEncoder::end_encoding` reads
+        // that off the buffer it is handed. A fresh buffer reports version 0,
+        // so it always wrote the varint and the pre-2.2 decoder read four bytes
+        // where two had been written.
+        temp_buffer.set_version(
+            (self.bitstream_version >> 8) as u8,
+            (self.bitstream_version & 0xff) as u8,
+        );
+        let Ok(num_orientations) = u64::try_from(self.orientations.len()) else {
+            return Err(DracoError::general(format!(
+                "{} orientations do not fit a 64-bit count",
+                self.orientations.len()
+            )));
+        };
+        // Pre-2.2 writes the count as a fixed u32; 2.2 moved it to a varint.
+        // Mirror of the decoder's branch on the same version.
+        if self.bitstream_version != 0 && self.bitstream_version < 0x0202 {
+            let Ok(num_orientations) = u32::try_from(num_orientations) else {
+                return Err(DracoError::general(format!(
+                    "{num_orientations} orientations do not fit the pre-2.2 u32 count"
+                )));
+            };
+            temp_buffer.encode_u32(num_orientations);
+        } else {
+            temp_buffer.encode_varint(num_orientations);
+        }
+
+        let mut last_orientation = true;
+        let mut bit_encoder = RAnsBitEncoder::new();
+        bit_encoder.start_encoding();
+        for &orientation in &self.orientations {
+            bit_encoder.encode_bit(orientation == last_orientation);
+            last_orientation = orientation;
+        }
+        bit_encoder.end_encoding(&mut temp_buffer);
+
+        buffer.extend_from_slice(temp_buffer.data());
+        self.transform.encode_transform_data(buffer)
+    }
+
+    fn compute_correction_values(
+        &mut self,
+        in_data: &[i32],
+        out_corr: &mut [i32],
+        size: usize,
+        num_components: usize,
+        entry_to_point_id_map: Option<crate::prediction_scheme::EntryToPointIdMap<'_>>,
+    ) -> Status {
+        if num_components != 2 || !size.is_multiple_of(num_components) {
+            return Err(DracoError::invalid_parameter(format!(
+                "Texture-coordinate prediction needs 2 components and a matching value count, got {num_components} components over {size} values"
+            )));
+        }
+        let missing = |what: &str| {
+            DracoError::general(format!("Texture-coordinate prediction has no {what}"))
+        };
+        if self.pos_parent.is_none() {
+            return Err(missing("position parent"));
+        }
+        let Some(entry_map) = entry_to_point_id_map else {
+            return Err(missing("entry-to-point map"));
+        };
+        let Some(mesh_data) = self.mesh_data.as_ref() else {
+            return Err(missing("mesh data"));
+        };
+        let Some(data_to_corner_map) = mesh_data.data_to_corner_map() else {
+            return Err(missing("data-to-corner map"));
+        };
+        if entry_map.len() < data_to_corner_map.len()
+            || in_data.len() < size
+            || out_corr.len() < size
+        {
+            return Err(DracoError::general(format!(
+                "Texture-coordinate prediction needs {} entries and {size} values, has {} entries, {} inputs and {} outputs",
+                data_to_corner_map.len(),
+                entry_map.len(),
+                in_data.len(),
+                out_corr.len()
+            )));
+        }
+
+        self.transform.init(in_data, size, num_components);
+        self.orientations.clear();
+
+        let mut predicted_value = [0i32; 2];
+        for p in (0..data_to_corner_map.len()).rev() {
+            if !self.compute_predicted_value(
+                CornerIndex(data_to_corner_map[p]),
+                in_data,
+                p as i32,
+                entry_map,
+                &mut predicted_value,
+            ) {
+                return Err(DracoError::general(format!(
+                    "Texture-coordinate prediction failed at entry {p}"
+                )));
+            }
+            let dst_offset = p * num_components;
+            self.transform.compute_correction(
+                &in_data[dst_offset..dst_offset + num_components],
+                &predicted_value,
+                &mut out_corr[dst_offset..dst_offset + num_components],
+            );
+        }
+
+        Ok(())
+    }
+}
+
+#[cfg(feature = "decoder")]
+pub struct MeshPredictionSchemeTexCoordsDeprecatedDecoder<'a, Transform> {
+    transform: Transform,
+    mesh_data: Option<MeshPredictionSchemeData<'a>>,
+    orientations: Vec<bool>,
+    pos_parent: Option<PredictionParent<'a>>,
+}
+
+#[cfg(feature = "decoder")]
+impl<'a, Transform> MeshPredictionSchemeTexCoordsDeprecatedDecoder<'a, Transform> {
+    pub fn new(transform: Transform) -> Self {
+        Self {
+            transform,
+            mesh_data: None,
+            orientations: Vec::new(),
+            pos_parent: None,
+        }
+    }
+
+    pub fn init(&mut self, mesh_data: &MeshPredictionSchemeData<'a>) {
+        self.mesh_data = Some(mesh_data.clone());
+    }
+
+    fn get_position_for_entry_id(
+        &self,
+        entry_id: i32,
+        entry_to_point_id_map: crate::prediction_scheme::EntryToPointIdMap<'_>,
+    ) -> Option<[f32; 3]> {
+        let point_id = entry_to_point_id_map.get(usize::try_from(entry_id).ok()?)?;
+        let parent = self.pos_parent?;
+        let val_index = parent.mapped_index(PointIndex(point_id));
+        if val_index == INVALID_ATTRIBUTE_VALUE_INDEX {
+            return None;
+        }
+
+        let mut pos = [0.0f32; 3];
+        for (component, out) in pos.iter_mut().enumerate() {
+            *out = parent.read_component_as_f32(val_index.0 as usize, component)?;
+        }
+        Some(pos)
+    }
+
+    fn get_tex_coord_for_entry_id(&self, entry_id: i32, data: &[i32]) -> Option<[f32; 2]> {
+        let offset = usize::try_from(entry_id).ok()?.checked_mul(2)?;
+        Some([*data.get(offset)? as f32, *data.get(offset + 1)? as f32])
+    }
+
+    fn compute_predicted_value(
+        &mut self,
+        corner_id: CornerIndex,
+        data: &[i32],
+        data_id: i32,
+        entry_to_point_id_map: crate::prediction_scheme::EntryToPointIdMap<'_>,
+        predicted_value: &mut [i32; 2],
+    ) -> bool {
+        let mesh_data = self.mesh_data.as_ref().unwrap();
+        let corner_table = mesh_data.corner_table().unwrap();
+        let vertex_to_data_map = mesh_data.vertex_to_data_map().unwrap();
+
+        let next_corner_id = corner_table.next(corner_id);
+        let prev_corner_id = corner_table.previous(corner_id);
+
+        let next_vert_id = corner_table.vertex(next_corner_id).0 as usize;
+        let prev_vert_id = corner_table.vertex(prev_corner_id).0 as usize;
+
+        let Some(&next_data_id) = vertex_to_data_map.get(next_vert_id) else {
+            return false;
+        };
+        let Some(&prev_data_id) = vertex_to_data_map.get(prev_vert_id) else {
+            return false;
+        };
+
+        if prev_data_id < data_id && next_data_id < data_id {
+            let Some(n_uv) = self.get_tex_coord_for_entry_id(next_data_id, data) else {
+                return false;
+            };
+            let Some(p_uv) = self.get_tex_coord_for_entry_id(prev_data_id, data) else {
+                return false;
+            };
+
+            if n_uv == p_uv {
+                predicted_value[0] = f32_to_i32_deprecated(p_uv[0], false);
+                predicted_value[1] = f32_to_i32_deprecated(p_uv[1], false);
+                return true;
+            }
+
+            let Some(tip_pos) = self.get_position_for_entry_id(data_id, entry_to_point_id_map)
+            else {
+                return false;
+            };
+            let Some(next_pos) =
+                self.get_position_for_entry_id(next_data_id, entry_to_point_id_map)
+            else {
+                return false;
+            };
+            let Some(prev_pos) =
+                self.get_position_for_entry_id(prev_data_id, entry_to_point_id_map)
+            else {
+                return false;
+            };
+
+            let pn = vec3_sub(prev_pos, next_pos);
+            let cn = vec3_sub(tip_pos, next_pos);
+            let pn_norm2_squared = vec3_squared_norm(pn);
+            let (s, t) = if pn_norm2_squared > 0.0 {
+                let s = vec3_dot(pn, cn) / pn_norm2_squared;
+                let t = (vec3_squared_norm(vec3_sub(cn, vec3_mul_scalar(pn, s)))
+                    / pn_norm2_squared)
+                    .sqrt();
+                (s, t)
+            } else {
+                (0.0, 0.0)
+            };
+
+            let pn_uv = vec2_sub(p_uv, n_uv);
+            let pnus = pn_uv[0] * s + n_uv[0];
+            let pnut = pn_uv[0] * t;
+            let pnvs = pn_uv[1] * s + n_uv[1];
+            let pnvt = pn_uv[1] * t;
+
+            let Some(orientation) = self.orientations.pop() else {
+                return false;
+            };
+            let predicted_uv = if orientation {
+                [pnus - pnvt, pnvs + pnut]
+            } else {
+                [pnus + pnvt, pnvs - pnut]
+            };
+
+            predicted_value[0] = f32_to_i32_deprecated(predicted_uv[0], true);
+            predicted_value[1] = f32_to_i32_deprecated(predicted_uv[1], true);
+            return true;
+        }
+
+        let mut data_offset = 0usize;
+        if prev_data_id < data_id {
+            let Some(offset) = usize::try_from(prev_data_id)
+                .ok()
+                .and_then(|v| v.checked_mul(2))
+            else {
+                return false;
+            };
+            data_offset = offset;
+        }
+        if next_data_id < data_id {
+            let Some(offset) = usize::try_from(next_data_id)
+                .ok()
+                .and_then(|v| v.checked_mul(2))
+            else {
+                return false;
+            };
+            data_offset = offset;
+        } else if prev_data_id >= data_id {
+            if data_id > 0 {
+                let Some(offset) = usize::try_from(data_id - 1)
+                    .ok()
+                    .and_then(|v| v.checked_mul(2))
+                else {
+                    return false;
+                };
+                data_offset = offset;
+            } else {
+                predicted_value[0] = 0;
+                predicted_value[1] = 0;
+                return true;
+            }
+        }
+
+        let Some(&u) = data.get(data_offset) else {
+            return false;
+        };
+        let Some(&v) = data.get(data_offset + 1) else {
+            return false;
+        };
+        predicted_value[0] = u;
+        predicted_value[1] = v;
+        true
+    }
+}
+
+#[cfg(feature = "decoder")]
+impl<'a, Transform> PredictionScheme<'a>
+    for MeshPredictionSchemeTexCoordsDeprecatedDecoder<'a, Transform>
+where
+    Transform: PredictionSchemeDecodingTransform<i32>,
+{
+    fn get_prediction_method(&self) -> PredictionSchemeMethod {
+        PredictionSchemeMethod::MeshPredictionTexCoordsDeprecated
+    }
+
+    fn is_initialized(&self) -> bool {
+        self.pos_parent.is_some() && self.mesh_data.is_some()
+    }
+
+    fn get_num_parent_attributes(&self) -> i32 {
+        1
+    }
+
+    fn get_parent_attribute_type(&self, _i: i32) -> GeometryAttributeType {
+        GeometryAttributeType::Position
+    }
+
+    fn set_parent_attribute(&mut self, parent: PredictionParent<'a>) -> Status {
+        if parent.attribute_type() != GeometryAttributeType::Position
+            || parent.num_components() != 3
+        {
+            return Err(DracoError::invalid_parameter(format!(
+                "Deprecated texture-coordinate prediction needs a 3-component position parent, got {:?} with {} components",
+                parent.attribute_type(),
+                parent.num_components()
+            )));
+        }
+        self.pos_parent = Some(parent);
+        Ok(())
+    }
+
+    fn get_transform_type(&self) -> PredictionSchemeTransformType {
+        self.transform.get_type()
+    }
+}
+
+#[cfg(feature = "decoder")]
+impl<'a, Transform> PredictionSchemeDecoder<'a, i32>
+    for MeshPredictionSchemeTexCoordsDeprecatedDecoder<'a, Transform>
+where
+    Transform: PredictionSchemeDecodingTransform<i32>,
+{
+    fn decode_prediction_data(&mut self, buffer: &mut DecoderBuffer) -> Status {
+        let bitstream_version = buffer.bitstream_version();
+        let truncated = || {
+            DracoError::buffer(
+                "Stream ends before the texture-coordinate orientation count".to_string(),
+            )
+        };
+        let num_orientations = if bitstream_version < 0x0202 {
+            buffer.decode_u32().map_err(|_| truncated())?
+        } else {
+            buffer.decode_varint().map_err(|_| truncated())? as u32
+        };
+
+        if num_orientations == 0 {
+            return Err(DracoError::general(
+                "Texture-coordinate prediction declares no orientations".to_string(),
+            ));
+        }
+        let missing = |what: &str| {
+            DracoError::general(format!("Texture-coordinate prediction has no {what}"))
+        };
+        let Some(mesh_data) = self.mesh_data.as_ref() else {
+            return Err(missing("mesh data"));
+        };
+        let Some(corner_table) = mesh_data.corner_table() else {
+            return Err(missing("corner table"));
+        };
+        if num_orientations > corner_table.num_corners() as u32 {
+            return Err(DracoError::general(format!(
+                "Stream declares {num_orientations} orientations, more than the {} corners",
+                corner_table.num_corners()
+            )));
+        }
+
+        self.orientations.clear();
+        self.orientations.reserve(num_orientations as usize);
+
+        let mut last_orientation = true;
+        let mut decoder = RAnsBitDecoder::new();
+        if !decoder.start_decoding(buffer) {
+            return Err(DracoError::buffer(
+                "Texture-coordinate orientation rANS stream is truncated".to_string(),
+            ));
+        }
+        for _ in 0..num_orientations {
+            if !decoder.decode_next_bit() {
+                last_orientation = !last_orientation;
+            }
+            self.orientations.push(last_orientation);
+        }
+        decoder.end_decoding();
+
+        self.transform.decode_transform_data(buffer)
+    }
+
+    fn compute_original_values(
+        &mut self,
+        data: &mut [i32],
+        _size: usize,
+        num_components: usize,
+        entry_to_point_id_map: Option<crate::prediction_scheme::EntryToPointIdMap<'_>>,
+    ) -> Status {
+        if num_components != 2 {
+            return Err(DracoError::invalid_parameter(format!(
+                "Texture-coordinate prediction needs 2 components, got {num_components}"
+            )));
+        }
+        let missing = |what: &str| {
+            DracoError::general(format!("Texture-coordinate prediction has no {what}"))
+        };
+        if self.pos_parent.is_none() {
+            return Err(missing("position parent"));
+        }
+        let Some(entry_map) = entry_to_point_id_map else {
+            return Err(missing("entry-to-point map"));
+        };
+        let Some(mesh_data) = self.mesh_data.as_ref() else {
+            return Err(missing("mesh data"));
+        };
+        let Some(data_to_corner_map) = mesh_data.data_to_corner_map() else {
+            return Err(missing("data-to-corner map"));
+        };
+        if entry_map.len() < data_to_corner_map.len() {
+            return Err(DracoError::general(format!(
+                "Texture-coordinate prediction needs {} entries, the map has {}",
+                data_to_corner_map.len(),
+                entry_map.len()
+            )));
+        }
+        let Some(required_values) = data_to_corner_map.len().checked_mul(num_components) else {
+            return Err(DracoError::general(
+                "Texture-coordinate prediction value count overflow".to_string(),
+            ));
+        };
+        if data.len() < required_values {
+            return Err(DracoError::general(format!(
+                "Texture-coordinate prediction needs {required_values} values, has {}",
+                data.len()
+            )));
+        }
+
+        self.transform.init(num_components)?;
+        let mut predicted_value = [0i32; 2];
+        for (p, &corner) in data_to_corner_map.iter().enumerate() {
+            if !self.compute_predicted_value(
+                CornerIndex(corner),
+                data,
+                p as i32,
+                entry_map,
+                &mut predicted_value,
+            ) {
+                return Err(DracoError::general(format!(
+                    "Texture-coordinate prediction failed at entry {p}"
+                )));
+            }
+            let dst_offset = p * num_components;
+            self.transform.compute_original_value(
+                &predicted_value,
+                &mut data[dst_offset..dst_offset + num_components],
+            );
+        }
+
+        Ok(())
+    }
+}
+
+fn f32_to_i32_deprecated(value: f32, round: bool) -> i32 {
+    let value = if round { (value + 0.5).floor() } else { value };
+    if value.is_nan() || (value as f64) > i32::MAX as f64 || (value as f64) < i32::MIN as f64 {
+        i32::MIN
+    } else {
+        value as i32
+    }
+}
+
+fn vec2_sub(a: [f32; 2], b: [f32; 2]) -> [f32; 2] {
+    [a[0] - b[0], a[1] - b[1]]
+}
+
+fn vec3_sub(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
+    [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+}
+
+fn vec3_mul_scalar(a: [f32; 3], s: f32) -> [f32; 3] {
+    [a[0] * s, a[1] * s, a[2] * s]
+}
+
+fn vec3_dot(a: [f32; 3], b: [f32; 3]) -> f32 {
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+}
+
+fn vec3_squared_norm(a: [f32; 3]) -> f32 {
+    vec3_dot(a, a)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[cfg(feature = "decoder")]
+    use crate::corner_table::CornerTable;
+    #[cfg(all(feature = "encoder", feature = "decoder"))]
+    use crate::encoder_buffer::EncoderBuffer;
+    use crate::geometry_attribute::PointAttribute;
+    #[cfg(feature = "decoder")]
+    use crate::geometry_indices::VertexIndex;
+    use crate::portable_attribute::PredictionParent;
+    #[cfg(feature = "decoder")]
+    use crate::prediction_scheme::PredictionSchemeDecoder;
+    #[cfg(feature = "decoder")]
+    use crate::prediction_scheme_wrap::PredictionSchemeWrapDecodingTransform;
+    #[cfg(all(feature = "encoder", feature = "decoder"))]
+    use crate::rans_bit_encoder::RAnsBitEncoder;
+
+    #[test]
+    fn deprecated_tex_coords_rejects_truncated_position_buffer() {
+        let mut pos = PointAttribute::new();
+        pos.init(
+            GeometryAttributeType::Position,
+            3,
+            DataType::Float32,
+            false,
+            1,
+        );
+        pos.buffer_mut().write(0, &1.0f32.to_le_bytes());
+        pos.buffer_mut().write(4, &2.0f32.to_le_bytes());
+        pos.buffer_mut().resize(8);
+
+        let parent = PredictionParent::legacy(&pos);
+        assert_eq!(parent.read_component_as_f32(0, 2), None);
+    }
+
+    #[cfg(all(feature = "encoder", feature = "decoder"))]
+    #[test]
+    fn deprecated_tex_coords_decodes_orientation_prediction() {
+        let mut corner_table = CornerTable::new(1);
+        corner_table.init(&[[VertexIndex(0), VertexIndex(1), VertexIndex(2)]]);
+        let data_to_corner_map = [1, 2, 0];
+        let vertex_to_data_map = [2, 0, 1];
+        let mut mesh_data = MeshPredictionSchemeData::new();
+        mesh_data.set(&corner_table, &data_to_corner_map, &vertex_to_data_map);
+
+        let mut pos = PointAttribute::new();
+        pos.init(
+            GeometryAttributeType::Position,
+            3,
+            DataType::Float32,
+            false,
+            3,
+        );
+        pos.set_identity_mapping();
+        for (i, value) in [[5.0f32, 5.0, 0.0], [0.0, 0.0, 0.0], [10.0, 0.0, 0.0]]
+            .iter()
+            .enumerate()
+        {
+            let offset = i * 12;
+            pos.buffer_mut().write(offset, &value[0].to_le_bytes());
+            pos.buffer_mut().write(offset + 4, &value[1].to_le_bytes());
+            pos.buffer_mut().write(offset + 8, &value[2].to_le_bytes());
+        }
+
+        let mut prediction_data = EncoderBuffer::new();
+        prediction_data.set_version(2, 2);
+        prediction_data.encode_varint(1u64);
+        let mut bit_encoder = RAnsBitEncoder::new();
+        bit_encoder.start_encoding();
+        bit_encoder.encode_bit(true);
+        bit_encoder.end_encoding(&mut prediction_data);
+        prediction_data.encode_u32(0);
+        prediction_data.encode_u32(10);
+
+        let mut buffer = DecoderBuffer::new(prediction_data.data());
+        buffer.set_version(2, 2);
+        let mut decoder = MeshPredictionSchemeTexCoordsDeprecatedDecoder::new(
+            PredictionSchemeWrapDecodingTransform::<i32>::new(),
+        );
+        decoder.init(&mesh_data);
+        assert!(decoder
+            .set_parent_attribute(PredictionParent::legacy(&pos))
+            .is_ok());
+        assert!(decoder.decode_prediction_data(&mut buffer).is_ok());
+
+        let mut out = [0, 0, 10, 0, 0, 0];
+        assert!(decoder
+            .compute_original_values(
+                &mut out,
+                6,
+                2,
+                Some(crate::prediction_scheme::EntryToPointIdMap::from_u32_slice(
+                    &[1, 2, 0],
+                )),
+            )
+            .is_ok());
+        assert_eq!(out, [0, 0, 10, 0, 5, 5]);
+    }
+
+    #[cfg(feature = "decoder")]
+    #[test]
+    fn deprecated_tex_coords_refuses_orientation_count_above_the_corner_count() {
+        let mut corner_table = CornerTable::new(1);
+        corner_table.init(&[[VertexIndex(0), VertexIndex(1), VertexIndex(2)]]);
+        let mut mesh_data = MeshPredictionSchemeData::new();
+        mesh_data.set(&corner_table, &[1, 2, 0], &[2, 0, 1]);
+
+        // One face = three corners. Four orientations would read one rANS bit
+        // each past what any three-corner mesh can consume, and the refusal has
+        // to come before the stream starts: `decode_next_bit` answers `false`
+        // for an encoded zero and for a spent stream alike, so the declared
+        // count checked against the corner count is the only bound.
+        let bytes = [4u8]; // varint: 4 orientations
+        let mut buffer = DecoderBuffer::new(&bytes);
+        buffer.set_version(2, 2);
+
+        let mut decoder = MeshPredictionSchemeTexCoordsDeprecatedDecoder::new(
+            PredictionSchemeWrapDecodingTransform::<i32>::new(),
+        );
+        decoder.init(&mesh_data);
+
+        let err = decoder.decode_prediction_data(&mut buffer).unwrap_err();
+        assert!(err.message().contains("more than the 3 corners"), "{err}");
+    }
+
+    #[test]
+    #[cfg(all(feature = "encoder", feature = "decoder"))]
+    fn deprecated_tex_coords_encoder_roundtrips_decoder() {
+        use crate::prediction_scheme::PredictionSchemeEncoder;
+        use crate::prediction_scheme_wrap::PredictionSchemeWrapEncodingTransform;
+
+        let mut corner_table = CornerTable::new(1);
+        corner_table.init(&[[VertexIndex(0), VertexIndex(1), VertexIndex(2)]]);
+        let data_to_corner_map = [1, 2, 0];
+        let vertex_to_data_map = [2, 0, 1];
+        let mut mesh_data = MeshPredictionSchemeData::new();
+        mesh_data.set(&corner_table, &data_to_corner_map, &vertex_to_data_map);
+
+        let mut pos = PointAttribute::new();
+        pos.init(
+            GeometryAttributeType::Position,
+            3,
+            DataType::Float32,
+            false,
+            3,
+        );
+        pos.set_identity_mapping();
+        for (i, value) in [[5.0f32, 5.0, 0.0], [0.0, 0.0, 0.0], [10.0, 0.0, 0.0]]
+            .iter()
+            .enumerate()
+        {
+            let offset = i * 12;
+            pos.buffer_mut().write(offset, &value[0].to_le_bytes());
+            pos.buffer_mut().write(offset + 4, &value[1].to_le_bytes());
+            pos.buffer_mut().write(offset + 8, &value[2].to_le_bytes());
+        }
+
+        let values = [0, 0, 10, 0, 5, 5];
+        let entry_map = crate::prediction_scheme::EntryToPointIdMap::from_u32_slice(&[1, 2, 0]);
+
+        let mut encoder = MeshPredictionSchemeTexCoordsDeprecatedEncoder::new(
+            PredictionSchemeWrapEncodingTransform::<i32>::new(),
+        );
+        encoder.init(&mesh_data);
+        assert!(encoder
+            .set_parent_attribute(PredictionParent::legacy(&pos))
+            .is_ok());
+        let mut corrections = [0; 6];
+        assert!(encoder
+            .compute_correction_values(&values, &mut corrections, values.len(), 2, Some(entry_map),)
+            .is_ok());
+        let mut prediction_data = Vec::new();
+        assert!(encoder.encode_prediction_data(&mut prediction_data).is_ok());
+
+        let mut decoder = MeshPredictionSchemeTexCoordsDeprecatedDecoder::new(
+            PredictionSchemeWrapDecodingTransform::<i32>::new(),
+        );
+        decoder.init(&mesh_data);
+        assert!(decoder
+            .set_parent_attribute(PredictionParent::legacy(&pos))
+            .is_ok());
+        let mut buffer = DecoderBuffer::new(&prediction_data);
+        buffer.set_version(2, 2);
+        assert!(decoder.decode_prediction_data(&mut buffer).is_ok());
+
+        let mut decoded = corrections;
+        assert!(decoder
+            .compute_original_values(
+                &mut decoded,
+                values.len(),
+                2,
+                Some(crate::prediction_scheme::EntryToPointIdMap::from_u32_slice(
+                    &[1, 2, 0],
+                )),
+            )
+            .is_ok());
+        assert_eq!(decoded, values);
+    }
+}

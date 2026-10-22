@@ -54,7 +54,7 @@ serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
 # One Draco crate, shared by decodeI3S and decodeDraco. No other Draco decoder.
 # Pure-Rust Draco 1.x. MSRV 1.88, Apache-2.0, no C++/native deps.
 # point_cloud_decode is the KD-tree/sequential path decodeDraco needs.
-draco-core = { version = "=2.3.2", default-features = false, features = [
+draco-core = { path = "third_party/draco-core", default-features = false, features = [
     "decoder",
     "point_cloud_decode",
     "edgebreaker_valence_decode",

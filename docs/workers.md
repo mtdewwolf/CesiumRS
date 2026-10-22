@@ -3,8 +3,9 @@
 The first Workers completion batch adds all **31 geometry creation entry points**
 and **`createGeometry`**. Together with the five previously validated terrain and
 KTX2 workers, later terrain, vector-tile, and Gaussian splat workers,
-`decodeI3S`, `combineGeometry`, and `createTaskProcessorWorker`, **51 of 53 Workers modules** are now ported. No remaining worker is
-marked partial or counted as complete through a placeholder.
+`decodeI3S`, `decodeDraco`, `combineGeometry`, and `createTaskProcessorWorker`,
+all **52 applicable Workers modules** are ported; `transferTypedArrayTest` is
+n/a. No worker is marked partial or counted as complete through a placeholder.
 
 ## Geometry entry points
 
@@ -129,9 +130,9 @@ cargo test --test workers_i3s
 TZ=UTC node tools/cesium/fixtures/generate.mjs decodeI3S
 ```
 
-## Remaining modules
+## Other worker modules
 
-The next batches cover:
+These modules are also ported, each with direct CesiumJS worker fixtures:
 
 - Terrain and packets: `createVerticesFromCesium3DTilesTerrain`,
   `upsampleVerticesFromCesium3DTilesTerrain`,
@@ -141,8 +142,7 @@ The next batches cover:
   `createVectorTileClampedPolylines`, `createVectorTilePolygons`,
   `createVectorTileGeometries`.
 - Gaussian splats: `gaussianSplatSorter`, `gaussianSplatTextureGenerator`.
-- Scene combination and worker messaging: `combineGeometry` and
-  `createTaskProcessorWorker` are ported. `combineGeometry` runs the existing
+- Scene combination and worker messaging: `combineGeometry` runs the existing
   geometry pipeline on packed instances and posts Float32 bounding spheres.
   `createTaskProcessorWorker` adapts a calculation to the TaskProcessor
   `onmessage` / `onmessageerror` contract, including the `formatError` strings
@@ -162,10 +162,24 @@ valence, and legacy bitstream features). The helper is the geometry-type
 check, the panic boundary, the face indices, and the mapped-index walk taken
 out of `decode_i3s`. The WebAssembly initialization message returns `true`.
 
-Dequantized attributes, including non-float and 64-bit values, index width,
-and the two geometry-type errors match the CesiumJS worker on 32 direct
-cases. `dequantizeInShader` does not: the crate always inverse-transforms and
-does not keep the portable integers or the quantization parameters
-`SkipAttributeTransform` would return. Model's Draco loader turns the flag on
-by default, so the most common production path differs from CesiumJS. Callers
-that set the flag still receive the dequantized values and `quantization: null`.
+Attributes, including non-float and 64-bit values, index width, and the two
+geometry-type errors match the CesiumJS worker on 61 direct cases.
+
+`dequantizeInShader` is supported. Upstream `draco-core` 2.3.2 always
+inverse-transforms, so the crate is vendored in `third_party/draco-core` with
+an equivalent of C++ Draco's `Decoder::SetSkipAttributeTransform`; see its
+`PATCHES.md`. For meshes, each name in `attributesToSkipTransform` is skipped.
+As in Cesium, an unknown name reaches Draco as `undefined`, which Draco reads as
+POSITION, and a missing list throws. Point clouds skip POSITION and NORMAL. A
+skipped attribute returns its quantized integers and
+`{quantizationBits, minValues, range, octEncoded}`. Values of up to 8 bits come
+back as `Uint8Array`, values of up to 16 bits as `Uint16Array`, and wider ones
+as `Float32Array`; like Cesium's getters, the integer arrays stop at the first
+out-of-range value. Integer-encoded attributes keep their `Int32Array`.
+Fixtures cover sequential, EdgeBreaker and KD-tree encodings at several speeds
+and quantization widths.
+
+```bash
+cargo test --test workers_decode_draco
+TZ=UTC node tools/cesium/fixtures/generate.mjs decodeDraco
+```

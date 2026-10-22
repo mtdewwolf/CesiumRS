@@ -1,0 +1,995 @@
+use crate::status::DracoError;
+use crate::version::DEFAULT_MESH_VERSION;
+use std::mem;
+
+/// Input buffer for reading compressed Draco data.
+///
+/// `DecoderBuffer` provides sequential byte and bit-level access to compressed data.
+/// It supports both byte-aligned reads (integers, floats, strings) and bit-level
+/// reads for entropy-coded data.
+///
+/// # Example
+///
+/// ```
+/// use draco_core::DecoderBuffer;
+///
+/// let data = &[0x44, 0x52, 0x41, 0x43, 0x4F]; // "DRACO" header
+/// let mut buffer = DecoderBuffer::new(data);
+///
+/// assert_eq!(buffer.decode_u8().unwrap(), 0x44);
+/// assert_eq!(buffer.remaining_size(), 4);
+/// ```
+pub struct DecoderBuffer<'a> {
+    data: &'a [u8],
+    pos: usize,
+    bit_decoder_active: bool,
+    bit_start_pos: usize,
+    current_bit_offset: usize,
+    bit_stream_end_pos: usize,
+    bit_sequence_size_known: bool,
+    version_major: u8,
+    version_minor: u8,
+    /// Bytes this decode has reserved so far, across every buffer it sized.
+    ///
+    /// The budget belongs to *one decode of one stream*, and that is what this
+    /// type is: built once per decode, carrying the stream, and already
+    /// threaded to every site that sizes something. Holding the counter here
+    /// is what makes the bound cumulative rather than per-allocation -- see
+    /// [`charge`](Self::charge).
+    spent: usize,
+    /// The length of the stream the budget's ratio is taken against. The whole
+    /// stream's, not this buffer's: a buffer over one attribute's bytes is still
+    /// one decode of one stream, and judging its reservations against its own
+    /// few kilobytes would refuse a constant attribute the whole file backs.
+    budget_len: usize,
+    /// The running total shared with the buffers over other pieces of the same
+    /// stream, where this is one of them: they charge one counter, so the bound
+    /// stays cumulative over the whole decode whichever piece spends.
+    shared_spent: Option<std::sync::Arc<std::sync::atomic::AtomicUsize>>,
+    /// The caller's ceilings on what this decode may produce, and what it has
+    /// produced so far against the byte one.
+    ///
+    /// Here rather than on the decoders because this type is the stream and
+    /// already reaches every site that learns a count -- the same reason the
+    /// budget above lives here. A decode of a mesh runs a point-cloud decoder
+    /// and an attributes decoder under it; one buffer is what all three share.
+    limits: crate::decode_limits::DecodeLimits,
+    decoded_bytes: u64,
+    /// Attribute values the caller's limits admitted that no unbacked run has
+    /// drawn on yet -- see [`charge_unbacked`](Self::charge_unbacked).
+    admitted_values: usize,
+    /// The allowance shared with the buffers over other pieces of the same
+    /// stream while they decode beside this one, where it is in place of
+    /// `admitted_values`: one allowance for the decode, so an admitted value
+    /// excuses one unbacked value once whichever piece draws it.
+    shared_admitted: Option<std::sync::Arc<std::sync::atomic::AtomicUsize>>,
+}
+
+/// A decode's standing against its budget and limits, as
+/// [`DecoderBuffer::budget`] takes it.
+#[cfg(feature = "point_cloud_decode")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Budget {
+    spent: usize,
+    decoded_bytes: u64,
+    admitted_values: usize,
+}
+
+/// The version, ceilings and budget of one decode, set aside to open buffers over
+/// pieces of its stream. See [`DecoderBuffer::child_template`].
+#[cfg(feature = "point_cloud_decode")]
+pub(crate) struct ChildTemplate {
+    version_major: u8,
+    version_minor: u8,
+    budget_len: usize,
+    limits: crate::decode_limits::DecodeLimits,
+    decoded_bytes: u64,
+    /// What the stream had spent when this was taken, and what it and every
+    /// piece opened from this have spent since.
+    spent: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    spent_at_start: usize,
+    /// The stream's admitted-value allowance while the pieces are out, and what
+    /// it held when this was taken.
+    admitted: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    admitted_at_start: usize,
+}
+
+#[cfg(feature = "point_cloud_decode")]
+impl ChildTemplate {
+    /// A buffer over `data`, a stretch of the stream this was taken from. It
+    /// charges the counter every other such buffer, and the stream itself,
+    /// charges, so what the pieces spend side by side is bounded the way what
+    /// one buffer spends in order is.
+    pub(crate) fn open<'a>(&self, data: &'a [u8]) -> DecoderBuffer<'a> {
+        let mut buffer = DecoderBuffer::new(data).with_limits(self.limits);
+        buffer.version_major = self.version_major;
+        buffer.version_minor = self.version_minor;
+        buffer.spent = self.spent_at_start;
+        buffer.budget_len = self.budget_len;
+        buffer.decoded_bytes = self.decoded_bytes;
+        buffer.shared_spent = Some(self.spent.clone());
+        buffer.shared_admitted = Some(self.admitted.clone());
+        buffer
+    }
+
+    /// What the pieces opened from this, and the stream beside them, have
+    /// spent since it was taken.
+    #[cfg(test)]
+    pub(crate) fn spent_since(&self) -> usize {
+        self.spent
+            .load(std::sync::atomic::Ordering::Relaxed)
+            .saturating_sub(self.spent_at_start)
+    }
+}
+
+impl<'a> DecoderBuffer<'a> {
+    /// Creates a new `DecoderBuffer` from a byte slice.
+    pub fn new(data: &'a [u8]) -> Self {
+        Self {
+            data,
+            pos: 0,
+            bit_decoder_active: false,
+            bit_start_pos: 0,
+            current_bit_offset: 0,
+            bit_stream_end_pos: 0,
+            bit_sequence_size_known: false,
+            // Default to latest mesh version to match encoder output format
+            version_major: DEFAULT_MESH_VERSION.0,
+            version_minor: DEFAULT_MESH_VERSION.1,
+            spent: 0,
+            budget_len: data.len(),
+            shared_spent: None,
+            limits: crate::decode_limits::DecodeLimits::default(),
+            decoded_bytes: 0,
+            admitted_values: 0,
+            shared_admitted: None,
+        }
+    }
+
+    /// What a buffer over a stretch of this one's stream needs from it, taken
+    /// now so that the stretch can be opened later, on another thread, while this
+    /// buffer goes on being read.
+    ///
+    /// This buffer's admitted-value allowance and what it has spent move into
+    /// counters the pieces share, and this buffer draws on and charges them too
+    /// until [`rejoin`](Self::rejoin): the pieces and whatever this buffer
+    /// decodes in the meantime are one decode, every charge checked against
+    /// what all of them have spent.
+    #[cfg(feature = "point_cloud_decode")]
+    pub(crate) fn child_template(&mut self) -> ChildTemplate {
+        let admitted =
+            std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(self.admitted_values));
+        let spent = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(self.spent));
+        self.shared_admitted = Some(admitted.clone());
+        self.shared_spent = Some(spent.clone());
+        ChildTemplate {
+            version_major: self.version_major,
+            version_minor: self.version_minor,
+            budget_len: self.budget_len,
+            limits: self.limits,
+            decoded_bytes: self.decoded_bytes,
+            spent,
+            spent_at_start: self.spent,
+            admitted,
+            admitted_at_start: self.admitted_values,
+        }
+    }
+
+    /// Takes the allowance and the budget back from the pieces opened from
+    /// `template`: as they and this buffer left them where their work is kept,
+    /// and as they stood when it was taken where it is thrown away to be
+    /// decoded again in order.
+    #[cfg(feature = "point_cloud_decode")]
+    pub(crate) fn rejoin(&mut self, template: &ChildTemplate, kept: bool) {
+        use std::sync::atomic::Ordering;
+        (self.admitted_values, self.spent) = if kept {
+            (
+                template.admitted.load(Ordering::Relaxed),
+                template.spent.load(Ordering::Relaxed),
+            )
+        } else {
+            (template.admitted_at_start, template.spent_at_start)
+        };
+        self.shared_admitted = None;
+        self.shared_spent = None;
+    }
+
+    /// Decodes under `limits` rather than under
+    /// [`DecodeLimits::default`](crate::DecodeLimits::default).
+    ///
+    /// ```
+    /// use draco_core::{DecodeLimits, DecoderBuffer};
+    ///
+    /// let stream = [0u8; 0];
+    /// let buffer = DecoderBuffer::new(&stream).with_limits(DecodeLimits::permissive());
+    /// # let _ = buffer;
+    /// ```
+    #[must_use]
+    pub fn with_limits(mut self, limits: crate::decode_limits::DecodeLimits) -> Self {
+        self.limits = limits;
+        self
+    }
+
+    /// Refuses a decoded point count over the caller's ceiling.
+    #[cfg(feature = "point_cloud_decode")]
+    pub(crate) fn check_points(&self, points: usize) -> crate::status::Status {
+        self.limits.check_points(points as u64)
+    }
+
+    /// Refuses a decoded face count over the caller's ceiling.
+    pub(crate) fn check_faces(&self, faces: usize) -> crate::status::Status {
+        self.limits.check_faces(faces as u64)
+    }
+
+    /// Adds one attribute's declared size to this decode's running total and
+    /// refuses when the total passes the caller's ceiling.
+    ///
+    /// Cumulative for the same reason [`charge`](Self::charge) is: the
+    /// attribute count is the header's, so a per-attribute check bounds
+    /// nothing. Called where the size becomes known and before anything is
+    /// allocated for it.
+    ///
+    /// An admitted attribute's values are also credited to the allowance
+    /// [`charge_unbacked`](Self::charge_unbacked) draws on, since the caller
+    /// has now said a decode this large is one it is willing to make.
+    pub(crate) fn admit_attribute(
+        &mut self,
+        num_points: usize,
+        num_components: usize,
+        component_bytes: usize,
+    ) -> crate::status::Status {
+        let num_values = num_components.saturating_mul(num_points);
+        let total = self
+            .decoded_bytes
+            .saturating_add(num_values.saturating_mul(component_bytes) as u64);
+        self.limits.check_decoded_bytes(total)?;
+        self.decoded_bytes = total;
+        self.admitted_values = self.admitted_values.saturating_add(num_values);
+        Ok(())
+    }
+
+    /// Charges `bytes` against what this stream is allowed to make the decoder
+    /// allocate, and refuses when the running total outgrows it.
+    ///
+    /// Cumulative on purpose. Checked per allocation, the same budget is
+    /// granted again at every site, and the number of sites is the attacker's:
+    /// one attributes decoder carries as many attributes as the header names,
+    /// and their buffers coexist. Measured before this existed, on a stream
+    /// held at ~32 KB while only the attribute count changed:
+    ///
+    /// | attributes | reserved |
+    /// | ---: | ---: |
+    /// | 1 | 19.2 MB |
+    /// | 4 | 76.8 MB |
+    /// | 16 | 307.2 MB |
+    ///
+    /// Linear in a count that costs 7.5 bytes of input each, so the per-site
+    /// form bounded nothing that mattered. One running total does.
+    ///
+    /// Nothing is ever credited back. A decode that frees a buffer and sizes
+    /// another still pays for both, which is why the ceiling has to cover the
+    /// *sum* over a real file rather than its peak -- see
+    /// [`MAX_ALLOCATED_BYTES_PER_INPUT_BYTE`], whose value is measured against
+    /// exactly that.
+    ///
+    /// [`MAX_ALLOCATED_BYTES_PER_INPUT_BYTE`]: crate::decode_budget::MAX_ALLOCATED_BYTES_PER_INPUT_BYTE
+    pub(crate) fn charge(&mut self, bytes: usize) -> crate::status::Status {
+        let total = match &self.shared_spent {
+            Some(shared) => shared
+                .fetch_add(bytes, std::sync::atomic::Ordering::Relaxed)
+                .saturating_add(bytes),
+            None => self.spent.saturating_add(bytes),
+        };
+        crate::decode_budget::ensure_allocation_is_backed(total, self.budget_len)?;
+        self.spent = total;
+        Ok(())
+    }
+
+    /// [`charge`](Self::charge) for a count of `element_size`-byte elements.
+    pub(crate) fn charge_elements(
+        &mut self,
+        count: usize,
+        element_size: usize,
+    ) -> crate::status::Status {
+        self.charge(count.saturating_mul(element_size))
+    }
+
+    /// Charges `count` values of `element_size` bytes that nothing in the
+    /// stream backs, drawing first on the attribute values the caller's limits
+    /// admitted and charging only the rest to [`charge`](Self::charge).
+    ///
+    /// The case this exists for is a run over an alphabet of one -- or raw
+    /// corrections declared zero bytes wide -- which is what a constant
+    /// attribute codes to. It carries no payload, so its count is unbacked by
+    /// construction, and the stream is as short for a billion values as for a
+    /// thousand. No bound derived from the stream separates such a file from a
+    /// hostile claim, so charging it to the budget would only move the refusal
+    /// of legitimate files to a larger point count: any ceiling the budget
+    /// could carry is one real scans walk past.
+    ///
+    /// What does separate them is the caller's ceiling. These values *are* the
+    /// attribute's own, whose declared size [`admit_attribute`] already put to
+    /// [`DecodeLimits`], so they are bounded there -- with the defaults, a
+    /// stream naming billions of values is refused at the header before
+    /// anything is decoded. Charging them here as well would count one
+    /// attribute twice, against two ceilings, the second of which only exists
+    /// to catch what the first cannot see.
+    ///
+    /// The allowance is drawn down rather than consulted, so each admitted
+    /// value excuses one unbacked value once, and the sum the budget would
+    /// have refused is bounded by the sum the limits admitted. That bound is
+    /// in values, while the limits count bytes of the declared type: the
+    /// decoder's working buffer holds four bytes per value, so a one-byte
+    /// attribute is decoded through up to four times the bytes the caller
+    /// admitted. That is what decoding it costs whether or not it is constant;
+    /// a caller whose limits are [`DecodeLimits::permissive`] has said it
+    /// trusts its input, and is now taken at its word here too.
+    ///
+    /// A count with no admission ahead of it -- connectivity, which is decoded
+    /// before any attribute is declared, or a run longer than the attributes
+    /// declared -- still pays the budget in full.
+    ///
+    /// [`admit_attribute`]: Self::admit_attribute
+    /// [`DecodeLimits`]: crate::decode_limits::DecodeLimits
+    /// [`DecodeLimits::permissive`]: crate::decode_limits::DecodeLimits::permissive
+    pub(crate) fn charge_unbacked(
+        &mut self,
+        count: usize,
+        element_size: usize,
+    ) -> crate::status::Status {
+        use std::sync::atomic::Ordering;
+        let Some(shared) = &self.shared_admitted else {
+            let admitted = count.min(self.admitted_values);
+            self.charge_elements(count - admitted, element_size)?;
+            self.admitted_values -= admitted;
+            return Ok(());
+        };
+        // Drawn before the charge so no other piece can draw the same values,
+        // and handed back if the charge refuses the rest. A compare-exchange
+        // loop rather than `fetch_update`, deprecated since 1.99, or the
+        // `try_update` it became, which is past this crate's 1.88.
+        let mut left = shared.load(Ordering::Relaxed);
+        let admitted = loop {
+            let admitted = count.min(left);
+            match shared.compare_exchange(
+                left,
+                left - admitted,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => break admitted,
+                Err(now) => left = now,
+            }
+        };
+        let shared = shared.clone();
+        self.charge_elements(count - admitted, element_size)
+            .inspect_err(|_| {
+                shared.fetch_add(admitted, Ordering::Relaxed);
+            })
+    }
+
+    /// Where this decode stands against its budget and its limits, for a
+    /// decode that tries a faster way and gives it up to put back as it was.
+    /// A buffer read on one thread; one whose pieces share their counters is
+    /// not one this is taken of.
+    #[cfg(feature = "point_cloud_decode")]
+    pub(crate) fn budget(&self) -> Budget {
+        debug_assert!(self.shared_spent.is_none() && self.shared_admitted.is_none());
+        Budget {
+            spent: self.spent,
+            decoded_bytes: self.decoded_bytes,
+            admitted_values: self.admitted_values,
+        }
+    }
+
+    /// Puts this decode's budget and limits back to `budget`.
+    #[cfg(feature = "point_cloud_decode")]
+    pub(crate) fn restore_budget(&mut self, budget: Budget) {
+        self.spent = budget.spent;
+        self.decoded_bytes = budget.decoded_bytes;
+        self.admitted_values = budget.admitted_values;
+    }
+
+    /// A buffer over the same stream at `pos`, carrying this one's version,
+    /// limits and the length its budget is judged against, and its budget as
+    /// it stands: what it charges is checked against everything this decode
+    /// has charged before it, and [`adopt_budget`] makes it this buffer's. For
+    /// reading a second stream of the same decode beside the first, on the
+    /// same thread.
+    ///
+    /// [`adopt_budget`]: Self::adopt_budget
+    #[cfg(feature = "point_cloud_decode")]
+    pub(crate) fn fork_at(&self, pos: usize) -> Result<DecoderBuffer<'a>, DracoError> {
+        let mut fork = DecoderBuffer::new(self.data).with_limits(self.limits);
+        fork.set_version(self.version_major, self.version_minor);
+        fork.budget_len = self.budget_len;
+        fork.restore_budget(self.budget());
+        fork.set_position(pos)?;
+        Ok(fork)
+    }
+
+    /// Takes `fork`'s budget as this decode's: what was charged through it, on
+    /// top of what this buffer had charged when it was forked.
+    #[cfg(feature = "point_cloud_decode")]
+    pub(crate) fn adopt_budget(&mut self, fork: &DecoderBuffer) {
+        self.restore_budget(fork.budget());
+    }
+
+    /// What this decode has reserved so far, for the tests that hold the
+    /// budget to being a backstop no legitimate file reaches.
+    #[cfg(test)]
+    pub(crate) fn spent(&self) -> usize {
+        self.spent
+    }
+
+    /// Sets the Draco bitstream version for version-dependent decoding.
+    pub fn set_version(&mut self, major: u8, minor: u8) {
+        self.version_major = major;
+        self.version_minor = minor;
+    }
+
+    /// Returns the major version number.
+    pub fn version_major(&self) -> u8 {
+        self.version_major
+    }
+
+    /// Returns the minor version number.
+    pub fn version_minor(&self) -> u8 {
+        self.version_minor
+    }
+
+    /// Returns the packed `0xMMmm` bitstream version for ordered comparisons.
+    pub fn bitstream_version(&self) -> u16 {
+        crate::version::bitstream_version(self.version_major, self.version_minor)
+    }
+
+    /// Returns the current read position in bytes.
+    pub fn position(&self) -> usize {
+        self.pos
+    }
+
+    /// Sets the read position.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`ErrorKind::Buffer`](crate::ErrorKind::Buffer) error if:
+    /// - Bit decoding is currently active
+    /// - Position is beyond the buffer length
+    pub fn set_position(&mut self, pos: usize) -> Result<(), DracoError> {
+        if self.bit_decoder_active {
+            return Err(DracoError::buffer(
+                "Cannot set position while bit decoding is active",
+            ));
+        }
+        if pos > self.data.len() {
+            return Err(DracoError::buffer(format!(
+                "Position {} exceeds buffer length {}",
+                pos,
+                self.data.len()
+            )));
+        }
+        self.pos = pos;
+        Ok(())
+    }
+
+    /// Returns the number of bytes remaining in the buffer.
+    pub fn remaining_size(&self) -> usize {
+        self.data.len().saturating_sub(self.pos)
+    }
+
+    /// Returns the total size of the buffer, read or not.
+    ///
+    /// The decode allocation budget measures against this rather than against
+    /// [`remaining_size`](Self::remaining_size): an attribute decoded last has
+    /// a legitimately tiny payload left in front of it while its value count is
+    /// no smaller than the first attribute's, so charging it only for what
+    /// follows would refuse valid streams.
+    pub fn size(&self) -> usize {
+        self.data.len()
+    }
+
+    /// Peeks at the next `len` bytes without advancing the position.
+    pub fn peek_bytes(&self, len: usize) -> Vec<u8> {
+        let start = self.pos.min(self.data.len());
+        let end = start.saturating_add(len).min(self.data.len());
+        self.data[start..end].to_vec()
+    }
+
+    /// Starts bit-level decoding mode.
+    ///
+    /// When `decode_size` is true, reads the bit sequence size from the buffer.
+    /// Returns the size in bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`ErrorKind::Buffer`](crate::ErrorKind::Buffer) error if bit decoding is already active.
+    pub fn start_bit_decoding(&mut self, decode_size: bool) -> Result<u64, DracoError> {
+        if self.bit_decoder_active {
+            return Err(DracoError::buffer("Bit decoding already active"));
+        }
+        let bitstream_version = self.bitstream_version();
+        // Draco stores the bit-sequence size in BYTES (not bits) when |decode_size| is true.
+        let mut size_bytes: u64 = 0;
+        if decode_size {
+            if bitstream_version < 0x0202 {
+                if !cfg!(feature = "legacy_bitstream_decode") {
+                    return Err(DracoError::bitstream_version_unsupported());
+                }
+                size_bytes = self.decode_u64()?;
+            } else {
+                size_bytes = self.decode_varint()?;
+            }
+        }
+
+        self.bit_start_pos = self.pos;
+        self.bit_decoder_active = true;
+        self.current_bit_offset = 0;
+        self.bit_sequence_size_known = decode_size;
+
+        if decode_size {
+            let size_bytes = usize::try_from(size_bytes)
+                .map_err(|_| DracoError::buffer("Bit stream size too large"))?;
+            // Bounded by the buffer, not by the number: the size is a varint
+            // out of the stream, and a stream claiming more than it carries is
+            // one upstream reads to the end of rather than refuses -- its bit
+            // decoder is handed `remaining_size()` and never sees the claim.
+            // Left unbounded, the claim lands in `pos` when bit decoding ends,
+            // and a position past the buffer is one no later bounds check is
+            // written to expect.
+            let declared_end = self
+                .bit_start_pos
+                .checked_add(size_bytes)
+                .ok_or_else(|| DracoError::buffer("Bit stream end position overflow"))?;
+            self.bit_stream_end_pos = declared_end.min(self.data.len());
+        } else {
+            // If size is not encoded, assume the rest of the buffer.
+            self.bit_stream_end_pos = self.data.len();
+        }
+
+        Ok(size_bytes)
+    }
+
+    /// Ends bit-level decoding mode and advances the byte position.
+    pub fn end_bit_decoding(&mut self) {
+        self.bit_decoder_active = false;
+        // Draco behavior:
+        // - When decoding with size known, the caller typically skips by the stored byte size.
+        // - When decoding without size, advance by the number of decoded bits (rounded up).
+        if self.bit_sequence_size_known {
+            self.pos = self.bit_stream_end_pos;
+        } else {
+            let bytes_consumed = self.current_bit_offset.div_ceil(8);
+            self.pos = self.bit_start_pos + bytes_consumed;
+        }
+    }
+
+    /// Decodes `nbits` least significant bits as a u32.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`ErrorKind::Buffer`](crate::ErrorKind::Buffer) error if bit decoding is not active or end of stream.
+    #[inline(always)]
+    pub fn decode_least_significant_bits32(&mut self, nbits: u32) -> Result<u32, DracoError> {
+        if !self.bit_decoder_active {
+            return Err(DracoError::buffer("Bit decoding not active"));
+        }
+        self.decode_least_significant_bits32_fast(nbits)
+    }
+
+    /// Optimized version for hot paths - reads multiple bytes at once.
+    #[inline(always)]
+    pub fn decode_least_significant_bits32_fast(&mut self, nbits: u32) -> Result<u32, DracoError> {
+        if nbits == 0 {
+            return Ok(0);
+        }
+        // The tagged symbol scheme's per-chunk bit length is a full byte
+        // (0..=255) read straight off the wire and checked only against
+        // `> 32`, so 32 itself reaches here as a legitimate width -- a
+        // 32-bit-wide residual is what the scheme exists for. `nbits` past
+        // 32 is not a width this format defines.
+        if nbits > 32 {
+            return Err(DracoError::buffer("Bit width exceeds 32 bits"));
+        }
+
+        let total_bit_offset = self.current_bit_offset;
+        let byte_offset = self.bit_start_pos + total_bit_offset / 8;
+        let bit_shift = (total_bit_offset % 8) as u32;
+
+        if byte_offset >= self.bit_stream_end_pos || byte_offset >= self.data.len() {
+            return Err(DracoError::buffer("Unexpected end of bit stream"));
+        }
+        let available_end = self.bit_stream_end_pos.min(self.data.len());
+        let remaining = available_end - byte_offset;
+
+        // Fast path: read 8 bytes at once when enough data remains (avoids per-byte loop).
+        let raw = if remaining >= 8 {
+            let mut bytes = [0u8; 8];
+            bytes.copy_from_slice(&self.data[byte_offset..byte_offset + 8]);
+            u64::from_le_bytes(bytes)
+        } else {
+            let needed_bytes = (bit_shift + nbits).div_ceil(8) as usize;
+            if remaining < needed_bytes {
+                return Err(DracoError::buffer("Unexpected end of bit stream"));
+            }
+            let mut v = 0u64;
+            for i in 0..needed_bytes {
+                v |= (self.data[byte_offset + i] as u64) << (i * 8);
+            }
+            v
+        };
+        // Masking with a u64 keeps `nbits == 32` in range for the shift;
+        // `1u32 << 32` is exactly the overflow this guards against.
+        let mask = (1u64 << nbits) - 1;
+        let value = ((raw >> bit_shift) & mask) as u32;
+
+        self.current_bit_offset += nbits as usize;
+        Ok(value)
+    }
+
+    #[inline]
+    #[allow(dead_code)]
+    fn get_bit(&mut self) -> Result<u32, DracoError> {
+        let total_bit_offset = self.current_bit_offset;
+        let byte_offset = self.bit_start_pos + total_bit_offset / 8;
+        let bit_shift = total_bit_offset % 8;
+
+        if byte_offset < self.bit_stream_end_pos && byte_offset < self.data.len() {
+            let bit = (self.data[byte_offset] >> bit_shift) & 1;
+            self.current_bit_offset += 1;
+            Ok(bit as u32)
+        } else {
+            Err(DracoError::buffer("Unexpected end of bit stream"))
+        }
+    }
+
+    /// Decodes a value of type T using raw memory copy.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`ErrorKind::Buffer`](crate::ErrorKind::Buffer) error if:
+    /// - Bit decoding is active
+    /// - Not enough bytes remaining
+    pub fn decode<T: Copy + bytemuck::Pod>(&mut self) -> Result<T, DracoError> {
+        if self.bit_decoder_active {
+            return Err(DracoError::buffer(
+                "Cannot decode bytes while bit decoding is active",
+            ));
+        }
+        let size = mem::size_of::<T>();
+        if size > self.data.len().saturating_sub(self.pos) {
+            return Err(DracoError::buffer(format!(
+                "Unexpected end of buffer: need {} bytes, have {}",
+                size,
+                self.remaining_size()
+            )));
+        }
+
+        // Safety: bytemuck::Pod guarantees T can be safely read from any bit pattern
+        let val = bytemuck::pod_read_unaligned::<T>(&self.data[self.pos..self.pos + size]);
+        self.pos += size;
+        Ok(val)
+    }
+
+    /// Decodes a single byte.
+    pub fn decode_u8(&mut self) -> Result<u8, DracoError> {
+        self.decode::<u8>()
+    }
+
+    /// Decodes a little-endian u16.
+    pub fn decode_u16(&mut self) -> Result<u16, DracoError> {
+        let mut bytes = [0u8; 2];
+        self.decode_bytes(&mut bytes)?;
+        Ok(u16::from_le_bytes(bytes))
+    }
+
+    /// Decodes a little-endian u32.
+    pub fn decode_u32(&mut self) -> Result<u32, DracoError> {
+        let mut bytes = [0u8; 4];
+        self.decode_bytes(&mut bytes)?;
+        Ok(u32::from_le_bytes(bytes))
+    }
+
+    /// Decodes a little-endian u64.
+    pub fn decode_u64(&mut self) -> Result<u64, DracoError> {
+        let mut bytes = [0u8; 8];
+        self.decode_bytes(&mut bytes)?;
+        Ok(u64::from_le_bytes(bytes))
+    }
+
+    /// Decodes a little-endian f32.
+    pub fn decode_f32(&mut self) -> Result<f32, DracoError> {
+        let mut bytes = [0u8; 4];
+        self.decode_bytes(&mut bytes)?;
+        Ok(f32::from_le_bytes(bytes))
+    }
+
+    /// Decodes a little-endian f64.
+    pub fn decode_f64(&mut self) -> Result<f64, DracoError> {
+        let mut bytes = [0u8; 8];
+        self.decode_bytes(&mut bytes)?;
+        Ok(f64::from_le_bytes(bytes))
+    }
+
+    /// Decodes a null-terminated string.
+    pub fn decode_string(&mut self) -> Result<String, DracoError> {
+        let mut bytes = Vec::new();
+        loop {
+            let b = self.decode_u8()?;
+            if b == 0 {
+                break;
+            }
+            bytes.push(b);
+        }
+        String::from_utf8(bytes)
+            .map_err(|e| DracoError::buffer(format!("Invalid UTF-8 string: {}", e)))
+    }
+
+    /// Decodes bytes into the provided buffer.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`ErrorKind::Buffer`](crate::ErrorKind::Buffer) error if not enough bytes remaining.
+    pub fn decode_bytes(&mut self, out: &mut [u8]) -> Result<(), DracoError> {
+        let size = out.len();
+        if size > self.data.len().saturating_sub(self.pos) {
+            return Err(DracoError::buffer(format!(
+                "Unexpected end of buffer: need {} bytes, have {}",
+                size,
+                self.remaining_size()
+            )));
+        }
+        out.copy_from_slice(&self.data[self.pos..self.pos + size]);
+        self.pos += size;
+        Ok(())
+    }
+
+    /// Decodes a variable-length unsigned integer (varint).
+    pub fn decode_varint(&mut self) -> Result<u64, DracoError> {
+        let mut val = 0u64;
+        let mut shift = 0;
+        loop {
+            let b = self.decode_u8()?;
+            val |= ((b & 0x7F) as u64) << shift;
+            if (b & 0x80) == 0 {
+                break;
+            }
+            shift += 7;
+            if shift >= 64 {
+                return Err(DracoError::buffer("Varint exceeds 64 bits"));
+            }
+        }
+        Ok(val)
+    }
+
+    /// Decodes a Draco-compatible signed varint.
+    ///
+    /// Uses unsigned varint encoding with ConvertSymbolToSignedInt transformation.
+    pub fn decode_varint_signed_i32(&mut self) -> Result<i32, DracoError> {
+        let symbol = self.decode_varint()? as u32;
+        let is_positive = (symbol & 1) == 0;
+        let v = symbol >> 1;
+        if is_positive {
+            Ok(v as i32)
+        } else {
+            Ok(-(v as i32) - 1)
+        }
+    }
+
+    /// Returns a slice of the remaining data without advancing.
+    pub fn remaining_data(&self) -> &'a [u8] {
+        &self.data[self.pos..]
+    }
+
+    /// Advances the position by `n` bytes without reading.
+    pub fn advance(&mut self, n: usize) {
+        self.pos = self.pos.saturating_add(n).min(self.data.len());
+    }
+
+    /// Advances the position by `n` bytes without reading.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`ErrorKind::Buffer`](crate::ErrorKind::Buffer) error if the requested advance would move
+    /// beyond the end of the input buffer.
+    pub fn try_advance(&mut self, n: usize) -> Result<(), DracoError> {
+        let new_pos = self
+            .pos
+            .checked_add(n)
+            .ok_or_else(|| DracoError::buffer("Buffer advance overflow"))?;
+        if new_pos > self.data.len() {
+            return Err(DracoError::buffer(format!(
+                "Cannot advance buffer by {} bytes: need position {}, buffer length {}",
+                n,
+                new_pos,
+                self.data.len()
+            )));
+        }
+        self.pos = new_pos;
+        Ok(())
+    }
+
+    /// Decodes and returns a slice of the specified size.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`ErrorKind::Buffer`](crate::ErrorKind::Buffer) error if not enough bytes remaining.
+    pub fn decode_slice(&mut self, size: usize) -> Result<&'a [u8], DracoError> {
+        if size > self.data.len().saturating_sub(self.pos) {
+            return Err(DracoError::buffer(format!(
+                "Unexpected end of buffer: need {} bytes, have {}",
+                size,
+                self.remaining_size()
+            )));
+        }
+        let slice = &self.data[self.pos..self.pos + size];
+        self.pos += size;
+        Ok(slice)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::DecoderBuffer;
+
+    #[test]
+    fn bit_decode_respects_declared_byte_size() {
+        let data = [1, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+        let mut buffer = DecoderBuffer::new(&data);
+
+        assert_eq!(buffer.start_bit_decoding(true).unwrap(), 1);
+        assert!(buffer.decode_least_significant_bits32(16).is_err());
+    }
+
+    #[test]
+    fn try_advance_rejects_out_of_bounds_skip() {
+        let data = [0u8; 4];
+        let mut buffer = DecoderBuffer::new(&data);
+
+        assert!(buffer.try_advance(5).is_err());
+        assert_eq!(buffer.position(), 0);
+        assert!(buffer.try_advance(4).is_ok());
+        assert_eq!(buffer.position(), 4);
+    }
+
+    #[test]
+    fn decode_least_significant_bits32_reads_full_width() {
+        // `(1u32 << 32) - 1` is the overflow this width used to hit.
+        let data = [0xffu8; 5];
+        let mut buffer = DecoderBuffer::new(&data);
+
+        buffer.start_bit_decoding(false).unwrap();
+        assert_eq!(
+            buffer.decode_least_significant_bits32(32).unwrap(),
+            u32::MAX
+        );
+    }
+
+    #[test]
+    fn decode_least_significant_bits32_reads_full_width_past_a_bit_shift() {
+        // Same width, but starting mid-byte so the fast path's `raw >>
+        // bit_shift` also has to keep all 32 bits in range.
+        let data = [0xffu8; 6];
+        let mut buffer = DecoderBuffer::new(&data);
+
+        buffer.start_bit_decoding(false).unwrap();
+        assert_eq!(buffer.decode_least_significant_bits32(3).unwrap(), 0b111);
+        assert_eq!(
+            buffer.decode_least_significant_bits32(32).unwrap(),
+            u32::MAX
+        );
+    }
+
+    #[test]
+    fn decode_least_significant_bits32_rejects_width_above_32() {
+        let data = [0xffu8; 5];
+        let mut buffer = DecoderBuffer::new(&data);
+
+        buffer.start_bit_decoding(false).unwrap();
+        assert!(buffer.decode_least_significant_bits32(33).is_err());
+    }
+
+    /// The count a constant RGB colour over 29,351,662 points codes to: past
+    /// what the budget alone permits, from a stream of any length.
+    const CONSTANT_COLOUR_VALUES: usize = 29_351_662 * 3;
+
+    #[test]
+    fn an_unbacked_run_the_limits_admitted_charges_nothing() {
+        let data = [0u8; 113];
+        let mut buffer = DecoderBuffer::new(&data);
+        assert!(buffer
+            .charge_unbacked(CONSTANT_COLOUR_VALUES, size_of::<u32>())
+            .is_err());
+
+        let mut buffer = DecoderBuffer::new(&data);
+        buffer
+            .admit_attribute(CONSTANT_COLOUR_VALUES / 3, 3, 1)
+            .unwrap();
+        buffer
+            .charge_unbacked(CONSTANT_COLOUR_VALUES, size_of::<u32>())
+            .unwrap();
+        assert_eq!(buffer.spent(), 0);
+    }
+
+    /// Each admitted value excuses one unbacked value once: a second run over
+    /// the same admission pays the budget, so the sum the budget lets through
+    /// stays bounded by the sum the limits admitted.
+    #[test]
+    fn an_admission_is_drawn_down_rather_than_reused() {
+        let data = [0u8; 113];
+        let mut buffer = DecoderBuffer::new(&data);
+        buffer.admit_attribute(1_000, 1, 1).unwrap();
+        buffer.charge_unbacked(1_000, size_of::<u32>()).unwrap();
+        assert_eq!(buffer.spent(), 0);
+        buffer.charge_unbacked(10, size_of::<u32>()).unwrap();
+        assert_eq!(buffer.spent(), 40);
+        assert!(buffer
+            .charge_unbacked(CONSTANT_COLOUR_VALUES, size_of::<u32>())
+            .is_err());
+    }
+
+    /// The protection the budget exists for is kept, by the limits: the
+    /// header of a tiny stream naming billions of values is refused before
+    /// anything is admitted, so nothing is there to draw on.
+    #[test]
+    fn a_claim_past_the_default_limits_is_refused_at_admission() {
+        let data = [0u8; 170];
+        let mut buffer = DecoderBuffer::new(&data);
+        let error = buffer
+            .admit_attribute(2_270_000_000, 3, 1)
+            .expect_err("6.8 billion values admitted under the defaults");
+        assert_eq!(error.kind(), crate::status::ErrorKind::LimitExceeded);
+        assert!(buffer
+            .charge_unbacked(u32::MAX as usize, size_of::<u32>())
+            .is_err());
+    }
+
+    /// Pieces of one stream decoded side by side draw on one allowance: what
+    /// two of them draw together is what one buffer could, the rest pays the
+    /// budget they share, and the stream takes back what is left -- or all of
+    /// it, where their work is thrown away to be decoded again in order.
+    #[cfg(feature = "point_cloud_decode")]
+    #[test]
+    fn pieces_decoded_side_by_side_share_one_allowance() {
+        let data = [0u8; 113];
+        let mut stream = DecoderBuffer::new(&data);
+        stream.admit_attribute(1_000, 1, 1).unwrap();
+        let template = stream.child_template();
+        let mut a = template.open(&data);
+        let mut b = template.open(&data);
+        a.charge_unbacked(600, size_of::<u32>()).unwrap();
+        b.charge_unbacked(600, size_of::<u32>()).unwrap();
+        stream.charge_unbacked(100, size_of::<u32>()).unwrap();
+        assert_eq!(template.spent_since(), 300 * size_of::<u32>());
+
+        stream.rejoin(&template, true);
+        assert_eq!(stream.admitted_values, 0);
+        assert_eq!(stream.spent(), 300 * size_of::<u32>());
+        stream.rejoin(&template, false);
+        assert_eq!(stream.admitted_values, 1_000);
+        assert_eq!(stream.spent(), 0);
+    }
+
+    /// What the stream charges while its pieces are out counts against the
+    /// ceiling they charge: two charges, each under it alone, are refused
+    /// together whichever of them made it.
+    #[cfg(feature = "point_cloud_decode")]
+    #[test]
+    fn the_stream_and_its_pieces_charge_one_budget() {
+        let data = [0u8; 113];
+        let two_thirds = (113 << 20) * 2 / 3;
+        for stream_first in [true, false] {
+            let mut stream = DecoderBuffer::new(&data);
+            let template = stream.child_template();
+            let mut piece = template.open(&data);
+            let (first, second) = if stream_first {
+                (stream.charge(two_thirds), piece.charge(two_thirds))
+            } else {
+                (piece.charge(two_thirds), stream.charge(two_thirds))
+            };
+            assert!(
+                first.is_ok() && second.is_err(),
+                "stream first: {stream_first}"
+            );
+        }
+    }
+}

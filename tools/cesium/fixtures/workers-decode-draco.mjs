@@ -165,6 +165,91 @@ const int32Span = Uint8Array.from([
   157, 25, 3, 168, 251, 176, 255, 255, 255, 255, 233, 255, 255, 255, 15,
 ]);
 
+
+// A cube with four vertices per face. Shared corner positions with different
+// normals, UVs and colors give the edgebreaker encoder attribute seams, so the
+// decoded attributes map points through explicit indices.
+function encodeCube(encoderModule, { speed = 5, positionBits = 14, colorBits = 8 } = {}) {
+  const builder = new encoderModule.MeshBuilder();
+  const mesh = new encoderModule.Mesh();
+  const faces = [
+    [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, -1]],
+    [[0, 0, 1], [0, 1, 1], [1, 1, 1], [1, 0, 1], [0, 0, 1]],
+    [[0, 0, 0], [0, 1, 0], [0, 1, 1], [0, 0, 1], [-1, 0, 0]],
+    [[1, 0, 0], [1, 0, 1], [1, 1, 1], [1, 1, 0], [1, 0, 0]],
+    [[0, 0, 0], [0, 0, 1], [1, 0, 1], [1, 0, 0], [0, -1, 0]],
+    [[0, 1, 0], [1, 1, 0], [1, 1, 1], [0, 1, 1], [0, 1, 0]],
+  ];
+  const positions = [], normals = [], uvs = [], colors = [], intColors = [], indices = [];
+  faces.forEach(([a, b, c, d, n], f) => {
+    const base = f * 4;
+    for (const [k, p] of [a, b, c, d].entries()) {
+      positions.push(p[0] * 3 - 1, p[1] * 2 + 0.5, p[2] * 5);
+      normals.push(...n);
+      uvs.push((k & 1) * 0.5 + f * 0.1, (k >> 1) * 0.5);
+      colors.push(f / 6, k / 4, 1 - f / 6);
+      intColors.push(f * 40, k * 60, 255 - f * 40, 255);
+    }
+    indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  });
+  const count = positions.length / 3;
+  const ids = {
+    POSITION: builder.AddFloatAttributeToMesh(mesh, encoderModule.POSITION, count, 3, new Float32Array(positions)),
+    NORMAL: builder.AddFloatAttributeToMesh(mesh, encoderModule.NORMAL, count, 3, new Float32Array(normals)),
+    TEX_COORD: builder.AddFloatAttributeToMesh(mesh, encoderModule.TEX_COORD, count, 2, new Float32Array(uvs)),
+    COLOR: builder.AddFloatAttributeToMesh(mesh, encoderModule.COLOR, count, 3, new Float32Array(colors)),
+    COLOR_INT: builder.AddUInt8Attribute(mesh, encoderModule.COLOR, count, 4, new Uint8Array(intColors)),
+  };
+  builder.AddFacesToMesh(mesh, indices.length / 3, new Uint32Array(indices));
+  const encoder = new encoderModule.Encoder();
+  encoder.SetAttributeQuantization(encoderModule.POSITION, positionBits);
+  encoder.SetAttributeQuantization(encoderModule.NORMAL, 8);
+  encoder.SetAttributeQuantization(encoderModule.TEX_COORD, 10);
+  encoder.SetAttributeQuantization(encoderModule.COLOR, colorBits);
+  encoder.SetSpeedOptions(speed, speed);
+  const out = new encoderModule.DracoInt8Array();
+  const len = encoder.EncodeMeshToDracoBuffer(mesh, out);
+  if (!len) throw new Error("cube encode failed");
+  const raw = bytesOf(out, len);
+  encoderModule.destroy(out);
+  encoderModule.destroy(encoder);
+  encoderModule.destroy(mesh);
+  encoderModule.destroy(builder);
+  return { raw, ids };
+}
+
+function encodeCloudAt(encoderModule, speed) {
+  const builder = new encoderModule.PointCloudBuilder();
+  const cloud = new encoderModule.PointCloud();
+  const count = 40;
+  const positions = new Float32Array(count * 3).map((_, i) => Math.sin(i * 1.7) * 50 + (i % 3) * 7);
+  const normals = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    const v = [Math.cos(i), Math.sin(i * 0.7), 0.4 + (i % 5) * 0.1];
+    const l = Math.hypot(...v);
+    normals.set(v.map((x) => x / l), i * 3);
+  }
+  const colors = new Uint8Array(count * 3).map((_, i) => (i * 37) & 255);
+  const ids = {
+    POSITION: builder.AddFloatAttribute(cloud, encoderModule.POSITION, count, 3, positions),
+    NORMAL: builder.AddFloatAttribute(cloud, encoderModule.NORMAL, count, 3, normals),
+    RGB: builder.AddUInt8Attribute(cloud, encoderModule.COLOR, count, 3, colors),
+  };
+  const encoder = new encoderModule.Encoder();
+  encoder.SetAttributeQuantization(encoderModule.POSITION, 12);
+  encoder.SetAttributeQuantization(encoderModule.NORMAL, 9);
+  encoder.SetSpeedOptions(speed, speed);
+  const out = new encoderModule.DracoInt8Array();
+  const len = encoder.EncodePointCloudToDracoBuffer(cloud, false, out);
+  if (!len) throw new Error("point cloud encode failed");
+  const raw = bytesOf(out, len);
+  encoderModule.destroy(out);
+  encoderModule.destroy(encoder);
+  encoderModule.destroy(cloud);
+  encoderModule.destroy(builder);
+  return { raw, ids };
+}
+
 function presentAttributes(attributes) {
   const out = {};
   for (const [name, value] of Object.entries(attributes)) {
@@ -327,6 +412,42 @@ export default async function workersDecodeDraco() {
     [{ buffer: cloud.raw, properties: { extra: 99 } }],
     () => run({ buffer: cloud.raw, properties: { extra: 99 } }),
   );
+
+  // dequantizeInShader: skipped transforms keep the portable integers.
+  const all = ["POSITION", "NORMAL", "TEX_COORD", "COLOR", "GENERIC"];
+  const skipCase = async (encoded, attributesToSkipTransform, extra = {}) => {
+    const parameters = {
+      array: encoded.raw,
+      bufferView: { byteLength: encoded.raw.length },
+      compressedAttributes: encoded.ids,
+      dequantizeInShader: true,
+      attributesToSkipTransform,
+      ...extra,
+    };
+    await decode.add("decodeDraco", [parameters], () => run(parameters));
+  };
+  await skipCase(mesh, all);
+  await skipCase(mesh, ["POSITION", "NORMAL"]);
+  await skipCase(mesh, ["TEX_COORD"]);
+  await skipCase(mesh, ["INVALID"]);
+  await skipCase(mesh, ["NOT_A_TYPE"]);
+  await skipCase(mesh, all, { dequantizeInShader: 1 });
+  await skipCase(mesh, undefined);
+  for (const options of [{}, { speed: 10 }, { speed: 0 }, { positionBits: 20, colorBits: 16 }, { positionBits: 24, speed: 10 }]) {
+    const cube = encodeCube(encoderModule, options);
+    await skipCase(cube, [...all]);
+    await skipCase(cube, ["COLOR"]);
+    await skipCase(cube, []);
+  }
+  for (const speed of [5, 10, 0]) {
+    const encoded = encodeCloudAt(encoderModule, speed);
+    for (const dequantizeInShader of [true, false]) {
+      const parameters = { buffer: encoded.raw, properties: { POSITION: 0, NORMAL: 0, rgb: encoded.ids.RGB }, dequantizeInShader };
+      await decode.add("decodeDraco", [parameters], () => run(parameters));
+    }
+  }
+  const skippedCloud = { buffer: cloud.raw, properties: { POSITION: 0, NORMAL: 0, extra: cloud.ids.GENERIC }, dequantizeInShader: true };
+  await decode.add("decodeDraco", [skippedCloud], () => run(skippedCloud));
 
   return [decode];
 }

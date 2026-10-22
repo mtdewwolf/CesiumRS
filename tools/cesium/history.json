@@ -302,5 +302,13 @@
     "ported": 674,
     "implemented": 0,
     "validatedPercent": 36.6
+  },
+  {
+    "milestone": "Workers complete",
+    "date": "2026-10-22",
+    "percent": 36.7,
+    "ported": 675,
+    "implemented": 0,
+    "validatedPercent": 36.7
   }
 ]
