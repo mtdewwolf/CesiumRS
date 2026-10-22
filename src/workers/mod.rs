@@ -4,6 +4,7 @@
 //! Native applications can schedule them through `core::native_host::NativeTaskWorker`;
 //! browser applications can call them from their Wasm worker entry point.
 
+pub mod combine_geometry;
 pub mod create_geometry;
 pub mod gaussian_splats;
 pub mod geometry;
@@ -17,6 +18,7 @@ pub use geometry::*;
 pub use geometry_results::PackedGeometryResults;
 pub use terrain::*;
 pub use vector_tiles::*;
+pub use combine_geometry::*;
 pub use gaussian_splats::*;
 pub use task_processor_worker::{
     deliver_message_error, deliver_task, PostMessageError, TaskMessage, TaskProcessorReply, WorkerException,
