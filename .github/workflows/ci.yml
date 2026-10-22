@@ -29,12 +29,25 @@ jobs:
       - name: cargo test
         run: cargo test --locked
 
-      # Report clippy output, but do not fail the job on warnings.
+      - name: cargo build native-host
+        run: cargo build --locked --features native-host
+
+      - name: cargo test native-host
+        run: cargo test --locked --features native-host
+
+      # native-host is additive, so this also covers the default feature set.
+      # Warnings are errors. --all-targets includes tests and examples.
       - name: cargo clippy
-        run: cargo clippy --locked -- -A warnings
+        run: cargo clippy --locked --all-targets --features native-host -- -D warnings
 
       # scripts/build-web.sh ships `cargo build --release --target wasm32-unknown-unknown`
       # (size-tuned LTO). CI compiles the same target without --release so the
       # cdylib still type-checks, without the release-profile link.
       - name: wasm build
         run: cargo build --locked --target wasm32-unknown-unknown
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@cargo-audit
+
+      - name: cargo audit
+        run: cargo audit

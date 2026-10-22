@@ -217,7 +217,7 @@ impl CesiumTerrainProvider {
             let has_water = is_heightmap || extension("watermask");
             let has_metadata = extension("metadata");
             let availability_levels = data["metadataAvailability"].as_u64().map(|v| v as u32);
-            let (available, loaded) = if let Some(_) = availability_levels {
+            let (available, loaded) = if availability_levels.is_some() {
                 let a = Rc::new(TileAvailability::new(scheme.clone(), max_zoom));
                 a.add_available_tile_range(0, 0, 0, 1, 0);
                 overall.retain(|(l, _)| *l != 0);
@@ -315,7 +315,7 @@ impl CesiumTerrainProvider {
         if level == 0 || levels == 0 {
             return None;
         }
-        let parent = if level % levels == 0 { level - levels } else { level / levels * levels };
+        let parent = if level.is_multiple_of(levels) { level - levels } else { level / levels * levels };
         let div = 1u32.wrapping_shl(level - parent);
         if div == 0 {
             return None;
@@ -458,7 +458,7 @@ impl State {
             .ok_or_else(|| invalid("Invalid quantized vertices."))?;
         let wide = count > 65536;
         let alignment = if wide { 4 } else { 2 };
-        if r.pos % alignment != 0 {
+        if !r.pos.is_multiple_of(alignment) {
             r.take(alignment - r.pos % alignment)?;
         }
         let triangles = r.u32()? as usize;

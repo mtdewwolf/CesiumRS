@@ -258,8 +258,9 @@ fn context_cache_has_no_reference_cycles() {
     assert_eq!(host.count("createVertexArray"), host.count("deleteVertexArray"));
     assert_eq!(host.count("createProgram"), host.count("deleteProgram"));
 }
+type BlitLog = Rc<RefCell<Vec<(TextureRegion, [u32; 2])>>>;
 #[derive(Clone, Default)]
-struct Surfaces(Rc<RefCell<Vec<(TextureRegion, [u32; 2])>>>);
+struct Surfaces(BlitLog);
 impl SharedSurfaceHost<Host> for Surfaces {
     type Surface = u32;
     fn same_surface(&self, a: &u32, b: &u32) -> bool {

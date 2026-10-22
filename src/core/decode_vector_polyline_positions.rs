@@ -14,7 +14,7 @@ pub fn decode_vector_polyline_positions(
     options: DecodeVectorPolylineOptions<'_>,
 ) -> Option<Vec<f64>> {
     let DecodeVectorPolylineOptions { rectangle, minimum_height, maximum_height, ellipsoid } = options;
-    if positions.len() % 3 != 0 {
+    if !positions.len().is_multiple_of(3) {
         return None;
     }
     let length = positions.len() / 3;

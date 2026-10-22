@@ -5,7 +5,7 @@ fn error() -> RuntimeError {
     RuntimeError::new("Invalid meshopt vertex buffer.")
 }
 pub fn decode(bytes: &[u8], count: usize, stride: usize) -> Result<Vec<u8>, RuntimeError> {
-    if stride == 0 || stride > 256 || stride % 4 != 0 {
+    if stride == 0 || stride > 256 || !stride.is_multiple_of(4) {
         return Err(error());
     }
     let mut r = Reader::new(bytes);
@@ -83,7 +83,7 @@ pub fn decode(bytes: &[u8], count: usize, stride: usize) -> Result<Vec<u8>, Runt
 }
 fn decode_bytes(r: &mut Reader<'_>, count: usize, bits: &[u8]) -> Result<Vec<u8>, RuntimeError> {
     let groups = count / 16;
-    let headers = r.take((groups + 3) / 4)?.to_vec();
+    let headers = r.take(groups.div_ceil(4))?.to_vec();
     let mut out = vec![0; count];
     for group in 0..groups {
         let mode = (headers[group / 4] >> ((group % 4) * 2)) & 3;

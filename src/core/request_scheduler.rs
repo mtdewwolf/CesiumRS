@@ -24,6 +24,8 @@ pub struct RequestStatistics {
     pub last_number_of_active_requests: usize,
 }
 
+type RequestOrdering<T> = fn(&RequestHandle<T>, &RequestHandle<T>) -> std::cmp::Ordering;
+
 fn compare<T>(a: &RequestHandle<T>, b: &RequestHandle<T>) -> std::cmp::Ordering {
     a.borrow().options.priority.partial_cmp(&b.borrow().options.priority).unwrap_or(std::cmp::Ordering::Equal)
 }
@@ -41,10 +43,13 @@ pub struct RequestScheduler<T> {
     pub throttle_requests: bool,
     pub page_url: String,
     pub debug_show_statistics: bool,
+    // Cesium's statistics callback. Naming this in the public API would add a type
+    // that no caller mentions; the field stays the function trait object directly.
+    #[allow(clippy::type_complexity)]
     pub statistics_log: Option<Box<dyn FnMut(&str)>>,
     pub statistics: RequestStatistics,
     pub request_completed_event: Event<Option<RequestErrorEvent>>,
-    heap: Heap<RequestHandle<T>, fn(&RequestHandle<T>, &RequestHandle<T>) -> std::cmp::Ordering>,
+    heap: Heap<RequestHandle<T>, RequestOrdering<T>>,
     active: Vec<Active<T>>,
     by_server: HashMap<String, usize>,
     heap_length: usize,
@@ -52,7 +57,7 @@ pub struct RequestScheduler<T> {
 
 impl<T> Default for RequestScheduler<T> {
     fn default() -> Self {
-        let mut heap = Heap::new(compare::<T> as fn(&RequestHandle<T>, &RequestHandle<T>) -> std::cmp::Ordering);
+        let mut heap = Heap::new(compare::<T> as RequestOrdering<T>);
         heap.set_maximum_length(Some(20));
         Self {
             maximum_requests: 50,

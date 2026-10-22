@@ -19,6 +19,7 @@ use std::{
     task::{Context, Waker},
 };
 type Pending = Shared<LocalBoxFuture<'static, Result<(), RuntimeError>>>;
+type Inflight = (Pending, Option<RequestHandle<HttpResponse>>);
 #[derive(Default)]
 pub struct GeeTerrainOptions {
     pub ellipsoid: Option<Ellipsoid>,
@@ -31,7 +32,7 @@ struct State {
     scheme: GeographicTilingScheme,
     credit: Option<Credit>,
     cache: RefCell<HashMap<String, (Vec<u8>, f64)>>,
-    pending: RefCell<HashMap<String, (Pending, Option<RequestHandle<HttpResponse>>)>>,
+    pending: RefCell<HashMap<String, Inflight>>,
     background: RefCell<Vec<TerrainFuture<'static, GoogleEarthEnterpriseTileInformation>>>,
     last_tidy: Cell<f64>,
     now: Rc<dyn Fn() -> f64>,
