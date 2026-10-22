@@ -50,13 +50,11 @@ punycode = "0.4.1"
 regex = "1"
 roxmltree = "0.21"
 serde = { version = "1", features = ["derive"] }
-serde_json = { version = "1", features = ["float_roundtrip"] }
-# Same crate and version as the decodeI3S worker (PR #35): draco-core 2.3.2.
-# Pure-Rust Draco 1.x decoder. MSRV 1.88, Apache-2.0, no C++/native deps.
-# Used only by workers::decode_draco. Not a shared helper and not a second
-# Draco crate. `point_cloud_decode` is the KD-tree/sequential point-cloud
-# path decodeDraco needs; decodeI3S does not.
-draco-core = { version = "2.3.2", default-features = false, features = [
+serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
+# One Draco crate, shared by decodeI3S and decodeDraco. No other Draco decoder.
+# Pure-Rust Draco 1.x. MSRV 1.88, Apache-2.0, no C++/native deps.
+# point_cloud_decode is the KD-tree/sequential path decodeDraco needs.
+draco-core = { version = "=2.3.2", default-features = false, features = [
     "decoder",
     "point_cloud_decode",
     "edgebreaker_valence_decode",

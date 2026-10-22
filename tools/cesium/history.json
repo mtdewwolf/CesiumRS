@@ -248,11 +248,35 @@
     "validatedPercent": 31.87
   },
   {
+    "milestone": "Workers decodeI3S",
+    "date": "2026-10-22",
+    "percent": 32.3,
+    "ported": 365,
+    "implemented": 0,
+    "validatedPercent": 32.3
+  },
+  {
+    "milestone": "combineGeometry",
+    "date": "2026-10-22",
+    "percent": 32.3,
+    "ported": 366,
+    "implemented": 0,
+    "validatedPercent": 32.3
+  },
+  {
+    "milestone": "createTaskProcessorWorker",
+    "date": "2026-10-22",
+    "percent": 32.33,
+    "ported": 367,
+    "implemented": 0,
+    "validatedPercent": 32.33
+  },
+  {
     "milestone": "decodeDraco",
     "date": "2026-10-22",
-    "percent": 31.92,
-    "ported": 364,
+    "percent": 32.38,
+    "ported": 367,
     "implemented": 0,
-    "validatedPercent": 31.87
+    "validatedPercent": 32.33
   }
 ]

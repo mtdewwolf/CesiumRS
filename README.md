@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 31.9% implemented; 31.9% validated** (364 validated modules, 0 implemented awaiting validation, and 1 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
+**Status: 32.4% implemented; 32.3% validated** (367 validated modules, 0 implemented awaiting validation, and 1 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
 
 ## What is ported
 
@@ -52,12 +52,12 @@ frame inputs and the remaining viewer/native-driver integration work.
 
 ### Workers completion underway
 
-**37 of 53 Workers modules** are now ported. The first completion batch adds all
-31 geometry worker entry points and the `createGeometry` batch dispatcher, with
-typed and offset-packed inputs, asynchronous custom modules, ordered results and
-Cesium-compatible result buffers. **474 direct CesiumJS worker cases** and native
-thread/async regressions validate this batch. The remaining 16 cover vector tiles,
-terrain/packet boundaries, splats, specialized codecs, combination and messaging.
+**51 of 53 Workers modules** are now ported, including geometry, terrain, vector
+tiles, Gaussian splats, `decodeI3S`, `combineGeometry`, and `createTaskProcessorWorker`.
+The I3S worker decodes binary and Draco payloads into an owned glTF document.
+`combineGeometry` runs the existing geometry pipeline on packed instances.
+`createTaskProcessorWorker` adapts a calculation to the TaskProcessor message
+contract. `decodeDraco` is still open. `transferTypedArrayTest` is n/a.
 [Workers API, validation and remaining work](docs/workers.md).
 
 ### Ion and platform clients
@@ -104,7 +104,7 @@ The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **28,211 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **28,293 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
 
 ```bash
 cargo test --all-features                    # all fixtures + native host integration

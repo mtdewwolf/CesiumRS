@@ -1,8 +1,8 @@
 //! CesiumJS `decodeDraco` worker.
 //!
-//! Decodes a Draco triangular mesh or point cloud with `draco-core` 2.3.2,
-//! the same decoder-only crate the I3S worker uses. This module does not share
-//! code with `workers::decode_i3s`.
+//! Decodes a Draco triangular mesh or point cloud through `workers::draco`,
+//! the helper extracted from `workers::decode_i3s`. Both workers use
+//! `draco-core` 2.3.2 and no other Draco crate.
 //!
 //! The WebAssembly initialization message returns `true`: there is no Draco
 //! module to compile. A buffer whose header is a triangular mesh is decoded
@@ -23,18 +23,14 @@
 //! is absent or no transform is skipped. Callers that set the flag still get
 //! that dequantized result.
 
+use super::draco::{self, AttributeValues, DracoAttribute, DracoDecodeError, DracoGeometry, GeometryAttributeType};
 use crate::core::math::SIXTY_FOUR_KILOBYTES;
 use crate::core::{ComponentDatatype, IndexDatatype, RuntimeError};
-use draco_core::geometry_attribute::GeometryAttributeType;
-use draco_core::{
-    DataType, DecoderBuffer, Mesh, MeshDecoder, PointAttribute, PointCloud, PointCloudDecoder, PointIndex,
-};
+use draco_core::DataType;
 use serde_json::{Map, Number, Value};
 
 /// Draco file header: 5-byte magic, major, minor, geometry type, method, flags.
 const HEADER_BYTES: usize = 11;
-const POINT_CLOUD: u8 = 0;
-const TRIANGULAR_MESH: u8 = 1;
 
 /// Runs the `decodeDraco` worker on one parameters object.
 pub fn decode_draco(parameters: &Value) -> Result<Value, RuntimeError> {
@@ -103,14 +99,10 @@ fn decode_mesh(parameters: &Map<String, Value>) -> Result<Value, RuntimeError> {
     let absent = Value::Null;
     let length = byte_length(view.get("byteLength").unwrap_or(&absent))?;
     let bytes = read_bytes(parameters.get("array").unwrap_or(&absent), Some(length))?;
-    if geometry_type(&bytes) != Some(TRIANGULAR_MESH) {
+    if geometry_type(&bytes) != Some(draco::TRIANGULAR_MESH) {
         return Err(RuntimeError::new("Unsupported draco mesh geometry type."));
     }
-    let mut mesh = Mesh::new();
-    let mut buffer = DecoderBuffer::new(&bytes);
-    MeshDecoder::new()
-        .decode(&mut buffer, &mut mesh)
-        .map_err(|error| RuntimeError::new(format!("Error decoding draco mesh geometry: {}", error.message())))?;
+    let mesh = mesh_or_error(draco::decode_triangular_mesh(&bytes))?;
 
     let compressed = parameters
         .get("compressedAttributes")
@@ -122,7 +114,7 @@ fn decode_mesh(parameters: &Map<String, Value>) -> Result<Value, RuntimeError> {
         let attribute = mesh
             .attribute_by_unique_id(unique_id)
             .ok_or_else(|| RuntimeError::new(format!("Missing Draco attribute {unique_id}")))?;
-        attribute_data.insert(name.clone(), attribute_json(attribute, mesh.num_points())?);
+        attribute_data.insert(name.clone(), attribute_json(attribute, mesh.num_points)?);
     }
 
     Ok(serde_json::json!({
@@ -134,14 +126,10 @@ fn decode_mesh(parameters: &Map<String, Value>) -> Result<Value, RuntimeError> {
 fn decode_point_cloud(parameters: &Map<String, Value>) -> Result<Value, RuntimeError> {
     let absent = Value::Null;
     let bytes = read_bytes(parameters.get("buffer").unwrap_or(&absent), None)?;
-    if geometry_type(&bytes) != Some(POINT_CLOUD) {
+    if geometry_type(&bytes) != Some(draco::POINT_CLOUD) {
         return Err(RuntimeError::new("Draco geometry type must be POINT_CLOUD."));
     }
-    let mut cloud = PointCloud::new();
-    let mut buffer = DecoderBuffer::new(&bytes);
-    PointCloudDecoder::new()
-        .decode(&mut buffer, &mut cloud)
-        .map_err(|error| RuntimeError::new(format!("Error decoding draco point cloud: {}", error.message())))?;
+    let cloud = cloud_or_error(draco::decode_point_cloud(&bytes))?;
 
     let properties = parameters
         .get("properties")
@@ -150,27 +138,37 @@ fn decode_point_cloud(parameters: &Map<String, Value>) -> Result<Value, RuntimeE
     let mut result = Map::new();
     for (name, id) in properties {
         let attribute = if name == "POSITION" || name == "NORMAL" {
-            named_attribute(
-                &cloud,
-                if name == "POSITION" { GeometryAttributeType::Position } else { GeometryAttributeType::Normal },
-            )?
+            let kind = if name == "POSITION" { GeometryAttributeType::Position } else { GeometryAttributeType::Normal };
+            cloud.named_attribute(kind).ok_or_else(|| RuntimeError::new("Missing Draco attribute"))?
         } else {
             let unique_id = json_u32(id)?;
             cloud
                 .attribute_by_unique_id(unique_id)
                 .ok_or_else(|| RuntimeError::new(format!("Missing Draco attribute {unique_id}")))?
         };
-        result.insert(name.clone(), attribute_json(attribute, cloud.num_points())?);
+        result.insert(name.clone(), attribute_json(attribute, cloud.num_points)?);
     }
     Ok(Value::Object(result))
 }
 
-fn named_attribute(cloud: &PointCloud, kind: GeometryAttributeType) -> Result<&PointAttribute, RuntimeError> {
-    let id = cloud.named_attribute_id(kind);
-    if id < 0 {
-        return Err(RuntimeError::new("Missing Draco attribute"));
+fn mesh_or_error(decoded: Result<DracoGeometry, DracoDecodeError>) -> Result<DracoGeometry, RuntimeError> {
+    match decoded {
+        Ok(geometry) => Ok(geometry),
+        Err(DracoDecodeError::WrongGeometry) => Err(RuntimeError::new("Unsupported draco mesh geometry type.")),
+        Err(DracoDecodeError::Failed(message)) => {
+            Err(RuntimeError::new(format!("Error decoding draco mesh geometry: {message}")))
+        }
     }
-    cloud.try_attribute(id).map_err(|error| RuntimeError::new(error.message().to_string()))
+}
+
+fn cloud_or_error(decoded: Result<DracoGeometry, DracoDecodeError>) -> Result<DracoGeometry, RuntimeError> {
+    match decoded {
+        Ok(geometry) => Ok(geometry),
+        Err(DracoDecodeError::WrongGeometry) => Err(RuntimeError::new("Draco geometry type must be POINT_CLOUD.")),
+        Err(DracoDecodeError::Failed(message)) => {
+            Err(RuntimeError::new(format!("Error decoding draco point cloud: {message}")))
+        }
+    }
 }
 
 fn json_u32(value: &Value) -> Result<u32, RuntimeError> {
@@ -180,21 +178,17 @@ fn json_u32(value: &Value) -> Result<u32, RuntimeError> {
         .ok_or_else(|| RuntimeError::new("Draco attribute id must be an integer"))
 }
 
-fn index_array(mesh: &Mesh) -> Value {
-    let mut indices = Vec::with_capacity(mesh.num_faces().saturating_mul(3));
-    for face in mesh.faces() {
-        indices.extend(face.iter().map(|point| point.0));
-    }
+fn index_array(mesh: &DracoGeometry) -> Value {
     serde_json::json!({
-        "typedArray": indices,
-        "numberOfIndices": indices.len(),
-        "indexDatatype": index_datatype(mesh.num_points()),
+        "typedArray": mesh.indices,
+        "numberOfIndices": mesh.indices.len(),
+        "indexDatatype": index_datatype(mesh.num_points),
     })
 }
 
-fn attribute_json(attribute: &PointAttribute, num_points: usize) -> Result<Value, RuntimeError> {
-    let components = attribute.num_components() as usize;
-    let datatype = component_datatype(attribute.data_type());
+fn attribute_json(attribute: &DracoAttribute, num_points: usize) -> Result<Value, RuntimeError> {
+    let components = attribute.components as usize;
+    let datatype = component_datatype(attribute.data_type);
     let stored =
         ComponentDatatype::from_gl(datatype).ok_or_else(|| RuntimeError::new("Unsupported Draco attribute type"))?;
     let byte_stride = stored.get_size_in_bytes().saturating_mul(components);
@@ -205,7 +199,7 @@ fn attribute_json(attribute: &PointAttribute, num_points: usize) -> Result<Value
             "componentDatatype": datatype,
             "byteOffset": 0,
             "byteStride": byte_stride,
-            "normalized": attribute.normalized(),
+            "normalized": attribute.normalized,
             "quantization": Value::Null,
         }
     }))
@@ -226,52 +220,36 @@ fn component_datatype(data_type: DataType) -> u32 {
 }
 
 fn attribute_values(
-    attribute: &PointAttribute,
+    attribute: &DracoAttribute,
     num_points: usize,
     components: usize,
 ) -> Result<Vec<Value>, RuntimeError> {
-    let mut values = Vec::with_capacity(num_points.saturating_mul(components));
-    if components == 0 {
-        return Ok(values);
-    }
-    let stride = usize::try_from(attribute.byte_stride()).unwrap_or(0);
-    let width = attribute.data_type().byte_length();
-    let data = attribute.buffer().data();
-    for point in 0..num_points {
-        let value_index = attribute.mapped_index(PointIndex(point as u32)).0;
-        if value_index == u32::MAX {
-            values.extend((0..components).map(|_| Value::from(0)));
-            continue;
-        }
-        let start = (value_index as usize).saturating_mul(stride);
-        for component in 0..components {
-            let offset = start.saturating_add(component.saturating_mul(width));
-            values.push(scalar_value(
-                attribute.data_type(),
-                data.get(offset..offset.saturating_add(width)).unwrap_or(&[]),
-            )?);
-        }
-    }
-    Ok(values)
-}
-
-fn scalar_value(data_type: DataType, bytes: &[u8]) -> Result<Value, RuntimeError> {
-    if data_type != DataType::Invalid && bytes.len() < data_type.byte_length() {
+    if attribute.short_value {
         return Err(RuntimeError::new("Draco attribute is shorter than its values"));
     }
-    Ok(match data_type {
-        DataType::Invalid => Value::from(0),
-        DataType::Int8 | DataType::Bool => Value::from(bytes[0] as i8),
-        DataType::Uint8 => Value::from(bytes[0]),
-        DataType::Int16 => Value::from(i16::from_le_bytes([bytes[0], bytes[1]])),
-        DataType::Uint16 => Value::from(u16::from_le_bytes([bytes[0], bytes[1]])),
-        DataType::Int32 => Value::from(i32::from_le_bytes(bytes[..4].try_into().unwrap())),
-        DataType::Uint32 => Value::from(u32::from_le_bytes(bytes[..4].try_into().unwrap())),
-        DataType::Int64 => Value::from(i64::from_le_bytes(bytes[..8].try_into().unwrap()) as i32),
-        DataType::Uint64 => Value::from(u64::from_le_bytes(bytes[..8].try_into().unwrap()) as u32),
-        DataType::Float32 => float_value(f32::from_le_bytes(bytes[..4].try_into().unwrap()) as f64),
-        DataType::Float64 => float_value(f64::from_le_bytes(bytes[..8].try_into().unwrap()) as f32 as f64),
-    })
+    if components == 0 {
+        return Ok(Vec::new());
+    }
+    let values = match &attribute.values {
+        AttributeValues::Invalid => vec![Value::from(0); num_points.saturating_mul(components)],
+        AttributeValues::Unreadable => {
+            return Err(RuntimeError::new("Draco attribute is shorter than its values"));
+        }
+        AttributeValues::F32(values) => values.iter().copied().map(|value| float_value(f64::from(value))).collect(),
+        AttributeValues::I8(values) => values.iter().copied().map(Value::from).collect(),
+        AttributeValues::U8(values) if attribute.data_type == DataType::Bool => {
+            values.iter().copied().map(|value| Value::from(value as i8)).collect()
+        }
+        AttributeValues::U8(values) => values.iter().copied().map(Value::from).collect(),
+        AttributeValues::I16(values) => values.iter().copied().map(Value::from).collect(),
+        AttributeValues::U16(values) => values.iter().copied().map(Value::from).collect(),
+        AttributeValues::I32(values) => values.iter().copied().map(Value::from).collect(),
+        AttributeValues::U32(values) => values.iter().copied().map(Value::from).collect(),
+        AttributeValues::I64(values) => values.iter().copied().map(|value| Value::from(value as i32)).collect(),
+        AttributeValues::U64(values) => values.iter().copied().map(|value| Value::from(value as u32)).collect(),
+        AttributeValues::F64(values) => values.iter().copied().map(|value| float_value(value as f32 as f64)).collect(),
+    };
+    Ok(values)
 }
 
 fn float_value(value: f64) -> Value {

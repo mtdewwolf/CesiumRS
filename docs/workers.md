@@ -2,7 +2,8 @@
 
 The first Workers completion batch adds all **31 geometry creation entry points**
 and **`createGeometry`**. Together with the five previously validated terrain and
-KTX2 workers, **37 of 53 Workers modules** are now ported. No remaining worker is
+KTX2 workers, later terrain, vector-tile, and Gaussian splat workers,
+`decodeI3S`, `combineGeometry`, and `createTaskProcessorWorker`, **51 of 53 Workers modules** are now ported. No remaining worker is
 marked partial or counted as complete through a placeholder.
 
 ## Geometry entry points
@@ -101,7 +102,34 @@ TZ=UTC node tools/cesium/fixtures/generate.mjs createGeometry \
   $(node --input-type=module -e 'import fs from "node:fs"; for (const f of fs.readdirSync("tools/cesium/node_modules/@cesium/engine/Source/Workers")) if (/^create.+Geometry.js$/.test(f)) process.stdout.write(f.slice(0,-3)+" ")')
 ```
 
-## Remaining 16 modules
+## I3S geometry
+
+`workers::decode_i3s::decode_i3s` is the CesiumJS `decodeI3S` worker. It walks an
+I3S binary buffer in schema or `bufferInfo` order, and it decodes payloads that
+start with the `DRACO` magic through `workers::draco`. That module is shared
+with `decodeDraco`. The helper checks for a triangular-mesh header before
+`MeshDecoder`, catches a decoder panic as an empty geometry, and leaves
+64-bit attributes undefined for I3S. I3S still applies semantic names and
+`i3s-scale_*` / `i3s-attribute-type` metadata itself. A point cloud is still
+empty geometry.
+
+The result is the worker's glTF document. Bytes that Cesium stores behind blob
+URLs are owned buffers. Position accessor `min` and `max` stay swapped. Colors
+are converted from sRGB. Feature ids, structural metadata, and
+`CESIUM_primitive_outline` are emitted with the same buffer order and the same
+JavaScript object-key order for welded vertices. A short header still throws
+before the binary decoder's try/catch; a later typed-array failure keeps the
+attributes already read.
+
+`init_decode_i3s` is the WebAssembly initialization message. There is no Draco
+module to compile, so it returns `true`.
+
+```bash
+cargo test --test workers_i3s
+TZ=UTC node tools/cesium/fixtures/generate.mjs decodeI3S
+```
+
+## Remaining modules
 
 The next batches cover:
 
@@ -113,10 +141,14 @@ The next batches cover:
   `createVectorTileClampedPolylines`, `createVectorTilePolygons`,
   `createVectorTileGeometries`.
 - Gaussian splats: `gaussianSplatSorter`, `gaussianSplatTextureGenerator`.
-- Specialized codecs: `decodeDraco`, `decodeI3S`.
-- Scene combination and worker messaging: `combineGeometry`,
-  `createTaskProcessorWorker`. `transferTypedArrayTest` is n/a: its `onmessage`
-  handler only transfers a typed array through `postMessage`. Owned Rust buffers
+- Scene combination and worker messaging: `combineGeometry` and
+  `createTaskProcessorWorker` are ported. `combineGeometry` runs the existing
+  geometry pipeline on packed instances and posts Float32 bounding spheres.
+  `createTaskProcessorWorker` adapts a calculation to the TaskProcessor
+  `onmessage` / `onmessageerror` contract, including the `formatError` strings
+  posted when `postMessage` fails. Object keys in those strings follow
+  `JSON.stringify`. `transferTypedArrayTest` is n/a: its `onmessage` handler
+  only transfers a typed array through `postMessage`. Owned Rust buffers
   replace that transfer.
 
 Existing Core helpers are reused only after their worker boundaries have direct
@@ -124,10 +156,11 @@ reference validation.
 
 ## decodeDraco
 
-`workers::decode_draco` decodes Draco 1.x meshes and point clouds with
-`draco-core` 2.3.2 (decoder, point-cloud, EdgeBreaker valence, and legacy
-bitstream features). It is the same crate the I3S worker uses and is not a
-shared helper. The WebAssembly initialization message returns `true`.
+`workers::decode_draco` decodes Draco 1.x meshes and point clouds through
+`workers::draco` and `draco-core` =2.3.2 (decoder, point-cloud, EdgeBreaker
+valence, and legacy bitstream features). The helper is the geometry-type
+check, the panic boundary, the face indices, and the mapped-index walk taken
+out of `decode_i3s`. The WebAssembly initialization message returns `true`.
 
 Dequantized attributes, index width, and the two geometry-type errors match
 the CesiumJS worker on 18 direct cases. `dequantizeInShader` does not: the
