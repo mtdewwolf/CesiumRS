@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  ci:
+    name: build, test, clippy, wasm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # idna_adapter 1.2.2 asks for 1.86, but this crate's MSRV is 1.97:
+      # locked encoding_rs 0.8.42 / ICU 2.3 need 1.88, and s2_cell.rs calls
+      # u64::isolate_lowest_one (stable in 1.97). Cargo.toml rust-version matches.
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@1.97.0
+        with:
+          components: clippy
+          targets: wasm32-unknown-unknown
+
+      - name: cargo build
+        run: cargo build --locked
+
+      - name: cargo test
+        run: cargo test --locked
+
+      # Report clippy output, but do not fail the job on warnings.
+      - name: cargo clippy
+        run: cargo clippy --locked -- -A warnings
+
+      # scripts/build-web.sh ships `cargo build --release --target wasm32-unknown-unknown`
+      # (size-tuned LTO). CI compiles the same target without --release so the
+      # cdylib still type-checks, without the release-profile link.
+      - name: wasm build
+        run: cargo build --locked --target wasm32-unknown-unknown

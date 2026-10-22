@@ -37,6 +37,62 @@ impl TerrainGltf {
 fn error(s: impl Into<String>) -> RuntimeError {
     RuntimeError::new(s)
 }
+fn read_u8(bytes: &[u8], offset: usize) -> Result<u8, RuntimeError> {
+    bytes.get(offset).copied().ok_or_else(|| error("Terrain attribute is truncated."))
+}
+fn read_u16_le(bytes: &[u8], offset: usize) -> Result<u16, RuntimeError> {
+    let end = offset.checked_add(2).ok_or_else(|| error("Terrain attribute range overflow."))?;
+    let slice = bytes.get(offset..end).ok_or_else(|| error("Terrain attribute is truncated."))?;
+    let mut out = [0u8; 2];
+    out.copy_from_slice(slice);
+    Ok(u16::from_le_bytes(out))
+}
+fn component_bytes<const N: usize>(bytes: &[u8]) -> Result<[u8; N], RuntimeError> {
+    if bytes.len() != N {
+        return Err(error("Invalid glTF component width."));
+    }
+    let mut out = [0u8; N];
+    out.copy_from_slice(bytes);
+    Ok(out)
+}
+fn attribute_offset(index: usize, stride: usize, extra: usize) -> Result<usize, RuntimeError> {
+    index
+        .checked_mul(stride)
+        .and_then(|base| base.checked_add(extra))
+        .ok_or_else(|| error("Terrain attribute range overflow."))
+}
+/// Dequantize meshopt position bytes. A short buffer is a runtime error: the
+/// release profile aborts on panic, which would take down the wasm module.
+fn meshopt_positions(decoded: &[u8], count: usize, stride: usize) -> Result<Vec<f64>, RuntimeError> {
+    let unit = if stride == 4 { 1 } else { 2 };
+    let maximum = if unit == 1 { 255. } else { 65535. };
+    let mut out = Vec::with_capacity(count.saturating_mul(3));
+    for i in 0..count {
+        for c in 0..3 {
+            let p = attribute_offset(i, stride, c * unit)?;
+            let v = if unit == 1 { read_u8(decoded, p)? as f64 } else { read_u16_le(decoded, p)? as f64 };
+            out.push((v / maximum) as f32 as f64);
+        }
+    }
+    Ok(out)
+}
+fn meshopt_normals(decoded: &[u8], count: usize) -> Result<Vec<f64>, RuntimeError> {
+    let mut out = Vec::with_capacity(count.saturating_mul(3));
+    for i in 0..count {
+        let base = attribute_offset(i, 4, 0)?;
+        let mut x = (read_u8(decoded, base)? as i8 as f64 / 127.).max(-1.);
+        let mut y = (read_u8(decoded, base + 1)? as i8 as f64 / 127.).max(-1.);
+        let z = 1. - (x.abs() + y.abs());
+        if z < 0. {
+            let old = x;
+            x = (1. - y.abs()) * if old < 0. { -1. } else { 1. };
+            y = (1. - old.abs()) * if y < 0. { -1. } else { 1. };
+        }
+        let n = Cartesian3::new(x, y, z).normalize();
+        out.extend([n.x as f32 as f64, n.y as f32 as f64, n.z as f32 as f64]);
+    }
+    Ok(out)
+}
 fn integer(v: &Value) -> Result<usize, RuntimeError> {
     v.as_u64().and_then(|n| usize::try_from(n).ok()).ok_or_else(|| error("Invalid glTF integer."))
 }
@@ -83,39 +139,12 @@ fn accessor(g: &TerrainGltf, id: usize, kind: u8) -> Result<Vec<f64>, RuntimeErr
                 _ => return Err(error("Unsupported meshopt terrain attribute stride.")),
             };
             if kind == 0 {
-                let unit = if stride == 4 { 1 } else { 2 };
-                let maximum = if unit == 1 { 255. } else { 65535. };
-                let mut out = Vec::with_capacity(count * 3);
-                for i in 0..count {
-                    for c in 0..3 {
-                        let p = i * stride + c * unit;
-                        let v = if unit == 1 {
-                            decoded[p] as f64
-                        } else {
-                            u16::from_le_bytes(decoded[p..p + 2].try_into().unwrap()) as f64
-                        };
-                        out.push((v / maximum) as f32 as f64);
-                    }
-                }
-                return Ok(out);
+                return meshopt_positions(&decoded, count, stride);
             }
             if stride != 4 {
                 return Err(error("Invalid meshopt normal stride."));
             }
-            let mut out = vec![];
-            for i in 0..count {
-                let mut x = (decoded[i * 4] as i8 as f64 / 127.).max(-1.);
-                let mut y = (decoded[i * 4 + 1] as i8 as f64 / 127.).max(-1.);
-                let z = 1. - (x.abs() + y.abs());
-                if z < 0. {
-                    let old = x;
-                    x = (1. - y.abs()) * if old < 0. { -1. } else { 1. };
-                    y = (1. - old.abs()) * if y < 0. { -1. } else { 1. };
-                }
-                let n = Cartesian3::new(x, y, z).normalize();
-                out.extend([n.x as f32 as f64, n.y as f32 as f64, n.z as f32 as f64]);
-            }
-            return Ok(out);
+            return meshopt_normals(&decoded, count);
         }
         let mut out = vec![0u32; count];
         let result = if kind == 2 {
@@ -139,18 +168,18 @@ fn accessor(g: &TerrainGltf, id: usize, kind: u8) -> Result<Vec<f64>, RuntimeErr
     let components = if kind < 2 { 3 } else { 1 };
     let n = count.checked_mul(components).ok_or_else(|| error("glTF accessor overflow."))?;
     let bytes = slice(b, start, n.checked_mul(size).ok_or_else(|| error("glTF accessor overflow."))?)?;
-    Ok(bytes
-        .chunks_exact(size)
-        .map(|b| {
-            if kind < 2 {
-                f32::from_le_bytes(b.try_into().unwrap()) as f64
-            } else if size == 2 {
-                u16::from_le_bytes(b.try_into().unwrap()) as f64
-            } else {
-                u32::from_le_bytes(b.try_into().unwrap()) as f64
-            }
-        })
-        .collect())
+    let mut out = Vec::with_capacity(n);
+    for b in bytes.chunks_exact(size) {
+        let v = if kind < 2 {
+            f32::from_le_bytes(component_bytes::<4>(b)?) as f64
+        } else if size == 2 {
+            u16::from_le_bytes(component_bytes::<2>(b)?) as f64
+        } else {
+            u32::from_le_bytes(component_bytes::<4>(b)?) as f64
+        };
+        out.push(v);
+    }
+    Ok(out)
 }
 #[derive(Clone, Copy)]
 pub struct TilesTerrainMeshOptions<'a> {
@@ -320,16 +349,16 @@ impl Cesium3DTilesTerrainGeometryProcessor {
             if ids.iter().any(|&i| i >= count) {
                 return Err(error("Invalid terrain triangle."));
             }
-            let mut polygon = ids
-                .iter()
-                .enumerate()
-                .map(|(j, &i)| {
-                    let uv = o.parent_encoding.decode_texture_coordinates(o.parent_vertices, i).unwrap();
-                    let mut b = [0.; 3];
-                    b[j] = 1.;
-                    (uv, b)
-                })
-                .collect::<Vec<_>>();
+            let mut polygon = Vec::with_capacity(ids.len());
+            for (j, &i) in ids.iter().enumerate() {
+                let uv = o
+                    .parent_encoding
+                    .decode_texture_coordinates(o.parent_vertices, i)
+                    .ok_or_else(|| error("Invalid terrain texture coordinates."))?;
+                let mut b = [0.; 3];
+                b[j] = 1.;
+                polygon.push((uv, b));
+            }
             for e in 0..2 {
                 let side = (start + e) % 4;
                 let inside = |p: Cartesian2| match side {
@@ -339,10 +368,9 @@ impl Cesium3DTilesTerrainGeometryProcessor {
                     _ => p.y - min.y,
                 };
                 let mut next = vec![];
-                if polygon.is_empty() {
+                let Some(mut previous) = polygon.last().copied() else {
                     break;
-                }
-                let mut previous = *polygon.last().unwrap();
+                };
                 for &current in &polygon {
                     let a = inside(previous.0);
                     let b = inside(current.0);
@@ -416,7 +444,7 @@ impl Cesium3DTilesTerrainGeometryProcessor {
                             normal = normal.add(
                                 o.parent_encoding
                                     .decode_normal(o.parent_vertices, ids[j])
-                                    .unwrap()
+                                    .ok_or_else(|| error("Invalid terrain normal."))?
                                     .multiply_by_scalar(weights[j]),
                             );
                         }
@@ -514,8 +542,10 @@ fn set_fields(v: &mut TerrainVertex, latitude: f64, r: &Rectangle, e: &Ellipsoid
 fn decoded(encoding: &TerrainEncoding, buffer: &[f32], i: usize) -> Result<TerrainVertex, RuntimeError> {
     Ok(TerrainVertex {
         position: encoding.decode_position(buffer, i).ok_or_else(|| error("Invalid encoded terrain vertex."))?,
-        texture_coordinates: encoding.decode_texture_coordinates(buffer, i).unwrap(),
-        height: encoding.decode_height(buffer, i).unwrap(),
+        texture_coordinates: encoding
+            .decode_texture_coordinates(buffer, i)
+            .ok_or_else(|| error("Invalid encoded terrain texture coordinates."))?,
+        height: encoding.decode_height(buffer, i).ok_or_else(|| error("Invalid encoded terrain height."))?,
         normal_to_pack: if encoding.has_vertex_normals { encoding.get_oct_encoded_normal(buffer, i) } else { None },
         web_mercator_t: if encoding.has_web_mercator_t { encoding.decode_web_mercator_t(buffer, i) } else { None },
         geodetic_surface_normal: if encoding.has_geodetic_surface_normals {
@@ -569,7 +599,7 @@ fn build_mesh(
         exaggeration_relative_height: relative,
         ..Default::default()
     })
-    .unwrap();
+    .ok_or_else(|| error("Invalid terrain encoding."))?;
     let mut buffer = vec![0.; total * temp.stride];
     let (mut min, mut max) = (
         Cartesian3::new(f64::INFINITY, f64::INFINITY, f64::INFINITY),
@@ -639,7 +669,9 @@ fn build_mesh(
         let mut final_buffer = vec![0.; total * final_encoding.stride];
         let mut offset = 0;
         for i in 0..total {
-            offset = final_encoding.encode(&mut final_buffer, offset, &decoded(&temp, &buffer, i)?).unwrap();
+            offset = final_encoding
+                .encode(&mut final_buffer, offset, &decoded(&temp, &buffer, i)?)
+                .ok_or_else(|| error("Invalid terrain encoding."))?;
         }
         buffer = final_buffer;
         final_encoding
@@ -670,4 +702,226 @@ fn build_mesh(
         encoding,
         edges,
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        accessor, build_mesh, component_bytes, decoded, meshopt_normals, meshopt_positions, read_u16_le,
+        Cesium3DTilesTerrainGeometryProcessor, TerrainGltf, TilesTerrainUpsampleOptions,
+    };
+    use crate::core::{
+        AxisAlignedBoundingBox, Cartesian2, Cartesian3, ComponentDatatype, Ellipsoid, Matrix4, Rectangle, RuntimeError,
+        TerrainEdgeIndices, TerrainEncoding, TerrainEncodingOptions, TerrainQuantization, TerrainVertex, TypedArray,
+    };
+    use serde_json::json;
+
+    fn position_gltf(bytes: Vec<u8>, count: usize) -> TerrainGltf {
+        TerrainGltf {
+            json: json!({
+                "accessors": [{
+                    "bufferView": 0,
+                    "componentType": 5126,
+                    "count": count,
+                    "type": "VEC3"
+                }],
+                "bufferViews": [{ "buffer": 0, "byteLength": bytes.len() }]
+            }),
+            buffers: vec![bytes],
+        }
+    }
+
+    fn index_gltf(bytes: Vec<u8>, count: usize, component_type: u64) -> TerrainGltf {
+        TerrainGltf {
+            json: json!({
+                "accessors": [{
+                    "bufferView": 0,
+                    "componentType": component_type,
+                    "count": count,
+                    "type": "SCALAR"
+                }],
+                "bufferViews": [{ "buffer": 0, "byteLength": bytes.len() }]
+            }),
+            buffers: vec![bytes],
+        }
+    }
+
+    fn unquantized() -> TerrainEncoding {
+        TerrainEncoding::new(TerrainEncodingOptions { center: Some(Cartesian3::ZERO), ..Default::default() })
+            .expect("unquantized terrain encoding")
+    }
+
+    fn edges() -> TerrainEdgeIndices {
+        TerrainEdgeIndices {
+            west_indices_south_to_north: vec![0],
+            south_indices_east_to_west: vec![1],
+            east_indices_north_to_south: vec![2],
+            north_indices_west_to_east: vec![3],
+        }
+    }
+
+    #[test]
+    fn component_width_and_u16_reads_reject_truncated_bytes() {
+        assert_eq!(component_bytes::<2>(&[0x34, 0x12]).unwrap(), [0x34, 0x12]);
+        assert!(component_bytes::<4>(&[1, 2, 3]).is_err());
+        assert_eq!(read_u16_le(&[0x34, 0x12, 0], 0).unwrap(), 0x1234);
+        assert!(read_u16_le(&[0x34], 0).is_err());
+        assert!(read_u16_le(&[0x34, 0x12], 1).is_err());
+        assert!(read_u16_le(&[0x34, 0x12], usize::MAX).is_err());
+    }
+
+    #[test]
+    fn meshopt_attributes_reject_short_decoded_buffers() {
+        let positions = meshopt_positions(&[255, 0, 128, 0], 1, 4).unwrap();
+        assert_eq!(positions[0], 1.0);
+        assert_eq!(positions[1], 0.0);
+        assert_eq!(positions[2], (128.0f32 / 255.0) as f64);
+        let wide = [0xFFu8, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00];
+        let decoded = meshopt_positions(&wide, 1, 8).unwrap();
+        assert_eq!(decoded[0], (255.0f32 / 65535.0) as f64);
+        assert_eq!(decoded[1], 0.0);
+        assert_eq!(decoded[2], (1.0f32 / 65535.0) as f64);
+        assert!(meshopt_positions(&[0], 1, 8).unwrap_err().message.contains("truncated"));
+        // Oct normals use the first two bytes of each 4-byte vertex.
+        assert!(meshopt_normals(&[10], 1).unwrap_err().message.contains("truncated"));
+        assert!(meshopt_normals(&[127, 0, 0, 0], 2).unwrap_err().message.contains("truncated"));
+        assert_eq!(meshopt_normals(&[127, 0, 0, 0], 1).unwrap().len(), 3);
+    }
+
+    #[test]
+    fn accessor_reads_plain_components_and_rejects_truncated_buffers() {
+        let mut bytes = Vec::new();
+        for v in [1.0f32, -2.0, 3.5] {
+            bytes.extend(v.to_le_bytes());
+        }
+        assert_eq!(accessor(&position_gltf(bytes, 1), 0, 0).unwrap(), vec![1.0, -2.0, 3.5]);
+        let err = accessor(&position_gltf(vec![0; 4], 1), 0, 0).unwrap_err();
+        assert!(err.message.contains("truncated"), "{}", err.message);
+
+        let mut indices = Vec::new();
+        for v in [4u16, 5, 6] {
+            indices.extend(v.to_le_bytes());
+        }
+        assert_eq!(accessor(&index_gltf(indices, 3, 5123), 0, 2).unwrap(), vec![4.0, 5.0, 6.0]);
+        assert!(accessor(&index_gltf(vec![0, 1], 3, 5123), 0, 2).is_err());
+
+        let mut wide = Vec::new();
+        for v in [7u32, 8, 9] {
+            wide.extend(v.to_le_bytes());
+        }
+        assert_eq!(accessor(&index_gltf(wide, 3, 5125), 0, 2).unwrap(), vec![7.0, 8.0, 9.0]);
+
+        let broken = TerrainGltf {
+            json: json!({
+                "accessors": [{ "bufferView": 0, "componentType": 5121, "count": 1, "type": "VEC3" }],
+                "bufferViews": [{
+                    "buffer": 0,
+                    "extensions": {
+                        "EXT_meshopt_compression": {
+                            "buffer": 0,
+                            "byteLength": 4,
+                            "byteStride": 4
+                        }
+                    }
+                }]
+            }),
+            buffers: vec![vec![0, 1, 2, 3]],
+        };
+        assert!(accessor(&broken, 0, 0).is_err());
+    }
+
+    #[test]
+    fn decoded_rejects_truncated_vertices_and_quantized_heights_without_a_range() {
+        let err = decoded(&unquantized(), &[0.0; 2], 0).unwrap_err();
+        assert!(err.message.contains("vertex"), "{}", err.message);
+
+        let mut encoding = TerrainEncoding::new(TerrainEncodingOptions {
+            center: Some(Cartesian3::ZERO),
+            axis_aligned_bounding_box: Some(AxisAlignedBoundingBox::from_corners(
+                Cartesian3::ZERO,
+                Cartesian3::new(10.0, 10.0, 10.0),
+            )),
+            minimum_height: Some(0.0),
+            maximum_height: Some(100.0),
+            from_enu: Some(Matrix4::IDENTITY),
+            ..Default::default()
+        })
+        .expect("quantized terrain encoding");
+        assert_eq!(encoding.quantization, TerrainQuantization::Bits12);
+        encoding.minimum_height = None;
+        encoding.maximum_height = None;
+        let err = decoded(&encoding, &[0.0; 3], 0).unwrap_err();
+        assert!(err.message.contains("height"), "{}", err.message);
+    }
+
+    fn upsample(
+        encoding: &TerrainEncoding,
+        vertices: &[f32],
+        vertex_count: usize,
+        indices: &[f64],
+    ) -> Result<crate::core::TerrainMesh, RuntimeError> {
+        Cesium3DTilesTerrainGeometryProcessor::upsample(TilesTerrainUpsampleOptions {
+            is_east_child: false,
+            is_north_child: false,
+            parent_vertices: vertices,
+            parent_indices: &TypedArray::from_values(ComponentDatatype::UnsignedInt, indices),
+            parent_vertex_count_without_skirts: vertex_count,
+            parent_index_count_without_skirts: indices.len(),
+            parent_minimum_height: 0.0,
+            parent_maximum_height: 10.0,
+            parent_encoding: encoding,
+            rectangle: Rectangle::from_degrees(-1.0, -1.0, 1.0, 1.0),
+            ellipsoid: Ellipsoid::WGS84,
+            skirt_height: 1.0,
+        })
+    }
+
+    #[test]
+    fn upsample_rejects_malformed_parent_geometry() {
+        let encoding = unquantized();
+        let err = upsample(&encoding, &[], 3, &[0.0, 1.0, 2.0]).unwrap_err();
+        assert!(err.message.contains("texture"), "{}", err.message);
+        let err = upsample(&encoding, &[], 1, &[0.0, 1.0, 2.0]).unwrap_err();
+        assert!(err.message.contains("triangle"), "{}", err.message);
+
+        let mut buffer = vec![0.0; encoding.stride * 3];
+        let mut offset = 0;
+        for i in 0..3 {
+            let vertex = TerrainVertex::new(Cartesian3::new(i as f64, 0.0, 0.0), Cartesian2::new(1.0, 1.0), 5.0);
+            offset = encoding.encode(&mut buffer, offset, &vertex).expect("parent vertex");
+        }
+        // Every UV is outside the southwest child, so clipping drops the triangle
+        // instead of panicking on an empty polygon.
+        let err = upsample(&encoding, &buffer, 3, &[0.0, 1.0, 2.0]).unwrap_err();
+        assert!(err.message.contains("topology"), "{}", err.message);
+
+        let mut normals = encoding.clone();
+        normals.has_vertex_normals = true;
+        normals.calculate_stride_and_offsets();
+        let err = upsample(&normals, &buffer, 3, &[0.0, 1.0, 2.0]).unwrap_err();
+        assert!(err.message.contains("texture"), "{}", err.message);
+    }
+
+    #[test]
+    fn build_mesh_rejects_vertices_missing_required_encoding_fields() {
+        let samples = vec![TerrainVertex::new(Cartesian3::new(1.0, 0.0, 0.0), Cartesian2::ZERO, 0.0); 4];
+        let err = build_mesh(
+            samples,
+            vec![0, 1, 2],
+            edges(),
+            Rectangle::from_degrees(-1.0, -1.0, 1.0, 1.0),
+            Ellipsoid::WGS84,
+            Cartesian3::new(1.0, 0.0, 0.0),
+            Cartesian3::new(1.0, 0.0, 0.0),
+            [0.0, 10.0],
+            None,
+            1.0,
+            false,
+            true,
+            1.0,
+            0.0,
+        )
+        .unwrap_err();
+        assert!(err.message.contains("encoding"), "{}", err.message);
+    }
 }
