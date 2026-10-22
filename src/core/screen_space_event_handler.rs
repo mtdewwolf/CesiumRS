@@ -172,8 +172,8 @@ impl ScreenSpaceEventHandler {
                     _ => 120.,
                 },
             )
-        } else if detail.is_some_and(|d| d > 0.) {
-            Some(-detail.unwrap() * 120.)
+        } else if let Some(d) = detail.filter(|d| *d > 0.) {
+            Some(-d * 120.)
         } else {
             legacy
         }

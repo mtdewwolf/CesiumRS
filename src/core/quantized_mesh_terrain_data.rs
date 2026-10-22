@@ -173,8 +173,9 @@ impl<C: Clone> QuantizedMeshTerrainData<C> {
             .quantized_vertices
             .as_ref()
             .ok_or_else(|| RuntimeError::new("Quantized terrain buffers were released"))?;
-        let indices = self.indices.as_ref().unwrap();
-        let edges = self.edges.as_ref().unwrap();
+        let indices =
+            self.indices.as_ref().ok_or_else(|| RuntimeError::new("Quantized terrain buffers were released"))?;
+        let edges = self.edges.as_ref().ok_or_else(|| RuntimeError::new("Quantized terrain buffers were released"))?;
         let TerrainTile { x, y, level } = request.tile;
         let rectangle = request.tiling_scheme.tile_xy_to_rectangle(x as f64, y as f64, level);
         let result =

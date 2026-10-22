@@ -128,15 +128,13 @@ impl<G: Gl> Context<G> {
         // subtracting offset. An invalid final GL range is reported by WebGL.
         let count = size(command.count.unwrap_or(available).min(available))?;
         size::<G::Object>(command.instance_count as usize)?;
-        if let Some(b) = va.index_buffer() {
-            if let BufferKind::Index(datatype) = b.kind() {
-                offset = size(
-                    command
-                        .offset
-                        .checked_mul(datatype.get_size_in_bytes())
-                        .ok_or_else(|| crate::core::RuntimeError::new("Index offset overflow"))?,
-                )?;
-            }
+        if let Some(datatype) = va.index_datatype() {
+            offset = size(
+                command
+                    .offset
+                    .checked_mul(datatype.get_size_in_bytes())
+                    .ok_or_else(|| crate::core::RuntimeError::new("Index offset overflow"))?,
+            )?;
         }
         self.bind_framebuffer(command.framebuffer.as_deref().or(pass.framebuffer.as_deref()))?;
         self.apply_render_state(&command.render_state, pass, false)?;
@@ -188,11 +186,8 @@ impl<G: Gl> Context<G> {
                 return Err(error);
             }
         }
-        let draw = if let Some(b) = va.index_buffer() {
-            let datatype = match b.kind() {
-                BufferKind::Index(d) => d as u32,
-                _ => unreachable!(),
-            };
+        let draw = if let Some(datatype) = va.index_datatype() {
+            let datatype = datatype as u32;
             let mut args = vec![(command.primitive_type as u32).into(), count, datatype.into(), offset];
             if command.instance_count > 0 {
                 args.push(command.instance_count.into());

@@ -178,3 +178,17 @@ fn terrain_data_contract_and_mesh_ownership() {
     assert!(TerrainData::interpolate_height(&d, &r, r.west, r.south).is_some());
     assert_eq!(cesium_rs::core::terrain_data::MAXIMUM_ASYNCHRONOUS_TASKS, 5);
 }
+
+#[test]
+fn upsample_returns_none_when_elements_exceed_stride() {
+    // The source buffer is long enough to build a mesh, but upsampling allocates
+    // only width*height*stride samples. elements_per_height > stride then walks
+    // off that allocation.
+    let mut options = HeightmapTerrainDataOptions::new(TypedArray::Float32(vec![1.0; 8]), 2, 2);
+    options.structure.samples = HeightmapStructure { elements_per_height: 2, stride: 1, ..HeightmapStructure::DEFAULT };
+    let mut data = HeightmapTerrainData::new(options).expect("heightmap");
+    let scheme = GeographicTilingScheme::default();
+    let tile = TerrainTile { x: 0, y: 0, level: 1 };
+    data.create_mesh_sync(TerrainMeshRequest::new(&scheme, tile)).expect("mesh");
+    assert!(data.upsample_sync(&scheme, tile, TerrainTile { x: 0, y: 0, level: 2 }).is_none());
+}

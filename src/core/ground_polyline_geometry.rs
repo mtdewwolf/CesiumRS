@@ -201,9 +201,14 @@ impl GroundPolylineGeometry {
                     };
                     let rhumb =
                         if self.arc_type == ArcType::Rhumb { Some(EllipsoidRhumbLine::new(&c, &end, e)) } else { None };
-                    let distance = geodesic
+                    let Some(distance) = geodesic
                         .as_ref()
-                        .map_or_else(|| rhumb.as_ref().unwrap().surface_distance, |g| g.surface_distance);
+                        .map(|g| g.surface_distance)
+                        .or_else(|| rhumb.as_ref().map(|r| r.surface_distance))
+                    else {
+                        // ArcType::None has no surface curve to subdivide.
+                        continue;
+                    };
                     if distance >= self.granularity {
                         let segments = (distance / self.granularity).ceil() as usize;
                         if segments > 2_000_000 {
@@ -213,10 +218,13 @@ impl GroundPolylineGeometry {
                         let mut d = step;
                         let normal = right(e, c, end);
                         for _ in 0..segments - 1 {
-                            let c = geodesic.as_ref().map_or_else(
-                                || rhumb.as_ref().unwrap().interpolate_using_surface_distance(d),
-                                |g| g.interpolate_using_surface_distance(d),
-                            );
+                            let c = if let Some(g) = geodesic.as_ref() {
+                                g.interpolate_using_surface_distance(d)
+                            } else if let Some(r) = rhumb.as_ref() {
+                                r.interpolate_using_surface_distance(d)
+                            } else {
+                                break;
+                            };
                             vertices.push(Vertex { c, bottom: position(e, c, 0.), top: position(e, c, 1000.), normal });
                             d += step;
                         }

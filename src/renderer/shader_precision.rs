@@ -44,12 +44,27 @@ pub fn handle_uniform_precision_mismatches(
     for name in vertex_names {
         if fragment_names.contains(&name) {
             let duplicate = format!("czm_mediump_{name}");
-            fragment = regex::Regex::new(&format!(r"{}\b", name))
-                .unwrap()
-                .replace_all(&fragment, regex::NoExpand(&duplicate))
-                .into_owned();
+            // Shader text supplies the name, so metacharacters must stay literals.
+            let pattern = format!(r"{}\b", regex::escape(&name));
+            let re = regex::Regex::new(&pattern).expect("escaped identifier is a valid pattern");
+            fragment = re.replace_all(&fragment, regex::NoExpand(&duplicate)).into_owned();
             duplicates.insert(duplicate, name);
         }
     }
     (fragment, duplicates)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn metacharacter_uniform_names_stay_literals() {
+        let vertex = "uniform float a(b;";
+        let fragment = "uniform float a(b;\nvoid main() { gl_FragColor = vec4(a(b)); }";
+        let (text, names) = handle_uniform_precision_mismatches(vertex, fragment, false, false);
+        assert!(text.contains("czm_mediump_a(b"));
+        assert!(!text.contains("uniform float a(b;"));
+        assert_eq!(names.get("czm_mediump_a(b").map(String::as_str), Some("a(b"));
+    }
 }

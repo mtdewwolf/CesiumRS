@@ -62,7 +62,8 @@ fn create<G: Gl>(
 }
 impl<G: Gl> UniformBinding<'_, G> {
     pub fn set(&self, value: &UniformValue) -> Result<()> {
-        let (category, components, rows) = shape(self.datatype).unwrap();
+        let (category, components, rows) = shape(self.datatype)
+            .ok_or_else(|| crate::core::RuntimeError::new(format!("Unrecognized uniform type: {}", self.datatype)))?;
         let (actual, width, height, length) = match value {
             UniformValue::Float(v) => (0, v.len() as u32, 1, v.len()),
             UniformValue::Int(v) => (1, v.len() as u32, 1, v.len()),
@@ -82,7 +83,10 @@ impl<G: Gl> UniformBinding<'_, G> {
         self.program.set_uniform(&self.name, value)
     }
     pub fn set_sampler(&mut self, first: u32) -> Result<u32> {
-        ensure(shape(self.datatype).unwrap().0 == 4, "Uniform is not a sampler")?;
+        let category = shape(self.datatype)
+            .ok_or_else(|| crate::core::RuntimeError::new(format!("Unrecognized uniform type: {}", self.datatype)))?
+            .0;
+        ensure(category == 4, "Uniform is not a sampler")?;
         let end = first
             .checked_add(
                 u32::try_from(self.size).map_err(|_| crate::core::RuntimeError::new("Sampler count overflow"))?,
@@ -106,7 +110,8 @@ impl<G: Gl> UniformBinding<'_, G> {
         Ok(end)
     }
     pub fn set_textures(&mut self, textures: Vec<TextureBinding<G>>) -> Result<()> {
-        let (category, target, _) = shape(self.datatype).unwrap();
+        let (category, target, _) = shape(self.datatype)
+            .ok_or_else(|| crate::core::RuntimeError::new(format!("Unrecognized uniform type: {}", self.datatype)))?;
         ensure(category == 4 && textures.len() == self.size, "Sampler texture count does not match declaration")?;
         let first = self
             .texture_unit_index
