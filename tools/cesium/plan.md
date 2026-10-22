@@ -67,10 +67,10 @@ applications can implement the existing `Gl` host contract.
 
 ### Workers completion
 
-Workers has **50/53 validated modules**, matching the Workers row in the package table.
+Workers has **51/53 validated modules**, matching the Workers row in the package table.
 Direct CesiumJS worker fixtures cover typed/packed inputs and batch/result wire
-formats; geometry, terrain, vector-tile, and Gaussian splat workers are in that
-validated set. Ground polylines use the bundled height table. Host-registered
+formats; geometry, terrain, vector-tile, Gaussian splat, I3S, combineGeometry, and
+createTaskProcessorWorker workers are in that validated set. Ground polylines use the bundled height table. Host-registered
 Rust factories replace dynamic module imports. No Scene module is marked complete
 for the result-packing helpers.
 
@@ -96,6 +96,6 @@ empty object if that transfer throws. It performs no calculation. Rust workers
 return owned buffers, and `TaskProcessor` moves those values instead of
 transferring `ArrayBuffer`s.
 
-The remaining todo modules are `decodeDraco` and
-`decodeI3S`. Each stays todo until its implementation and
+The remaining todo module is `decodeDraco`.
+It stays todo until its implementation and
 direct worker validation are complete. See [Workers details](docs/workers.md).
