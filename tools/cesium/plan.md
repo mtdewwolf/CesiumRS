@@ -67,10 +67,10 @@ applications can implement the existing `Gl` host contract.
 
 ### Workers completion
 
-Workers has **50/53 validated modules**, matching the Workers row in the package table.
+Workers has **51/53 validated modules**, matching the Workers row in the package table.
 Direct CesiumJS worker fixtures cover typed/packed inputs and batch/result wire
-formats; geometry, terrain, vector-tile, Gaussian splat, I3S, and combineGeometry
-workers are in that validated set. Ground polylines use the bundled height table. Host-registered
+formats; geometry, terrain, vector-tile, Gaussian splat, I3S, combineGeometry, and
+createTaskProcessorWorker workers are in that validated set. Ground polylines use the bundled height table. Host-registered
 Rust factories replace dynamic module imports. No Scene module is marked complete
 for the result-packing helpers.
 
@@ -81,12 +81,21 @@ high/low encoding, compression, and unsigned-short index fitting. Bounding
 spheres are packed as `Float32Array`s. Direct worker cases call the real
 adapter. Shared geometry helpers are unchanged.
 
+`createTaskProcessorWorker` is ported. It adapts a calculation to the
+TaskProcessor message contract: task id, parameters, `CESIUM_BASE_URL`,
+`Error` versus non-Error failures, clearing the transfer list when
+`canTransferArrayBuffer` is false, and the `postMessage` / `onmessageerror`
+failure strings produced by `formatError`. Direct worker cases call the real
+adapter. `TaskProcessor` itself is unchanged and still moves owned buffers.
+Object keys in those failure strings follow `JSON.stringify`: array indexes
+first, in ascending order, then every other key in insertion order.
+
 `transferTypedArrayTest` is n/a. It is a Web Worker `onmessage` handler that
 posts the received typed array back by transferring `array.buffer`, or posts an
 empty object if that transfer throws. It performs no calculation. Rust workers
 return owned buffers, and `TaskProcessor` moves those values instead of
 transferring `ArrayBuffer`s.
 
-The remaining todo modules are `createTaskProcessorWorker` and `decodeDraco`.
-Each stays todo until its implementation and
+The remaining todo module is `decodeDraco`.
+It stays todo until its implementation and
 direct worker validation are complete. See [Workers details](docs/workers.md).
