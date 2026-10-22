@@ -61,6 +61,28 @@ function enu(lon, lat, height = 0) {
   return C.Transforms.eastNorthUpToFixedFrame(C.Cartesian3.fromDegrees(lon, lat, height));
 }
 
+// 21846 triangles: 65538 vertices, two past the unsigned-short limit. The
+// split flushes a piece at 65535 vertices, and the original index count does
+// not fit in that piece, so the pick offset rolls onto the next geometry.
+function denseTriangles(vertexCount) {
+  const positions = new Float64Array(vertexCount * 3);
+  for (let i = 0; i < vertexCount; i++) positions[i * 3] = i;
+  const indices = new Uint32Array(vertexCount);
+  for (let i = 0; i < vertexCount; i++) indices[i] = i;
+  return new C.Geometry({
+    attributes: {
+      position: new C.GeometryAttribute({
+        componentDatatype: C.ComponentDatatype.DOUBLE,
+        componentsPerAttribute: 3,
+        values: positions,
+      }),
+    },
+    indices,
+    primitiveType: C.PrimitiveType.TRIANGLES,
+    boundingSphere: C.BoundingSphere.fromVertices(positions),
+  });
+}
+
 export default async function workersCombine() {
   const worker = await loadWorker("combineGeometry");
   const cases = [];
@@ -134,6 +156,8 @@ export default async function workersCombine() {
   await add([unit, undefined]);
   await add([], { groups: [] });
   await add([unit], { elementIndexUintSupported: false });
+  await add([denseTriangles(65538)], { elementIndexUintSupported: false, createPickOffsets: true });
+  await add([wide], { scene3DOnly: false, createPickOffsets: true, matrices: [enu(179.5, 0, 0)] });
   const smallEllipsoid = new C.Ellipsoid(1000, 1000, 500);
   await add([box([10, 10, 10])], {
     ellipsoid: smallEllipsoid,
