@@ -67,12 +67,19 @@ applications can implement the existing `Gl` host contract.
 
 ### Workers completion
 
-Workers has **48/53 validated modules**, matching the Workers row in the package table.
+Workers has **49/53 validated modules**, matching the Workers row in the package table.
 Direct CesiumJS worker fixtures cover typed/packed inputs and batch/result wire
 formats; geometry, terrain, vector-tile, and Gaussian splat workers are in that
 validated set. Ground polylines use the bundled height table. Host-registered
 Rust factories replace dynamic module imports. No Scene module is marked complete
 for the result-packing helpers.
+
+`combineGeometry` is ported. It unpacks `createGeometry` results onto packed
+instances, then runs the existing geometry pipeline: world transforms, optional
+antimeridian splits, `batchId`, vertex-cache reorder, combine, 2D projection,
+high/low encoding, compression, and unsigned-short index fitting. Bounding
+spheres are packed as `Float32Array`s. Direct worker cases call the real
+adapter. Shared geometry helpers are unchanged.
 
 `transferTypedArrayTest` is n/a. It is a Web Worker `onmessage` handler that
 posts the received typed array back by transferring `array.buffer`, or posts an
@@ -80,6 +87,6 @@ empty object if that transfer throws. It performs no calculation. Rust workers
 return owned buffers, and `TaskProcessor` moves those values instead of
 transferring `ArrayBuffer`s.
 
-The remaining todo modules are `combineGeometry`, `createTaskProcessorWorker`,
-`decodeDraco`, and `decodeI3S`. Each stays todo until its implementation and
+The remaining todo modules are `createTaskProcessorWorker`, `decodeDraco`, and
+`decodeI3S`. Each stays todo until its implementation and
 direct worker validation are complete. See [Workers details](docs/workers.md).
