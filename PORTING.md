@@ -97,7 +97,7 @@ applications can implement the existing `Gl` host contract.
 
 ### Workers completion
 
-Workers has **48/53 validated modules**, matching the package table below.
+Workers has **48/53 validated modules**, matching the Workers row in the package table.
 Direct CesiumJS worker fixtures cover typed/packed inputs and batch/result wire
 formats; geometry, terrain, vector-tile, and Gaussian splat workers are in that
 validated set. Ground polylines use the bundled height table. Host-registered
