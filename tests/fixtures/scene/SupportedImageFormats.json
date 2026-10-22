@@ -1,0 +1,1 @@
+{"module":"SupportedImageFormats","cesium":"23.0.0","cases":[{"f":"new","a":[null],"r":[false,false]},{"f":"new","a":[{}],"r":[false,false]},{"f":"new","a":[{"webp":true}],"r":[true,false]},{"f":"new","a":[{"basis":true,"webp":false}],"r":[false,true]}]}

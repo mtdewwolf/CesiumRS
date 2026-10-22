@@ -1,0 +1,1 @@
+{"module":"CustomShaderMode","cesium":"23.0.0","cases":[{"f":"constants","a":[],"r":{"MODIFY_MATERIAL":"MODIFY_MATERIAL","REPLACE_MATERIAL":"REPLACE_MATERIAL"}},{"f":"getDefineName","a":["MODIFY_MATERIAL"],"r":"CUSTOM_SHADER_MODIFY_MATERIAL"},{"f":"getDefineName","a":["REPLACE_MATERIAL"],"r":"CUSTOM_SHADER_REPLACE_MATERIAL"}]}

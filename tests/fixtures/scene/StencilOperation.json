@@ -1,0 +1,1 @@
+{"module":"StencilOperation","cesium":"23.0.0","cases":[{"f":"constants","a":[],"r":{"ZERO":0,"KEEP":7680,"REPLACE":7681,"INCREMENT":7682,"DECREMENT":7683,"INVERT":5386,"INCREMENT_WRAP":34055,"DECREMENT_WRAP":34056}}]}

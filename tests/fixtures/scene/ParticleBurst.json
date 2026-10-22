@@ -1,0 +1,1 @@
+{"module":"ParticleBurst","cesium":"23.0.0","cases":[{"f":"new","a":[null],"r":[0,0,50,false]},{"f":"new","a":[{}],"r":[0,0,50,false]},{"f":"new","a":[{"time":5,"minimum":10,"maximum":100}],"r":[5,10,100,false]},{"f":"new","a":[{"maximum":0}],"r":[0,0,0,false]}]}
