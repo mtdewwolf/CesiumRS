@@ -59,7 +59,7 @@ impl GoogleEarthEnterpriseMetadata {
                 url: Some("dbRoot.v5?output=proto".into()),
                 ..Default::default()
             })
-            .unwrap();
+            .ok_or_else(|| RuntimeError::new("Invalid dbRoot resource."))?;
         let db_result = if let Some(f) = fetch_bytes(&m.client, &db) {
             match f.await {
                 Ok(b) => m.apply_db_root(&b),
@@ -76,10 +76,8 @@ impl GoogleEarthEnterpriseMetadata {
             .ok_or_else(|| RuntimeError::new("Metadata request was throttled."))?
             .await;
         if let Err(e) = result {
-            return Err(RuntimeError::new(format!(
-                "An error occurred while accessing {}: {e}",
-                m.metadata_resource("", 1, None).unwrap().url()
-            )));
+            let url = m.metadata_resource("", 1, None).map(|r| r.url()).unwrap_or_default();
+            return Err(RuntimeError::new(format!("An error occurred while accessing {url}: {e}")));
         }
         Ok(m)
     }
@@ -212,7 +210,7 @@ impl GoogleEarthEnterpriseMetadata {
         let mut keys = result.keys().cloned().collect::<Vec<_>>();
         keys.sort_by_key(String::len);
         for key in keys {
-            let mut info = result.remove(&key).unwrap();
+            let Some(mut info) = result.remove(&key) else { continue };
             if let Some(info) = info.as_mut() {
                 if key.len() > 1 {
                     let parent = tiles

@@ -190,10 +190,10 @@ impl ITwinPlatform {
                 data["error"]["details"][0]["code"].as_str().unwrap_or("")
             ),
             Some(403) => "Not allowed, forbidden".into(),
-            Some(404) if reality.is_some() => {
-                let (t, d) = reality.unwrap();
-                format!("Reality data not found: {t}, {d}")
-            }
+            Some(404) => match reality {
+                Some((t, d)) => format!("Reality data not found: {t}, {d}"),
+                None => "Unknown request failure 404".into(),
+            },
             Some(422) => {
                 format!("Unprocessable Entity:{} {}", text(&data["error"]["code"]), text(&data["error"]["message"]))
             }

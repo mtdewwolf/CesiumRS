@@ -86,7 +86,7 @@ impl<T> RequestScheduler<T> {
     }
     pub fn set_priority_heap_length(&mut self, length: usize) {
         while self.heap.len() > length {
-            let r = self.heap.pop(0).unwrap();
+            let Some(r) = self.heap.pop(0) else { break };
             self.cancel(&r, false);
         }
         self.heap_length = length;
@@ -129,18 +129,27 @@ impl<T> RequestScheduler<T> {
         }
     }
 
-    fn start(&mut self, r: RequestHandle<T>, local: bool) -> ScheduledRequest<T> {
+    fn start(&mut self, r: RequestHandle<T>, local: bool) -> Option<ScheduledRequest<T>> {
+        // Both fields are public, so a caller can clear them after `request` queues the handle.
+        let callback = r.borrow().options.request_function.clone()?;
+        if !local && r.borrow().options.server_key.is_none() {
+            let url = r.borrow().options.url.clone();
+            let key = self.get_server_key(&url);
+            r.borrow_mut().options.server_key = Some(key);
+        }
+        let server_key = if local { None } else { r.borrow().options.server_key.clone() };
+        if !local && server_key.is_none() {
+            return None;
+        }
         let response = ScheduledRequest::issue(&r);
         r.borrow_mut().state = if local { RequestState::Received } else { RequestState::Active };
-        if !local {
+        if let Some(key) = server_key {
             self.statistics.number_of_active_requests += 1;
             self.statistics.number_of_active_requests_ever += 1;
-            let key = r.borrow().options.server_key.clone().unwrap();
             *self.by_server.entry(key).or_default() += 1;
         }
-        let callback = r.borrow().options.request_function.clone().unwrap();
         self.active.push(Active { request: r, future: Some(callback()), local });
-        response
+        Some(response)
     }
 
     fn release_slot(&mut self, r: &RequestHandle<T>) {
@@ -181,19 +190,22 @@ impl<T> RequestScheduler<T> {
         let url = r.borrow().options.url.clone();
         if url.to_ascii_lowercase().starts_with("data:") || url.to_ascii_lowercase().starts_with("blob:") {
             self.request_completed_event.raise_event(&None);
-            return Some(self.start(r, true));
+            return self.start(r, true);
         }
         self.statistics.number_of_attempted_requests += 1;
-        if r.borrow().options.server_key.is_none() {
+        let existing_key = r.borrow().options.server_key.clone();
+        let key = if let Some(key) = existing_key {
+            key
+        } else {
             let key = self.get_server_key(&url);
-            r.borrow_mut().options.server_key = Some(key);
-        }
-        let key = r.borrow().options.server_key.clone().unwrap();
+            r.borrow_mut().options.server_key = Some(key.clone());
+            key
+        };
         if self.throttle_requests && r.borrow().options.throttle_by_server && !self.server_has_open_slots(&key, 1) {
             return None;
         }
         if !self.throttle_requests || !r.borrow().options.throttle {
-            return Some(self.start(r, false));
+            return self.start(r, false);
         }
         if self.active.iter().filter(|a| !a.local).count() >= self.maximum_requests {
             return None;
@@ -253,15 +265,21 @@ impl<T> RequestScheduler<T> {
         self.heap.resort();
         let slots = self.maximum_requests.saturating_sub(self.active.iter().filter(|a| !a.local).count());
         let mut filled = 0;
-        while filled < slots && !self.heap.is_empty() {
-            let r = self.heap.pop(0).unwrap();
-            let key = r.borrow().options.server_key.clone().unwrap();
+        while filled < slots {
+            let Some(r) = self.heap.pop(0) else { break };
+            let Some(key) = r.borrow().options.server_key.clone() else {
+                self.cancel(&r, false);
+                continue;
+            };
             if r.borrow().cancelled || (r.borrow().options.throttle_by_server && !self.server_has_open_slots(&key, 1)) {
                 self.cancel(&r, false);
                 continue;
             }
-            self.start(r, false);
-            filled += 1;
+            if self.start(Rc::clone(&r), false).is_some() {
+                filled += 1;
+            } else {
+                self.cancel(&r, false);
+            }
         }
         self.update_statistics();
         if filled > 0 {
@@ -346,4 +364,73 @@ fn default_statistics_log(message: &str) {
     println!("{message}");
     #[cfg(all(target_arch = "wasm32", not(feature = "browser")))]
     let _ = message; // raw C-ABI hosts supply statistics_log explicitly.
+}
+
+#[cfg(test)]
+mod tests {
+    use super::RequestScheduler;
+    use crate::core::{Request, RequestOptions, RequestState};
+    use std::cell::RefCell;
+    use std::rc::Rc;
+    use std::task::{Context, Waker};
+
+    fn throttled(url: &str, started: &Rc<RefCell<usize>>) -> crate::core::request::RequestHandle<u8> {
+        let started = started.clone();
+        Request::new(RequestOptions {
+            url: url.into(),
+            throttle: true,
+            request_function: Some(Rc::new(move || {
+                *started.borrow_mut() += 1;
+                Box::pin(async { Ok(1) })
+            })),
+            ..Default::default()
+        })
+        .into_handle()
+    }
+
+    #[test]
+    fn shrinking_the_heap_cancels_without_panicking() {
+        let mut scheduler = RequestScheduler::<u8>::new();
+        scheduler.set_priority_heap_length(4);
+        let started = Rc::new(RefCell::new(0));
+        let mut queued = Vec::new();
+        for i in 0..3 {
+            let request = throttled(&format!("https://example.test/{i}"), &started);
+            assert!(scheduler.request(request.clone()).is_some());
+            queued.push(request);
+        }
+        scheduler.set_priority_heap_length(0);
+        assert!(queued.iter().all(|r| r.borrow().state == RequestState::Cancelled));
+        assert_eq!(*started.borrow(), 0);
+        assert_eq!(scheduler.statistics.number_of_cancelled_requests, 3);
+    }
+
+    #[test]
+    fn cleared_server_key_or_callback_is_cancelled() {
+        let mut scheduler = RequestScheduler::<u8>::new();
+        let started = Rc::new(RefCell::new(0));
+        let missing_key = throttled("https://example.test/key", &started);
+        assert!(scheduler.request(missing_key.clone()).is_some());
+        missing_key.borrow_mut().options.server_key = None;
+        let missing_callback = throttled("https://example.test/callback", &started);
+        assert!(scheduler.request(missing_callback.clone()).is_some());
+        missing_callback.borrow_mut().options.request_function = None;
+        let mut cx = Context::from_waker(Waker::noop());
+        scheduler.poll_update(&mut cx);
+        assert_eq!(missing_key.borrow().state, RequestState::Cancelled);
+        assert_eq!(missing_callback.borrow().state, RequestState::Cancelled);
+        assert_eq!(*started.borrow(), 0);
+    }
+
+    #[test]
+    fn a_queued_request_still_starts() {
+        let mut scheduler = RequestScheduler::<u8>::new();
+        let started = Rc::new(RefCell::new(0));
+        let request = throttled("https://example.test/ok", &started);
+        assert!(scheduler.request(request.clone()).is_some());
+        let mut cx = Context::from_waker(Waker::noop());
+        scheduler.poll_update(&mut cx);
+        assert_eq!(request.borrow().state, RequestState::Active);
+        assert_eq!(*started.borrow(), 1);
+    }
 }

@@ -220,10 +220,18 @@ pub fn create_vertices_from_quantized_terrain_mesh(
     let mut indices =
         IndexDatatype::create_typed_array(count + edge_count, &values.iter().map(|&v| v as u32).collect::<Vec<_>>());
     terrain_provider::add_skirt_indices(&edges, u32::try_from(count).ok()?, &mut indices, index_count)?;
+    let skirt_end = index_count + skirt_count;
     match &mut indices {
-        TypedArray::Uint16(v) => v.truncate(index_count + skirt_count),
-        TypedArray::Uint32(v) => v.truncate(index_count + skirt_count),
-        _ => unreachable!(),
+        TypedArray::Uint16(v) => v.truncate(skirt_end),
+        TypedArray::Uint32(v) => v.truncate(skirt_end),
+        // `IndexDatatype::create_typed_array` only builds these two. Any other
+        // element type is not an index buffer this mesh can write.
+        TypedArray::Int8(_)
+        | TypedArray::Uint8(_)
+        | TypedArray::Int16(_)
+        | TypedArray::Int32(_)
+        | TypedArray::Float32(_)
+        | TypedArray::Float64(_) => return None,
     }
     let occludee_point_in_scaled_space = if p.minimum_height < 0.0 {
         EllipsoidalOccluder::new(&p.ellipsoid, None).compute_horizon_culling_point_possibly_under_ellipsoid(

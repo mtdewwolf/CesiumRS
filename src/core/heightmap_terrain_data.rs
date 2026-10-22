@@ -296,7 +296,8 @@ impl HeightmapTerrainData {
                     let value = if n + 1 == order.len() { height } else { to_int32(height / divisor) as f64 };
                     heights.set(start + element, value);
                     if n + 1 < order.len() {
-                        height -= heights.get(start + element).unwrap() * divisor;
+                        let stored = heights.get(start + element)?;
+                        height -= stored * divisor;
                         divisor /= s.element_multiplier;
                     }
                 }

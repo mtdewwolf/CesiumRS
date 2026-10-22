@@ -73,15 +73,15 @@ impl Vertex {
             }
         }
     }
-    fn normal(&self, parent: &Parent) -> Cartesian2 {
+    fn normal(&self, parent: &Parent) -> Option<Cartesian2> {
         match self {
-            Self::Indexed(i) => parent.normals.as_ref().unwrap()[*i],
+            Self::Indexed(i) => parent.normals.as_ref().and_then(|normals| normals.get(*i)).copied(),
             Self::Interpolated(a, b, t) => {
-                let a = a.normal(parent);
-                let b = b.normal(parent);
+                let a = a.normal(parent)?;
+                let b = b.normal(parent)?;
                 let a = AttributeCompression::oct_decode(a.x, a.y);
                 let b = AttributeCompression::oct_decode(b.x, b.y);
-                AttributeCompression::oct_encode(a.lerp(b, *t).normalize())
+                Some(AttributeCompression::oct_encode(a.lerp(b, *t).normalize()))
             }
         }
     }
@@ -126,7 +126,7 @@ fn add_polygon(
             let index = u32::try_from(values.len()).ok()?;
             values.push(vertex.values(parent));
             if parent.normals.is_some() {
-                normals.push(vertex.normal(parent));
+                normals.push(vertex.normal(parent)?);
             }
             map.insert(key, index);
             index

@@ -105,11 +105,15 @@ pub struct ScheduledRequest<T> {
 impl<T> ScheduledRequest<T> {
     pub(crate) fn issue(request: &RequestHandle<T>) -> Self {
         let mut r = request.borrow_mut();
-        if r.deferred.is_none() {
+        let deferred = if let Some(deferred) = r.deferred.clone() {
+            deferred
+        } else {
             r.state = RequestState::Issued;
-            r.deferred = Some(Rc::new(RefCell::new(Deferred { result: None, waker: None })));
-        }
-        Self { deferred: r.deferred.as_ref().unwrap().clone() }
+            let deferred = Rc::new(RefCell::new(Deferred { result: None, waker: None }));
+            r.deferred = Some(deferred.clone());
+            deferred
+        };
+        Self { deferred }
     }
 }
 

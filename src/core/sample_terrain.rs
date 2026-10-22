@@ -85,17 +85,19 @@ where
             }
         }
         if delay.is_none() {
-            while let Some(group) = groups.front() {
+            while let Some(group) = groups.pop_front() {
                 let Some(request) = provider.request_tile_geometry(group.x, group.y, level, None) else {
+                    groups.push_front(group);
                     delay = Some(Box::pin(host.delay(100)));
                     // Register the timer's waker on this poll.
-                    if delay.as_mut().unwrap().as_mut().poll(cx).is_ready() {
-                        delay = None;
-                        cx.waker().wake_by_ref();
+                    if let Some(wait) = delay.as_mut() {
+                        if wait.as_mut().poll(cx).is_ready() {
+                            delay = None;
+                            cx.waker().wake_by_ref();
+                        }
                     }
                     break;
                 };
-                let group = groups.pop_front().unwrap();
                 let indices = group.positions.iter().map(|(index, _)| *index).collect();
                 let working = working.clone();
                 let task = async move {
@@ -190,11 +192,17 @@ where
     let mut pending: Vec<usize> = (0..positions.len()).collect();
     while !pending.is_empty() {
         let mut levels = Vec::with_capacity(pending.len());
+        {
+            let Some(availability) = provider.availability() else {
+                return Err(TerrainSamplingError::MissingAvailability);
+            };
+            for &index in &pending {
+                levels.push(availability.compute_maximum_level_at_position(&positions[index]));
+            }
+        }
         let mut by_level: std::collections::BTreeMap<u32, Vec<usize>> = Default::default();
         let mut availability_requests = Vec::new();
-        for &index in &pending {
-            let level = provider.availability().unwrap().compute_maximum_level_at_position(&positions[index]);
-            levels.push(level);
+        for (&index, &level) in pending.iter().zip(levels.iter()) {
             if level == 0 {
                 if let Some(xy) = provider.tiling_scheme().position_to_tile_xy(&positions[index], 1) {
                     if let Some(request) = provider.load_tile_data_availability(xy.x as u32, xy.y as u32, 1) {
@@ -264,12 +272,14 @@ where
             }
         })
         .await?;
+        let Some(availability) = provider.availability() else {
+            return Err(TerrainSamplingError::MissingAvailability);
+        };
         pending = pending
             .into_iter()
             .zip(levels)
             .filter_map(|(index, previous)| {
-                (provider.availability().unwrap().compute_maximum_level_at_position(&positions[index]) != previous)
-                    .then_some(index)
+                (availability.compute_maximum_level_at_position(&positions[index]) != previous).then_some(index)
             })
             .collect();
     }

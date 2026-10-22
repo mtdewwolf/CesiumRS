@@ -1,6 +1,6 @@
 //! CesiumJS VertexArray: buffer layouts, constant attributes and instancing.
 use super::{context::*, Buffer, BufferKind};
-use crate::core::{webgl_constants as gl, ComponentDatatype};
+use crate::core::{webgl_constants as gl, ComponentDatatype, IndexDatatype};
 use std::{collections::HashSet, rc::Rc};
 pub enum AttributeSource<G: Gl> {
     Buffer(Buffer<G>),
@@ -45,10 +45,20 @@ impl<G: Gl> VertexAttribute<G> {
         }
     }
 }
+/// An index buffer whose element type was checked in `VertexArray::new`.
+struct IndexedBuffer<G: Gl> {
+    buffer: Buffer<G>,
+    datatype: IndexDatatype,
+}
+impl<G: Gl> Clone for IndexedBuffer<G> {
+    fn clone(&self) -> Self {
+        Self { buffer: self.buffer.clone(), datatype: self.datatype }
+    }
+}
 pub struct VertexArray<G: Gl> {
     pub(crate) resource: Rc<Resource<G>>,
     attributes: Vec<VertexAttribute<G>>,
-    index_buffer: Option<Buffer<G>>,
+    index_buffer: Option<IndexedBuffer<G>>,
     number_of_vertices: usize,
 }
 impl<G: Gl> VertexArray<G> {
@@ -93,11 +103,16 @@ impl<G: Gl> VertexArray<G> {
                 }
             }
         }
-        if let Some(b) = &index_buffer {
-            context.same(&b.resource.context)?;
-            b.resource.value()?;
-            ensure(matches!(b.kind(), BufferKind::Index(_)), "Vertex array requires an index buffer")?;
-        }
+        let index_buffer = if let Some(buffer) = index_buffer {
+            context.same(&buffer.resource.context)?;
+            buffer.resource.value()?;
+            let BufferKind::Index(datatype) = buffer.kind() else {
+                return Err(crate::core::RuntimeError::new("Vertex array requires an index buffer"));
+            };
+            Some(IndexedBuffer { buffer, datatype })
+        } else {
+            None
+        };
         let resource = Rc::new(Resource::create(context, "createVertexArray", &[], "deleteVertexArray")?);
         context.call("bindVertexArray", &[resource.value()?])?;
         let result = (|| {
@@ -123,7 +138,7 @@ impl<G: Gl> VertexArray<G> {
                 }
             }
             if let Some(b) = &index_buffer {
-                context.call("bindBuffer", &[gl::ELEMENT_ARRAY_BUFFER.into(), b.resource.value()?])?;
+                context.call("bindBuffer", &[gl::ELEMENT_ARRAY_BUFFER.into(), b.buffer.resource.value()?])?;
             }
             Ok(())
         })();
@@ -139,7 +154,11 @@ impl<G: Gl> VertexArray<G> {
         &self.attributes
     }
     pub fn index_buffer(&self) -> Option<&Buffer<G>> {
-        self.index_buffer.as_ref()
+        self.index_buffer.as_ref().map(|b| &b.buffer)
+    }
+    /// Element type stored with the index buffer. Absent when the array is not indexed.
+    pub fn index_datatype(&self) -> Option<IndexDatatype> {
+        self.index_buffer.as_ref().map(|b| b.datatype)
     }
     pub(crate) fn bind(&self) -> Result<()> {
         for a in &self.attributes {
@@ -148,7 +167,7 @@ impl<G: Gl> VertexArray<G> {
             }
         }
         if let Some(b) = &self.index_buffer {
-            b.resource.value()?;
+            b.buffer.resource.value()?;
         }
         let ctx = &self.resource.context;
         ctx.call("bindVertexArray", &[self.resource.value()?])?;
@@ -221,7 +240,8 @@ impl<G: Gl> VertexArray<G> {
         ensure(index < self.attributes.len(), "Invalid attribute index")?;
         let mut attributes = self.attributes.clone();
         attributes[index] = attribute;
-        let replacement = Self::new(&self.resource.context, attributes, self.index_buffer.clone())?;
+        let replacement =
+            Self::new(&self.resource.context, attributes, self.index_buffer.as_ref().map(|b| b.buffer.clone()))?;
         *self = replacement;
         Ok(())
     }

@@ -142,7 +142,14 @@ pub(super) fn transcode(texture: &Transcoder<'_>, level: u32) -> Result<Vec<u8>,
     };
     let mut result = Vec::with_capacity(rgb.len() * 2);
     for (i, c) in rgb.chunks_exact(8).enumerate() {
-        result.extend_from_slice(&convert(c, alpha.as_ref().map(|a| &a[i * 8..i * 8 + 8])));
+        let alpha_block = if let Some(a) = &alpha {
+            let start = i.checked_mul(8).ok_or_else(|| RuntimeError::new("transcodeImage() failed."))?;
+            let end = start.checked_add(8).ok_or_else(|| RuntimeError::new("transcodeImage() failed."))?;
+            Some(a.get(start..end).ok_or_else(|| RuntimeError::new("transcodeImage() failed."))?)
+        } else {
+            None
+        };
+        result.extend_from_slice(&convert(c, alpha_block));
     }
     Ok(result)
 }
