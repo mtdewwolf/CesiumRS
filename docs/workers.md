@@ -2,8 +2,8 @@
 
 The first Workers completion batch adds all **31 geometry creation entry points**
 and **`createGeometry`**. Together with the five previously validated terrain and
-KTX2 workers, later terrain, vector-tile, and Gaussian splat workers, and
-`decodeI3S`, **49 of 53 Workers modules** are now ported. No remaining worker is
+KTX2 workers, later terrain, vector-tile, and Gaussian splat workers,
+`decodeI3S`, and `combineGeometry`, **50 of 53 Workers modules** are now ported. No remaining worker is
 marked partial or counted as complete through a placeholder.
 
 ## Geometry entry points
@@ -139,10 +139,11 @@ The next batches cover:
   `createVectorTileGeometries`.
 - Gaussian splats: `gaussianSplatSorter`, `gaussianSplatTextureGenerator`.
 - Specialized codecs: `decodeDraco`.
-- Scene combination and worker messaging: `combineGeometry`,
-  `createTaskProcessorWorker`. `transferTypedArrayTest` is n/a: its `onmessage`
-  handler only transfers a typed array through `postMessage`. Owned Rust buffers
-  replace that transfer.
+- Scene combination and worker messaging: `createTaskProcessorWorker`.
+  `combineGeometry` is ported: it runs the existing geometry pipeline on packed
+  instances and posts Float32 bounding spheres. `transferTypedArrayTest` is n/a:
+  its `onmessage` handler only transfers a typed array through `postMessage`.
+  Owned Rust buffers replace that transfer.
 
 Existing Core helpers are reused only after their worker boundaries have direct
 reference validation.

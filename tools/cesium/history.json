@@ -254,5 +254,13 @@
     "ported": 365,
     "implemented": 0,
     "validatedPercent": 32.3
+  },
+  {
+    "milestone": "combineGeometry",
+    "date": "2026-10-22",
+    "percent": 32.3,
+    "ported": 366,
+    "implemented": 0,
+    "validatedPercent": 32.3
   }
 ]
