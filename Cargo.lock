@@ -38,7 +38,7 @@ checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
 [[package]]
 name = "basisu"
 version = "0.1.0"
-source = "git+https://github.com/mtdewwolf/basisu?rev=05fbe10786751fb58b84d0b1af1e7852376a1110#05fbe10786751fb58b84d0b1af1e7852376a1110"
+source = "git+https://github.com/mtdewwolf/basisu?rev=683cd4df8238cd065fa3c37225921f3b30523e57#683cd4df8238cd065fa3c37225921f3b30523e57"
 dependencies = [
  "portable-atomic",
  "ruzstd",

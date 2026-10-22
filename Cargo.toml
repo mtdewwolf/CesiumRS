@@ -32,8 +32,9 @@ codegen-units = 16
 
 [dependencies]
 # crates.io basisu 0.1.0 depends on ruzstd 0.7 (RUSTSEC-2026-0344).
-# mtdewwolf/basisu master @ 05fbe107 (PR #2) pins ruzstd 0.9.1. MSRV is 1.87.
-basisu = { git = "https://github.com/mtdewwolf/basisu", rev = "05fbe10786751fb58b84d0b1af1e7852376a1110" }
+# mtdewwolf/basisu master @ 683cd4df (PR #3) pins ruzstd 0.9.1 and rejects
+# overflowing image-size products. MSRV is 1.87.
+basisu = { git = "https://github.com/mtdewwolf/basisu", rev = "683cd4df8238cd065fa3c37225921f3b30523e57" }
 flate2 = "1"
 meshopt-rs = { version = "=0.1.2", features = ["experimental"] }
 base64 = "0.22"
