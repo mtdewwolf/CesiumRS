@@ -91,8 +91,8 @@ function encodeCloud(encoderModule) {
 
 // A quantized POSITION is what lets draco3d encode a point cloud that also
 // carries an integer attribute. The integer values are added with the typed
-// Add*Attribute calls. i32::MIN and values at 2^31-1 make that encoder's own
-// decoder fail, so the Int32 fixture stays inside the range both sides decode.
+// Add*Attribute calls. i32::MIN and i32::MAX make that encoder's own decoder
+// fail, so those bounds are a separate sequential buffer below.
 function encodeTyped(encoderModule, add) {
   const count = 4;
   const builder = new encoderModule.PointCloudBuilder();
@@ -134,6 +134,35 @@ const uint64Cloud = Uint8Array.from([
   68, 82, 65, 67, 79, 2, 3, 0, 0, 0, 0, 6, 0, 0, 0, 1, 1, 4, 8, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
   0, 0, 42, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 255, 255, 255, 255, 255, 255,
   255, 255,
+]);
+// In-range values after the first out-of-range value. 2^31 then 5, and 5 then
+// 2^31 then 7. The uint64 pair is 2^32 then 5, and 5 then 2^32 then 7.
+const int64After = Uint8Array.from([
+  68, 82, 65, 67, 79, 2, 3, 0, 0, 0, 0, 2, 0, 0, 0, 1, 1, 4, 7, 1, 0, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0,
+  0, 0,
+]);
+const int64Mid = Uint8Array.from([
+  68, 82, 65, 67, 79, 2, 3, 0, 0, 0, 0, 3, 0, 0, 0, 1, 1, 4, 7, 1, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 0, 0,
+  0, 0, 7, 0, 0, 0, 0, 0, 0, 0,
+]);
+const uint64After = Uint8Array.from([
+  68, 82, 65, 67, 79, 2, 3, 0, 0, 0, 0, 2, 0, 0, 0, 1, 1, 4, 8, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 5, 0, 0, 0, 0, 0,
+  0, 0,
+]);
+const uint64Mid = Uint8Array.from([
+  68, 82, 65, 67, 79, 2, 3, 0, 0, 0, 0, 3, 0, 0, 0, 1, 1, 4, 8, 1, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+  0, 0, 7, 0, 0, 0, 0, 0, 0, 0,
+]);
+// i32::MIN and i32::MAX. draco3d's AddInt32Attribute cannot produce a buffer
+// its decoder accepts for these bounds. These sequential clouds are draco-core
+// 2.3.2, encoding method 0.
+const int32Bounds = Uint8Array.from([
+  68, 82, 65, 67, 79, 2, 3, 0, 0, 0, 0, 2, 0, 0, 0, 1, 1, 4, 5, 1, 0, 0, 1, 254, 1, 0, 33, 127, 1, 64, 1, 0, 255, 255,
+  255, 255, 254, 255, 255, 255,
+]);
+const int32Span = Uint8Array.from([
+  68, 82, 65, 67, 79, 2, 3, 0, 0, 0, 0, 5, 0, 0, 0, 1, 1, 4, 5, 1, 0, 0, 1, 254, 1, 0, 33, 3, 153, 25, 205, 12, 115,
+  157, 25, 3, 168, 251, 176, 255, 255, 255, 255, 233, 255, 255, 255, 15,
 ]);
 
 function presentAttributes(attributes) {
@@ -258,7 +287,7 @@ export default async function workersDecodeDraco() {
     const parameters = { buffer: encoded.raw, properties: { value: encoded.id } };
     await decode.add("decodeDraco", [parameters], () => run(parameters));
   }
-  for (const buffer of [boolCloud, int64Cloud, uint64Cloud]) {
+  for (const buffer of [boolCloud, int64Cloud, uint64Cloud, int64After, int64Mid, uint64After, uint64Mid, int32Bounds, int32Span]) {
     const parameters = { buffer, properties: { value: 0 } };
     await decode.add("decodeDraco", [parameters], () => run(parameters));
   }

@@ -139,8 +139,8 @@ fn guard(decode: impl FnOnce() -> Result<DracoGeometry, String>) -> Result<Draco
 /// undefined. `DT_INVALID` and an overflowing component count do too.
 /// `decode_i3s` drops the previous attribute of that name when this is `None`.
 /// `decode_draco` narrows the stored 64-bit buffers to the 32-bit view that
-/// worker requests: a value that fits is kept, and a value that does not fit
-/// becomes 0.
+/// worker requests. Values before the first one that does not fit are kept.
+/// That value and everything after it become 0.
 pub fn defined_for_i3s(values: AttributeValues) -> Option<AttributeValues> {
     match values {
         AttributeValues::I64(_)

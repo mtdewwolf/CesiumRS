@@ -163,7 +163,7 @@ check, the panic boundary, the face indices, and the mapped-index walk taken
 out of `decode_i3s`. The WebAssembly initialization message returns `true`.
 
 Dequantized attributes, including non-float and 64-bit values, index width,
-and the two geometry-type errors match the CesiumJS worker on 26 direct
+and the two geometry-type errors match the CesiumJS worker on 32 direct
 cases. `dequantizeInShader` does not: the crate always inverse-transforms and
 does not keep the portable integers or the quantization parameters
 `SkipAttributeTransform` would return. Model's Draco loader turns the flag on

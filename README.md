@@ -104,7 +104,7 @@ The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **28,301 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **28,307 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
 
 ```bash
 cargo test --all-features                    # all fixtures + native host integration

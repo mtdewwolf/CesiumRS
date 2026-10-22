@@ -35,6 +35,13 @@ use serde_json::{Map, Number, Value};
 /// Draco file header: 5-byte magic, major, minor, geometry type, method, flags.
 const HEADER_BYTES: usize = 11;
 
+/// Missing attributes do not get a Draco status string. `GetAttribute` and
+/// `GetAttributeByUniqueId` still return an object, its `data_type` misses the
+/// typed-array switch, and `draco.destroy` is called on the array that switch
+/// never created. The worker throws this TypeError for a missing unique id and
+/// for a missing POSITION or NORMAL semantic.
+const MISSING_ATTRIBUTE: &str = "Cannot read properties of undefined (reading '__destroy__')";
+
 /// Runs the `decodeDraco` worker on one parameters object.
 pub fn decode_draco(parameters: &Value) -> Result<Value, RuntimeError> {
     let parameters = parameters.as_object().ok_or_else(|| RuntimeError::new("Draco parameters must be an object"))?;
@@ -114,9 +121,7 @@ fn decode_mesh(parameters: &Map<String, Value>) -> Result<Value, RuntimeError> {
     let mut attribute_data = Map::new();
     for (name, id) in compressed {
         let unique_id = json_u32(id)?;
-        let attribute = mesh
-            .attribute_by_unique_id(unique_id)
-            .ok_or_else(|| RuntimeError::new(format!("Missing Draco attribute {unique_id}")))?;
+        let attribute = mesh.attribute_by_unique_id(unique_id).ok_or_else(|| RuntimeError::new(MISSING_ATTRIBUTE))?;
         attribute_data.insert(name.clone(), attribute_json(attribute, mesh.num_points)?);
     }
 
@@ -142,12 +147,10 @@ fn decode_point_cloud(parameters: &Map<String, Value>) -> Result<Value, RuntimeE
     for (name, id) in properties {
         let attribute = if name == "POSITION" || name == "NORMAL" {
             let kind = if name == "POSITION" { GeometryAttributeType::Position } else { GeometryAttributeType::Normal };
-            cloud.named_attribute(kind).ok_or_else(|| RuntimeError::new("Missing Draco attribute"))?
+            cloud.named_attribute(kind).ok_or_else(|| RuntimeError::new(MISSING_ATTRIBUTE))?
         } else {
             let unique_id = json_u32(id)?;
-            cloud
-                .attribute_by_unique_id(unique_id)
-                .ok_or_else(|| RuntimeError::new(format!("Missing Draco attribute {unique_id}")))?
+            cloud.attribute_by_unique_id(unique_id).ok_or_else(|| RuntimeError::new(MISSING_ATTRIBUTE))?
         };
         result.insert(name.clone(), attribute_json(attribute, cloud.num_points)?);
     }
@@ -258,10 +261,12 @@ fn attribute_values(
         AttributeValues::I32(values) => values.iter().copied().map(Value::from).collect(),
         AttributeValues::U32(values) => values.iter().copied().map(Value::from).collect(),
         // `GetAttributeInt32ForAllPoints` / `GetAttributeUInt32ForAllPoints`
-        // return false when any value does not fit. The worker still reads
-        // the array: values that fit are kept, and the rest stay 0.
-        AttributeValues::I64(values) => values.iter().copied().map(|value| Value::from(narrow_i64(value))).collect(),
-        AttributeValues::U64(values) => values.iter().copied().map(|value| Value::from(narrow_u64(value))).collect(),
+        // return false at the first value that does not fit and leave the rest
+        // of the zero-filled array unread. Values before that stay. That value
+        // and everything after it stay 0, including a later value that would
+        // fit: `[2^31, 5]` is `[0, 0]`, and `[5, 2^31, 7]` is `[5, 0, 0]`.
+        AttributeValues::I64(values) => narrow_i64(values),
+        AttributeValues::U64(values) => narrow_u64(values),
         AttributeValues::F64(values) => values.iter().copied().map(|value| float_value(value as f32 as f64)).collect(),
     };
     Ok(values)
@@ -271,12 +276,32 @@ fn float_value(value: f64) -> Value {
     Number::from_f64(value).map(Value::Number).unwrap_or(Value::Null)
 }
 
-fn narrow_i64(value: i64) -> i32 {
-    i32::try_from(value).unwrap_or(0)
+fn narrow_i64(values: &[i64]) -> Vec<Value> {
+    let mut failed = false;
+    values
+        .iter()
+        .map(|value| match (failed, i32::try_from(*value)) {
+            (false, Ok(narrowed)) => Value::from(narrowed),
+            _ => {
+                failed = true;
+                Value::from(0)
+            }
+        })
+        .collect()
 }
 
-fn narrow_u64(value: u64) -> u32 {
-    u32::try_from(value).unwrap_or(0)
+fn narrow_u64(values: &[u64]) -> Vec<Value> {
+    let mut failed = false;
+    values
+        .iter()
+        .map(|value| match (failed, u32::try_from(*value)) {
+            (false, Ok(narrowed)) => Value::from(narrowed),
+            _ => {
+                failed = true;
+                Value::from(0)
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]

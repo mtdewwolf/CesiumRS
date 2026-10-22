@@ -405,7 +405,21 @@ pub fn run(package: &str, module: &str, tol: impl Fn(&str) -> Tol, port: impl Fn
         };
         checked += 1;
         match (out, expected_throw) {
-            (Out::Err(_), true) => {}
+            (Out::Err(e), true) => {
+                // A missing Draco attribute is the worker's TypeError from
+                // `draco.destroy` on the array the typed-array switch never
+                // created. That text is the contract. A truncated mesh makes
+                // draco3d and draco-core report different status strings, so
+                // the rest of the throw cases only require that both sides throw.
+                let expected = c.r.get("throws").and_then(Value::as_str).unwrap_or("");
+                if module == "decodeDraco" && expected.contains("__destroy__") && e != expected {
+                    failures.push(format!(
+                        "#{i} {}({}) expected error {expected:?} got {e:?}",
+                        c.f,
+                        Value::Array(c.a.clone())
+                    ));
+                }
+            }
             (Out::Ok(v), false) if close(&v, &c.r, tol(&c.f)) => {}
             (Out::Ok(v), _) => {
                 failures.push(format!("#{i} {}({}) expected {} got {}", c.f, Value::Array(c.a.clone()), c.r, v))
