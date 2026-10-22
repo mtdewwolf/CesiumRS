@@ -80,7 +80,15 @@ TaskProcessor message contract: task id, parameters, `CESIUM_BASE_URL`,
 `canTransferArrayBuffer` is false, and the `postMessage` / `onmessageerror`
 failure strings produced by `formatError`. Direct worker cases call the real
 adapter. `TaskProcessor` itself is unchanged and still moves owned buffers.
+Object keys in those failure strings keep insertion order, matching
+`JSON.stringify`.
 
-The remaining todo modules are `combineGeometry`, `decodeDraco`, `decodeI3S`,
-and `transferTypedArrayTest`. Each stays todo until its implementation and
+`transferTypedArrayTest` is n/a. It is a Web Worker `onmessage` handler that
+posts the received typed array back by transferring `array.buffer`, or posts an
+empty object if that transfer throws. It performs no calculation. Rust workers
+return owned buffers, and `TaskProcessor` moves those values instead of
+transferring `ArrayBuffer`s.
+
+The remaining todo modules are `combineGeometry`, `decodeDraco`, and
+`decodeI3S`. Each stays todo until its implementation and
 direct worker validation are complete. See [Workers details](docs/workers.md).

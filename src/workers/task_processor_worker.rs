@@ -27,11 +27,11 @@ pub struct TaskMessage {
     pub can_transfer_array_buffer: bool,
 }
 
-/// A thrown `Error`. `message` and `stack` are omitted from the reply when `None`,
-/// matching `JSON.stringify` dropping `undefined`.
+/// A thrown `Error`. `name`, `message`, and `stack` are omitted from the reply
+/// when `None`, matching `JSON.stringify` dropping `undefined`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct WorkerException {
-    pub name: String,
+    pub name: Option<String>,
     pub message: Option<String>,
     pub stack: Option<String>,
 }
@@ -96,8 +96,8 @@ pub fn deliver_task(
         }
     };
     if let Some(failure) = post_failure {
-        // `result` is cleared before the previous error is stringified. Key order
-        // follows JSON.stringify (insertion), which serde_json's map does not.
+        // `result` is cleared before the previous error is stringified.
+        // `preserve_order` keeps object keys in insertion order, matching JSON.stringify.
         let embedded = stringify_message(task.id.as_ref(), None, error_json.as_deref());
         let text =
             format!("postMessage failed with error: {}\n  with responseMessage: {embedded}", format_error(failure));
@@ -127,7 +127,9 @@ pub fn deliver_message_error(id: Option<Value>, event: &Value) -> TaskProcessorR
 
 fn exception_json(exception: &WorkerException) -> String {
     let mut parts = Vec::new();
-    parts.push(format!("\"name\":{}", serde_json::to_string(&exception.name).expect("name")));
+    if let Some(name) = &exception.name {
+        parts.push(format!("\"name\":{}", serde_json::to_string(name).expect("name")));
+    }
     if let Some(message) = &exception.message {
         parts.push(format!("\"message\":{}", serde_json::to_string(message).expect("message")));
     }
@@ -139,7 +141,9 @@ fn exception_json(exception: &WorkerException) -> String {
 
 fn exception_value(exception: &WorkerException) -> Value {
     let mut error = Map::new();
-    error.insert("name".to_string(), Value::String(exception.name.clone()));
+    if let Some(name) = &exception.name {
+        error.insert("name".to_string(), Value::String(name.clone()));
+    }
     if let Some(message) = &exception.message {
         error.insert("message".to_string(), Value::String(message.clone()));
     }

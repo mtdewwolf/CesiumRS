@@ -8,7 +8,8 @@ function raiseWorker(spec) {
   if (spec.type === "undefined") throw undefined;
   if (spec.type === "value") throw spec.value;
   const error = new Error("placeholder");
-  error.name = spec.name ?? "Error";
+  if ("name" in spec) error.name = spec.name === null ? undefined : spec.name;
+  else error.name = "Error";
   error.message = "message" in spec && spec.message === null ? undefined : spec.message ?? "";
   error.stack = "stack" in spec && spec.stack !== null ? spec.stack : undefined;
   throw error;
@@ -130,6 +131,9 @@ const messages = [
   { id: 2, parameters: { x: 1, y: [2, 3] }, canTransferArrayBuffer: true, echoParameters: true },
   { id: 6, baseUrl: "https://cesium.test/thrown", canTransferArrayBuffer: true, throw: { type: "error", name: "Error", message: "bad" } },
   { id: 6, baseUrl: "https://cesium.test/post", canTransferArrayBuffer: true, returns: { v: 1 }, postThrows: { type: "error", name: "DataCloneError", message: "clone failed" } },
+  { id: 7, canTransferArrayBuffer: true, throw: { type: "value", value: { z: 1, a: 2, m: 3 } }, postThrows: { type: "error", name: "DataCloneError", message: "clone failed" } },
+  { id: 3, canTransferArrayBuffer: true, throw: { type: "error", name: null, message: "bad" } },
+  { id: 7, canTransferArrayBuffer: true, throw: { type: "error", name: null, message: "bad", stack: "at worker.js:1" }, postThrows: { type: "error", name: "DataCloneError", message: "clone failed" } },
 ];
 
 const messageErrors = [
@@ -137,6 +141,7 @@ const messageErrors = [
   { id: 9, event: { data: { id: 9 }, type: "messageerror" } },
   { event: { type: "messageerror" } },
   { event: { data: null } },
+  { id: 4, event: { z: 1, data: { id: 4 }, type: "messageerror" } },
 ];
 
 export default async function workersTask() {

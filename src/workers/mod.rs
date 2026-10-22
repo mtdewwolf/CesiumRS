@@ -18,4 +18,7 @@ pub use geometry_results::PackedGeometryResults;
 pub use terrain::*;
 pub use vector_tiles::*;
 pub use gaussian_splats::*;
-pub use task_processor_worker::*;
+pub use task_processor_worker::{
+    deliver_message_error, deliver_task, PostMessageError, TaskMessage, TaskProcessorReply, WorkerException,
+    WorkerResponse, WorkerThrown,
+};

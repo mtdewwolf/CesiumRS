@@ -16,7 +16,12 @@ fn parse_throw(v: &Value) -> WorkerThrown {
         Some("undefined") => WorkerThrown::Other(None),
         Some("value") => WorkerThrown::Other(Some(v.get("value").cloned().unwrap_or(Value::Null))),
         Some("error") => WorkerThrown::Exception(WorkerException {
-            name: string_field(v, "name").unwrap_or_else(|| "Error".to_string()),
+            name: match v.get("name") {
+                Some(Value::Null) => None,
+                Some(Value::String(s)) => Some(s.clone()),
+                None => Some("Error".to_string()),
+                Some(other) => panic!("throw name: {other}"),
+            },
             message: match v.get("message") {
                 Some(Value::Null) => None,
                 Some(Value::String(s)) => Some(s.clone()),

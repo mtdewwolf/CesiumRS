@@ -240,6 +240,14 @@
     "validatedPercent": 31.87
   },
   {
+    "milestone": "transferTypedArrayTest n/a",
+    "date": "2026-10-22",
+    "percent": 31.87,
+    "ported": 364,
+    "implemented": 0,
+    "validatedPercent": 31.87
+  },
+  {
     "milestone": "createTaskProcessorWorker",
     "date": "2026-10-22",
     "percent": 31.9,
