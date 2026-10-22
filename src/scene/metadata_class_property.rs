@@ -319,10 +319,7 @@ impl MetadataClassProperty {
         if !self.has_value_transform || self.is_variable_length_array {
             return Ok(value);
         }
-        Self::value_transform_in_place(value, Some(&self.offset), Some(&self.scale), &|v, o, s| {
-            let product = arithmetic(numeric(s), v.to_numeric(), '*')?.value();
-            js_add(&product, o)
-        })
+        Self::value_transform_in_place(value, Some(&self.offset), Some(&self.scale), &apply_transform_leaf)
     }
 
     /// `(value - offset) / scale`, or 0 where the scale is 0.
@@ -330,12 +327,7 @@ impl MetadataClassProperty {
         if !self.has_value_transform || self.is_variable_length_array {
             return Ok(value);
         }
-        Self::value_transform_in_place(value, Some(&self.offset), Some(&self.scale), &|v, o, s| {
-            if matches!(s, Some(MetadataValue::Number(z)) if *z == 0.0) {
-                return Ok(MetadataValue::Number(0.0));
-            }
-            Ok(arithmetic(arithmetic(v.to_numeric(), numeric(o), '-')?, numeric(s), '/')?.value())
-        })
+        Self::value_transform_in_place(value, Some(&self.offset), Some(&self.scale), &unapply_transform_leaf)
     }
 
     /// `MetadataClassProperty.valueTransformInPlace`: `transform(value,
@@ -681,6 +673,29 @@ impl MetadataClassProperty {
     }
 }
 
+/// `MetadataComponentType.applyValueTransform`: `scale * value + offset`.
+pub(crate) fn apply_transform_leaf(
+    value: &MetadataValue,
+    offset: Option<&MetadataValue>,
+    scale: Option<&MetadataValue>,
+) -> Result<MetadataValue> {
+    let product = arithmetic(numeric(scale), value.to_numeric(), '*')?.value();
+    js_add(&product, offset)
+}
+
+/// `MetadataComponentType.unapplyValueTransform`: `(value - offset) /
+/// scale`, or 0 where the scale is 0.
+pub(crate) fn unapply_transform_leaf(
+    value: &MetadataValue,
+    offset: Option<&MetadataValue>,
+    scale: Option<&MetadataValue>,
+) -> Result<MetadataValue> {
+    if matches!(scale, Some(MetadataValue::Number(z)) if *z == 0.0) {
+        return Ok(MetadataValue::Number(0.0));
+    }
+    Ok(arithmetic(arithmetic(value.to_numeric(), numeric(offset), '-')?, numeric(scale), '/')?.value())
+}
+
 /// `ToNumeric` of an optional operand: `undefined` is NaN.
 fn numeric(value: Option<&MetadataValue>) -> Numeric {
     value.map_or(Numeric::Number(f64::NAN), MetadataValue::to_numeric)
@@ -843,7 +858,7 @@ fn unpack_array(math: MathType, value: &MetadataValue) -> Result<MetadataValue> 
 /// `MathType.pack(value, [])`: the Cartesian classes read `value.x`… and the
 /// matrices `value[i]`, whatever `value` is; what is missing is `undefined`
 /// (NaN). Reading from `null` throws.
-fn pack(math: MathType, value: &MetadataValue) -> Result<MetadataValue> {
+pub(crate) fn pack(math: MathType, value: &MetadataValue) -> Result<MetadataValue> {
     if matches!(value, MetadataValue::Null) {
         return Err(MetadataError::Type("Cannot read properties of null (reading 'x')".into()));
     }
