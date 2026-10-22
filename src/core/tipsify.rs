@@ -47,7 +47,7 @@ pub fn tipsify(indices: &[u32], maximum_index: Option<u32>, cache_size: usize) -
     let mut vertices: Vec<Vertex> = (0..maximum_index_plus_one)
         .map(|_| Vertex { num_live_triangles: 0, time_stamp: 0, vertex_triangles: Vec::new() })
         .collect();
-    for (triangle, tri) in indices.chunks_exact(3).enumerate() {
+    for (triangle, tri) in indices.as_chunks::<3>().0.iter().enumerate() {
         for &index in tri {
             let v = &mut vertices[index as usize];
             v.vertex_triangles.push(triangle);

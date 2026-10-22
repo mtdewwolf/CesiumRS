@@ -110,7 +110,7 @@ impl GroundPolylineGeometry {
     pub fn unpack(a: &[f64], offset: usize) -> Option<Self> {
         let n = *a.get(offset)? as usize;
         let a = a.get(offset..offset.checked_add(1 + n.checked_mul(3)? + 8)?)?;
-        let positions = a[1..1 + n * 3].chunks_exact(3).map(|v| Cartesian3::new(v[0], v[1], v[2])).collect();
+        let positions = a[1..1 + n * 3].as_chunks::<3>().0.iter().map(|v| Cartesian3::new(v[0], v[1], v[2])).collect();
         let mut g = Self::new(positions)?;
         let p = 1 + n * 3;
         g.granularity = a[p];

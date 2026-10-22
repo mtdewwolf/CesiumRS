@@ -180,7 +180,7 @@ fn compute_attributes(positions: Vec<f64>, shape: &[Cartesian2], br: &BoundingRe
         ));
     }
     let end_offset = vertex_count - shape_length * 2.0;
-    for t in first_end_indices.chunks_exact(3) {
+    for t in first_end_indices.as_chunks::<3>().0 {
         let [v0, v1, v2] = [t[0] as f64 + end_offset, t[1] as f64 + end_offset, t[2] as f64 + end_offset];
         for v in [v0, v1, v2, v2 + shape_length, v1 + shape_length, v0 + shape_length] {
             put(&mut indices, &mut index, v);
