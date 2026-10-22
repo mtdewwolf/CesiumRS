@@ -246,5 +246,13 @@
     "ported": 364,
     "implemented": 0,
     "validatedPercent": 31.87
+  },
+  {
+    "milestone": "Workers decodeI3S",
+    "date": "2026-10-22",
+    "percent": 32.3,
+    "ported": 365,
+    "implemented": 0,
+    "validatedPercent": 32.3
   }
 ]

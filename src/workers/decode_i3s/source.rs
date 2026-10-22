@@ -223,13 +223,7 @@ fn decode_binary(
     geometry
 }
 
-fn walk(
-    names: &[String],
-    geometry: &mut DecodedGeometry,
-    feature_count: u32,
-    data: &[u8],
-    offset: &mut usize,
-) -> bool {
+fn walk(names: &[String], geometry: &mut DecodedGeometry, feature_count: u32, data: &[u8], offset: &mut usize) -> bool {
     for name in names {
         let Ok(next) = decode_attribute(name, geometry, feature_count, data, *offset) else {
             return false;
@@ -240,10 +234,7 @@ fn walk(
 }
 
 fn is_known(name: &str) -> bool {
-    matches!(
-        name,
-        "position" | "normal" | "uv0" | "color" | "featureId" | "id" | "faceRange" | "uvRegion" | "region"
-    )
+    matches!(name, "position" | "normal" | "uv0" | "color" | "featureId" | "id" | "faceRange" | "uvRegion" | "region")
 }
 
 fn decode_attribute(
@@ -256,13 +247,49 @@ fn decode_attribute(
     let vertices = geometry.vertex_count as usize;
     let features = feature_count as usize;
     match name {
-        "position" => push_view(geometry, "positions", data, offset, vertices, 3, 4, Kind::F32),
-        "normal" => push_view(geometry, "normals", data, offset, vertices, 3, 4, Kind::F32),
-        "uv0" => push_view(geometry, "uv0s", data, offset, vertices, 2, 4, Kind::F32),
-        "color" => push_view(geometry, "colors", data, offset, vertices, 4, 1, Kind::U8),
+        "position" => push_view(
+            geometry,
+            "positions",
+            data,
+            offset,
+            ViewShape { major: vertices, components: 3, align: 4, kind: Kind::F32 },
+        ),
+        "normal" => push_view(
+            geometry,
+            "normals",
+            data,
+            offset,
+            ViewShape { major: vertices, components: 3, align: 4, kind: Kind::F32 },
+        ),
+        "uv0" => push_view(
+            geometry,
+            "uv0s",
+            data,
+            offset,
+            ViewShape { major: vertices, components: 2, align: 4, kind: Kind::F32 },
+        ),
+        "color" => push_view(
+            geometry,
+            "colors",
+            data,
+            offset,
+            ViewShape { major: vertices, components: 4, align: 1, kind: Kind::U8 },
+        ),
         "featureId" | "id" => offset.checked_add(features.checked_mul(8).ok_or(())?).ok_or(()),
-        "faceRange" => push_view(geometry, "faceRange", data, offset, features, 2, 4, Kind::U32),
-        "uvRegion" | "region" => push_view(geometry, "uv-region", data, offset, vertices, 4, 2, Kind::U16),
+        "faceRange" => push_view(
+            geometry,
+            "faceRange",
+            data,
+            offset,
+            ViewShape { major: features, components: 2, align: 4, kind: Kind::U32 },
+        ),
+        "uvRegion" | "region" => push_view(
+            geometry,
+            "uv-region",
+            data,
+            offset,
+            ViewShape { major: vertices, components: 4, align: 2, kind: Kind::U16 },
+        ),
         _ => Err(()),
     }
 }
@@ -275,18 +302,22 @@ enum Kind {
     U32,
 }
 
+struct ViewShape {
+    major: usize,
+    components: usize,
+    align: usize,
+    kind: Kind,
+}
+
 fn push_view(
     geometry: &mut DecodedGeometry,
     name: &str,
     data: &[u8],
     offset: usize,
-    major: usize,
-    components: usize,
-    align: usize,
-    kind: Kind,
+    shape: ViewShape,
 ) -> Result<usize, ()> {
-    let count = major.checked_mul(components).ok_or(())?;
-    let (values, next) = read_view(data, offset, count, align, kind)?;
+    let count = shape.major.checked_mul(shape.components).ok_or(())?;
+    let (values, next) = read_view(data, offset, count, shape.align, shape.kind)?;
     if let Some((_, existing)) = geometry.attributes.iter_mut().find(|(current, _)| current == name) {
         *existing = values;
     } else {
@@ -296,17 +327,17 @@ fn push_view(
 }
 
 fn read_view(data: &[u8], offset: usize, count: usize, align: usize, kind: Kind) -> Result<(Values, usize), ()> {
-    if offset % align != 0 {
+    if !offset.is_multiple_of(align) {
         return Err(());
     }
     let bytes = count.checked_mul(align).ok_or(())?;
     let end = offset.checked_add(bytes).ok_or(())?;
     let slice = data.get(offset..end).ok_or(())?;
     let values = match kind {
-        Kind::F32 => Values::F32(slice.chunks_exact(4).map(|c| f32::from_le_bytes(c.try_into().unwrap())).collect()),
+        Kind::F32 => Values::F32(slice.as_chunks::<4>().0.iter().copied().map(f32::from_le_bytes).collect()),
         Kind::U8 => Values::U8(slice.to_vec()),
-        Kind::U16 => Values::U16(slice.chunks_exact(2).map(|c| u16::from_le_bytes(c.try_into().unwrap())).collect()),
-        Kind::U32 => Values::U32(slice.chunks_exact(4).map(|c| u32::from_le_bytes(c.try_into().unwrap())).collect()),
+        Kind::U16 => Values::U16(slice.as_chunks::<2>().0.iter().copied().map(u16::from_le_bytes).collect()),
+        Kind::U32 => Values::U32(slice.as_chunks::<4>().0.iter().copied().map(u32::from_le_bytes).collect()),
     };
     Ok((values, end))
 }

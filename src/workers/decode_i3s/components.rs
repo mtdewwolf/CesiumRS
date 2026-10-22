@@ -22,6 +22,10 @@ pub(super) enum Values {
 }
 
 impl Values {
+    pub(super) fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub(super) fn len(&self) -> usize {
         match self {
             Self::F32(v) => v.len(),
@@ -316,7 +320,9 @@ impl FeatureKey {
                 Self::PosInf => "Infinity".to_string(),
                 Self::NegInf => "-Infinity".to_string(),
                 Self::Nan => "NaN".to_string(),
-                Self::Finite(bits) => return if f64::from_bits(bits).to_string() == name { key } else { Self::Finite(u64::MAX) },
+                Self::Finite(bits) => {
+                    return if f64::from_bits(bits).to_string() == name { key } else { Self::Finite(u64::MAX) }
+                }
                 Self::Undefined | Self::Default => return key,
             };
             if name == canonical {

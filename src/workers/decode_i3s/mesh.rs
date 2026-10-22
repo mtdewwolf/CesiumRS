@@ -9,8 +9,8 @@
 use super::components::{to_length, to_uint32, to_uint8, FeatureIndex, FeatureKey, FeatureMap, NumMap, Values};
 use super::source::DecodedGeometry;
 use super::{
-    I3sAccessor, I3sBufferView, I3sDecodeParameters, I3sMesh, I3sMeshData, I3sNode, I3sPrimitive, I3sPrimitiveExtensions,
-    I3sPropertyTable, I3sRootExtensions,
+    I3sAccessor, I3sBufferView, I3sDecodeParameters, I3sMesh, I3sMeshData, I3sNode, I3sPrimitive,
+    I3sPrimitiveExtensions, I3sPropertyTable, I3sRootExtensions,
 };
 use crate::core::js_math::JsMath;
 use crate::core::math::{js_max, js_min, to_radians};
@@ -30,13 +30,31 @@ struct Channels {
     feature_index: Option<FeatureIndex>,
 }
 
-pub(super) fn build(mut geometry: DecodedGeometry, parameters: &I3sDecodeParameters) -> Result<I3sMeshData, RuntimeError> {
+pub(super) fn build(
+    mut geometry: DecodedGeometry,
+    parameters: &I3sDecodeParameters,
+) -> Result<I3sMeshData, RuntimeError> {
     if !parameters.geoid_data_list.is_empty() {
-        let center = parameters.cartographic_center.ok_or_else(|| RuntimeError::new("cartographicCenter is required"))?;
-        orthometric_to_ellipsoidal(geometry.vertex_count, geometry.get("positions"), geometry.scale_x, geometry.scale_y, center, parameters)?;
+        let center =
+            parameters.cartographic_center.ok_or_else(|| RuntimeError::new("cartographicCenter is required"))?;
+        orthometric_to_ellipsoidal(
+            geometry.vertex_count,
+            geometry.get("positions"),
+            geometry.scale_x,
+            geometry.scale_y,
+            center,
+            parameters,
+        )?;
         // The helper above only reads. Re-borrow mutably for the write.
         if let Some(positions) = geometry.attributes.iter_mut().find(|(name, _)| name == "positions").map(|(_, v)| v) {
-            orthometric_write(geometry.vertex_count, positions, geometry.scale_x, geometry.scale_y, center, parameters)?;
+            orthometric_write(
+                geometry.vertex_count,
+                positions,
+                geometry.scale_x,
+                geometry.scale_y,
+                center,
+                parameters,
+            )?;
         }
     }
     transform_to_local(&mut geometry, parameters)?;
@@ -62,16 +80,8 @@ pub(super) fn build(mut geometry: DecodedGeometry, parameters: &I3sDecodeParamet
     let mut vertex_count = geometry.vertex_count;
     let mut vertex_count_is_array = geometry.vertex_count_is_array;
     if parameters.calculate_normals {
-        if let Some(generated) = generate_normals(
-            vertex_count,
-            vertex_count_is_array,
-            channels.indices.as_ref(),
-            channels.positions.as_ref(),
-            channels.normals.as_ref(),
-            channels.uv0s.as_ref(),
-            channels.colors.as_ref(),
-            channels.feature_index.as_ref(),
-        ) {
+        let sourced = sourced_from(&channels, vertex_count, vertex_count_is_array);
+        if let Some(generated) = generate_normals(&sourced) {
             channels.normals = Some(generated.normals);
             if let Some(count) = generated.vertex_count {
                 vertex_count = count;
@@ -85,17 +95,7 @@ pub(super) fn build(mut geometry: DecodedGeometry, parameters: &I3sDecodeParamet
         }
     }
 
-    let mut document = gltf_document(
-        vertex_count,
-        vertex_count_is_array,
-        channels.indices.as_ref(),
-        channels.positions.as_ref(),
-        channels.normals.as_ref(),
-        channels.uv0s.as_ref(),
-        channels.colors.as_ref(),
-        channels.feature_index.as_ref(),
-        parameters,
-    );
+    let mut document = gltf_document(sourced_from(&channels, vertex_count, vertex_count_is_array), parameters);
     document.positions = channels.positions.as_ref().map(Values::to_f64);
     document.indices = match channels.indices.as_ref() {
         Some(Values::U32(values)) => Some(values.clone()),
@@ -188,7 +188,11 @@ fn orthometric_write(
     Ok(())
 }
 
-fn sample_geoid_from_list(longitude: f64, latitude: f64, parameters: &I3sDecodeParameters) -> Result<f64, RuntimeError> {
+fn sample_geoid_from_list(
+    longitude: f64,
+    latitude: f64,
+    parameters: &I3sDecodeParameters,
+) -> Result<f64, RuntimeError> {
     for geoid in &parameters.geoid_data_list {
         let (x, y) = if let Some(radii) = geoid.web_mercator_radii {
             let projection = WebMercatorProjection::new(Ellipsoid::new(radii.x, radii.y, radii.z));
@@ -235,20 +239,22 @@ fn sample_map(u: f64, v: f64, width: f64, data: &[f64]) -> f64 {
 }
 
 fn transform_to_local(geometry: &mut DecodedGeometry, parameters: &I3sDecodeParameters) -> Result<(), RuntimeError> {
-    let positions_empty = geometry.get("positions").map(|values| values.len() == 0).unwrap_or(true);
+    let positions_empty = geometry.get("positions").is_none_or(|values| values.is_empty());
     if (!geometry.vertex_count_is_array && geometry.vertex_count == 0) || positions_empty {
         return Ok(());
     }
     let center = parameters.cartographic_center.ok_or_else(|| RuntimeError::new("cartographicCenter is required"))?;
     let cartesian = parameters.cartesian_center.ok_or_else(|| RuntimeError::new("cartesianCenter is required"))?;
     let rotation = parameters.parent_rotation.ok_or_else(|| RuntimeError::new("parentRotation is required"))?;
-    let radii = parameters.ellipsoid_radii_square.ok_or_else(|| RuntimeError::new("ellipsoidRadiiSquare is required"))?;
+    let radii =
+        parameters.ellipsoid_radii_square.ok_or_else(|| RuntimeError::new("ellipsoidRadiiSquare is required"))?;
     let ellipsoid = Ellipsoid::new(radii.x.sqrt(), radii.y.sqrt(), radii.z.sqrt());
     let scale_x = geometry.scale_x;
     let scale_y = geometry.scale_y;
     let count = geometry.vertex_count as usize;
     let has_normals = geometry.get("normals").is_some();
-    let positions = geometry.attributes.iter_mut().find(|(name, _)| name == "positions").map(|(_, values)| values).unwrap();
+    let positions =
+        geometry.attributes.iter_mut().find(|(name, _)| name == "positions").map(|(_, values)| values).unwrap();
     for i in 0..count {
         let cartographic = Cartographic::new(
             center.longitude + to_radians(scale_x * positions.get(i * 3).unwrap_or(f64::NAN)),
@@ -262,7 +268,8 @@ fn transform_to_local(geometry: &mut DecodedGeometry, parameters: &I3sDecodePara
         positions.set(i * 3 + 2, rotated.z);
     }
     if has_normals {
-        let normals = geometry.attributes.iter_mut().find(|(name, _)| name == "normals").map(|(_, values)| values).unwrap();
+        let normals =
+            geometry.attributes.iter_mut().find(|(name, _)| name == "normals").map(|(_, values)| values).unwrap();
         for i in 0..count {
             let normal = Cartesian3::new(
                 normals.get(i * 3).unwrap_or(f64::NAN),
@@ -282,8 +289,11 @@ fn crop_uvs(vertex_count: usize, uvs: &mut Values, regions: &Values) {
     for vertex in 0..vertex_count {
         let min_u = regions.get(vertex * 4).unwrap_or(f64::NAN) / 65535.0;
         let min_v = regions.get(vertex * 4 + 1).unwrap_or(f64::NAN) / 65535.0;
-        let scale_u = (regions.get(vertex * 4 + 2).unwrap_or(f64::NAN) - regions.get(vertex * 4).unwrap_or(f64::NAN)) / 65535.0;
-        let scale_v = (regions.get(vertex * 4 + 3).unwrap_or(f64::NAN) - regions.get(vertex * 4 + 1).unwrap_or(f64::NAN)) / 65535.0;
+        let scale_u =
+            (regions.get(vertex * 4 + 2).unwrap_or(f64::NAN) - regions.get(vertex * 4).unwrap_or(f64::NAN)) / 65535.0;
+        let scale_v = (regions.get(vertex * 4 + 3).unwrap_or(f64::NAN)
+            - regions.get(vertex * 4 + 1).unwrap_or(f64::NAN))
+            / 65535.0;
         let u = uvs.get(vertex * 2).unwrap_or(f64::NAN) * scale_u;
         uvs.set(vertex * 2, u);
         let u = uvs.get(vertex * 2).unwrap_or(f64::NAN) + min_u;
@@ -295,6 +305,18 @@ fn crop_uvs(vertex_count: usize, uvs: &mut Values, regions: &Values) {
     }
 }
 
+#[derive(Clone, Copy)]
+struct Sourced<'a> {
+    vertex_count: u32,
+    vertex_count_is_array: bool,
+    indices: Option<&'a Values>,
+    positions: Option<&'a Values>,
+    normals: Option<&'a Values>,
+    uv0s: Option<&'a Values>,
+    colors: Option<&'a Values>,
+    feature_index: Option<&'a FeatureIndex>,
+}
+
 struct GeneratedNormals {
     normals: Values,
     vertex_count: Option<u32>,
@@ -304,17 +326,23 @@ struct GeneratedNormals {
     feature_index: Option<FeatureIndex>,
 }
 
-fn generate_normals(
-    vertex_count: u32,
-    vertex_count_is_array: bool,
-    indices: Option<&Values>,
-    positions: Option<&Values>,
-    normals: Option<&Values>,
-    uv0s: Option<&Values>,
-    colors: Option<&Values>,
-    feature_index: Option<&FeatureIndex>,
-) -> Option<GeneratedNormals> {
-    let positions_empty = positions.map(|values| values.len() == 0).unwrap_or(true);
+fn sourced_from(channels: &Channels, vertex_count: u32, vertex_count_is_array: bool) -> Sourced<'_> {
+    Sourced {
+        vertex_count,
+        vertex_count_is_array,
+        indices: channels.indices.as_ref(),
+        positions: channels.positions.as_ref(),
+        normals: channels.normals.as_ref(),
+        uv0s: channels.uv0s.as_ref(),
+        colors: channels.colors.as_ref(),
+        feature_index: channels.feature_index.as_ref(),
+    }
+}
+
+fn generate_normals(source: &Sourced<'_>) -> Option<GeneratedNormals> {
+    let Sourced { vertex_count, vertex_count_is_array, indices, positions, normals, uv0s, colors, feature_index } =
+        *source;
+    let positions_empty = positions.is_none_or(|values| values.is_empty());
     if (!vertex_count_is_array && vertex_count == 0) || positions_empty || normals.is_some() {
         return None;
     }
@@ -404,54 +432,44 @@ fn cartesian_at(positions: &Values, index: usize) -> Cartesian3 {
     )
 }
 
-fn gltf_document(
-    mut vertex_count: u32,
-    vertex_count_is_array: bool,
-    indices: Option<&Values>,
-    positions: Option<&Values>,
-    normals: Option<&Values>,
-    uv0s: Option<&Values>,
-    colors: Option<&Values>,
-    feature_index: Option<&FeatureIndex>,
-    parameters: &I3sDecodeParameters,
-) -> I3sMeshData {
-    let positions_empty = positions.map(|values| values.len() == 0).unwrap_or(true);
+fn gltf_document(source: Sourced<'_>, parameters: &I3sDecodeParameters) -> I3sMeshData {
+    let Sourced { mut vertex_count, vertex_count_is_array, indices, positions, normals, uv0s, colors, feature_index } =
+        source;
+    let positions_empty = positions.is_none_or(|values| values.is_empty());
     if (!vertex_count_is_array && vertex_count == 0) || positions_empty {
         return I3sMeshData::empty();
     }
-    let positions = positions.unwrap();
-    if indices.is_some() {
-        vertex_count = indices.unwrap().len() as u32;
+    let Some(positions) = positions else {
+        return I3sMeshData::empty();
+    };
+    if let Some(indices) = indices {
+        vertex_count = indices.len() as u32;
     }
-    let (index_array, transparent_offset) = generate_index_array(
-        vertex_count as usize,
-        indices,
-        colors,
-        parameters.split_geometry_by_color_transparency,
-    );
+    let (index_array, transparent_offset) =
+        generate_index_array(vertex_count as usize, indices, colors, parameters.split_geometry_by_color_transparency);
     let end_index = vertex_count as usize;
 
     let mut doc = GltfBuilder::default();
     let mut attributes = Vec::new();
-    let position_bytes = positions.prefix_bytes(end_index * 3);
-    let (min, max) = position_bounds(positions, position_bytes.len() / positions_element_size(positions) / 3);
-    attributes.push(("POSITION", doc.push_accessor(position_bytes, ARRAY_BUFFER, FLOAT, "VEC3", Some(max), Some(min))));
-    // The accessor above used buffer length / element size / 3. prefix_bytes length is exact.
-    // Recompute count from the byte length inside push. See push_vec.
+    let position_count = (end_index * 3).min(positions.len()) / 3;
+    let position_bytes = positions.prefix_bytes(position_count * 3);
+    let (min, max) = position_bounds(positions, position_count);
+    // Cesium stores the real minimum in `max` and the real maximum in `min`.
+    attributes.push(("POSITION", doc.push_position(position_bytes, position_count, min, max)));
 
     if let Some(normals) = normals {
         let bytes = normals.prefix_bytes(end_index * 3);
-        let accessor = doc.push_vec(bytes, normals_element(normals), 3, ARRAY_BUFFER, FLOAT, "VEC3");
+        let accessor = doc.push_vec(bytes, VecLayout::array(element_size(normals), 3, "VEC3"));
         attributes.push(("NORMAL", accessor));
     }
     if let Some(uvs) = uv0s {
         let bytes = uvs.prefix_bytes(end_index * 2);
-        attributes.push(("TEXCOORD_0", doc.push_vec(bytes, element_size(uvs), 2, ARRAY_BUFFER, FLOAT, "VEC2")));
+        attributes.push(("TEXCOORD_0", doc.push_vec(bytes, VecLayout::array(element_size(uvs), 2, "VEC2"))));
     }
     if let Some(colors) = colors {
         let converted = convert_colors(colors, end_index * 4);
         let bytes = converted.prefix_bytes(converted.len());
-        attributes.push(("COLOR_0", doc.push_vec(bytes, 4, 4, ARRAY_BUFFER, FLOAT, "VEC4")));
+        attributes.push(("COLOR_0", doc.push_vec(bytes, VecLayout::array(4, 4, "VEC4"))));
     }
 
     let mut extensions = I3sPrimitiveExtensions::default();
@@ -463,7 +481,7 @@ fn gltf_document(
             // `subarray` clamps. The Float32Array has the full feature-index length.
             let full = feature_id_values(feature_index);
             let id_bytes = Values::F32(full).prefix_bytes(end_index);
-            attributes.push(("_FEATURE_ID_0", doc.push_vec(id_bytes, 4, 1, ELEMENT_ARRAY_BUFFER, FLOAT, "SCALAR")));
+            attributes.push(("_FEATURE_ID_0", doc.push_vec(id_bytes, VecLayout::elements(4, 1, FLOAT, "SCALAR"))));
             extensions.feature_count = Some(feature_count);
             used.push("EXT_mesh_features".to_string());
             let table_len = to_length(feature_count);
@@ -476,12 +494,13 @@ fn gltf_document(
 
     if let Some(outlines) = generate_outlines(&index_array, positions, normals, feature_index, parameters) {
         let bytes = Values::U32(outlines.clone()).prefix_bytes(outlines.len());
-        let accessor = doc.push_vec(bytes, 4, 1, ELEMENT_ARRAY_BUFFER, UNSIGNED_INT, "SCALAR");
+        let accessor = doc.push_vec(bytes, VecLayout::elements(4, 1, UNSIGNED_INT, "SCALAR"));
         extensions.outline = Some(accessor);
         used.push("CESIUM_primitive_outline".to_string());
     }
 
-    let index_view = doc.push_buffer(Values::U32(index_array).prefix_bytes(vertex_count as usize), ELEMENT_ARRAY_BUFFER);
+    let index_view =
+        doc.push_buffer(Values::U32(index_array).prefix_bytes(vertex_count as usize), ELEMENT_ARRAY_BUFFER);
     let mut primitives = Vec::new();
     if transparent_offset > 0 {
         let accessor = doc.push_index_accessor(index_view, 0, transparent_offset);
@@ -494,7 +513,8 @@ fn gltf_document(
         });
     }
     if (transparent_offset as u32) < vertex_count {
-        let accessor = doc.push_index_accessor(index_view, transparent_offset * 4, vertex_count as usize - transparent_offset);
+        let accessor =
+            doc.push_index_accessor(index_view, transparent_offset * 4, vertex_count as usize - transparent_offset);
         primitives.push(I3sPrimitive {
             attributes,
             indices: accessor,
@@ -522,10 +542,6 @@ fn gltf_document(
     }
 }
 
-fn positions_element_size(values: &Values) -> usize {
-    element_size(values).max(1)
-}
-
 fn position_bounds(positions: &Values, count: usize) -> ([f64; 3], [f64; 3]) {
     let mut min = [f64::INFINITY; 3];
     let mut max = [f64::NEG_INFINITY; 3];
@@ -544,15 +560,18 @@ fn feature_id_values(feature_index: &FeatureIndex) -> Vec<f32> {
 }
 
 fn feature_buffers(feature_index: &FeatureIndex) -> (Vec<f32>, f64) {
-    let values = feature_id_values(feature_index);
     let mut feature_count = 0.0;
-    for value in &values {
-        let next = f64::from(*value) + 1.0;
-        if feature_count < next {
-            feature_count = next;
+    for index in 0..feature_index.len() {
+        // Holes are `undefined`; `undefined + 1` is NaN and does not raise the count.
+        // The count uses the original value, before the Float32 store.
+        if let Some(value) = feature_index.get(index) {
+            let next = value + 1.0;
+            if feature_count < next {
+                feature_count = next;
+            }
         }
     }
-    (values, feature_count)
+    (feature_id_values(feature_index), feature_count)
 }
 
 fn convert_colors(colors: &Values, requested: usize) -> Values {
@@ -587,16 +606,17 @@ fn generate_index_array(
     split: bool,
 ) -> (Vec<u32>, usize) {
     let mut index_array = vec![0u32; vertex_count];
-    let vertex_of = |index: usize| -> Option<f64> { indices.map(|values| values.get(index)).unwrap_or(Some(index as f64)) };
+    let vertex_of =
+        |index: usize| -> Option<f64> { indices.map(|values| values.get(index)).unwrap_or(Some(index as f64)) };
     let transparent = |index: usize, colors: &Values| -> bool {
-        let Some(vertex) = vertex_of(index).filter(|value| value.is_finite() && value.fract() == 0.0 && *value >= 0.0) else {
+        let Some(vertex) = vertex_of(index).filter(|value| value.is_finite() && value.fract() == 0.0 && *value >= 0.0)
+        else {
             return false;
         };
         let element = (vertex as usize).saturating_mul(4).saturating_add(3);
         colors.get(element).is_some_and(|alpha| alpha < 255.0)
     };
-    if split && colors.is_some() {
-        let colors = colors.unwrap();
+    if let Some(colors) = colors.filter(|_| split) {
         let mut offset = 0;
         let mut index = 0;
         while index < vertex_count {
@@ -620,7 +640,7 @@ fn generate_index_array(
                 }
                 index += 3;
             }
-            (index_array, offset.min(vertex_count))
+            (index_array, offset)
         } else {
             for index in 0..vertex_count {
                 write_index(&mut index_array, index, vertex_of(index));
@@ -677,8 +697,8 @@ fn generate_outlines(
         index += 3;
     }
     let mut outlines = Vec::new();
-    let by_position = normals.is_some_and(|values| values.len() == positions.len() && index_array.len() * 3 == values.len());
-    let mut normal_buf = if by_position {
+    // Replace the normal buffer once, up front, when it cannot cover every corner.
+    let mut normal_buf = if normals.is_some_and(|values| index_array.len() * 3 == values.len()) {
         NormalBuf::Source(normals.unwrap())
     } else {
         NormalBuf::Plain(Vec::new())
@@ -686,7 +706,7 @@ fn generate_outlines(
     for record in features.values_in_key_order() {
         for ends in record.edges.values_in_key_order() {
             for edge in ends.values_in_key_order() {
-                if edge_is_smooth(edge, index_array, positions, &mut normal_buf, by_position) {
+                if edge_is_smooth(edge, index_array, positions, &mut normal_buf) {
                     continue;
                 }
                 outlines.extend_from_slice(&edge.outlines);
@@ -779,16 +799,19 @@ enum NormalBuf<'a> {
     Plain(Vec<Option<f64>>),
 }
 
-fn edge_is_smooth(
-    edge: &EdgeData,
-    index_array: &[u32],
-    positions: &Values,
-    normals: &mut NormalBuf<'_>,
-    by_position: bool,
-) -> bool {
+fn normal_len(normals: &NormalBuf<'_>) -> usize {
+    match normals {
+        NormalBuf::Source(values) => values.len(),
+        NormalBuf::Plain(values) => values.len(),
+    }
+}
+
+fn edge_is_smooth(edge: &EdgeData, index_array: &[u32], positions: &Values, normals: &mut NormalBuf<'_>) -> bool {
     if edge.normals_index.len() <= 1 {
         return false;
     }
+    // Sampled once per edge, before flat normals grow the plain array.
+    let by_position = positions.len() == normal_len(normals);
     for (index_a, &corner_a) in edge.normals_index.iter().enumerate() {
         ensure_face_normal(normals, corner_a as usize, index_array, positions);
         if index_a == 0 {
@@ -861,6 +884,24 @@ fn normal_at(normals: &NormalBuf<'_>, index: usize) -> Cartesian3 {
     Cartesian3::new(component(0), component(1), component(2))
 }
 
+struct VecLayout {
+    element_size: usize,
+    components: usize,
+    target: u32,
+    component_type: u32,
+    type_name: &'static str,
+}
+
+impl VecLayout {
+    fn array(element_size: usize, components: usize, type_name: &'static str) -> Self {
+        Self { element_size, components, target: ARRAY_BUFFER, component_type: FLOAT, type_name }
+    }
+
+    fn elements(element_size: usize, components: usize, component_type: u32, type_name: &'static str) -> Self {
+        Self { element_size, components, target: ELEMENT_ARRAY_BUFFER, component_type, type_name }
+    }
+}
+
 #[derive(Default)]
 struct GltfBuilder {
     buffers: Vec<Vec<u8>>,
@@ -876,41 +917,36 @@ impl GltfBuilder {
         view
     }
 
-    fn push_vec(&mut self, bytes: Vec<u8>, element_size: usize, components: usize, target: u32, component_type: u32, type_name: &'static str) -> usize {
-        let count = if element_size == 0 || components == 0 { 0 } else { bytes.len() / element_size / components };
-        let view = self.push_buffer(bytes, target);
+    fn push_vec(&mut self, bytes: Vec<u8>, layout: VecLayout) -> usize {
+        let count = if layout.element_size == 0 || layout.components == 0 {
+            0
+        } else {
+            bytes.len() / layout.element_size / layout.components
+        };
+        let view = self.push_buffer(bytes, layout.target);
         self.accessors.push(I3sAccessor {
             buffer_view: view,
             byte_offset: 0,
-            component_type,
+            component_type: layout.component_type,
             count,
-            type_name,
+            type_name: layout.type_name,
             min: None,
             max: None,
         });
         self.accessors.len() - 1
     }
 
-    fn push_accessor(
-        &mut self,
-        bytes: Vec<u8>,
-        target: u32,
-        component_type: u32,
-        type_name: &'static str,
-        max: Option<[f64; 3]>,
-        min: Option<[f64; 3]>,
-    ) -> usize {
-        let element = if component_type == FLOAT { 4 } else { 4 };
-        let count = bytes.len() / element / 3;
-        let view = self.push_buffer(bytes, target);
+    /// `max` is the real minimum and `min` is the real maximum.
+    fn push_position(&mut self, bytes: Vec<u8>, count: usize, max: [f64; 3], min: [f64; 3]) -> usize {
+        let view = self.push_buffer(bytes, ARRAY_BUFFER);
         self.accessors.push(I3sAccessor {
             buffer_view: view,
             byte_offset: 0,
-            component_type,
+            component_type: FLOAT,
             count,
-            type_name,
-            min,
-            max,
+            type_name: "VEC3",
+            min: Some(min),
+            max: Some(max),
         });
         self.accessors.len() - 1
     }
@@ -935,8 +971,4 @@ fn element_size(values: &Values) -> usize {
         Values::I16(_) | Values::U16(_) => 2,
         Values::I8(_) | Values::U8(_) => 1,
     }
-}
-
-fn normals_element(values: &Values) -> usize {
-    element_size(values)
 }

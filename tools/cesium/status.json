@@ -1747,6 +1747,11 @@
     "rust": "workers::gaussian_splats::gaussian_splat_sorter",
     "note": "Native port of @cesium/wasm-splats radix_sort_gaussians_indexes: view-depth quantization, saturating casts, wrapping offset and four stable 8-bit passes. No Wasm module is compiled, so the initialization message has no counterpart. 19 direct worker cases against the real Wasm, including saturated depth ranges, NaN, ties and length errors."
   },
+  "Workers/decodeI3S": {
+    "status": "ported",
+    "rust": "workers::decode_i3s::decode_i3s",
+    "note": "Binary schema/bufferInfo walk and a private draco-core decode of DRACO payloads, including i3s scale and attribute-type metadata. Geoid sampling, local ENU transform, UV crop, flat normals, transparency split, feature ids, and object-key outlines. Owned buffers replace blob URLs. Position accessor min/max stay swapped. Wasm init returns true with no module. 21 direct worker cases."
+  },
   "Workers/gaussianSplatTextureGenerator": {
     "status": "ported",
     "rust": "workers::gaussian_splats::gaussian_splat_texture_generator",

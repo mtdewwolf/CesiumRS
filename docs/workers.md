@@ -2,7 +2,8 @@
 
 The first Workers completion batch adds all **31 geometry creation entry points**
 and **`createGeometry`**. Together with the five previously validated terrain and
-KTX2 workers, **37 of 53 Workers modules** are now ported. No remaining worker is
+KTX2 workers, later terrain, vector-tile, and Gaussian splat workers, and
+`decodeI3S`, **49 of 53 Workers modules** are now ported. No remaining worker is
 marked partial or counted as complete through a placeholder.
 
 ## Geometry entry points
@@ -101,6 +102,30 @@ TZ=UTC node tools/cesium/fixtures/generate.mjs createGeometry \
   $(node --input-type=module -e 'import fs from "node:fs"; for (const f of fs.readdirSync("tools/cesium/node_modules/@cesium/engine/Source/Workers")) if (/^create.+Geometry.js$/.test(f)) process.stdout.write(f.slice(0,-3)+" ")')
 ```
 
+## I3S geometry
+
+`workers::decode_i3s::decode_i3s` is the CesiumJS `decodeI3S` worker. It walks an
+I3S binary buffer in schema or `bufferInfo` order, and it decodes payloads that
+start with the `DRACO` magic through `draco-core` inside this module. That
+decoder is not shared with `decodeDraco`: I3S reads draco3d attribute values and
+`i3s-scale_*` / `i3s-attribute-type` metadata directly.
+
+The result is the worker's glTF document. Bytes that Cesium stores behind blob
+URLs are owned buffers. Position accessor `min` and `max` stay swapped. Colors
+are converted from sRGB. Feature ids, structural metadata, and
+`CESIUM_primitive_outline` are emitted with the same buffer order and the same
+JavaScript object-key order for welded vertices. A short header still throws
+before the binary decoder's try/catch; a later typed-array failure keeps the
+attributes already read.
+
+`init_decode_i3s` is the WebAssembly initialization message. There is no Draco
+module to compile, so it returns `true`.
+
+```bash
+cargo test --test workers_i3s
+TZ=UTC node tools/cesium/fixtures/generate.mjs decodeI3S
+```
+
 ## Remaining 16 modules
 
 The next batches cover:
@@ -113,7 +138,7 @@ The next batches cover:
   `createVectorTileClampedPolylines`, `createVectorTilePolygons`,
   `createVectorTileGeometries`.
 - Gaussian splats: `gaussianSplatSorter`, `gaussianSplatTextureGenerator`.
-- Specialized codecs: `decodeDraco`, `decodeI3S`.
+- Specialized codecs: `decodeDraco`.
 - Scene combination and worker messaging: `combineGeometry`,
   `createTaskProcessorWorker`. `transferTypedArrayTest` is n/a: its `onmessage`
   handler only transfers a typed array through `postMessage`. Owned Rust buffers
