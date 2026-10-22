@@ -97,11 +97,13 @@ return owned buffers, and `TaskProcessor` moves those values instead of
 transferring `ArrayBuffer`s.
 
 `decodeDraco` is partial. Dequantized triangular-mesh and point-cloud payloads,
-the geometry-type errors, and the WebAssembly initialization message (`true`;
-there is no module to compile) match the CesiumJS worker on direct cases.
-`dequantizeInShader` does not. `draco-core` 2.3.2 always inverse-transforms and
-drops the portable integers and quantization parameters that
-`SkipAttributeTransform` keeps, and it exposes no skip API. Mesh decode, face
-indices, and the mapped-index attribute walk live in `workers::draco`, which
-`decodeI3S` also uses. There is no remaining todo worker module. See
+including non-float and 64-bit attributes, the geometry-type errors, and the
+WebAssembly initialization message (`true`; there is no module to compile)
+match the CesiumJS worker on direct cases. Model's Draco loader turns
+`dequantizeInShader` on by default, so the most common production path differs
+from CesiumJS. `draco-core` 2.3.2 always inverse-transforms and drops the
+portable integers and quantization parameters that `SkipAttributeTransform`
+keeps, and it exposes no skip API. Mesh decode, face indices, and the
+mapped-index attribute walk live in `workers::draco`, which `decodeI3S` also
+uses. There is no remaining todo worker module. See
 [Workers details](docs/workers.md).

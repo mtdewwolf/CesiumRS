@@ -113,7 +113,8 @@ pub fn decode_triangular_mesh(data: &[u8]) -> Result<DracoGeometry, DracoDecodeE
 ///
 /// The type byte is checked before `PointCloudDecoder`. A mesh header is
 /// [`DracoDecodeError::WrongGeometry`]. Panic and status errors use the same
-/// catch as the mesh path.
+/// catch as the mesh path. `PointCloudDecoder::new` leaves `threads` at 1, so
+/// the point-cloud decoder runs on the calling thread.
 pub fn decode_point_cloud(data: &[u8]) -> Result<DracoGeometry, DracoDecodeError> {
     if data.get(7).copied() != Some(POINT_CLOUD) {
         return Err(DracoDecodeError::WrongGeometry);
@@ -137,8 +138,9 @@ fn guard(decode: impl FnOnce() -> Result<DracoGeometry, String>) -> Result<Draco
 /// The empty handlers for `DT_INT64`, `DT_UINT64`, and `DT_FLOAT64` return
 /// undefined. `DT_INVALID` and an overflowing component count do too.
 /// `decode_i3s` drops the previous attribute of that name when this is `None`.
-/// `decode_draco` still downcasts the stored 64-bit buffers to the 32-bit view
-/// that worker requests.
+/// `decode_draco` narrows the stored 64-bit buffers to the 32-bit view that
+/// worker requests: a value that fits is kept, and a value that does not fit
+/// becomes 0.
 pub fn defined_for_i3s(values: AttributeValues) -> Option<AttributeValues> {
     match values {
         AttributeValues::I64(_)
