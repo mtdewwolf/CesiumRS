@@ -115,7 +115,9 @@ The next batches cover:
 - Gaussian splats: `gaussianSplatSorter`, `gaussianSplatTextureGenerator`.
 - Specialized codecs: `decodeDraco`, `decodeI3S`.
 - Scene combination and worker messaging: `combineGeometry`,
-  `createTaskProcessorWorker`, `transferTypedArrayTest`.
+  `transferTypedArrayTest`. `createTaskProcessorWorker` is ported: it adapts a
+  calculation to the TaskProcessor `onmessage` / `onmessageerror` contract,
+  including the `formatError` strings posted when `postMessage` fails.
 
 Existing Core helpers are reused only after their worker boundaries have direct
-reference validation. These 16 entries remain todo in `PORTING.md`.
+reference validation.

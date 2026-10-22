@@ -1751,5 +1751,10 @@
     "status": "ported",
     "rust": "workers::gaussian_splats::gaussian_splat_texture_generator",
     "note": "Native port of @cesium/wasm-splats generate_splat_texture: Float32 position bits, ILM half-float covariance and RGBA8 colors in a 2048-wide RGBA32UI texture. 14 direct worker cases against the real Wasm, including row boundaries, denormal/overflow/NaN covariances and unnormalized rotations."
+  },
+  "Workers/createTaskProcessorWorker": {
+    "status": "ported",
+    "rust": "workers::task_processor_worker::deliver_task",
+    "note": "TaskProcessor onmessage and onmessageerror adapter: task id, parameters, CESIUM_BASE_URL, Error versus non-Error throws, transfer-list clearing, and formatError postMessage failure strings. 35 direct worker cases call the real adapter. TaskProcessor is unchanged."
   }
 }

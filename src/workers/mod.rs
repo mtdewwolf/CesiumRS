@@ -8,6 +8,7 @@ pub mod create_geometry;
 pub mod gaussian_splats;
 pub mod geometry;
 pub mod geometry_results;
+pub mod task_processor_worker;
 pub mod terrain;
 pub mod vector_tiles;
 
@@ -17,3 +18,4 @@ pub use geometry_results::PackedGeometryResults;
 pub use terrain::*;
 pub use vector_tiles::*;
 pub use gaussian_splats::*;
+pub use task_processor_worker::*;
