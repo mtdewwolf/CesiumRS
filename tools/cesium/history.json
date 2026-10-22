@@ -326,5 +326,13 @@
     "ported": 779,
     "implemented": 0,
     "validatedPercent": 39.04
+  },
+  {
+    "milestone": "3D Metadata",
+    "date": "2026-10-22",
+    "percent": 39.73,
+    "ported": 786,
+    "implemented": 0,
+    "validatedPercent": 39.73
   }
 ]

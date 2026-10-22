@@ -3830,5 +3830,40 @@
     "status": "ported",
     "rust": "scene::gltf_pipeline::update_version",
     "note": "glTF 0.8 to 1.0 (profiles, instance techniques, axis-angle rotations rewritten in the source buffer, technique passes, lights) and 1.0 to 2.0 (empty-node removal, objects to arrays, byte stride split into buffer views, accessor bounds, semantics, component types, techniques), then technique and KHR_materials_common materials to PBR. JavaScript undefined assignments become removed properties. The sRGB conversion uses the platform pow, within 1e-12 of V8's Math.pow. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/MetadataEnumValue": {
+    "status": "ported",
+    "rust": "scene::metadata_enum_value",
+    "note": "fromJson with the number and string checks, description, extras and extensions. Direct CesiumJS cases in tests/scene_metadata.rs."
+  },
+  "Scene/MetadataEnum": {
+    "status": "ported",
+    "rust": "scene::metadata_enum",
+    "note": "fromJson, namesByValue and valuesByName with JavaScript key order and later-duplicate wins, and the UINT16 default value type. Direct CesiumJS cases in tests/scene_metadata.rs."
+  },
+  "Scene/MetadataClassProperty": {
+    "status": "ported",
+    "rust": "scene::metadata_class_property",
+    "note": "fromJson for 3D Metadata and EXT_feature_metadata (type parsing, legacy detection, required/optional), the offset and scale defaults, normalize/unnormalize (BigInt-aware), value transforms with JavaScript's + and BigInt mixing TypeErrors, expandConstant, handleNoData, vector and matrix pack/unpack with Cesium's duck typing, validate messages, bytesPerElement, isGpuCompatible and the WebGL 1 and 2 GLSL unpacking. A MetadataValue enum carries numbers, BigInts, strings, booleans, arrays and the Cartesian and Matrix classes. Direct CesiumJS cases in tests/scene_metadata.rs."
+  },
+  "Scene/MetadataClass": {
+    "status": "ported",
+    "rust": "scene::metadata_class",
+    "note": "fromJson, properties in key order, propertiesBySemantic (later wins) and BATCH_TABLE_CLASS_NAME. Direct CesiumJS cases in tests/scene_metadata.rs."
+  },
+  "Scene/MetadataSchema": {
+    "status": "ported",
+    "rust": "scene::metadata_schema",
+    "note": "fromJson with enums before classes; classes and enums in JavaScript key order. Direct CesiumJS cases in tests/scene_metadata.rs."
+  },
+  "Scene/getMetadataClassProperty": {
+    "status": "ported",
+    "rust": "scene::get_metadata_class_property",
+    "note": "Schema, schema id, class and property lookups. Direct CesiumJS cases in tests/scene_metadata.rs."
+  },
+  "Scene/MetadataEntity": {
+    "status": "ported",
+    "rust": "scene::metadata_entity",
+    "note": "Rust trait for the abstract class; the static has/get/set (by id and by semantic) and getPropertyIds helpers over ordered raw properties, with no-data, defaults, normalization, value transforms and vector/matrix packing. Direct CesiumJS cases in tests/scene_metadata.rs."
   }
 }

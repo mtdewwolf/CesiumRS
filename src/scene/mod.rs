@@ -42,9 +42,6 @@ macro_rules! string_enum {
     };
 }
 
-pub mod gltf_pipeline;
-pub mod model;
-
 pub mod alpha_mode;
 pub mod arc_gis_base_map_type;
 pub mod attribute_type;
@@ -72,6 +69,8 @@ pub mod dynamic_atmosphere_lighting_type;
 pub mod expression_node_type;
 pub mod get_binary_accessor;
 pub mod get_clip_and_style_code;
+pub mod get_metadata_class_property;
+pub mod gltf_pipeline;
 pub mod has_extension;
 pub mod height_reference;
 pub mod horizontal_origin;
@@ -83,9 +82,17 @@ pub mod job_type;
 pub mod label_style;
 pub mod light;
 pub mod map_mode_2d;
+pub mod metadata_class;
+pub mod metadata_class_property;
 pub mod metadata_component_type;
+pub mod metadata_entity;
+pub mod metadata_enum;
+pub mod metadata_enum_value;
+pub mod metadata_schema;
 pub mod metadata_semantic;
 pub mod metadata_type;
+pub mod metadata_value;
+pub mod model;
 pub mod model_animation_loop;
 pub mod model_animation_state;
 pub mod never_tile_discard_policy;
@@ -178,6 +185,14 @@ pub use vertical_origin::VerticalOrigin;
 pub use voxel_metadata_order::VoxelMetadataOrder;
 
 pub use get_binary_accessor::get_binary_accessor;
+pub use get_metadata_class_property::get_metadata_class_property;
+pub use metadata_class::MetadataClass;
+pub use metadata_class_property::{MetadataClassProperty, MetadataClassPropertyOptions};
+pub use metadata_entity::{MetadataEntity, MetadataProperties};
+pub use metadata_enum::MetadataEnum;
+pub use metadata_enum_value::MetadataEnumValue;
+pub use metadata_schema::MetadataSchema;
+pub use metadata_value::{JsMap, MetadataError, MetadataValue, Numeric};
 pub use get_clip_and_style_code::get_clip_and_style_code;
 pub use has_extension::has_extension;
 pub use height_reference::{is_height_reference_clamp, is_height_reference_relative};
