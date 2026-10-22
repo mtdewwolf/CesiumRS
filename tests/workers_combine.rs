@@ -1,6 +1,7 @@
 //! `combineGeometry` against the real CesiumJS worker, including packed
 //! instances and Float32 bounding-sphere buffers.
 mod common;
+use cesium_rs::core::math::SIXTY_FOUR_KILOBYTES;
 use cesium_rs::core::*;
 use cesium_rs::workers::*;
 use common::*;
@@ -40,6 +41,33 @@ fn sphere_json(sphere: Option<BoundingSphere>) -> Value {
     }
 }
 
+/// Constructor name Cesium records for an attribute's `values`.
+///
+/// `fitToUnsignedShortIndices` copies values into a plain array. The port
+/// stores that copy as `Float64` and keeps the source component datatype, so
+/// the storage kind and the datatype differ only for those copied attributes.
+fn attribute_values_name(attribute: &GeometryAttribute) -> &'static str {
+    if attribute.values.component_datatype() != attribute.component_datatype {
+        "Array"
+    } else {
+        typed_array_name(&attribute.values)
+    }
+}
+
+/// Constructor name Cesium records for `geometry.indices`.
+///
+/// The unsigned-short split stores each piece's indices in a plain array.
+/// Every piece has fewer than 64K vertices, where a typed array would be
+/// `Uint16Array`. The port stores those plain index lists as `Uint32`.
+fn index_values_name(geometry: &Geometry, indices: &TypedArray) -> &'static str {
+    let vertices = geometry.compute_number_of_vertices().unwrap_or(f64::NAN);
+    if matches!(indices, TypedArray::Uint32(_)) && vertices < f64::from(SIXTY_FOUR_KILOBYTES) {
+        "Array"
+    } else {
+        typed_array_name(indices)
+    }
+}
+
 fn geometry_json(geometry: &Geometry) -> Value {
     let mut attributes = Map::new();
     for (name, attribute) in geometry.attributes.iter() {
@@ -49,14 +77,16 @@ fn geometry_json(geometry: &Geometry) -> Value {
                 attribute.component_datatype as u32,
                 attribute.components_per_attribute,
                 attribute.normalize,
-                typed_array_name(&attribute.values),
+                attribute_values_name(attribute),
                 typed_values(&attribute.values),
             ]),
         );
     }
     json!({
         "attributes": attributes,
-        "indices": geometry.indices.as_ref().map(|indices| json!([typed_array_name(indices), typed_values(indices)])),
+        "indices": geometry.indices.as_ref().map(|indices| {
+            json!([index_values_name(geometry, indices), typed_values(indices)])
+        }),
         "primitiveType": geometry.primitive_type as u32,
         "boundingSphere": sphere_json(geometry.bounding_sphere),
         "boundingSphereCV": sphere_json(geometry.bounding_sphere_cv),
@@ -126,4 +156,23 @@ fn combine_geometry_reference() {
             })
         },
     );
+}
+
+/// Cesium's debug build throws `DeveloperError` when instances mix
+/// `primitiveType`s. Release builds strip that check, and this port combines
+/// the instances under the first geometry's type.
+#[test]
+fn mixed_primitive_types_keep_the_first() {
+    let cases = load("workers", "combineGeometry");
+    let case = cases
+        .iter()
+        .find(|case| case.r.get("kind").and_then(Value::as_str) == Some("DeveloperError"))
+        .expect("mixed primitiveType fixture");
+    let result = combine(&case.a[0]).expect("mixed primitive types combine");
+    let geometries = result.geometries.expect("geometries");
+    assert_eq!(geometries.len(), 1);
+    assert_eq!(geometries[0].primitive_type, PrimitiveType::Triangles);
+    let indices = geometries[0].indices.as_ref().expect("indices");
+    // BoxGeometry contributes 36 indices. The line geometry is concatenated after them.
+    assert!(indices.len() > 36, "line indices were not concatenated, len {}", indices.len());
 }
