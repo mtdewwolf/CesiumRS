@@ -6,9 +6,8 @@
 //! Blob URLs are owned byte buffers. The worker's WebAssembly initialization
 //! message has no module to compile and resolves `true`.
 //!
-//! Draco decoding uses `draco-core` inside this module. It is not a shared
-//! `decodeDraco` helper: I3S reads draco3d attribute values and `i3s-*`
-//! metadata directly.
+//! Draco decoding uses `workers::draco`, shared with `decodeDraco`. This module
+//! still reads the dequantized values and applies `i3s-*` metadata itself.
 
 mod components;
 mod mesh;

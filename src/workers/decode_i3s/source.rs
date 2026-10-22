@@ -4,14 +4,11 @@
 //! attributes named by `bufferInfo` or by the schema. A read that would throw
 //! from a JavaScript typed-array view stops the walk and keeps what was decoded.
 //! Unknown `bufferInfo` names are skipped without moving the cursor. Draco
-//! attributes are read in attribute-id order, already dequantized to the stored
-//! data type, and may be renamed by `i3s-attribute-type` metadata.
+//! payloads go through `workers::draco`. This module still applies semantic
+//! names and `i3s-attribute-type` metadata, and it still drops 64-bit values.
 
 use super::components::Values;
-use draco_core::geometry_attribute::GeometryAttributeType;
-use draco_core::geometry_indices::PointIndex;
-use draco_core::{DataType, DecoderBuffer, Mesh, MeshDecoder, PointAttribute};
-use std::panic::{catch_unwind, AssertUnwindSafe};
+use crate::workers::draco::{self, AttributeValues, GeometryAttributeType, Metadata};
 
 #[derive(Clone, Debug)]
 pub(super) struct DecodedGeometry {
@@ -52,45 +49,21 @@ pub(super) fn decode_geometry(
 }
 
 fn decode_draco(data: &[u8]) -> DecodedGeometry {
-    // `GetEncodedGeometryType` accepts only TRIANGULAR_MESH (header type byte 1).
-    // Point clouds and buffers shorter than the type byte stay the empty geometry.
-    if data.get(7).copied() != Some(1) {
-        return empty_draco();
-    }
-    // A truncated mesh makes draco3d return a failed status. draco-core returns
-    // `Status::Err` for the same prefixes. `catch_unwind` maps an unwind panic
-    // onto that empty geometry. Release and wasm use `panic = "abort"`, so an
-    // assert inside the decoder still aborts the module; this catch does not.
-    let decoded = catch_unwind(AssertUnwindSafe(|| {
-        let mut buffer = DecoderBuffer::new(data);
-        let mut mesh = Mesh::new();
-        if MeshDecoder::new().decode(&mut buffer, &mut mesh).is_err() {
-            None
-        } else {
-            Some(mesh)
-        }
-    }));
-    let Ok(Some(mesh)) = decoded else {
+    // Wrong geometry, a decoder error, and a caught panic are all the empty
+    // geometry. The header check and `catch_unwind` live in the shared helper.
+    let Ok(mesh) = draco::decode_triangular_mesh(data) else {
         return empty_draco();
     };
     let mut geometry = empty_draco();
-    let vertex_count = mesh.num_points();
-    geometry.vertex_count = vertex_count as u32;
-    let mut indices = Vec::with_capacity(mesh.num_faces() * 3);
-    for face in mesh.faces() {
-        indices.extend(face.iter().map(|point| point.0));
-    }
-    geometry.indices = Some(Values::U32(indices));
+    geometry.vertex_count = mesh.num_points as u32;
+    geometry.indices = Some(Values::U32(mesh.indices));
 
-    for attr_index in 0..mesh.num_attributes() {
-        let Ok(attribute) = mesh.try_attribute(attr_index) else {
-            continue;
-        };
-        let mut name = semantic_name(attribute.attribute_type());
-        if let Some(metadata) = mesh.attribute_metadata_by_unique_id(attribute.unique_id()) {
-            apply_metadata(&mut geometry, metadata.metadata(), &mut name);
+    for attribute in mesh.attributes {
+        let mut name = semantic_name(attribute.attribute_type);
+        if let Some(metadata) = attribute.metadata.as_ref() {
+            apply_metadata(&mut geometry, metadata, &mut name);
         }
-        let Some(values) = read_draco_attribute(attribute, vertex_count) else {
+        let Some(values) = i3s_values(attribute.values) else {
             // INT64, UINT64, and FLOAT64 handlers return undefined, and the
             // assignment still replaces any previous value of this name.
             // `featureCount++` runs when that name is `feature-index`, but
@@ -129,7 +102,7 @@ fn semantic_name(kind: GeometryAttributeType) -> String {
     .to_string()
 }
 
-fn apply_metadata(geometry: &mut DecodedGeometry, metadata: &draco_core::Metadata, name: &mut String) {
+fn apply_metadata(geometry: &mut DecodedGeometry, metadata: &Metadata, name: &mut String) {
     for entry in metadata.entries().keys() {
         if entry == "i3s-scale_x" {
             geometry.scale_x = metadata.get_f64(entry).unwrap_or(0.0);
@@ -141,65 +114,22 @@ fn apply_metadata(geometry: &mut DecodedGeometry, metadata: &draco_core::Metadat
     }
 }
 
-fn read_draco_attribute(attribute: &PointAttribute, vertex_count: usize) -> Option<Values> {
-    let components = attribute.num_components() as usize;
-    let count = components.checked_mul(vertex_count)?;
-    match attribute.data_type() {
-        // The empty handlers for DT_INT64, DT_UINT64, and DT_FLOAT64 return undefined.
-        DataType::Invalid | DataType::Int64 | DataType::Uint64 | DataType::Float64 => None,
-        DataType::Float32 => Some(Values::F32(read_mapped(attribute, count, read_f32))),
-        DataType::Int8 => Some(Values::I8(read_mapped(attribute, count, read_i8))),
-        DataType::Uint8 | DataType::Bool => Some(Values::U8(read_mapped(attribute, count, read_u8))),
-        DataType::Int16 => Some(Values::I16(read_mapped(attribute, count, read_i16))),
-        DataType::Uint16 => Some(Values::U16(read_mapped(attribute, count, read_u16))),
-        DataType::Int32 => Some(Values::I32(read_mapped(attribute, count, read_i32))),
-        DataType::Uint32 => Some(Values::U32(read_mapped(attribute, count, read_u32))),
+fn i3s_values(values: AttributeValues) -> Option<Values> {
+    let values = draco::defined_for_i3s(values)?;
+    match values {
+        AttributeValues::F32(values) => Some(Values::F32(values)),
+        AttributeValues::I8(values) => Some(Values::I8(values)),
+        AttributeValues::U8(values) => Some(Values::U8(values)),
+        AttributeValues::I16(values) => Some(Values::I16(values)),
+        AttributeValues::U16(values) => Some(Values::U16(values)),
+        AttributeValues::I32(values) => Some(Values::I32(values)),
+        AttributeValues::U32(values) => Some(Values::U32(values)),
+        AttributeValues::I64(_)
+        | AttributeValues::U64(_)
+        | AttributeValues::F64(_)
+        | AttributeValues::Invalid
+        | AttributeValues::Unreadable => None,
     }
-}
-
-fn read_mapped<T: Copy + Default>(attribute: &PointAttribute, count: usize, read: fn(&[u8]) -> T) -> Vec<T> {
-    let components = attribute.num_components() as usize;
-    if components == 0 {
-        return vec![T::default(); count];
-    }
-    let width = attribute.data_type().byte_length();
-    let stride = attribute.byte_stride() as usize;
-    let data = attribute.buffer().data();
-    let mut out = vec![T::default(); count];
-    for (element, slot) in out.iter_mut().enumerate() {
-        let point = element / components;
-        let component = element % components;
-        let value_index = attribute.mapped_index(PointIndex(point as u32)).0 as usize;
-        let Some(offset) = value_index.checked_mul(stride).and_then(|base| base.checked_add(component * width)) else {
-            continue;
-        };
-        if let Some(bytes) = data.get(offset..offset + width) {
-            *slot = read(bytes);
-        }
-    }
-    out
-}
-
-fn read_f32(bytes: &[u8]) -> f32 {
-    f32::from_le_bytes(bytes.try_into().unwrap_or([0; 4]))
-}
-fn read_i8(bytes: &[u8]) -> i8 {
-    bytes.first().copied().unwrap_or(0) as i8
-}
-fn read_u8(bytes: &[u8]) -> u8 {
-    bytes.first().copied().unwrap_or(0)
-}
-fn read_i16(bytes: &[u8]) -> i16 {
-    i16::from_le_bytes(bytes.try_into().unwrap_or([0; 2]))
-}
-fn read_u16(bytes: &[u8]) -> u16 {
-    u16::from_le_bytes(bytes.try_into().unwrap_or([0; 2]))
-}
-fn read_i32(bytes: &[u8]) -> i32 {
-    i32::from_le_bytes(bytes.try_into().unwrap_or([0; 4]))
-}
-fn read_u32(bytes: &[u8]) -> u32 {
-    u32::from_le_bytes(bytes.try_into().unwrap_or([0; 4]))
 }
 
 fn decode_binary(

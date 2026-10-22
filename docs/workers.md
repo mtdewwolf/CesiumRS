@@ -106,9 +106,12 @@ TZ=UTC node tools/cesium/fixtures/generate.mjs createGeometry \
 
 `workers::decode_i3s::decode_i3s` is the CesiumJS `decodeI3S` worker. It walks an
 I3S binary buffer in schema or `bufferInfo` order, and it decodes payloads that
-start with the `DRACO` magic through `draco-core` inside this module. That
-decoder is not shared with `decodeDraco`: I3S reads draco3d attribute values and
-`i3s-scale_*` / `i3s-attribute-type` metadata directly.
+start with the `DRACO` magic through `workers::draco`. That module is shared
+with `decodeDraco`. The helper checks for a triangular-mesh header before
+`MeshDecoder`, catches a decoder panic as an empty geometry, and leaves
+64-bit attributes undefined for I3S. I3S still applies semantic names and
+`i3s-scale_*` / `i3s-attribute-type` metadata itself. A point cloud is still
+empty geometry.
 
 The result is the worker's glTF document. Bytes that Cesium stores behind blob
 URLs are owned buffers. Position accessor `min` and `max` stay swapped. Colors
@@ -138,7 +141,6 @@ The next batches cover:
   `createVectorTileClampedPolylines`, `createVectorTilePolygons`,
   `createVectorTileGeometries`.
 - Gaussian splats: `gaussianSplatSorter`, `gaussianSplatTextureGenerator`.
-- Specialized codecs: `decodeDraco`.
 - Scene combination and worker messaging: `combineGeometry` and
   `createTaskProcessorWorker` are ported. `combineGeometry` runs the existing
   geometry pipeline on packed instances and posts Float32 bounding spheres.
@@ -151,3 +153,17 @@ The next batches cover:
 
 Existing Core helpers are reused only after their worker boundaries have direct
 reference validation.
+
+## decodeDraco
+
+`workers::decode_draco` decodes Draco 1.x meshes and point clouds through
+`workers::draco` and `draco-core` =2.3.2 (decoder, point-cloud, EdgeBreaker
+valence, and legacy bitstream features). The helper is the geometry-type
+check, the panic boundary, the face indices, and the mapped-index walk taken
+out of `decode_i3s`. The WebAssembly initialization message returns `true`.
+
+Dequantized attributes, index width, and the two geometry-type errors match
+the CesiumJS worker on 18 direct cases. `dequantizeInShader` does not: the
+crate always inverse-transforms and does not keep the portable integers or
+the quantization parameters `SkipAttributeTransform` would return. Callers
+that set the flag still receive the dequantized values and `quantization: null`.

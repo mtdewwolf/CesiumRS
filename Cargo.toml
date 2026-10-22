@@ -51,11 +51,12 @@ regex = "1"
 roxmltree = "0.21"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
-# Pure-Rust Draco 1.x decoder (decoder + EdgeBreaker valence + legacy bitstreams).
-# decodeI3S calls draco3d 1.5.9 directly; this stays inside the I3S worker and is
-# not a shared decodeDraco helper. MSRV 1.88, Apache-2.0, no C++/native deps.
+# One Draco crate, shared by decodeI3S and decodeDraco. No other Draco decoder.
+# Pure-Rust Draco 1.x. MSRV 1.88, Apache-2.0, no C++/native deps.
+# point_cloud_decode is the KD-tree/sequential path decodeDraco needs.
 draco-core = { version = "=2.3.2", default-features = false, features = [
     "decoder",
+    "point_cloud_decode",
     "edgebreaker_valence_decode",
     "legacy_bitstream_decode",
 ] }

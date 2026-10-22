@@ -1750,7 +1750,7 @@
   "Workers/decodeI3S": {
     "status": "ported",
     "rust": "workers::decode_i3s::decode_i3s",
-    "note": "Binary schema/bufferInfo walk and a private draco-core decode of DRACO payloads, including i3s scale and attribute-type metadata. Geoid sampling, local ENU transform, UV crop, flat normals, transparency split, feature ids, and object-key outlines. Owned buffers replace blob URLs. Position accessor min/max stay swapped. Wasm init returns true with no module. 24 direct worker cases."
+    "note": "Binary schema/bufferInfo walk and workers::draco for DRACO payloads, including i3s scale and attribute-type metadata. Geoid sampling, local ENU transform, UV crop, flat normals, transparency split, feature ids, and object-key outlines. Owned buffers replace blob URLs. Position accessor min/max stay swapped. Wasm init returns true with no module. 24 direct worker cases."
   },
   "Workers/gaussianSplatTextureGenerator": {
     "status": "ported",
@@ -1766,6 +1766,11 @@
     "status": "ported",
     "rust": "workers::task_processor_worker::deliver_task",
     "note": "TaskProcessor onmessage and onmessageerror adapter: task id, parameters, CESIUM_BASE_URL, Error versus non-Error throws, transfer-list clearing, and formatError postMessage failure strings. 41 direct worker cases call the real adapter. TaskProcessor is unchanged."
+  },
+  "Workers/decodeDraco": {
+    "status": "partial",
+    "rust": "workers::decode_draco",
+    "note": "Dequantized triangular meshes and point clouds, geometry-type errors, and the WebAssembly init message (returns true; no module is compiled) match the CesiumJS worker. 18 direct cases. Built on workers::draco, the helper extracted from decodeI3S. dequantizeInShader is not reproduced: draco-core 2.3.2 always inverse-transforms and discards portable integers and quantization parameters, and it has no SkipAttributeTransform."
   },
   "Workers/transferTypedArrayTest": {
     "status": "n/a",

@@ -96,6 +96,12 @@ empty object if that transfer throws. It performs no calculation. Rust workers
 return owned buffers, and `TaskProcessor` moves those values instead of
 transferring `ArrayBuffer`s.
 
-The remaining todo module is `decodeDraco`.
-It stays todo until its implementation and
-direct worker validation are complete. See [Workers details](docs/workers.md).
+`decodeDraco` is partial. Dequantized triangular-mesh and point-cloud payloads,
+the geometry-type errors, and the WebAssembly initialization message (`true`;
+there is no module to compile) match the CesiumJS worker on direct cases.
+`dequantizeInShader` does not. `draco-core` 2.3.2 always inverse-transforms and
+drops the portable integers and quantization parameters that
+`SkipAttributeTransform` keeps, and it exposes no skip API. Mesh decode, face
+indices, and the mapped-index attribute walk live in `workers::draco`, which
+`decodeI3S` also uses. There is no remaining todo worker module. See
+[Workers details](docs/workers.md).

@@ -259,6 +259,28 @@ fn huge_face_range_returns_an_error() {
 }
 
 #[test]
+fn point_cloud_draco_payload_is_rejected() {
+    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/workers/decodeI3S.json");
+    let fixture: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    let bytes = fixture["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|case| {
+            let values = case["a"][0].as_array()?;
+            let bytes: Vec<u8> = values.iter().map(|value| n(value) as u8).collect();
+            (bytes.starts_with(b"DRACO") && bytes.get(7).copied() == Some(0)).then_some(bytes)
+        })
+        .next()
+        .expect("point-cloud draco fixture");
+    let decoded = std::panic::catch_unwind(|| decode_i3s(&wgs84_frame(bytes, Vec::new())));
+    let decoded = decoded.expect("point cloud must not panic").expect("point cloud stays empty geometry");
+    assert!(decoded.buffers.is_empty());
+    assert!(decoded.positions.is_none());
+    assert!(decoded.indices.is_none());
+}
+
+#[test]
 fn truncated_draco_payload_does_not_panic() {
     let path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/workers/decodeI3S.json");
     let fixture: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
