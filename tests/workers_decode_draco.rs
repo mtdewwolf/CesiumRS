@@ -13,7 +13,7 @@ fn decode_draco_reference() {
         |_, a| {
             Some(match decode_draco(&a[0]) {
                 Ok(value) => Out::Ok(value),
-                Err(error) => Out::Err(error.to_string()),
+                Err(error) => Out::Err(error.message),
             })
         },
     );

@@ -1770,7 +1770,7 @@
   "Workers/decodeDraco": {
     "status": "partial",
     "rust": "workers::decode_draco",
-    "note": "Dequantized triangular meshes and point clouds, geometry-type errors, and the WebAssembly init message (returns true; no module is compiled) match the CesiumJS worker. 18 direct cases. Built on workers::draco, the helper extracted from decodeI3S. dequantizeInShader is not reproduced: draco-core 2.3.2 always inverse-transforms and discards portable integers and quantization parameters, and it has no SkipAttributeTransform."
+    "note": "Dequantized triangular meshes and point clouds, including non-float and 64-bit attributes, geometry-type errors, and the WebAssembly init message (returns true; no module is compiled) match the CesiumJS worker. 32 direct cases. Built on workers::draco, the helper extracted from decodeI3S. dequantizeInShader is not reproduced: draco-core 2.3.2 always inverse-transforms and discards portable integers and quantization parameters, and it has no SkipAttributeTransform. Model's Draco loader turns dequantizeInShader on by default, so the most common production path differs from CesiumJS."
   },
   "Workers/transferTypedArrayTest": {
     "status": "n/a",

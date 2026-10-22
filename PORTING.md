@@ -127,13 +127,15 @@ return owned buffers, and `TaskProcessor` moves those values instead of
 transferring `ArrayBuffer`s.
 
 `decodeDraco` is partial. Dequantized triangular-mesh and point-cloud payloads,
-the geometry-type errors, and the WebAssembly initialization message (`true`;
-there is no module to compile) match the CesiumJS worker on direct cases.
-`dequantizeInShader` does not. `draco-core` 2.3.2 always inverse-transforms and
-drops the portable integers and quantization parameters that
-`SkipAttributeTransform` keeps, and it exposes no skip API. Mesh decode, face
-indices, and the mapped-index attribute walk live in `workers::draco`, which
-`decodeI3S` also uses. There is no remaining todo worker module. See
+including non-float and 64-bit attributes, the geometry-type errors, and the
+WebAssembly initialization message (`true`; there is no module to compile)
+match the CesiumJS worker on direct cases. Model's Draco loader turns
+`dequantizeInShader` on by default, so the most common production path differs
+from CesiumJS. `draco-core` 2.3.2 always inverse-transforms and drops the
+portable integers and quantization parameters that `SkipAttributeTransform`
+keeps, and it exposes no skip API. Mesh decode, face indices, and the
+mapped-index attribute walk live in `workers::draco`, which `decodeI3S` also
+uses. There is no remaining todo worker module. See
 [Workers details](docs/workers.md).
 
 ## Core
@@ -1127,7 +1129,7 @@ indices, and the mapped-index attribute walk live in `workers::draco`, which
 | createVerticesFromQuantizedTerrainMesh | 550 | ✅ ported | `core::quantized_terrain_processor` | Native ENU bounds, vertex quantization, normals/Mercator/exaggeration fields, skirt offsets, edge ordering, indices and horizon metadata. 17 direct worker cases include antimeridian bounds and skirt-induced Uint32 promotion; also checked through terrain-data lifecycles. |
 | createWallGeometry | 13 | ✅ ported | `workers::geometry::create_wall_geometry` | Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction. |
 | createWallOutlineGeometry | 13 | ✅ ported | `workers::geometry::create_wall_outline_geometry` | Typed and offset-packed entry points reuse complete Core geometry calculations; 15 direct CesiumJS worker reference cases per module. Rust-owned centers/ellipsoids replace structured-clone reconstruction. |
-| decodeDraco | 384 | 🟡 partial | `workers::decode_draco` | Dequantized triangular meshes and point clouds, geometry-type errors, and the WebAssembly init message (returns true; no module is compiled) match the CesiumJS worker. 18 direct cases. Built on workers::draco, the helper extracted from decodeI3S. dequantizeInShader is not reproduced: draco-core 2.3.2 always inverse-transforms and discards portable integers and quantization parameters, and it has no SkipAttributeTransform. |
+| decodeDraco | 384 | 🟡 partial | `workers::decode_draco` | Dequantized triangular meshes and point clouds, including non-float and 64-bit attributes, geometry-type errors, and the WebAssembly init message (returns true; no module is compiled) match the CesiumJS worker. 32 direct cases. Built on workers::draco, the helper extracted from decodeI3S. dequantizeInShader is not reproduced: draco-core 2.3.2 always inverse-transforms and discards portable integers and quantization parameters, and it has no SkipAttributeTransform. Model's Draco loader turns dequantizeInShader on by default, so the most common production path differs from CesiumJS. |
 | decodeGoogleEarthEnterprisePacket | 269 | ✅ ported | `workers::terrain::decode_google_earth_enterprise_packet` | Typed packet kinds; XOR decoding, zlib/gzip inflation with both header byte orders, quadtree metadata, five-mesh terrain splitting and dbRoot buffers. 29 direct worker cases including every header/offset failure and short instance lists. |
 | decodeI3S | 1653 | ✅ ported | `workers::decode_i3s::decode_i3s` | Binary schema/bufferInfo walk and workers::draco for DRACO payloads, including i3s scale and attribute-type metadata. Geoid sampling, local ENU transform, UV crop, flat normals, transparency split, feature ids, and object-key outlines. Owned buffers replace blob URLs. Position accessor min/max stay swapped. Wasm init returns true with no module. 24 direct worker cases. |
 | gaussianSplatSorter | 35 | ✅ ported | `workers::gaussian_splats::gaussian_splat_sorter` | Native port of @cesium/wasm-splats radix_sort_gaussians_indexes: view-depth quantization, saturating casts, wrapping offset and four stable 8-bit passes. No Wasm module is compiled, so the initialization message has no counterpart. 19 direct worker cases against the real Wasm, including saturated depth ranges, NaN, ties and length errors. |
