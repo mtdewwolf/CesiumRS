@@ -51,6 +51,14 @@ regex = "1"
 roxmltree = "0.21"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
+# Pure-Rust Draco 1.x decoder (decoder + EdgeBreaker valence + legacy bitstreams).
+# decodeI3S calls draco3d 1.5.9 directly; this stays inside the I3S worker and is
+# not a shared decodeDraco helper. MSRV 1.88, Apache-2.0, no C++/native deps.
+draco-core = { version = "2.3.2", default-features = false, features = [
+    "decoder",
+    "edgebreaker_valence_decode",
+    "legacy_bitstream_decode",
+] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ureq = { version = "3.4", optional = true }
