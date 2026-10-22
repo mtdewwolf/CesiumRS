@@ -122,18 +122,16 @@ pub fn interpolate(
                 let coef_index = coef_index as i64;
                 let zj = x_table[z_indices[j as usize]];
                 let zn = x_table[z_indices[(j + i) as usize]];
-                let numerator;
-                let coefficient;
-                if zn - zj <= 0.0 {
+                let (numerator, coefficient) = if zn - zj <= 0.0 {
                     let index = z_indices[j as usize] * y_stride * (input_order + 1) + y_stride * i as usize + s;
-                    numerator = y_table[index];
-                    coefficient = numerator / factorial(i as u32);
+                    let numerator = y_table[index];
+                    (numerator, numerator / factorial(i as u32))
                 } else {
                     let dim_two_minus_one = ((i - 1) * (2 - i)).div_euclid(2) + z_len * (i - 1);
-                    numerator = coefficients[(dim_one + dim_two_minus_one + j + 1) as usize]
+                    let numerator = coefficients[(dim_one + dim_two_minus_one + j + 1) as usize]
                         - coefficients[(dim_one + dim_two_minus_one + j) as usize];
-                    coefficient = numerator / (zn - zj);
-                }
+                    (numerator, numerator / (zn - zj))
+                };
                 coefficients[(dim_one + dim_two_i + coef_index) as usize] = coefficient;
                 non_zero_coefficients = non_zero_coefficients || numerator != 0.0;
             }

@@ -188,7 +188,9 @@ impl CylinderGeometry {
         if vertex_format.st {
             let rad = js_max(top_radius, bottom_radius);
             let st: Vec<f64> = positions
-                .chunks_exact(3)
+                .as_chunks::<3>()
+                .0
+                .iter()
                 .flat_map(|p| [(p[0] + rad) / (2.0 * rad), (p[1] + rad) / (2.0 * rad)])
                 .collect();
             attributes.st = Some(GeometryAttribute::floats(2, &st));

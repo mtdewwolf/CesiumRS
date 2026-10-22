@@ -251,7 +251,7 @@ impl Cesium3DTilesTerrainGeometryProcessor {
         center.height = (o.minimum_height + o.maximum_height) * 0.5;
         let approximate = o.ellipsoid.cartographic_to_cartesian(&center);
         let mut samples = vec![];
-        for (i, pos) in positions.chunks_exact(3).enumerate() {
+        for (i, pos) in positions.as_chunks::<3>().0.iter().enumerate() {
             let position = transform.multiply_by_point(Cartesian3::new(pos[0], pos[1], pos[2]));
             let c =
                 o.ellipsoid.cartesian_to_cartographic(position).ok_or_else(|| error("Invalid terrain position."))?;
@@ -344,7 +344,7 @@ impl Cesium3DTilesTerrainGeometryProcessor {
         let mut output = vec![];
         let mut edge: [Vec<u32>; 4] = Default::default();
         let (mut hmin, mut hmax) = (f64::INFINITY, f64::NEG_INFINITY);
-        for tri in indices[..index_count].chunks_exact(3) {
+        for tri in indices[..index_count].as_chunks::<3>().0 {
             let ids = [tri[0] as usize, tri[1] as usize, tri[2] as usize];
             if ids.iter().any(|&i| i >= count) {
                 return Err(error("Invalid terrain triangle."));

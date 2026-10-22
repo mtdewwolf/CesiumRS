@@ -247,7 +247,7 @@ pub fn create_vector_tile_polylines(p: VectorTilePolylinesParameters<'_>) -> Res
     let index_length = length(positions_length as f64 * 6.0 - 6.0)?;
     let mut indices = vec![0.0; index_length];
     let mut index = 0.0;
-    for quad in indices.chunks_exact_mut(6) {
+    for quad in indices.as_chunks_mut::<6>().0 {
         quad.copy_from_slice(&[index, index + 2.0, index + 1.0, index + 1.0, index + 2.0, index + 3.0]);
         index += 4.0;
     }
@@ -370,7 +370,9 @@ pub fn create_vector_tile_clamped_polylines(
             .pack(&mut positions, i * 3);
     }
     let rtc: Vec<f32> = positions
-        .chunks_exact(3)
+        .as_chunks::<3>()
+        .0
+        .iter()
         .flat_map(|p| [(p[0] - tile.center.x) as f32, (p[1] - tile.center.y) as f32, (p[2] - tile.center.z) as f32])
         .collect();
 
@@ -516,11 +518,11 @@ fn reinterpret(indices: &TypedArray, bytes_per_element: f64) -> Result<Vec<f64>,
         _ => return Err(invalid("Vector tile polygon indices must be unsigned integers.")),
     };
     if bytes_per_element == 2.0 {
-        Ok(bytes.chunks_exact(2).map(|b| u16::from_le_bytes([b[0], b[1]]) as f64).collect())
+        Ok(bytes.as_chunks::<2>().0.iter().map(|b| u16::from_le_bytes(*b) as f64).collect())
     } else if !bytes.len().is_multiple_of(4) {
         Err(invalid("byte length of Uint32Array should be a multiple of 4"))
     } else {
-        Ok(bytes.chunks_exact(4).map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]) as f64).collect())
+        Ok(bytes.as_chunks::<4>().0.iter().map(|b| u32::from_le_bytes(*b) as f64).collect())
     }
 }
 
