@@ -1768,9 +1768,9 @@
     "note": "TaskProcessor onmessage and onmessageerror adapter: task id, parameters, CESIUM_BASE_URL, Error versus non-Error throws, transfer-list clearing, and formatError postMessage failure strings. 41 direct worker cases call the real adapter. TaskProcessor is unchanged."
   },
   "Workers/decodeDraco": {
-    "status": "partial",
+    "status": "ported",
     "rust": "workers::decode_draco",
-    "note": "Dequantized triangular meshes and point clouds, including non-float and 64-bit attributes, geometry-type errors, and the WebAssembly init message (returns true; no module is compiled) match the CesiumJS worker. 32 direct cases. Built on workers::draco, the helper extracted from decodeI3S. dequantizeInShader is not reproduced: draco-core 2.3.2 always inverse-transforms and discards portable integers and quantization parameters, and it has no SkipAttributeTransform. Model's Draco loader turns dequantizeInShader on by default, so the most common production path differs from CesiumJS."
+    "note": "Triangular meshes and point clouds, including non-float and 64-bit attributes, geometry-type errors, and the WebAssembly init message (returns true; no module is compiled) match the CesiumJS worker. dequantizeInShader and attributesToSkipTransform keep quantized POSITION, NORMAL, COLOR and TEX_COORD values with their quantization or octahedral parameters, through SetSkipAttributeTransform in a vendored, patched draco-core 2.3.2 (third_party/draco-core). Covers sequential, EdgeBreaker and KD-tree encodings, 8/16-bit and wider quantization, integer-encoded attributes, and unknown type names (Draco reads them as POSITION). 61 direct cases. Built on workers::draco, the helper shared with decodeI3S."
   },
   "Workers/transferTypedArrayTest": {
     "status": "n/a",

@@ -35,7 +35,7 @@ Along the way, `core::js_math` made the port's `sin`, `cos`, `log` and the other
    - ✅ network heightmap/quantized and 3D Tiles terrain providers, Google Earth Enterprise metadata and terrain, world-terrain factories. Ion resources/geocoding and platform clients are now validated. Bing, Google, Pelias, OpenCage and coordinate geocoders pass deterministic parsing, request construction, attribution and error fixtures.
 11. ✅ **Contracts and host behavior:** interpolation/packing interfaces, geometry factories, video bindings, terrain sampling, screen-space gestures and canvas text/pin rendering validated.
 
-Core and Renderer have reached 100% of applicable modules; Workers completion is the active milestone, followed by Scene. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. The viewer already runs on Core — it was migrated ahead of 100% Core so the two implementations could not drift apart. After Core, proceed to Renderer and Scene.
+Core, Renderer, Shaders and Workers have reached 100% of applicable modules; Scene is next. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. The viewer already runs on Core — it was migrated ahead of 100% Core so the two implementations could not drift apart. After Core, proceed to Renderer and Scene.
 
 ### Validated partial-module batch
 
@@ -67,9 +67,9 @@ applications can implement the existing `Gl` host contract.
 
 ### Workers completion
 
-Workers has **51/53 validated modules**, matching the Workers row in the package table.
+All **52 applicable Workers modules** are validated, matching the Workers row in the package table; `transferTypedArrayTest` is n/a.
 Direct CesiumJS worker fixtures cover typed/packed inputs and batch/result wire
-formats; geometry, terrain, vector-tile, Gaussian splat, I3S, combineGeometry, and
+formats; geometry, terrain, vector-tile, Gaussian splat, I3S, Draco, combineGeometry, and
 createTaskProcessorWorker workers are in that validated set. Ground polylines use the bundled height table. Host-registered
 Rust factories replace dynamic module imports. No Scene module is marked complete
 for the result-packing helpers.
@@ -96,16 +96,15 @@ empty object if that transfer throws. It performs no calculation. Rust workers
 return owned buffers, and `TaskProcessor` moves those values instead of
 transferring `ArrayBuffer`s.
 
-`decodeDraco` is partial. Dequantized triangular-mesh and point-cloud payloads,
-including non-float and 64-bit attributes, the geometry-type errors, and the
-WebAssembly initialization message (`true`; there is no module to compile)
-match the CesiumJS worker on direct cases. Model's Draco loader turns
-`dequantizeInShader` on by default, so the most common production path differs
-from CesiumJS. `draco-core` 2.3.2 always inverse-transforms and drops the
-portable integers and quantization parameters that `SkipAttributeTransform`
-keeps, and it exposes no skip API. Mesh decode, face indices, and the
-mapped-index attribute walk live in `workers::draco`, which `decodeI3S` also
-uses. There is no remaining todo worker module. See
+`decodeDraco` is ported. Meshes and point clouds, including non-float and
+64-bit attributes, the geometry-type errors, and the WebAssembly initialization
+message (`true`; there is no module to compile) match the CesiumJS worker on
+direct cases. `dequantizeInShader`, which Model's Draco loader turns on by
+default, keeps the quantized integers and their quantization or octahedral
+parameters. Upstream `draco-core` 2.3.2 always inverse-transforms, so it is
+vendored in `third_party/draco-core` with an equivalent of C++ Draco's
+`SetSkipAttributeTransform`. Mesh decode, face indices, and the mapped-index
+attribute walk live in `workers::draco`, which `decodeI3S` also uses. See
 [Workers details](docs/workers.md).
 
 Shaders is complete: all **307 modules** are ported. Each `Source/Shaders`

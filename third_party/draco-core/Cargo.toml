@@ -1,0 +1,48 @@
+# Vendored from draco-core 2.3.2 (https://github.com/Filyus/draco-rust,
+# Apache-2.0) with one addition: decoders can skip attribute transforms, as
+# C++ Draco's `Decoder::SetSkipAttributeTransform` does. See PATCHES.md.
+[package]
+name = "draco-core"
+version = "2.3.2"
+edition = "2021"
+rust-version = "1.88.0"
+description = "Pure Rust core encoder and decoder for Draco geometry compression"
+license = "Apache-2.0"
+repository = "https://github.com/Filyus/draco-rust"
+readme = "README.md"
+publish = false
+autotests = false
+autoexamples = false
+autobenches = false
+
+[lib]
+name = "draco_core"
+path = "src/lib.rs"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(docsrs)', 'cfg(fuzzing)'] }
+unsafe_code = "forbid"
+
+[features]
+# Decoder-only defaults. The encoder sources were removed (see PATCHES.md); the
+# encode features stay declared so the remaining cfgs stay known, and enabling
+# `encoder` is a compile error.
+default = [
+    "decoder",
+    "point_cloud_decode",
+    "edgebreaker_valence_decode",
+    "legacy_bitstream_decode",
+]
+encoder = []
+decoder = []
+point_cloud_decode = ["decoder"]
+edgebreaker_valence_encode = ["encoder"]
+edgebreaker_valence_decode = ["decoder"]
+legacy_bitstream_encode = ["encoder"]
+legacy_bitstream_decode = ["decoder"]
+count_table_loads = []
+debug_logs = []
+force_sequential_seeds = []
+
+[dependencies]
+bytemuck = { version = "1.24.0", features = ["derive"] }

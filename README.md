@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 36.7% implemented; 36.6% validated** (674 validated modules, 0 implemented awaiting validation, and 1 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
+**Status: 36.7% implemented; 36.7% validated** (675 validated modules, 0 implemented awaiting validation, and 0 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
 
 ## What is ported
 
@@ -50,15 +50,17 @@ facade GPU buffers and shared-canvas presentation. Native hosts implement `Gl`.
 [Renderer API and validation](docs/renderer-foundation.md) documents ownership,
 frame inputs and the remaining viewer/native-driver integration work.
 
-### Workers completion underway
+### Workers complete
 
-**51 of 53 Workers modules** are now ported, including geometry, terrain, vector
-tiles, Gaussian splats, `decodeI3S`, `combineGeometry`, and `createTaskProcessorWorker`.
-The I3S worker decodes binary and Draco payloads into an owned glTF document.
-`combineGeometry` runs the existing geometry pipeline on packed instances.
-`createTaskProcessorWorker` adapts a calculation to the TaskProcessor message
-contract. `decodeDraco` is still open. `transferTypedArrayTest` is n/a.
-[Workers API, validation and remaining work](docs/workers.md).
+All **52 applicable Workers modules** are ported, including geometry, terrain,
+vector tiles, Gaussian splats, `decodeI3S`, `decodeDraco`, `combineGeometry`, and
+`createTaskProcessorWorker`. The I3S worker decodes binary and Draco payloads
+into an owned glTF document. `decodeDraco` matches CesiumJS with and without
+`dequantizeInShader`, using a vendored `draco-core` that can skip attribute
+transforms. `combineGeometry` runs the existing geometry pipeline on packed
+instances. `createTaskProcessorWorker` adapts a calculation to the
+TaskProcessor message contract. `transferTypedArrayTest` is n/a.
+[Workers API and validation](docs/workers.md).
 
 ### Shaders complete
 
@@ -113,7 +115,7 @@ The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **28,614 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **28,643 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
 
 ```bash
 cargo test --all-features                    # all fixtures + native host integration
@@ -152,7 +154,8 @@ Near-antipodal routes use a deterministic great-circle approximation when Vincen
 1. ✅ **Core at 100%:** all 270 applicable modules implemented and validated; 18 JavaScript idioms have documented Rust replacements.
 2. **Renderer complete:** all 46 modules, including Context, complete Scene-frame uniforms, cube/volume textures, atlases and shared contexts. Next: Scene and viewer integration; see [Renderer validation](docs/renderer-foundation.md).
 3. ✅ **Shaders complete:** all 307 `Source/Shaders` modules match their CesiumJS exports byte for byte; see [Shaders](docs/shaders.md).
-4. **Scene, DataSources and Workers,** the rest of the way to 100% overall.
+4. ✅ **Workers complete:** all 52 applicable modules, including `decodeDraco` with `dequantizeInShader`; see [Workers](docs/workers.md).
+5. **Scene and DataSources,** the rest of the way to 100% overall.
 
 ## Examples and benchmarks
 

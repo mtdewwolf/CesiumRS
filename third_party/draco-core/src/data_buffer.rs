@@ -1,0 +1,294 @@
+//! Raw byte buffer for attribute data.
+//!
+//! [`DataBuffer`] is the contiguous little-endian byte store behind every
+//! [`PointAttribute`](crate::PointAttribute), with typed read/write helpers;
+//! [`DataBufferDescriptor`] records its id and size. Port of Draco's
+//! `data_buffer.h`.
+
+use std::io::{self, Write};
+
+#[derive(Debug, Default, Clone)]
+pub struct DataBufferDescriptor {
+    pub buffer_id: i64,
+    pub buffer_update_count: i64,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct DataBuffer {
+    data: Vec<u8>,
+    descriptor: DataBufferDescriptor,
+}
+
+impl DataBuffer {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn update(&mut self, data: &[u8], offset: Option<usize>) {
+        let offset = offset.unwrap_or(0);
+        let end = offset + data.len();
+
+        if end > self.data.len() {
+            self.data.resize(end, 0);
+        }
+
+        self.data[offset..end].copy_from_slice(data);
+        self.descriptor.buffer_update_count += 1;
+    }
+
+    pub fn resize(&mut self, new_size: usize) {
+        self.data.resize(new_size, 0);
+    }
+
+    /// Takes the byte storage out, leaving the buffer empty.
+    ///
+    /// The bytes are the allocation an attribute's values live in, and the
+    /// point cloud keeps them across a `clear` so the next decode can grow
+    /// into them instead of allocating.
+    pub(crate) fn take_storage(&mut self) -> Vec<u8> {
+        std::mem::take(&mut self.data)
+    }
+
+    /// Whether the buffer owns an allocation, empty or not.
+    pub(crate) fn has_storage(&self) -> bool {
+        self.data.capacity() > 0
+    }
+
+    /// Adopts a previously taken storage, emptied, as this buffer's own.
+    ///
+    /// Only an empty buffer adopts, and the storage is emptied first, so what
+    /// the buffer reads afterwards is exactly what it would read from a fresh
+    /// one: every `resize` zero-fills what it grows into.
+    pub(crate) fn adopt_storage(&mut self, mut storage: Vec<u8>) {
+        debug_assert!(self.data.is_empty());
+        storage.clear();
+        self.data = storage;
+    }
+
+    pub fn try_resize(&mut self, new_size: usize) -> Result<(), std::collections::TryReserveError> {
+        if new_size > self.data.len() {
+            self.data.try_reserve_exact(new_size - self.data.len())?;
+        }
+        self.data.resize(new_size, 0);
+        Ok(())
+    }
+
+    /// Makes `bytes` the buffer's first bytes, growing it to hold them.
+    ///
+    /// What `try_resize` followed by a write does, without the zeros: a buffer
+    /// too short for `bytes` is rebuilt from them rather than grown with zeros
+    /// that are overwritten straight after. Bytes past `bytes.len()` in a buffer
+    /// that was already long enough are kept.
+    #[cfg(feature = "decoder")]
+    pub(crate) fn try_write_prefix(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(), std::collections::TryReserveError> {
+        if let Some(prefix) = self.data.get_mut(..bytes.len()) {
+            prefix.copy_from_slice(bytes);
+            return Ok(());
+        }
+        self.data.clear();
+        self.data.try_reserve_exact(bytes.len())?;
+        self.data.extend_from_slice(bytes);
+        Ok(())
+    }
+
+    /// Fills an empty buffer with `len` bytes that `fill` appends to the storage
+    /// it is handed, which has room for them.
+    ///
+    /// For a writer that produces the bytes in order, so the buffer is never
+    /// zero-filled first only to be overwritten.
+    pub(crate) fn try_fill_with(
+        &mut self,
+        len: usize,
+        fill: impl FnOnce(&mut Vec<u8>),
+    ) -> Result<(), std::collections::TryReserveError> {
+        debug_assert!(self.data.is_empty());
+        self.data.clear();
+        self.data.try_reserve_exact(len)?;
+        fill(&mut self.data);
+        debug_assert_eq!(self.data.len(), len);
+        Ok(())
+    }
+
+    pub fn write_data_to_stream<W: Write>(&self, stream: &mut W) -> io::Result<()> {
+        stream.write_all(&self.data)
+    }
+
+    pub fn read(&self, byte_pos: usize, out_data: &mut [u8]) {
+        let len = out_data.len();
+        out_data.copy_from_slice(&self.data[byte_pos..byte_pos + len]);
+    }
+
+    pub fn try_read(&self, byte_pos: usize, out_data: &mut [u8]) -> bool {
+        let Some(end) = byte_pos.checked_add(out_data.len()) else {
+            return false;
+        };
+        let Some(src) = self.data.get(byte_pos..end) else {
+            return false;
+        };
+        out_data.copy_from_slice(src);
+        true
+    }
+
+    pub fn write(&mut self, byte_pos: usize, in_data: &[u8]) {
+        let len = in_data.len();
+        self.data[byte_pos..byte_pos + len].copy_from_slice(in_data);
+    }
+
+    pub fn try_write(&mut self, byte_pos: usize, in_data: &[u8]) -> bool {
+        let Some(end) = byte_pos.checked_add(in_data.len()) else {
+            return false;
+        };
+        let Some(dst) = self.data.get_mut(byte_pos..end) else {
+            return false;
+        };
+        dst.copy_from_slice(in_data);
+        true
+    }
+
+    /// Write a slice of `f32` at `byte_pos` as little-endian bytes, growing the
+    /// buffer when the range runs past its end.
+    ///
+    /// Named for [`update`](Self::update) rather than for
+    /// [`write`](Self::write) because it grows the way `update` does: `write`
+    /// panics past the end and `try_write` refuses, so a `write_` name here
+    /// would promise bounds this does not enforce. The whole slice goes in one
+    /// pass, with no per-value buffer in between.
+    pub fn update_f32s_le(&mut self, byte_pos: usize, values: &[f32]) {
+        let end = byte_pos
+            .checked_add(values.len() * 4)
+            .expect("f32 slice range overflows the address space");
+        if end > self.data.len() {
+            self.data.resize(end, 0);
+        }
+        let dst = &mut self.data[byte_pos..end];
+        for (index, value) in values.iter().enumerate() {
+            dst[index * 4..(index + 1) * 4].copy_from_slice(&value.to_le_bytes());
+        }
+        self.descriptor.buffer_update_count += 1;
+    }
+
+    pub fn copy(
+        &mut self,
+        dst_offset: usize,
+        src_buf: &DataBuffer,
+        src_offset: usize,
+        size: usize,
+    ) {
+        let src_slice = &src_buf.data[src_offset..src_offset + size];
+        if dst_offset + size > self.data.len() {
+            self.data.resize(dst_offset + size, 0);
+        }
+        self.data[dst_offset..dst_offset + size].copy_from_slice(src_slice);
+    }
+
+    pub fn set_update_count(&mut self, count: i64) {
+        self.descriptor.buffer_update_count = count;
+    }
+
+    pub fn update_count(&self) -> i64 {
+        self.descriptor.buffer_update_count
+    }
+
+    pub fn data_size(&self) -> usize {
+        self.data.len()
+    }
+
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+
+    pub fn data_mut(&mut self) -> &mut [u8] {
+        &mut self.data
+    }
+
+    pub fn buffer_id(&self) -> i64 {
+        self.descriptor.buffer_id
+    }
+
+    pub fn set_buffer_id(&mut self, buffer_id: i64) {
+        self.descriptor.buffer_id = buffer_id;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::DataBuffer;
+
+    #[test]
+    fn try_read_write_reject_out_of_bounds_ranges() {
+        let mut buffer = DataBuffer::new();
+        buffer.resize(4);
+
+        assert!(buffer.try_write(1, &[1, 2, 3]));
+        assert!(!buffer.try_write(2, &[1, 2, 3]));
+
+        let mut bytes = [0u8; 2];
+        assert!(buffer.try_read(1, &mut bytes));
+        assert_eq!(bytes, [1, 2]);
+        assert!(!buffer.try_read(3, &mut bytes));
+    }
+
+    #[test]
+    fn try_resize_rejects_impossible_size() {
+        let mut buffer = DataBuffer::new();
+
+        assert!(buffer.try_resize(usize::MAX).is_err());
+        assert_eq!(buffer.data_size(), 0);
+    }
+
+    /// Little-endian by construction rather than by host: the expected bytes
+    /// are spelled out, so a big-endian host would fail here rather than write
+    /// a file no reader accepts.
+    #[test]
+    fn update_f32s_le_writes_little_endian() {
+        let mut buffer = DataBuffer::new();
+        buffer.resize(12);
+        buffer.update_f32s_le(0, &[1.0, -2.5, 0.0]);
+        assert_eq!(
+            buffer.data(),
+            &[0x00, 0x00, 0x80, 0x3f, 0x00, 0x00, 0x20, 0xc0, 0x00, 0x00, 0x00, 0x00]
+        );
+    }
+
+    #[test]
+    fn update_f32s_le_grows_past_the_end() {
+        let mut buffer = DataBuffer::new();
+        buffer.update_f32s_le(4, &[1.0]);
+        assert_eq!(buffer.data_size(), 8);
+        assert_eq!(&buffer.data()[..4], &[0, 0, 0, 0]);
+    }
+
+    /// Writing at an offset leaves what is already there alone, which is what
+    /// lets an attribute be filled in more than one call.
+    #[test]
+    fn update_f32s_le_leaves_the_surrounding_bytes() {
+        let mut buffer = DataBuffer::new();
+        buffer.resize(12);
+        buffer.update(&[0xff; 12], None);
+        buffer.update_f32s_le(4, &[0.0]);
+        assert_eq!(&buffer.data()[..4], &[0xff; 4]);
+        assert_eq!(&buffer.data()[4..8], &[0, 0, 0, 0]);
+        assert_eq!(&buffer.data()[8..], &[0xff; 4]);
+    }
+
+    /// Counted as an update, the same as `update`, because it is one: a buffer
+    /// whose count did not move reads as untouched to anything watching it.
+    #[test]
+    fn update_f32s_le_counts_as_an_update() {
+        let mut buffer = DataBuffer::new();
+        let before = buffer.update_count();
+        buffer.update_f32s_le(0, &[1.0]);
+        assert_eq!(buffer.update_count(), before + 1);
+    }
+
+    /// An empty slice is a no-op rather than a resize to `byte_pos`.
+    #[test]
+    fn update_f32s_le_accepts_an_empty_slice() {
+        let mut buffer = DataBuffer::new();
+        buffer.update_f32s_le(0, &[]);
+        assert_eq!(buffer.data_size(), 0);
+    }
+}
