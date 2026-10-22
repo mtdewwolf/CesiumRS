@@ -1,10 +1,9 @@
 # Shaders
 
 `src/shaders` stores the GLSL text of each module in `@cesium/engine` 23.0.0
-`Source/Shaders`. Every upstream subdirectory is registered. This port's three
-directories are complete: all 140 Builtin modules, the `CzmBuiltins.js` table,
-14 Appearances and 19 Materials, 174 modules in all. The other port's
-directories are still empty.
+`Source/Shaders`. All 307 modules are ported: the 140 Builtin modules, the
+`CzmBuiltins.js` table, 14 Appearances, 19 Materials, the 55 root
+`Shaders/*.js` modules, 36 Model, 26 PostProcessStages and 16 Voxels.
 
 The renderer does not read this registry. [`renderer::shader_source`](../src/renderer/shader_source.rs)
 still assembles programs from the pinned `assets/renderer/glsl-builtins.json`
@@ -13,34 +12,27 @@ table. A module here is the exact default-export string of the upstream file.
 ## Registration
 
 Each upstream subdirectory is one Rust module. It appears in `src/shaders/mod.rs`
-as two lines, and those lines are only ever added:
+as two lines:
 
 1. `pub mod <directory>;` with the other module declarations.
 2. `<directory>::register(&mut shaders);` inside `registry`.
 
-Append both lines. Do not edit, reorder, or delete another directory's line.
-Two people can add directories without editing the same block. Lookup is by
-shader id and does not depend on registration order.
+Lookup is by shader id and does not depend on registration order.
 
 Inside a directory, each shader is one `shaders.push(&SHADER);` line in that
 directory's `register` function. A new group under a directory (`Constants`,
 `Functions`, `Structs`) is the same pair of lines in that directory's `mod.rs`,
-not in the crate-root shader module. An empty directory calls `register_empty`
-so its signature stays `&mut Vec` and the first shader is a `push` line.
+not in the crate-root shader module.
 
-| Directory | Upstream | Owner |
-| --- | --- | --- |
-| `builtin` | `Builtin/` (`Constants`, `Functions`, `Structs`, `CzmBuiltins.js`) | this port |
-| `appearances` | `Appearances/` | this port |
-| `materials` | `Materials/` | this port |
-| `root` | `Shaders/*.js` | the other port |
-| `model` | `Model/` | the other port |
-| `post_process_stages` | `PostProcessStages/` | the other port |
-| `voxels` | `Voxels/` | the other port |
-
-`builtin`, `appearances`, and `materials` are this port. `root`, `model`,
-`post_process_stages`, and `voxels` are empty stubs for the other port. Do not
-add shader text to the other port's directories.
+| Directory | Upstream | Modules |
+| --- | --- | ---: |
+| `builtin` | `Builtin/` (`Constants`, `Functions`, `Structs`, `CzmBuiltins.js`) | 141 |
+| `appearances` | `Appearances/` | 14 |
+| `materials` | `Materials/` | 19 |
+| `root` | `Shaders/*.js` | 55 |
+| `model` | `Model/` | 36 |
+| `post_process_stages` | `PostProcessStages/` | 26 |
+| `voxels` | `Voxels/` | 16 |
 
 `registry()` builds that list once, behind a `OnceLock`. Lookup is by id.
 
@@ -59,11 +51,23 @@ keeps the upstream stem:
 | `Builtin/CzmBuiltins.js` | `shaders::builtin::czm_builtins()` | the 140 builtins above |
 | `Appearances/*.js` | `shaders::appearances` | `src/shaders/appearances/glsl/<stem>.glsl` |
 | `Materials/*.js` | `shaders::materials` | `src/shaders/materials/glsl/<stem>.glsl` |
+| `*.js` (root) | `shaders::root` | `src/shaders/root/glsl/<stem>.glsl` |
+| `Model/*.js` | `shaders::model` | `src/shaders/model/glsl/<stem>.glsl` |
+| `PostProcessStages/*.js` | `shaders::post_process_stages` | `src/shaders/post_process_stages/glsl/<stem>.glsl` |
+| `Voxels/*.js` | `shaders::voxels` | `src/shaders/voxels/glsl/<stem>.glsl` |
 
 Each `.glsl` file is the module's default export, not a copy of the upstream
-`.glsl` file. In 23.0.0 the two are identical for all 173 modules.
-`Functions/textureCube` and `Functions/unpackClippingExtents` have no trailing
-newline upstream, and neither do their files here.
+`.glsl` file. In 23.0.0 the two are identical for 304 of the 306 GLSL modules.
+The exceptions are `PolylineShadowVolumeVS` and `Vector3DTileClampedPolylinesVS`.
+Cesium's build does not escape backslashes, so the `\ ` in a comment diagram
+of each becomes a space in the export. The export is what the engine compiles,
+so the port keeps it.
+
+Seven exports have no trailing newline, and neither do their files here:
+`Builtin/Functions/textureCube`, `Builtin/Functions/unpackClippingExtents`,
+`PolygonSignedDistanceFS`, `PrimitiveGaussianSplatVS`,
+`Model/ModelSilhouetteStageFS`, `Model/MorphTargetsStageVS` and
+`Model/SkinningStageVS`.
 
 `CzmBuiltins.js` exports an object, not a GLSL string, so it is not in
 `registry()`. `czm_builtins()` returns the builtins in its key order:
@@ -77,15 +81,11 @@ That is also the GLSL identifier and, where the file declares one, its
 `@alias`. Most builtins have no `@alias`; `czm_pi` does
 (`Builtin/Constants/pi.js`).
 
-An appearance or material is named by its file stem, which is how Scene
-imports it (`import GridMaterial from "../Shaders/Materials/GridMaterial.js"`).
-None of those modules declare an `@alias`.
-
-A root `Shaders/*.js` module's name is its file stem. In `@cesium/engine`
-23.0.0 there are 55 of those modules. Each default export is the GLSL string
-alone, and call sites import the stem, for example
-`import PolylineCommon from "../Shaders/PolylineCommon.js"`. `AdjustTranslucentFS.js`
-is `AdjustTranslucentFS`. Those files do not declare an `@alias`.
+Every other module is named by its file stem, which is how Scene imports it:
+`import GridMaterial from "../Shaders/Materials/GridMaterial.js"`,
+`import PolylineCommon from "../Shaders/PolylineCommon.js"`,
+`import ModelFS from "../../Shaders/Model/ModelFS.js"`. None of those modules
+declare an `@alias`.
 
 ## Fixtures
 
@@ -112,9 +112,14 @@ A fixture holds one upstream group, not one module, so each needs one
 | `shaders/builtin/CzmBuiltins.json` | 1 |
 | `shaders/appearances/appearances.json` | 14 |
 | `shaders/materials/materials.json` | 19 |
+| `shaders/root/root.json` | 55 |
+| `shaders/model/model.json` | 36 |
+| `shaders/post_process_stages/post_process_stages.json` | 26 |
+| `shaders/voxels/voxels.json` | 16 |
 
 `tools/cesium/fixtures/shader-cases.mjs` lists the `.js` files of a group in
-the installed package and records one `shader` case per file. A module that
+the installed package and records one `shader` case per file. The empty group
+is the root: its `.js` files only, not its subdirectories. A module that
 upstream adds and the port does not register therefore fails its replay. The
 helper's name does not start with `shaders-`, so `generate.mjs` does not load
 it as a directory.
@@ -140,8 +145,8 @@ records the string. The Rust replay loads the fixture and compares with
 
 The `CzmBuiltins` fixture records the whole table as `[{ name, source }]` in
 key order, for function `czmBuiltins`. Its replay builds the same array from
-`czm_builtins()`. Appearances and Materials replay in
-`tests/shaders_appearances.rs` and `tests/shaders_materials.rs`.
+`czm_builtins()`. Every other directory replays in its own
+`tests/shaders_<directory>.rs` with `common::shader_module`.
 
 `shaders::shader` returns `None` for an unknown id. The fixture harness treats
 an unknown function name as a missing port, which fails the test.
@@ -154,9 +159,8 @@ table; `builtin::CZM_BUILTINS_ID` names it.
 ## Tracker
 
 `PORTING.md`, the README status line, and the progress charts come from
-`tools/cesium/tracker.mjs`. Two shader ports both edit `status.json` and
-`plan.md`. Whoever merges second reruns the tracker so the generated files
-include both sides:
+`tools/cesium/tracker.mjs`. After editing `status.json` or `plan.md`, rerun
+it:
 
 ```bash
 TZ=UTC node tools/cesium/tracker.mjs --milestone "Shaders …"

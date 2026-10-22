@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Port the Builtin, Appearances and Materials shaders: all 140 builtins, the `CzmBuiltins.js` table, 14 appearances and 19 materials (174 modules), each compared byte for byte with its `@cesium/engine` 23.0.0 default export.
+- Port all 307 `Source/Shaders` modules: 140 builtins and the `CzmBuiltins.js` table, 14 appearances, 19 materials, 55 root shaders, 36 Model, 26 PostProcessStages and 16 Voxels shaders. Each is compared byte for byte with its `@cesium/engine` 23.0.0 default export.
 - Reach **100% validated Core coverage**: all 270 applicable Core modules are ported; 18 JavaScript-specific entries retain documented Rust replacements.
 - Complete the final 20 modules: Ion/platform clients, ArcGIS/VR/Cesium/GEE/implicit 3D Tiles terrain and metadata, world terrain/bathymetry factories, ground polylines, screen-space gestures and canvas text/pins.
 - Add native GEE protobuf/packet processing, meshopt v0/v1 terrain decoding, terrain cache/availability integration and concrete browser canvas/input adapters.
