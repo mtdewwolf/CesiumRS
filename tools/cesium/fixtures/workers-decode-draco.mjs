@@ -89,6 +89,53 @@ function encodeCloud(encoderModule) {
   return { raw, ids };
 }
 
+// A quantized POSITION is what lets draco3d encode a point cloud that also
+// carries an integer attribute. The integer values are added with the typed
+// Add*Attribute calls. i32::MIN and values at 2^31-1 make that encoder's own
+// decoder fail, so the Int32 fixture stays inside the range both sides decode.
+function encodeTyped(encoderModule, add) {
+  const count = 4;
+  const builder = new encoderModule.PointCloudBuilder();
+  const cloud = new encoderModule.PointCloud();
+  builder.AddFloatAttribute(
+    cloud,
+    encoderModule.POSITION,
+    count,
+    3,
+    new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]),
+  );
+  const id = add(builder, cloud, encoderModule, count);
+  const encoder = new encoderModule.Encoder();
+  encoder.SetSpeedOptions(5, 5);
+  encoder.SetAttributeQuantization(encoderModule.POSITION, 14);
+  const out = new encoderModule.DracoInt8Array();
+  const len = encoder.EncodePointCloudToDracoBuffer(cloud, false, out);
+  if (!len) throw new Error("typed attribute encode failed");
+  const raw = bytesOf(out, len);
+  encoderModule.destroy(out);
+  encoderModule.destroy(encoder);
+  encoderModule.destroy(cloud);
+  encoderModule.destroy(builder);
+  return { raw, id };
+}
+
+// draco3d's encoder has no AddBoolAttribute, AddInt64Attribute, or
+// AddUInt64Attribute. These sequential point clouds come from draco-core
+// 2.3.2 (encoding method 0) and are checked against the same worker.
+const boolCloud = Uint8Array.from([
+  68, 82, 65, 67, 79, 2, 3, 0, 0, 0, 0, 4, 0, 0, 0, 1, 1, 4, 11, 1, 0, 0, 0, 0, 1, 2, 255,
+]);
+const int64Cloud = Uint8Array.from([
+  68, 82, 65, 67, 79, 2, 3, 0, 0, 0, 0, 8, 0, 0, 0, 1, 1, 4, 7, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+  0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 255, 255, 255, 127,
+  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 127, 0, 0, 0, 0, 0, 0, 0, 128,
+]);
+const uint64Cloud = Uint8Array.from([
+  68, 82, 65, 67, 79, 2, 3, 0, 0, 0, 0, 6, 0, 0, 0, 1, 1, 4, 8, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+  0, 0, 42, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 255, 255, 255, 255, 255, 255,
+  255, 255,
+]);
+
 function presentAttributes(attributes) {
   const out = {};
   for (const [name, value] of Object.entries(attributes)) {
@@ -189,6 +236,32 @@ export default async function workersDecodeDraco() {
     [{ webAssemblyConfig: null, buffer: cloud.raw, properties: { NORMAL: cloud.ids.NORMAL } }],
     () => run({ webAssemblyConfig: null, buffer: cloud.raw, properties: { NORMAL: cloud.ids.NORMAL } }),
   );
+
+  const typed = {
+    int8: encodeTyped(encoderModule, (builder, cloud, module, count) =>
+      builder.AddInt8Attribute(cloud, module.GENERIC, count, 1, new Int8Array([-128, -1, 0, 127])),
+    ),
+    uint8: encodeTyped(encoderModule, (builder, cloud, module, count) =>
+      builder.AddUInt8Attribute(cloud, module.GENERIC, count, 1, new Uint8Array([0, 1, 128, 255])),
+    ),
+    int16: encodeTyped(encoderModule, (builder, cloud, module, count) =>
+      builder.AddInt16Attribute(cloud, module.GENERIC, count, 1, new Int16Array([-32768, -2, 3, 32767])),
+    ),
+    uint16: encodeTyped(encoderModule, (builder, cloud, module, count) =>
+      builder.AddUInt16Attribute(cloud, module.GENERIC, count, 1, new Uint16Array([0, 2, 40000, 65535])),
+    ),
+    int32: encodeTyped(encoderModule, (builder, cloud, module, count) =>
+      builder.AddInt32Attribute(cloud, module.GENERIC, count, 1, new Int32Array([-1073741823, -5, 9, 1073741823])),
+    ),
+  };
+  for (const encoded of Object.values(typed)) {
+    const parameters = { buffer: encoded.raw, properties: { value: encoded.id } };
+    await decode.add("decodeDraco", [parameters], () => run(parameters));
+  }
+  for (const buffer of [boolCloud, int64Cloud, uint64Cloud]) {
+    const parameters = { buffer, properties: { value: 0 } };
+    await decode.add("decodeDraco", [parameters], () => run(parameters));
+  }
 
   await decode.add(
     "decodeDraco",
