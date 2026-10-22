@@ -8,7 +8,7 @@ use serde_json::json;
 #[test]
 fn czm_pi_source_matches_cesium() {
     run(
-        "shaders",
+        "shaders/builtin",
         "pi",
         |_| EXACT,
         |function, args| {

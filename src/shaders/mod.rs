@@ -33,6 +33,14 @@
 //!
 //! `czm_pi` is the one wired example. The other directories register no
 //! shaders yet. See `docs/shaders.md`.
+//!
+//! A builtin's [`ShaderModule::name`] is its `@alias` (`czm_pi`). A root
+//! `Shaders/*.js` module's name is its file stem. `@cesium/engine` 23.0.0
+//! has 55 of those modules. Each default export is only the GLSL string,
+//! none declare an `@alias`, and call sites import that stem
+//! (`import PolylineCommon from "../Shaders/PolylineCommon.js"`).
+
+use std::sync::OnceLock;
 
 pub mod appearances;
 pub mod builtin;
@@ -46,8 +54,10 @@ pub mod voxels;
 pub struct ShaderModule {
     /// Tracker id, such as `Shaders/Builtin/Constants/pi`.
     pub id: &'static str,
-    /// Builtin name, such as `czm_pi`. Root shaders that are not builtins use
-    /// the file stem.
+    /// Builtin `@alias`, such as `czm_pi`. A root `Shaders/*.js` module has no
+    /// `@alias`; its name is the file stem (`PolylineCommon` for
+    /// `PolylineCommon.js`). Confirmed for all 55 root modules in
+    /// `@cesium/engine` 23.0.0: each default export is the GLSL string alone.
     pub name: &'static str,
     /// Exact default export of the upstream module, trailing newline included.
     pub source: &'static str,
@@ -55,22 +65,28 @@ pub struct ShaderModule {
 
 /// Every shader registered by the directory modules, in append order.
 ///
-/// Lookup does not depend on this order. Do not sort or rewrite the calls.
-pub fn registry() -> Vec<&'static ShaderModule> {
-    let mut shaders = Vec::new();
-    builtin::register(&mut shaders);
-    appearances::register(&mut shaders);
-    materials::register(&mut shaders);
-    root::register(&mut shaders);
-    model::register(&mut shaders);
-    post_process_stages::register(&mut shaders);
-    voxels::register(&mut shaders);
-    shaders
+/// The list is built once. Lookup does not depend on this order. Do not sort
+/// or rewrite the calls.
+pub fn registry() -> &'static [&'static ShaderModule] {
+    static REGISTRY: OnceLock<Vec<&'static ShaderModule>> = OnceLock::new();
+    REGISTRY
+        .get_or_init(|| {
+            let mut shaders = Vec::new();
+            builtin::register(&mut shaders);
+            appearances::register(&mut shaders);
+            materials::register(&mut shaders);
+            root::register(&mut shaders);
+            model::register(&mut shaders);
+            post_process_stages::register(&mut shaders);
+            voxels::register(&mut shaders);
+            shaders
+        })
+        .as_slice()
 }
 
 /// The shader with this tracker id.
 pub fn shader(id: &str) -> Option<&'static ShaderModule> {
-    registry().into_iter().find(|module| module.id == id)
+    registry().iter().copied().find(|module| module.id == id)
 }
 
 /// Keeps an empty directory on the same `&mut` signature as a directory that
@@ -84,6 +100,8 @@ pub(crate) fn register_empty(shaders: &mut Vec<&'static ShaderModule>) {
 #[cfg(test)]
 mod tests {
     use super::registry;
+    use std::collections::BTreeSet;
+    use std::path::Path;
 
     #[test]
     fn shader_ids_are_unique() {
@@ -94,5 +112,24 @@ mod tests {
         ids.dedup();
         assert_eq!(ids.len(), count);
         assert!(ids.contains(&"Shaders/Builtin/Constants/pi"));
+    }
+
+    #[test]
+    fn registered_ids_match_ported_status() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tools/cesium/status.json");
+        let text = std::fs::read_to_string(&path).unwrap_or_else(|err| panic!("{}: {err}", path.display()));
+        let status: serde_json::Value = serde_json::from_str(&text).expect("status.json");
+        let entries = status.as_object().expect("status object");
+        let shaders = registry();
+        let ids: BTreeSet<&str> = shaders.iter().map(|module| module.id).collect();
+        for module in shaders {
+            assert!(entries.contains_key(module.id), "registered shader missing from status.json: {}", module.id);
+        }
+        for (id, entry) in entries {
+            let ported = entry.get("status").and_then(|value| value.as_str()) == Some("ported");
+            if id.starts_with("Shaders/") && ported {
+                assert!(ids.contains(id.as_str()), "ported shader is not registered: {id}");
+            }
+        }
     }
 }

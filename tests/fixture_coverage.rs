@@ -21,24 +21,37 @@ fn every_fixture_file_has_a_replay_suite() {
             }
         }
     }
-    let mut missing = Vec::new();
-    for package in std::fs::read_dir(root.join("fixtures")).unwrap() {
-        let package = package.unwrap();
-        if !package.file_type().unwrap().is_dir() {
+    let fixtures = root.join("fixtures");
+    let mut found = Vec::new();
+    collect_fixture_keys(&fixtures, &fixtures, &mut found);
+    let missing: Vec<_> = found.into_iter().filter(|key| !registered.contains(key)).collect();
+    assert!(missing.is_empty(), "fixture files without a common::run replay: {missing:?}");
+}
+
+/// `(package, module)` for every fixture JSON file. A nested shader fixture
+/// `shaders/builtin/pi.json` is `("shaders/builtin", "pi")`, matching
+/// `run("shaders/builtin", "pi", ...)`.
+fn collect_fixture_keys(dir: &Path, root: &Path, keys: &mut Vec<(String, String)>) {
+    let mut entries: Vec<_> = std::fs::read_dir(dir).unwrap().map(|entry| entry.unwrap().path()).collect();
+    entries.sort();
+    for path in entries {
+        if path.is_dir() {
+            collect_fixture_keys(&path, root, keys);
             continue;
         }
-        for file in std::fs::read_dir(package.path()).unwrap() {
-            let path = file.unwrap().path();
-            if path.extension().and_then(|s| s.to_str()) == Some("json") {
-                let key = (
-                    package.file_name().to_string_lossy().into_owned(),
-                    path.file_stem().unwrap().to_string_lossy().into_owned(),
-                );
-                if !registered.contains(&key) {
-                    missing.push(key);
-                }
-            }
+        if path.extension().and_then(|ext| ext.to_str()) != Some("json") {
+            continue;
         }
+        let package = path
+            .strip_prefix(root)
+            .unwrap()
+            .parent()
+            .unwrap()
+            .components()
+            .map(|component| component.as_os_str().to_string_lossy())
+            .collect::<Vec<_>>()
+            .join("/");
+        let module = path.file_stem().unwrap().to_string_lossy().into_owned();
+        keys.push((package, module));
     }
-    assert!(missing.is_empty(), "fixture files without a common::run replay: {missing:?}");
 }

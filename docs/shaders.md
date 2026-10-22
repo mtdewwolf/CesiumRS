@@ -40,12 +40,39 @@ so its signature stays `&mut Vec` and the first shader is a `push` line.
 `post_process_stages`, and `voxels` are empty stubs for the other port. Do not
 add shader text to the other port's directories.
 
+`registry()` builds that list once, behind a `OnceLock`. Lookup is by id.
+
+## Names
+
+`ShaderModule::name` for a builtin is the GLSL `@alias`. `czm_pi` is the alias
+of `Builtin/Constants/pi.js`.
+
+A root `Shaders/*.js` module's name is its file stem. In `@cesium/engine`
+23.0.0 there are 55 of those modules. Each default export is the GLSL string
+alone, and call sites import the stem, for example
+`import PolylineCommon from "../Shaders/PolylineCommon.js"`. `AdjustTranslucentFS.js`
+is `AdjustTranslucentFS`. Those files do not declare an `@alias`.
+
+## Fixtures
+
+Each directory that has shader cases adds one file,
+`tools/cesium/fixtures/shaders-<directory>.mjs`. `generate.mjs` reads every
+file matching that name, in filename order, and writes
+
+`tests/fixtures/shaders/<directory>/<stem>.json`.
+
+Adding a directory does not edit `generate.mjs`. The directory name is the
+text between `shaders-` and `.mjs`, so `shaders-builtin.mjs` writes
+`tests/fixtures/shaders/builtin/pi.json`. Stems can repeat across directories
+because the path includes the directory. Select one module with
+`TZ=UTC node tools/cesium/fixtures/generate.mjs builtin/pi`.
+
 ## Validation
 
 A ported shader matches the default export of the `@cesium/engine` 23.0.0
-module, including the trailing newline. `tools/cesium/fixtures` imports that
-module and writes the string into `tests/fixtures`. The Rust replay loads the
-fixture and compares with `EXACT`, so the source text has to be identical.
+module, including the trailing newline. The fixture imports that module and
+records the string. The Rust replay loads the fixture and compares with
+`EXACT`, so the source text has to be identical.
 
 `czm_pi` is the example:
 
@@ -55,9 +82,26 @@ fixture and compares with `EXACT`, so the source text has to be identical.
 - Fixture: `tools/cesium/fixtures/shaders-builtin.mjs` records
   `{ name: "czm_pi", source }` for function `shader` and argument
   `["Shaders/Builtin/Constants/pi"]`.
-- Generate only that module with `TZ=UTC node tools/cesium/fixtures/generate.mjs pi`.
+- Generated file: `tests/fixtures/shaders/builtin/pi.json`.
 - Replay: `tests/shaders_builtin.rs` calls `shaders::shader(id)` and returns
   `{ name, source }`.
 
 `shaders::shader` returns `None` for an unknown id. The fixture harness treats
 an unknown function name as a missing port, which fails the test.
+
+A unit test checks the registry against `tools/cesium/status.json`: every
+registered id has an entry, and every `Shaders/` entry marked `ported` is
+registered.
+
+## Tracker
+
+`PORTING.md`, the README status line, and the progress charts come from
+`tools/cesium/tracker.mjs`. Two shader ports both edit `status.json` and
+`plan.md`. Whoever merges second reruns the tracker so the generated files
+include both sides:
+
+```bash
+TZ=UTC node tools/cesium/tracker.mjs --milestone "Shaders …"
+```
+
+Omitting `--milestone` rewrites the previous milestone in place.
