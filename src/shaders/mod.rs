@@ -7,38 +7,33 @@
 //! # Registration
 //!
 //! Each upstream subdirectory is one Rust module. It appears in this file as
-//! two lines, and those lines are only ever added:
+//! two lines:
 //!
 //! 1. `pub mod <directory>;` with the other module declarations.
 //! 2. `<directory>::register(&mut shaders);` inside [`registry`].
-//!
-//! Append both lines. Do not edit, reorder, or delete another directory's
-//! line. The two directories owned by different people therefore never share
-//! an editable block.
 //!
 //! Inside a directory, each shader is one `shaders.push(&SHADER);` line in
 //! that directory's `register` function. A new group under a directory
 //! (`Constants`, `Functions`, `Structs`) is the same pair of lines in that
 //! directory's `mod.rs`, not in this file.
 //!
-//! | Directory | Upstream | Owner |
-//! | --- | --- | --- |
-//! | `builtin` | `Builtin/` (`Constants`, `Functions`, `Structs`, `CzmBuiltins.js`) | this port |
-//! | `appearances` | `Appearances/` | this port |
-//! | `materials` | `Materials/` | this port |
-//! | `root` | `Shaders/*.js` | the other port |
-//! | `model` | `Model/` | the other port |
-//! | `post_process_stages` | `PostProcessStages/` | the other port |
-//! | `voxels` | `Voxels/` | the other port |
+//! | Directory | Upstream | Modules |
+//! | --- | --- | ---: |
+//! | `builtin` | `Builtin/` (`Constants`, `Functions`, `Structs`, `CzmBuiltins.js`) | 141 |
+//! | `appearances` | `Appearances/` | 14 |
+//! | `materials` | `Materials/` | 19 |
+//! | `root` | `Shaders/*.js` | 55 |
+//! | `model` | `Model/` | 36 |
+//! | `post_process_stages` | `PostProcessStages/` | 26 |
+//! | `voxels` | `Voxels/` | 16 |
 //!
-//! `czm_pi` is the one wired example. The other directories register no
-//! shaders yet. See `docs/shaders.md`.
+//! Every directory registers every upstream module: all 307 in
+//! `@cesium/engine` 23.0.0. See `docs/shaders.md`.
 //!
-//! A builtin's [`ShaderModule::name`] is its `@alias` (`czm_pi`). A root
-//! `Shaders/*.js` module's name is its file stem. `@cesium/engine` 23.0.0
-//! has 55 of those modules. Each default export is only the GLSL string,
-//! none declare an `@alias`, and call sites import that stem
-//! (`import PolylineCommon from "../Shaders/PolylineCommon.js"`).
+//! A builtin's [`ShaderModule::name`] is its `CzmBuiltins.js` key (`czm_pi`),
+//! which is also its `@alias` where the file declares one. Every other module
+//! is named by its file stem. None of them declare an `@alias`, and call sites
+//! import that stem (`import PolylineCommon from "../Shaders/PolylineCommon.js"`).
 
 use std::sync::OnceLock;
 
@@ -54,8 +49,8 @@ pub mod voxels;
 pub struct ShaderModule {
     /// Tracker id, such as `Shaders/Builtin/Constants/pi`.
     pub id: &'static str,
-    /// Builtin `@alias`, such as `czm_pi`. A root `Shaders/*.js` module has no
-    /// `@alias`; its name is the file stem (`PolylineCommon` for
+    /// Builtin `CzmBuiltins.js` key, such as `czm_pi`. Other modules have no
+    /// `@alias`; their name is the file stem (`PolylineCommon` for
     /// `PolylineCommon.js`). Confirmed for all 55 root modules in
     /// `@cesium/engine` 23.0.0: each default export is the GLSL string alone.
     pub name: &'static str,
@@ -89,14 +84,6 @@ pub fn shader(id: &str) -> Option<&'static ShaderModule> {
     registry().iter().copied().find(|module| module.id == id)
 }
 
-/// Keeps an empty directory on the same `&mut` signature as a directory that
-/// has shaders, so the first real shader is a `push` line and not a signature
-/// edit.
-#[allow(clippy::needless_pass_by_ref_mut)]
-pub(crate) fn register_empty(shaders: &mut Vec<&'static ShaderModule>) {
-    let _ = shaders;
-}
-
 #[cfg(test)]
 mod tests {
     use super::registry;
@@ -121,7 +108,8 @@ mod tests {
         let status: serde_json::Value = serde_json::from_str(&text).expect("status.json");
         let entries = status.as_object().expect("status object");
         let shaders = registry();
-        let ids: BTreeSet<&str> = shaders.iter().map(|module| module.id).collect();
+        let mut ids: BTreeSet<&str> = shaders.iter().map(|module| module.id).collect();
+        ids.insert(super::builtin::CZM_BUILTINS_ID);
         for module in shaders {
             assert!(entries.contains_key(module.id), "registered shader missing from status.json: {}", module.id);
         }

@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 32.4% implemented; 32.3% validated** (368 validated modules, 0 implemented awaiting validation, and 1 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
+**Status: 36.7% implemented; 36.6% validated** (674 validated modules, 0 implemented awaiting validation, and 1 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
 
 ## What is ported
 
@@ -60,6 +60,15 @@ The I3S worker decodes binary and Draco payloads into an owned glTF document.
 contract. `decodeDraco` is still open. `transferTypedArrayTest` is n/a.
 [Workers API, validation and remaining work](docs/workers.md).
 
+### Shaders complete
+
+All **307 Shaders modules** are ported. `shaders::shader(id)` returns the exact
+GLSL text of every builtin, appearance, material, root, Model,
+PostProcessStages and Voxels module, and `shaders::builtin::czm_builtins()`
+is the `CzmBuiltins.js` table. Each is compared byte for byte with the
+`@cesium/engine` 23.0.0 default export. The renderer still uses its pinned
+builtin table. [Shaders](docs/shaders.md).
+
 ### Ion and platform clients
 
 `Ion`, `IonResource`, `IonGeocoderService`, `GoogleMaps` and `ITwinPlatform` now
@@ -104,7 +113,7 @@ The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **28,308 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **28,614 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
 
 ```bash
 cargo test --all-features                    # all fixtures + native host integration
@@ -142,7 +151,8 @@ Near-antipodal routes use a deterministic great-circle approximation when Vincen
 
 1. ✅ **Core at 100%:** all 270 applicable modules implemented and validated; 18 JavaScript idioms have documented Rust replacements.
 2. **Renderer complete:** all 46 modules, including Context, complete Scene-frame uniforms, cube/volume textures, atlases and shared contexts. Next: Scene and viewer integration; see [Renderer validation](docs/renderer-foundation.md).
-3. **Scene, DataSources, Workers and Shaders,** the rest of the way to 100% overall.
+3. ✅ **Shaders complete:** all 307 `Source/Shaders` modules match their CesiumJS exports byte for byte; see [Shaders](docs/shaders.md).
+4. **Scene, DataSources and Workers,** the rest of the way to 100% overall.
 
 ## Examples and benchmarks
 

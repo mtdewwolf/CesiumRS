@@ -1779,6 +1779,1536 @@
   "Shaders/Builtin/Constants/pi": {
     "status": "ported",
     "rust": "shaders::builtin::constants::PI",
-    "note": "Exact GLSL source of czm_pi from @cesium/engine 23.0.0. Skeleton example for the shader registry; the rest of Builtin, Appearances, and Materials are still todo."
+    "note": "Exact GLSL source of czm_pi from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/degreesPerRadian": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::DEGREES_PER_RADIAN",
+    "note": "Exact GLSL source of czm_degreesPerRadian from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/depthRange": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::DEPTH_RANGE",
+    "note": "Exact GLSL source of czm_depthRange from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/epsilon1": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::EPSILON1",
+    "note": "Exact GLSL source of czm_epsilon1 from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/epsilon2": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::EPSILON2",
+    "note": "Exact GLSL source of czm_epsilon2 from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/epsilon3": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::EPSILON3",
+    "note": "Exact GLSL source of czm_epsilon3 from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/epsilon4": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::EPSILON4",
+    "note": "Exact GLSL source of czm_epsilon4 from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/epsilon5": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::EPSILON5",
+    "note": "Exact GLSL source of czm_epsilon5 from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/epsilon6": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::EPSILON6",
+    "note": "Exact GLSL source of czm_epsilon6 from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/epsilon7": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::EPSILON7",
+    "note": "Exact GLSL source of czm_epsilon7 from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/infinity": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::INFINITY",
+    "note": "Exact GLSL source of czm_infinity from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/oneOverPi": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::ONE_OVER_PI",
+    "note": "Exact GLSL source of czm_oneOverPi from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/oneOverTwoPi": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::ONE_OVER_TWO_PI",
+    "note": "Exact GLSL source of czm_oneOverTwoPi from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/passCesium3DTile": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PASS_CESIUM3D_TILE",
+    "note": "Exact GLSL source of czm_passCesium3DTile from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/passCesium3DTileClassification": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PASS_CESIUM3D_TILE_CLASSIFICATION",
+    "note": "Exact GLSL source of czm_passCesium3DTileClassification from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/passCesium3DTileClassificationIgnoreShow": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PASS_CESIUM3D_TILE_CLASSIFICATION_IGNORE_SHOW",
+    "note": "Exact GLSL source of czm_passCesium3DTileClassificationIgnoreShow from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/passCesium3DTileEdges": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PASS_CESIUM3D_TILE_EDGES",
+    "note": "Exact GLSL source of czm_passCesium3DTileEdges from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/passClassification": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PASS_CLASSIFICATION",
+    "note": "Exact GLSL source of czm_passClassification from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/passCompute": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PASS_COMPUTE",
+    "note": "Exact GLSL source of czm_passCompute from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/passEnvironment": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PASS_ENVIRONMENT",
+    "note": "Exact GLSL source of czm_passEnvironment from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/passGaussianSplats": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PASS_GAUSSIAN_SPLATS",
+    "note": "Exact GLSL source of czm_passGaussianSplats from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/passGlobe": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PASS_GLOBE",
+    "note": "Exact GLSL source of czm_passGlobe from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/passOpaque": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PASS_OPAQUE",
+    "note": "Exact GLSL source of czm_passOpaque from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/passOverlay": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PASS_OVERLAY",
+    "note": "Exact GLSL source of czm_passOverlay from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/passTerrainClassification": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PASS_TERRAIN_CLASSIFICATION",
+    "note": "Exact GLSL source of czm_passTerrainClassification from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/passTranslucent": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PASS_TRANSLUCENT",
+    "note": "Exact GLSL source of czm_passTranslucent from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/passVoxels": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PASS_VOXELS",
+    "note": "Exact GLSL source of czm_passVoxels from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/piOverFour": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PI_OVER_FOUR",
+    "note": "Exact GLSL source of czm_piOverFour from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/piOverSix": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PI_OVER_SIX",
+    "note": "Exact GLSL source of czm_piOverSix from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/piOverThree": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PI_OVER_THREE",
+    "note": "Exact GLSL source of czm_piOverThree from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/piOverTwo": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PI_OVER_TWO",
+    "note": "Exact GLSL source of czm_piOverTwo from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/radiansPerDegree": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::RADIANS_PER_DEGREE",
+    "note": "Exact GLSL source of czm_radiansPerDegree from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/sceneMode2D": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::SCENE_MODE2D",
+    "note": "Exact GLSL source of czm_sceneMode2D from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/sceneMode3D": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::SCENE_MODE3D",
+    "note": "Exact GLSL source of czm_sceneMode3D from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/sceneModeColumbusView": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::SCENE_MODE_COLUMBUS_VIEW",
+    "note": "Exact GLSL source of czm_sceneModeColumbusView from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/sceneModeMorphing": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::SCENE_MODE_MORPHING",
+    "note": "Exact GLSL source of czm_sceneModeMorphing from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/solarRadius": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::SOLAR_RADIUS",
+    "note": "Exact GLSL source of czm_solarRadius from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/threePiOver2": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::THREE_PI_OVER2",
+    "note": "Exact GLSL source of czm_threePiOver2 from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/twoPi": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::TWO_PI",
+    "note": "Exact GLSL source of czm_twoPi from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Constants/webMercatorMaxLatitude": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::WEB_MERCATOR_MAX_LATITUDE",
+    "note": "Exact GLSL source of czm_webMercatorMaxLatitude from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Structs/depthRangeStruct": {
+    "status": "ported",
+    "rust": "shaders::builtin::structs::DEPTH_RANGE_STRUCT",
+    "note": "Exact GLSL source of czm_depthRangeStruct from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Structs/material": {
+    "status": "ported",
+    "rust": "shaders::builtin::structs::MATERIAL",
+    "note": "Exact GLSL source of czm_material from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Structs/materialInput": {
+    "status": "ported",
+    "rust": "shaders::builtin::structs::MATERIAL_INPUT",
+    "note": "Exact GLSL source of czm_materialInput from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Structs/modelMaterial": {
+    "status": "ported",
+    "rust": "shaders::builtin::structs::MODEL_MATERIAL",
+    "note": "Exact GLSL source of czm_modelMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Structs/modelVertexOutput": {
+    "status": "ported",
+    "rust": "shaders::builtin::structs::MODEL_VERTEX_OUTPUT",
+    "note": "Exact GLSL source of czm_modelVertexOutput from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Structs/ray": {
+    "status": "ported",
+    "rust": "shaders::builtin::structs::RAY",
+    "note": "Exact GLSL source of czm_ray from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Structs/raySegment": {
+    "status": "ported",
+    "rust": "shaders::builtin::structs::RAY_SEGMENT",
+    "note": "Exact GLSL source of czm_raySegment from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Structs/shadowParameters": {
+    "status": "ported",
+    "rust": "shaders::builtin::structs::SHADOW_PARAMETERS",
+    "note": "Exact GLSL source of czm_shadowParameters from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/HSBToRGB": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::HSB_TO_RGB",
+    "note": "Exact GLSL source of czm_HSBToRGB from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/HSLToRGB": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::HSL_TO_RGB",
+    "note": "Exact GLSL source of czm_HSLToRGB from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/RGBToHSB": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::RGB_TO_HSB",
+    "note": "Exact GLSL source of czm_RGBToHSB from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/RGBToHSL": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::RGB_TO_HSL",
+    "note": "Exact GLSL source of czm_RGBToHSL from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/RGBToXYZ": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::RGB_TO_XYZ",
+    "note": "Exact GLSL source of czm_RGBToXYZ from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/XYZToRGB": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::XYZ_TO_RGB",
+    "note": "Exact GLSL source of czm_XYZToRGB from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/acesTonemapping": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::ACES_TONEMAPPING",
+    "note": "Exact GLSL source of czm_acesTonemapping from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/alphaWeight": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::ALPHA_WEIGHT",
+    "note": "Exact GLSL source of czm_alphaWeight from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/antialias": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::ANTIALIAS",
+    "note": "Exact GLSL source of czm_antialias from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/applyHSBShift": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::APPLY_HSB_SHIFT",
+    "note": "Exact GLSL source of czm_applyHSBShift from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/approximateSphericalCoordinates": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::APPROXIMATE_SPHERICAL_COORDINATES",
+    "note": "Exact GLSL source of czm_approximateSphericalCoordinates from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/approximateTanh": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::APPROXIMATE_TANH",
+    "note": "Exact GLSL source of czm_approximateTanh from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/backFacing": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::BACK_FACING",
+    "note": "Exact GLSL source of czm_backFacing from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/branchFreeTernary": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::BRANCH_FREE_TERNARY",
+    "note": "Exact GLSL source of czm_branchFreeTernary from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/cascadeColor": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::CASCADE_COLOR",
+    "note": "Exact GLSL source of czm_cascadeColor from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/cascadeDistance": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::CASCADE_DISTANCE",
+    "note": "Exact GLSL source of czm_cascadeDistance from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/cascadeMatrix": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::CASCADE_MATRIX",
+    "note": "Exact GLSL source of czm_cascadeMatrix from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/cascadeWeights": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::CASCADE_WEIGHTS",
+    "note": "Exact GLSL source of czm_cascadeWeights from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/clipPolygons": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::CLIP_POLYGONS",
+    "note": "Exact GLSL source of czm_clipPolygons from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/columbusViewMorph": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::COLUMBUS_VIEW_MORPH",
+    "note": "Exact GLSL source of czm_columbusViewMorph from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/computeAtmosphereColor": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::COMPUTE_ATMOSPHERE_COLOR",
+    "note": "Exact GLSL source of czm_computeAtmosphereColor from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/computeGroundAtmosphereScattering": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::COMPUTE_GROUND_ATMOSPHERE_SCATTERING",
+    "note": "Exact GLSL source of czm_computeGroundAtmosphereScattering from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/computePosition": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::COMPUTE_POSITION",
+    "note": "Exact GLSL source of czm_computePosition from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/computeScattering": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::COMPUTE_SCATTERING",
+    "note": "Exact GLSL source of czm_computeScattering from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/cosineAndSine": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::COSINE_AND_SINE",
+    "note": "Exact GLSL source of czm_cosineAndSine from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/decodeRGB8": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::DECODE_RGB8",
+    "note": "Exact GLSL source of czm_decodeRGB8 from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/decompressTextureCoordinates": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::DECOMPRESS_TEXTURE_COORDINATES",
+    "note": "Exact GLSL source of czm_decompressTextureCoordinates from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/depthClamp": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::DEPTH_CLAMP",
+    "note": "Exact GLSL source of czm_depthClamp from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/eastNorthUpToEyeCoordinates": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::EAST_NORTH_UP_TO_EYE_COORDINATES",
+    "note": "Exact GLSL source of czm_eastNorthUpToEyeCoordinates from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/ellipsoidContainsPoint": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::ELLIPSOID_CONTAINS_POINT",
+    "note": "Exact GLSL source of czm_ellipsoidContainsPoint from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/ellipsoidTextureCoordinates": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::ELLIPSOID_TEXTURE_COORDINATES",
+    "note": "Exact GLSL source of czm_ellipsoidTextureCoordinates from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/equalsEpsilon": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::EQUALS_EPSILON",
+    "note": "Exact GLSL source of czm_equalsEpsilon from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/eyeOffset": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::EYE_OFFSET",
+    "note": "Exact GLSL source of czm_eyeOffset from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/eyeToWindowCoordinates": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::EYE_TO_WINDOW_COORDINATES",
+    "note": "Exact GLSL source of czm_eyeToWindowCoordinates from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/fastApproximateAtan": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::FAST_APPROXIMATE_ATAN",
+    "note": "Exact GLSL source of czm_fastApproximateAtan from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/fog": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::FOG",
+    "note": "Exact GLSL source of czm_fog from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/gammaCorrect": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::GAMMA_CORRECT",
+    "note": "Exact GLSL source of czm_gammaCorrect from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/geodeticSurfaceNormal": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::GEODETIC_SURFACE_NORMAL",
+    "note": "Exact GLSL source of czm_geodeticSurfaceNormal from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/getDefaultMaterial": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::GET_DEFAULT_MATERIAL",
+    "note": "Exact GLSL source of czm_getDefaultMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/getDynamicAtmosphereLightDirection": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::GET_DYNAMIC_ATMOSPHERE_LIGHT_DIRECTION",
+    "note": "Exact GLSL source of czm_getDynamicAtmosphereLightDirection from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/getLambertDiffuse": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::GET_LAMBERT_DIFFUSE",
+    "note": "Exact GLSL source of czm_getLambertDiffuse from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/getSpecular": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::GET_SPECULAR",
+    "note": "Exact GLSL source of czm_getSpecular from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/getWaterNoise": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::GET_WATER_NOISE",
+    "note": "Exact GLSL source of czm_getWaterNoise from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/hue": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::HUE",
+    "note": "Exact GLSL source of czm_hue from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/inverseGamma": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::INVERSE_GAMMA",
+    "note": "Exact GLSL source of czm_inverseGamma from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/isEmpty": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::IS_EMPTY",
+    "note": "Exact GLSL source of czm_isEmpty from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/isFull": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::IS_FULL",
+    "note": "Exact GLSL source of czm_isFull from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/latitudeToWebMercatorFraction": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::LATITUDE_TO_WEB_MERCATOR_FRACTION",
+    "note": "Exact GLSL source of czm_latitudeToWebMercatorFraction from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/lineDistance": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::LINE_DISTANCE",
+    "note": "Exact GLSL source of czm_lineDistance from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/linearToSrgb": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::LINEAR_TO_SRGB",
+    "note": "Exact GLSL source of czm_linearToSrgb from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/luminance": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::LUMINANCE",
+    "note": "Exact GLSL source of czm_luminance from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/maximumComponent": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::MAXIMUM_COMPONENT",
+    "note": "Exact GLSL source of czm_maximumComponent from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/metersPerPixel": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::METERS_PER_PIXEL",
+    "note": "Exact GLSL source of czm_metersPerPixel from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/modelToWindowCoordinates": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::MODEL_TO_WINDOW_COORDINATES",
+    "note": "Exact GLSL source of czm_modelToWindowCoordinates from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/multiplyWithColorBalance": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::MULTIPLY_WITH_COLOR_BALANCE",
+    "note": "Exact GLSL source of czm_multiplyWithColorBalance from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/nearFarScalar": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::NEAR_FAR_SCALAR",
+    "note": "Exact GLSL source of czm_nearFarScalar from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/octDecode": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::OCT_DECODE",
+    "note": "Exact GLSL source of czm_octDecode from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/packDepth": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::PACK_DEPTH",
+    "note": "Exact GLSL source of czm_packDepth from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/pbrLighting": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::PBR_LIGHTING",
+    "note": "Exact GLSL source of czm_pbrLighting from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/pbrNeutralTonemapping": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::PBR_NEUTRAL_TONEMAPPING",
+    "note": "Exact GLSL source of czm_pbrNeutralTonemapping from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/phong": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::PHONG",
+    "note": "Exact GLSL source of czm_phong from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/planeDistance": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::PLANE_DISTANCE",
+    "note": "Exact GLSL source of czm_planeDistance from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/pointAlongRay": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::POINT_ALONG_RAY",
+    "note": "Exact GLSL source of czm_pointAlongRay from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/rayEllipsoidIntersectionInterval": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::RAY_ELLIPSOID_INTERSECTION_INTERVAL",
+    "note": "Exact GLSL source of czm_rayEllipsoidIntersectionInterval from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/raySphereIntersectionInterval": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::RAY_SPHERE_INTERSECTION_INTERVAL",
+    "note": "Exact GLSL source of czm_raySphereIntersectionInterval from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/readDepth": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::READ_DEPTH",
+    "note": "Exact GLSL source of czm_readDepth from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/readNonPerspective": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::READ_NON_PERSPECTIVE",
+    "note": "Exact GLSL source of czm_readNonPerspective from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/reverseLogDepth": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::REVERSE_LOG_DEPTH",
+    "note": "Exact GLSL source of czm_reverseLogDepth from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/round": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::ROUND",
+    "note": "Exact GLSL source of czm_round from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/saturation": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::SATURATION",
+    "note": "Exact GLSL source of czm_saturation from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/shadowDepthCompare": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::SHADOW_DEPTH_COMPARE",
+    "note": "Exact GLSL source of czm_shadowDepthCompare from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/shadowVisibility": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::SHADOW_VISIBILITY",
+    "note": "Exact GLSL source of czm_shadowVisibility from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/signNotZero": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::SIGN_NOT_ZERO",
+    "note": "Exact GLSL source of czm_signNotZero from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/sphericalHarmonics": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::SPHERICAL_HARMONICS",
+    "note": "Exact GLSL source of czm_sphericalHarmonics from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/srgbToLinear": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::SRGB_TO_LINEAR",
+    "note": "Exact GLSL source of czm_srgbToLinear from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/tangentToEyeSpaceMatrix": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::TANGENT_TO_EYE_SPACE_MATRIX",
+    "note": "Exact GLSL source of czm_tangentToEyeSpaceMatrix from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/textureCube": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::TEXTURE_CUBE",
+    "note": "Exact GLSL source of czm_textureCube from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/transformPlane": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::TRANSFORM_PLANE",
+    "note": "Exact GLSL source of czm_transformPlane from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/translateRelativeToEye": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::TRANSLATE_RELATIVE_TO_EYE",
+    "note": "Exact GLSL source of czm_translateRelativeToEye from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/translucentPhong": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::TRANSLUCENT_PHONG",
+    "note": "Exact GLSL source of czm_translucentPhong from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/transpose": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::TRANSPOSE",
+    "note": "Exact GLSL source of czm_transpose from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/unpackClippingExtents": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::UNPACK_CLIPPING_EXTENTS",
+    "note": "Exact GLSL source of czm_unpackClippingExtents from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/unpackDepth": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::UNPACK_DEPTH",
+    "note": "Exact GLSL source of czm_unpackDepth from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/unpackFloat": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::UNPACK_FLOAT",
+    "note": "Exact GLSL source of czm_unpackFloat from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/unpackTexture": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::UNPACK_TEXTURE",
+    "note": "Exact GLSL source of czm_unpackTexture from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/unpackUint": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::UNPACK_UINT",
+    "note": "Exact GLSL source of czm_unpackUint from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/valueTransform": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::VALUE_TRANSFORM",
+    "note": "Exact GLSL source of czm_valueTransform from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/vertexLogDepth": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::VERTEX_LOG_DEPTH",
+    "note": "Exact GLSL source of czm_vertexLogDepth from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/windowToEyeCoordinates": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::WINDOW_TO_EYE_COORDINATES",
+    "note": "Exact GLSL source of czm_windowToEyeCoordinates from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/writeDepthClamp": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::WRITE_DEPTH_CLAMP",
+    "note": "Exact GLSL source of czm_writeDepthClamp from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/writeLogDepth": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::WRITE_LOG_DEPTH",
+    "note": "Exact GLSL source of czm_writeLogDepth from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/Functions/writeNonPerspective": {
+    "status": "ported",
+    "rust": "shaders::builtin::functions::WRITE_NON_PERSPECTIVE",
+    "note": "Exact GLSL source of czm_writeNonPerspective from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Appearances/AllMaterialAppearanceFS": {
+    "status": "ported",
+    "rust": "shaders::appearances::ALL_MATERIAL_APPEARANCE_FS",
+    "note": "Exact GLSL source of AllMaterialAppearanceFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Appearances/AllMaterialAppearanceVS": {
+    "status": "ported",
+    "rust": "shaders::appearances::ALL_MATERIAL_APPEARANCE_VS",
+    "note": "Exact GLSL source of AllMaterialAppearanceVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Appearances/BasicMaterialAppearanceFS": {
+    "status": "ported",
+    "rust": "shaders::appearances::BASIC_MATERIAL_APPEARANCE_FS",
+    "note": "Exact GLSL source of BasicMaterialAppearanceFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Appearances/BasicMaterialAppearanceVS": {
+    "status": "ported",
+    "rust": "shaders::appearances::BASIC_MATERIAL_APPEARANCE_VS",
+    "note": "Exact GLSL source of BasicMaterialAppearanceVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Appearances/EllipsoidSurfaceAppearanceFS": {
+    "status": "ported",
+    "rust": "shaders::appearances::ELLIPSOID_SURFACE_APPEARANCE_FS",
+    "note": "Exact GLSL source of EllipsoidSurfaceAppearanceFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Appearances/EllipsoidSurfaceAppearanceVS": {
+    "status": "ported",
+    "rust": "shaders::appearances::ELLIPSOID_SURFACE_APPEARANCE_VS",
+    "note": "Exact GLSL source of EllipsoidSurfaceAppearanceVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Appearances/PerInstanceColorAppearanceFS": {
+    "status": "ported",
+    "rust": "shaders::appearances::PER_INSTANCE_COLOR_APPEARANCE_FS",
+    "note": "Exact GLSL source of PerInstanceColorAppearanceFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Appearances/PerInstanceColorAppearanceVS": {
+    "status": "ported",
+    "rust": "shaders::appearances::PER_INSTANCE_COLOR_APPEARANCE_VS",
+    "note": "Exact GLSL source of PerInstanceColorAppearanceVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Appearances/PerInstanceFlatColorAppearanceFS": {
+    "status": "ported",
+    "rust": "shaders::appearances::PER_INSTANCE_FLAT_COLOR_APPEARANCE_FS",
+    "note": "Exact GLSL source of PerInstanceFlatColorAppearanceFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Appearances/PerInstanceFlatColorAppearanceVS": {
+    "status": "ported",
+    "rust": "shaders::appearances::PER_INSTANCE_FLAT_COLOR_APPEARANCE_VS",
+    "note": "Exact GLSL source of PerInstanceFlatColorAppearanceVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Appearances/PolylineColorAppearanceVS": {
+    "status": "ported",
+    "rust": "shaders::appearances::POLYLINE_COLOR_APPEARANCE_VS",
+    "note": "Exact GLSL source of PolylineColorAppearanceVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Appearances/PolylineMaterialAppearanceVS": {
+    "status": "ported",
+    "rust": "shaders::appearances::POLYLINE_MATERIAL_APPEARANCE_VS",
+    "note": "Exact GLSL source of PolylineMaterialAppearanceVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Appearances/TexturedMaterialAppearanceFS": {
+    "status": "ported",
+    "rust": "shaders::appearances::TEXTURED_MATERIAL_APPEARANCE_FS",
+    "note": "Exact GLSL source of TexturedMaterialAppearanceFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Appearances/TexturedMaterialAppearanceVS": {
+    "status": "ported",
+    "rust": "shaders::appearances::TEXTURED_MATERIAL_APPEARANCE_VS",
+    "note": "Exact GLSL source of TexturedMaterialAppearanceVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/AspectRampMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::ASPECT_RAMP_MATERIAL",
+    "note": "Exact GLSL source of AspectRampMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/BumpMapMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::BUMP_MAP_MATERIAL",
+    "note": "Exact GLSL source of BumpMapMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/CheckerboardMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::CHECKERBOARD_MATERIAL",
+    "note": "Exact GLSL source of CheckerboardMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/DotMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::DOT_MATERIAL",
+    "note": "Exact GLSL source of DotMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/ElevationBandMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::ELEVATION_BAND_MATERIAL",
+    "note": "Exact GLSL source of ElevationBandMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/ElevationContourMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::ELEVATION_CONTOUR_MATERIAL",
+    "note": "Exact GLSL source of ElevationContourMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/ElevationRampMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::ELEVATION_RAMP_MATERIAL",
+    "note": "Exact GLSL source of ElevationRampMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/FadeMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::FADE_MATERIAL",
+    "note": "Exact GLSL source of FadeMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/GridMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::GRID_MATERIAL",
+    "note": "Exact GLSL source of GridMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/NormalMapMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::NORMAL_MAP_MATERIAL",
+    "note": "Exact GLSL source of NormalMapMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/PolylineArrowMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::POLYLINE_ARROW_MATERIAL",
+    "note": "Exact GLSL source of PolylineArrowMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/PolylineDashMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::POLYLINE_DASH_MATERIAL",
+    "note": "Exact GLSL source of PolylineDashMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/PolylineGlowMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::POLYLINE_GLOW_MATERIAL",
+    "note": "Exact GLSL source of PolylineGlowMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/PolylineOutlineMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::POLYLINE_OUTLINE_MATERIAL",
+    "note": "Exact GLSL source of PolylineOutlineMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/RimLightingMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::RIM_LIGHTING_MATERIAL",
+    "note": "Exact GLSL source of RimLightingMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/SlopeRampMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::SLOPE_RAMP_MATERIAL",
+    "note": "Exact GLSL source of SlopeRampMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/StripeMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::STRIPE_MATERIAL",
+    "note": "Exact GLSL source of StripeMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/Water": {
+    "status": "ported",
+    "rust": "shaders::materials::WATER",
+    "note": "Exact GLSL source of Water from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Materials/WaterMaskMaterial": {
+    "status": "ported",
+    "rust": "shaders::materials::WATER_MASK_MATERIAL",
+    "note": "Exact GLSL source of WaterMaskMaterial from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Builtin/CzmBuiltins": {
+    "status": "ported",
+    "rust": "shaders::builtin::czm_builtins",
+    "note": "The 140 builtins keyed by czm_ name in upstream key order (constants, structs, functions), compared with the module default export. Not in shaders::registry, because it is a table rather than a GLSL module."
+  },
+  "Shaders/AdjustTranslucentFS": {
+    "status": "ported",
+    "rust": "shaders::root::ADJUST_TRANSLUCENT_FS",
+    "note": "Exact GLSL source of AdjustTranslucentFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/AtmosphereCommon": {
+    "status": "ported",
+    "rust": "shaders::root::ATMOSPHERE_COMMON",
+    "note": "Exact GLSL source of AtmosphereCommon from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/BillboardCollectionFS": {
+    "status": "ported",
+    "rust": "shaders::root::BILLBOARD_COLLECTION_FS",
+    "note": "Exact GLSL source of BillboardCollectionFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/BillboardCollectionVS": {
+    "status": "ported",
+    "rust": "shaders::root::BILLBOARD_COLLECTION_VS",
+    "note": "Exact GLSL source of BillboardCollectionVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/BrdfLutGeneratorFS": {
+    "status": "ported",
+    "rust": "shaders::root::BRDF_LUT_GENERATOR_FS",
+    "note": "Exact GLSL source of BrdfLutGeneratorFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/CloudCollectionFS": {
+    "status": "ported",
+    "rust": "shaders::root::CLOUD_COLLECTION_FS",
+    "note": "Exact GLSL source of CloudCollectionFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/CloudCollectionVS": {
+    "status": "ported",
+    "rust": "shaders::root::CLOUD_COLLECTION_VS",
+    "note": "Exact GLSL source of CloudCollectionVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/CloudNoiseFS": {
+    "status": "ported",
+    "rust": "shaders::root::CLOUD_NOISE_FS",
+    "note": "Exact GLSL source of CloudNoiseFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/CloudNoiseVS": {
+    "status": "ported",
+    "rust": "shaders::root::CLOUD_NOISE_VS",
+    "note": "Exact GLSL source of CloudNoiseVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/CompareAndPackTranslucentDepth": {
+    "status": "ported",
+    "rust": "shaders::root::COMPARE_AND_PACK_TRANSLUCENT_DEPTH",
+    "note": "Exact GLSL source of CompareAndPackTranslucentDepth from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/CompositeOITFS": {
+    "status": "ported",
+    "rust": "shaders::root::COMPOSITE_OITFS",
+    "note": "Exact GLSL source of CompositeOITFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/ComputeIrradianceFS": {
+    "status": "ported",
+    "rust": "shaders::root::COMPUTE_IRRADIANCE_FS",
+    "note": "Exact GLSL source of ComputeIrradianceFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/ComputeRadianceMapFS": {
+    "status": "ported",
+    "rust": "shaders::root::COMPUTE_RADIANCE_MAP_FS",
+    "note": "Exact GLSL source of ComputeRadianceMapFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/ConvolveSpecularMapFS": {
+    "status": "ported",
+    "rust": "shaders::root::CONVOLVE_SPECULAR_MAP_FS",
+    "note": "Exact GLSL source of ConvolveSpecularMapFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/ConvolveSpecularMapVS": {
+    "status": "ported",
+    "rust": "shaders::root::CONVOLVE_SPECULAR_MAP_VS",
+    "note": "Exact GLSL source of ConvolveSpecularMapVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/CubeMapPanoramaVS": {
+    "status": "ported",
+    "rust": "shaders::root::CUBE_MAP_PANORAMA_VS",
+    "note": "Exact GLSL source of CubeMapPanoramaVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/DepthPlaneFS": {
+    "status": "ported",
+    "rust": "shaders::root::DEPTH_PLANE_FS",
+    "note": "Exact GLSL source of DepthPlaneFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/DepthPlaneVS": {
+    "status": "ported",
+    "rust": "shaders::root::DEPTH_PLANE_VS",
+    "note": "Exact GLSL source of DepthPlaneVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/EllipsoidFS": {
+    "status": "ported",
+    "rust": "shaders::root::ELLIPSOID_FS",
+    "note": "Exact GLSL source of EllipsoidFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/EllipsoidVS": {
+    "status": "ported",
+    "rust": "shaders::root::ELLIPSOID_VS",
+    "note": "Exact GLSL source of EllipsoidVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/FXAA3_11": {
+    "status": "ported",
+    "rust": "shaders::root::FXAA3_11",
+    "note": "Exact GLSL source of FXAA3_11 from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/GlobeFS": {
+    "status": "ported",
+    "rust": "shaders::root::GLOBE_FS",
+    "note": "Exact GLSL source of GlobeFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/GlobeVS": {
+    "status": "ported",
+    "rust": "shaders::root::GLOBE_VS",
+    "note": "Exact GLSL source of GlobeVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/GroundAtmosphere": {
+    "status": "ported",
+    "rust": "shaders::root::GROUND_ATMOSPHERE",
+    "note": "Exact GLSL source of GroundAtmosphere from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PointPrimitiveCollectionFS": {
+    "status": "ported",
+    "rust": "shaders::root::POINT_PRIMITIVE_COLLECTION_FS",
+    "note": "Exact GLSL source of PointPrimitiveCollectionFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PointPrimitiveCollectionVS": {
+    "status": "ported",
+    "rust": "shaders::root::POINT_PRIMITIVE_COLLECTION_VS",
+    "note": "Exact GLSL source of PointPrimitiveCollectionVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PolygonSignedDistanceFS": {
+    "status": "ported",
+    "rust": "shaders::root::POLYGON_SIGNED_DISTANCE_FS",
+    "note": "Exact GLSL source of PolygonSignedDistanceFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PolylineCommon": {
+    "status": "ported",
+    "rust": "shaders::root::POLYLINE_COMMON",
+    "note": "Exact GLSL source of PolylineCommon from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PolylineFS": {
+    "status": "ported",
+    "rust": "shaders::root::POLYLINE_FS",
+    "note": "Exact GLSL source of PolylineFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PolylineShadowVolumeFS": {
+    "status": "ported",
+    "rust": "shaders::root::POLYLINE_SHADOW_VOLUME_FS",
+    "note": "Exact GLSL source of PolylineShadowVolumeFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PolylineShadowVolumeMorphFS": {
+    "status": "ported",
+    "rust": "shaders::root::POLYLINE_SHADOW_VOLUME_MORPH_FS",
+    "note": "Exact GLSL source of PolylineShadowVolumeMorphFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PolylineShadowVolumeMorphVS": {
+    "status": "ported",
+    "rust": "shaders::root::POLYLINE_SHADOW_VOLUME_MORPH_VS",
+    "note": "Exact GLSL source of PolylineShadowVolumeMorphVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PolylineShadowVolumeVS": {
+    "status": "ported",
+    "rust": "shaders::root::POLYLINE_SHADOW_VOLUME_VS",
+    "note": "Exact GLSL source of PolylineShadowVolumeVS from @cesium/engine 23.0.0, compared with the module default export. The export differs from the upstream .glsl file: Cesium build does not escape backslashes, so the \\ in a comment diagram becomes a space. The port keeps the export."
+  },
+  "Shaders/PolylineVS": {
+    "status": "ported",
+    "rust": "shaders::root::POLYLINE_VS",
+    "note": "Exact GLSL source of PolylineVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PrimitiveGaussianSplatFS": {
+    "status": "ported",
+    "rust": "shaders::root::PRIMITIVE_GAUSSIAN_SPLAT_FS",
+    "note": "Exact GLSL source of PrimitiveGaussianSplatFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PrimitiveGaussianSplatVS": {
+    "status": "ported",
+    "rust": "shaders::root::PRIMITIVE_GAUSSIAN_SPLAT_VS",
+    "note": "Exact GLSL source of PrimitiveGaussianSplatVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/ReprojectWebMercatorFS": {
+    "status": "ported",
+    "rust": "shaders::root::REPROJECT_WEB_MERCATOR_FS",
+    "note": "Exact GLSL source of ReprojectWebMercatorFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/ReprojectWebMercatorVS": {
+    "status": "ported",
+    "rust": "shaders::root::REPROJECT_WEB_MERCATOR_VS",
+    "note": "Exact GLSL source of ReprojectWebMercatorVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/ShadowVolumeAppearanceFS": {
+    "status": "ported",
+    "rust": "shaders::root::SHADOW_VOLUME_APPEARANCE_FS",
+    "note": "Exact GLSL source of ShadowVolumeAppearanceFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/ShadowVolumeAppearanceVS": {
+    "status": "ported",
+    "rust": "shaders::root::SHADOW_VOLUME_APPEARANCE_VS",
+    "note": "Exact GLSL source of ShadowVolumeAppearanceVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/ShadowVolumeFS": {
+    "status": "ported",
+    "rust": "shaders::root::SHADOW_VOLUME_FS",
+    "note": "Exact GLSL source of ShadowVolumeFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/SkyAtmosphereCommon": {
+    "status": "ported",
+    "rust": "shaders::root::SKY_ATMOSPHERE_COMMON",
+    "note": "Exact GLSL source of SkyAtmosphereCommon from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/SkyAtmosphereFS": {
+    "status": "ported",
+    "rust": "shaders::root::SKY_ATMOSPHERE_FS",
+    "note": "Exact GLSL source of SkyAtmosphereFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/SkyAtmosphereVS": {
+    "status": "ported",
+    "rust": "shaders::root::SKY_ATMOSPHERE_VS",
+    "note": "Exact GLSL source of SkyAtmosphereVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/SkyBoxFS": {
+    "status": "ported",
+    "rust": "shaders::root::SKY_BOX_FS",
+    "note": "Exact GLSL source of SkyBoxFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/SkyBoxVS": {
+    "status": "ported",
+    "rust": "shaders::root::SKY_BOX_VS",
+    "note": "Exact GLSL source of SkyBoxVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/SunFS": {
+    "status": "ported",
+    "rust": "shaders::root::SUN_FS",
+    "note": "Exact GLSL source of SunFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/SunTextureFS": {
+    "status": "ported",
+    "rust": "shaders::root::SUN_TEXTURE_FS",
+    "note": "Exact GLSL source of SunTextureFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/SunVS": {
+    "status": "ported",
+    "rust": "shaders::root::SUN_VS",
+    "note": "Exact GLSL source of SunVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Vector3DTileClampedPolylinesFS": {
+    "status": "ported",
+    "rust": "shaders::root::VECTOR3D_TILE_CLAMPED_POLYLINES_FS",
+    "note": "Exact GLSL source of Vector3DTileClampedPolylinesFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Vector3DTileClampedPolylinesVS": {
+    "status": "ported",
+    "rust": "shaders::root::VECTOR3D_TILE_CLAMPED_POLYLINES_VS",
+    "note": "Exact GLSL source of Vector3DTileClampedPolylinesVS from @cesium/engine 23.0.0, compared with the module default export. The export differs from the upstream .glsl file: Cesium build does not escape backslashes, so the \\ in a comment diagram becomes a space. The port keeps the export."
+  },
+  "Shaders/Vector3DTilePolylinesVS": {
+    "status": "ported",
+    "rust": "shaders::root::VECTOR3D_TILE_POLYLINES_VS",
+    "note": "Exact GLSL source of Vector3DTilePolylinesVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/VectorTileVS": {
+    "status": "ported",
+    "rust": "shaders::root::VECTOR_TILE_VS",
+    "note": "Exact GLSL source of VectorTileVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/ViewportQuadFS": {
+    "status": "ported",
+    "rust": "shaders::root::VIEWPORT_QUAD_FS",
+    "note": "Exact GLSL source of ViewportQuadFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/ViewportQuadVS": {
+    "status": "ported",
+    "rust": "shaders::root::VIEWPORT_QUAD_VS",
+    "note": "Exact GLSL source of ViewportQuadVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/AtmosphereStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::ATMOSPHERE_STAGE_FS",
+    "note": "Exact GLSL source of AtmosphereStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/AtmosphereStageVS": {
+    "status": "ported",
+    "rust": "shaders::model::ATMOSPHERE_STAGE_VS",
+    "note": "Exact GLSL source of AtmosphereStageVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/CPUStylingStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::CPU_STYLING_STAGE_FS",
+    "note": "Exact GLSL source of CPUStylingStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/CPUStylingStageVS": {
+    "status": "ported",
+    "rust": "shaders::model::CPU_STYLING_STAGE_VS",
+    "note": "Exact GLSL source of CPUStylingStageVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/CustomShaderStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::CUSTOM_SHADER_STAGE_FS",
+    "note": "Exact GLSL source of CustomShaderStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/CustomShaderStageVS": {
+    "status": "ported",
+    "rust": "shaders::model::CUSTOM_SHADER_STAGE_VS",
+    "note": "Exact GLSL source of CustomShaderStageVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/EdgeDetectionStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::EDGE_DETECTION_STAGE_FS",
+    "note": "Exact GLSL source of EdgeDetectionStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/EdgeVisibilityStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::EDGE_VISIBILITY_STAGE_FS",
+    "note": "Exact GLSL source of EdgeVisibilityStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/FeatureIdStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::FEATURE_ID_STAGE_FS",
+    "note": "Exact GLSL source of FeatureIdStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/FeatureIdStageVS": {
+    "status": "ported",
+    "rust": "shaders::model::FEATURE_ID_STAGE_VS",
+    "note": "Exact GLSL source of FeatureIdStageVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/GeometryStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::GEOMETRY_STAGE_FS",
+    "note": "Exact GLSL source of GeometryStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/GeometryStageVS": {
+    "status": "ported",
+    "rust": "shaders::model::GEOMETRY_STAGE_VS",
+    "note": "Exact GLSL source of GeometryStageVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/ImageBasedLightingStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::IMAGE_BASED_LIGHTING_STAGE_FS",
+    "note": "Exact GLSL source of ImageBasedLightingStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/InstancingStageCommon": {
+    "status": "ported",
+    "rust": "shaders::model::INSTANCING_STAGE_COMMON",
+    "note": "Exact GLSL source of InstancingStageCommon from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/InstancingStageVS": {
+    "status": "ported",
+    "rust": "shaders::model::INSTANCING_STAGE_VS",
+    "note": "Exact GLSL source of InstancingStageVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/LegacyInstancingStageVS": {
+    "status": "ported",
+    "rust": "shaders::model::LEGACY_INSTANCING_STAGE_VS",
+    "note": "Exact GLSL source of LegacyInstancingStageVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/LightingStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::LIGHTING_STAGE_FS",
+    "note": "Exact GLSL source of LightingStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/MaterialStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::MATERIAL_STAGE_FS",
+    "note": "Exact GLSL source of MaterialStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/MetadataStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::METADATA_STAGE_FS",
+    "note": "Exact GLSL source of MetadataStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/MetadataStageVS": {
+    "status": "ported",
+    "rust": "shaders::model::METADATA_STAGE_VS",
+    "note": "Exact GLSL source of MetadataStageVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/ModelClippingPlanesStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::MODEL_CLIPPING_PLANES_STAGE_FS",
+    "note": "Exact GLSL source of ModelClippingPlanesStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/ModelClippingPolygonsStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::MODEL_CLIPPING_POLYGONS_STAGE_FS",
+    "note": "Exact GLSL source of ModelClippingPolygonsStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/ModelClippingPolygonsStageVS": {
+    "status": "ported",
+    "rust": "shaders::model::MODEL_CLIPPING_POLYGONS_STAGE_VS",
+    "note": "Exact GLSL source of ModelClippingPolygonsStageVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/ModelColorStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::MODEL_COLOR_STAGE_FS",
+    "note": "Exact GLSL source of ModelColorStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/ModelFS": {
+    "status": "ported",
+    "rust": "shaders::model::MODEL_FS",
+    "note": "Exact GLSL source of ModelFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/ModelSilhouetteStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::MODEL_SILHOUETTE_STAGE_FS",
+    "note": "Exact GLSL source of ModelSilhouetteStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/ModelSilhouetteStageVS": {
+    "status": "ported",
+    "rust": "shaders::model::MODEL_SILHOUETTE_STAGE_VS",
+    "note": "Exact GLSL source of ModelSilhouetteStageVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/ModelSplitterStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::MODEL_SPLITTER_STAGE_FS",
+    "note": "Exact GLSL source of ModelSplitterStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/ModelVS": {
+    "status": "ported",
+    "rust": "shaders::model::MODEL_VS",
+    "note": "Exact GLSL source of ModelVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/MorphTargetsStageVS": {
+    "status": "ported",
+    "rust": "shaders::model::MORPH_TARGETS_STAGE_VS",
+    "note": "Exact GLSL source of MorphTargetsStageVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/PointCloudStylingStageVS": {
+    "status": "ported",
+    "rust": "shaders::model::POINT_CLOUD_STYLING_STAGE_VS",
+    "note": "Exact GLSL source of PointCloudStylingStageVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/PrimitiveOutlineStageFS": {
+    "status": "ported",
+    "rust": "shaders::model::PRIMITIVE_OUTLINE_STAGE_FS",
+    "note": "Exact GLSL source of PrimitiveOutlineStageFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/PrimitiveOutlineStageVS": {
+    "status": "ported",
+    "rust": "shaders::model::PRIMITIVE_OUTLINE_STAGE_VS",
+    "note": "Exact GLSL source of PrimitiveOutlineStageVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/SelectedFeatureIdStageCommon": {
+    "status": "ported",
+    "rust": "shaders::model::SELECTED_FEATURE_ID_STAGE_COMMON",
+    "note": "Exact GLSL source of SelectedFeatureIdStageCommon from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/SkinningStageVS": {
+    "status": "ported",
+    "rust": "shaders::model::SKINNING_STAGE_VS",
+    "note": "Exact GLSL source of SkinningStageVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Model/VerticalExaggerationStageVS": {
+    "status": "ported",
+    "rust": "shaders::model::VERTICAL_EXAGGERATION_STAGE_VS",
+    "note": "Exact GLSL source of VerticalExaggerationStageVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/AcesTonemappingStage": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::ACES_TONEMAPPING_STAGE",
+    "note": "Exact GLSL source of AcesTonemappingStage from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/AdditiveBlend": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::ADDITIVE_BLEND",
+    "note": "Exact GLSL source of AdditiveBlend from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/AmbientOcclusionGenerate": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::AMBIENT_OCCLUSION_GENERATE",
+    "note": "Exact GLSL source of AmbientOcclusionGenerate from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/AmbientOcclusionModulate": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::AMBIENT_OCCLUSION_MODULATE",
+    "note": "Exact GLSL source of AmbientOcclusionModulate from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/BlackAndWhite": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::BLACK_AND_WHITE",
+    "note": "Exact GLSL source of BlackAndWhite from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/BloomComposite": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::BLOOM_COMPOSITE",
+    "note": "Exact GLSL source of BloomComposite from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/BrightPass": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::BRIGHT_PASS",
+    "note": "Exact GLSL source of BrightPass from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/Brightness": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::BRIGHTNESS",
+    "note": "Exact GLSL source of Brightness from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/CompositeTranslucentClassification": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::COMPOSITE_TRANSLUCENT_CLASSIFICATION",
+    "note": "Exact GLSL source of CompositeTranslucentClassification from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/ContrastBias": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::CONTRAST_BIAS",
+    "note": "Exact GLSL source of ContrastBias from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/DepthOfField": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::DEPTH_OF_FIELD",
+    "note": "Exact GLSL source of DepthOfField from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/DepthView": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::DEPTH_VIEW",
+    "note": "Exact GLSL source of DepthView from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/DepthViewPacked": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::DEPTH_VIEW_PACKED",
+    "note": "Exact GLSL source of DepthViewPacked from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/EdgeDetection": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::EDGE_DETECTION",
+    "note": "Exact GLSL source of EdgeDetection from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/FXAA": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::FXAA",
+    "note": "Exact GLSL source of FXAA from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/FilmicTonemapping": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::FILMIC_TONEMAPPING",
+    "note": "Exact GLSL source of FilmicTonemapping from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/GaussianBlur1D": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::GAUSSIAN_BLUR1D",
+    "note": "Exact GLSL source of GaussianBlur1D from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/LensFlare": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::LENS_FLARE",
+    "note": "Exact GLSL source of LensFlare from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/ModifiedReinhardTonemapping": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::MODIFIED_REINHARD_TONEMAPPING",
+    "note": "Exact GLSL source of ModifiedReinhardTonemapping from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/NightVision": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::NIGHT_VISION",
+    "note": "Exact GLSL source of NightVision from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/PassThrough": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::PASS_THROUGH",
+    "note": "Exact GLSL source of PassThrough from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/PassThroughDepth": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::PASS_THROUGH_DEPTH",
+    "note": "Exact GLSL source of PassThroughDepth from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/PbrNeutralTonemapping": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::PBR_NEUTRAL_TONEMAPPING",
+    "note": "Exact GLSL source of PbrNeutralTonemapping from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/PointCloudEyeDomeLighting": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::POINT_CLOUD_EYE_DOME_LIGHTING",
+    "note": "Exact GLSL source of PointCloudEyeDomeLighting from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/ReinhardTonemapping": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::REINHARD_TONEMAPPING",
+    "note": "Exact GLSL source of ReinhardTonemapping from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/PostProcessStages/Silhouette": {
+    "status": "ported",
+    "rust": "shaders::post_process_stages::SILHOUETTE",
+    "note": "Exact GLSL source of Silhouette from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Voxels/IntersectBox": {
+    "status": "ported",
+    "rust": "shaders::voxels::INTERSECT_BOX",
+    "note": "Exact GLSL source of IntersectBox from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Voxels/IntersectCylinder": {
+    "status": "ported",
+    "rust": "shaders::voxels::INTERSECT_CYLINDER",
+    "note": "Exact GLSL source of IntersectCylinder from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Voxels/IntersectDepth": {
+    "status": "ported",
+    "rust": "shaders::voxels::INTERSECT_DEPTH",
+    "note": "Exact GLSL source of IntersectDepth from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Voxels/IntersectEllipsoid": {
+    "status": "ported",
+    "rust": "shaders::voxels::INTERSECT_ELLIPSOID",
+    "note": "Exact GLSL source of IntersectEllipsoid from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Voxels/IntersectLongitude": {
+    "status": "ported",
+    "rust": "shaders::voxels::INTERSECT_LONGITUDE",
+    "note": "Exact GLSL source of IntersectLongitude from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Voxels/IntersectPlane": {
+    "status": "ported",
+    "rust": "shaders::voxels::INTERSECT_PLANE",
+    "note": "Exact GLSL source of IntersectPlane from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Voxels/Intersection": {
+    "status": "ported",
+    "rust": "shaders::voxels::INTERSECTION",
+    "note": "Exact GLSL source of Intersection from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Voxels/IntersectionUtils": {
+    "status": "ported",
+    "rust": "shaders::voxels::INTERSECTION_UTILS",
+    "note": "Exact GLSL source of IntersectionUtils from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Voxels/Megatexture": {
+    "status": "ported",
+    "rust": "shaders::voxels::MEGATEXTURE",
+    "note": "Exact GLSL source of Megatexture from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Voxels/Octree": {
+    "status": "ported",
+    "rust": "shaders::voxels::OCTREE",
+    "note": "Exact GLSL source of Octree from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Voxels/VoxelFS": {
+    "status": "ported",
+    "rust": "shaders::voxels::VOXEL_FS",
+    "note": "Exact GLSL source of VoxelFS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Voxels/VoxelUtils": {
+    "status": "ported",
+    "rust": "shaders::voxels::VOXEL_UTILS",
+    "note": "Exact GLSL source of VoxelUtils from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Voxels/VoxelVS": {
+    "status": "ported",
+    "rust": "shaders::voxels::VOXEL_VS",
+    "note": "Exact GLSL source of VoxelVS from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Voxels/convertLocalToBoxUv": {
+    "status": "ported",
+    "rust": "shaders::voxels::CONVERT_LOCAL_TO_BOX_UV",
+    "note": "Exact GLSL source of convertLocalToBoxUv from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Voxels/convertLocalToCylinderUv": {
+    "status": "ported",
+    "rust": "shaders::voxels::CONVERT_LOCAL_TO_CYLINDER_UV",
+    "note": "Exact GLSL source of convertLocalToCylinderUv from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Shaders/Voxels/convertLocalToEllipsoidUv": {
+    "status": "ported",
+    "rust": "shaders::voxels::CONVERT_LOCAL_TO_ELLIPSOID_UV",
+    "note": "Exact GLSL source of convertLocalToEllipsoidUv from @cesium/engine 23.0.0, compared with the module default export."
   }
 }

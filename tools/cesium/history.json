@@ -286,5 +286,21 @@
     "ported": 368,
     "implemented": 0,
     "validatedPercent": 32.34
+  },
+  {
+    "milestone": "Builtin, Appearances and Materials shaders",
+    "date": "2026-10-22",
+    "percent": 33.84,
+    "ported": 541,
+    "implemented": 0,
+    "validatedPercent": 33.79
+  },
+  {
+    "milestone": "Shaders complete",
+    "date": "2026-10-22",
+    "percent": 36.65,
+    "ported": 674,
+    "implemented": 0,
+    "validatedPercent": 36.6
   }
 ]

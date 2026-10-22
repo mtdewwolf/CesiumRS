@@ -1,16 +1,23 @@
-// Exact default-export text of one Builtin shader. The Cesium build writes
-// the GLSL string into the module; this fixture records that string.
-import czmPi from "@cesium/engine/Source/Shaders/Builtin/Constants/pi.js";
+// Exact default-export text of every Builtin shader, and the CzmBuiltins.js
+// table. The Cesium build writes each GLSL string into its module; these
+// fixtures record those strings.
+import czmBuiltins from "@cesium/engine/Source/Shaders/Builtin/CzmBuiltins.js";
+import { shaderCases } from "./shader-cases.mjs";
 
-export default function shadersBuiltin() {
+const builtinName = (stem) => `czm_${stem}`;
+
+export default async function shadersBuiltin() {
   return [
+    { module: "constants", cases: await shaderCases("Builtin/Constants", builtinName) },
+    { module: "functions", cases: await shaderCases("Builtin/Functions", builtinName) },
+    { module: "structs", cases: await shaderCases("Builtin/Structs", builtinName) },
     {
-      module: "pi",
+      module: "CzmBuiltins",
       cases: [
         {
-          f: "shader",
-          a: ["Shaders/Builtin/Constants/pi"],
-          r: { name: "czm_pi", source: czmPi },
+          f: "czmBuiltins",
+          a: [],
+          r: Object.entries(czmBuiltins).map(([name, source]) => ({ name, source })),
         },
       ],
     },
