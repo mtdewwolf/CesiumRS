@@ -2,7 +2,8 @@
 //! plus the Lakebed viewer that runs on Core.
 //!
 //! The [`renderer`] module provides executable WebGL1/WebGL2 rendering with
-//! explicit host, resource-lifetime and validation contracts.
+//! explicit host, resource-lifetime and validation contracts. GLSL module
+//! text from `Source/Shaders` lives in [`shaders`].
 //!
 //! The ported CesiumJS Core modules live in [`core`] — one Rust module per
 //! Cesium module, checked against CesiumJS fixtures. The viewer layer
@@ -46,6 +47,7 @@ pub mod core;
 pub mod geodesic;
 pub mod mesh;
 pub mod renderer;
+pub mod shaders;
 pub mod sun;
 pub mod workers;
 

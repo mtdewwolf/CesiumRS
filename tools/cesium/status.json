@@ -1775,5 +1775,10 @@
   "Workers/transferTypedArrayTest": {
     "status": "n/a",
     "note": "Web Worker onmessage handler whose only job is to postMessage the received typed array back, transferring array.buffer, or an empty object if that transfer throws. It performs no calculation. Rust workers return owned buffers; TaskProcessor moves those values instead of transferring ArrayBuffers."
+  },
+  "Shaders/Builtin/Constants/pi": {
+    "status": "ported",
+    "rust": "shaders::builtin::constants::PI",
+    "note": "Exact GLSL source of czm_pi from @cesium/engine 23.0.0. Skeleton example for the shader registry; the rest of Builtin, Appearances, and Materials are still todo."
   }
 }
