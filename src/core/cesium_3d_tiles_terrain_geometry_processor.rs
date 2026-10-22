@@ -99,7 +99,7 @@ fn integer(v: &Value) -> Result<usize, RuntimeError> {
 fn member<'a>(v: &'a Value, key: &str) -> Result<&'a Value, RuntimeError> {
     v.get(key).ok_or_else(|| error(format!("Missing glTF {key}.")))
 }
-fn index<'a>(v: &'a Value, i: usize) -> Result<&'a Value, RuntimeError> {
+fn index(v: &Value, i: usize) -> Result<&Value, RuntimeError> {
     v.get(i).ok_or_else(|| error("glTF index is out of bounds."))
 }
 fn slice(bytes: &[u8], offset: usize, len: usize) -> Result<&[u8], RuntimeError> {
@@ -389,8 +389,8 @@ impl Cesium3DTilesTerrainGeometryProcessor {
                             _ => p.y = max.y,
                         }
                         let mut bary = [0.; 3];
-                        for j in 0..3 {
-                            bary[j] = previous.1[j] * (1. - t) + current.1[j] * t;
+                        for (j, weight) in bary.iter_mut().enumerate() {
+                            *weight = previous.1[j] * (1. - t) + current.1[j] * t;
                         }
                         next.push((p, bary));
                     }

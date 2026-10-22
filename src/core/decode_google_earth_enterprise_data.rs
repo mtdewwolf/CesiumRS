@@ -3,7 +3,7 @@
 use super::runtime_error::RuntimeError;
 
 pub fn decode_google_earth_enterprise_data(key: &[u8], data: &mut [u8]) -> Result<(), RuntimeError> {
-    if key.is_empty() || key.len() % 4 != 0 {
+    if key.is_empty() || !key.len().is_multiple_of(4) {
         return Err(RuntimeError::new("The length of key must be greater than 0 and a multiple of 4."));
     }
     let header: [u8; 4] =

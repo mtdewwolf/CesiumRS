@@ -7,13 +7,17 @@ use std::{
     cell::{Cell, RefCell},
     collections::HashMap,
     future::Future,
-    pin::{pin, Pin},
+    pin::Pin,
     rc::Rc,
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,
     },
     task::{Context, Poll, Wake, Waker},
+};
+#[cfg(feature = "native-host")]
+use std::{
+    pin::pin,
     time::{Duration, Instant},
 };
 fn poll<F: Future + Unpin>(f: &mut F, w: &Waker) -> Poll<F::Output> {
@@ -189,7 +193,9 @@ fn load_ktx2_uses_scheduled_resource_bytes() {
     assert!(matches!(poll(&mut f, Waker::noop()), Poll::Ready(Ok(Ktx2Texture::Image(_)))));
     assert_eq!(loader.0.get(), 1);
 }
+#[cfg(feature = "native-host")]
 struct ThreadWake(std::thread::Thread);
+#[cfg(feature = "native-host")]
 impl Wake for ThreadWake {
     fn wake(self: Arc<Self>) {
         self.0.unpark();
@@ -198,6 +204,7 @@ impl Wake for ThreadWake {
         self.0.unpark();
     }
 }
+#[cfg(feature = "native-host")]
 fn block<T>(f: impl Future<Output = T>) -> T {
     let mut f = pin!(f);
     let w = Waker::from(Arc::new(ThreadWake(std::thread::current())));

@@ -265,7 +265,7 @@ impl TerrainProvider for Provider {
         if self.mode == "throttled" && !self.throttled.replace(true) {
             return None;
         }
-        Some(ready(if self.fail && x % 2 == 0 {
+        Some(ready(if self.fail && x.is_multiple_of(2) {
             Err(RuntimeError::new("tile failed"))
         } else {
             Ok(HeightmapTerrainData::new(HeightmapTerrainDataOptions::new(

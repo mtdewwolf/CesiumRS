@@ -81,10 +81,11 @@ mod tests {
 
     #[test]
     fn north_pole_is_semiminor_axis() {
-        let p = to_cartesian(&wgs84(), 0.0, PI_OVER_TWO, 0.0);
+        let e = wgs84();
+        let p = to_cartesian(&e, 0.0, PI_OVER_TWO, 0.0);
         assert!(p.x.abs() < 1e-4);
         assert!(p.y.abs() < 1e-4);
-        assert!((p.z - 6_356_752.314_245_179_3).abs() < 1e-4);
+        assert!((p.z - e.radii.z).abs() < 1e-4);
     }
 
     #[test]

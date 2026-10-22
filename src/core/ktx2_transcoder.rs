@@ -209,7 +209,7 @@ impl Ktx2Header {
         }
         // Validate descriptor sample storage as ktx-parse does, without copying it.
         let block_size = u16::from_le_bytes(data[dfd + 10..dfd + 12].try_into().unwrap()) as usize;
-        if block_size < 24 || block_size % 4 != 0 || block_size + 4 > dfd_length {
+        if block_size < 24 || !block_size.is_multiple_of(4) || block_size + 4 > dfd_length {
             return Err(invalid());
         }
         check_range(data, u32_at(data, 56)? as usize, u32_at(data, 60)? as usize)?;

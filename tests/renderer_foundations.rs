@@ -95,7 +95,7 @@ fn sampler() {
                 s.minification_filter as u32,
                 s.magnification_filter as u32,
                 s.maximum_anisotropy,
-                s == s.clone(),
+                s == s,
                 s == Sampler::NEAREST
             ]))
         },
@@ -192,9 +192,11 @@ fn render_state_defaults() {
                 let mut value = serde_json::to_value(&s).unwrap();
                 let color = &s.blending.color;
                 value["blending"]["color"] = json!([color.red, color.green, color.blue, color.alpha]);
-                let rect = |v: Viewport| json!([v.x, v.y, v.width, v.height]);
-                value["scissorTest"]["rectangle"] = rect(s.scissor_test.rectangle);
-                value["viewport"] = s.viewport.map(rect).unwrap_or(Value::Null);
+                fn viewport_json(v: Viewport) -> Value {
+                    json!([v.x, v.y, v.width, v.height])
+                }
+                value["scissorTest"]["rectangle"] = viewport_json(s.scissor_test.rectangle);
+                value["viewport"] = s.viewport.map(viewport_json).unwrap_or(Value::Null);
                 ok(value)
             } else {
                 None

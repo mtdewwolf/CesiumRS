@@ -12,6 +12,7 @@ use std::{
     rc::Rc,
     sync::{Arc, Mutex},
 };
+type WaterMaskDecoder = Rc<dyn Fn(Vec<u8>) -> TerrainFuture<'static, Vec<u8>>>;
 #[derive(Clone, Default)]
 pub struct TilesTerrainOptions {
     pub ellipsoid: Option<Ellipsoid>,
@@ -249,7 +250,7 @@ pub struct Cesium3DTilesTerrainProvider {
     stamp: Cell<u64>,
     pub maximum_subtree_count: usize,
     available: TileAvailability,
-    water_decoder: Option<Rc<dyn Fn(Vec<u8>) -> TerrainFuture<'static, Vec<u8>>>>,
+    water_decoder: Option<WaterMaskDecoder>,
     error: Arc<Mutex<Event<RuntimeError>>>,
 }
 impl Cesium3DTilesTerrainProvider {
@@ -608,7 +609,7 @@ impl TerrainProvider for Cesium3DTilesTerrainProvider {
             let mut mask = 0;
             for (dx, dy, bit) in [(0, 0, 1), (1, 0, 2), (0, 1, 4), (1, 1, 8)] {
                 let child = ImplicitTerrainCoordinates { level: c.level + 1, x: c.x * 2 + dx, y: c.y * 2 + dy };
-                let available = if child.level % t.subtree_levels == 0 {
+                let available = if child.level.is_multiple_of(t.subtree_levels) {
                     subtree.child_available(child)
                 } else {
                     subtree.tile_available(child)

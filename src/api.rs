@@ -19,12 +19,9 @@ struct Scratch {
 }
 
 thread_local! {
-    static SCRATCH: RefCell<Scratch> = RefCell::new(Scratch {
-        f64s: Vec::new(),
-        f32s: Vec::new(),
-        u32s: Vec::new(),
-        camera: None,
-    });
+    static SCRATCH: RefCell<Scratch> = const {
+        RefCell::new(Scratch { f64s: Vec::new(), f32s: Vec::new(), u32s: Vec::new(), camera: None })
+    };
 }
 
 fn ellipsoid() -> Ellipsoid {
