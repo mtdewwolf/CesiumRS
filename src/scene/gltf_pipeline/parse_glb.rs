@@ -13,7 +13,10 @@ const BIN_CHUNK: u32 = 0x004e4942;
 /// first buffer in version 2. The body is a view into `glb`'s buffer.
 ///
 /// A version 2 container without a JSON chunk gives `Ok(None)`, where Cesium
-/// returns `undefined`.
+/// returns `undefined`. Like Cesium, it reads the five-word version 1 header
+/// before looking at the version, through the view's whole buffer: a version
+/// 2 container whose buffer ends within 20 bytes is a `RangeError`, even
+/// with no chunks.
 pub fn parse_glb(glb: &BufferSource) -> Result<Option<Gltf>> {
     if get_magic(glb.bytes(), 0) != "glTF" {
         return Err(PipelineError::Runtime("File is not valid binary glTF".into()));

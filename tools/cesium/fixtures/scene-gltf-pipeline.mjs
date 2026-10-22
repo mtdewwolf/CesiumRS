@@ -1,8 +1,9 @@
 // Scene/GltfPipeline: the glTF JSON utilities, evaluated by the pinned CesiumJS
 // engine on glTF 0.8, 1.0 and 2.0 documents and binary containers.
 //
-// Buffer sources travel as `{ "$source": [bytes], "pad": n }`: a Uint8Array
-// view that starts `pad` bytes into its ArrayBuffer (the pad bytes are 0xEE).
+// Buffer sources travel as `{ "$source": [bytes], "pad": n, "tail": m }`: a
+// Uint8Array view that starts `pad` bytes into its ArrayBuffer and has `tail`
+// more bytes after it (pad and tail bytes are 0xEE).
 // Results are the JSON after `JSON.stringify`, with sources written back as
 // `{ "$source": [view bytes] }`.
 import { suite } from "./lib.mjs";
@@ -14,9 +15,9 @@ function decode(value) {
   if (value && typeof value === "object") {
     if ("$source" in value) {
       const pad = value.pad ?? 0;
-      const buffer = new Uint8Array(pad + value.$source.length).fill(0xee);
+      const buffer = new Uint8Array(pad + value.$source.length + (value.tail ?? 0)).fill(0xee);
       buffer.set(value.$source, pad);
-      return buffer.subarray(pad);
+      return buffer.subarray(pad, pad + value.$source.length);
     }
     return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, decode(v)]));
   }
@@ -612,6 +613,13 @@ export default async function sceneGltfPipeline() {
         return result === undefined ? null : encode(result);
       });
     }
+    // A header-only version 2 container: the five-word header read throws
+    // unless the view's buffer extends past it.
+    const headerOnly = [...utf8("glTF"), ...u32(2), ...u32(12)];
+    for (const tail of [0, 3, 8, 20]) s.add("parseGlb", [{ $source: headerOnly, pad: 0, tail }], (g) => {
+      const result = fn(decode(g));
+      return result === undefined ? null : encode(result);
+    });
   }
   {
     const s = add("moveTechniqueRenderStates");

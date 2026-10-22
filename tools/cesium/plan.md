@@ -76,7 +76,7 @@ Scene has **104 of 482 modules** ported, in two batches.
 - **`GltfPipeline`:** all 24 glTF JSON utilities, including `parseGlb`,
   `updateVersion` (glTF 0.8 and 1.0 to 2.0), `addDefaults`,
   `removeUnusedElements` and `ForEach`. They run over a `Gltf` document whose
-  buffer sources travel in a side table. 406 direct cases cover 0.8, 1.0 and
+  buffer sources travel in a side table. 410 direct cases cover 0.8, 1.0 and
   2.0 documents and GLB containers.
 
 Next come the glTF and 3D Tiles loaders, the metadata schema and table

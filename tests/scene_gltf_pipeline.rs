@@ -1,7 +1,8 @@
 //! Scene/GltfPipeline replayed against the pinned CesiumJS fixtures.
 //!
-//! Buffer sources travel as `{ "$source": [bytes], "pad": n }`: a view that
-//! starts `n` bytes into its buffer, whose pad bytes are 0xEE.
+//! Buffer sources travel as `{ "$source": [bytes], "pad": n, "tail": m }`: a
+//! view that starts `n` bytes into its buffer and has `m` more bytes after it.
+//! Pad and tail bytes are 0xEE.
 mod common;
 use cesium_rs::core::ComponentDatatype;
 use cesium_rs::scene::gltf_pipeline::{self as pipeline, for_each, BufferSource, Gltf, Id, PipelineError};
@@ -27,10 +28,12 @@ fn decode_into(gltf: &mut Gltf, value: &Value) -> Value {
 
 fn source(value: &Value) -> BufferSource {
     let pad = value.get("pad").map_or(0, |p| n(p) as usize);
+    let tail = value.get("tail").map_or(0, |t| n(t) as usize);
     let bytes: Vec<u8> = nums(&value["$source"]).into_iter().map(|b| b as u8).collect();
     let length = bytes.len();
     let mut buffer = vec![0xEE; pad];
     buffer.extend(bytes);
+    buffer.extend(std::iter::repeat_n(0xEE, tail));
     BufferSource::view(Arc::new(buffer), pad, length)
 }
 

@@ -137,9 +137,9 @@ JSON utilities Cesium's loaders run before building a model.
 `tools/cesium/fixtures/scene-gltf-pipeline.mjs` runs the real modules on
 crafted glTF 0.8, 1.0 and 2.0 documents, GLB containers (including truncated,
 mislabeled and invalid-JSON ones) and offset buffer views.
-`tests/scene_gltf_pipeline.rs` replays the resulting 406 cases:
+`tests/scene_gltf_pipeline.rs` replays the resulting 410 cases:
 
-- 405 are compared, exactly except `updateVersion`, which allows a 1e-12
+- 409 are compared, exactly except `updateVersion`, which allows a 1e-12
   relative difference for the `pow`.
 - One debug-only precondition is skipped.
 
