@@ -115,7 +115,9 @@ The next batches cover:
 - Gaussian splats: `gaussianSplatSorter`, `gaussianSplatTextureGenerator`.
 - Specialized codecs: `decodeDraco`, `decodeI3S`.
 - Scene combination and worker messaging: `combineGeometry`,
-  `createTaskProcessorWorker`, `transferTypedArrayTest`.
+  `createTaskProcessorWorker`. `transferTypedArrayTest` is n/a: its `onmessage`
+  handler only transfers a typed array through `postMessage`. Owned Rust buffers
+  replace that transfer.
 
 Existing Core helpers are reused only after their worker boundaries have direct
-reference validation. These 16 entries remain todo in `PORTING.md`.
+reference validation.
