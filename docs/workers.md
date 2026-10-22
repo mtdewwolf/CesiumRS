@@ -114,8 +114,9 @@ The next batches cover:
   `createVectorTileGeometries`.
 - Gaussian splats: `gaussianSplatSorter`, `gaussianSplatTextureGenerator`.
 - Specialized codecs: `decodeDraco`, `decodeI3S`.
-- Scene combination and worker messaging: `combineGeometry`,
-  `createTaskProcessorWorker`, `transferTypedArrayTest`.
+- Scene combination and worker messaging: `createTaskProcessorWorker`,
+  `transferTypedArrayTest`. `combineGeometry` is ported: it runs the existing
+  geometry pipeline on packed instances and posts Float32 bounding spheres.
 
 Existing Core helpers are reused only after their worker boundaries have direct
-reference validation. These 16 entries remain todo in `PORTING.md`.
+reference validation.
