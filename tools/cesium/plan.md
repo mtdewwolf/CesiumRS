@@ -81,7 +81,12 @@ high/low encoding, compression, and unsigned-short index fitting. Bounding
 spheres are packed as `Float32Array`s. Direct worker cases call the real
 adapter. Shared geometry helpers are unchanged.
 
-The remaining todo modules are `createTaskProcessorWorker`, `decodeDraco`,
-`decodeI3S`, and `transferTypedArrayTest`. Each stays todo until its
-implementation and direct worker validation are complete. See
-[Workers details](docs/workers.md).
+`transferTypedArrayTest` is n/a. It is a Web Worker `onmessage` handler that
+posts the received typed array back by transferring `array.buffer`, or posts an
+empty object if that transfer throws. It performs no calculation. Rust workers
+return owned buffers, and `TaskProcessor` moves those values instead of
+transferring `ArrayBuffer`s.
+
+The remaining todo modules are `createTaskProcessorWorker`, `decodeDraco`, and
+`decodeI3S`. Each stays todo until its implementation and
+direct worker validation are complete. See [Workers details](docs/workers.md).
