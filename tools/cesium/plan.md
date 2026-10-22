@@ -66,14 +66,22 @@ applications can implement the existing `Gl` host contract.
 
 ### Scene
 
-Scene has **80 of 482 modules** ported. The first batch is the foundations:
-the enums and stateless helpers the rest of Scene imports. That covers the
-render-state constants and presets, scene and globe state, 3D Tiles and 3D
-Metadata types (including BigInt-aware `MetadataComponentType`), glTF
-attribute semantics, light and option types, and `Splitter`. They are replayed
-against 1,428 direct CesiumJS cases. Next come the `GltfPipeline` JSON
-helpers, the metadata schema and table classes, and the 3D Tiles content
-parsers; after them, the frame-driven modules. See [Scene](docs/scene.md).
+Scene has **104 of 482 modules** ported, in two batches.
+
+- **Foundations:** the enums and stateless helpers the rest of Scene
+  imports. That covers the render-state constants and presets, scene and
+  globe state, 3D Tiles and 3D Metadata types (including BigInt-aware
+  `MetadataComponentType`), glTF attribute semantics, light and option types,
+  and `Splitter`. They are replayed against 1,428 direct CesiumJS cases.
+- **`GltfPipeline`:** all 24 glTF JSON utilities, including `parseGlb`,
+  `updateVersion` (glTF 0.8 and 1.0 to 2.0), `addDefaults`,
+  `removeUnusedElements` and `ForEach`. They run over a `Gltf` document whose
+  buffer sources travel in a side table. 406 direct cases cover 0.8, 1.0 and
+  2.0 documents and GLB containers.
+
+Next come the glTF and 3D Tiles loaders, the metadata schema and table
+classes, and the 3D Tiles content parsers; after them, the frame-driven
+modules. See [Scene](docs/scene.md).
 
 
 ### Workers completion

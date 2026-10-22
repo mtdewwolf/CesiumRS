@@ -42,6 +42,7 @@ macro_rules! string_enum {
     };
 }
 
+pub mod gltf_pipeline;
 pub mod model;
 
 pub mod alpha_mode;

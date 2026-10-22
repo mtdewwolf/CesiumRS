@@ -3710,5 +3710,125 @@
     "status": "ported",
     "rust": "scene::model::extensions::gpm::storage_type",
     "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/GltfPipeline/usesExtension": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::uses_extension",
+    "note": "extensionsUsed lookup, including a string list's substring indexOf. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/addExtensionsUsed": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::add_extensions_used",
+    "note": "Creates the list and adds once. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/addExtensionsRequired": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::add_extensions_required",
+    "note": "Adds to extensionsRequired and extensionsUsed. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/removeExtensionsRequired": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::remove_extensions_required",
+    "note": "Removes the extension and an emptied list. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/removeExtensionsUsed": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::remove_extensions_used",
+    "note": "Removes from both lists and drops emptied lists. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/addToArray": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::add_to_array",
+    "note": "Push with the optional === duplicate check (primitives only, as JavaScript identity compares objects). Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/numberOfComponentsForType": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::number_of_components_for_type",
+    "note": "Components per accessor type; None where Cesium returns undefined. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/getAccessorByteStride": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::get_accessor_byte_stride",
+    "note": "Positive buffer view byteStride, else the packed element size (NaN for an unknown type). Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/addBuffer": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::add_buffer",
+    "note": "New buffer with an extras._pipeline.source and a whole-buffer view. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/addPipelineExtras": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::add_pipeline_extras",
+    "note": "extras._pipeline on the glTF, shaders (KHR_techniques_webgl aware), buffers and images, with JavaScript's TypeErrors for null and primitive elements. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/removePipelineExtras": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::remove_pipeline_extras",
+    "note": "Removes extras._pipeline and emptied extras. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/removeExtension": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::remove_extension",
+    "note": "Removes from the lists and from every object, returns the top-level extension data, and restores MODELVIEW for CESIUM_RTC. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/ForEach": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::for_each",
+    "note": "Every iterator, with objectLegacy for...in order (array indices first), live array lengths, visited-accessor sets and first-defined-return early exit; id lists and mutable lookups for editing passes. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/getComponentReader": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::get_component_reader",
+    "note": "Little-endian DataView readers for the eight component types, with ToIndex offsets and RangeErrors past the buffer. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/readAccessorPacked": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::read_accessor_packed",
+    "note": "Strided reads over the source's whole ArrayBuffer, zeros without a buffer view, and new Array length RangeErrors. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/findAccessorMinMax": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::find_accessor_min_max",
+    "note": "Math.min/Math.max semantics, zeros without a buffer view, and one-element arrays for unknown types. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/updateAccessorComponentTypes": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::update_accessor_component_types",
+    "note": "JOINTS_0 and WEIGHTS_0 conversion to unsigned types into new buffers, with typed-array wrapping. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/forEachTextureInMaterial": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::for_each_texture_in_material",
+    "note": "Cesium's texture info order across PBR, specular-glossiness, KHR_materials_specular, KHR_materials_common, technique values and the emissive, normal and occlusion textures, with early exit. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/addDefaults": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::add_defaults",
+    "note": "Accessor, buffer view, primitive, default material, vertex/index target and stride, material (including KHR_materials_common and specular-glossiness), texture, animation sampler, node transform, sampler and scene defaults. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/parseGlb": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::parse_glb",
+    "note": "Binary glTF 1 and 2: header checks and RuntimeErrors, chunk walking with DataView bounds, JSON SyntaxErrors, and the binary body as a view into the container's buffer. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/moveTechniqueRenderStates": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::move_technique_render_states",
+    "note": "glTF 1.0 technique states to alphaMode, doubleSided and KHR_blend, with Cesium's supported blend factor check. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/moveTechniquesToExtension": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::move_techniques_to_extension",
+    "note": "Techniques, programs and shaders into KHR_techniques_webgl, with shader dedupe by identity (the shader id), uniform remapping and material extension values. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/removeUnusedElements": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::remove_unused_elements",
+    "note": "All nine element types with their extension references (Draco, webp, basisu, meshopt, GPU instancing, primitive outline, EXT_feature_metadata, EXT_structural_metadata, EXT_mesh_features), index shifting, node emptiness and Cesium's unconditional meshopt decrement. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
+  },
+  "Scene/GltfPipeline/updateVersion": {
+    "status": "ported",
+    "rust": "scene::gltf_pipeline::update_version",
+    "note": "glTF 0.8 to 1.0 (profiles, instance techniques, axis-angle rotations rewritten in the source buffer, technique passes, lights) and 1.0 to 2.0 (empty-node removal, objects to arrays, byte stride split into buffer views, accessor bounds, semantics, component types, techniques), then technique and KHR_materials_common materials to PBR. JavaScript undefined assignments become removed properties. The sRGB conversion uses the platform pow, within 1e-12 of V8's Math.pow. Direct CesiumJS cases in tests/scene_gltf_pipeline.rs."
   }
 }

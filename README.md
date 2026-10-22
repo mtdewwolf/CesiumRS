@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 38.0% implemented; 38.0% validated** (755 validated modules, 0 implemented awaiting validation, and 0 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
+**Status: 39.0% implemented; 39.0% validated** (779 validated modules, 0 implemented awaiting validation, and 0 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
 
 ## What is ported
 
@@ -64,14 +64,19 @@ TaskProcessor message contract. `transferTypedArrayTest` is n/a.
 
 ### Scene underway
 
-**80 of 482 Scene modules** are ported. The first batch covers the enums and
-stateless helpers the rest of Scene builds on:
+**104 of 482 Scene modules** are ported, in two batches.
+
+The first covers the enums and stateless helpers the rest of Scene builds on:
 - the blend, depth and stencil constants and presets, returned as renderer
   render-state values;
 - scene, globe and 3D Tiles state;
 - glTF attribute semantics;
 - 3D Metadata types, with BigInt-aware `MetadataComponentType`;
 - lights and `Splitter`.
+
+The second ports all 24 `GltfPipeline` utilities: `parseGlb`, the glTF 0.8
+and 1.0 to 2.0 upgrade, `addDefaults`, `removeUnusedElements`, `ForEach` and
+the accessor readers.
 
 All are replayed against direct CesiumJS cases. [Scene](docs/scene.md).
 
@@ -128,7 +133,7 @@ The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **30,071 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **30,477 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
 
 ```bash
 cargo test --all-features                    # all fixtures + native host integration
@@ -168,7 +173,7 @@ Near-antipodal routes use a deterministic great-circle approximation when Vincen
 2. **Renderer complete:** all 46 modules, including Context, complete Scene-frame uniforms, cube/volume textures, atlases and shared contexts. Next: Scene and viewer integration; see [Renderer validation](docs/renderer-foundation.md).
 3. ✅ **Shaders complete:** all 307 `Source/Shaders` modules match their CesiumJS exports byte for byte; see [Shaders](docs/shaders.md).
 4. ✅ **Workers complete:** all 52 applicable modules, including `decodeDraco` with `dequantizeInShader`; see [Workers](docs/workers.md).
-5. **Scene:** the foundations batch (80 of 482 modules) is in; see [Scene](docs/scene.md). Next: `GltfPipeline`, 3D Metadata and 3D Tiles content.
+5. **Scene:** the foundations and `GltfPipeline` batches (104 of 482 modules) are in; see [Scene](docs/scene.md). Next: the glTF loaders, 3D Metadata and 3D Tiles content.
 6. **DataSources,** the rest of the way to 100% overall.
 
 ## Examples and benchmarks

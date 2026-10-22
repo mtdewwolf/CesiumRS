@@ -84,11 +84,75 @@ cargo test --test scene_foundations
 TZ=UTC node tools/cesium/fixtures/generate.mjs scene/SceneMode   # one module
 ```
 
+## GltfPipeline
+
+`scene::gltf_pipeline` ports all **24 `Scene/GltfPipeline` modules**: the glTF
+JSON utilities Cesium's loaders run before building a model.
+
+- **Glue for the loaders:** `parseGlb` reads binary glTF 1 and 2, and
+  `updateVersion` upgrades glTF 0.8 and 1.0 to 2.0 and turns technique and
+  `KHR_materials_common` materials into PBR. `addDefaults` fills in the 2.0
+  defaults and `removeUnusedElements` drops unreferenced elements.
+- **Helpers:** `ForEach`, the extension-list helpers, `removeExtension`,
+  `addToArray`, `addBuffer`, `addPipelineExtras` and `removePipelineExtras`,
+  `forEachTextureInMaterial`, the technique movers, and the accessor readers
+  (`getComponentReader`, `readAccessorPacked`, `findAccessorMinMax`,
+  `getAccessorByteStride`, `numberOfComponentsForType`,
+  `updateAccessorComponentTypes`).
+
+### Rust shape
+
+- **The document:** a `Gltf` is the JSON as `serde_json::Value` plus a side
+  table of binary sources. Cesium attaches each source to its buffer as
+  `extras._pipeline.source`. In the port that property holds a marker naming
+  a table entry, so the source moves with its buffer when indices shift.
+- **Sources as views:** a `BufferSource` is a view into a shared buffer,
+  because Cesium reads through `new DataView(source.buffer)` at
+  `source.byteOffset`. GLB bodies are views into the container, and
+  `updateVersion` rewrites glTF 0.8 rotations in place, copying the buffer on
+  write.
+- **JavaScript semantics:** a small helper layer reproduces what the code
+  depends on:
+  - `for...in` order, with array-index keys first;
+  - `defined`, `??` and JavaScript truthiness;
+  - `ToNumber` comparisons and `===`;
+  - `DataView` `ToIndex` bounds and `new Array` length checks.
+
+  The JavaScript `TypeError`s, `RangeError`s and `SyntaxError`s, and Cesium's
+  `RuntimeError`s, become `PipelineError`s. Iteration over glTF 1.0 objects
+  skips keys deleted mid-walk, as `hasOwnProperty` does.
+- **`ForEach`:** its functions take closures that stop at the first `Some`,
+  as Cesium stops at the first defined return. Passes that edit while
+  iterating use id lists and mutable lookups.
+- **Known deviations:**
+  - **`undefined` assignments:** where Cesium assigns `undefined`, for
+    example a glTF 1.0 id with no mapping, the port removes the property and
+    writes `null` inside arrays. That is what `JSON.stringify` produces. Later
+    steps that would read the `undefined` and throw skip it instead.
+  - **sRGB rounding:** `updateVersion`'s sRGB conversion uses the platform
+    `pow`, which can differ from V8's `Math.pow` in the last bit.
+
+### Validation
+
+`tools/cesium/fixtures/scene-gltf-pipeline.mjs` runs the real modules on
+crafted glTF 0.8, 1.0 and 2.0 documents, GLB containers (including truncated,
+mislabeled and invalid-JSON ones) and offset buffer views.
+`tests/scene_gltf_pipeline.rs` replays the resulting 406 cases:
+
+- 405 are compared, exactly except `updateVersion`, which allows a 1e-12
+  relative difference for the `pow`.
+- One debug-only precondition is skipped.
+
+```bash
+cargo test --test scene_gltf_pipeline
+TZ=UTC node tools/cesium/fixtures/generate.mjs gltf_pipeline/updateVersion
+```
+
 ## Next
 
-The next batches build on these types:
+The next batches build on these:
 
-- the pure-JSON `GltfPipeline` helpers;
+- the glTF and 3D Tiles resource loaders on top of `GltfPipeline`;
 - the 3D Metadata schema and table classes;
 - 3D Tiles content parsers;
 - then the frame-driven modules (`FrameState`, `Camera`, `Primitive`, the

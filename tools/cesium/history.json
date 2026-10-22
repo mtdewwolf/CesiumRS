@@ -318,5 +318,13 @@
     "ported": 755,
     "implemented": 0,
     "validatedPercent": 38.01
+  },
+  {
+    "milestone": "GltfPipeline",
+    "date": "2026-10-22",
+    "percent": 39.04,
+    "ported": 779,
+    "implemented": 0,
+    "validatedPercent": 39.04
   }
 ]

@@ -11,6 +11,7 @@ import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import sceneFoundations from "./scene-foundations.mjs";
+import sceneGltfPipeline from "./scene-gltf-pipeline.mjs";
 import workersDecodeDraco from "./workers-decode-draco.mjs";
 import workersGeometry from "./workers-geometry.mjs";
 import workersTerrain from "./workers-terrain.mjs";
@@ -81,7 +82,7 @@ for (const name of readdirSync(here).filter((entry) => entry.startsWith("shaders
   for (const suite of await loaded.default()) shaders.push({ ...suite, dir });
 }
 
-const packages = { scene: [...await sceneFoundations()], workers: [...await workersDecodeDraco(), ...await workersGeometry(), ...await workersTerrain(), ...await workersVector(), ...await workersSplats(), ...await workersI3s(), ...await workersCombine(), ...await workersTask()], renderer: [...rendererCompletion(), ...rendererFoundations(), ...rendererExtended(), ...await rendererExecution()], core: [...await coreGroundPolyline(), ...await coreTilesProvider(), ...await coreTilesTerrain(), ...await coreGee(), ...await coreNetworkTerrain(), ...await corePlatforms(), ...coreContracts(), ...await coreRequests(), ...await coreServices(), ...await coreTextures(), ...coreFoundations(), ...coreMath(), ...coreGeometry(), ...coreBounds(), ...coreTime(), ...corePacking(), ...coreSplines(), ...coreAlgorithms(), ...coreGeometries(), ...coreUtilities(), ...corePolygon(), ...corePipeline(), ...coreSurfaces(), ...coreLines(), ...coreCorridors(), ...coreTerrain(), ...coreTerrainProvider(), ...await coreTerrainMesh(), ...await coreHeightmapData(), ...coreS2(), ...await coreQuantizedTerrain(), ...await coreTerrainBoundsProviders(), ...coreAstronomy()], shaders };
+const packages = { scene: [...await sceneFoundations(), ...await sceneGltfPipeline()], workers: [...await workersDecodeDraco(), ...await workersGeometry(), ...await workersTerrain(), ...await workersVector(), ...await workersSplats(), ...await workersI3s(), ...await workersCombine(), ...await workersTask()], renderer: [...rendererCompletion(), ...rendererFoundations(), ...rendererExtended(), ...await rendererExecution()], core: [...await coreGroundPolyline(), ...await coreTilesProvider(), ...await coreTilesTerrain(), ...await coreGee(), ...await coreNetworkTerrain(), ...await corePlatforms(), ...coreContracts(), ...await coreRequests(), ...await coreServices(), ...await coreTextures(), ...coreFoundations(), ...coreMath(), ...coreGeometry(), ...coreBounds(), ...coreTime(), ...corePacking(), ...coreSplines(), ...coreAlgorithms(), ...coreGeometries(), ...coreUtilities(), ...corePolygon(), ...corePipeline(), ...coreSurfaces(), ...coreLines(), ...coreCorridors(), ...coreTerrain(), ...coreTerrainProvider(), ...await coreTerrainMesh(), ...await coreHeightmapData(), ...coreS2(), ...await coreQuantizedTerrain(), ...await coreTerrainBoundsProviders(), ...coreAstronomy()], shaders };
 // coreAstronomy runs last: loading EOP data adds leap seconds to JulianDate.leapSeconds.
 
 // Labels a suite can be selected by. Shader suites also accept
