@@ -4,9 +4,20 @@
 // when postMessage is retried without one, and CESIUM_BASE_URL after the call.
 import createTaskProcessorWorker from "@cesium/engine/Source/Workers/createTaskProcessorWorker.js";
 
+function thrownValue(spec) {
+  // `entries` keeps insertion order in the fixture file. JSON.stringify would
+  // otherwise move array indexes ahead of `b` before Rust ever sees the object.
+  if (Array.isArray(spec.entries)) {
+    const value = {};
+    for (const [key, item] of spec.entries) value[key] = item;
+    return value;
+  }
+  return spec.value;
+}
+
 function raiseWorker(spec) {
   if (spec.type === "undefined") throw undefined;
-  if (spec.type === "value") throw spec.value;
+  if (spec.type === "value") throw thrownValue(spec);
   const error = new Error("placeholder");
   if ("name" in spec) error.name = spec.name === null ? undefined : spec.name;
   else error.name = "Error";
@@ -132,6 +143,8 @@ const messages = [
   { id: 6, baseUrl: "https://cesium.test/thrown", canTransferArrayBuffer: true, throw: { type: "error", name: "Error", message: "bad" } },
   { id: 6, baseUrl: "https://cesium.test/post", canTransferArrayBuffer: true, returns: { v: 1 }, postThrows: { type: "error", name: "DataCloneError", message: "clone failed" } },
   { id: 7, canTransferArrayBuffer: true, throw: { type: "value", value: { z: 1, a: 2, m: 3 } }, postThrows: { type: "error", name: "DataCloneError", message: "clone failed" } },
+  { id: 7, canTransferArrayBuffer: true, throw: { type: "value", entries: [["b", 1], ["2", 0]] }, postThrows: { type: "error", name: "DataCloneError", message: "clone failed" } },
+  { id: 7, canTransferArrayBuffer: true, throw: { type: "value", entries: [["b", 1], ["10", 2], ["2", 0]] }, postThrows: { type: "error", name: "DataCloneError", message: "clone failed" } },
   { id: 3, canTransferArrayBuffer: true, throw: { type: "error", name: null, message: "bad" } },
   { id: 7, canTransferArrayBuffer: true, throw: { type: "error", name: null, message: "bad", stack: "at worker.js:1" }, postThrows: { type: "error", name: "DataCloneError", message: "clone failed" } },
 ];

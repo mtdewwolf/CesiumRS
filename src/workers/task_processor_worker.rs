@@ -86,7 +86,7 @@ pub fn deliver_task(
     let (result, error, error_json) = match response.result {
         Ok(result) => (result, None, None),
         Err(WorkerThrown::Other(value)) => {
-            let json = value.as_ref().map(|v| serde_json::to_string(v).expect("thrown value"));
+            let json = value.as_ref().map(json_stringify);
             (None, value, json)
         }
         Err(WorkerThrown::Exception(exception)) => {
@@ -97,7 +97,8 @@ pub fn deliver_task(
     };
     if let Some(failure) = post_failure {
         // `result` is cleared before the previous error is stringified.
-        // `preserve_order` keeps object keys in insertion order, matching JSON.stringify.
+        // `json_stringify` matches `JSON.stringify`: array indexes first, in
+        // ascending numeric order, then every other key in insertion order.
         let embedded = stringify_message(task.id.as_ref(), None, error_json.as_deref());
         let text =
             format!("postMessage failed with error: {}\n  with responseMessage: {embedded}", format_error(failure));
@@ -116,7 +117,7 @@ pub fn deliver_task(
 
 /// `onmessageerror`: `postMessage failed with error: ${JSON.stringify(event)}`.
 pub fn deliver_message_error(id: Option<Value>, event: &Value) -> TaskProcessorReply {
-    let event_json = serde_json::to_string(event).expect("message error event");
+    let event_json = json_stringify(event);
     let error = format!("postMessage failed with error: {event_json}");
     TaskProcessorReply {
         message: message_value(id.as_ref(), None, Some(&Value::String(error))),
@@ -183,13 +184,65 @@ fn message_value(id: Option<&Value>, result: Option<&Value>, error: Option<&Valu
 fn stringify_message(id: Option<&Value>, result: Option<&Value>, error_json: Option<&str>) -> String {
     let mut parts = Vec::new();
     if let Some(id) = id {
-        parts.push(format!("\"id\":{}", serde_json::to_string(id).expect("id")));
+        parts.push(format!("\"id\":{}", json_stringify(id)));
     }
     if let Some(result) = result {
-        parts.push(format!("\"result\":{}", serde_json::to_string(result).expect("result")));
+        parts.push(format!("\"result\":{}", json_stringify(result)));
     }
     if let Some(error_json) = error_json {
         parts.push(format!("\"error\":{error_json}"));
     }
     format!("{{{}}}", parts.join(","))
+}
+
+/// `JSON.stringify` of one value.
+///
+/// `preserve_order` keeps `serde_json` object keys in insertion order. That is
+/// not the whole `JSON.stringify` rule: integer array indexes (canonical
+/// decimal strings for `0 .. 2^32 - 1`) are written first, ascending numerically,
+/// and only then the remaining keys in insertion order. `"10"` therefore comes
+/// after `"2"` and before `"b"`, which neither insertion order nor a `BTreeMap`
+/// produces. Nested objects and arrays follow the same rule.
+fn json_stringify(value: &Value) -> String {
+    match value {
+        Value::Array(items) => {
+            let parts: Vec<String> = items.iter().map(json_stringify).collect();
+            format!("[{}]", parts.join(","))
+        }
+        Value::Object(map) => {
+            let mut indexes = Vec::new();
+            let mut rest = Vec::new();
+            for (key, item) in map {
+                match array_index(key) {
+                    Some(index) => indexes.push((index, key, item)),
+                    None => rest.push((key, item)),
+                }
+            }
+            indexes.sort_by_key(|(index, _, _)| *index);
+            let mut parts = Vec::with_capacity(indexes.len() + rest.len());
+            for (_, key, item) in indexes {
+                parts.push(format!("{}:{}", serde_json::to_string(key).expect("key"), json_stringify(item)));
+            }
+            for (key, item) in rest {
+                parts.push(format!("{}:{}", serde_json::to_string(key).expect("key"), json_stringify(item)));
+            }
+            format!("{{{}}}", parts.join(","))
+        }
+        other => serde_json::to_string(other).expect("json value"),
+    }
+}
+
+/// Array index in the `JSON.stringify` / `OrdinaryOwnPropertyKeys` sense:
+/// a canonical base-10 string whose value is below `2^32 - 1`. `"0"` qualifies;
+/// `"01"`, `"-1"`, `"1.0"`, and `"4294967295"` do not.
+fn array_index(key: &str) -> Option<u32> {
+    let bytes = key.as_bytes();
+    if bytes.is_empty() || bytes.len() > 10 || (bytes.len() > 1 && bytes[0] == b'0') {
+        return None;
+    }
+    if !bytes.iter().all(u8::is_ascii_digit) {
+        return None;
+    }
+    let index = key.parse::<u32>().ok()?;
+    (index != u32::MAX).then_some(index)
 }

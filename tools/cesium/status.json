@@ -1755,7 +1755,7 @@
   "Workers/createTaskProcessorWorker": {
     "status": "ported",
     "rust": "workers::task_processor_worker::deliver_task",
-    "note": "TaskProcessor onmessage and onmessageerror adapter: task id, parameters, CESIUM_BASE_URL, Error versus non-Error throws, transfer-list clearing, and formatError postMessage failure strings. 39 direct worker cases call the real adapter. TaskProcessor is unchanged."
+    "note": "TaskProcessor onmessage and onmessageerror adapter: task id, parameters, CESIUM_BASE_URL, Error versus non-Error throws, transfer-list clearing, and formatError postMessage failure strings. 41 direct worker cases call the real adapter. TaskProcessor is unchanged."
   },
   "Workers/transferTypedArrayTest": {
     "status": "n/a",

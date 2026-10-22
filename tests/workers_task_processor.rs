@@ -14,7 +14,7 @@ fn string_field(v: &Value, key: &str) -> Option<String> {
 fn parse_throw(v: &Value) -> WorkerThrown {
     match v.get("type").and_then(Value::as_str) {
         Some("undefined") => WorkerThrown::Other(None),
-        Some("value") => WorkerThrown::Other(Some(v.get("value").cloned().unwrap_or(Value::Null))),
+        Some("value") => WorkerThrown::Other(Some(thrown_value(v))),
         Some("error") => WorkerThrown::Exception(WorkerException {
             name: match v.get("name") {
                 Some(Value::Null) => None,
@@ -32,6 +32,19 @@ fn parse_throw(v: &Value) -> WorkerThrown {
         }),
         other => panic!("throw type: {other:?}"),
     }
+}
+
+fn thrown_value(v: &Value) -> Value {
+    let Some(entries) = v.get("entries").and_then(Value::as_array) else {
+        return v.get("value").cloned().unwrap_or(Value::Null);
+    };
+    let mut object = serde_json::Map::new();
+    for entry in entries {
+        let pair = entry.as_array().expect("entry pair");
+        let key = pair[0].as_str().expect("entry key");
+        object.insert(key.to_string(), pair[1].clone());
+    }
+    Value::Object(object)
 }
 
 fn parse_post(v: &Value) -> PostMessageError {
