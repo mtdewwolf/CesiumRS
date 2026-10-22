@@ -1,26 +1,41 @@
-//! `czm_pi` against the CesiumJS shader module's default export.
+//! Builtin shaders and the `CzmBuiltins.js` table against the CesiumJS
+//! modules' default exports.
 mod common;
 
 use cesium_rs::shaders;
-use common::{run, Out, EXACT};
-use serde_json::json;
+use common::{run, shader_module, Out, EXACT};
+use serde_json::{json, Value};
 
 #[test]
-fn czm_pi_source_matches_cesium() {
+fn builtin_constants_match_cesium() {
+    run("shaders/builtin", "constants", |_| EXACT, shader_module);
+}
+
+#[test]
+fn builtin_functions_match_cesium() {
+    run("shaders/builtin", "functions", |_| EXACT, shader_module);
+}
+
+#[test]
+fn builtin_structs_match_cesium() {
+    run("shaders/builtin", "structs", |_| EXACT, shader_module);
+}
+
+#[test]
+fn czm_builtins_table_matches_cesium() {
     run(
         "shaders/builtin",
-        "pi",
+        "CzmBuiltins",
         |_| EXACT,
-        |function, args| {
-            if function != "shader" {
+        |function, _| {
+            if function != "czmBuiltins" {
                 return None;
             }
-            let id = args.first()?.as_str()?;
-            let module = shaders::shader(id)?;
-            Some(Out::Ok(json!({
-                "name": module.name,
-                "source": module.source,
-            })))
+            let table = shaders::builtin::czm_builtins()
+                .iter()
+                .map(|module| json!({ "name": module.name, "source": module.source }))
+                .collect();
+            Some(Out::Ok(Value::Array(table)))
         },
     );
 }

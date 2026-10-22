@@ -31,10 +31,12 @@
 //! | `post_process_stages` | `PostProcessStages/` | the other port |
 //! | `voxels` | `Voxels/` | the other port |
 //!
-//! `czm_pi` is the one wired example. The other directories register no
-//! shaders yet. See `docs/shaders.md`.
+//! `builtin`, `appearances`, and `materials` register every upstream module.
+//! The other port's directories register none yet. See `docs/shaders.md`.
 //!
-//! A builtin's [`ShaderModule::name`] is its `@alias` (`czm_pi`). A root
+//! A builtin's [`ShaderModule::name`] is its `CzmBuiltins.js` key (`czm_pi`),
+//! which is also its `@alias` where the file declares one. An appearance or
+//! material is named by its file stem. A root
 //! `Shaders/*.js` module's name is its file stem. `@cesium/engine` 23.0.0
 //! has 55 of those modules. Each default export is only the GLSL string,
 //! none declare an `@alias`, and call sites import that stem
@@ -54,8 +56,8 @@ pub mod voxels;
 pub struct ShaderModule {
     /// Tracker id, such as `Shaders/Builtin/Constants/pi`.
     pub id: &'static str,
-    /// Builtin `@alias`, such as `czm_pi`. A root `Shaders/*.js` module has no
-    /// `@alias`; its name is the file stem (`PolylineCommon` for
+    /// Builtin `CzmBuiltins.js` key, such as `czm_pi`. Other modules have no
+    /// `@alias`; their name is the file stem (`PolylineCommon` for
     /// `PolylineCommon.js`). Confirmed for all 55 root modules in
     /// `@cesium/engine` 23.0.0: each default export is the GLSL string alone.
     pub name: &'static str,
@@ -121,7 +123,8 @@ mod tests {
         let status: serde_json::Value = serde_json::from_str(&text).expect("status.json");
         let entries = status.as_object().expect("status object");
         let shaders = registry();
-        let ids: BTreeSet<&str> = shaders.iter().map(|module| module.id).collect();
+        let mut ids: BTreeSet<&str> = shaders.iter().map(|module| module.id).collect();
+        ids.insert(super::builtin::CZM_BUILTINS_ID);
         for module in shaders {
             assert!(entries.contains_key(module.id), "registered shader missing from status.json: {}", module.id);
         }

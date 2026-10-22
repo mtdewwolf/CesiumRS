@@ -108,11 +108,14 @@ mapped-index attribute walk live in `workers::draco`, which `decodeI3S` also
 uses. There is no remaining todo worker module. See
 [Workers details](docs/workers.md).
 
-Shaders is a skeleton. Each `Source/Shaders` subdirectory registers itself
-with two appended lines in `src/shaders/mod.rs` (`pub mod` and one `register`
-call). Shader text is the exact default export of the `@cesium/engine` 23.0.0
-module. `czm_pi` (`Shaders/Builtin/Constants/pi`) is the one wired example.
-The rest of Builtin, Appearances, and Materials stay todo. The root, Model,
+Shaders has this port's three directories complete. Each `Source/Shaders`
+subdirectory registers itself with two appended lines in `src/shaders/mod.rs`
+(`pub mod` and one `register` call). Shader text is the exact default export of
+the `@cesium/engine` 23.0.0 module. All 140 Builtin modules (40 constants,
+8 structs, 92 functions), the `CzmBuiltins.js` table, 14 Appearances and
+19 Materials are ported, 174 modules in all, and each is compared byte for byte
+with its CesiumJS default export. The fixtures discover every module in those
+upstream folders, so an unregistered one fails its replay. The root, Model,
 PostProcessStages, and Voxels directories are empty stubs for the other port.
 The renderer still assembles programs from the pinned builtin table. See
 [Shaders](docs/shaders.md).

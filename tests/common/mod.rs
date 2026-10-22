@@ -484,3 +484,13 @@ pub fn geometry_enc(g: Option<Geometry>) -> Value {
         "offsetAttribute": g.offset_attribute.map(|o| o as u32),
     })
 }
+
+/// Replay port for shader fixtures: `shader(id)` returns `{ name, source }`
+/// from `shaders::shader`. An unknown id is a missing port.
+pub fn shader_module(function: &str, args: &[Value]) -> Option<Out> {
+    if function != "shader" {
+        return None;
+    }
+    let module = cesium_rs::shaders::shader(args.first()?.as_str()?)?;
+    Some(Out::Ok(json!({ "name": module.name, "source": module.source })))
+}
