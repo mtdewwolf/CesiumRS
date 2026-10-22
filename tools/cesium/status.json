@@ -1757,6 +1757,11 @@
     "rust": "workers::combine_geometry::combine_geometry",
     "note": "PrimitivePipeline.combineGeometry on packed instances and createGeometry results: world transforms, antimeridian splits, batchId, vertex-cache reorder, 2D projection, high/low encoding, compression, unsigned-short indices, pick offsets, and Float32 bounding spheres. 15 direct worker cases. The mixed primitiveType DeveloperError is a debug precondition. Shared geometry helpers are unchanged."
   },
+  "Workers/createTaskProcessorWorker": {
+    "status": "ported",
+    "rust": "workers::task_processor_worker::deliver_task",
+    "note": "TaskProcessor onmessage and onmessageerror adapter: task id, parameters, CESIUM_BASE_URL, Error versus non-Error throws, transfer-list clearing, and formatError postMessage failure strings. 41 direct worker cases call the real adapter. TaskProcessor is unchanged."
+  },
   "Workers/transferTypedArrayTest": {
     "status": "n/a",
     "note": "Web Worker onmessage handler whose only job is to postMessage the received typed array back, transferring array.buffer, or an empty object if that transfer throws. It performs no calculation. Rust workers return owned buffers; TaskProcessor moves those values instead of transferring ArrayBuffers."

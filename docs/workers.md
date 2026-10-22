@@ -114,11 +114,15 @@ The next batches cover:
   `createVectorTileGeometries`.
 - Gaussian splats: `gaussianSplatSorter`, `gaussianSplatTextureGenerator`.
 - Specialized codecs: `decodeDraco`, `decodeI3S`.
-- Scene combination and worker messaging: `createTaskProcessorWorker`.
-  `combineGeometry` is ported: it runs the existing geometry pipeline on packed
-  instances and posts Float32 bounding spheres. `transferTypedArrayTest` is n/a:
-  its `onmessage` handler only transfers a typed array through `postMessage`.
-  Owned Rust buffers replace that transfer.
+- Scene combination and worker messaging: `combineGeometry` and
+  `createTaskProcessorWorker` are ported. `combineGeometry` runs the existing
+  geometry pipeline on packed instances and posts Float32 bounding spheres.
+  `createTaskProcessorWorker` adapts a calculation to the TaskProcessor
+  `onmessage` / `onmessageerror` contract, including the `formatError` strings
+  posted when `postMessage` fails. Object keys in those strings follow
+  `JSON.stringify`. `transferTypedArrayTest` is n/a: its `onmessage` handler
+  only transfers a typed array through `postMessage`. Owned Rust buffers
+  replace that transfer.
 
 Existing Core helpers are reused only after their worker boundaries have direct
 reference validation.

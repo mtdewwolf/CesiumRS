@@ -9,6 +9,7 @@ pub mod create_geometry;
 pub mod gaussian_splats;
 pub mod geometry;
 pub mod geometry_results;
+pub mod task_processor_worker;
 pub mod terrain;
 pub mod vector_tiles;
 
@@ -19,3 +20,7 @@ pub use terrain::*;
 pub use vector_tiles::*;
 pub use combine_geometry::*;
 pub use gaussian_splats::*;
+pub use task_processor_worker::{
+    deliver_message_error, deliver_task, PostMessageError, TaskMessage, TaskProcessorReply, WorkerException,
+    WorkerResponse, WorkerThrown,
+};
