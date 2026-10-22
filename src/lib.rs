@@ -1,6 +1,8 @@
 //! Rust port of the CesiumJS 1.139 geospatial core, renderer and worker calculations,
 //! plus the Lakebed viewer that runs on Core.
 //!
+//! [`scene`] is the CesiumJS `Scene` package, ported batch by batch.
+//!
 //! The [`renderer`] module provides executable WebGL1/WebGL2 rendering with
 //! explicit host, resource-lifetime and validation contracts. GLSL module
 //! text from `Source/Shaders` lives in [`shaders`].
@@ -47,6 +49,7 @@ pub mod core;
 pub mod geodesic;
 pub mod mesh;
 pub mod renderer;
+pub mod scene;
 pub mod shaders;
 pub mod sun;
 pub mod workers;

@@ -1,0 +1,1 @@
+{"module":"CloudType","cesium":"23.0.0","cases":[{"f":"constants","a":[],"r":{"CUMULUS":0}},{"f":"validate","a":[0],"r":true},{"f":"validate","a":[1],"r":false},{"f":"validate","a":[-1],"r":false},{"f":"validate","a":[0.5],"r":false},{"f":"validate","a":["-0"],"r":true},{"f":"validate","a":[2],"r":false}]}

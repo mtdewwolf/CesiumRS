@@ -3310,5 +3310,405 @@
     "status": "ported",
     "rust": "shaders::voxels::CONVERT_LOCAL_TO_ELLIPSOID_UV",
     "note": "Exact GLSL source of convertLocalToEllipsoidUv from @cesium/engine 23.0.0, compared with the module default export."
+  },
+  "Scene/SDFSettings": {
+    "status": "ported",
+    "rust": "scene::sdfsettings",
+    "note": "Font size, padding, radius and cutoff constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/CloudType": {
+    "status": "ported",
+    "rust": "scene::cloud_type",
+    "note": "Enum and validate. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/ColorBlendMode": {
+    "status": "ported",
+    "rust": "scene::color_blend_mode",
+    "note": "Enum and getColorBlend, including the clamp to [1e-4, 1] and NaN pass-through for MIX. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/StencilConstants": {
+    "status": "ported",
+    "rust": "scene::stencil_constants",
+    "note": "Masks and setCesium3DTileBit as a renderer StencilTest, compared with the object and its RenderState.fromCache resolution. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/ImplicitSubdivisionScheme": {
+    "status": "ported",
+    "rust": "scene::implicit_subdivision_scheme",
+    "note": "Enum and getBranchingFactor. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Cesium3DTilePass": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_pass",
+    "note": "Enum, NUMBER_OF_PASSES and getPassOptions for every pass (undefined out of range). Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/DynamicAtmosphereLightingType": {
+    "status": "ported",
+    "rust": "scene::dynamic_atmosphere_lighting_type",
+    "note": "Enum and fromGlobeFlags over all eight flag combinations; a flags struct stands in for the Globe. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/SceneMode": {
+    "status": "ported",
+    "rust": "scene::scene_mode",
+    "note": "Enum and getMorphTime (undefined while morphing). Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/SensorVolumePortionToDisplay": {
+    "status": "ported",
+    "rust": "scene::sensor_volume_portion_to_display",
+    "note": "Enum, validate and toString. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/ShadowMode": {
+    "status": "ported",
+    "rust": "scene::shadow_mode",
+    "note": "Enum, castShadows, receiveShadows and fromCastReceive. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/TileSelectionResult": {
+    "status": "ported",
+    "rust": "scene::tile_selection_result",
+    "note": "Enum and the wasKicked, originalResult and kick bit helpers over 0-15. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/HeightReference": {
+    "status": "ported",
+    "rust": "scene::height_reference",
+    "note": "Enum and the isHeightReferenceClamp / isHeightReferenceRelative named exports. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Tonemapper": {
+    "status": "ported",
+    "rust": "scene::tonemapper",
+    "note": "Enum and the validateTonemapper named export. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/InstanceAttributeSemantic": {
+    "status": "ported",
+    "rust": "scene::instance_attribute_semantic",
+    "note": "Enum and fromGltfSemantic, including the ASCII /^(\\w+)_\\d+$/ set-index strip. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Axis": {
+    "status": "ported",
+    "rust": "scene::axis",
+    "note": "Enum, the six up-axis rotation matrices and fromName for X, Y and Z (Cesium's lookup also returns the matrices by name; Rust exposes them as constants). Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/AttributeType": {
+    "status": "ported",
+    "rust": "scene::attribute_type",
+    "note": "Enum and getMathType (a MathType enum stands in for the constructor), getNumberOfComponents, getAttributeLocationCount and getGlslType. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/MetadataType": {
+    "status": "ported",
+    "rust": "scene::metadata_type",
+    "note": "Enum and isVectorType, isMatrixType, getComponentCount and getMathType, including unknown type strings. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/VertexAttributeSemantic": {
+    "status": "ported",
+    "rust": "scene::vertex_attribute_semantic",
+    "note": "Enum and hasSetIndex, fromGltfSemantic (with the _SCALE / _ROTATION splat names), fromPntsSemantic, getGlslType and getVariableName. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Cesium3DTileContentType": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_content_type",
+    "note": "Enum and isBinaryFormat. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Model/ModelType": {
+    "status": "ported",
+    "rust": "scene::model::model_type",
+    "note": "Enum and is3DTiles. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Model/CustomShaderMode": {
+    "status": "ported",
+    "rust": "scene::model::custom_shader_mode",
+    "note": "Enum and getDefineName. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Model/StyleCommandsNeeded": {
+    "status": "ported",
+    "rust": "scene::model::style_commands_needed",
+    "note": "Enum and getStyleCommandsNeeded. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/BlendingState": {
+    "status": "ported",
+    "rust": "scene::blending_state",
+    "note": "The four presets as renderer Blending values, compared with Cesium's objects and their RenderState.fromCache resolution. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/MetadataComponentType": {
+    "status": "ported",
+    "rust": "scene::metadata_component_type",
+    "note": "Enum, typeInfo, min/max with BigInt 64-bit limits, category helpers, normalize (number and BigInt), unnormalize (BigInt results, the number-0 UINT64 clamp and BigInt RangeErrors), value transforms, ComponentDatatype conversion and getDataViewSetter as set_data_view_value, including wrapping, BigInt TypeErrors and out-of-range writes. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/hasExtension": {
+    "status": "ported",
+    "rust": "scene::has_extension",
+    "note": "Over serde_json values; JSON null counts as undefined. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/getClipAndStyleCode": {
+    "status": "ported",
+    "rust": "scene::get_clip_and_style_code",
+    "note": "Exact GLSL snippet. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/NeverTileDiscardPolicy": {
+    "status": "ported",
+    "rust": "scene::never_tile_discard_policy",
+    "note": "Implements the TileDiscardPolicy trait. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/TileDiscardPolicy": {
+    "status": "ported",
+    "rust": "scene::tile_discard_policy",
+    "note": "Rust trait over the host image type replaces the abstract class; validated through NeverTileDiscardPolicy. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Splitter": {
+    "status": "ported",
+    "rust": "scene::splitter",
+    "note": "modifyFragmentShader text and addUniforms as a wrapping renderer UniformMap that appends czm_splitDirection. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/SupportedImageFormats": {
+    "status": "ported",
+    "rust": "scene::supported_image_formats",
+    "note": "Plain struct; defaults match. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/SunLight": {
+    "status": "ported",
+    "rust": "scene::sun_light",
+    "note": "Options struct with Cesium's defaults; implements the Light trait. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/DirectionalLight": {
+    "status": "ported",
+    "rust": "scene::directional_light",
+    "note": "Options struct with Cesium's defaults; a zero direction returns None where Cesium throws. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Light": {
+    "status": "ported",
+    "rust": "scene::light",
+    "note": "Rust trait replaces the abstract class; validated through SunLight and DirectionalLight. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/ParticleBurst": {
+    "status": "ported",
+    "rust": "scene::particle_burst",
+    "note": "Options struct with Cesium's defaults and the complete flag. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/QuadtreeOccluders": {
+    "status": "ported",
+    "rust": "scene::quadtree_occluders",
+    "note": "Wraps core::EllipsoidalOccluder with the camera at the origin. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/getBinaryAccessor": {
+    "status": "ported",
+    "rust": "scene::get_binary_accessor",
+    "note": "Component type by name or value, components per attribute, the math type and typed-array views over little-endian bytes. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Model/ModelAlphaOptions": {
+    "status": "ported",
+    "rust": "scene::model::model_alpha_options",
+    "note": "Pass and alpha cutoff, both unset by default. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Model/ModelLightingOptions": {
+    "status": "ported",
+    "rust": "scene::model::model_lighting_options",
+    "note": "Defaults to UNLIT. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Model/ImageryFlags": {
+    "status": "ported",
+    "rust": "scene::model::imagery_flags",
+    "note": "All flags false by default. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Model/CartesianRectangle": {
+    "status": "ported",
+    "rust": "scene::model::cartesian_rectangle",
+    "note": "Defaults and the contains, containsExclusive and containsInclusive bounds. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/ModelAnimationState": {
+    "status": "ported",
+    "rust": "scene::model_animation_state",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/JobType": {
+    "status": "ported",
+    "rust": "scene::job_type",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/TileState": {
+    "status": "ported",
+    "rust": "scene::tile_state",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/ArcGisBaseMapType": {
+    "status": "ported",
+    "rust": "scene::arc_gis_base_map_type",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Cesium3DTileContentState": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_content_state",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Cesium3DTileOptimizationHint": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_optimization_hint",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/TerrainState": {
+    "status": "ported",
+    "rust": "scene::terrain_state",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/ImageryState": {
+    "status": "ported",
+    "rust": "scene::imagery_state",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/PostProcessStageSampleMode": {
+    "status": "ported",
+    "rust": "scene::post_process_stage_sample_mode",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/MapMode2D": {
+    "status": "ported",
+    "rust": "scene::map_mode_2d",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/VoxelMetadataOrder": {
+    "status": "ported",
+    "rust": "scene::voxel_metadata_order",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/ExpressionNodeType": {
+    "status": "ported",
+    "rust": "scene::expression_node_type",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/BlendOption": {
+    "status": "ported",
+    "rust": "scene::blend_option",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Cesium3DTileRefine": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_refine",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/CullFace": {
+    "status": "ported",
+    "rust": "scene::cull_face",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/IonWorldImageryStyle": {
+    "status": "ported",
+    "rust": "scene::ion_world_imagery_style",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/LabelStyle": {
+    "status": "ported",
+    "rust": "scene::label_style",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/ModelAnimationLoop": {
+    "status": "ported",
+    "rust": "scene::model_animation_loop",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/SplitDirection": {
+    "status": "ported",
+    "rust": "scene::split_direction",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/QuadtreeTileLoadState": {
+    "status": "ported",
+    "rust": "scene::quadtree_tile_load_state",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/HorizontalOrigin": {
+    "status": "ported",
+    "rust": "scene::horizontal_origin",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/BillboardLoadState": {
+    "status": "ported",
+    "rust": "scene::billboard_load_state",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/CameraEventType": {
+    "status": "ported",
+    "rust": "scene::camera_event_type",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/VerticalOrigin": {
+    "status": "ported",
+    "rust": "scene::vertical_origin",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Cesium3DTileColorBlendMode": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_color_blend_mode",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/BlendEquation": {
+    "status": "ported",
+    "rust": "scene::blend_equation",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/ResourceLoaderState": {
+    "status": "ported",
+    "rust": "scene::resource_loader_state",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/DepthFunction": {
+    "status": "ported",
+    "rust": "scene::depth_function",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/StencilFunction": {
+    "status": "ported",
+    "rust": "scene::stencil_function",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/StencilOperation": {
+    "status": "ported",
+    "rust": "scene::stencil_operation",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/BlendFunction": {
+    "status": "ported",
+    "rust": "scene::blend_function",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/ClassificationType": {
+    "status": "ported",
+    "rust": "scene::classification_type",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/AlphaMode": {
+    "status": "ported",
+    "rust": "scene::alpha_mode",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/BingMapsStyle": {
+    "status": "ported",
+    "rust": "scene::bing_maps_style",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/MetadataSemantic": {
+    "status": "ported",
+    "rust": "scene::metadata_semantic",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Model/LightingModel": {
+    "status": "ported",
+    "rust": "scene::model::lighting_model",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Model/CustomShaderTranslucencyMode": {
+    "status": "ported",
+    "rust": "scene::model::custom_shader_translucency_mode",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Model/UniformType": {
+    "status": "ported",
+    "rust": "scene::model::uniform_type",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Model/VaryingType": {
+    "status": "ported",
+    "rust": "scene::model::varying_type",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/Model/Extensions/Gpm/StorageType": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::storage_type",
+    "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
   }
 }

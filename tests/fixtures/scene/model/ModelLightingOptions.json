@@ -1,0 +1,1 @@
+{"module":"ModelLightingOptions","cesium":"23.0.0","cases":[{"f":"new","a":[null],"r":0},{"f":"new","a":[{}],"r":0},{"f":"new","a":[{"lightingModel":1}],"r":1},{"f":"new","a":[{"lightingModel":0}],"r":0}]}

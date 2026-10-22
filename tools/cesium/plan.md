@@ -35,7 +35,7 @@ Along the way, `core::js_math` made the port's `sin`, `cos`, `log` and the other
    - ✅ network heightmap/quantized and 3D Tiles terrain providers, Google Earth Enterprise metadata and terrain, world-terrain factories. Ion resources/geocoding and platform clients are now validated. Bing, Google, Pelias, OpenCage and coordinate geocoders pass deterministic parsing, request construction, attribution and error fixtures.
 11. ✅ **Contracts and host behavior:** interpolation/packing interfaces, geometry factories, video bindings, terrain sampling, screen-space gestures and canvas text/pin rendering validated.
 
-Core, Renderer, Shaders and Workers have reached 100% of applicable modules; Scene is next. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. The viewer already runs on Core — it was migrated ahead of 100% Core so the two implementations could not drift apart. After Core, proceed to Renderer and Scene.
+Core, Renderer, Shaders and Workers have reached 100% of applicable modules; Scene is the active package. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. The viewer already runs on Core — it was migrated ahead of 100% Core so the two implementations could not drift apart. After Core, proceed to Renderer and Scene.
 
 ### Validated partial-module batch
 
@@ -63,6 +63,17 @@ After Workers, port Scene using the typed frame snapshots, shared resource
 ownership and executable Renderer commands. The raw viewer's migration to this
 API and a concrete native GPU driver remain separate integration work; native
 applications can implement the existing `Gl` host contract.
+
+### Scene
+
+Scene has **80 of 482 modules** ported. The first batch is the foundations:
+the enums and stateless helpers the rest of Scene imports. That covers the
+render-state constants and presets, scene and globe state, 3D Tiles and 3D
+Metadata types (including BigInt-aware `MetadataComponentType`), glTF
+attribute semantics, light and option types, and `Splitter`. They are replayed
+against 1,428 direct CesiumJS cases. Next come the `GltfPipeline` JSON
+helpers, the metadata schema and table classes, and the 3D Tiles content
+parsers; after them, the frame-driven modules. See [Scene](docs/scene.md).
 
 
 ### Workers completion
