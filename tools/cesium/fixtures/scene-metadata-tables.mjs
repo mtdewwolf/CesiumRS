@@ -559,5 +559,39 @@ export default async function sceneMetadataTables() {
       });
     }
   }
+  // ---- ImplicitMetadataView ----
+  {
+    const s = add("ImplicitMetadataView");
+    const ImplicitMetadataView = await scene("ImplicitMetadataView");
+    const spec = { cls: "t", count: 3, ...tableColumns(["f32", "str", "i8"], tableRows) };
+    const ops = [["info", 0], ["info", 2], ["ids", 0]];
+    for (const k of [0, 1, 2]) {
+      for (const id of ["f32", "str", "i8", "onlyDefault", "u16"]) ops.push(["has", k, id], ["get", k, id]);
+      for (const sem of ["HEIGHT", "NAME", "NONE"]) ops.push(["hasSem", k, sem], ["getSem", k, sem]);
+    }
+    ops.push(["set", 0, "f32", 8], ["get", 0, "f32"], ["get", 2, "f32"], ["set", 2, "str", "two"], ["getSem", 2, "NAME"], ["get", 0, "str"]);
+    ops.push(["setSem", 1, "HEIGHT", 4], ["get", 1, "f32"], ["setSem", 1, "NONE", 1], ["set", 1, "u16", 1], ["get", 3, "f32"]);
+    for (const json of [{ extras: { a: 1 }, extensions: { E: {} } }, {}, null]) {
+      s.add("script", [spec, json, ops], (sp, j, script) => {
+        const table = buildTable(sp);
+        const views = [0, 1, 2, 3].map((entityId) => new ImplicitMetadataView({ metadataTable: table, class: classT, entityId, propertyTableJson: j }));
+        return script.map((op) =>
+          attempt(() => {
+            const v = views[op[1]];
+            switch (op[0]) {
+              case "info": return [v.class.id, v.extras ?? null, v.extensions ?? null];
+              case "ids": return v.getPropertyIds();
+              case "has": return v.hasProperty(op[2]);
+              case "get": return val(v.getProperty(op[2]));
+              case "hasSem": return v.hasPropertyBySemantic(op[2]);
+              case "getSem": return val(v.getPropertyBySemantic(op[2]));
+              case "set": return v.setProperty(op[2], unval(op[3]));
+              case "setSem": return v.setPropertyBySemantic(op[2], unval(op[3]));
+            }
+          }),
+        );
+      });
+    }
+  }
   return out;
 }

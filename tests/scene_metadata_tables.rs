@@ -410,3 +410,39 @@ fn property_attributes() {
         },
     );
 }
+
+#[test]
+fn implicit_metadata_view() {
+    run(
+        "scene",
+        "ImplicitMetadataView",
+        |_| EXACT,
+        |_, a| {
+            let table = match build(table_from(&a[0])) {
+                Ok(t) => Arc::new(std::sync::Mutex::new(t)),
+                Err(out) => return out,
+            };
+            let mut views = Vec::new();
+            for entity_id in 0..4 {
+                match build(ImplicitMetadataView::new(table.clone(), class("t"), entity_id, &a[1])) {
+                    Ok(v) => views.push(v),
+                    Err(out) => return out,
+                }
+            }
+            script(&a[2], |op, x| {
+                let v = &mut views[idx(&x[0])];
+                match op {
+                    "info" => Ok(json!([MetadataEntity::class(v).id, opt(v.extras()), opt(v.extensions())])),
+                    "ids" => Ok(json!(v.get_property_ids())),
+                    "has" => Ok(json!(v.has_property(s(&x[1])))),
+                    "get" => v.get_property(s(&x[1])).map(|v| tval(v.as_ref())),
+                    "hasSem" => Ok(json!(v.has_property_by_semantic(s(&x[1])))),
+                    "getSem" => v.get_property_by_semantic(s(&x[1])).map(|v| tval(v.as_ref())),
+                    "set" => v.set_property(s(&x[1]), arg(&x[2])).map(|b| json!(b)),
+                    "setSem" => v.set_property_by_semantic(s(&x[1]), arg(&x[2])).map(|b| json!(b)),
+                    _ => panic!("unknown op {op}"),
+                }
+            })
+        },
+    );
+}

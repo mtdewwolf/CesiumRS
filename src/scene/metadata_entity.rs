@@ -136,3 +136,77 @@ pub fn set_property_by_semantic(
 pub fn properties_from_json(properties: Option<&serde_json::Value>) -> MetadataProperties {
     super::metadata_value::json_entries(properties).into_iter().map(|(k, v)| (k, MetadataValue::from_json(v))).collect()
 }
+
+/// The class-independent parts of an entity's JSON. Cesium keeps a reference
+/// to the JSON's `properties`; an entity here owns a copy, so writes do not
+/// reach the tileset JSON. A missing `properties` is empty.
+pub(crate) struct EntityJson {
+    pub properties: MetadataProperties,
+    pub extras: Option<serde_json::Value>,
+    pub extensions: Option<serde_json::Value>,
+}
+
+/// `json` must be an object, as Cesium's `Check.typeOf.object` requires.
+pub(crate) fn entity_json(json: &serde_json::Value, what: &str) -> Result<EntityJson> {
+    if !(json.is_object() || json.is_array()) {
+        return Err(developer(format!("Expected options.{what} to be typeof object")));
+    }
+    Ok(EntityJson {
+        properties: properties_from_json(json.get("properties")),
+        extras: json.get("extras").cloned(),
+        extensions: json.get("extensions").cloned(),
+    })
+}
+
+/// [`MetadataEntity`] for a struct with `class: Arc<MetadataClass>` and
+/// `properties: MetadataProperties` fields, through this module's helpers.
+macro_rules! json_metadata_entity {
+    ($name:ident) => {
+        impl $crate::scene::MetadataEntity for $name {
+            fn class(&self) -> &$crate::scene::MetadataClass {
+                &self.class
+            }
+            fn has_property(&self, property_id: &str) -> bool {
+                $crate::scene::metadata_entity::has_property(property_id, &self.properties, &self.class)
+            }
+            fn has_property_by_semantic(&self, semantic: &str) -> bool {
+                $crate::scene::metadata_entity::has_property_by_semantic(semantic, &self.class)
+            }
+            fn get_property_ids(&self) -> Vec<String> {
+                $crate::scene::metadata_entity::get_property_ids(&self.properties, &self.class)
+            }
+            fn get_property(
+                &self,
+                property_id: &str,
+            ) -> Result<Option<$crate::scene::MetadataValue>, $crate::scene::MetadataError> {
+                $crate::scene::metadata_entity::get_property(property_id, &self.properties, &self.class)
+            }
+            fn set_property(
+                &mut self,
+                property_id: &str,
+                value: $crate::scene::MetadataValue,
+            ) -> Result<bool, $crate::scene::MetadataError> {
+                $crate::scene::metadata_entity::set_property(property_id, value, &mut self.properties, &self.class)
+            }
+            fn get_property_by_semantic(
+                &self,
+                semantic: &str,
+            ) -> Result<Option<$crate::scene::MetadataValue>, $crate::scene::MetadataError> {
+                $crate::scene::metadata_entity::get_property_by_semantic(semantic, &self.properties, &self.class)
+            }
+            fn set_property_by_semantic(
+                &mut self,
+                semantic: &str,
+                value: $crate::scene::MetadataValue,
+            ) -> Result<bool, $crate::scene::MetadataError> {
+                $crate::scene::metadata_entity::set_property_by_semantic(
+                    semantic,
+                    value,
+                    &mut self.properties,
+                    &self.class,
+                )
+            }
+        }
+    };
+}
+pub(crate) use json_metadata_entity;
