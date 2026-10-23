@@ -7,7 +7,7 @@ use crate::{
     core::{Cartesian3, Color, Credit, CullingVolume, JulianDate, Occluder},
     renderer::{UniformFrame, UniformLight},
 };
-use std::{any::Any, rc::Rc};
+use std::{any::Any, cell::RefCell, rc::Rc};
 
 /// A shared subsystem or GPU resource. FrameState does not perform operations
 /// on these objects; their concrete owners retain the corresponding type.
@@ -75,6 +75,8 @@ pub type AfterRender = Box<dyn FnOnce() -> Result<bool, crate::core::RuntimeErro
 pub struct FrameState {
     pub context: Option<FrameResource>,
     pub context_capabilities: crate::renderer::ContextCapabilities,
+    pub stencil_buffer: bool,
+    pub(crate) clipping_plane_updates: Vec<Rc<RefCell<super::ClippingPlaneCollection>>>,
     pub credit_display: Option<FrameResource>,
     pub job_scheduler: Option<FrameResource>,
     pub render_request: Option<super::SceneRenderRequest>,
@@ -132,10 +134,19 @@ pub struct FrameState {
     pub vertical_exaggeration_relative_height: f64,
 }
 impl FrameState {
+    /// Ask Scene's concrete backend to upload a collection during pre-passes.
+    pub fn schedule_clipping_planes_update(&mut self, planes: Rc<RefCell<super::ClippingPlaneCollection>>) {
+        if !self.clipping_plane_updates.iter().any(|p| Rc::ptr_eq(p, &planes)) {
+            self.clipping_plane_updates.push(planes);
+        }
+    }
+
     pub fn new(uniform: UniformFrame, culling_volume: CullingVolume, dimensions: [u32; 2]) -> Self {
         Self {
             context: None,
             context_capabilities: crate::renderer::ContextCapabilities::default(),
+            stencil_buffer: false,
+            clipping_plane_updates: Vec::new(),
             credit_display: None,
             job_scheduler: None,
             render_request: None,

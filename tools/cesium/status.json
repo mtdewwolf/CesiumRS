@@ -4034,12 +4034,12 @@
   "Scene/Scene": {
     "status": "partial",
     "rust": "scene::scene",
-    "note": "Frame/event/error ordering, request-render decisions, camera movement events, flight preloading, deferred callbacks, exact View depth fitting, executable log-depth/HDR/depth/pick shaders, uniforms/textures and framebuffer targets. 54 frame sequences, 48 View cases, nine movement sequences and 24 WebGL2 pixel comparisons. Globe/translucency, classification/effects/shadows/OIT, complete Picking and controller/morph/terrain integration remain; docs/scene.md."
+    "note": "Frame/event/error ordering, request-render decisions, camera movement events, flight preloading, deferred callbacks, exact View depth fitting, executable log-depth/HDR/depth/pick shaders, uniforms/textures and framebuffer targets. 54 frame sequences, 48 View cases, nine movement sequences and 96 GPU pixel comparisons. Plane clipping, pre-pass texture uploads and masked stencil clears are integrated. Globe/translucency, classification/effects/shadows/OIT, complete Picking and controller/morph/terrain integration remain; docs/scene.md."
   },
   "Scene/Cesium3DTileset": {
     "status": "partial",
     "rust": "scene::cesium_3d_tileset",
-    "note": "JSON/schema/Ion loading, exact volumes, base/skip/most-detailed traversal with foveated/progressive priorities, external/multiple/implicit content expansion, expiry, CPU height queries/callbacks, async lifecycle, shared texture accounting and LRU. Reference trees, S2/metadata expansion and lifecycle tests. Rendering formats require a content factory; styling/clipping/imagery/environment/debug and mixed-LOD stencil rendering remain; docs/scene.md."
+    "note": "JSON/schema/Ion loading, exact volumes, base/skip/most-detailed traversal with foveated/progressive priorities, external/multiple/implicit content expansion, expiry, CPU height queries/callbacks, async lifecycle, shared texture accounting and LRU. Reference trees, S2/metadata expansion and lifecycle tests. Rendering formats require a content factory; plane clipping and mixed-LOD stencil/backface rendering are executable; styling/polygon clipping/imagery/environment/debug remain; docs/scene.md."
   },
   "Scene/DerivedCommand": {
     "status": "ported",
@@ -4070,5 +4070,15 @@
     "status": "partial",
     "rust": "scene::view",
     "note": "Camera equality/movement events, potentially-visible set, exact frustum fitting/binning, compute/overlay routing, shadow ranges and debug overlap statistics. 48 fitting and nine movement cases. View GPU resource ownership for picking, globe depth/translucency, OIT, classification and edges remains."
+  },
+  "Scene/ClippingPlane": {
+    "status": "ported",
+    "rust": "scene::clipping_plane",
+    "note": "Plane parameters, normal-component setters, notifications before mutation and unowned clones. Typed callbacks receive a borrowed plane to inspect old parameters safely. Three direct CesiumJS mutation sequences in scene_clipping."
+  },
+  "Scene/ClippingPlaneCollection": {
+    "status": "ported",
+    "rust": "scene::clipping_plane_collection",
+    "note": "Collection/equality removal/events/indexing, single-owner lifetime, union/intersection volume tests and transformed planes, float/Oct32 byte packing, retained/resized GPU textures and partial uploads. 18 CesiumJS sequences and real WebGL1/WebGL2 texture/clipping comparisons. Empty unallocated textures have native zero dimensions."
   }
 }

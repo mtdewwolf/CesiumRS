@@ -374,5 +374,13 @@
     "ported": 824,
     "implemented": 0,
     "validatedPercent": 43.8
+  },
+  {
+    "milestone": "Plane clipping and mixed-LOD stencil rendering",
+    "date": "2026-10-23",
+    "percent": 45.31,
+    "ported": 826,
+    "implemented": 0,
+    "validatedPercent": 44.05
   }
 ]

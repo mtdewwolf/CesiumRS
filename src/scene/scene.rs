@@ -40,6 +40,8 @@ pub struct SceneSubmission {
     pub framebuffer: Option<super::FrameResource>,
     pub viewport: Option<Viewport>,
     pub metadata: renderer::DrawMetadata,
+    pub clipping_planes: Option<super::SceneClippingPlanes>,
+    pub tileset_draw: Option<super::TilesetDrawKind>,
 }
 pub type SceneExecute = Rc<dyn Fn(SceneSubmission) -> Result<()>>;
 pub type SceneCommandFilter = Rc<dyn Fn(&SceneCommand) -> bool>;
@@ -84,10 +86,22 @@ pub struct SceneCommand {
     pub metadata: renderer::DrawMetadata,
     pub execute: SceneExecute,
     pub is_clear: bool,
+    pub clipping_planes: Option<super::SceneClippingPlanes>,
+    pub tileset_draw: Option<super::TilesetDrawKind>,
+    pub stencil_clear: Option<u32>,
 }
 impl SceneCommand {
     pub fn new(id: impl Into<String>, pass: Pass, execute: SceneExecute) -> Self {
-        Self { id: id.into(), pass, metadata: renderer::DrawMetadata::default(), execute, is_clear: false }
+        Self {
+            id: id.into(),
+            pass,
+            metadata: renderer::DrawMetadata::default(),
+            execute,
+            is_clear: false,
+            clipping_planes: None,
+            tileset_draw: None,
+            stencil_clear: None,
+        }
     }
     /// Own the resources while the command is queued; DrawCommand borrows them
     /// only for submission, so Scene never stores dangling resource references.
@@ -113,7 +127,7 @@ impl SceneCommand {
     ) -> Self {
         use super::DerivedCommand;
         let programs = std::cell::RefCell::new(std::collections::HashMap::<
-            (super::SceneDrawMode, Option<String>),
+            (super::SceneDrawMode, Option<String>, Option<super::ClippingShaderKey>, bool),
             Rc<renderer::ShaderProgram<G>>,
         >::new());
         Self {
@@ -121,11 +135,16 @@ impl SceneCommand {
             pass,
             metadata,
             is_clear: false,
+            clipping_planes: None,
+            tileset_draw: None,
+            stencil_clear: None,
             execute: Rc::new(move |submission| {
                 let mode = submission.draw_mode;
-                let key = (mode, submission.metadata.pick_id.clone());
+                let clipping = submission.clipping_planes.as_ref().map(|c| c.prepare(&context)).transpose()?.flatten();
+                let polygon_offset = submission.tileset_draw.is_some_and(|d| d.polygon_offset());
+                let key = (mode, submission.metadata.pick_id.clone(), clipping, polygon_offset);
                 let cached = { programs.borrow().get(&key).cloned() };
-                let program = if mode == super::SceneDrawMode::default() {
+                let program = if mode == super::SceneDrawMode::default() && clipping.is_none() && !polygon_offset {
                     Rc::clone(&options.program)
                 } else if let Some(p) = cached {
                     p
@@ -133,6 +152,12 @@ impl SceneCommand {
                     let mut source = options.program.source_options().cloned().ok_or_else(|| {
                         RuntimeError::new("Scene shader variants require ShaderProgram::from_sources")
                     })?;
+                    if let Some(key) = clipping {
+                        source = super::SceneClippingPlanes::shader(&source, key);
+                    }
+                    if polygon_offset && !source.fragment_shader_source.defines.iter().any(|d| d == "POLYGON_OFFSET") {
+                        source.fragment_shader_source.defines.push("POLYGON_OFFSET".into());
+                    }
                     if mode.logarithmic_depth {
                         source = DerivedCommand::logarithmic_depth(&source);
                     }
@@ -167,13 +192,52 @@ impl SceneCommand {
                         options.state.clone()
                     };
                 command.metadata = submission.metadata;
+                if let Some(kind) = submission.tileset_draw {
+                    command.render_state = kind.render_state(&command.render_state);
+                }
                 command.primitive_type = options.primitive_type;
                 command.offset = options.offset;
                 command.count = options.count;
                 command.instance_count = options.instance_count;
                 command.uniforms = options.uniforms.clone();
+                let mut scene_uniforms = Vec::new();
+                if polygon_offset {
+                    scene_uniforms.push((
+                        "u_polygonOffset".into(),
+                        renderer::UniformValue::Float(
+                            if submission.tileset_draw == Some(super::TilesetDrawKind::Backface) {
+                                vec![5., 5.]
+                            } else {
+                                vec![0., 0.]
+                            },
+                        ),
+                    ));
+                }
                 command.uniform_map = options.uniform_map.clone();
-                command.samplers = options.textures.iter().map(|(n, t)| (n.clone(), t.as_ref())).collect();
+                command.samplers = options
+                    .textures
+                    .iter()
+                    .filter(|(n, _)| clipping.is_none() || n != "model_clippingPlanes")
+                    .map(|(n, t)| (n.clone(), t.as_ref()))
+                    .collect();
+                let clipping_uniforms = if clipping.is_some() {
+                    submission.clipping_planes.as_ref().map(|c| c.uniforms(&context)).transpose()?
+                } else {
+                    None
+                };
+                if let Some((texture, uniforms)) = &clipping_uniforms {
+                    command.samplers.push(("model_clippingPlanes".into(), texture.as_ref()));
+                    scene_uniforms.extend(uniforms.clone());
+                }
+                if !scene_uniforms.is_empty() {
+                    let map = options.uniform_map.clone();
+                    command.uniform_map = Some(Rc::new(move || {
+                        let mut values = map.as_ref().map_or_else(|| Ok(Vec::new()), |map| map())?;
+                        values.retain(|(name, _)| !scene_uniforms.iter().any(|(n, _)| n == name));
+                        values.extend(scene_uniforms.clone());
+                        Ok(values)
+                    }));
+                }
                 command.framebuffer = options.framebuffer.clone();
                 let framebuffer = submission
                     .framebuffer
@@ -214,6 +278,15 @@ impl SceneCommand {
 /// The GPU surface. Scene owns frame decisions and command ordering; the
 /// backend applies uniforms, clears and executes the selected commands.
 pub trait SceneBackend {
+    fn update_clipping_planes(&mut self, _planes: &mut super::ClippingPlaneCollection) -> Result<()> {
+        Err(RuntimeError::new("Scene backend does not support clipping-plane uploads"))
+    }
+    fn stencil_buffer(&self) -> Result<bool> {
+        Ok(false)
+    }
+    fn clear_stencil(&mut self, _value: i32, _mask: u32) -> Result<()> {
+        Err(RuntimeError::new("Scene backend does not support masked stencil clears"))
+    }
     fn set_render_target(
         &mut self,
         framebuffer: Option<&super::FrameResource>,
@@ -256,6 +329,20 @@ impl<G: Gl> RendererSceneBackend<G> {
     }
 }
 impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
+    fn update_clipping_planes(&mut self, planes: &mut super::ClippingPlaneCollection) -> Result<()> {
+        planes.update(&self.context)
+    }
+    fn stencil_buffer(&self) -> Result<bool> {
+        self.context.stencil_buffer()
+    }
+    fn clear_stencil(&mut self, value: i32, mask: u32) -> Result<()> {
+        ClearCommand {
+            stencil: Some(value),
+            render_state: renderer::RenderState { stencil_mask: mask as i64, ..Default::default() },
+            ..Default::default()
+        }
+        .execute(&self.context, &self.pass_state)
+    }
     fn set_render_target(
         &mut self,
         framebuffer: Option<&super::FrameResource>,
@@ -485,6 +572,7 @@ impl<B: SceneBackend> Scene<B> {
         let mut frame_state = FrameState::new(uniform, volume, [width, height]);
         frame_state.context = backend.frame_context();
         frame_state.context_capabilities = capabilities.clone();
+        frame_state.stencil_buffer = backend.stencil_buffer()?;
         let mut fog = Fog::default();
         fog.enabled = earth;
         let mut result = Self {
@@ -677,9 +765,13 @@ impl<B: SceneBackend> Scene<B> {
         frame.passes = FramePasses::default();
     }
     fn pre_passes(&mut self) -> Result<()> {
+        self.frame_state.clipping_plane_updates.clear();
         self.stage(SceneStage::ResetBudgets)?;
         for p in &mut self.primitives {
             p.pre_passes_update(&mut self.frame_state)?;
+        }
+        for planes in std::mem::take(&mut self.frame_state.clipping_plane_updates) {
+            self.backend.update_clipping_planes(&mut planes.borrow_mut())?;
         }
         self.stage(SceneStage::PrePasses)
     }
@@ -901,8 +993,14 @@ impl<B: SceneBackend> Scene<B> {
                 framebuffer: self.framebuffer.clone(),
                 viewport: self.viewport,
                 metadata: command.metadata.clone(),
+                clipping_planes: command.clipping_planes.clone(),
+                tileset_draw: command.tileset_draw,
             };
-            self.backend.execute(&command, submission.clone())?;
+            if let Some(mask) = command.stencil_clear {
+                self.backend.clear_stencil(0, mask)?;
+            } else {
+                self.backend.execute(&command, submission.clone())?;
+            }
             self.frame_state.executed_commands.push(submission);
         }
         Ok(())

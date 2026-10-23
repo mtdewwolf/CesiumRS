@@ -149,6 +149,18 @@ fn traverse(a: &[Value]) -> Result<Value, RuntimeError> {
         }
     }
     let config = &a[3];
+    if let Some(clipping) = config.get("clipping") {
+        let mut planes = ClippingPlaneCollection::new(
+            clipping["planes"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|p| ClippingPlane::handle(Cartesian3::new(n(&p[0]), n(&p[1]), n(&p[2])), n(&p[3]))),
+        );
+        planes.union_clipping_regions = clipping["union"].as_bool().unwrap();
+        planes.model_matrix = m4(&clipping["matrix"]);
+        t.set_clipping_planes(Some(Rc::new(std::cell::RefCell::new(planes))))?;
+    }
     let mut camera = Camera::new(CameraOptions::new(800., 600.));
     camera.position = c3(&config["position"]);
     camera.direction = config.get("direction").map(c3).unwrap_or(Cartesian3::new(-1., 0., 0.)).normalize();

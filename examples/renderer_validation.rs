@@ -11,6 +11,173 @@ mod browser {
         JsValue::from_str(&e.to_string())
     }
     #[wasm_bindgen]
+    pub fn scene_mixed_lod(gl: JsValue, config: &str) -> Result<String, JsValue> {
+        use cesium_rs::scene::*;
+        use std::rc::Rc;
+        struct Content(SceneCommand);
+        impl TilesetContent for Content {
+            fn metrics(&self) -> TileContentMetrics {
+                Default::default()
+            }
+            fn process(&mut self, _: &FrameState) -> Result<bool, RuntimeError> {
+                Ok(true)
+            }
+            fn update(&mut self, f: &mut FrameState) -> Result<(), RuntimeError> {
+                f.command_list.push(self.0.clone());
+                Ok(())
+            }
+            fn pick(&self, _: &Ray, _: &FrameState) -> Result<Option<Cartesian3>, RuntimeError> {
+                Ok(None)
+            }
+            fn destroy(&mut self) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+        }
+        struct Commands(Vec<SceneCommand>);
+        impl ScenePrimitive for Commands {
+            fn pre_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn update(&mut self, f: &mut FrameState) -> Result<(), RuntimeError> {
+                f.command_list.extend(self.0.clone());
+                Ok(())
+            }
+            fn post_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn update_for_pass(&mut self, _: &mut FrameState, _: Cesium3DTilePass) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn destroy(&mut self) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+        }
+        let config: serde_json::Value = serde_json::from_str(config).map_err(error)?;
+        let flag = |n: &str| config[n].as_bool().unwrap_or(false);
+        let child_distance = config["distance"].as_f64().unwrap_or(1000.) as f32;
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let tile = |radius: f64, geometric_error: f64, children: Option<Vec<serde_json::Value>>| {
+            let mut v = json!({"boundingVolume":{"sphere":[6378137,0,0,radius]},"geometricError":geometric_error,"refine":"REPLACE","content":{"uri":format!("{radius}.glb")}});
+            if let Some(c) = children {
+                v["children"] = json!(c);
+            }
+            v
+        };
+        let document = json!({"asset":{"version":"1.1"},"geometricError":1000,"root":tile(300.,500.,Some(vec![tile(100.,100.,Some(vec![tile(30.,0.,None),tile(20.,0.,None)]))]))});
+        let mut tileset = Cesium3DTileset::from_json(
+            Resource::new("https://example.com/tileset.json").unwrap(),
+            &document,
+            TilesetOptions {
+                skip_level_of_detail: flag("skip"),
+                maximum_screen_space_error: 0.1,
+                dynamic_screen_space_error: false,
+                foveated_screen_space_error: false,
+                cull_with_children_bounds: false,
+                cull_requests_while_moving: false,
+                ..Default::default()
+            },
+            None,
+        )
+        .map_err(error)?;
+        let shader=Rc::new(ShaderProgram::from_sources(&ctx,&ShaderProgramOptions{vertex_shader_source:ShaderSource::new("in vec2 position;in float distance;void main(){gl_Position=czm_projection*vec4(position*distance*0.5,-distance,1.0);}"),fragment_shader_source:ShaderSource::new("uniform vec4 color;void main(){out_FragColor=color;}"),attribute_locations:std::collections::BTreeMap::from([("position".into(),0),("distance".into(),1)])}).map_err(error)?);
+        for id in [0, 2] {
+            let size = if id == 0 { 1. } else { 0.5 };
+            let mut vertices = Vec::<f32>::new();
+            for distance in if id == 0 { vec![800., 1200.] } else { vec![child_distance] } {
+                for (x, y) in [(-size, -size), (size, -size), (size, size), (-size, size)] {
+                    vertices.extend([x, y, distance]);
+                }
+            }
+            let bytes = floats(&vertices);
+            let buffer = Buffer::new(&ctx, BufferKind::Vertex, BufferUsage::StaticDraw, BufferData::Bytes(&bytes))
+                .map_err(error)?;
+            let mut position = VertexAttribute::buffer(0, buffer.clone(), 2);
+            position.stride = 12;
+            let mut distance = VertexAttribute::buffer(1, buffer, 1);
+            distance.offset = 8;
+            distance.stride = 12;
+            let indices: Vec<u8> =
+                if id == 0 { vec![0u16, 1, 2, 0, 2, 3, 4, 6, 5, 4, 7, 6] } else { vec![0u16, 1, 2, 0, 2, 3] }
+                    .into_iter()
+                    .flat_map(u16::to_le_bytes)
+                    .collect();
+            let index = Buffer::new(
+                &ctx,
+                BufferKind::Index(IndexDatatype::UnsignedShort),
+                BufferUsage::StaticDraw,
+                BufferData::Bytes(&indices),
+            )
+            .map_err(error)?;
+            let array = Rc::new(VertexArray::new(&ctx, vec![position, distance], Some(index)).map_err(error)?);
+            let mut options = SceneDrawOptions::new(array, shader.clone());
+            options.state.depth_test.enabled = true;
+            options.uniforms.push((
+                "color".into(),
+                UniformValue::Float(if id == 0 { vec![1., 0., 0., 1.] } else { vec![0., 1., 0., 1.] }),
+            ));
+            let command = SceneCommand::from_draw(
+                id.to_string(),
+                ctx.clone(),
+                Pass::Cesium3DTile,
+                DrawMetadata { bounding_volume: Some(tileset.tiles[id].bounding_sphere), ..Default::default() },
+                options,
+            );
+            tileset.install_content(id, Box::new(Content(command))).map_err(error)?;
+        }
+        let mut scene = Scene::new(
+            RendererSceneBackend::new(ctx.clone()),
+            CameraOptions::new(8., 8.),
+            SceneOptions { logarithmic_depth_buffer: flag("log"), ..Default::default() },
+            JulianDate::new(2451545., 0., TimeStandard::Tai),
+        )
+        .map_err(error)?;
+        scene.camera.position = Cartesian3::new(6379137., 0., 0.);
+        scene.camera.direction = Cartesian3::new(-1., 0., 0.);
+        scene.camera.up = Cartesian3::UNIT_Z;
+        scene.camera.right = Cartesian3::UNIT_Y;
+        if flag("preserve") {
+            let clear = SceneCommand::clear(
+                "classification-bits",
+                ctx.clone(),
+                ClearCommand {
+                    pass: Some(Pass::Globe),
+                    stencil: Some(9),
+                    render_state: RenderState { stencil_mask: 15, ..Default::default() },
+                    ..Default::default()
+                },
+            );
+            let quad = ViewportQuad::new(&ctx).map_err(error)?;
+            let program = Rc::new(
+                ShaderProgram::from_sources(
+                    &ctx,
+                    &ViewportQuad::<BrowserGl>::shader_options(ShaderSource::new(
+                        "void main(){out_FragColor=vec4(0.0,0.0,1.0,1.0);}",
+                    )),
+                )
+                .map_err(error)?,
+            );
+            let mut options = SceneDrawOptions::new(quad.vertex_array().clone(), program);
+            options.state.stencil_test.enabled = true;
+            options.state.stencil_test.reference = 9;
+            options.state.stencil_test.mask = 15;
+            options.state.stencil_test.front_function = webgl_constants::EQUAL;
+            options.state.stencil_test.back_function = webgl_constants::EQUAL;
+            let overlay = SceneCommand::from_draw(
+                "classification-bit-check",
+                ctx.clone(),
+                Pass::Overlay,
+                DrawMetadata::default(),
+                options,
+            );
+            scene.primitives.push(Box::new(Commands(vec![clear, overlay])));
+        }
+        scene.primitives.push(Box::new(tileset));
+        scene.rethrow_render_errors = true;
+        scene.render(JulianDate::new(2451545., 0., TimeStandard::Tai)).map_err(error)?;
+        let pixels = ctx.read_pixels(TextureRegion { x: 0, y: 0, width: 8, height: 8 }).map_err(error)?;
+        Ok(json!({"pixels":pixels,"executed":scene.frame_state.executed_commands.len(),"frustums":scene.view.frustum_commands_list.iter().map(|f|vec![f.near,f.far]).collect::<Vec<_>>()} ).to_string())
+    }
+    #[wasm_bindgen]
     pub fn scene_draw_variants(gl: JsValue, config: &str) -> Result<String, JsValue> {
         use cesium_rs::scene::*;
         use std::rc::Rc;
@@ -35,7 +202,11 @@ mod browser {
         }
         let config: serde_json::Value = serde_json::from_str(config).map_err(error)?;
         let flag = |n: &str| config[n].as_bool().unwrap_or(false);
-        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let ctx = if flag("webgl1") {
+            Context::new_webgl1(BrowserGl::new_webgl1(gl).map_err(error)?)
+        } else {
+            Context::new_webgl2(BrowserGl::new(gl).map_err(error)?)
+        };
         let quad = ViewportQuad::new(&ctx).map_err(error)?;
         let source=ShaderSource::new("uniform sampler2D image;uniform vec4 u_pickColor;void main(){out_FragColor=texture(image,vec2(0.5));\n#ifdef HDR\nout_FragColor.rgb*=0.5;\n#endif\n}");
         let program = Rc::new(
@@ -50,7 +221,7 @@ mod browser {
         options
             .uniforms
             .push(("u_pickColor".into(), UniformValue::Float(vec![25. / 255., 50. / 255., 75. / 255., 1.])));
-        let command = SceneCommand::from_draw(
+        let mut command = SceneCommand::from_draw(
             "quad",
             ctx.clone(),
             Pass::Opaque,
@@ -72,6 +243,21 @@ mod browser {
             JulianDate::new(2451545., 0., TimeStandard::Tai),
         )
         .map_err(error)?;
+        let planes = if flag("clip") {
+            let mut planes = ClippingPlaneCollection::new([
+                ClippingPlane::handle(Cartesian3::UNIT_X, 0.),
+                ClippingPlane::handle(Cartesian3::UNIT_Y, 0.),
+            ]);
+            planes.union_clipping_regions = flag("union");
+            planes.edge_color = Color::RED;
+            planes.edge_width = 1.25;
+            let planes = Rc::new(std::cell::RefCell::new(planes));
+            command.clipping_planes =
+                Some(SceneClippingPlanes::new(planes.clone(), scene.camera.inverse_view_matrix()));
+            Some(planes)
+        } else {
+            None
+        };
         scene.primitives.push(Box::new(Commands(vec![command])));
         let target = if flag("target") {
             let color = Rc::new(Texture::new(&ctx, TextureOptions::rgba(8, 8), None).map_err(error)?);
@@ -94,6 +280,39 @@ mod browser {
             depth: flag("depth"),
             ..Default::default()
         };
+        if let Some(planes) = planes {
+            let mut phases = Vec::new();
+            for phase in 0..6 {
+                {
+                    let mut p = planes.borrow_mut();
+                    match phase {
+                        1 => p.get(0).unwrap().borrow_mut().set_distance(0.25),
+                        2 => {
+                            p.get(0).unwrap().borrow_mut().set_distance(-0.25);
+                            p.get(1).unwrap().borrow_mut().set_distance(0.25);
+                        }
+                        3 => {
+                            let plane = p.get(1).unwrap().clone();
+                            p.remove(&plane);
+                        }
+                        4 => p.remove_all(),
+                        5 => p.add(ClippingPlane::handle(Cartesian3::UNIT_Y, -0.1)),
+                        _ => {}
+                    }
+                }
+                scene.draw_passes(passes).map_err(error)?;
+                let bytes = ctx
+                    .read_pixels_from(ReadState {
+                        framebuffer: target.as_deref(),
+                        region: TextureRegion { x: 0, y: 0, width: 8, height: 8 },
+                    })
+                    .map_err(error)?
+                    .bytes;
+                let texture = planes.borrow().texture::<BrowserGl>();
+                phases.push(json!({"pixels":bytes,"texture":texture.map(|t|[t.width(),t.height()]),"float":ctx.capabilities().map_err(error)?.floating_point_texture}));
+            }
+            return Ok(json!(phases).to_string());
+        }
         scene.draw_passes(passes).map_err(error)?;
         // Repeat to exercise variant reuse and all retained GPU input lifetimes.
         scene.draw_passes(passes).map_err(error)?;

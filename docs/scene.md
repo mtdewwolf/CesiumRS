@@ -86,26 +86,48 @@ It does not decode picked objects or sampled heights.
 Scene and Cesium3DTileset remain **partial**. Scene still needs globe and
 translucency integration, classification, shadows, OIT/post-processing, full
 Picking, 2D viewport wrapping/WebVR and controller/morph/terrain integration.
-Tileset rendering still needs styling, clipping, imagery, environment/lighting,
-debug rendering and the mixed-LOD stencil/backface pass. Selecting a mixed-LOD
-tree is supported; drawing its overlap correctly requires that rendering pass.
+Tileset rendering still needs styling, polygon clipping, imagery, environment/lighting
+and debug rendering. Plane clipping and the mixed-LOD stencil/backface pass
+now execute through the native renderer.
 `SceneComponent` lifecycle hooks do not implement those effects. Existing
 runtime options do not establish support for missing rendering features.
 
 `tools/cesium/fixtures/scene-runtime.mjs` supplies **124 scenarios** (54 Scene,
 five fog sequences with 480 updates, six Atmosphere, 59 tileset).
-`scene-completion.mjs` adds **292 scenarios**: two FrameState, 48 View fitting,
-144 traversal, 18 implicit expansion, 47 derived shader, nine camera movement
-and 24 dynamic-SSE cases. `tests/scene_runtime.rs` also checks cancellation,
+`scene-completion.mjs` adds **377 scenarios**: two FrameState, 48 View fitting,
+180 traversal (including clipped trees), 18 implicit expansion, 47 derived shader,
+nine camera movement, 24 dynamic-SSE, 21 clipping plane/collection, 24 stencil
+state and four mixed-LOD command sequences. `tests/scene_runtime.rs` also checks cancellation,
 expiration, shared textures, partial content failure, resource bases, CPU
 height queries and renderer/resource ownership. The reference frame harness
 uses explicit host operations and does not establish full browser Scene parity.
 
-`scripts/check-scene.sh` compares **24 actual WebGL2 pixel results** with
-CesiumJS DerivedCommand, covering log depth, HDR, render/pick/depth passes,
-framebuffer targets, retained texture/uniform inputs and variant reuse. The
-checks exercise Rust Scene's executable command path, not visual parity for
-the unported globe/effects/picking subsystems.
+`scripts/check-scene.sh` compares **96 actual GPU pixel results** with
+CesiumJS. The original 24 WebGL2 cases cover log depth, HDR, render/pick/depth
+passes, framebuffer targets and retained uniforms/textures. Another 48 phase
+comparisons cover float and byte plane textures, mutation/partial upload,
+removal/resizing, edge colors, union/intersection modes and WebGL1/WebGL2 log
+depth. The final 24 cases exercise actual mixed-LOD draws: masked clears,
+ancestor backfaces, selection-depth stencil tests, depth overlap and preservation
+of classification bits. The reference uses real Cesium ModelDrawCommand
+variants. This does not establish visual parity for unported globe/effects/picking.
+
+`ClippingPlaneCollection` owns its GPU texture, handles callbacks/events and
+plane indices, supports transformed volume tests, and tracks a single owner.
+Attach an `Rc<RefCell<ClippingPlaneCollection>>` with
+`tileset.set_clipping_planes(...)`; replacement and destruction release the old
+collection. Scene schedules owner texture updates during pre-passes, including
+hidden tilesets and skipped draws. Intersecting draw commands inherit the plane
+collection and render its clipping/edge stage; fully clipped bounds are culled.
+Standalone users can call `collection.update(&context)` and retrieve its typed
+texture. A new empty collection reports zero dimensions without allocating one.
+
+Mixed skip-LOD trees enqueue a clear restricted to the skip-LOD stencil bits,
+then unresolved ancestor backfaces, then the selected front draws. Selection
+depth controls the stencil reference. Backfaces disable color writes and shadows,
+cull front faces, and supply polygon offset to linear and logarithmic depth.
+Opaque 3D Tiles commands also mark the classification bit. Custom Scene backends
+that support these features implement clipping uploads and masked stencil clears.
 
 ```bash
 cargo test --test scene_completion --test scene_runtime

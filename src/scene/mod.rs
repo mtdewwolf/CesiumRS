@@ -43,6 +43,14 @@ macro_rules! string_enum {
 }
 
 pub mod alpha_mode;
+pub mod clipping_plane;
+pub mod clipping_plane_collection;
+pub mod clipping_plane_shader;
+pub mod tileset_stencil;
+pub use clipping_plane::{ClippingPlane, ClippingPlaneHandle, PlaneChangeCallback};
+pub use clipping_plane_collection::{ClippingPlaneCollection, ClippingPlaneEvent};
+pub use clipping_plane_shader::{ClippingShaderKey, SceneClippingPlanes};
+pub use tileset_stencil::TilesetDrawKind;
 mod tileset_expansion;
 pub use tileset_expansion::derive_implicit_volume;
 mod tileset_content;

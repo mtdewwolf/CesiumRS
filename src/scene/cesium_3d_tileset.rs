@@ -433,6 +433,7 @@ pub struct Cesium3DTileset {
     pub selected_tiles_to_style: Vec<TileId>,
     pub empty_tiles: Vec<TileId>,
     pub has_mixed_content: bool,
+    pub(super) clipping_planes: Option<Rc<RefCell<ClippingPlaneCollection>>>,
     pub(super) height_requests: Vec<super::tileset_content::TileHeightRequest>,
     exaggeration: [f64; 2],
 }
@@ -609,6 +610,7 @@ impl Cesium3DTileset {
             selected_tiles_to_style: Vec::new(),
             empty_tiles: Vec::new(),
             has_mixed_content: false,
+            clipping_planes: None,
             height_requests: Vec::new(),
             exaggeration: [1., 0.],
         };
@@ -1078,6 +1080,33 @@ impl Cesium3DTileset {
         }
         Ok(())
     }
+    pub fn clipping_planes(&self) -> Option<&Rc<RefCell<ClippingPlaneCollection>>> {
+        self.clipping_planes.as_ref()
+    }
+    pub fn set_clipping_planes(&mut self, planes: Option<Rc<RefCell<ClippingPlaneCollection>>>) -> Result<()> {
+        if self.clipping_planes.as_ref().zip(planes.as_ref()).is_some_and(|(a, b)| Rc::ptr_eq(a, b)) {
+            return Ok(());
+        }
+        if let Some(previous) = self.clipping_planes.take() {
+            previous.borrow_mut().destroy()?;
+        }
+        if let Some(planes) = planes {
+            planes.borrow_mut().assign_owner(Rc::as_ptr(&self.alive) as usize)?;
+            self.clipping_planes = Some(planes);
+        }
+        Ok(())
+    }
+    pub(super) fn clip_volume(&self, volume: &TilesetVolume) -> Result<Intersect> {
+        let Some(planes) = &self.clipping_planes else { return Ok(Intersect::Inside) };
+        let planes = planes.borrow();
+        if !planes.enabled {
+            return Ok(Intersect::Inside);
+        }
+        let transform = self.root.map_or(Matrix4::IDENTITY, |root| {
+            self.tiles[root].computed_transform.multiply(&self.initial_clipping_planes_origin_matrix)
+        });
+        planes.compute_intersection(volume, Some(&transform))
+    }
     fn emit(&self, event: TilesetEvent) {
         if self.alive.get() {
             self.events.borrow_mut().raise_event(&event);
@@ -1249,6 +1278,9 @@ impl Cesium3DTileset {
             self.processing.sort_by(|&a, &b| self.tiles[a].priority.total_cmp(&self.tiles[b].priority));
         }
         let start = *self.load_timestamp.get_or_insert(frame.time);
+        if let Some(planes) = self.clipping_planes.as_ref().filter(|p| p.borrow().enabled) {
+            frame.schedule_clipping_planes_update(Rc::clone(planes));
+        }
         self.time_since_load = (JulianDate::seconds_difference(&frame.time, &start) * 1000.).max(0.);
         if frame.new_frame {
             self.cache.reset();
@@ -1420,7 +1452,37 @@ impl Cesium3DTileset {
                     }
                 }
             }
+            let bivariate = self.is_skipping_level_of_detail()
+                && self.has_mixed_content
+                && frame.stencil_buffer
+                && !self.selected_tiles.is_empty();
+            let backface_start = frame.command_list.len() + usize::from(bivariate);
+            let mut backfaces = Vec::new();
+            if bivariate {
+                let mut clear = SceneCommand::new(
+                    "skip-lod-stencil-clear",
+                    crate::renderer::Pass::Cesium3DTile,
+                    Rc::new(|_| Ok(())),
+                );
+                clear.is_clear = true;
+                clear.stencil_clear = Some(stencil_constants::SKIP_LOD_MASK as u32);
+                frame.command_list.push(clear);
+            }
             for id in self.selected_tiles.clone() {
+                let clipping = if self.tiles[id].traversal.is_clipped {
+                    self.clipping_planes.as_ref().filter(|p| p.borrow().enabled).map(|p| {
+                        SceneClippingPlanes::new(
+                            Rc::clone(p),
+                            self.root.map_or(Matrix4::IDENTITY, |root| {
+                                self.tiles[root]
+                                    .computed_transform
+                                    .multiply(&self.initial_clipping_planes_origin_matrix)
+                            }),
+                        )
+                    })
+                } else {
+                    None
+                };
                 if options.is_render {
                     self.emit(TilesetEvent::TileVisible(id));
                 }
@@ -1447,9 +1509,28 @@ impl Cesium3DTileset {
                     self.statistics.number_of_triangles_selected += m.triangles;
                 }
                 for command in &mut frame.command_list[command_start..] {
+                    command.clipping_planes = clipping.clone();
+                    if command.pass == crate::renderer::Pass::Cesium3DTile && !command.is_clear {
+                        command.tileset_draw = Some(if bivariate {
+                            TilesetDrawKind::Stencil { selection_depth: tile.traversal.selection_depth }
+                        } else {
+                            TilesetDrawKind::Regular
+                        });
+                        if bivariate && !tile.traversal.final_resolution {
+                            let mut backface = command.clone();
+                            backface.id = format!("{}-skip-lod-backface", backface.id);
+                            backface.tileset_draw = Some(TilesetDrawKind::Backface);
+                            backface.metadata.cast_shadows = false;
+                            backface.metadata.receive_shadows = false;
+                            backfaces.push(backface);
+                        }
+                    }
                     command.metadata.depth_for_translucent_classification =
                         command.pass == crate::renderer::Pass::Translucent;
                 }
+            }
+            if bivariate {
+                frame.command_list.splice(backface_start..backface_start, backfaces);
             }
             self.statistics.selected = self.selected_tiles.len() as u64;
             self.statistics.number_of_commands = (frame.command_list.len() - command_start) as u64;
@@ -1581,6 +1662,9 @@ impl Cesium3DTileset {
             return Ok(());
         }
         self.alive.set(false);
+        if let Some(planes) = self.clipping_planes.take() {
+            planes.borrow_mut().destroy()?;
+        }
         for request in self.height_requests.drain(..) {
             request.active.set(false);
         }

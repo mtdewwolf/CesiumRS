@@ -8,8 +8,11 @@ import DrawCommand from '@cesium/engine/Source/Renderer/DrawCommand.js';
 import RenderState from '@cesium/engine/Source/Renderer/RenderState.js';
 import MetadataClassProperty from '@cesium/engine/Source/Scene/MetadataClassProperty.js';
 import Camera from '@cesium/engine/Source/Scene/Camera.js';
+import ClippingPlane from '@cesium/engine/Source/Scene/ClippingPlane.js';
+import ClippingPlaneCollection from '@cesium/engine/Source/Scene/ClippingPlaneCollection.js';
 import {Scene,Cartesian3,BoundingSphere,PerspectiveFrustum,OrthographicOffCenterFrustum,GeographicProjection,Ellipsoid,Cesium3DTileset,JulianDate,Matrix4} from '@cesium/engine';
 import {suite,enc,makeRng} from './lib.mjs';
+import clipping from './scene-clipping.mjs';
 
 function derive(input,operations,metadata) {
   const context={shaderCache:{getDerivedShaderProgram:()=>undefined,createDerivedShaderProgram:(program,key,options)=>({...options,id:2,_attributeLocations:options.attributeLocations})}};
@@ -55,7 +58,8 @@ function fit(options,commands) {
 }
 async function traverse(json,options,ready,config,pass) {
   const load=Cesium3DTileset.loadJson;Cesium3DTileset.loadJson=async()=>structuredClone(json);let t;
-  try{t=await Cesium3DTileset.fromUrl('https://example.com/tileset.json',options);}finally{Cesium3DTileset.loadJson=load;}
+  const actualOptions={...options};if(config.clipping){const c=config.clipping;actualOptions.clippingPlanes=new ClippingPlaneCollection({planes:c.planes.map(p=>new ClippingPlane(new Cartesian3(...p.slice(0,3)),p[3])),unionClippingRegions:c.union,modelMatrix:Matrix4.fromArray(c.matrix)});}
+  try{t=await Cesium3DTileset.fromUrl('https://example.com/tileset.json',actualOptions);}finally{Cesium3DTileset.loadJson=load;}
   const tiles=[],queue=[t.root];while(queue.length){const tile=queue.shift();tiles.push(tile);queue.push(...tile.children);}
   const ids=new Map(tiles.map((t,i)=>[t,i]));
   for(const id of ready)if(!tiles[id].hasEmptyContent){tiles[id]._contentState=3;tiles[id]._content={featurePropertiesDirty:false,featuresLength:0,pointsLength:0,trianglesLength:0,geometryByteLength:0,texturesByteLength:0,batchTableByteLength:0,destroy:()=>{},isDestroyed:()=>false};}
@@ -139,6 +143,13 @@ export default async function sceneCompletion() {
     const subtree={tileAvailability:{constant:1},contentAvailability:[{constant:1},{constant:children}],childSubtreeAvailability:{constant:children}};
     const args=[json,subtree,{}];expansion.cases.push({f:'expand',a:enc(args),r:enc(await expand(...args))});
   }
+  for(let i=0;i<12;i++){
+    const child=y=>({boundingVolume:{sphere:[6378137,y,0,40]},geometricError:0,content:{uri:`${y}.glb`,boundingVolume:{sphere:[6378137,y-20,0,10]}}});
+    const json={asset:{version:'1.1'},geometricError:1000,root:{boundingVolume:{sphere:[6378137,0,0,200]},geometricError:100,content:{uri:'root.glb'},children:[child(-60),child(0),child(60)]}};
+    const options={skipLevelOfDetail:i%2===0,dynamicScreenSpaceError:false,foveatedScreenSpaceError:false,cullWithChildrenBounds:false,cullRequestsWhileMoving:false};
+    const config={position:[6379137,0,0],clipping:{planes:i%3===0?[[1,0,0,0],[-1,0,0,-30]]:[[1,0,0,[-50,0,50][i%3]]],union:i%4<2,matrix:Array.from(Matrix4.fromTranslation(new Cartesian3(i%2===0?20:0,0,0)))}};
+    for(const pass of [0,6,7]){const args=[json,options,[0,1,2,3],config,pass];traversal.cases.push({f:'traverse',a:enc(args),r:enc(await traverse(...args))});}
+  }
   for(const scheme of ['QUADTREE','OCTREE']){
     const count=scheme==='QUADTREE'?5:9;
     const bytes=new Uint8Array(count*12),data=new DataView(bytes.buffer);
@@ -147,5 +158,5 @@ export default async function sceneCompletion() {
     const subtree={tileAvailability:{constant:1},contentAvailability:{constant:1},childSubtreeAvailability:{constant:0},buffers:[{uri:'meta.bin',byteLength:bytes.length}],bufferViews:[0,1,2].map(i=>({buffer:0,byteOffset:count*4*i,byteLength:count*4})),propertyTables:[{class:'tile',count,properties:{min:{values:0},max:{values:1},error:{values:2}}}],tileMetadata:0};
     const args=[json,subtree,{'meta.bin':Array.from(bytes)}];expansion.cases.push({f:'expand',a:enc(args),r:enc(await expand(...args))});
   }
-  return [frame,view,traversal,expansion,derived,movement,dynamic];
+  return [frame,view,traversal,expansion,derived,movement,dynamic,...await clipping()];
 }

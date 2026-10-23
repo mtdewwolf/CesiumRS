@@ -298,7 +298,15 @@ impl Cesium3DTileset {
         let progressive = self.tile_error(id, frame, false, self.options.progressive_resolution_height_fraction);
         let parent = self.tiles[id].parent;
         let mask = parent.map_or(CullingVolume::MASK_INDETERMINATE, |p| self.tiles[p].traversal.visibility_plane_mask);
-        let visibility = frame.culling_volume.compute_visibility_with_plane_mask(&volume, mask);
+        let clip = self.clip_volume(&volume)?;
+        if self.clipping_planes.as_ref().is_some_and(|p| p.borrow().enabled) {
+            self.tiles[id].traversal.is_clipped = clip != Intersect::Inside;
+        }
+        let visibility = if clip == Intersect::Outside {
+            CullingVolume::MASK_OUTSIDE
+        } else {
+            frame.culling_volume.compute_visibility_with_plane_mask(&volume, mask)
+        };
         let in_request_volume = self.tiles[id].viewer_request_volume.as_ref().is_none_or(|v| v.distance(frame) == 0.);
         let root_error =
             self.root.map_or(0., |r| if r == id { error } else { self.tiles[r].traversal.screen_space_error });
@@ -473,11 +481,25 @@ impl Cesium3DTileset {
         }
         self.requested_tiles.push(id);
     }
-    fn select_tile(&mut self, id: TileId, frame: &FrameState) {
-        if let Some(volume) = &self.tiles[id].content_volume {
-            if frame.culling_volume.compute_visibility(&volume.for_frame(frame)) == Intersect::Outside {
-                return;
-            }
+    fn content_visibility(&mut self, id: TileId, frame: &FrameState) -> Result<Intersect, RuntimeError> {
+        if self.tiles[id].traversal.visibility_plane_mask == CullingVolume::MASK_INSIDE {
+            return Ok(Intersect::Inside);
+        }
+        let Some(volume) = self.tiles[id].content_volume.as_ref().map(|v| v.for_frame(frame)) else {
+            return Ok(Intersect::Inside);
+        };
+        let clip = self.clip_volume(&volume)?;
+        if self.clipping_planes.as_ref().is_some_and(|p| p.borrow().enabled) {
+            self.tiles[id].traversal.is_clipped = clip != Intersect::Inside;
+        }
+        if clip == Intersect::Outside {
+            return Ok(clip);
+        }
+        Ok(frame.culling_volume.compute_visibility(&volume))
+    }
+    fn select_tile(&mut self, id: TileId, frame: &FrameState) -> Result<(), RuntimeError> {
+        if self.content_visibility(id, frame)? == Intersect::Outside {
+            return Ok(());
         }
         let t = &mut self.tiles[id];
         t.traversal.was_selected_last_frame = true;
@@ -487,6 +509,7 @@ impl Cesium3DTileset {
         }
         t.traversal.selected_frame = frame.frame_number;
         self.selected_tiles.push(id);
+        Ok(())
     }
     fn update_children(
         &mut self,
@@ -596,7 +619,7 @@ impl Cesium3DTileset {
                         if self.content_available(child) {
                             self.update_tile(child, frame)?;
                             self.touch_tile(child, frame);
-                            self.select_tile(child, frame);
+                            self.select_tile(child, frame)?;
                         } else if (self.tiles[child].depth as i64 - depth as i64) < 2 {
                             stack.push(child);
                         }
@@ -649,11 +672,7 @@ impl Cesium3DTileset {
                 if self.tiles[id].refine == Cesium3DTileRefine::Add || !traverse {
                     self.load_tile(id, frame, true);
                     self.touch_tile(id, frame);
-                    if self.content_available(id)
-                        && self.tiles[id].content_volume.as_ref().is_none_or(|v| {
-                            frame.culling_volume.compute_visibility(&v.for_frame(frame)) != Intersect::Outside
-                        })
-                    {
+                    if self.content_available(id) && self.content_visibility(id, frame)? != Intersect::Outside {
                         self.selected_tiles.push(id);
                     }
                     if self.renderable(id) && !self.content_available(id) {
@@ -695,20 +714,20 @@ impl Cesium3DTileset {
                     if skip {
                         self.select_desired_skip(id, frame)?;
                     } else if self.content_available(id) {
-                        self.select_tile(id, frame);
+                        self.select_tile(id, frame)?;
                     }
                 }
             } else if self.tiles[id].refine == Cesium3DTileRefine::Add {
                 if skip {
                     self.select_desired_skip(id, frame)?;
                 } else if self.content_available(id) {
-                    self.select_tile(id, frame);
+                    self.select_tile(id, frame)?;
                 }
                 self.load_tile(id, frame, false);
             } else if !skip {
                 self.load_tile(id, frame, false);
                 if stopped && self.content_available(id) {
-                    self.select_tile(id, frame);
+                    self.select_tile(id, frame)?;
                 }
             } else {
                 let t = &self.tiles[id];
@@ -745,7 +764,7 @@ impl Cesium3DTileset {
             self.touch_tile(id, frame);
         }
         if kind == TilesetTraversalKind::Skip {
-            self.traverse_skip_selection(root, frame);
+            self.traverse_skip_selection(root, frame)?;
         }
         if kind != TilesetTraversalKind::MostDetailed {
             for id in self.requested_tiles.clone() {
@@ -754,7 +773,7 @@ impl Cesium3DTileset {
         }
         Ok(ready)
     }
-    fn traverse_skip_selection(&mut self, root: TileId, frame: &FrameState) {
+    fn traverse_skip_selection(&mut self, root: TileId, frame: &FrameState) -> Result<(), RuntimeError> {
         let mut stack = vec![root];
         let mut ancestors: Vec<TileId> = vec![];
         let mut last = None;
@@ -765,7 +784,7 @@ impl Cesium3DTileset {
                     if Some(waiting) != last {
                         self.tiles[waiting].traversal.final_resolution = false;
                     }
-                    self.select_tile(waiting, frame);
+                    self.select_tile(waiting, frame)?;
                     continue;
                 }
             }
@@ -773,13 +792,13 @@ impl Cesium3DTileset {
             let traverse = self.can_traverse(id, false);
             if self.tiles[id].traversal.should_select {
                 if self.tiles[id].refine == Cesium3DTileRefine::Add {
-                    self.select_tile(id, frame);
+                    self.select_tile(id, frame)?;
                 } else {
                     self.tiles[id].traversal.selection_depth = ancestors.len();
                     self.has_mixed_content |= !ancestors.is_empty();
                     last = Some(id);
                     if !traverse {
-                        self.select_tile(id, frame);
+                        self.select_tile(id, frame)?;
                         continue;
                     }
                     ancestors.push(id);
@@ -794,6 +813,7 @@ impl Cesium3DTileset {
                 }
             }
         }
+        Ok(())
     }
     pub(super) fn update_priority(&mut self, id: TileId) {
         fn normalize(value: f64, min: f64, max: f64) -> f64 {
