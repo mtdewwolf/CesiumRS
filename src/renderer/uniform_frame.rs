@@ -162,6 +162,31 @@ impl<G: Gl> Default for FrameTextures<G> {
     }
 }
 impl<G: Gl> Context<G> {
+    pub fn automatic_texture(&self, name: &str) -> Result<Option<TextureBinding<G>>> {
+        Ok(self.cache()?.automatic_textures.borrow().get(name).cloned())
+    }
+    /// Update an automatic sampler between Scene passes, such as the packed
+    /// globe depth produced after rendering the globe.
+    pub fn set_automatic_texture(&self, name: &str, texture: Option<TextureBinding<G>>) -> Result<()> {
+        let cache = self.cache()?;
+        let uniform = automatic_uniforms().get(name).ok_or_else(|| RuntimeError::new("Unknown automatic texture"))?;
+        let expected = match uniform.datatype {
+            35678 => webgl_constants::TEXTURE_2D,
+            35680 => webgl_constants::TEXTURE_CUBE_MAP,
+            _ => return Err(RuntimeError::new("Automatic uniform is not a sampler")),
+        };
+        if let Some(texture) = texture {
+            self.same(texture.sampled().context())?;
+            ensure(
+                texture.sampled().target() == expected && !texture.sampled().is_destroyed(),
+                "Invalid automatic texture",
+            )?;
+            cache.automatic_textures.borrow_mut().insert(name.into(), texture);
+        } else {
+            cache.automatic_textures.borrow_mut().remove(name);
+        }
+        Ok(())
+    }
     pub fn update_frame(&self, frame: &UniformFrame, textures: &FrameTextures<G>) -> Result<()> {
         let cache = self.cache()?;
         let mut bindings = textures.textures.clone();

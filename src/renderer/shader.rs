@@ -107,6 +107,7 @@ pub struct ShaderProgram<G: Gl> {
     uniforms: Vec<ShaderVariable>,
     vertex_source: String,
     fragment_source: String,
+    source_options: Option<super::ShaderProgramOptions>,
     duplicate_uniforms: HashMap<String, String>,
     uniform_values: RefCell<HashMap<String, UniformValue>>,
 }
@@ -123,6 +124,26 @@ fn status<G: Gl>(context: &Context<G>, method: &str, resource: &Resource<G>, pna
     }
 }
 impl<G: Gl> ShaderProgram<G> {
+    /// Compile source fragments and retain them for Scene's derived commands.
+    pub fn from_sources(context: &Context<G>, options: &super::ShaderProgramOptions) -> Result<Self> {
+        let capabilities = context.capabilities()?;
+        let caps = ShaderCapabilities {
+            floating_point_texture: capabilities.floating_point_texture,
+            texture_float_linear: capabilities.texture_float_linear,
+        };
+        let attrs: Vec<_> = options.attribute_locations.iter().map(|(k, v)| (k.as_str(), *v)).collect();
+        let mut program = Self::new(
+            context,
+            &options.vertex_shader_source.combine(false, caps, context.webgl2())?,
+            &options.fragment_shader_source.combine(true, caps, context.webgl2())?,
+            &attrs,
+        )?;
+        program.source_options = Some(options.clone());
+        Ok(program)
+    }
+    pub fn source_options(&self) -> Option<&super::ShaderProgramOptions> {
+        self.source_options.as_ref()
+    }
     /// Sources must be complete GLSL ES 3.00 shaders; use ShaderSource to assemble
     /// source fragments. Attribute bindings are applied before linking.
     pub fn new(context: &Context<G>, vertex: &str, fragment: &str, attributes: &[(&str, u32)]) -> Result<Self> {
@@ -188,6 +209,7 @@ impl<G: Gl> ShaderProgram<G> {
             uniforms,
             vertex_source: vertex.into(),
             fragment_source: fragment_text,
+            source_options: None,
             duplicate_uniforms,
             uniform_values: RefCell::new(HashMap::new()),
         };

@@ -11,6 +11,648 @@ mod browser {
         JsValue::from_str(&e.to_string())
     }
     #[wasm_bindgen]
+    pub fn scene_oit(gl: JsValue, config: &str) -> Result<String, JsValue> {
+        use cesium_rs::scene::*;
+        use std::rc::Rc;
+        struct Commands(Vec<SceneCommand>);
+        impl ScenePrimitive for Commands {
+            fn pre_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn post_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn update_for_pass(&mut self, _: &mut FrameState, _: Cesium3DTilePass) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn update(&mut self, frame: &mut FrameState) -> Result<(), RuntimeError> {
+                frame.command_list.extend(self.0.clone());
+                Ok(())
+            }
+            fn destroy(&mut self) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+        }
+        let config: serde_json::Value = serde_json::from_str(config).map_err(error)?;
+        let context = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let quad = ViewportQuad::new(&context).map_err(error)?;
+        let shader=Rc::new(ShaderProgram::from_sources(&context,&ShaderProgramOptions{vertex_shader_source:ShaderSource::new("in vec4 position;\nuniform float distance;\nuniform float scale;\nvoid main(){gl_Position=czm_projection*vec4(position.xy*scale*distance*0.5,-distance,1.0);}"),fragment_shader_source:ShaderSource::new("uniform vec4 color;\nvoid main(){out_FragColor=color;}"),attribute_locations:std::collections::BTreeMap::from([("position".into(),0)])}).map_err(error)?);
+        let mut commands = Vec::new();
+        let order = if config["reverse"] == true { vec![0, 3, 2, 1] } else { vec![0, 1, 2, 3] };
+        for i in order {
+            let mut options = SceneDrawOptions::new(quad.vertex_array().clone(), shader.clone());
+            options.state.depth_test.enabled = true;
+            if i != 0 {
+                options.state.blending = blending_state::alpha_blend();
+                options.state.depth_mask = false;
+            }
+            options.uniforms = vec![
+                ("distance".into(), UniformValue::Float(vec![[1100., 1000., 950., 900.][i]])),
+                ("scale".into(), UniformValue::Float(vec![if i == 0 { 0.65 } else { 1. }])),
+                (
+                    "color".into(),
+                    UniformValue::Float(
+                        [vec![0.2, 0.3, 0.4, 1.], vec![1., 0., 0., 0.4], vec![0., 1., 0., 0.5], vec![0., 0., 1., 0.2]]
+                            [i]
+                            .clone(),
+                    ),
+                ),
+            ];
+            commands.push(SceneCommand::from_draw(
+                i.to_string(),
+                context.clone(),
+                if i == 0 { Pass::Opaque } else { Pass::Translucent },
+                DrawMetadata {
+                    bounding_volume: Some(BoundingSphere::new(Cartesian3::new(6378137., 0., 0.), 300.)),
+                    execute_in_closest_frustum: true,
+                    ..Default::default()
+                },
+                options,
+            ));
+        }
+        let mut scene = Scene::new(
+            RendererSceneBackend::new(context.clone()),
+            CameraOptions::new(8., 8.),
+            SceneOptions {
+                logarithmic_depth_buffer: config["log"] == true,
+                high_dynamic_range: config["hdr"] == true,
+                ..Default::default()
+            },
+            JulianDate::new(2451545., 0., TimeStandard::Tai),
+        )
+        .map_err(error)?;
+        scene.msaa_samples = 1;
+        scene.camera.position = Cartesian3::new(6379137., 0., 0.);
+        scene.camera.direction = -Cartesian3::UNIT_X;
+        scene.camera.up = Cartesian3::UNIT_Z;
+        scene.camera.right = Cartesian3::UNIT_Y;
+        if config["mrt"] == false {
+            let mut caps = context.capabilities().map_err(error)?;
+            caps.draw_buffers = false;
+            scene.view.resources::<BrowserGl>().unwrap().borrow_mut().oit =
+                Some(Oit::with_capabilities(caps).map_err(error)?);
+        }
+        scene.primitives.push(Box::new(Commands(commands)));
+        scene.rethrow_render_errors = true;
+        scene.render(JulianDate::new(2451545., 0., TimeStandard::Tai)).map_err(error)?;
+        let pixels = context.read_pixels(TextureRegion { x: 0, y: 0, width: 8, height: 8 }).map_err(error)?;
+        let result=json!({"pixels":pixels,"supported":scene.view.resources::<BrowserGl>().unwrap().borrow().oit.as_ref().unwrap().is_supported()}).to_string();
+        scene.destroy().map_err(error)?;
+        Ok(result)
+    }
+    #[wasm_bindgen]
+    pub fn scene_depth_resources(gl: JsValue, config: &str) -> Result<String, JsValue> {
+        use cesium_rs::scene::*;
+        let config: serde_json::Value = serde_json::from_str(config).map_err(error)?;
+        let context = if config["webgl1"] == true {
+            Context::new_webgl1(BrowserGl::new_webgl1(gl).map_err(error)?)
+        } else {
+            Context::new_webgl2(BrowserGl::new(gl).map_err(error)?)
+        };
+        let hdr = config["hdr"] == true;
+        let samples = config["samples"].as_u64().unwrap_or(1) as u32;
+        let viewport = Viewport { x: 0, y: 0, width: 8, height: 8 };
+        let pass = PassState {
+            viewport: Some(if config["scissor"] == true {
+                Viewport { x: 1, y: 2, width: 5, height: 4 }
+            } else {
+                viewport
+            }),
+            ..Default::default()
+        };
+        let read = |framebuffer: Option<&Framebuffer<BrowserGl>>| -> Result<serde_json::Value, JsValue> {
+            let read = context
+                .read_pixels_from(ReadState { framebuffer, region: TextureRegion { x: 0, y: 0, width: 8, height: 8 } })
+                .map_err(error)?;
+            Ok(if read.pixel_datatype == PixelDatatype::Float {
+                json!(read.bytes.chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect::<Vec<_>>())
+            } else {
+                json!(read.bytes)
+            })
+        };
+        let mut scene = SceneFramebuffer::new().map_err(error)?;
+        scene.update(&context, viewport, hdr, samples).map_err(error)?;
+        scene.clear(&context, &pass, Color::RED).map_err(error)?;
+        scene.prepare_color_textures().map_err(error)?;
+        let cleared = read(scene.color_framebuffer().map(std::rc::Rc::as_ref))?;
+        let mut globe = GlobeDepth::new().map_err(error)?;
+        globe.picking = config["picking"] == true;
+        globe.update(&context, &pass, viewport, samples, hdr, config["clear"] == true).map_err(error)?;
+        ClearCommand {
+            framebuffer: globe.framebuffer().cloned(),
+            color: Some([0.2, 0.4, 0.6, 1.]),
+            depth: Some(0.3),
+            stencil: Some(128),
+            ..Default::default()
+        }
+        .execute(&context, &pass)
+        .map_err(error)?;
+        globe.execute_copy_depth(&context, &pass).map_err(error)?;
+        let packed = read(globe.packed_depth_framebuffer().map(std::rc::Rc::as_ref))?;
+        let mut other = SceneFramebuffer::new().map_err(error)?;
+        other.update(&context, viewport, false, 1).map_err(error)?;
+        let other_pass = PassState { framebuffer: other.framebuffer().cloned(), ..pass.clone() };
+        ClearCommand {
+            color: Some([0.; 4]),
+            depth: Some(config["depth"].as_f64().unwrap_or(0.7)),
+            stencil: Some(if config["stencil"] == true { 128 } else { 0 }),
+            ..Default::default()
+        }
+        .execute(&context, &other_pass)
+        .map_err(error)?;
+        globe.execute_update_depth(&context, &other_pass, other.depth_stencil_texture().cloned()).map_err(error)?;
+        let merged = read(globe.packed_depth_framebuffer().map(std::rc::Rc::as_ref))?;
+        let mut pick = PickDepth::new().map_err(error)?;
+        pick.update(&context, other.depth_stencil_texture().unwrap().clone()).map_err(error)?;
+        pick.execute_copy_depth(&context, &pass, globe.packed_depth_texture().map_err(error)?.cloned())
+            .map_err(error)?;
+        let picked = read(pick.framebuffer().map(std::rc::Rc::as_ref))?;
+        let depth = pick.get_depth(&context, 4., 4.).map_err(error)?;
+        let mut translucent = GlobeTranslucencyFramebuffer::new().map_err(error)?;
+        translucent.update_and_clear(hdr, viewport, &context, &pass).map_err(error)?;
+        translucent.clear_classification(&context, &pass).map_err(error)?;
+        ClearCommand {
+            framebuffer: translucent.classification_framebuffer().cloned(),
+            color: Some([1., 0., 0., 0.5]),
+            depth: Some(0.4),
+            ..Default::default()
+        }
+        .execute(&context, &pass)
+        .map_err(error)?;
+        translucent.pack_depth(&context, &pass).map_err(error)?;
+        let translucent_depth = read(translucent.packed_depth_framebuffer().map(std::rc::Rc::as_ref))?;
+        let mut edge = EdgeFramebuffer::new().map_err(error)?;
+        edge.update(
+            &context,
+            viewport,
+            hdr,
+            globe.color_texture().map_err(error)?.cloned(),
+            globe.depth_stencil_texture().cloned(),
+        )
+        .map_err(error)?;
+        edge.clear(&context, &pass, Some(Color::LIME)).map_err(error)?;
+        let edge_pixels = read(edge.framebuffer().map(std::rc::Rc::as_ref))?;
+        let result=json!({"cleared":cleared,"packed":packed,"merged":merged,"picked":picked,"depth":depth,"translucent":translucent_depth,"edge":edge_pixels}).to_string();
+        edge.destroy().map_err(error)?;
+        pick.destroy().map_err(error)?;
+        translucent.destroy().map_err(error)?;
+        globe.destroy().map_err(error)?;
+        other.destroy().map_err(error)?;
+        scene.destroy().map_err(error)?;
+        context.destroy().map_err(error)?;
+        Ok(result)
+    }
+    #[wasm_bindgen]
+    pub async fn scene_pick(gl: JsValue, config: &str, schedule: js_sys::Function) -> Result<String, JsValue> {
+        use cesium_rs::scene::*;
+        use std::rc::Rc;
+        struct Commands(Vec<SceneCommand>);
+        impl ScenePrimitive for Commands {
+            fn pre_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn post_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn update_for_pass(&mut self, _: &mut FrameState, _: Cesium3DTilePass) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn update(&mut self, frame: &mut FrameState) -> Result<(), RuntimeError> {
+                frame.command_list.extend(self.0.clone());
+                Ok(())
+            }
+            fn destroy(&mut self) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+        }
+        let config: serde_json::Value = serde_json::from_str(config).map_err(error)?;
+        let webgl1 = config["webgl1"].as_bool().unwrap_or(false);
+        let context = if webgl1 {
+            Context::new_webgl1(BrowserGl::new_webgl1(gl).map_err(error)?)
+        } else {
+            Context::new_webgl2(BrowserGl::new(gl).map_err(error)?)
+        };
+        let quad = ViewportQuad::new(&context).map_err(error)?;
+        let a = Rc::new("a".to_string());
+        let b = Rc::new("b".to_string());
+        let c = Rc::new("c".to_string());
+        let ids = [a.clone(), b, a, c]
+            .map(|o| context.create_pick_id(o).map_err(error))
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>()?;
+        let source=ShaderSource::new("uniform vec4 color0;uniform vec4 color1;uniform vec4 color2;uniform vec4 color3;uniform float hole;void main(){out_FragColor=vec4(0.7,0.2,0.1,0.5);if(hole>0.0&&gl_FragCoord.x>3.0&&gl_FragCoord.x<5.0&&gl_FragCoord.y>3.0&&gl_FragCoord.y<5.0){out_FragColor.a=0.0;}}");
+        let program = Rc::new(
+            ShaderProgram::from_sources(&context, &ViewportQuad::<BrowserGl>::shader_options(source)).map_err(error)?,
+        );
+        let mut options = SceneDrawOptions::new(quad.vertex_array().clone(), program);
+        options.state.blending.enabled = true;
+        for (i, id) in ids.iter().enumerate() {
+            options.uniforms.push((
+                format!("color{i}"),
+                UniformValue::Float(vec![
+                    id.color.red as f32,
+                    id.color.green as f32,
+                    id.color.blue as f32,
+                    id.color.alpha as f32,
+                ]),
+            ));
+        }
+        options.uniforms.push(("hole".into(), UniformValue::Float(vec![if config["hole"] == true { 1. } else { 0. }])));
+        let command=SceneCommand::from_draw("quadrants",context.clone(),Pass::Opaque,DrawMetadata{pick_id:Some("(gl_FragCoord.y < 4.0 ? (gl_FragCoord.x < 4.0 ? color0 : color1) : (gl_FragCoord.x < 4.0 ? color2 : color3))".into()),execute_in_closest_frustum:true,..Default::default()},options);
+        let overlay = SceneCommand::clear(
+            "overlay",
+            context.clone(),
+            ClearCommand { color: Some([0., 0., 1., 1.]), pass: Some(Pass::Overlay), ..Default::default() },
+        );
+        let mut scene = Scene::new(
+            RendererSceneBackend::new(context.clone()),
+            CameraOptions::new(8., 8.),
+            SceneOptions { logarithmic_depth_buffer: config["log"] == true, ..Default::default() },
+            JulianDate::new(2451545., 0., TimeStandard::Tai),
+        )
+        .map_err(error)?;
+        scene.camera.client_width = 4.;
+        scene.camera.client_height = 4.;
+        scene.primitives.push(Box::new(Commands(vec![command, overlay])));
+        let target = FramebufferManagerOptions { depth_stencil: true, ..Default::default() };
+        let mut external = FramebufferManager::new(target).map_err(error)?;
+        external.update(&context, 8, 8, None, None, None).map_err(error)?;
+        let external = external.framebuffer().unwrap().clone();
+        scene.framebuffer = Some(FrameResource::new(external));
+        scene.viewport = Some(Viewport { x: 1, y: 1, width: 6, height: 6 });
+        scene.scissor_test =
+            Some(ScissorTest { enabled: true, rectangle: Viewport { x: 2, y: 2, width: 2, height: 2 } });
+        scene.blending_enabled = Some(true);
+        let old_target = scene.framebuffer.clone();
+        let old_viewport = scene.viewport;
+        let old_scissor = scene.scissor_test.clone();
+        let mut outputs = Vec::new();
+        for q in config["queries"].as_array().unwrap() {
+            let p = Cartesian2::new(q[0].as_f64().unwrap(), q[1].as_f64().unwrap());
+            let width = q[2].as_f64();
+            let height = q[3].as_f64();
+            let limit = q[4].as_u64().unwrap() as usize;
+            let objects = if config["async"] == true {
+                let request = scene.begin_pick_async(p, width, height, limit).map_err(error)?;
+                request
+                    .wait(|| {
+                        let value = schedule.call0(&JsValue::NULL);
+                        async move {
+                            let value = value.map_err(|_| RuntimeError::new("schedule error"))?;
+                            wasm_bindgen_futures::JsFuture::from(js_sys::Promise::resolve(&value))
+                                .await
+                                .map_err(|_| RuntimeError::new("schedule rejection"))?;
+                            Ok(())
+                        }
+                    })
+                    .await
+                    .map_err(error)?
+            } else {
+                scene.pick_objects(p, width, height, limit).map_err(error)?
+            };
+            outputs.push(
+                objects
+                    .into_iter()
+                    .map(|o| o.downcast::<String>().map(|s| s.as_ref().clone()).unwrap())
+                    .collect::<Vec<_>>(),
+            );
+            if scene.framebuffer != old_target
+                || scene.viewport != old_viewport
+                || scene.scissor_test != old_scissor
+                || scene.blending_enabled != Some(true)
+            {
+                return Err(error("Pick failed to restore Scene pass state"));
+            }
+        }
+        let result = json!({"objects":outputs,"restored":true,"frame":scene.frame_state.frame_number}).to_string();
+        scene.destroy().map_err(error)?;
+        Ok(result)
+    }
+    #[wasm_bindgen]
+    pub fn scene_mixed_lod(gl: JsValue, config: &str) -> Result<String, JsValue> {
+        use cesium_rs::scene::*;
+        use std::rc::Rc;
+        struct Content(SceneCommand);
+        impl TilesetContent for Content {
+            fn metrics(&self) -> TileContentMetrics {
+                Default::default()
+            }
+            fn process(&mut self, _: &FrameState) -> Result<bool, RuntimeError> {
+                Ok(true)
+            }
+            fn update(&mut self, f: &mut FrameState) -> Result<(), RuntimeError> {
+                f.command_list.push(self.0.clone());
+                Ok(())
+            }
+            fn pick(&self, _: &Ray, _: &FrameState) -> Result<Option<Cartesian3>, RuntimeError> {
+                Ok(None)
+            }
+            fn destroy(&mut self) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+        }
+        struct Commands(Vec<SceneCommand>);
+        impl ScenePrimitive for Commands {
+            fn pre_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn update(&mut self, f: &mut FrameState) -> Result<(), RuntimeError> {
+                f.command_list.extend(self.0.clone());
+                Ok(())
+            }
+            fn post_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn update_for_pass(&mut self, _: &mut FrameState, _: Cesium3DTilePass) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn destroy(&mut self) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+        }
+        let config: serde_json::Value = serde_json::from_str(config).map_err(error)?;
+        let flag = |n: &str| config[n].as_bool().unwrap_or(false);
+        let child_distance = config["distance"].as_f64().unwrap_or(1000.) as f32;
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let tile = |radius: f64, geometric_error: f64, children: Option<Vec<serde_json::Value>>| {
+            let mut v = json!({"boundingVolume":{"sphere":[6378137,0,0,radius]},"geometricError":geometric_error,"refine":"REPLACE","content":{"uri":format!("{radius}.glb")}});
+            if let Some(c) = children {
+                v["children"] = json!(c);
+            }
+            v
+        };
+        let document = json!({"asset":{"version":"1.1"},"geometricError":1000,"root":tile(300.,500.,Some(vec![tile(100.,100.,Some(vec![tile(30.,0.,None),tile(20.,0.,None)]))]))});
+        let mut tileset = Cesium3DTileset::from_json(
+            Resource::new("https://example.com/tileset.json").unwrap(),
+            &document,
+            TilesetOptions {
+                skip_level_of_detail: flag("skip"),
+                maximum_screen_space_error: 0.1,
+                dynamic_screen_space_error: false,
+                foveated_screen_space_error: false,
+                cull_with_children_bounds: false,
+                cull_requests_while_moving: false,
+                ..Default::default()
+            },
+            None,
+        )
+        .map_err(error)?;
+        let shader=Rc::new(ShaderProgram::from_sources(&ctx,&ShaderProgramOptions{vertex_shader_source:ShaderSource::new("in vec2 position;in float distance;void main(){gl_Position=czm_projection*vec4(position*distance*0.5,-distance,1.0);}"),fragment_shader_source:ShaderSource::new("uniform vec4 color;void main(){out_FragColor=color;}"),attribute_locations:std::collections::BTreeMap::from([("position".into(),0),("distance".into(),1)])}).map_err(error)?);
+        for id in [0, 2] {
+            let size = if id == 0 { 1. } else { 0.5 };
+            let mut vertices = Vec::<f32>::new();
+            for distance in if id == 0 { vec![800., 1200.] } else { vec![child_distance] } {
+                for (x, y) in [(-size, -size), (size, -size), (size, size), (-size, size)] {
+                    vertices.extend([x, y, distance]);
+                }
+            }
+            let bytes = floats(&vertices);
+            let buffer = Buffer::new(&ctx, BufferKind::Vertex, BufferUsage::StaticDraw, BufferData::Bytes(&bytes))
+                .map_err(error)?;
+            let mut position = VertexAttribute::buffer(0, buffer.clone(), 2);
+            position.stride = 12;
+            let mut distance = VertexAttribute::buffer(1, buffer, 1);
+            distance.offset = 8;
+            distance.stride = 12;
+            let indices: Vec<u8> =
+                if id == 0 { vec![0u16, 1, 2, 0, 2, 3, 4, 6, 5, 4, 7, 6] } else { vec![0u16, 1, 2, 0, 2, 3] }
+                    .into_iter()
+                    .flat_map(u16::to_le_bytes)
+                    .collect();
+            let index = Buffer::new(
+                &ctx,
+                BufferKind::Index(IndexDatatype::UnsignedShort),
+                BufferUsage::StaticDraw,
+                BufferData::Bytes(&indices),
+            )
+            .map_err(error)?;
+            let array = Rc::new(VertexArray::new(&ctx, vec![position, distance], Some(index)).map_err(error)?);
+            let mut options = SceneDrawOptions::new(array, shader.clone());
+            options.state.depth_test.enabled = true;
+            options.uniforms.push((
+                "color".into(),
+                UniformValue::Float(if id == 0 { vec![1., 0., 0., 1.] } else { vec![0., 1., 0., 1.] }),
+            ));
+            let command = SceneCommand::from_draw(
+                id.to_string(),
+                ctx.clone(),
+                Pass::Cesium3DTile,
+                DrawMetadata { bounding_volume: Some(tileset.tiles[id].bounding_sphere), ..Default::default() },
+                options,
+            );
+            tileset.install_content(id, Box::new(Content(command))).map_err(error)?;
+        }
+        let mut scene = Scene::new(
+            RendererSceneBackend::new(ctx.clone()),
+            CameraOptions::new(8., 8.),
+            SceneOptions { logarithmic_depth_buffer: flag("log"), ..Default::default() },
+            JulianDate::new(2451545., 0., TimeStandard::Tai),
+        )
+        .map_err(error)?;
+        scene.msaa_samples = 1;
+        scene.camera.position = Cartesian3::new(6379137., 0., 0.);
+        scene.camera.direction = Cartesian3::new(-1., 0., 0.);
+        scene.camera.up = Cartesian3::UNIT_Z;
+        scene.camera.right = Cartesian3::UNIT_Y;
+        if flag("preserve") {
+            let clear = SceneCommand::clear(
+                "classification-bits",
+                ctx.clone(),
+                ClearCommand {
+                    pass: Some(Pass::Globe),
+                    stencil: Some(9),
+                    render_state: RenderState { stencil_mask: 15, ..Default::default() },
+                    ..Default::default()
+                },
+            );
+            let quad = ViewportQuad::new(&ctx).map_err(error)?;
+            let program = Rc::new(
+                ShaderProgram::from_sources(
+                    &ctx,
+                    &ViewportQuad::<BrowserGl>::shader_options(ShaderSource {
+                        defines: vec!["LOG_DEPTH_READ_ONLY".into()],
+                        ..ShaderSource::new("void main(){out_FragColor=vec4(0.0,0.0,1.0,1.0);}")
+                    }),
+                )
+                .map_err(error)?,
+            );
+            let mut options = SceneDrawOptions::new(quad.vertex_array().clone(), program);
+            options.state.stencil_test.enabled = true;
+            options.state.stencil_test.reference = 9;
+            options.state.stencil_test.mask = 15;
+            options.state.stencil_test.front_function = webgl_constants::EQUAL;
+            options.state.stencil_test.back_function = webgl_constants::EQUAL;
+            let overlay = SceneCommand::from_draw(
+                "classification-bit-check",
+                ctx.clone(),
+                Pass::Opaque,
+                DrawMetadata {
+                    bounding_volume: Some(tileset.tiles[0].bounding_sphere),
+                    execute_in_closest_frustum: true,
+                    ..Default::default()
+                },
+                options,
+            );
+            scene.primitives.push(Box::new(Commands(vec![clear, overlay])));
+        }
+        scene.primitives.push(Box::new(tileset));
+        scene.rethrow_render_errors = true;
+        scene.render(JulianDate::new(2451545., 0., TimeStandard::Tai)).map_err(error)?;
+        let pixels = ctx.read_pixels(TextureRegion { x: 0, y: 0, width: 8, height: 8 }).map_err(error)?;
+        Ok(json!({"pixels":pixels,"executed":scene.frame_state.executed_commands.len(),"frustums":scene.view.frustum_commands_list.iter().map(|f|vec![f.near,f.far]).collect::<Vec<_>>()} ).to_string())
+    }
+    #[wasm_bindgen]
+    pub fn scene_draw_variants(gl: JsValue, config: &str) -> Result<String, JsValue> {
+        use cesium_rs::scene::*;
+        use std::rc::Rc;
+        struct Commands(Vec<SceneCommand>);
+        impl ScenePrimitive for Commands {
+            fn pre_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn update(&mut self, f: &mut FrameState) -> Result<(), RuntimeError> {
+                f.command_list.extend(self.0.clone());
+                Ok(())
+            }
+            fn post_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn update_for_pass(&mut self, _: &mut FrameState, _: Cesium3DTilePass) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn destroy(&mut self) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+        }
+        let config: serde_json::Value = serde_json::from_str(config).map_err(error)?;
+        let flag = |n: &str| config[n].as_bool().unwrap_or(false);
+        let ctx = if flag("webgl1") {
+            Context::new_webgl1(BrowserGl::new_webgl1(gl).map_err(error)?)
+        } else {
+            Context::new_webgl2(BrowserGl::new(gl).map_err(error)?)
+        };
+        let quad = ViewportQuad::new(&ctx).map_err(error)?;
+        let source=ShaderSource::new("uniform sampler2D image;uniform vec4 u_pickColor;void main(){out_FragColor=texture(image,vec2(0.5));\n#ifdef HDR\nout_FragColor.rgb*=0.5;\n#endif\n}");
+        let program = Rc::new(
+            ShaderProgram::from_sources(&ctx, &ViewportQuad::<BrowserGl>::shader_options(source)).map_err(error)?,
+        );
+        let mut texture_options = TextureOptions::rgba(1, 1);
+        texture_options.flip_y = false;
+        texture_options.sampler = Sampler::NEAREST;
+        let texture = Rc::new(Texture::new(&ctx, texture_options, Some(&[200, 100, 50, 255])).map_err(error)?);
+        let mut options = SceneDrawOptions::new(quad.vertex_array().clone(), program);
+        options.textures.push(("image".into(), texture));
+        options
+            .uniforms
+            .push(("u_pickColor".into(), UniformValue::Float(vec![25. / 255., 50. / 255., 75. / 255., 1.])));
+        let mut command = SceneCommand::from_draw(
+            "quad",
+            ctx.clone(),
+            Pass::Opaque,
+            DrawMetadata {
+                pick_id: Some("u_pickColor".into()),
+                execute_in_closest_frustum: true,
+                ..Default::default()
+            },
+            options,
+        );
+        let mut scene = Scene::new(
+            RendererSceneBackend::new(ctx.clone()),
+            CameraOptions::new(8., 8.),
+            SceneOptions {
+                logarithmic_depth_buffer: flag("log"),
+                high_dynamic_range: flag("hdr"),
+                // This case deliberately hides OES_texture_float to exercise
+                // byte clipping textures. Disable the unrelated float OIT path.
+                order_independent_translucency: !(flag("clip") && flag("webgl1")),
+                ..Default::default()
+            },
+            JulianDate::new(2451545., 0., TimeStandard::Tai),
+        )
+        .map_err(error)?;
+        let planes = if flag("clip") {
+            let mut planes = ClippingPlaneCollection::new([
+                ClippingPlane::handle(Cartesian3::UNIT_X, 0.),
+                ClippingPlane::handle(Cartesian3::UNIT_Y, 0.),
+            ]);
+            planes.union_clipping_regions = flag("union");
+            planes.edge_color = Color::RED;
+            planes.edge_width = 1.25;
+            let planes = Rc::new(std::cell::RefCell::new(planes));
+            command.clipping_planes =
+                Some(SceneClippingPlanes::new(planes.clone(), scene.camera.inverse_view_matrix()));
+            Some(planes)
+        } else {
+            None
+        };
+        scene.primitives.push(Box::new(Commands(vec![command])));
+        let target = if flag("target") {
+            let color = Rc::new(Texture::new(&ctx, TextureOptions::rgba(8, 8), None).map_err(error)?);
+            let target = Rc::new(
+                Framebuffer::new(
+                    &ctx,
+                    FramebufferOptions { colors: vec![Attachment::Texture(color)], ..Default::default() },
+                )
+                .map_err(error)?,
+            );
+            scene.framebuffer = Some(FrameResource::new(Rc::clone(&target)));
+            Some(target)
+        } else {
+            None
+        };
+        scene.viewport = Some(Viewport { x: 0, y: 0, width: 8, height: 8 });
+        let passes = FramePasses {
+            render: !flag("pick") && !flag("depth"),
+            pick: flag("pick"),
+            depth: flag("depth"),
+            ..Default::default()
+        };
+        if let Some(planes) = planes {
+            let mut phases = Vec::new();
+            for phase in 0..6 {
+                {
+                    let mut p = planes.borrow_mut();
+                    match phase {
+                        1 => p.get(0).unwrap().borrow_mut().set_distance(0.25),
+                        2 => {
+                            p.get(0).unwrap().borrow_mut().set_distance(-0.25);
+                            p.get(1).unwrap().borrow_mut().set_distance(0.25);
+                        }
+                        3 => {
+                            let plane = p.get(1).unwrap().clone();
+                            p.remove(&plane);
+                        }
+                        4 => p.remove_all(),
+                        5 => p.add(ClippingPlane::handle(Cartesian3::UNIT_Y, -0.1)),
+                        _ => {}
+                    }
+                }
+                scene.draw_passes(passes).map_err(error)?;
+                let bytes = ctx
+                    .read_pixels_from(ReadState {
+                        framebuffer: target.as_deref(),
+                        region: TextureRegion { x: 0, y: 0, width: 8, height: 8 },
+                    })
+                    .map_err(error)?
+                    .bytes;
+                let texture = planes.borrow().texture::<BrowserGl>();
+                phases.push(json!({"pixels":bytes,"texture":texture.map(|t|[t.width(),t.height()]),"float":ctx.capabilities().map_err(error)?.floating_point_texture}));
+            }
+            return Ok(json!(phases).to_string());
+        }
+        scene.draw_passes(passes).map_err(error)?;
+        // Repeat to exercise variant reuse and all retained GPU input lifetimes.
+        scene.draw_passes(passes).map_err(error)?;
+        let bytes = ctx
+            .read_pixels_from(ReadState {
+                framebuffer: target.as_deref(),
+                region: TextureRegion { x: 4, y: 4, width: 1, height: 1 },
+            })
+            .map_err(error)?
+            .bytes;
+        Ok(json!({"pixels":bytes,"executed":scene.frame_state.executed_commands.len()}).to_string())
+    }
+    #[wasm_bindgen]
     pub fn renderer_buffers(gl: JsValue) -> Result<String, JsValue> {
         let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
         let b = Buffer::new(

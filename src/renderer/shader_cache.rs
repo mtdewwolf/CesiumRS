@@ -27,18 +27,7 @@ impl<G: Gl> ShaderCache<G> {
     }
     fn compile(&self, options: &ShaderProgramOptions) -> Result<Rc<ShaderProgram<G>>> {
         ensure(!self.destroyed, "Shader cache is destroyed")?;
-        let capabilities = self.context.capabilities()?;
-        let caps = ShaderCapabilities {
-            floating_point_texture: capabilities.floating_point_texture,
-            texture_float_linear: capabilities.texture_float_linear,
-        };
-        let attrs: Vec<_> = options.attribute_locations.iter().map(|(k, v)| (k.as_str(), *v)).collect();
-        Ok(Rc::new(ShaderProgram::new(
-            &self.context,
-            &options.vertex_shader_source.combine(false, caps, self.context.webgl2())?,
-            &options.fragment_shader_source.combine(true, caps, self.context.webgl2())?,
-            &attrs,
-        )?))
+        Ok(Rc::new(ShaderProgram::from_sources(&self.context, options)?))
     }
     fn key(options: &ShaderProgramOptions) -> String {
         format!(

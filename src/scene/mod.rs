@@ -43,6 +43,77 @@ macro_rules! string_enum {
 }
 
 pub mod alpha_mode;
+pub mod clipping_plane;
+pub mod clipping_plane_collection;
+pub mod clipping_plane_shader;
+pub mod tileset_stencil;
+pub use clipping_plane::{ClippingPlane, ClippingPlaneHandle, PlaneChangeCallback};
+pub use clipping_plane_collection::{ClippingPlaneCollection, ClippingPlaneEvent};
+pub use clipping_plane_shader::{ClippingShaderKey, SceneClippingPlanes};
+pub use tileset_stencil::TilesetDrawKind;
+mod tileset_expansion;
+pub use tileset_expansion::derive_implicit_volume;
+mod tileset_content;
+pub use tileset_content::{
+    HeightSubscription, ImplicitContentRequest, MultipleTilesetContent, RenderableTileFactory, TileContentFailure,
+    TileExpansion, TilesetResourceLoader,
+};
+mod tileset_traversal;
+pub use tileset_traversal::{TileTraversalState, TilesetVolume};
+pub mod cesium_3d_tileset;
+pub use cesium_3d_tileset::{
+    Cesium3DTileset, FeatureIdLabel, TileContentFuture, TileContentMetrics, TileContentRequest, TileId, TilesetCache,
+    TilesetContent, TilesetContentLoader, TilesetEvent, TilesetOptions, TilesetPassState, TilesetStatistics,
+    TilesetTile, TilesetTraversalKind,
+};
+pub mod atmosphere;
+pub mod derived_command;
+pub use derived_command::{DerivedCommand, PickMetadataShader, SceneDrawMode};
+pub mod edge_framebuffer;
+pub mod fog;
+pub mod frame_state;
+mod framebuffer_helpers;
+pub mod pick_depth;
+pub mod pick_depth_framebuffer;
+pub mod scene_framebuffer;
+pub use edge_framebuffer::EdgeFramebuffer;
+pub use pick_depth::PickDepth;
+pub mod globe_depth;
+pub mod globe_translucency_framebuffer;
+pub use globe_depth::GlobeDepth;
+pub use globe_translucency_framebuffer::GlobeTranslucencyFramebuffer;
+pub mod view_resources;
+pub use pick_depth_framebuffer::PickDepthFramebuffer;
+pub use scene_framebuffer::SceneFramebuffer;
+pub use view_resources::ViewResources;
+pub mod oit;
+pub mod translucent_tile_classification;
+pub use oit::{Oit, OitDrawKind};
+pub use translucent_tile_classification::TranslucentTileClassification;
+pub mod metadata_picking;
+pub use metadata_picking::MetadataPicking;
+pub mod pick_object;
+pub use pick_object::{PickExclusion, PickedMetadataInfo, RayPickResult, ScenePickObject};
+mod detailed_picking;
+pub use detailed_picking::{MostDetailedPickRequest, SampledHeight};
+pub mod scene_transforms;
+pub use scene_transforms::{SceneTransformState, SceneTransforms};
+pub mod pick_framebuffer;
+pub mod picking;
+pub use pick_framebuffer::{PickFramebuffer, PickReadback, PickedObject};
+pub use picking::Picking;
+// Keep the upstream Scene/Scene.js module path.
+#[allow(clippy::module_inception)]
+pub mod scene;
+pub mod view;
+pub use atmosphere::Atmosphere;
+pub use fog::{Fog, FrameFog};
+pub use frame_state::{FramePasses, FrameResource, FrameShadowState, FrameState};
+pub use scene::{
+    RendererSceneBackend, Scene, SceneBackend, SceneCommand, SceneCommandFilter, SceneComponent, SceneDrawOptions,
+    SceneEventKind, SceneNotification, SceneOptions, ScenePrimitive, SceneRenderRequest, SceneStage, SceneSubmission,
+};
+pub use view::{DebugFrustumStatistics, FrustumCommands, SceneView};
 pub mod arc_gis_base_map_type;
 pub mod attribute_type;
 pub mod axis;

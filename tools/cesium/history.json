@@ -358,5 +358,45 @@
     "ported": 816,
     "implemented": 0,
     "validatedPercent": 43.11
+  },
+  {
+    "milestone": "Scene and tileset runtime foundations",
+    "date": "2026-10-23",
+    "percent": 44.46,
+    "ported": 818,
+    "implemented": 0,
+    "validatedPercent": 43.19
+  },
+  {
+    "milestone": "Scene traversal, content expansion and executable shader variants",
+    "date": "2026-10-23",
+    "percent": 45.06,
+    "ported": 824,
+    "implemented": 0,
+    "validatedPercent": 43.8
+  },
+  {
+    "milestone": "Plane clipping and mixed-LOD stencil rendering",
+    "date": "2026-10-23",
+    "percent": 45.31,
+    "ported": 826,
+    "implemented": 0,
+    "validatedPercent": 44.05
+  },
+  {
+    "milestone": "Scene transforms and color picking",
+    "date": "2026-10-23",
+    "percent": 45.72,
+    "ported": 828,
+    "implemented": 0,
+    "validatedPercent": 44.24
+  },
+  {
+    "milestone": "Scene depth resources, OIT and picking checkpoint",
+    "date": "2026-10-23",
+    "percent": 46.52,
+    "ported": 836,
+    "implemented": 2,
+    "validatedPercent": 44.89
   }
 ]

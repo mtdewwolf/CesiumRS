@@ -4,6 +4,184 @@
 has one Rust module per Cesium module, as `core` does. `Scene/Model/...`
 modules live under `scene::model`.
 
+## Scene and tileset runtime
+
+`Scene<B: SceneBackend>` now owns the frame loop: render requests, time and
+camera changes, frame numbering, pre/post update and render events, caught
+render errors, primitive passes, flight destination preloading, deferred
+callbacks, fog and atmosphere uniforms, and command submission. Call
+`initialize_frame(monotonic_seconds)` before `render(julian_time)` to advance
+camera flights. Pre/post passes also run when request-render mode skips a draw.
+`SceneRenderRequest` can cross threads and supplies a `Waker` for asynchronous
+content. The host still drives calls to the frame loop.
+
+`RendererSceneBackend` uses the existing Rust `Context`, uniform state, clears
+and executable `DrawCommand`. `SceneCommand::draw` owns the shader and vertex
+array while queued. Submission handles pass ordering, culling, occlusion,
+back-to-front translucency, depth partitions, closest-frustum execution and
+overlays. Other backends can implement the same typed boundary.
+
+`Cesium3DTileset::from_url` loads JSON and relative external metadata schemas
+through `ResourceClient`; `from_json` accepts an already loaded document.
+Loading validates asset versions and required extensions, builds the explicit
+tile tree, inherits transforms/refinement/error, resolves content URLs and
+version queries, and sets metadata, credits, bounds and clipping origin.
+`load_tileset(resource, json, parent)` preserves each nested document's URL.
+Sphere, box, region and S2 bounds and implicit-root subtree descriptors reuse
+the existing Scene ports.
+
+Tile content is supplied by `TilesetContentLoader`, whose future returns an
+owned `TilesetContent`. Content provides processing, metrics, command updates,
+CPU ray picks and destruction. Futures are polled during pre-passes with the
+Scene render-request waker. Processing readiness updates statistics, load
+events and the cache; post-passes cancel obsolete requests, defer progress
+events and evict unused content under the memory budget. `trim_loaded_tiles`
+protects tiles touched in the current frame. Destroying a tileset cancels its
+requests and suppresses queued events. A tileset implements `ScenePrimitive`
+and can be added directly to `scene.primitives`.
+
+`FrameState` now carries the complete upstream data surface. The required
+camera, projection, time and culling volume live in an initialized `UniformFrame`;
+other optional services/resources use owned `FrameResource` handles. Shadow,
+environment, metadata-picking, panorama and pass-state fields retain the
+upstream defaults. `Fog` and `Atmosphere` are complete.
+
+Traversal now implements the base, skip-LOD and most-detailed algorithms,
+including empty/external ancestors, descendant fallback, mixed-content selection
+depths, priority holders, progressive/foveated priorities, movement deferral,
+request deduplication and child-union optimization. Visibility and distance use
+sphere, oriented-box, region and S2 volumes. Bounds are rebuilt when transforms
+or exaggeration change, rather than on every frame.
+
+`from_url` installs `TilesetResourceLoader` by default. It expands external
+JSON and implicit subtrees, fetching external subtree buffers and applying
+availability, URI templates, metadata bounds/errors and child-subtree headers.
+`from_ion_asset_id` uses the existing Ion resource and credentials/credits.
+Multiple contents load concurrently and preserve successful contents when a
+sibling fails. Statistics account for each pending request and shared GPU
+texture identity. Expired content remains available during replacement;
+accepted refreshes update accounting, clear the expiry date after download,
+and destroy structural descendants when needed. Collision height callbacks
+support cancellation, including callbacks already queued for after-render.
+
+Renderable formats require a `RenderableTileFactory` or a custom
+`TilesetContentLoader`. Missing decoders report an error; structural content
+and raw bytes never stand in for rendered models. A content implementation
+owns its format-specific processing, rendering, CPU geometry, aggregate
+metrics and GPU texture identities.
+
+`SceneView` fits command bounds to depth partitions, builds pass bins,
+tracks shadow ranges/debug overlap masks and dispatches movement start/end
+with Cesium's camera tolerance and delay. Call `initialize_frame` with an
+absolute monotonic timestamp to advance flights and movement-event timing.
+`SceneCommand::from_draw` retains geometry, program, textures, uniforms,
+instancing and draw ranges. Build the program with
+`ShaderProgram::from_sources` (or `ShaderCache`) so Scene can derive log-depth,
+HDR, depth-only and pick shaders from original fragments. Metadata-pick shader
+configuration uses `PickMetadataShader`. Compiled variants are reused across
+submissions. `framebuffer` and `viewport` route clears and draws to a target;
+`draw_passes` exposes the same path for caller-supplied render/pick/depth flags.
+On `Scene<RendererSceneBackend<G>>`, `pick` returns the closest visible object
+ID within a canvas rectangle. `pick_objects` collects visible IDs in center-out
+order. Keep the renderer `PickId` alive and supply its color as the command's
+pick uniform. Picked objects retain their original `Rc<dyn Any>` identity.
+`begin_pick_async` issues the PBO transfer and fence immediately and returns an
+owned `PickReadback`; `.wait(schedule)` uses a host future for each GPU poll.
+`pick_async` combines these steps. WebGL1 captures picked objects synchronously.
+Picking preserves the caller's framebuffer, viewport, scissor and blending
+settings, including primitive/shader failures. It does not advance frame numbers
+or fire render events.
+
+View now owns the Scene/id, offscreen pick, depth, globe-depth/translucency,
+edge, OIT and translucent-classification GPU resources and destroys them with
+its Scene. Depth snapshots are captured per frustum; position reconstruction
+supports log depth and scene modes. OIT supports weighted MRT rendering and
+the two-pass fallback. The fallback supplies an output declaration missing
+from the pinned upstream WebGL2 shader. Globe-depth copy/update honors scissor,
+MSAA and classification stencil masks.
+
+Picking now exposes depth positions, metadata and voxel reads, drill picks,
+ray intersections, height sampling and clamping. Register `ScenePickObject`
+identities and attach their show handles to command visibility for drill
+picking. Most-detailed requests preload participating tilesets and resolve
+after a subsequent post-render event; the host must keep driving frames.
+Cancellation and Scene destruction release queued requests. Metadata decoding
+has 500 pinned-source cases, including normalization, transforms and 64-bit
+integers. Variable-length metadata arrays remain unsupported by the shader
+path. The new depth-position, metadata-render, ray and most-detailed APIs still
+need independent end-to-end GPU comparisons; native tests cover failure
+restoration, drill visibility and request completion/cancellation.
+
+`SceneTransforms` implements world-to-canvas/buffer transforms, eye offsets,
+2D map wrapping, Columbus View/morph coordinates and reconstruction from current
+frustum depth, including log depth. `cartesian_to_canvas_coordinates` exposes
+the Scene wrapper. Canvas output has a top-left origin; depth reconstruction
+takes bottom-left GL coordinates.
+
+Scene and Cesium3DTileset remain **partial**. Scene still needs the actual globe/terrain integration, complete classification
+validation, shadows, post-processing, full picking validation, 2D viewport
+wrapping/WebVR and controller/morph/terrain integration. The new framebuffer
+and classification plumbing does not supply the unported globe primitives.
+Tileset rendering still needs styling, polygon clipping, imagery, environment/lighting
+and debug rendering. Plane clipping and the mixed-LOD stencil/backface pass
+now execute through the native renderer.
+`SceneComponent` lifecycle hooks do not implement those effects. Existing
+runtime options do not establish support for missing rendering features.
+
+`tools/cesium/fixtures/scene-runtime.mjs` supplies **124 scenarios** (54 Scene,
+five fog sequences with 480 updates, six Atmosphere, 59 tileset).
+`scene-completion.mjs` adds **377 scenarios**: two FrameState, 48 View fitting,
+180 traversal (including clipped trees), 18 implicit expansion, 47 derived shader,
+nine camera movement, 24 dynamic-SSE, 21 clipping plane/collection, 24 stencil
+state and four mixed-LOD command sequences. `tests/scene_runtime.rs` also checks cancellation,
+expiration, shared textures, partial content failure, resource bases, CPU
+height queries and renderer/resource ownership. The reference frame harness
+uses explicit host operations and does not establish full browser Scene parity.
+
+`scripts/check-scene.sh` compares **352 actual GPU results** with
+CesiumJS. The original 24 WebGL2 cases cover log depth, HDR, render/pick/depth
+passes, framebuffer targets and retained uniforms/textures. Another 48 phase
+comparisons cover float and byte plane textures, mutation/partial upload,
+removal/resizing, edge colors, union/intersection modes and WebGL1/WebGL2 log
+depth. Another 24 cases exercise actual mixed-LOD draws: masked clears,
+ancestor backfaces, selection-depth stencil tests, depth overlap and preservation
+of classification bits. The reference uses real Cesium ModelDrawCommand
+variants. A further 176 comparisons check color picking, object identity,
+rectangle order, transparent fragments, high-DPI coordinates, edge padding,
+sync/async readback and WebGL1 fallback. This does not establish visual parity
+for unported globe/effects or the newly added picking APIs. Another 64
+comparisons cover the View depth/framebuffer resources with WebGL1/WebGL2,
+HDR, MSAA, scissor and stencil. Sixteen compare actual OIT draws across MRT,
+two-pass fallback, log depth, HDR and reversed submission order.
+
+`scene-transforms.mjs` and `scene-picking.mjs` add **452 reference cases**:
+259 transforms, 81 pick culling/rectangle inputs and 112 framebuffer spiral
+sequences. Native resource tests check fence timeout/cancellation cleanup,
+WebGL1 object snapshots, framebuffer destruction and pass-state restoration
+after a failed primitive update.
+
+`ClippingPlaneCollection` owns its GPU texture, handles callbacks/events and
+plane indices, supports transformed volume tests, and tracks a single owner.
+Attach an `Rc<RefCell<ClippingPlaneCollection>>` with
+`tileset.set_clipping_planes(...)`; replacement and destruction release the old
+collection. Scene schedules owner texture updates during pre-passes, including
+hidden tilesets and skipped draws. Intersecting draw commands inherit the plane
+collection and render its clipping/edge stage; fully clipped bounds are culled.
+Standalone users can call `collection.update(&context)` and retrieve its typed
+texture. A new empty collection reports zero dimensions without allocating one.
+
+Mixed skip-LOD trees enqueue a clear restricted to the skip-LOD stencil bits,
+then unresolved ancestor backfaces, then the selected front draws. Selection
+depth controls the stencil reference. Backfaces disable color writes and shadows,
+cull front faces, and supply polygon offset to linear and logarithmic depth.
+Opaque 3D Tiles commands also mark the classification bit. Custom Scene backends
+that support these features implement clipping uploads and masked stencil clears.
+
+```bash
+cargo test --test scene_completion --test scene_runtime
+bash scripts/check-scene.sh
+```
+
 ## Camera
 
 `scene::Camera` starts the large, frame-driven Scene modules. It is the
@@ -417,6 +595,5 @@ The next batches build on these:
 - the rest of 3D Metadata: property textures, `StructuralMetadata`,
   `PickedMetadataInfo` and the parsers;
 - 3D Tiles content parsers;
-- then the frame-driven modules (`FrameState`, `Camera`, `Primitive`, the
-  globe and the tile traversal) on top of the Renderer's typed frame
-  snapshots.
+- completion of Scene/FrameState and tileset traversal, followed by Primitive,
+  globe, picking and effect integrations on the Renderer's typed snapshots.

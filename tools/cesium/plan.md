@@ -66,7 +66,7 @@ applications can implement the existing `Gl` host contract.
 
 ### Scene
 
-Scene has **141 of 482 modules** fully ported, including Camera and
+Scene has **143 of 482 modules** fully ported, including Camera and
 CameraFlightPath. The validated batches cover the foundations, all 24
 GltfPipeline utilities, 3D Metadata schemas/tables/entities, tile bounding
 volumes and implicit tiling.
@@ -78,9 +78,17 @@ callbacks, preload culling and correction tweens. Their 1,161 direct CesiumJS
 scenarios pass; hosts supply the clock and consume the controller input gate.
 Flight state is owned per camera instead of using shared JavaScript scratch.
 
-Next continue Scene orchestration (5,293 lines), then Cesium3DTileset, Model,
-ScreenSpaceCameraController and GltfLoader, implementing their prerequisites
-as needed. See [Scene](docs/scene.md) for APIs and validation.
+Scene orchestration (5,293 upstream lines) and Cesium3DTileset (3,933) now
+have partial Rust runtimes: frame decisions and events, renderer submission,
+JSON/schema/tree loading, explicit-tree traversal, content futures, cancellation,
+progress and cache eviction. Fog and Atmosphere are fully ported. The new batch
+has 124 CesiumJS scenarios and Rust integration checks; these do not establish
+full rendering or traversal parity. FrameState also remains partial.
+
+Continue the Scene/View and tileset traversal/content integrations, then Model,
+ScreenSpaceCameraController and GltfLoader. Skip-LOD and content format loading
+are explicit gaps; the runtime currently requires a caller-supplied content
+loader. See [Scene](docs/scene.md) for APIs, validation and remaining work.
 
 
 ### Workers completion
