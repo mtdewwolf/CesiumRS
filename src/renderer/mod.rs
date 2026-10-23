@@ -21,7 +21,7 @@ pub use enums::*;
 pub use vertex_array::{AttributeSource, VertexArray, VertexAttribute};
 
 pub use draw_command::{ClearCommand, DrawCommand, UniformMap};
-pub use render_state::{PassState, RenderState, Viewport};
+pub use render_state::{PassState, RenderState, ScissorTest, Viewport};
 pub use shader::{
     ShaderCapabilities, ShaderDestination, ShaderFunction, ShaderProgram, ShaderSource, ShaderStruct, UniformValue,
 };

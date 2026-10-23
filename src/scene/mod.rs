@@ -71,6 +71,12 @@ pub mod derived_command;
 pub use derived_command::{DerivedCommand, PickMetadataShader, SceneDrawMode};
 pub mod fog;
 pub mod frame_state;
+pub mod scene_transforms;
+pub use scene_transforms::{SceneTransformState, SceneTransforms};
+pub mod pick_framebuffer;
+pub mod picking;
+pub use pick_framebuffer::{PickFramebuffer, PickReadback, PickedObject};
+pub use picking::Picking;
 // Keep the upstream Scene/Scene.js module path.
 #[allow(clippy::module_inception)]
 pub mod scene;

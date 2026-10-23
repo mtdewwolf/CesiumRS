@@ -6,7 +6,7 @@ import {readFile} from 'node:fs/promises';
 import {resolve,extname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=resolve(fileURLToPath(new URL('../..',import.meta.url)));
-const modules={Renderer:['Context','ShaderSource','ShaderProgram','VertexArray','Buffer','DrawCommand','Texture','Sampler','PassState','ClearCommand','RenderState'],Scene:['DerivedCommand','ClippingPlane','ClippingPlaneCollection','StencilConstants'],Core:['Color','BoundingRectangle','BoundingSphere','PerspectiveFrustum','Cartesian2','Cartesian3','Matrix4']};
+const modules={Renderer:['Context','ShaderSource','ShaderProgram','VertexArray','Buffer','DrawCommand','Texture','Sampler','PassState','ClearCommand','RenderState'],Scene:['PickFramebuffer','DerivedCommand','ClippingPlane','ClippingPlaneCollection','StencilConstants'],Core:['Color','BoundingRectangle','BoundingSphere','PerspectiveFrustum','Cartesian2','Cartesian3','Matrix4']};
 const contents=Object.entries(modules).flatMap(([dir,names])=>names.map(n=>`export {default as ${n}} from '@cesium/engine/Source/${dir}/${n}.js';`)).join('\n')+"\nexport {default as ModelClippingPlanesStageFS} from '@cesium/engine/Source/Shaders/Model/ModelClippingPlanesStageFS.js';\nexport {default as ModelDrawCommand} from '@cesium/engine/Source/Scene/Model/ModelDrawCommand.js';";
 const bundle=await build({stdin:{contents,resolveDir:fileURLToPath(new URL('.',import.meta.url))},bundle:true,write:false,format:'esm',platform:'browser'});
 const server=createServer(async(req,res)=>{try{const url=new URL(req.url,'http://localhost');if(url.pathname==='/reference.mjs'){res.setHeader('Content-Type','text/javascript');res.end(bundle.outputFiles[0].contents);return;}if(url.pathname==='/'){res.end('<!doctype html><title>Scene checks</title>');return;}const path=resolve(root,'.'+url.pathname);if(!path.startsWith(root+'/'))throw Error('Invalid path');res.setHeader('Content-Type',({'.js':'text/javascript','.mjs':'text/javascript','.wasm':'application/wasm'})[extname(path)]??'application/octet-stream');res.end(await readFile(path));}catch(e){res.writeHead(404);res.end(e.message);}});
@@ -65,7 +65,28 @@ try{
     if(preserve)context.createViewportQuadCommand('void main(){out_FragColor=vec4(0.0,0.0,1.0,1.0);}',{renderState:ref.RenderState.fromCache({stencilTest:{enabled:true,reference:9,mask:15,frontFunction:514,backFunction:514}})}).execute(context,state);
     const expected=Array.from(context.readPixels({width:8,height:8})),actual=JSON.parse(wasm.scene_mixed_lod(gl,JSON.stringify(config)));
     const expectedCount=(skip?4:1)+(preserve?2:0);if(JSON.stringify(actual.pixels)!==JSON.stringify(expected)||actual.executed!==expectedCount||gl.getError()!==0){const differences=expected.flatMap((v,i)=>v===actual.pixels[i]?[]:[[i,actual.pixels[i],v]]);throw Error(JSON.stringify({config,differences,executed:actual.executed,expectedCount,frustums:actual.frustums,glError:gl.getError()}));}passed.push({mixed:true,...config});context.destroy();
+  }
+  const queries=[[1,1,1,1,1],[3,1,1,1,1],[1,3,1,1,1],[3,3,1,1,1],[2,2,3,3,5],[2,2,4,6,5],[0,0,3,3,5],[3.75,3.75,3,3,5],[2,2,null,null,1],[2,2,3,3,0],[1.75,2.25,5,3,2]];
+  const schedule=()=>new Promise(resolve=>setTimeout(resolve,5));
+  for(const webgl1 of [false,true])for(const log of [false,true])for(const hole of [false,true])for(const asynchronous of [false,true]){
+    const config={webgl1,log,hole,async:asynchronous,queries};window.lastSceneCase={picking:true,...config};
+    const gl=canvas().getContext(webgl1?'webgl':'webgl2',attributes),context=new ref.Context(canvas(),{webgl:attributes,requestWebgl1:webgl1});
+    context.uniformState._frameState={mode:3};context.uniformState.updateFrustum(new ref.PerspectiveFrustum({fov:Math.PI/3,aspectRatio:1,near:1,far:5e8}));
+    const a={name:'a'},b={name:'b'},c={name:'c'},ids=[a,b,a,c].map(o=>context.createPickId(o));
+    let command=context.createViewportQuadCommand('uniform vec4 color0;uniform vec4 color1;uniform vec4 color2;uniform vec4 color3;uniform float hole;void main(){out_FragColor=vec4(0.7,0.2,0.1,0.5);if(hole>0.0&&gl_FragCoord.x>3.0&&gl_FragCoord.x<5.0&&gl_FragCoord.y>3.0&&gl_FragCoord.y<5.0){out_FragColor.a=0.0;}}',{renderState:ref.RenderState.fromCache({blending:{enabled:true}}),uniformMap:{color0:()=>ids[0].color,color1:()=>ids[1].color,color2:()=>ids[2].color,color3:()=>ids[3].color,hole:()=>hole?1:0}});
+    command.pickId='(gl_FragCoord.y < 4.0 ? (gl_FragCoord.x < 4.0 ? color0 : color1) : (gl_FragCoord.x < 4.0 ? color2 : color3))';
+    const scene={_depthOnlyRenderStateCache:{},picking:{pickRenderStateCache:{}}};if(log)command=ref.DerivedCommand.createLogDepthCommand(command,context).command;
+    command=ref.DerivedCommand.createPickDerivedCommand(scene,command,context).pickCommand;
+    const framebuffer=new ref.PickFramebuffer(context),expected=[];
+    for(const [x,y,w,h,limit]of queries){const width=w??3,height=h??width,rectangle=new ref.BoundingRectangle(x*2-(width-1)*.5,8-y*2-(height-1)*.5,width,height),state=framebuffer.begin(rectangle,new ref.BoundingRectangle(0,0,8,8));
+      new ref.ClearCommand({color:ref.Color.TRANSPARENT,depth:1,stencil:0}).execute(context,state);command.execute(context,state);
+      let objects;if(asynchronous&&!webgl1){const request=framebuffer.endAsync(rectangle,{afterRender:{push:next=>setTimeout(next,5)}},limit);context.endFrame();objects=await request;}else{objects=framebuffer.end(rectangle,limit);context.endFrame();}
+      expected.push(objects.map(o=>o.name));
+    }
+    const actual=JSON.parse(await wasm.scene_pick(gl,JSON.stringify(config),schedule));
+    if(JSON.stringify(actual.objects)!==JSON.stringify(expected)||!actual.restored||actual.frame!==0||gl.getError()!==0)throw Error(JSON.stringify({config,actual,expected,glError:gl.getError()}));
+    queries.forEach((q,i)=>passed.push({picking:true,webgl1,log,hole,async:asynchronous,query:i}));framebuffer.destroy();ids.forEach(id=>id.destroy());context.destroy();
   }return passed;
  }catch(e){throw Error(JSON.stringify({case:window.lastSceneCase,message:e.message??String(e),stack:e.stack}));}
- });console.log(`Scene GPU: ${result.length} pixel comparisons passed (derived shaders, float/byte clipping, mixed-LOD depth/stencil and classification bits).`);
+ });console.log(`Scene GPU: ${result.length} pixel comparisons passed (derived shaders, float/byte clipping, mixed-LOD depth/stencil, classification bits and sync/async object picking).`);
 }finally{if(browser)await browser.close();await new Promise(r=>server.close(r));}

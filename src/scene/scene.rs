@@ -39,6 +39,8 @@ pub struct SceneSubmission {
     pub draw_mode: super::SceneDrawMode,
     pub framebuffer: Option<super::FrameResource>,
     pub viewport: Option<Viewport>,
+    pub scissor_test: Option<renderer::ScissorTest>,
+    pub blending_enabled: Option<bool>,
     pub metadata: renderer::DrawMetadata,
     pub clipping_planes: Option<super::SceneClippingPlanes>,
     pub tileset_draw: Option<super::TilesetDrawKind>,
@@ -248,8 +250,15 @@ impl SceneCommand {
                             .ok_or_else(|| RuntimeError::new("Scene framebuffer has a different renderer type"))
                     })
                     .transpose()?;
-                command
-                    .execute(&context, &PassState { framebuffer, viewport: submission.viewport, ..Default::default() })
+                command.execute(
+                    &context,
+                    &PassState {
+                        framebuffer,
+                        viewport: submission.viewport,
+                        scissor_test: submission.scissor_test,
+                        blending_enabled: submission.blending_enabled,
+                    },
+                )
             }),
         }
     }
@@ -268,7 +277,15 @@ impl SceneCommand {
                             .ok_or_else(|| RuntimeError::new("Scene framebuffer has a different renderer type"))
                     })
                     .transpose()?;
-                command.execute(&context, &PassState { framebuffer, viewport: s.viewport, ..Default::default() })
+                command.execute(
+                    &context,
+                    &PassState {
+                        framebuffer,
+                        viewport: s.viewport,
+                        scissor_test: s.scissor_test,
+                        blending_enabled: s.blending_enabled,
+                    },
+                )
             }),
         );
         result.is_clear = true;
@@ -278,6 +295,12 @@ impl SceneCommand {
 /// The GPU surface. Scene owns frame decisions and command ordering; the
 /// backend applies uniforms, clears and executes the selected commands.
 pub trait SceneBackend {
+    fn set_pass_overrides(&mut self, scissor: Option<renderer::ScissorTest>, blending: Option<bool>) -> Result<()> {
+        if scissor.is_some() || blending.is_some() {
+            return Err(RuntimeError::new("Scene backend does not support pass overrides"));
+        }
+        Ok(())
+    }
     fn update_clipping_planes(&mut self, _planes: &mut super::ClippingPlaneCollection) -> Result<()> {
         Err(RuntimeError::new("Scene backend does not support clipping-plane uploads"))
     }
@@ -322,13 +345,19 @@ pub struct RendererSceneBackend<G: Gl> {
     pub context: Context<G>,
     pub textures: FrameTextures<G>,
     pass_state: PassState<G>,
+    pub(crate) pick_framebuffer: Option<super::PickFramebuffer<G>>,
 }
 impl<G: Gl> RendererSceneBackend<G> {
     pub fn new(context: Context<G>) -> Self {
-        Self { context, textures: FrameTextures::default(), pass_state: PassState::default() }
+        Self { context, textures: FrameTextures::default(), pass_state: PassState::default(), pick_framebuffer: None }
     }
 }
 impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
+    fn set_pass_overrides(&mut self, scissor: Option<renderer::ScissorTest>, blending: Option<bool>) -> Result<()> {
+        self.pass_state.scissor_test = scissor;
+        self.pass_state.blending_enabled = blending;
+        Ok(())
+    }
     fn update_clipping_planes(&mut self, planes: &mut super::ClippingPlaneCollection) -> Result<()> {
         planes.update(&self.context)
     }
@@ -428,6 +457,9 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
         self.context.end_frame()
     }
     fn destroy(&mut self) -> Result<()> {
+        if let Some(mut framebuffer) = self.pick_framebuffer.take() {
+            framebuffer.destroy()?;
+        }
         self.context.destroy()
     }
 }
@@ -531,6 +563,8 @@ pub struct Scene<B: SceneBackend> {
     pub occluder: Option<Occluder>,
     pub framebuffer: Option<super::FrameResource>,
     pub viewport: Option<Viewport>,
+    pub scissor_test: Option<renderer::ScissorTest>,
+    pub blending_enabled: Option<bool>,
     pub debug_command_filter: Option<SceneCommandFilter>,
     render_requested: SceneRenderRequest,
     last_render_time: Option<JulianDate>,
@@ -599,6 +633,8 @@ impl<B: SceneBackend> Scene<B> {
             occluder: None,
             framebuffer: None,
             viewport: None,
+            scissor_test: None,
+            blending_enabled: None,
             debug_command_filter: None,
             render_requested: SceneRenderRequest(Arc::new(AtomicBool::new(true))),
             last_render_time: None,
@@ -886,13 +922,28 @@ impl<B: SceneBackend> Scene<B> {
     /// owns hit decoding/readback; this executes the same primitive and shader
     /// path as a normal frame without changing frame numbers or firing events.
     pub fn draw_passes(&mut self, passes: FramePasses) -> Result<()> {
+        self.draw_passes_with_culling(passes, None, None)?;
+        self.backend.end_frame()
+    }
+    pub(crate) fn draw_passes_with_culling(
+        &mut self,
+        passes: FramePasses,
+        culling: Option<CullingVolume>,
+        clear_color: Option<Color>,
+    ) -> Result<()> {
         self.alive()?;
         let [width, height] = self.backend.dimensions()?;
         self.frame_state.drawing_buffer_width = width;
         self.frame_state.drawing_buffer_height = height;
         self.update_frame_state();
         self.frame_state.passes = passes;
-        let mut color = self.background_color;
+        if let Some(culling) = culling {
+            self.frame_state.culling_volume = culling;
+        }
+        if passes.pick {
+            self.frame_state.invert_classification = false;
+        }
+        let mut color = clear_color.unwrap_or(self.background_color);
         if self.options.high_dynamic_range {
             color.red = color.red.powf(self.options.gamma);
             color.green = color.green.powf(self.options.gamma);
@@ -919,6 +970,7 @@ impl<B: SceneBackend> Scene<B> {
         self.frame_state.uniform.fog_visual_density_scalar = self.frame_fog.visual_density_scalar;
         self.frame_state.uniform.fog_minimum_brightness = self.frame_fog.minimum_brightness;
         self.backend.set_render_target(self.framebuffer.as_ref(), self.viewport)?;
+        self.backend.set_pass_overrides(self.scissor_test.clone(), self.blending_enabled)?;
         self.backend.begin_frame(&self.frame_state)?;
         self.stage(SceneStage::Environment)?;
         if self.primitives_show {
@@ -929,12 +981,22 @@ impl<B: SceneBackend> Scene<B> {
         self.backend.clear(color, None, Some(0))?;
         self.execute_commands()?;
         self.stage(SceneStage::Resolve)?;
-        self.execute_pass(Pass::Overlay, usize::MAX, 0., 0.)?;
+        if !passes.pick && !passes.pick_voxel && !passes.depth {
+            self.execute_pass(Pass::Overlay, usize::MAX, 0., 0.)?;
+        }
         self.stage(SceneStage::GlobeEnd)?;
-        self.backend.end_frame()
+        Ok(())
     }
     pub fn is_visible(&self, command: &SceneCommand) -> bool {
         command.visible_in(&self.frame_state.culling_volume, self.occluder.as_ref())
+    }
+    /// Canvas coordinates for placing overlays at an ellipsoid-fixed position.
+    pub fn cartesian_to_canvas_coordinates(&mut self, position: Cartesian3) -> Result<Option<crate::core::Cartesian2>> {
+        let state = super::SceneTransformState::from_frame(
+            &self.frame_state,
+            crate::core::Cartesian2::new(self.camera.client_width, self.camera.client_height),
+        );
+        super::SceneTransforms::world_to_window_coordinates(&state, &mut self.camera, position)
     }
     fn execute_pass(&mut self, pass: Pass, frustum: usize, near: f64, far: f64) -> Result<()> {
         let camera = self.frame_state.uniform.camera.position;
@@ -992,6 +1054,8 @@ impl<B: SceneBackend> Scene<B> {
                 draw_mode,
                 framebuffer: self.framebuffer.clone(),
                 viewport: self.viewport,
+                scissor_test: self.scissor_test.clone(),
+                blending_enabled: self.blending_enabled,
                 metadata: command.metadata.clone(),
                 clipping_planes: command.clipping_planes.clone(),
                 tileset_draw: command.tileset_draw,

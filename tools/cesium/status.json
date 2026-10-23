@@ -4034,7 +4034,7 @@
   "Scene/Scene": {
     "status": "partial",
     "rust": "scene::scene",
-    "note": "Frame/event/error ordering, request-render decisions, camera movement events, flight preloading, deferred callbacks, exact View depth fitting, executable log-depth/HDR/depth/pick shaders, uniforms/textures and framebuffer targets. 54 frame sequences, 48 View cases, nine movement sequences and 96 GPU pixel comparisons. Plane clipping, pre-pass texture uploads and masked stencil clears are integrated. Globe/translucency, classification/effects/shadows/OIT, complete Picking and controller/morph/terrain integration remain; docs/scene.md."
+    "note": "Frame/event/error ordering, request-render decisions, camera movement events, flight preloading, deferred callbacks, exact View depth fitting, executable log-depth/HDR/depth/pick shaders, uniforms/textures and framebuffer targets. 54 frame sequences, 48 View cases, nine movement sequences and 272 GPU comparisons. Plane clipping, pre-pass texture uploads, masked stencil clears, canvas transforms and sync/async color picking are integrated. Globe/translucency, classification/effects/shadows/OIT, complete Picking and controller/morph/terrain integration remain; docs/scene.md."
   },
   "Scene/Cesium3DTileset": {
     "status": "partial",
@@ -4080,5 +4080,20 @@
     "status": "ported",
     "rust": "scene::clipping_plane_collection",
     "note": "Collection/equality removal/events/indexing, single-owner lifetime, union/intersection volume tests and transformed planes, float/Oct32 byte packing, retained/resized GPU textures and partial uploads. 18 CesiumJS sequences and real WebGL1/WebGL2 texture/clipping comparisons. Empty unallocated textures have native zero dimensions."
+  },
+  "Scene/SceneTransforms": {
+    "status": "ported",
+    "rust": "scene::scene_transforms",
+    "note": "World/canvas/drawing-buffer transforms, eye offsets, actual ellipsoid positions in all modes, 2D infinite-scroll wrapping and current-frustum depth/log-depth reconstruction. Typed SceneTransformState carries canvas/projection inputs. 259 direct CesiumJS reference cases in scene_transforms."
+  },
+  "Scene/PickFramebuffer": {
+    "status": "ported",
+    "rust": "scene::pick_framebuffer",
+    "note": "Reusable RGBA/depth-stencil framebuffer, per-pass scissor/blend overrides, source spiral order and object-identity deduplication, center pixels, PBO/fence async readback, cancellation/timeout cleanup and WebGL1 synchronous object snapshot. 112 direct reference cases and 176 Scene picking GPU comparisons; host futures replace afterRender scheduling."
+  },
+  "Scene/Picking": {
+    "status": "partial",
+    "rust": "scene::picking",
+    "note": "Color pick/pickAsync and multi-object rectangle reads through the actual Scene draw path, exact perspective/orthographic culling and high-DPI rectangles, target restoration on error. 81 direct cases, GPU comparisons and resource-lifetime tests. Depth-position, voxel/metadata decoding, drill and most-detailed ray/height/clamp APIs remain."
   }
 }

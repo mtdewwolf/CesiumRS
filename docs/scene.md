@@ -81,7 +81,22 @@ HDR, depth-only and pick shaders from original fragments. Metadata-pick shader
 configuration uses `PickMetadataShader`. Compiled variants are reused across
 submissions. `framebuffer` and `viewport` route clears and draws to a target;
 `draw_passes` exposes the same path for caller-supplied render/pick/depth flags.
-It does not decode picked objects or sampled heights.
+On `Scene<RendererSceneBackend<G>>`, `pick` returns the closest visible object
+ID within a canvas rectangle. `pick_objects` collects visible IDs in center-out
+order. Keep the renderer `PickId` alive and supply its color as the command's
+pick uniform. Picked objects retain their original `Rc<dyn Any>` identity.
+`begin_pick_async` issues the PBO transfer and fence immediately and returns an
+owned `PickReadback`; `.wait(schedule)` uses a host future for each GPU poll.
+`pick_async` combines these steps. WebGL1 captures picked objects synchronously.
+Picking preserves the caller's framebuffer, viewport, scissor and blending
+settings, including primitive/shader failures. It does not advance frame numbers
+or fire render events. Depth sampling and drill/ray picks remain unported.
+
+`SceneTransforms` implements world-to-canvas/buffer transforms, eye offsets,
+2D map wrapping, Columbus View/morph coordinates and reconstruction from current
+frustum depth, including log depth. `cartesian_to_canvas_coordinates` exposes
+the Scene wrapper. Canvas output has a top-left origin; depth reconstruction
+takes bottom-left GL coordinates.
 
 Scene and Cesium3DTileset remain **partial**. Scene still needs globe and
 translucency integration, classification, shadows, OIT/post-processing, full
@@ -102,15 +117,24 @@ expiration, shared textures, partial content failure, resource bases, CPU
 height queries and renderer/resource ownership. The reference frame harness
 uses explicit host operations and does not establish full browser Scene parity.
 
-`scripts/check-scene.sh` compares **96 actual GPU pixel results** with
+`scripts/check-scene.sh` compares **272 actual GPU results** with
 CesiumJS. The original 24 WebGL2 cases cover log depth, HDR, render/pick/depth
 passes, framebuffer targets and retained uniforms/textures. Another 48 phase
 comparisons cover float and byte plane textures, mutation/partial upload,
 removal/resizing, edge colors, union/intersection modes and WebGL1/WebGL2 log
-depth. The final 24 cases exercise actual mixed-LOD draws: masked clears,
+depth. Another 24 cases exercise actual mixed-LOD draws: masked clears,
 ancestor backfaces, selection-depth stencil tests, depth overlap and preservation
 of classification bits. The reference uses real Cesium ModelDrawCommand
-variants. This does not establish visual parity for unported globe/effects/picking.
+variants. A further 176 comparisons check color picking, object identity,
+rectangle order, transparent fragments, high-DPI coordinates, edge padding,
+sync/async readback and WebGL1 fallback. This does not establish visual parity
+for unported globe/effects or the remaining picking APIs.
+
+`scene-transforms.mjs` and `scene-picking.mjs` add **452 reference cases**:
+259 transforms, 81 pick culling/rectangle inputs and 112 framebuffer spiral
+sequences. Native resource tests check fence timeout/cancellation cleanup,
+WebGL1 object snapshots, framebuffer destruction and pass-state restoration
+after a failed primitive update.
 
 `ClippingPlaneCollection` owns its GPU texture, handles callbacks/events and
 plane indices, supports transformed volume tests, and tracks a single owner.
