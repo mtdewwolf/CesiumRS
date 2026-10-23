@@ -11,6 +11,198 @@ mod browser {
         JsValue::from_str(&e.to_string())
     }
     #[wasm_bindgen]
+    pub fn scene_oit(gl: JsValue, config: &str) -> Result<String, JsValue> {
+        use cesium_rs::scene::*;
+        use std::rc::Rc;
+        struct Commands(Vec<SceneCommand>);
+        impl ScenePrimitive for Commands {
+            fn pre_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn post_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn update_for_pass(&mut self, _: &mut FrameState, _: Cesium3DTilePass) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn update(&mut self, frame: &mut FrameState) -> Result<(), RuntimeError> {
+                frame.command_list.extend(self.0.clone());
+                Ok(())
+            }
+            fn destroy(&mut self) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+        }
+        let config: serde_json::Value = serde_json::from_str(config).map_err(error)?;
+        let context = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let quad = ViewportQuad::new(&context).map_err(error)?;
+        let shader=Rc::new(ShaderProgram::from_sources(&context,&ShaderProgramOptions{vertex_shader_source:ShaderSource::new("in vec4 position;\nuniform float distance;\nuniform float scale;\nvoid main(){gl_Position=czm_projection*vec4(position.xy*scale*distance*0.5,-distance,1.0);}"),fragment_shader_source:ShaderSource::new("uniform vec4 color;\nvoid main(){out_FragColor=color;}"),attribute_locations:std::collections::BTreeMap::from([("position".into(),0)])}).map_err(error)?);
+        let mut commands = Vec::new();
+        let order = if config["reverse"] == true { vec![0, 3, 2, 1] } else { vec![0, 1, 2, 3] };
+        for i in order {
+            let mut options = SceneDrawOptions::new(quad.vertex_array().clone(), shader.clone());
+            options.state.depth_test.enabled = true;
+            if i != 0 {
+                options.state.blending = blending_state::alpha_blend();
+                options.state.depth_mask = false;
+            }
+            options.uniforms = vec![
+                ("distance".into(), UniformValue::Float(vec![[1100., 1000., 950., 900.][i]])),
+                ("scale".into(), UniformValue::Float(vec![if i == 0 { 0.65 } else { 1. }])),
+                (
+                    "color".into(),
+                    UniformValue::Float(
+                        [vec![0.2, 0.3, 0.4, 1.], vec![1., 0., 0., 0.4], vec![0., 1., 0., 0.5], vec![0., 0., 1., 0.2]]
+                            [i]
+                            .clone(),
+                    ),
+                ),
+            ];
+            commands.push(SceneCommand::from_draw(
+                i.to_string(),
+                context.clone(),
+                if i == 0 { Pass::Opaque } else { Pass::Translucent },
+                DrawMetadata {
+                    bounding_volume: Some(BoundingSphere::new(Cartesian3::new(6378137., 0., 0.), 300.)),
+                    execute_in_closest_frustum: true,
+                    ..Default::default()
+                },
+                options,
+            ));
+        }
+        let mut scene = Scene::new(
+            RendererSceneBackend::new(context.clone()),
+            CameraOptions::new(8., 8.),
+            SceneOptions {
+                logarithmic_depth_buffer: config["log"] == true,
+                high_dynamic_range: config["hdr"] == true,
+                ..Default::default()
+            },
+            JulianDate::new(2451545., 0., TimeStandard::Tai),
+        )
+        .map_err(error)?;
+        scene.msaa_samples = 1;
+        scene.camera.position = Cartesian3::new(6379137., 0., 0.);
+        scene.camera.direction = -Cartesian3::UNIT_X;
+        scene.camera.up = Cartesian3::UNIT_Z;
+        scene.camera.right = Cartesian3::UNIT_Y;
+        if config["mrt"] == false {
+            let mut caps = context.capabilities().map_err(error)?;
+            caps.draw_buffers = false;
+            scene.view.resources::<BrowserGl>().unwrap().borrow_mut().oit =
+                Some(Oit::with_capabilities(caps).map_err(error)?);
+        }
+        scene.primitives.push(Box::new(Commands(commands)));
+        scene.rethrow_render_errors = true;
+        scene.render(JulianDate::new(2451545., 0., TimeStandard::Tai)).map_err(error)?;
+        let pixels = context.read_pixels(TextureRegion { x: 0, y: 0, width: 8, height: 8 }).map_err(error)?;
+        let result=json!({"pixels":pixels,"supported":scene.view.resources::<BrowserGl>().unwrap().borrow().oit.as_ref().unwrap().is_supported()}).to_string();
+        scene.destroy().map_err(error)?;
+        Ok(result)
+    }
+    #[wasm_bindgen]
+    pub fn scene_depth_resources(gl: JsValue, config: &str) -> Result<String, JsValue> {
+        use cesium_rs::scene::*;
+        let config: serde_json::Value = serde_json::from_str(config).map_err(error)?;
+        let context = if config["webgl1"] == true {
+            Context::new_webgl1(BrowserGl::new_webgl1(gl).map_err(error)?)
+        } else {
+            Context::new_webgl2(BrowserGl::new(gl).map_err(error)?)
+        };
+        let hdr = config["hdr"] == true;
+        let samples = config["samples"].as_u64().unwrap_or(1) as u32;
+        let viewport = Viewport { x: 0, y: 0, width: 8, height: 8 };
+        let pass = PassState {
+            viewport: Some(if config["scissor"] == true {
+                Viewport { x: 1, y: 2, width: 5, height: 4 }
+            } else {
+                viewport
+            }),
+            ..Default::default()
+        };
+        let read = |framebuffer: Option<&Framebuffer<BrowserGl>>| -> Result<serde_json::Value, JsValue> {
+            let read = context
+                .read_pixels_from(ReadState { framebuffer, region: TextureRegion { x: 0, y: 0, width: 8, height: 8 } })
+                .map_err(error)?;
+            Ok(if read.pixel_datatype == PixelDatatype::Float {
+                json!(read.bytes.chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect::<Vec<_>>())
+            } else {
+                json!(read.bytes)
+            })
+        };
+        let mut scene = SceneFramebuffer::new().map_err(error)?;
+        scene.update(&context, viewport, hdr, samples).map_err(error)?;
+        scene.clear(&context, &pass, Color::RED).map_err(error)?;
+        scene.prepare_color_textures().map_err(error)?;
+        let cleared = read(scene.color_framebuffer().map(std::rc::Rc::as_ref))?;
+        let mut globe = GlobeDepth::new().map_err(error)?;
+        globe.picking = config["picking"] == true;
+        globe.update(&context, &pass, viewport, samples, hdr, config["clear"] == true).map_err(error)?;
+        ClearCommand {
+            framebuffer: globe.framebuffer().cloned(),
+            color: Some([0.2, 0.4, 0.6, 1.]),
+            depth: Some(0.3),
+            stencil: Some(128),
+            ..Default::default()
+        }
+        .execute(&context, &pass)
+        .map_err(error)?;
+        globe.execute_copy_depth(&context, &pass).map_err(error)?;
+        let packed = read(globe.packed_depth_framebuffer().map(std::rc::Rc::as_ref))?;
+        let mut other = SceneFramebuffer::new().map_err(error)?;
+        other.update(&context, viewport, false, 1).map_err(error)?;
+        let other_pass = PassState { framebuffer: other.framebuffer().cloned(), ..pass.clone() };
+        ClearCommand {
+            color: Some([0.; 4]),
+            depth: Some(config["depth"].as_f64().unwrap_or(0.7)),
+            stencil: Some(if config["stencil"] == true { 128 } else { 0 }),
+            ..Default::default()
+        }
+        .execute(&context, &other_pass)
+        .map_err(error)?;
+        globe.execute_update_depth(&context, &other_pass, other.depth_stencil_texture().cloned()).map_err(error)?;
+        let merged = read(globe.packed_depth_framebuffer().map(std::rc::Rc::as_ref))?;
+        let mut pick = PickDepth::new().map_err(error)?;
+        pick.update(&context, other.depth_stencil_texture().unwrap().clone()).map_err(error)?;
+        pick.execute_copy_depth(&context, &pass, globe.packed_depth_texture().map_err(error)?.cloned())
+            .map_err(error)?;
+        let picked = read(pick.framebuffer().map(std::rc::Rc::as_ref))?;
+        let depth = pick.get_depth(&context, 4., 4.).map_err(error)?;
+        let mut translucent = GlobeTranslucencyFramebuffer::new().map_err(error)?;
+        translucent.update_and_clear(hdr, viewport, &context, &pass).map_err(error)?;
+        translucent.clear_classification(&context, &pass).map_err(error)?;
+        ClearCommand {
+            framebuffer: translucent.classification_framebuffer().cloned(),
+            color: Some([1., 0., 0., 0.5]),
+            depth: Some(0.4),
+            ..Default::default()
+        }
+        .execute(&context, &pass)
+        .map_err(error)?;
+        translucent.pack_depth(&context, &pass).map_err(error)?;
+        let translucent_depth = read(translucent.packed_depth_framebuffer().map(std::rc::Rc::as_ref))?;
+        let mut edge = EdgeFramebuffer::new().map_err(error)?;
+        edge.update(
+            &context,
+            viewport,
+            hdr,
+            globe.color_texture().map_err(error)?.cloned(),
+            globe.depth_stencil_texture().cloned(),
+        )
+        .map_err(error)?;
+        edge.clear(&context, &pass, Some(Color::LIME)).map_err(error)?;
+        let edge_pixels = read(edge.framebuffer().map(std::rc::Rc::as_ref))?;
+        let result=json!({"cleared":cleared,"packed":packed,"merged":merged,"picked":picked,"depth":depth,"translucent":translucent_depth,"edge":edge_pixels}).to_string();
+        edge.destroy().map_err(error)?;
+        pick.destroy().map_err(error)?;
+        translucent.destroy().map_err(error)?;
+        globe.destroy().map_err(error)?;
+        other.destroy().map_err(error)?;
+        scene.destroy().map_err(error)?;
+        context.destroy().map_err(error)?;
+        Ok(result)
+    }
+    #[wasm_bindgen]
     pub async fn scene_pick(gl: JsValue, config: &str, schedule: js_sys::Function) -> Result<String, JsValue> {
         use cesium_rs::scene::*;
         use std::rc::Rc;
@@ -257,6 +449,7 @@ mod browser {
             JulianDate::new(2451545., 0., TimeStandard::Tai),
         )
         .map_err(error)?;
+        scene.msaa_samples = 1;
         scene.camera.position = Cartesian3::new(6379137., 0., 0.);
         scene.camera.direction = Cartesian3::new(-1., 0., 0.);
         scene.camera.up = Cartesian3::UNIT_Z;
@@ -276,9 +469,10 @@ mod browser {
             let program = Rc::new(
                 ShaderProgram::from_sources(
                     &ctx,
-                    &ViewportQuad::<BrowserGl>::shader_options(ShaderSource::new(
-                        "void main(){out_FragColor=vec4(0.0,0.0,1.0,1.0);}",
-                    )),
+                    &ViewportQuad::<BrowserGl>::shader_options(ShaderSource {
+                        defines: vec!["LOG_DEPTH_READ_ONLY".into()],
+                        ..ShaderSource::new("void main(){out_FragColor=vec4(0.0,0.0,1.0,1.0);}")
+                    }),
                 )
                 .map_err(error)?,
             );
@@ -291,8 +485,12 @@ mod browser {
             let overlay = SceneCommand::from_draw(
                 "classification-bit-check",
                 ctx.clone(),
-                Pass::Overlay,
-                DrawMetadata::default(),
+                Pass::Opaque,
+                DrawMetadata {
+                    bounding_volume: Some(tileset.tiles[0].bounding_sphere),
+                    execute_in_closest_frustum: true,
+                    ..Default::default()
+                },
                 options,
             );
             scene.primitives.push(Box::new(Commands(vec![clear, overlay])));
@@ -364,6 +562,9 @@ mod browser {
             SceneOptions {
                 logarithmic_depth_buffer: flag("log"),
                 high_dynamic_range: flag("hdr"),
+                // This case deliberately hides OES_texture_float to exercise
+                // byte clipping textures. Disable the unrelated float OIT path.
+                order_independent_translucency: !(flag("clip") && flag("webgl1")),
                 ..Default::default()
             },
             JulianDate::new(2451545., 0., TimeStandard::Tai),

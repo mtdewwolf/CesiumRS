@@ -90,7 +90,27 @@ owned `PickReadback`; `.wait(schedule)` uses a host future for each GPU poll.
 `pick_async` combines these steps. WebGL1 captures picked objects synchronously.
 Picking preserves the caller's framebuffer, viewport, scissor and blending
 settings, including primitive/shader failures. It does not advance frame numbers
-or fire render events. Depth sampling and drill/ray picks remain unported.
+or fire render events.
+
+View now owns the Scene/id, offscreen pick, depth, globe-depth/translucency,
+edge, OIT and translucent-classification GPU resources and destroys them with
+its Scene. Depth snapshots are captured per frustum; position reconstruction
+supports log depth and scene modes. OIT supports weighted MRT rendering and
+the two-pass fallback. The fallback supplies an output declaration missing
+from the pinned upstream WebGL2 shader. Globe-depth copy/update honors scissor,
+MSAA and classification stencil masks.
+
+Picking now exposes depth positions, metadata and voxel reads, drill picks,
+ray intersections, height sampling and clamping. Register `ScenePickObject`
+identities and attach their show handles to command visibility for drill
+picking. Most-detailed requests preload participating tilesets and resolve
+after a subsequent post-render event; the host must keep driving frames.
+Cancellation and Scene destruction release queued requests. Metadata decoding
+has 500 pinned-source cases, including normalization, transforms and 64-bit
+integers. Variable-length metadata arrays remain unsupported by the shader
+path. The new depth-position, metadata-render, ray and most-detailed APIs still
+need independent end-to-end GPU comparisons; native tests cover failure
+restoration, drill visibility and request completion/cancellation.
 
 `SceneTransforms` implements world-to-canvas/buffer transforms, eye offsets,
 2D map wrapping, Columbus View/morph coordinates and reconstruction from current
@@ -98,9 +118,10 @@ frustum depth, including log depth. `cartesian_to_canvas_coordinates` exposes
 the Scene wrapper. Canvas output has a top-left origin; depth reconstruction
 takes bottom-left GL coordinates.
 
-Scene and Cesium3DTileset remain **partial**. Scene still needs globe and
-translucency integration, classification, shadows, OIT/post-processing, full
-Picking, 2D viewport wrapping/WebVR and controller/morph/terrain integration.
+Scene and Cesium3DTileset remain **partial**. Scene still needs the actual globe/terrain integration, complete classification
+validation, shadows, post-processing, full picking validation, 2D viewport
+wrapping/WebVR and controller/morph/terrain integration. The new framebuffer
+and classification plumbing does not supply the unported globe primitives.
 Tileset rendering still needs styling, polygon clipping, imagery, environment/lighting
 and debug rendering. Plane clipping and the mixed-LOD stencil/backface pass
 now execute through the native renderer.
@@ -117,7 +138,7 @@ expiration, shared textures, partial content failure, resource bases, CPU
 height queries and renderer/resource ownership. The reference frame harness
 uses explicit host operations and does not establish full browser Scene parity.
 
-`scripts/check-scene.sh` compares **272 actual GPU results** with
+`scripts/check-scene.sh` compares **352 actual GPU results** with
 CesiumJS. The original 24 WebGL2 cases cover log depth, HDR, render/pick/depth
 passes, framebuffer targets and retained uniforms/textures. Another 48 phase
 comparisons cover float and byte plane textures, mutation/partial upload,
@@ -128,7 +149,10 @@ of classification bits. The reference uses real Cesium ModelDrawCommand
 variants. A further 176 comparisons check color picking, object identity,
 rectangle order, transparent fragments, high-DPI coordinates, edge padding,
 sync/async readback and WebGL1 fallback. This does not establish visual parity
-for unported globe/effects or the remaining picking APIs.
+for unported globe/effects or the newly added picking APIs. Another 64
+comparisons cover the View depth/framebuffer resources with WebGL1/WebGL2,
+HDR, MSAA, scissor and stencil. Sixteen compare actual OIT draws across MRT,
+two-pass fallback, log depth, HDR and reversed submission order.
 
 `scene-transforms.mjs` and `scene-picking.mjs` add **452 reference cases**:
 259 transforms, 81 pick culling/rectangle inputs and 112 framebuffer spiral

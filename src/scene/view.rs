@@ -28,6 +28,8 @@ pub struct SceneView {
     camera_clone: Option<CameraPose>,
     camera_start_fired: bool,
     camera_moved_time: Option<f64>,
+    resources: Option<super::FrameResource>,
+    destroy_resources: Option<Box<dyn Fn() -> Result<(), RuntimeError>>>,
 }
 #[derive(Clone)]
 struct CameraPose {
@@ -98,6 +100,28 @@ impl SceneCommand {
     }
 }
 impl SceneView {
+    pub fn set_resources<G: crate::renderer::Gl + 'static>(
+        &mut self,
+        resources: std::rc::Rc<std::cell::RefCell<super::ViewResources<G>>>,
+    ) -> Result<(), RuntimeError> {
+        self.destroy()?;
+        self.resources = Some(super::FrameResource::new(resources.clone()));
+        self.destroy_resources = Some(Box::new(move || resources.borrow_mut().destroy()));
+        Ok(())
+    }
+    pub fn resources<G: crate::renderer::Gl + 'static>(
+        &self,
+    ) -> Option<std::rc::Rc<std::cell::RefCell<super::ViewResources<G>>>> {
+        self.resources.as_ref()?.get::<std::rc::Rc<std::cell::RefCell<super::ViewResources<G>>>>().cloned()
+    }
+    pub fn destroy(&mut self) -> Result<(), RuntimeError> {
+        if let Some(destroy) = &self.destroy_resources {
+            destroy()?;
+        }
+        self.resources = None;
+        self.destroy_resources = None;
+        Ok(())
+    }
     pub fn initialize_camera(&mut self, camera: &Camera) {
         self.camera_clone = Some(CameraPose::new(camera));
         self.camera_start_fired = false;

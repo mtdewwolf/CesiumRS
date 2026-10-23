@@ -78,6 +78,43 @@ fn result<T>(r: Result<T, MetadataError>, f: impl FnOnce(T) -> Value) -> Option<
     })
 }
 
+#[test]
+fn metadata_picking_raw_and_transformed_values() {
+    run(
+        "scene",
+        "MetadataPicking",
+        |_| TIGHT,
+        |function, a| {
+            let decoded = match function {
+                "raw" => MetadataPicking::decode_raw_metadata_value(
+                    MetadataComponentType::from_str_value(s(&a[0])).unwrap(),
+                    &a[1].as_array().unwrap().iter().map(|v| u(v) as u8).collect::<Vec<_>>(),
+                    u(&a[2]) as usize,
+                ),
+                "decode" => {
+                    let p = MetadataClassProperty::from_json("p", &a[0], &Default::default()).unwrap();
+                    let bytes = a[1].as_array().unwrap().iter().map(|v| u(v) as u8).collect::<Vec<_>>();
+                    let count = if p.is_array() { 2 } else { p.metadata_type().get_component_count() };
+                    let shape = |x| {
+                        if count == 1 {
+                            MetadataValue::Number(x)
+                        } else {
+                            MetadataValue::Array(vec![MetadataValue::Number(x); count])
+                        }
+                    };
+                    let offset =
+                        MetadataPicking::convert_to_object_type(p.metadata_type(), Some(shape(1.))).unwrap().unwrap();
+                    let scale =
+                        MetadataPicking::convert_to_object_type(p.metadata_type(), Some(shape(2.))).unwrap().unwrap();
+                    MetadataPicking::decode_metadata_values(&p, (a[2] == true).then_some((&offset, &scale)), &bytes)
+                }
+                _ => return None,
+            };
+            result(decoded, |v| val(&v))
+        },
+    );
+}
+
 /// The schema every fixture case uses: the first `MetadataSchema` case's input.
 fn schema() -> &'static MetadataSchema {
     static SCHEMA: OnceLock<MetadataSchema> = OnceLock::new();

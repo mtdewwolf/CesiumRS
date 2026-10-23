@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add View-owned depth/framebuffer resources, weighted MRT/two-pass OIT, translucent classification plumbing, metadata decoding, depth/drill/ray/height picking and queued most-detailed preload requests. Add pinned-source fixtures and GPU comparisons; Scene, View, Picking and Cesium3DTileset remain partial pending the documented integrations and validation.
+
 - Complete Scene Camera and CameraFlightPath: 3D/2D/Columbus navigation, view fitting, picking, change events, timed flights, callbacks, preload culling and position correction. Validate 1,161 CesiumJS scenarios, renderer snapshots, concurrent cameras and callback resource cleanup.
 - Port all 307 `Source/Shaders` modules: 140 builtins and the `CzmBuiltins.js` table, 14 appearances, 19 materials, 55 root shaders, 36 Model, 26 PostProcessStages and 16 Voxels shaders. Each is compared byte for byte with its `@cesium/engine` 23.0.0 default export.
 - Reach **100% validated Core coverage**: all 270 applicable Core modules are ported; 18 JavaScript-specific entries retain documented Rust replacements.

@@ -73,6 +73,10 @@ pub struct FramePasses {
 }
 pub type AfterRender = Box<dyn FnOnce() -> Result<bool, crate::core::RuntimeError>>;
 pub struct FrameState {
+    pub order_independent_translucency: bool,
+    pub use_depth_picking: bool,
+    pub high_dynamic_range: bool,
+    pub msaa_samples: u32,
     pub context: Option<FrameResource>,
     pub context_capabilities: crate::renderer::ContextCapabilities,
     pub stencil_buffer: bool,
@@ -143,6 +147,10 @@ impl FrameState {
 
     pub fn new(uniform: UniformFrame, culling_volume: CullingVolume, dimensions: [u32; 2]) -> Self {
         Self {
+            use_depth_picking: true,
+            order_independent_translucency: true,
+            high_dynamic_range: false,
+            msaa_samples: 1,
             context: None,
             context_capabilities: crate::renderer::ContextCapabilities::default(),
             stencil_buffer: false,

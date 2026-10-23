@@ -1016,6 +1016,9 @@ impl Cesium3DTileset {
     pub fn is_destroyed(&self) -> bool {
         !self.alive.get()
     }
+    pub fn pick_identity(&self) -> super::PickedObject {
+        self.alive.clone()
+    }
     pub fn bounding_sphere(&mut self) -> Result<Option<BoundingSphere>> {
         self.update_transforms()?;
         Ok(self.root.map(|i| self.tiles[i].bounding_sphere))
@@ -1692,6 +1695,22 @@ impl Cesium3DTileset {
     }
 }
 impl ScenePrimitive for Cesium3DTileset {
+    fn most_detailed_pick_targets(&self) -> Vec<super::PickedObject> {
+        if self.options.show && !self.is_destroyed() {
+            vec![self.alive.clone()]
+        } else {
+            Vec::new()
+        }
+    }
+    fn update_most_detailed_pick(
+        &mut self,
+        frame: &mut FrameState,
+        pass: &mut TilesetPassState,
+        _targets: &[super::PickedObject],
+    ) -> Result<bool> {
+        self.update_for_pass(frame, pass)?;
+        Ok(pass.ready.unwrap_or(false))
+    }
     fn pre_passes_update(&mut self, frame: &mut FrameState) -> Result<()> {
         Cesium3DTileset::pre_passes_update(self, frame)
     }

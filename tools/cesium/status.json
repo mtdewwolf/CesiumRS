@@ -4034,7 +4034,7 @@
   "Scene/Scene": {
     "status": "partial",
     "rust": "scene::scene",
-    "note": "Frame/event/error ordering, request-render decisions, camera movement events, flight preloading, deferred callbacks, exact View depth fitting, executable log-depth/HDR/depth/pick shaders, uniforms/textures and framebuffer targets. 54 frame sequences, 48 View cases, nine movement sequences and 272 GPU comparisons. Plane clipping, pre-pass texture uploads, masked stencil clears, canvas transforms and sync/async color picking are integrated. Globe/translucency, classification/effects/shadows/OIT, complete Picking and controller/morph/terrain integration remain; docs/scene.md."
+    "note": "Executable frame/event/primitive runtime, clipping, mixed-LOD stencil, transforms and color picking; now integrates View depth/MSAA resources, weighted OIT, classification command plumbing and depth/drill/ray/metadata/height/most-detailed picking APIs. 352 GPU comparisons validate existing render/color-pick paths plus depth resources/OIT. Globe/terrain, shadows/post-processing, remaining classification/picking GPU validation and controller/morph integration remain; docs/scene.md."
   },
   "Scene/Cesium3DTileset": {
     "status": "partial",
@@ -4069,7 +4069,7 @@
   "Scene/View": {
     "status": "partial",
     "rust": "scene::view",
-    "note": "Camera equality/movement events, potentially-visible set, exact frustum fitting/binning, compute/overlay routing, shadow ranges and debug overlap statistics. 48 fitting and nine movement cases. View GPU resource ownership for picking, globe depth/translucency, OIT, classification and edges remains."
+    "note": "Camera movement, visible sets, exact frustum fitting/binning, compute/overlay routing, shadow ranges and debug overlap; now owns pick, depth, Scene/id, globe depth/translucency, edge, OIT and classification resources. 48 fitting cases, nine movement sequences, resource lifecycle fixtures and real GPU depth/OIT comparisons. Complete integration/validation with the remaining Scene effects is pending."
   },
   "Scene/ClippingPlane": {
     "status": "ported",
@@ -4094,6 +4094,56 @@
   "Scene/Picking": {
     "status": "partial",
     "rust": "scene::picking",
-    "note": "Color pick/pickAsync and multi-object rectangle reads through the actual Scene draw path, exact perspective/orthographic culling and high-DPI rectangles, target restoration on error. 81 direct cases, GPU comparisons and resource-lifetime tests. Depth-position, voxel/metadata decoding, drill and most-detailed ray/height/clamp APIs remain."
+    "note": "Color sync/async picking and culling plus depth positions, metadata/voxel reads, drill/ray/height APIs and most-detailed preload queues. Color picking has pinned-source/GPU parity; native tests cover restoration, visibility and queue lifetimes. Independent GPU validation of the newly added depth-position/metadata/ray/most-detailed paths remains."
+  },
+  "Scene/SceneFramebuffer": {
+    "status": "ported",
+    "rust": "scene::scene_framebuffer",
+    "note": "Owned color/id depth-stencil targets, HDR/MSAA resize, resolve, clear and destruction; pinned View resource lifecycle and real GPU framebuffer cases."
+  },
+  "Scene/PickDepthFramebuffer": {
+    "status": "ported",
+    "rust": "scene::pick_depth_framebuffer",
+    "note": "Depth-stencil pick target with source buffer sizing/scissor, lifecycle and pinned GPU resource cases."
+  },
+  "Scene/PickDepth": {
+    "status": "ported",
+    "rust": "scene::pick_depth",
+    "note": "Scene/globe packed depth merge, readback and decoding; 36 reference decoding cases and WebGL1/WebGL2 depth GPU comparisons."
+  },
+  "Scene/GlobeDepth": {
+    "status": "ported",
+    "rust": "scene::globe_depth",
+    "note": "Render/pick depth targets, packed copy, stencil-masked merge, color copy, resolve, automatic texture and destruction; real GPU HDR/MSAA/scissor/stencil comparisons."
+  },
+  "Scene/GlobeTranslucencyFramebuffer": {
+    "status": "ported",
+    "rust": "scene::globe_translucency_framebuffer",
+    "note": "Classification color/depth target and packed depth, resize and destruction; preserves upstream updateAndClear behavior and compares real GPU outputs."
+  },
+  "Scene/EdgeFramebuffer": {
+    "status": "ported",
+    "rust": "scene::edge_framebuffer",
+    "note": "Three color attachments with depth-stencil, HDR, clear and external exposure semantics; pinned resource and real GPU comparisons."
+  },
+  "Scene/OIT": {
+    "status": "ported",
+    "rust": "scene::oit",
+    "note": "Weighted MRT and two-pass fallback, exact derived shader/render states, GPU adjust/composite/clear and ownership; 12 source variants and 16 actual GPU comparisons. Rendering supplies the output declaration missing in the pinned WebGL2 fallback shader."
+  },
+  "Scene/MetadataPicking": {
+    "status": "ported",
+    "rust": "scene::metadata_picking",
+    "note": "Raw little-endian component/element/array decoding, 64-bit BigInts, normalization, value transforms and vector/matrix objects; 500 pinned-source cases. Shader pipeline rejects variable-length arrays."
+  },
+  "Scene/TranslucentTileClassification": {
+    "status": "implemented",
+    "rust": "scene::translucent_tile_classification",
+    "note": "Owned translucent depth, packed depth and classification accumulation targets; Scene command routing and sampler restoration implemented. Independent GPU classification comparisons still pending."
+  },
+  "Scene/PickedMetadataInfo": {
+    "status": "implemented",
+    "rust": "scene::pick_object",
+    "note": "Owned metadata shader selection, class property and optional value transform; integrated with Scene metadata reads. End-to-end metadata-render validation pending."
   }
 }

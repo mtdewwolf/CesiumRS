@@ -602,6 +602,7 @@ impl cesium_rs::renderer::Gl for Gpu {
             "getParameter" => GlValue::Number(16384.),
             "getExtension" => GlValue::Object(0),
             "getShaderParameter" | "getProgramParameter" => GlValue::Bool(true),
+            "checkFramebufferStatus" => GlValue::Number(cesium_rs::core::webgl_constants::FRAMEBUFFER_COMPLETE as f64),
             _ => GlValue::Null,
         })
     }
@@ -642,7 +643,11 @@ fn scene_executes_owned_draw_resources_through_renderer_backend() {
     scene.rethrow_render_errors = true;
     scene.primitives.push(Box::new(Commands(vec![command])));
     scene.render(epoch()).unwrap();
-    assert_eq!(gpu.calls.lock().unwrap().iter().filter(|s| s.as_str() == "drawElements").count(), 1);
+    let draw_count = gpu.calls.lock().unwrap().iter().filter(|s| s.as_str() == "drawElements").count();
+    // The owned primitive draw is accompanied by View depth-copy and resolve
+    // draws, which are internal renderer work rather than Scene commands.
+    assert!(draw_count > 1);
+    assert_eq!(scene.frame_state.executed_commands.len(), 1);
     assert_eq!(context.uniform_state().entire_frustum, [0.1, 1e10]);
     scene.destroy().unwrap();
     assert!(context.is_destroyed());

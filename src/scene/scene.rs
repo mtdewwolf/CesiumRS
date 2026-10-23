@@ -37,6 +37,8 @@ pub struct SceneSubmission {
     pub near: f64,
     pub far: f64,
     pub draw_mode: super::SceneDrawMode,
+    pub oit: Option<super::OitDrawKind>,
+    pub metadata_pick: Option<Rc<super::PickMetadataShader>>,
     pub framebuffer: Option<super::FrameResource>,
     pub viewport: Option<Viewport>,
     pub scissor_test: Option<renderer::ScissorTest>,
@@ -83,6 +85,7 @@ impl<G: Gl> SceneDrawOptions<G> {
 }
 #[derive(Clone)]
 pub struct SceneCommand {
+    pub visibility: Vec<Rc<std::cell::Cell<bool>>>,
     pub id: String,
     pub pass: Pass,
     pub metadata: renderer::DrawMetadata,
@@ -93,8 +96,16 @@ pub struct SceneCommand {
     pub stencil_clear: Option<u32>,
 }
 impl SceneCommand {
+    pub fn with_visibility(mut self, show: Rc<std::cell::Cell<bool>>) -> Self {
+        self.visibility.push(show);
+        self
+    }
+    pub fn shown(&self) -> bool {
+        self.visibility.iter().all(|show| show.get())
+    }
     pub fn new(id: impl Into<String>, pass: Pass, execute: SceneExecute) -> Self {
         Self {
+            visibility: Vec::new(),
             id: id.into(),
             pass,
             metadata: renderer::DrawMetadata::default(),
@@ -129,10 +140,18 @@ impl SceneCommand {
     ) -> Self {
         use super::DerivedCommand;
         let programs = std::cell::RefCell::new(std::collections::HashMap::<
-            (super::SceneDrawMode, Option<String>, Option<super::ClippingShaderKey>, bool),
+            (
+                super::SceneDrawMode,
+                Option<String>,
+                Option<super::ClippingShaderKey>,
+                bool,
+                Option<super::OitDrawKind>,
+                Option<String>,
+            ),
             Rc<renderer::ShaderProgram<G>>,
         >::new());
         Self {
+            visibility: Vec::new(),
             id: id.into(),
             pass,
             metadata,
@@ -144,9 +163,16 @@ impl SceneCommand {
                 let mode = submission.draw_mode;
                 let clipping = submission.clipping_planes.as_ref().map(|c| c.prepare(&context)).transpose()?.flatten();
                 let polygon_offset = submission.tileset_draw.is_some_and(|d| d.polygon_offset());
-                let key = (mode, submission.metadata.pick_id.clone(), clipping, polygon_offset);
+                let picked_info = submission.metadata_pick.as_deref().or(options.pick_metadata.as_ref());
+                let metadata_key = mode.pick_metadata.then(|| picked_info.map(|info| format!("{info:?}"))).flatten();
+                let key =
+                    (mode, submission.metadata.pick_id.clone(), clipping, polygon_offset, submission.oit, metadata_key);
                 let cached = { programs.borrow().get(&key).cloned() };
-                let program = if mode == super::SceneDrawMode::default() && clipping.is_none() && !polygon_offset {
+                let program = if mode == super::SceneDrawMode::default()
+                    && clipping.is_none()
+                    && !polygon_offset
+                    && submission.oit.is_none()
+                {
                     Rc::clone(&options.program)
                 } else if let Some(p) = cached {
                     p
@@ -169,7 +195,7 @@ impl SceneCommand {
                     if mode.depth_only {
                         source = DerivedCommand::depth_only(&source);
                     } else if mode.pick_metadata {
-                        if let Some(info) = &options.pick_metadata {
+                        if let Some(info) = picked_info {
                             source = DerivedCommand::pick_metadata(&source, info);
                         }
                     } else if mode.pick {
@@ -178,6 +204,9 @@ impl SceneCommand {
                         } else {
                             source = DerivedCommand::depth_only(&source);
                         }
+                    }
+                    if let Some(oit) = submission.oit {
+                        source = oit.shader_for_rendering(&source);
                     }
                     let program = Rc::new(renderer::ShaderProgram::from_sources(&context, &source)?);
                     programs.borrow_mut().insert(key, Rc::clone(&program));
@@ -196,6 +225,9 @@ impl SceneCommand {
                 command.metadata = submission.metadata;
                 if let Some(kind) = submission.tileset_draw {
                     command.render_state = kind.render_state(&command.render_state);
+                }
+                if let Some(oit) = submission.oit {
+                    command.render_state = oit.render_state(&command.render_state);
                 }
                 command.primitive_type = options.primitive_type;
                 command.offset = options.offset;
@@ -295,6 +327,30 @@ impl SceneCommand {
 /// The GPU surface. Scene owns frame decisions and command ordering; the
 /// backend applies uniforms, clears and executes the selected commands.
 pub trait SceneBackend {
+    fn begin_frustum(&mut self, _frame: &FrameState, _index: usize) -> Result<()> {
+        Ok(())
+    }
+    fn begin_translucent(&mut self, _frame: &FrameState, _has_commands: bool) -> Result<u32> {
+        Ok(1)
+    }
+    fn translucent_phase(&mut self, _phase: u32) -> Result<()> {
+        Ok(())
+    }
+    fn end_translucent(&mut self, _frame: &FrameState) -> Result<()> {
+        Ok(())
+    }
+    fn initialize_view(&mut self, _view: &mut super::SceneView, _use_oit: bool) -> Result<()> {
+        Ok(())
+    }
+    fn copy_globe_depth(&mut self, _frame: &FrameState) -> Result<()> {
+        Ok(())
+    }
+    fn capture_pick_depth(&mut self, _frame: &FrameState, _index: usize) -> Result<()> {
+        Ok(())
+    }
+    fn resolve_framebuffers(&mut self, _frame: &FrameState) -> Result<()> {
+        Ok(())
+    }
     fn set_pass_overrides(&mut self, scissor: Option<renderer::ScissorTest>, blending: Option<bool>) -> Result<()> {
         if scissor.is_some() || blending.is_some() {
             return Err(RuntimeError::new("Scene backend does not support pass overrides"));
@@ -345,14 +401,181 @@ pub struct RendererSceneBackend<G: Gl> {
     pub context: Context<G>,
     pub textures: FrameTextures<G>,
     pass_state: PassState<G>,
-    pub(crate) pick_framebuffer: Option<super::PickFramebuffer<G>>,
+    pub(crate) view_resources: Option<Rc<std::cell::RefCell<super::ViewResources<G>>>>,
+    original_pass_state: PassState<G>,
+    using_globe_depth: bool,
+    using_oit: bool,
+    oit_used: bool,
+    oit_active: bool,
+    oit_phase: u32,
+    depth_pass: bool,
+    translucent_depth_commands: Vec<(SceneCommand, SceneSubmission)>,
+    classification_commands: Vec<(SceneCommand, SceneSubmission)>,
 }
 impl<G: Gl> RendererSceneBackend<G> {
     pub fn new(context: Context<G>) -> Self {
-        Self { context, textures: FrameTextures::default(), pass_state: PassState::default(), pick_framebuffer: None }
+        Self {
+            context,
+            textures: FrameTextures::default(),
+            pass_state: PassState::default(),
+            view_resources: None,
+            original_pass_state: PassState::default(),
+            using_globe_depth: false,
+            using_oit: false,
+            oit_used: false,
+            oit_active: false,
+            oit_phase: 0,
+            depth_pass: false,
+            translucent_depth_commands: Vec::new(),
+            classification_commands: Vec::new(),
+        }
     }
 }
 impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
+    fn begin_frustum(&mut self, _frame: &FrameState, _index: usize) -> Result<()> {
+        self.translucent_depth_commands.clear();
+        self.classification_commands.clear();
+        self.oit_phase = 0;
+        Ok(())
+    }
+    fn begin_translucent(&mut self, _frame: &FrameState, has_commands: bool) -> Result<u32> {
+        self.oit_active = self.using_oit && has_commands;
+        if self.oit_active {
+            let resources = self.view_resources.as_ref().expect("initialized");
+            let mut resources = resources.borrow_mut();
+            let oit = resources.oit.as_mut().expect("supported");
+            oit.adjust(&self.context, &self.pass_state)?;
+            self.oit_used = true;
+            return Ok(if oit.uses_mrt() { 1 } else { 2 });
+        }
+        Ok(1)
+    }
+    fn translucent_phase(&mut self, phase: u32) -> Result<()> {
+        self.oit_phase = phase;
+        Ok(())
+    }
+    fn end_translucent(&mut self, _frame: &FrameState) -> Result<()> {
+        self.oit_active = false;
+        if self.depth_pass || !self.using_globe_depth {
+            return Ok(());
+        }
+        let Some(resources) = &self.view_resources else {
+            return Ok(());
+        };
+        let depth = {
+            let resources = resources.borrow();
+            resources.globe_depth.as_ref().and_then(|g| g.depth_stencil_texture().cloned())
+        };
+        let Some(depth) = depth else {
+            return Ok(());
+        };
+        let has_flagged = !self.translucent_depth_commands.is_empty();
+        let depth_pass = resources.borrow_mut().translucent_tile_classification.begin_translucent_depth(
+            &self.context,
+            &self.pass_state,
+            depth,
+            has_flagged,
+        )?;
+        if let Some(pass) = depth_pass {
+            for (command, submission) in &self.translucent_depth_commands {
+                let mut submission = submission.clone();
+                submission.framebuffer = pass.framebuffer.clone().map(super::FrameResource::new);
+                submission.oit = None;
+                submission.draw_mode.depth_only = true;
+                submission.draw_mode.pick = false;
+                submission.draw_mode.pick_metadata = false;
+                submission.draw_mode.high_dynamic_range = false;
+                (command.execute)(submission)?;
+            }
+            resources.borrow_mut().translucent_tile_classification.pack_depth(&self.context, &self.pass_state)?;
+        }
+        let classify_pass = resources
+            .borrow_mut()
+            .translucent_tile_classification
+            .begin_classification(&self.context, &self.pass_state)?;
+        if let Some(pass) = classify_pass {
+            let result = (|| {
+                for (command, submission) in &self.classification_commands {
+                    let mut submission = submission.clone();
+                    submission.framebuffer = pass.framebuffer.clone().map(super::FrameResource::new);
+                    (command.execute)(submission)?;
+                }
+                Ok(())
+            })();
+            let restore = resources
+                .borrow_mut()
+                .translucent_tile_classification
+                .end_classification(&self.context, &self.pass_state);
+            restore?;
+            result?;
+        }
+        Ok(())
+    }
+    fn initialize_view(&mut self, view: &mut super::SceneView, use_oit: bool) -> Result<()> {
+        let resources = Rc::new(std::cell::RefCell::new(super::ViewResources::new(&self.context, use_oit)?));
+        view.set_resources(resources.clone())?;
+        self.view_resources = Some(resources);
+        Ok(())
+    }
+    fn copy_globe_depth(&mut self, _frame: &FrameState) -> Result<()> {
+        if self.using_globe_depth {
+            if let Some(resources) = &self.view_resources {
+                if let Some(globe) = &mut resources.borrow_mut().globe_depth {
+                    globe.execute_copy_depth(&self.context, &self.pass_state)?;
+                }
+            }
+        }
+        Ok(())
+    }
+    fn capture_pick_depth(&mut self, frame: &FrameState, index: usize) -> Result<()> {
+        if !frame.use_depth_picking || !self.using_globe_depth {
+            return Ok(());
+        }
+        let Some(resources) = &self.view_resources else {
+            return Ok(());
+        };
+        let mut resources = resources.borrow_mut();
+        let (depth, packed) = if let Some(globe) = &resources.globe_depth {
+            globe.prepare_color_textures(false)?;
+            (globe.depth_stencil_texture().cloned(), globe.packed_depth_texture()?.cloned())
+        } else {
+            (None, None)
+        };
+        if let Some(depth) = depth {
+            let pick = resources.get_pick_depth(index)?;
+            pick.update(&self.context, depth)?;
+            pick.execute_copy_depth(&self.context, &self.pass_state, packed)?;
+        }
+        Ok(())
+    }
+    fn resolve_framebuffers(&mut self, _frame: &FrameState) -> Result<()> {
+        if self.using_globe_depth {
+            if let Some(resources) = &self.view_resources {
+                let mut resources = resources.borrow_mut();
+                if let Some(globe) = &resources.globe_depth {
+                    globe.prepare_color_textures(false)?;
+                }
+                if self.oit_used {
+                    if let Some(oit) = &mut resources.oit {
+                        oit.execute(&self.context, &self.original_pass_state)?;
+                    }
+                }
+                resources.translucent_tile_classification.execute(
+                    &self.context,
+                    if self.oit_used { &self.original_pass_state } else { &self.pass_state },
+                    _frame.passes.pick,
+                )?;
+                if !self.oit_used {
+                    if let Some(globe) = &mut resources.globe_depth {
+                        globe.execute_copy_color(&self.context, &self.original_pass_state)?;
+                    }
+                }
+            }
+        }
+        self.pass_state = self.original_pass_state.clone();
+        self.using_globe_depth = false;
+        Ok(())
+    }
     fn set_pass_overrides(&mut self, scissor: Option<renderer::ScissorTest>, blending: Option<bool>) -> Result<()> {
         self.pass_state.scissor_test = scissor;
         self.pass_state.blending_enabled = blending;
@@ -385,6 +608,7 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
             })
             .transpose()?;
         self.pass_state.viewport = viewport;
+        self.using_globe_depth = false;
         Ok(())
     }
     fn capabilities(&self) -> Result<renderer::ContextCapabilities> {
@@ -405,9 +629,56 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
             self.pass_state.viewport = Some(Viewport { x: 0, y: 0, width, height });
         }
         self.context.begin_frame();
-        self.context.update_frame(&frame.uniform, &self.textures)
+        self.context.update_frame(&frame.uniform, &self.textures)?;
+        self.original_pass_state = self.pass_state.clone();
+        self.using_globe_depth = false;
+        self.using_oit = false;
+        self.oit_used = false;
+        self.oit_active = false;
+        self.depth_pass = frame.passes.depth;
+        if let Some(resources) = &self.view_resources {
+            let mut resources = resources.borrow_mut();
+            let super::ViewResources { globe_depth, oit, .. } = &mut *resources;
+            if let Some(globe) = globe_depth {
+                globe.picking = frame.passes.pick || frame.passes.pick_voxel;
+                globe.update(
+                    &self.context,
+                    &self.pass_state,
+                    self.pass_state.viewport.expect("initialized above"),
+                    frame.msaa_samples.max(1),
+                    frame.high_dynamic_range,
+                    false,
+                )?;
+                self.pass_state.framebuffer = globe.framebuffer().cloned();
+                self.using_globe_depth = true;
+                if frame.order_independent_translucency
+                    && !frame.passes.pick
+                    && !frame.passes.pick_voxel
+                    && !frame.passes.depth
+                {
+                    if let Some(oit) = oit {
+                        oit.update(
+                            &self.context,
+                            &self.pass_state,
+                            globe.color_framebuffer_manager(),
+                            frame.high_dynamic_range,
+                            frame.msaa_samples,
+                        )?;
+                        self.using_oit = oit.is_supported();
+                    }
+                }
+            }
+        }
+        Ok(())
     }
     fn clear(&mut self, color: Color, depth: Option<f64>, stencil: Option<i32>) -> Result<()> {
+        if depth.is_none() && self.using_oit {
+            if let Some(resources) = &self.view_resources {
+                if let Some(oit) = &resources.borrow().oit {
+                    oit.clear(&self.context, &self.pass_state, color)?;
+                }
+            }
+        }
         ClearCommand {
             color: if depth.is_none() { Some([color.red, color.green, color.blue, color.alpha]) } else { None },
             depth,
@@ -418,6 +689,14 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
     }
     fn set_frustum(&mut self, frame: &FrameState, near: f64, far: f64) -> Result<()> {
         let mut camera = frame.uniform.camera.clone();
+        let (near, far) = if frame.mode == SceneMode::Scene2D {
+            camera.position.x += 1. - near;
+            camera.view = Matrix4::compute_view(camera.position, camera.direction, camera.up, camera.right);
+            camera.inverse_view = camera.view.inverse_transformation();
+            (1., (far - near).max(1.))
+        } else {
+            (near, far)
+        };
         camera.frustum = match camera.frustum {
             renderer::UniformFrustum::Perspective(mut f) => {
                 f.near = near;
@@ -446,19 +725,41 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
             }
         };
         let mut state = self.context.uniform_state();
-        state.update_camera_snapshot(&frame.uniform.camera, frame.uniform.map_projection.ellipsoid())?;
+        state.update_camera_snapshot(&camera, frame.uniform.map_projection.ellipsoid())?;
+        state.entire_frustum = frame.uniform.camera.frustum.parameters().2;
         state.update_frustum_snapshot(&camera.frustum);
         Ok(())
     }
     fn execute(&mut self, command: &SceneCommand, submission: SceneSubmission) -> Result<()> {
+        let mut submission = submission;
+        if self.using_globe_depth {
+            submission.framebuffer = self.pass_state.framebuffer.clone().map(super::FrameResource::new);
+        }
+        if command.pass == Pass::Cesium3DTileClassification {
+            self.classification_commands.push((command.clone(), submission.clone()));
+        }
+        if command.pass == Pass::Translucent
+            && command.metadata.depth_for_translucent_classification
+            && self.oit_phase == 0
+        {
+            self.translucent_depth_commands.push((command.clone(), submission.clone()));
+        }
+        if self.oit_active && command.pass == Pass::Translucent && !command.is_clear {
+            if let Some(resources) = &self.view_resources {
+                if let Some(oit) = &resources.borrow().oit {
+                    submission.oit = Some(oit.draw_kind(self.oit_phase));
+                    submission.framebuffer = oit.framebuffer(self.oit_phase).cloned().map(super::FrameResource::new);
+                }
+            }
+        }
         (command.execute)(submission)
     }
     fn end_frame(&mut self) -> Result<()> {
         self.context.end_frame()
     }
     fn destroy(&mut self) -> Result<()> {
-        if let Some(mut framebuffer) = self.pick_framebuffer.take() {
-            framebuffer.destroy()?;
+        if let Some(resources) = self.view_resources.take() {
+            resources.borrow_mut().destroy()?;
         }
         self.context.destroy()
     }
@@ -466,6 +767,17 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
 /// A primitive may produce ordinary renderer commands or perform additional
 /// tileset passes. Pre/post work runs even when request-render mode skips draws.
 pub trait ScenePrimitive {
+    fn most_detailed_pick_targets(&self) -> Vec<super::PickedObject> {
+        Vec::new()
+    }
+    fn update_most_detailed_pick(
+        &mut self,
+        _frame: &mut FrameState,
+        _pass: &mut super::TilesetPassState,
+        _targets: &[super::PickedObject],
+    ) -> Result<bool> {
+        Err(RuntimeError::new("Primitive does not implement most-detailed preload"))
+    }
     fn pre_passes_update(&mut self, frame: &mut FrameState) -> Result<()>;
     fn update(&mut self, frame: &mut FrameState) -> Result<()>;
     fn post_passes_update(&mut self, frame: &mut FrameState) -> Result<()>;
@@ -510,6 +822,7 @@ impl SceneRenderRequest {
 }
 #[derive(Clone, Debug)]
 pub struct SceneOptions {
+    pub order_independent_translucency: bool,
     pub request_render_mode: bool,
     pub maximum_render_time_change: Option<f64>,
     pub scene_3d_only: bool,
@@ -525,6 +838,7 @@ pub struct SceneOptions {
 impl Default for SceneOptions {
     fn default() -> Self {
         Self {
+            order_independent_translucency: true,
             request_render_mode: false,
             maximum_render_time_change: Some(0.),
             scene_3d_only: false,
@@ -540,6 +854,15 @@ impl Default for SceneOptions {
     }
 }
 pub struct Scene<B: SceneBackend> {
+    pub(crate) detailed_picks: Vec<super::detailed_picking::DetailedPickJob<B>>,
+    pub(crate) post_render_serial: u64,
+    pub(crate) pick_offscreen_camera: Option<Camera>,
+    pub(crate) pick_offscreen_view: Option<super::SceneView>,
+    pub(crate) tileset_pick_pass: Option<super::Cesium3DTilePass>,
+    pub(crate) metadata_pick: Option<super::PickedMetadataInfo>,
+    pub use_depth_picking: bool,
+    pub pick_translucent_depth: bool,
+    pub(crate) pick_position_cache: std::collections::HashMap<String, Option<Cartesian3>>,
     pub backend: B,
     pub capabilities: renderer::ContextCapabilities,
     pub context_limits: renderer::ContextLimits,
@@ -610,6 +933,15 @@ impl<B: SceneBackend> Scene<B> {
         let mut fog = Fog::default();
         fog.enabled = earth;
         let mut result = Self {
+            detailed_picks: Vec::new(),
+            post_render_serial: 0,
+            pick_offscreen_camera: None,
+            pick_offscreen_view: None,
+            tileset_pick_pass: None,
+            metadata_pick: None,
+            use_depth_picking: true,
+            pick_translucent_depth: false,
+            pick_position_cache: std::collections::HashMap::new(),
             backend,
             minimum_aliased_line_width: context_limits.minimum_aliased_line_width,
             maximum_aliased_line_width: context_limits.maximum_aliased_line_width,
@@ -645,6 +977,7 @@ impl<B: SceneBackend> Scene<B> {
             destroyed: false,
         };
         result.frame_state.render_request = Some(result.request_handle());
+        result.backend.initialize_view(&mut result.view, result.options.order_independent_translucency)?;
         result.view.initialize_camera(&result.camera);
         result.update_frame_state();
         Ok(result)
@@ -764,6 +1097,10 @@ impl<B: SceneBackend> Scene<B> {
     }
     pub fn update_frame_state(&mut self) {
         let frame = &mut self.frame_state;
+        frame.use_depth_picking = self.use_depth_picking;
+        frame.high_dynamic_range = self.options.high_dynamic_range;
+        frame.msaa_samples = self.msaa_samples.max(1);
+        frame.order_independent_translucency = self.options.order_independent_translucency;
         let snapshot = self.camera.uniform_camera();
         frame.command_list.clear();
         frame.executed_commands.clear();
@@ -801,6 +1138,7 @@ impl<B: SceneBackend> Scene<B> {
         frame.passes = FramePasses::default();
     }
     fn pre_passes(&mut self) -> Result<()> {
+        self.pick_position_cache.clear();
         self.frame_state.clipping_plane_updates.clear();
         self.stage(SceneStage::ResetBudgets)?;
         for p in &mut self.primitives {
@@ -860,7 +1198,7 @@ impl<B: SceneBackend> Scene<B> {
         let result = self.pre_passes();
         self.catch(result, time)?;
         if self.primitives_show {
-            let result = self.stage(SceneStage::MostDetailedPicks);
+            let result = self.update_most_detailed_ray_picks().and_then(|()| self.stage(SceneStage::MostDetailedPicks));
             self.catch(result, time)?;
             let result =
                 self.stage(SceneStage::Preload).and_then(|_| self.tileset_pass(super::Cesium3DTilePass::Preload));
@@ -908,7 +1246,9 @@ impl<B: SceneBackend> Scene<B> {
         if should_render {
             self.notify(SceneEventKind::PostRender, time, None);
             self.stage(SceneStage::CreditEnd)?;
+            self.post_render_serial = self.post_render_serial.wrapping_add(1);
         }
+        self.complete_most_detailed_ray_picks();
         Ok(should_render)
     }
     pub fn force_render(&mut self, time: JulianDate) -> Result<bool> {
@@ -922,6 +1262,7 @@ impl<B: SceneBackend> Scene<B> {
     /// owns hit decoding/readback; this executes the same primitive and shader
     /// path as a normal frame without changing frame numbers or firing events.
     pub fn draw_passes(&mut self, passes: FramePasses) -> Result<()> {
+        self.pick_position_cache.clear();
         self.draw_passes_with_culling(passes, None, None)?;
         self.backend.end_frame()
     }
@@ -937,6 +1278,12 @@ impl<B: SceneBackend> Scene<B> {
         self.frame_state.drawing_buffer_height = height;
         self.update_frame_state();
         self.frame_state.passes = passes;
+        if let Some(info) = &self.metadata_pick {
+            self.frame_state.picking_metadata = true;
+            self.frame_state.picked_metadata_info = Some(
+                serde_json::json!({"schemaId":info.shader.schema_id,"className":info.shader.class_name,"propertyName":info.shader.property_name}),
+            );
+        }
         if let Some(culling) = culling {
             self.frame_state.culling_volume = culling;
         }
@@ -953,7 +1300,7 @@ impl<B: SceneBackend> Scene<B> {
         self.frame_state.background_color = Some(color);
         self.frame_state.tileset_pass_state =
             Some(super::TilesetPassState::new(if passes.pick || passes.depth || passes.pick_voxel {
-                super::Cesium3DTilePass::Pick
+                self.tileset_pick_pass.unwrap_or(super::Cesium3DTilePass::Pick)
             } else {
                 super::Cesium3DTilePass::Render
             }));
@@ -979,8 +1326,10 @@ impl<B: SceneBackend> Scene<B> {
             }
         }
         self.backend.clear(color, None, Some(0))?;
+        self.frame_state.command_list.retain(SceneCommand::shown);
         self.execute_commands()?;
         self.stage(SceneStage::Resolve)?;
+        self.backend.resolve_framebuffers(&self.frame_state)?;
         if !passes.pick && !passes.pick_voxel && !passes.depth {
             self.execute_pass(Pass::Overlay, usize::MAX, 0., 0.)?;
         }
@@ -1052,6 +1401,8 @@ impl<B: SceneBackend> Scene<B> {
                 near,
                 far,
                 draw_mode,
+                oit: None,
+                metadata_pick: self.metadata_pick.as_ref().map(|info| info.shader.clone()),
                 framebuffer: self.framebuffer.clone(),
                 viewport: self.viewport,
                 scissor_test: self.scissor_test.clone(),
@@ -1078,6 +1429,7 @@ impl<B: SceneBackend> Scene<B> {
         }
         let ranges: Vec<_> = self.view.frustum_commands_list.iter().map(|f| (f.near, f.far)).collect();
         for (index, (near, far)) in ranges.into_iter().enumerate().rev() {
+            self.backend.begin_frustum(&self.frame_state, index)?;
             let opaque_near =
                 if index == 0 || self.frame_state.mode == SceneMode::Scene2D { near } else { near * 0.9999 };
             self.backend.set_frustum(&self.frame_state, opaque_near, far)?;
@@ -1093,11 +1445,22 @@ impl<B: SceneBackend> Scene<B> {
                 Pass::GaussianSplats,
             ] {
                 self.execute_pass(pass, index, opaque_near, far)?;
+                if pass == Pass::Globe {
+                    self.backend.copy_globe_depth(&self.frame_state)?;
+                }
             }
             if index != 0 && self.frame_state.mode != SceneMode::Scene2D {
                 self.backend.set_frustum(&self.frame_state, near, far)?;
             }
-            self.execute_pass(Pass::Translucent, index, near, far)?;
+            let has_translucent =
+                !self.view.frustum_commands_list[index].commands[Pass::Translucent as usize].is_empty();
+            let phases = self.backend.begin_translucent(&self.frame_state, has_translucent)?;
+            for phase in 0..phases {
+                self.backend.translucent_phase(phase)?;
+                self.execute_pass(Pass::Translucent, index, near, far)?;
+            }
+            self.backend.end_translucent(&self.frame_state)?;
+            self.backend.capture_pick_depth(&self.frame_state, index)?;
         }
         Ok(())
     }
@@ -1114,7 +1477,12 @@ impl<B: SceneBackend> Scene<B> {
         self.primitives.clear();
         self.components.clear();
         self.frame_state.after_render.clear();
+        self.detailed_picks.clear();
         self.camera.cancel_flight();
+        self.view.destroy()?;
+        if let Some(view) = &mut self.pick_offscreen_view {
+            view.destroy()?;
+        }
         self.backend.destroy()?;
         self.destroyed = true;
         Ok(())

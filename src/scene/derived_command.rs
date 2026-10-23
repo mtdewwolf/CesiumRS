@@ -7,7 +7,7 @@ use crate::{
 };
 use std::rc::Rc;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct PickMetadataShader {
     pub schema_id: Option<String>,
     pub class_name: String,
