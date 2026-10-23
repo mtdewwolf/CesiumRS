@@ -230,6 +230,62 @@ cargo test --test scene_metadata --test scene_metadata_tables --test scene_metad
 TZ=UTC node tools/cesium/fixtures/generate.mjs MetadataTableProperty
 ```
 
+## Tiling batch
+
+The fourth batch ports **11 modules**: the 3D Tiles bounding volumes and
+implicit tiling.
+
+- **Bounding volumes:** `TileBoundingVolume`, `TileBoundingSphere`,
+  `TileOrientedBoundingBox`, `TileBoundingRegion` and `TileBoundingS2Cell`,
+  with `BoundingVolumeSemantics` for volumes stored as `TILE_*` and
+  `CONTENT_*` metadata.
+- **Implicit tiling:** `ImplicitTileCoordinates`,
+  `ImplicitAvailabilityBitstream`, `ImplicitTileset`, `ImplicitSubtree` and
+  `ImplicitSubtreeCache`.
+
+### Rust shape
+
+- **Volumes:** `TileBoundingVolume` is a trait. A `TileBoundingVolumeFrame`
+  carries the `FrameState` fields a volume reads: the scene mode, the camera's
+  `positionWC` and `positionCartographic`, and the map projection.
+  `createDebugVolume` returns the outline `GeometryInstance`s, with their
+  geometry created. Cesium wraps the same instances in a `Primitive` drawn
+  with a flat, opaque `PerInstanceColorAppearance`.
+- **Coordinates:** `ImplicitTileCoordinates` keeps Cesium's 32-bit shift
+  arithmetic, so coordinates past a level's range fail the same checks. Those
+  checks are `MetadataError::Developer`.
+- **Subtrees:** `ImplicitSubtree::from_subtree_json` takes a JSON subtree or a
+  binary `.subtree` file. External buffers come from the caller's
+  `load_buffer` callback, which Cesium gets from `ResourceCache`, and the
+  subtree is built synchronously. Buffer views clamp like `subarray`. Metadata
+  tables read from each view's offset in the whole buffer, as Cesium's typed
+  arrays do. Jump buffers wrap at the width of the typed array Cesium would
+  have chosen.
+- **Cache:** `ImplicitSubtreeCache` is generic over a `CachedSubtree` trait,
+  so it holds an `ImplicitSubtree`, an `Arc` of one, or a test stand-in.
+- **Errors:** `MetadataError` gains a `Syntax` variant for `JSON.parse`
+  failures in subtree files.
+
+### Validation
+
+`tools/cesium/fixtures/scene-tiling.mjs` runs the real modules and
+`tests/scene_tiling.rs` replays 149 cases:
+
+- each volume over random and edge-case inputs, with distances in all four
+  scene modes, plane tests and debug geometry. S2 cases add camera points
+  outside each face, edge and corner;
+- coordinates in both schemes, including the range errors;
+- binary, JSON, external-buffer, legacy, multiple-content and octree
+  subtrees, with every tile's availability, indices and metadata view, and the
+  `RangeError`, `SyntaxError`, `TypeError` and `RuntimeError` cases.
+
+Results match to 1e-12, relative to each array's largest value.
+
+```bash
+cargo test --test scene_tiling
+TZ=UTC node tools/cesium/fixtures/generate.mjs ImplicitSubtree
+```
+
 ## Next
 
 The next batches build on these:

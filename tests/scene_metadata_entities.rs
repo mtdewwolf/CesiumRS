@@ -85,6 +85,7 @@ fn kind(e: &MetadataError) -> &'static str {
         MetadataError::Type(_) => "TypeError",
         MetadataError::Range(_) => "RangeError",
         MetadataError::Runtime(_) => "RuntimeError",
+        MetadataError::Syntax(_) => "SyntaxError",
     }
 }
 
