@@ -4015,5 +4015,30 @@
     "status": "ported",
     "rust": "scene::implicit_subtree_cache",
     "note": "Ancestor-first, then oldest-first eviction past maximumSubtreeCount (never the subtree just added), find by coordinates in queue order and the missing-parent DeveloperError after insertion. Generic over a CachedSubtree trait. Direct CesiumJS cases in tests/scene_tiling.rs."
+  },
+  "Scene/Atmosphere": {
+    "status": "ported",
+    "rust": "scene::atmosphere",
+    "note": "Atmosphere defaults, dynamic lighting, epsilon-based HSB correction and renderer uniform snapshot; direct CesiumJS fixtures in scene_runtime."
+  },
+  "Scene/Fog": {
+    "status": "ported",
+    "rust": "scene::fog",
+    "note": "Density/height/direction falloff, mode and height disabling, renderability and frame parameters; five CesiumJS sequences with 480 updates."
+  },
+  "Scene/FrameState": {
+    "status": "partial",
+    "rust": "scene::frame_state",
+    "note": "Owned frame snapshots, passes, command queues, deferred callbacks, dimensions, camera motion, fog/atmosphere renderer inputs and async render-request waker. Remaining Cesium FrameState fields and GPU subsystem integration are pending."
+  },
+  "Scene/Scene": {
+    "status": "partial",
+    "rust": "scene::scene",
+    "note": "Frame/event/error ordering, request-render decisions, flight preloading, deferred callbacks, fog/atmosphere, primitive stages and executable renderer commands; 54 direct CesiumJS sequences plus Rust renderer/future integration. View fitting, derived commands, globe, advanced classification/effects, picking and controller/morph integrations remain; see docs/scene.md."
+  },
+  "Scene/Cesium3DTileset": {
+    "status": "partial",
+    "rust": "scene::cesium_3d_tileset",
+    "note": "JSON/schema/resource/tree loading, transforms/bounds, explicit-tree base and most-detailed selection, async content processing/cancellation, pass state, progress/events, memory/LRU and CPU picks; 59 CesiumJS scenarios plus Rust integration. Skip-LOD, full traversal optimizations, content decoders, implicit/external/multiple expansion, styling/clipping/imagery/collision and other integrations remain; docs/scene.md lists limits."
   }
 }

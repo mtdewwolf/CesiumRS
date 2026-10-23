@@ -43,6 +43,25 @@ macro_rules! string_enum {
 }
 
 pub mod alpha_mode;
+pub mod cesium_3d_tileset;
+pub use cesium_3d_tileset::{
+    Cesium3DTileset, TileContentFuture, TileContentMetrics, TileContentRequest, TileId, TilesetCache, TilesetContent,
+    TilesetContentLoader, TilesetEvent, TilesetOptions, TilesetPassState, TilesetStatistics, TilesetTile,
+    TilesetTraversalKind,
+};
+pub mod atmosphere;
+pub mod fog;
+pub mod frame_state;
+// Keep the upstream Scene/Scene.js module path.
+#[allow(clippy::module_inception)]
+pub mod scene;
+pub use atmosphere::Atmosphere;
+pub use fog::{Fog, FrameFog};
+pub use frame_state::{FramePasses, FrameState};
+pub use scene::{
+    RendererSceneBackend, Scene, SceneBackend, SceneCommand, SceneComponent, SceneEventKind, SceneNotification,
+    SceneOptions, ScenePrimitive, SceneRenderRequest, SceneStage, SceneSubmission,
+};
 pub mod arc_gis_base_map_type;
 pub mod attribute_type;
 pub mod axis;

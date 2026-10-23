@@ -4,6 +4,67 @@
 has one Rust module per Cesium module, as `core` does. `Scene/Model/...`
 modules live under `scene::model`.
 
+## Scene and tileset runtime
+
+`Scene<B: SceneBackend>` now owns the frame loop: render requests, time and
+camera changes, frame numbering, pre/post update and render events, caught
+render errors, primitive passes, flight destination preloading, deferred
+callbacks, fog and atmosphere uniforms, and command submission. Call
+`initialize_frame(monotonic_seconds)` before `render(julian_time)` to advance
+camera flights. Pre/post passes also run when request-render mode skips a draw.
+`SceneRenderRequest` can cross threads and supplies a `Waker` for asynchronous
+content. The host still drives calls to the frame loop.
+
+`RendererSceneBackend` uses the existing Rust `Context`, uniform state, clears
+and executable `DrawCommand`. `SceneCommand::draw` owns the shader and vertex
+array while queued. Submission handles pass ordering, culling, occlusion,
+back-to-front translucency, depth partitions, closest-frustum execution and
+overlays. Other backends can implement the same typed boundary.
+
+`Cesium3DTileset::from_url` loads JSON and relative external metadata schemas
+through `ResourceClient`; `from_json` accepts an already loaded document.
+Loading validates asset versions and required extensions, builds the explicit
+tile tree, inherits transforms/refinement/error, resolves content URLs and
+version queries, and sets metadata, credits, bounds and clipping origin.
+`load_tileset(resource, json, parent)` preserves each nested document's URL.
+Sphere, box, region and S2 bounds and implicit-root subtree descriptors reuse
+the existing Scene ports.
+
+Tile content is supplied by `TilesetContentLoader`, whose future returns an
+owned `TilesetContent`. Content provides processing, metrics, command updates,
+CPU ray picks and destruction. Futures are polled during pre-passes with the
+Scene render-request waker. Processing readiness updates statistics, load
+events and the cache; post-passes cancel obsolete requests, defer progress
+events and evict unused content under the memory budget. `trim_loaded_tiles`
+protects tiles touched in the current frame. Destroying a tileset cancels its
+requests and suppresses queued events. A tileset implements `ScenePrimitive`
+and can be added directly to `scene.primitives`.
+
+These two large modules remain **partial**. Scene still needs View's tightly
+fitted depth partitions, derived shader commands, globe/translucency,
+classification, shadows, OIT, post-processing, picking and morph/controller
+integration. `SceneComponent` exposes lifecycle stages for those future ports;
+it does not implement those effects. Tileset traversal currently handles
+explicit tile trees with base replacement/additive refinement and
+most-detailed passes. Skip-LOD explicitly returns an error. Full traversal
+priority/foveated/progressive optimizations, exact non-spherical visibility,
+implicit subtree expansion, automatic external/multiple-content loading,
+expiration, styling, clipping, imagery, collision/height callbacks, shared
+model texture accounting and debug rendering remain. The existing options for
+these features do not establish support for them. Content format decoders and
+their GPU pipelines are separate work; there is no default content loader yet.
+`FrameState` is the owned data needed by this runtime, not yet the complete
+Cesium FrameState surface. Fog and Atmosphere are complete.
+
+`tools/cesium/fixtures/scene-runtime.mjs` invokes actual CesiumJS methods for
+**124 scenarios**: 54 Scene frame/event/error sequences, five fog sequences
+(480 updates), six Atmosphere cases and 59 tileset loading/lifecycle/traversal
+cases. `tests/scene_runtime.rs` replays them and tests asynchronous wakeups,
+cancellation, destruction, flight preload restoration, relative metadata and
+nested resources, command ordering and execution through the Rust renderer.
+The reference Scene harness supplies explicit host operations; it does not
+claim browser rendering or visual parity.
+
 ## Camera
 
 `scene::Camera` starts the large, frame-driven Scene modules. It is the
@@ -417,6 +478,5 @@ The next batches build on these:
 - the rest of 3D Metadata: property textures, `StructuralMetadata`,
   `PickedMetadataInfo` and the parsers;
 - 3D Tiles content parsers;
-- then the frame-driven modules (`FrameState`, `Camera`, `Primitive`, the
-  globe and the tile traversal) on top of the Renderer's typed frame
-  snapshots.
+- completion of Scene/FrameState and tileset traversal, followed by Primitive,
+  globe, picking and effect integrations on the Renderer's typed snapshots.
