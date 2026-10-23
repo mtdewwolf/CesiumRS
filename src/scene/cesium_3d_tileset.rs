@@ -19,6 +19,46 @@ use std::{
     task::{Context, Poll, Waker},
 };
 pub type TileId = usize;
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum FeatureIdLabel {
+    Label(String),
+    Index(f64),
+}
+impl FeatureIdLabel {
+    fn label(&self, prefix: &str) -> String {
+        match self {
+            Self::Label(label) => label.clone(),
+            Self::Index(index) => format!("{prefix}_{}", math::js_number_to_string(*index)),
+        }
+    }
+}
+impl From<String> for FeatureIdLabel {
+    fn from(value: String) -> Self {
+        Self::Label(value)
+    }
+}
+impl From<&str> for FeatureIdLabel {
+    fn from(value: &str) -> Self {
+        Self::Label(value.into())
+    }
+}
+impl From<f64> for FeatureIdLabel {
+    fn from(value: f64) -> Self {
+        Self::Index(value)
+    }
+}
+impl From<u32> for FeatureIdLabel {
+    fn from(value: u32) -> Self {
+        Self::Index(value as f64)
+    }
+}
+impl From<i32> for FeatureIdLabel {
+    fn from(value: i32) -> Self {
+        Self::Index(value as f64)
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TileContentMetrics {
@@ -37,17 +77,33 @@ impl TileContentMetrics {
 /// Concrete content owns GPU resources and/or CPU meshes. A content loader
 /// reports failure through Result; dropping an in-flight request cancels it.
 pub trait TilesetContent {
+    fn is_renderable(&self) -> bool {
+        true
+    }
+    fn take_failures(&mut self) -> Vec<TileContentFailure> {
+        Vec::new()
+    }
     fn metrics(&self) -> TileContentMetrics;
     fn process(&mut self, frame: &FrameState) -> Result<bool>;
     fn update(&mut self, frame: &mut FrameState) -> Result<()>;
     fn pick(&self, ray: &Ray, frame: &FrameState) -> Result<Option<Cartesian3>>;
     fn destroy(&mut self) -> Result<()>;
+    /// Model contents override this with stable GPU texture identities. Other
+    /// content owns its texture bytes independently.
+    fn texture_allocations(&self) -> Vec<(Option<String>, u64)> {
+        vec![(None, self.metrics().texture_bytes)]
+    }
+    fn take_expansions(&mut self) -> Vec<TileExpansion> {
+        Vec::new()
+    }
 }
 pub type TileContentFuture = Pin<Box<dyn Future<Output = Result<Box<dyn TilesetContent>>>>>;
 #[derive(Clone)]
 pub struct TileContentRequest {
     pub tile: TileId,
     pub resource: Resource,
+    pub base_resource: Resource,
+    pub implicit: Option<ImplicitContentRequest>,
     pub cancelled: Rc<Cell<bool>>,
     pub header: Value,
 }
@@ -86,6 +142,7 @@ pub struct TilesetOptions {
     pub enable_collision: bool,
     pub enable_pick: bool,
     pub show_credits_on_screen: bool,
+    pub debug_freeze_frame: bool,
 }
 impl Default for TilesetOptions {
     fn default() -> Self {
@@ -118,6 +175,7 @@ impl Default for TilesetOptions {
             enable_collision: false,
             enable_pick: false,
             show_credits_on_screen: false,
+            debug_freeze_frame: false,
         }
     }
 }
@@ -137,10 +195,14 @@ pub struct TilesetStatistics {
     pub number_of_points_selected: u64,
     pub number_of_triangles_selected: u64,
     pub number_of_features_loaded: u64,
+    pub number_of_tiles_styled: u64,
+    pub number_of_features_styled: u64,
+    pub number_of_tiles_culled_with_children_union: u64,
     pub number_of_points_loaded: u64,
     pub geometry_byte_length: u64,
     pub textures_byte_length: u64,
     pub batch_table_byte_length: u64,
+    pub textures_reference_counter_by_id: std::collections::BTreeMap<String, u64>,
 }
 impl TilesetStatistics {
     pub fn clear(&mut self) {
@@ -151,6 +213,9 @@ impl TilesetStatistics {
         self.number_of_features_selected = 0;
         self.number_of_points_selected = 0;
         self.number_of_triangles_selected = 0;
+        self.number_of_tiles_styled = 0;
+        self.number_of_features_styled = 0;
+        self.number_of_tiles_culled_with_children_union = 0;
     }
     pub fn total_memory_usage_in_bytes(&self) -> u64 {
         self.geometry_byte_length.saturating_add(self.textures_byte_length).saturating_add(self.batch_table_byte_length)
@@ -162,6 +227,31 @@ impl TilesetStatistics {
         apply(&mut self.batch_table_byte_length, m.batch_table_bytes);
         apply(&mut self.number_of_features_loaded, m.features);
         apply(&mut self.number_of_points_loaded, m.points);
+    }
+    fn load_content(&mut self, content: &dyn TilesetContent, add: bool) {
+        let mut metrics = content.metrics();
+        metrics.texture_bytes = 0;
+        self.load(metrics, add);
+        for (id, bytes) in content.texture_allocations() {
+            if let Some(id) = id {
+                let count = self.textures_reference_counter_by_id.get(&id).copied().unwrap_or(0);
+                if add {
+                    if count == 0 {
+                        self.textures_byte_length = self.textures_byte_length.saturating_add(bytes);
+                    }
+                    self.textures_reference_counter_by_id.insert(id, count + 1);
+                } else if count <= 1 {
+                    self.textures_reference_counter_by_id.remove(&id);
+                    self.textures_byte_length = self.textures_byte_length.saturating_sub(bytes);
+                } else {
+                    self.textures_reference_counter_by_id.insert(id, count - 1);
+                }
+            } else if add {
+                self.textures_byte_length = self.textures_byte_length.saturating_add(bytes);
+            } else {
+                self.textures_byte_length = self.textures_byte_length.saturating_sub(bytes);
+            }
+        }
     }
 }
 #[derive(Clone, Debug)]
@@ -185,6 +275,10 @@ pub struct TilesetTile {
     pub geometric_error: f64,
     pub bounding_sphere: BoundingSphere,
     pub content_resource: Option<Resource>,
+    pub base_resource: Resource,
+    pub implicit_coordinates: Option<ImplicitTileCoordinates>,
+    pub implicit_subtree: Option<Rc<ImplicitSubtree>>,
+    pub implicit_metadata: Option<ImplicitMetadataView>,
     pub state: Cesium3DTileContentState,
     pub content: Option<Box<dyn TilesetContent>>,
     pub priority: f64,
@@ -192,7 +286,21 @@ pub struct TilesetTile {
     pub distance_to_camera: f64,
     pub implicit_tileset: Option<ImplicitTileset>,
     pub destroyed: bool,
-    source_bounds: Value,
+    pub volume: TilesetVolume,
+    pub content_volume: Option<TilesetVolume>,
+    pub viewer_request_volume: Option<TilesetVolume>,
+    pub traversal: TileTraversalState,
+    pub has_external_content: bool,
+    pub has_implicit_content: bool,
+    pub has_renderable_content: bool,
+    pub initial_transform: Matrix4,
+    pub expire_duration: Option<f64>,
+    pub expire_date: Option<JulianDate>,
+    pub expired_content: Option<Box<dyn TilesetContent>>,
+    pub content_counted: bool,
+    pub metadata: Option<TileMetadata>,
+    pub(super) source_bounds: Value,
+    volume_exaggeration: [f64; 2],
 }
 impl TilesetTile {
     pub fn has_empty_content(&self) -> bool {
@@ -202,10 +310,13 @@ impl TilesetTile {
         self.state == Cesium3DTileContentState::Ready
     }
 }
-struct PendingContent {
-    id: TileId,
+pub(super) struct PendingContent {
+    pub(super) id: TileId,
     future: TileContentFuture,
-    cancelled: Rc<Cell<bool>>,
+    pub(super) cancelled: Rc<Cell<bool>>,
+    previous_state: Cesium3DTileContentState,
+    remaining: Rc<Cell<u64>>,
+    pub(super) counted: u64,
 }
 /// A sentinel separates reusable LRU entries from the tiles used this frame.
 #[derive(Default)]
@@ -258,13 +369,14 @@ pub enum TilesetTraversalKind {
 }
 pub struct TilesetPassState {
     pub pass: Cesium3DTilePass,
-    pub ready: bool,
+    pub ready: Option<bool>,
+    pub command_list: Option<Vec<SceneCommand>>,
     pub camera: Option<crate::renderer::UniformCamera>,
     pub culling_volume: Option<CullingVolume>,
 }
 impl TilesetPassState {
     pub fn new(pass: Cesium3DTilePass) -> Self {
-        Self { pass, ready: false, camera: None, culling_volume: None }
+        Self { pass, ready: Some(false), command_list: None, camera: None, culling_volume: None }
     }
 }
 
@@ -299,25 +411,35 @@ pub struct Cesium3DTileset {
     pub feature_id_label: String,
     pub instance_feature_id_label: String,
     loader: Option<Rc<dyn TilesetContentLoader>>,
-    pending: Vec<PendingContent>,
+    pub(super) pending: Vec<PendingContent>,
     processing: Vec<TileId>,
-    memory_adjusted_screen_space_error: f64,
+    pub(super) memory_adjusted_screen_space_error: f64,
     load_timestamp: Option<JulianDate>,
     previous_model_matrix: Option<Matrix4>,
     updated_model_matrix_frame: Option<u32>,
     model_matrix_changed: bool,
-    cull_requests_while_moving: bool,
+    pub(super) cull_requests_while_moving: bool,
     tiles_loaded: bool,
     initial_tiles_loaded: bool,
     last_progress: (u64, u64),
     initial_clipping_planes_origin_matrix: Matrix4,
     alive: Rc<Cell<bool>>,
     credits: Vec<Credit>,
+    pub(super) visibility_frame: u64,
+    pub(super) current_pass: Cesium3DTilePass,
+    pub(super) minimum_priority: super::tileset_traversal::TilePriority,
+    pub(super) maximum_priority: super::tileset_traversal::TilePriority,
+    pub foveated_interpolation: Rc<dyn Fn(f64, f64, f64) -> f64>,
+    pub selected_tiles_to_style: Vec<TileId>,
+    pub empty_tiles: Vec<TileId>,
+    pub has_mixed_content: bool,
+    pub(super) height_requests: Vec<super::tileset_content::TileHeightRequest>,
+    exaggeration: [f64; 2],
 }
 fn number(v: &Value, key: &str, default: f64) -> f64 {
     v.get(key).and_then(Value::as_f64).unwrap_or(default)
 }
-fn array<const N: usize>(v: &Value) -> Result<[f64; N]> {
+pub(super) fn array<const N: usize>(v: &Value) -> Result<[f64; N]> {
     let values =
         v.as_array().filter(|a| a.len() == N).ok_or_else(|| RuntimeError::new("invalid 3D Tiles numeric array"))?;
     let mut out = [0.; N];
@@ -479,6 +601,16 @@ impl Cesium3DTileset {
             initial_clipping_planes_origin_matrix: Matrix4::IDENTITY,
             alive: Rc::new(Cell::new(true)),
             credits,
+            visibility_frame: 0,
+            current_pass: Cesium3DTilePass::Render,
+            minimum_priority: super::tileset_traversal::TilePriority::minimum(),
+            maximum_priority: super::tileset_traversal::TilePriority::maximum(),
+            foveated_interpolation: Rc::new(math::lerp),
+            selected_tiles_to_style: Vec::new(),
+            empty_tiles: Vec::new(),
+            has_mixed_content: false,
+            height_requests: Vec::new(),
+            exaggeration: [1., 0.],
         };
         if let Some(axis) = out.asset["gltfUpAxis"].as_str().and_then(Axis::from_name) {
             out.model_up_axis = axis;
@@ -522,7 +654,129 @@ impl Cesium3DTileset {
                 json["schema"] = schema;
             }
         }
+        let loader = loader.or_else(|| {
+            Some(Rc::new(TilesetResourceLoader::new(client.clone(), None)) as Rc<dyn TilesetContentLoader>)
+        });
         Self::from_json(resource, &json, options, loader)
+    }
+    pub async fn from_ion_asset_id(
+        asset_id: u64,
+        ion: &Ion,
+        ion_options: crate::core::ion_resource::IonAssetOptions,
+        client: &ResourceClient,
+        options: TilesetOptions,
+        loader: Option<Rc<dyn TilesetContentLoader>>,
+    ) -> Result<Self> {
+        let ion_resource = IonResource::from_asset_id(asset_id, ion, ion_options, client)
+            .await
+            .map_err(|e| RuntimeError::new(e.to_string()))?;
+        let resource = ion_resource.as_resource().clone();
+        resource.options_mut().credits = Some(ion_resource.credits());
+        Self::from_url(resource, client, options, loader).await
+    }
+    pub fn metadata(&self) -> Option<&TilesetMetadata> {
+        self.metadata_extension.as_ref().and_then(|m| m.tileset())
+    }
+    pub fn schema(&self) -> Option<&Arc<MetadataSchema>> {
+        self.metadata_extension.as_ref().map(|m| m.schema())
+    }
+    pub fn total_memory_usage_in_bytes(&self) -> u64 {
+        self.statistics.total_memory_usage_in_bytes()
+    }
+    pub fn set_foveated_cone_size(&mut self, value: f64) -> Result<()> {
+        if !(0. ..=1.).contains(&value) {
+            return Err(RuntimeError::new("foveatedConeSize must be between zero and one"));
+        }
+        self.options.foveated_cone_size = value;
+        Ok(())
+    }
+    pub fn set_foveated_minimum_screen_space_error_relaxation(&mut self, value: f64) -> Result<()> {
+        if value < 0. || value > self.options.maximum_screen_space_error {
+            return Err(RuntimeError::new(
+                "foveatedMinimumScreenSpaceErrorRelaxation must be between zero and maximumScreenSpaceError",
+            ));
+        }
+        self.options.foveated_minimum_screen_space_error_relaxation = value;
+        Ok(())
+    }
+    pub fn set_feature_id_label(&mut self, value: impl Into<FeatureIdLabel>) {
+        self.feature_id_label = value.into().label("featureId");
+    }
+    pub fn set_instance_feature_id_label(&mut self, value: impl Into<FeatureIdLabel>) {
+        self.instance_feature_id_label = value.into().label("instanceFeatureId");
+    }
+    pub fn set_show_credits_on_screen(&mut self, value: bool) {
+        self.options.show_credits_on_screen = value;
+        self.credits = self.resource.options().credits.clone().unwrap_or_default();
+        if let Some(credits) = self.asset.pointer("/extras/cesium/credits").and_then(Value::as_array) {
+            for credit in credits {
+                if let Some(html) = credit["html"].as_str() {
+                    self.credits.push(Credit::new(html, false));
+                }
+            }
+        }
+        for credit in &mut self.credits {
+            credit.show_on_screen |= value;
+        }
+    }
+    pub fn get_height(
+        &self,
+        cartographic: Cartographic,
+        frame: &FrameState,
+        ellipsoid: Option<&Ellipsoid>,
+    ) -> Result<Option<f64>> {
+        let ellipsoid = ellipsoid.unwrap_or(&Ellipsoid::WGS84);
+        let direction = ellipsoid.cartographic_to_cartesian(&cartographic).normalize().negate();
+        let ray = Ray::new(direction.multiply_by_scalar(-2. * ellipsoid.maximum_radius), direction);
+        Ok(self
+            .pick(&ray, frame, frame.context_capabilities.webgl2)?
+            .and_then(|p| ellipsoid.cartesian_to_cartographic(p))
+            .map(|c| c.height))
+    }
+    pub fn update_height(
+        &mut self,
+        position: Cartographic,
+        callback: impl FnMut() + 'static,
+        ellipsoid: Option<Ellipsoid>,
+    ) -> HeightSubscription {
+        let active = Rc::new(Cell::new(true));
+        self.height_requests.push(super::tileset_content::TileHeightRequest {
+            position,
+            ellipsoid: ellipsoid.unwrap_or(Ellipsoid::WGS84),
+            callback: Rc::new(RefCell::new(callback)),
+            active: Rc::clone(&active),
+            invoked: Rc::new(Cell::new(false)),
+        });
+        HeightSubscription(active)
+    }
+    fn process_update_height(&mut self, id: TileId, frame: &mut FrameState) {
+        if !self.options.enable_collision || !self.options.show || self.tiles[id].traversal.was_selected_last_frame {
+            return;
+        }
+        let sphere = self.tiles[id].bounding_sphere;
+        for request in &self.height_requests {
+            if !request.active.get() || request.invoked.get() {
+                continue;
+            }
+            let mut position = request.position;
+            if let Some(center) = request.ellipsoid.cartesian_to_cartographic(sphere.center) {
+                position.height = center.height;
+            }
+            if request.ellipsoid.cartographic_to_cartesian(&position).distance(sphere.center) > sphere.radius {
+                continue;
+            }
+            request.invoked.set(true);
+            let callback = Rc::clone(&request.callback);
+            let active = Rc::clone(&request.active);
+            let invoked = Rc::clone(&request.invoked);
+            frame.after_render.push(Box::new(move || {
+                if active.get() {
+                    (callback.borrow_mut())();
+                }
+                invoked.set(false);
+                Ok(false)
+            }));
+        }
     }
     pub fn load_tileset(&mut self, resource: Resource, json: &Value, parent: Option<TileId>) -> Result<TileId> {
         let asset = json.get("asset").ok_or_else(|| RuntimeError::new("Tileset must have an asset property."))?;
@@ -543,6 +797,7 @@ impl Cesium3DTileset {
             );
         }
         let header = json.get("root").ok_or_else(|| RuntimeError::new("Tileset must have a root property."))?;
+        let start = self.tiles.len();
         let root = self.make_tile(&resource, header, parent)?;
         let mut stack = vec![(root, header)];
         while let Some((id, header)) = stack.pop() {
@@ -553,27 +808,17 @@ impl Cesium3DTileset {
                 }
             }
         }
+        if self.options.cull_with_children_bounds {
+            for id in start..self.tiles.len() {
+                self.compute_children_hint(id);
+            }
+        }
         Ok(root)
     }
-    fn make_tile(&mut self, resource: &Resource, header: &Value, parent: Option<TileId>) -> Result<TileId> {
-        let transform = header.get("transform").map(array::<16>).transpose()?.map(Matrix4).unwrap_or(Matrix4::IDENTITY);
-        let parent_transform = parent.map_or(self.model_matrix, |i| self.tiles[i].computed_transform);
-        let computed_transform = parent_transform.multiply(&transform);
-        let refine = match header["refine"].as_str() {
-            Some("ADD" | "add") => Cesium3DTileRefine::Add,
-            Some("REPLACE" | "replace") => Cesium3DTileRefine::Replace,
-            _ => parent.map_or(Cesium3DTileRefine::Replace, |i| self.tiles[i].refine),
-        };
-        let geometric_error =
-            number(header, "geometricError", parent.map_or(self.geometric_error, |i| self.tiles[i].geometric_error));
-        let source_bounds = header
-            .get("boundingVolume")
-            .cloned()
-            .ok_or_else(|| RuntimeError::new("tile boundingVolume is required"))?;
-        let bounding_sphere = bounds(&source_bounds, computed_transform, &Ellipsoid::WGS84)?;
-        let implicit =
-            header.get("implicitTiling").is_some() || header.pointer("/extensions/3DTILES_implicit_tiling").is_some();
-        let implicit_tileset = if implicit {
+    pub(super) fn make_tile(&mut self, resource: &Resource, header: &Value, parent: Option<TileId>) -> Result<TileId> {
+        let description = if header.get("implicitTiling").is_some()
+            || header.pointer("/extensions/3DTILES_implicit_tiling").is_some()
+        {
             Some(
                 ImplicitTileset::new(
                     resource.clone(),
@@ -585,32 +830,92 @@ impl Cesium3DTileset {
         } else {
             None
         };
-        let content_resource = if let Some(implicit) = &implicit_tileset {
-            implicit.subtree_uri_template.get_derived_resource(DerivedResourceOptions {
-                template_values: vec![
-                    ("level".into(), "0".into()),
-                    ("x".into(), "0".into()),
-                    ("y".into(), "0".into()),
-                    ("z".into(), "0".into()),
-                ],
-                ..DerivedResourceOptions::default()
-            })
-        } else {
-            let content = header.get("content").or_else(|| header["contents"].as_array().and_then(|a| a.first()));
-            content.and_then(|c| c.get("uri").or(c.get("url"))).and_then(Value::as_str).and_then(|uri| {
-                resource.get_derived_resource(DerivedResourceOptions {
-                    url: Some(uri.into()),
-                    ..DerivedResourceOptions::default()
+        let coordinates = description
+            .as_ref()
+            .map(|d| ImplicitTileCoordinates::new(d.subdivision_scheme, d.subtree_levels, 0, 0, 0, Some(0)))
+            .transpose()
+            .map_err(|e| RuntimeError::new(e.to_string()))?;
+        let mut stored_header = header.clone();
+        if let (Some(d), Some(c)) = (&description, coordinates) {
+            let subtree = d
+                .subtree_uri_template
+                .get_derived_resource(DerivedResourceOptions {
+                    template_values: c
+                        .get_template_values()
+                        .into_iter()
+                        .map(|(k, v)| (k.into(), v.to_string()))
+                        .collect(),
+                    ..Default::default()
                 })
+                .ok_or_else(|| RuntimeError::new("invalid subtree URI"))?;
+            stored_header["contents"] = serde_json::json!([{"uri":subtree.url()}]);
+            let h = stored_header.as_object_mut().ok_or_else(|| RuntimeError::new("invalid tile header"))?;
+            h.remove("content");
+            h.remove("extensions");
+        }
+        let header = &stored_header;
+        let transform = header.get("transform").map(array::<16>).transpose()?.map(Matrix4).unwrap_or(Matrix4::IDENTITY);
+        let computed_transform =
+            parent.map_or(self.model_matrix, |p| self.tiles[p].computed_transform).multiply(&transform);
+        let initial_transform =
+            parent.map_or(Matrix4::IDENTITY, |p| self.tiles[p].initial_transform).multiply(&transform);
+        let refine = match header["refine"].as_str() {
+            Some("ADD" | "add") => Cesium3DTileRefine::Add,
+            Some("REPLACE" | "replace") => Cesium3DTileRefine::Replace,
+            _ => parent.map_or(Cesium3DTileRefine::Replace, |p| self.tiles[p].refine),
+        };
+        let geometric_error =
+            number(header, "geometricError", parent.map_or(self.geometric_error, |p| self.tiles[p].geometric_error));
+        let metadata = super::find_tile_metadata::find_tile_metadata(
+            self.metadata_extension.as_ref().map(|m| m.schema().as_ref()),
+            header,
+        )
+        .map_err(|e| RuntimeError::new(e.to_string()))?;
+        let source_bounds = metadata
+            .as_ref()
+            .map(|m| {
+                super::tileset_expansion::semantic_volume(m, bounding_volume_semantics::BoundingVolumePrefix::Tile)
             })
+            .transpose()?
+            .flatten()
+            .or_else(|| header.get("boundingVolume").cloned())
+            .ok_or_else(|| RuntimeError::new("tile boundingVolume is required"))?;
+        let volume = TilesetVolume::from_header(&source_bounds, computed_transform, initial_transform, 1., 0.)?;
+        let bounding_sphere = *volume.sphere();
+        let contents = super::tileset_content::content_headers(header);
+        let content_volume = if super::tileset_content::is_multiple(header) {
+            None
+        } else {
+            contents
+                .first()
+                .and_then(|c| c.get("boundingVolume"))
+                .map(|v| TilesetVolume::from_header(v, computed_transform, initial_transform, 1., 0.))
+                .transpose()?
+        };
+        let viewer_request_volume = header
+            .get("viewerRequestVolume")
+            .map(|v| TilesetVolume::from_header(v, computed_transform, initial_transform, 1., 0.))
+            .transpose()?;
+        let content_resource = if super::tileset_content::is_multiple(header) {
+            Some(resource.clone())
+        } else {
+            contents.first().and_then(|c| super::tileset_content::content_resource(resource, c))
         };
         let state = if content_resource.is_none() {
             Cesium3DTileContentState::Ready
         } else {
             Cesium3DTileContentState::Unloaded
         };
+        let expire_duration = header.pointer("/expire/duration").and_then(Value::as_f64);
+        let expire_date = header
+            .pointer("/expire/date")
+            .and_then(Value::as_str)
+            .map(JulianDate::from_iso8601)
+            .transpose()
+            .map_err(|e| RuntimeError::new(e.to_string()))?;
         let id = self.tiles.len();
-        let depth = parent.map_or(0, |i| self.tiles[i].depth + 1);
+        let depth = parent.map_or(0, |p| self.tiles[p].depth + 1);
+        let has_renderable_content = content_resource.is_some() && description.is_none();
         self.tiles.push(TilesetTile {
             parent,
             children: Vec::new(),
@@ -622,14 +927,32 @@ impl Cesium3DTileset {
             geometric_error,
             bounding_sphere,
             content_resource,
+            base_resource: resource.clone(),
+            implicit_coordinates: coordinates,
+            implicit_subtree: None,
+            implicit_metadata: None,
             state,
             content: None,
             priority: 0.,
             touched_frame: 0,
             distance_to_camera: 0.,
-            implicit_tileset,
+            implicit_tileset: description,
             destroyed: false,
             source_bounds,
+            volume,
+            content_volume,
+            viewer_request_volume,
+            traversal: TileTraversalState::new(id),
+            has_external_content: false,
+            has_implicit_content: false,
+            has_renderable_content,
+            initial_transform,
+            expire_duration,
+            expire_date,
+            expired_content: None,
+            content_counted: false,
+            metadata,
+            volume_exaggeration: [1., 0.],
         });
         if let Some(parent) = parent {
             self.tiles[parent].children.push(id);
@@ -708,8 +1031,50 @@ impl Cesium3DTileset {
             }
             let parent = self.tiles[i].parent.map_or(self.model_matrix, |p| self.tiles[p].computed_transform);
             let transform = parent.multiply(&self.tiles[i].transform);
+            if self.tiles[i].computed_transform == transform && self.tiles[i].volume_exaggeration == self.exaggeration {
+                continue;
+            }
             self.tiles[i].computed_transform = transform;
-            self.tiles[i].bounding_sphere = bounds(&self.tiles[i].source_bounds, transform, &Ellipsoid::WGS84)?;
+            self.tiles[i].volume_exaggeration = self.exaggeration;
+            self.tiles[i].volume = TilesetVolume::from_header(
+                &self.tiles[i].source_bounds,
+                transform,
+                self.tiles[i].initial_transform,
+                self.exaggeration[0],
+                self.exaggeration[1],
+            )?;
+            self.tiles[i].bounding_sphere = *self.tiles[i].volume.sphere();
+            let headers = super::tileset_content::content_headers(&self.tiles[i].header);
+            self.tiles[i].content_volume = if super::tileset_content::is_multiple(&self.tiles[i].header) {
+                None
+            } else {
+                headers
+                    .first()
+                    .and_then(|h| h.get("boundingVolume"))
+                    .map(|v| {
+                        TilesetVolume::from_header(
+                            v,
+                            transform,
+                            self.tiles[i].initial_transform,
+                            self.exaggeration[0],
+                            self.exaggeration[1],
+                        )
+                    })
+                    .transpose()?
+            };
+            self.tiles[i].viewer_request_volume = self.tiles[i]
+                .header
+                .get("viewerRequestVolume")
+                .map(|v| {
+                    TilesetVolume::from_header(
+                        v,
+                        transform,
+                        self.tiles[i].initial_transform,
+                        self.exaggeration[0],
+                        self.exaggeration[1],
+                    )
+                })
+                .transpose()?;
         }
         Ok(())
     }
@@ -717,6 +1082,18 @@ impl Cesium3DTileset {
         if self.alive.get() {
             self.events.borrow_mut().raise_event(&event);
         }
+    }
+    pub(super) fn update_expiration(&mut self, id: TileId, now: JulianDate) -> Result<()> {
+        let tile = &mut self.tiles[id];
+        if tile.content_ready()
+            && !tile.has_empty_content()
+            && tile.expire_date.is_some_and(|date| JulianDate::less_than(&date, &now))
+            && !super::tileset_content::is_multiple(&tile.header)
+        {
+            tile.state = Cesium3DTileContentState::Expired;
+            tile.expired_content = tile.content.take();
+        }
+        Ok(())
     }
     fn defer(&self, frame: &mut FrameState, event: TilesetEvent) {
         let events = Rc::clone(&self.events);
@@ -728,7 +1105,21 @@ impl Cesium3DTileset {
             Ok(true)
         }));
     }
-    pub fn install_content(&mut self, id: TileId, content: Box<dyn TilesetContent>) -> Result<()> {
+    pub fn install_content(&mut self, id: TileId, mut content: Box<dyn TilesetContent>) -> Result<()> {
+        if self.tiles.get(id).is_none_or(|t| t.destroyed || t.content.is_some()) {
+            return Err(RuntimeError::new("invalid tile or tile already has content"));
+        }
+        for expansion in content.take_expansions() {
+            self.expand_content(id, expansion)?;
+        }
+        self.tiles[id].has_renderable_content = content.is_renderable();
+        for failure in content.take_failures() {
+            self.emit(TilesetEvent::TileFailed {
+                tile: id,
+                url: Some(failure.resource.url()),
+                message: failure.message,
+            });
+        }
         let tile = self.tiles.get_mut(id).ok_or_else(|| RuntimeError::new("invalid tile id"))?;
         if tile.destroyed {
             return Err(RuntimeError::new("tile destroyed"));
@@ -750,23 +1141,37 @@ impl Cesium3DTileset {
         let mut i = 0;
         while i < self.pending.len() {
             let result = self.pending[i].future.as_mut().poll(&mut cx);
+            let remaining = if result.is_ready() { 0 } else { self.pending[i].remaining.get() };
+            self.statistics.number_of_pending_requests = self
+                .statistics
+                .number_of_pending_requests
+                .saturating_sub(self.pending[i].counted.saturating_sub(remaining));
+            self.pending[i].counted = remaining;
             if let Poll::Ready(result) = result {
                 let pending = self.pending.remove(i);
-                self.statistics.number_of_pending_requests =
-                    self.statistics.number_of_pending_requests.saturating_sub(1);
                 if self.is_destroyed() || self.tiles[pending.id].destroyed {
                     continue;
                 }
                 match result {
                     Ok(content) => {
-                        let _ = self.install_content(pending.id, content);
+                        if pending.previous_state == Cesium3DTileContentState::Expired {
+                            self.tiles[pending.id].expire_date = None;
+                        }
+                        if let Err(error) = self.install_content(pending.id, content) {
+                            self.tiles[pending.id].state = Cesium3DTileContentState::Failed;
+                            self.emit(TilesetEvent::TileFailed {
+                                tile: pending.id,
+                                url: self.tiles[pending.id].content_resource.as_ref().map(Resource::url),
+                                message: error.message,
+                            });
+                        }
                     }
                     Err(error) => {
                         self.tiles[pending.id].state = Cesium3DTileContentState::Failed;
                         self.emit(TilesetEvent::TileFailed {
                             tile: pending.id,
                             url: self.tiles[pending.id].content_resource.as_ref().map(Resource::url),
-                            message: error.to_string(),
+                            message: error.message,
                         });
                     }
                 }
@@ -782,6 +1187,7 @@ impl Cesium3DTileset {
         if self.root.is_none() {
             return Ok(());
         }
+        self.height_requests.retain(|request| request.active.get());
         let waker = frame.render_request.as_ref().map(SceneRenderRequest::waker);
         self.poll_requests_with_waker(waker.as_ref().unwrap_or(Waker::noop()));
         self.processing
@@ -802,13 +1208,21 @@ impl Cesium3DTileset {
             match result {
                 Ok(true) => {
                     tile.state = Cesium3DTileContentState::Ready;
-                    let metrics = tile.content.as_ref().unwrap().metrics();
-                    self.statistics.load(metrics, true);
+                    if tile.has_renderable_content {
+                        self.statistics.load_content(tile.content.as_ref().unwrap().as_ref(), true);
+                        tile.content_counted = true;
+                        self.statistics.number_of_tiles_with_content_ready += 1;
+                        self.statistics.number_of_loaded_tiles_total += 1;
+                        self.cache.add(id);
+                    }
+                    if let Some(duration) = tile.expire_duration {
+                        let date = frame.time.add_seconds(duration);
+                        if tile.expire_date.is_none_or(|old| JulianDate::less_than(&old, &date)) {
+                            tile.expire_date = Some(date);
+                        }
+                    }
                     self.statistics.number_of_tiles_processing =
                         self.statistics.number_of_tiles_processing.saturating_sub(1);
-                    self.statistics.number_of_tiles_with_content_ready += 1;
-                    self.statistics.number_of_loaded_tiles_total += 1;
-                    self.cache.add(id);
                     self.emit(TilesetEvent::TileLoad(id));
                 }
                 Ok(false) => {}
@@ -819,7 +1233,7 @@ impl Cesium3DTileset {
                     self.emit(TilesetEvent::TileFailed {
                         tile: id,
                         url: self.tiles[id].content_resource.as_ref().map(Resource::url),
-                        message: error.to_string(),
+                        message: error.message,
                     });
                 }
             }
@@ -829,6 +1243,9 @@ impl Cesium3DTileset {
                 (self.memory_adjusted_screen_space_error / 1.02).max(self.options.maximum_screen_space_error);
         } else if exceeded && !self.processing.is_empty() {
             self.memory_adjusted_screen_space_error *= 1.02;
+            for id in self.processing.clone() {
+                self.update_priority(id);
+            }
             self.processing.sort_by(|&a, &b| self.tiles[a].priority.total_cmp(&self.tiles[b].priority));
         }
         let start = *self.load_timestamp.get_or_insert(frame.time);
@@ -848,18 +1265,18 @@ impl Cesium3DTileset {
         };
         let tile = &self.tiles[root];
         let camera = &frame.uniform.camera;
-        let region = tile.source_bounds.get("region").and_then(Value::as_array);
-        let (up, direction, height, min, max) = if let Some(r) = region {
+        let volume = tile.content_volume.as_ref().unwrap_or(&tile.volume);
+        let (up, direction, height, min, max) = if let TilesetVolume::Region(r) = volume {
             (
                 camera.position.normalize(),
                 camera.direction,
                 camera.cartographic.map_or(f64::NAN, |c| c.height),
-                r[4].as_f64().unwrap_or(0.),
-                r[5].as_f64().unwrap_or(0.),
+                r.minimum_height,
+                r.maximum_height,
             )
         } else {
             let inverse = tile.computed_transform.inverse_transformation();
-            let center = inverse.multiply_by_point(tile.bounding_sphere.center);
+            let center = inverse.multiply_by_point(volume.sphere().center);
             let ellipsoid = frame.uniform.map_projection.ellipsoid();
             if center.magnitude() > ellipsoid.minimum_radius {
                 (
@@ -872,11 +1289,11 @@ impl Cesium3DTileset {
             } else {
                 let position = inverse.multiply_by_point(camera.position);
                 let direction = inverse.multiply_by_point_as_vector(camera.direction).normalize();
-                let half = tile
-                    .source_bounds
-                    .get("box")
-                    .and_then(|v| array::<12>(v).ok())
-                    .map_or(tile.bounding_sphere.radius, |b| Cartesian3::new(b[9], b[10], b[11]).magnitude());
+                let half = match volume {
+                    TilesetVolume::Box(b) => b.bounding_volume().half_axes.get_column(2).magnitude(),
+                    TilesetVolume::Sphere(s) => s.radius(),
+                    _ => f64::NAN,
+                };
                 (Cartesian3::UNIT_Z, direction, position.z, center.z - half, center.z + half)
             }
         };
@@ -884,102 +1301,6 @@ impl Cesium3DTileset {
         let t = ((height - close) / (max - close)).clamp(0., 1.);
         self.dynamic_screen_space_error_computed_density =
             self.options.dynamic_screen_space_error_density * (1. - direction.dot(up).abs()) * (1. - t);
-    }
-    fn screen_space_error(&self, id: TileId, frame: &FrameState, error: f64) -> f64 {
-        if error == 0. {
-            return 0.;
-        }
-        let tile = &self.tiles[id];
-        let error = error * tile.computed_transform.get_maximum_scale();
-        let distance = (frame.uniform.camera.position.distance(tile.bounding_sphere.center)
-            - tile.bounding_sphere.radius)
-            .max(1e-7);
-        let height = frame.drawing_buffer_height as f64;
-        let perspective = match frame.uniform.camera.frustum {
-            crate::renderer::UniformFrustum::Perspective(f) if frame.mode != SceneMode::Scene2D => {
-                Some(f.sse_denominator())
-            }
-            crate::renderer::UniformFrustum::PerspectiveOffCenter(f) if frame.mode != SceneMode::Scene2D => {
-                Some((f.top - f.bottom) / f.near)
-            }
-            _ => None,
-        };
-        let error = if let Some(denominator) = perspective {
-            let dynamic = if self.options.dynamic_screen_space_error {
-                crate::core::math::fog(distance, self.dynamic_screen_space_error_computed_density)
-                    * self.options.dynamic_screen_space_error_factor
-            } else {
-                0.
-            };
-            error * height / (distance * denominator) - dynamic
-        } else {
-            let (_, _, _, planes) = frame.uniform.camera.frustum.parameters();
-            let pixel_size =
-                (planes[0] - planes[1]).max(planes[3] - planes[2]) / (frame.drawing_buffer_width as f64).max(height);
-            error / pixel_size
-        };
-        error / frame.uniform.pixel_ratio
-    }
-    fn select(&mut self, id: TileId, frame: &FrameState, most_detailed: bool) -> bool {
-        let tile = &mut self.tiles[id];
-        if tile.destroyed || frame.culling_volume.compute_visibility(&tile.bounding_sphere) == Intersect::Outside {
-            return true;
-        }
-        self.statistics.visited += 1;
-        // Multiple passes in the same frame must not reorder the cache twice.
-        if tile.touched_frame != frame.frame_number {
-            tile.touched_frame = frame.frame_number;
-            self.cache.touch(id);
-        }
-        tile.distance_to_camera =
-            (frame.uniform.camera.position.distance(tile.bounding_sphere.center) - tile.bounding_sphere.radius).max(0.);
-        let mut children = tile.children.clone();
-        let refine = tile.refine;
-        let ready = tile.content_ready();
-        let empty = tile.has_empty_content();
-        let error = tile.geometric_error;
-        let can_request = matches!(tile.state, Cesium3DTileContentState::Unloaded | Cesium3DTileContentState::Expired);
-        let sse = self.screen_space_error(id, frame, error);
-        let refine_more = !children.is_empty() && (most_detailed || sse > self.memory_adjusted_screen_space_error);
-        if !empty && can_request && (!most_detailed || !refine_more || refine == Cesium3DTileRefine::Add) {
-            self.requested_tiles.push(id);
-        }
-        if !empty && ready && refine == Cesium3DTileRefine::Add {
-            self.selected_tiles.push(id);
-        }
-        let selection_start = self.selected_tiles.len();
-        let mut children_ready = true;
-        if refine_more {
-            if most_detailed {
-                children.reverse();
-            } else {
-                let camera = frame.uniform.camera.position;
-                children.sort_by(|&a, &b| {
-                    self.tiles[a]
-                        .bounding_sphere
-                        .distance_squared_to(camera)
-                        .total_cmp(&self.tiles[b].bounding_sphere.distance_squared_to(camera))
-                });
-            }
-            for child in children {
-                children_ready &= self.select(child, frame, most_detailed);
-            }
-        }
-        if refine_more && refine == Cesium3DTileRefine::Replace && !children_ready && !empty && !most_detailed {
-            self.selected_tiles.truncate(selection_start);
-        }
-        if !empty
-            && ready
-            && refine == Cesium3DTileRefine::Replace
-            && (!refine_more || (!children_ready && !most_detailed))
-        {
-            self.selected_tiles.push(id);
-        }
-        if most_detailed {
-            (!refine_more || children_ready) && (empty || refine == Cesium3DTileRefine::Replace && refine_more || ready)
-        } else {
-            empty || ready || (refine_more && children_ready)
-        }
     }
     pub fn update_for_pass(&mut self, frame: &mut FrameState, state: &mut TilesetPassState) -> Result<()> {
         let pass = state.pass;
@@ -992,7 +1313,7 @@ impl Cesium3DTileset {
         {
             return Ok(());
         }
-        state.ready = false;
+        state.ready = Some(false);
         let options = pass.get_pass_options();
         if !self.options.show && !options.ignore_commands {
             return Ok(());
@@ -1000,13 +1321,12 @@ impl Cesium3DTileset {
         if frame.mode == SceneMode::Morphing || self.root.is_none() {
             return Ok(());
         }
-        if self.traversal_kind(pass) == TilesetTraversalKind::Skip {
-            return Err(RuntimeError::new("skip-LOD traversal is not ported"));
-        }
         let original_camera =
             state.camera.as_ref().map(|camera| std::mem::replace(&mut frame.uniform.camera, camera.clone()));
         let original_culling =
             state.culling_volume.as_ref().map(|volume| std::mem::replace(&mut frame.culling_volume, volume.clone()));
+        let original_commands =
+            state.command_list.take().map(|commands| std::mem::replace(&mut frame.command_list, commands));
         let command_start = frame.command_list.len();
         let result = (|| {
             self.statistics.clear();
@@ -1018,18 +1338,15 @@ impl Cesium3DTileset {
                 }
             }
             self.cull_requests_while_moving = self.options.cull_requests_while_moving && !self.model_matrix_changed;
-            self.selected_tiles.clear();
-            self.requested_tiles.clear();
+            self.exaggeration = [frame.vertical_exaggeration, frame.vertical_exaggeration_relative_height];
             self.update_transforms()?;
-            let root = self.root.unwrap();
-            let most_detailed = self.traversal_kind(pass) == TilesetTraversalKind::MostDetailed;
-            state.ready = if !most_detailed
-                && self.screen_space_error(root, frame, self.geometric_error) <= self.memory_adjusted_screen_space_error
-            {
-                true
-            } else {
-                self.select(root, frame, most_detailed)
-            };
+            self.visibility_frame = self.visibility_frame.wrapping_add(1);
+            self.current_pass = pass;
+            self.minimum_priority = super::tileset_traversal::TilePriority::minimum();
+            self.maximum_priority = super::tileset_traversal::TilePriority::maximum();
+            let kind = self.traversal_kind(pass);
+            let ready = self.select_tiles(frame, kind)?;
+            state.ready = if kind == TilesetTraversalKind::MostDetailed { Some(ready) } else { None };
             if options.request_tiles {
                 let mut requested = self.requested_tiles.clone();
                 requested.sort_by(|&a, &b| self.tiles[a].priority.total_cmp(&self.tiles[b].priority));
@@ -1038,30 +1355,62 @@ impl Cesium3DTileset {
                         self.tiles[id].state,
                         Cesium3DTileContentState::Unloaded | Cesium3DTileContentState::Expired
                     ) {
-                        if self.cull_requests_while_moving {
-                            let delta = if frame.camera_position_delta != 0. {
-                                frame.camera_position_delta
-                            } else {
-                                frame.camera_position_delta_last_frame
-                            };
-                            let diameter = (self.tiles[id].bounding_sphere.radius * 2.).max(1.);
-                            if self.options.cull_requests_while_moving_multiplier * delta / diameter >= 1. {
-                                continue;
-                            }
-                        }
                         if let (Some(loader), Some(resource)) = (&self.loader, self.tiles[id].content_resource.clone())
                         {
+                            if self.tiles[id].state == Cesium3DTileContentState::Expired {
+                                if let Some(date) = self.tiles[id].expire_date {
+                                    resource.set_query_parameters(
+                                        &vec![("expired".into(), Some(query::QueryValue::Single(date.to_string())))],
+                                        false,
+                                    );
+                                }
+                            }
                             let cancelled = Rc::new(Cell::new(false));
                             let request = TileContentRequest {
                                 tile: id,
+                                base_resource: self.tiles[id].base_resource.clone(),
+                                implicit: self.tiles[id]
+                                    .implicit_tileset
+                                    .as_ref()
+                                    .zip(self.tiles[id].implicit_coordinates)
+                                    .map(|(d, c)| ImplicitContentRequest { description: d.clone(), coordinates: c }),
                                 resource,
                                 cancelled: Rc::clone(&cancelled),
                                 header: self.tiles[id].header.clone(),
                             };
-                            if let Some(future) = loader.request(request) {
-                                self.pending.push(PendingContent { id, future, cancelled });
+                            let remaining = Rc::new(Cell::new(1));
+                            let future = if super::tileset_content::is_multiple(&request.header) {
+                                super::tileset_content::request_multiple(loader.as_ref(), request, &remaining)
+                            } else {
+                                loader.request(request)
+                            };
+                            if let Some(future) = future {
+                                let previous_state = self.tiles[id].state;
+                                if previous_state == Cesium3DTileContentState::Expired
+                                    && (self.tiles[id].has_external_content || self.tiles[id].has_implicit_content)
+                                {
+                                    self.destroy_subtree(id)?;
+                                }
+                                if previous_state == Cesium3DTileContentState::Expired && self.tiles[id].content_counted
+                                {
+                                    if let Some(content) = self.tiles[id].expired_content.as_ref() {
+                                        self.statistics.load_content(content.as_ref(), false);
+                                    }
+                                    self.statistics.number_of_tiles_with_content_ready =
+                                        self.statistics.number_of_tiles_with_content_ready.saturating_sub(1);
+                                    self.tiles[id].content_counted = false;
+                                }
+                                let counted = remaining.get();
+                                self.pending.push(PendingContent {
+                                    id,
+                                    future,
+                                    cancelled,
+                                    previous_state,
+                                    remaining,
+                                    counted,
+                                });
                                 self.tiles[id].state = Cesium3DTileContentState::Loading;
-                                self.statistics.number_of_pending_requests += 1;
+                                self.statistics.number_of_pending_requests += counted;
                             } else {
                                 self.statistics.number_of_attempted_requests += 1;
                             }
@@ -1075,22 +1424,46 @@ impl Cesium3DTileset {
                 if options.is_render {
                     self.emit(TilesetEvent::TileVisible(id));
                 }
+                self.process_update_height(id, frame);
                 let tile = &mut self.tiles[id];
-                if let Some(content) = &mut tile.content {
-                    content.update(frame)?;
+                let command_start = frame.command_list.len();
+                if tile.content_ready() {
+                    if let Some(mut old) = tile.expired_content.take() {
+                        old.destroy()?;
+                    }
+                }
+                let expired = !tile.content_ready() && tile.expired_content.is_some();
+                let content = if expired { tile.expired_content.as_mut() } else { tile.content.as_mut() };
+                if let Some(content) = content {
+                    if let Err(error) = content.update(frame) {
+                        if !expired {
+                            tile.state = Cesium3DTileContentState::Failed;
+                            return Err(error);
+                        }
+                    }
                     let m = content.metrics();
                     self.statistics.number_of_features_selected += m.features;
                     self.statistics.number_of_points_selected += m.points;
                     self.statistics.number_of_triangles_selected += m.triangles;
                 }
+                for command in &mut frame.command_list[command_start..] {
+                    command.metadata.depth_for_translucent_classification =
+                        command.pass == crate::renderer::Pass::Translucent;
+                }
             }
             self.statistics.selected = self.selected_tiles.len() as u64;
             self.statistics.number_of_commands = (frame.command_list.len() - command_start) as u64;
             self.statistics_per_pass[pass.value() as usize] = self.statistics.clone();
+            if options.is_render && self.statistics.selected > 0 {
+                frame.credits.extend(self.credits.iter().cloned());
+            }
             Ok(())
         })();
         if options.ignore_commands {
             frame.command_list.truncate(command_start);
+        }
+        if let Some(commands) = original_commands {
+            state.command_list = Some(std::mem::replace(&mut frame.command_list, commands));
         }
         if let Some(camera) = original_camera {
             frame.uniform.camera = camera;
@@ -1107,9 +1480,9 @@ impl Cesium3DTileset {
             if frame.frame_number.saturating_sub(self.tiles[id].touched_frame) >= 1 {
                 let pending = self.pending.remove(i);
                 pending.cancelled.set(true);
-                self.tiles[id].state = Cesium3DTileContentState::Unloaded;
+                self.tiles[id].state = pending.previous_state;
                 self.statistics.number_of_pending_requests =
-                    self.statistics.number_of_pending_requests.saturating_sub(1);
+                    self.statistics.number_of_pending_requests.saturating_sub(pending.counted);
             } else {
                 i += 1;
             }
@@ -1144,13 +1517,22 @@ impl Cesium3DTileset {
     pub fn unload_tile(&mut self, id: TileId) -> Result<()> {
         if self.cache.remove(id) {
             self.emit(TilesetEvent::TileUnload(id));
-            if let Some(mut content) = self.tiles[id].content.take() {
-                self.statistics.load(content.metrics(), false);
+            let tile = &mut self.tiles[id];
+            if tile.content_counted {
+                if let Some(content) = tile.content.as_ref().or(tile.expired_content.as_ref()) {
+                    self.statistics.load_content(content.as_ref(), false);
+                }
+                self.statistics.number_of_tiles_with_content_ready =
+                    self.statistics.number_of_tiles_with_content_ready.saturating_sub(1);
+                tile.content_counted = false;
+            }
+            if let Some(mut content) = tile.content.take() {
                 content.destroy()?;
             }
-            self.tiles[id].state = Cesium3DTileContentState::Unloaded;
-            self.statistics.number_of_tiles_with_content_ready =
-                self.statistics.number_of_tiles_with_content_ready.saturating_sub(1);
+            if let Some(mut content) = tile.expired_content.take() {
+                content.destroy()?;
+            }
+            tile.state = Cesium3DTileContentState::Unloaded;
         }
         Ok(())
     }
@@ -1163,18 +1545,32 @@ impl Cesium3DTileset {
             .iter()
             .copied()
             .filter(|&id| {
-                self.tiles[id].content.is_some()
-                    && intersection_tests::ray_sphere(ray, &self.tiles[id].bounding_sphere).is_some()
+                (self.tiles[id].content.is_some() || self.tiles[id].expired_content.is_some())
+                    && intersection_tests::ray_sphere(
+                        ray,
+                        self.tiles[id].content_volume.as_ref().map_or(&self.tiles[id].bounding_sphere, |v| v.sphere()),
+                    )
+                    .is_some()
             })
             .collect();
         candidates.sort_by(|&a, &b| {
             self.tiles[a]
-                .bounding_sphere
+                .content_volume
+                .as_ref()
+                .map_or(&self.tiles[a].bounding_sphere, |v| v.sphere())
                 .distance_squared_to(ray.origin)
-                .total_cmp(&self.tiles[b].bounding_sphere.distance_squared_to(ray.origin))
+                .total_cmp(
+                    &self.tiles[b]
+                        .content_volume
+                        .as_ref()
+                        .map_or(&self.tiles[b].bounding_sphere, |v| v.sphere())
+                        .distance_squared_to(ray.origin),
+                )
         });
         for id in candidates {
-            if let Some(hit) = self.tiles[id].content.as_ref().unwrap().pick(ray, frame)? {
+            if let Some(hit) =
+                self.tiles[id].content.as_ref().or(self.tiles[id].expired_content.as_ref()).unwrap().pick(ray, frame)?
+            {
                 return Ok(Some(hit));
             }
         }
@@ -1185,11 +1581,17 @@ impl Cesium3DTileset {
             return Ok(());
         }
         self.alive.set(false);
+        for request in self.height_requests.drain(..) {
+            request.active.set(false);
+        }
         for pending in self.pending.drain(..) {
             pending.cancelled.set(true);
         }
         for tile in &mut self.tiles {
             if let Some(content) = &mut tile.content {
+                content.destroy()?;
+            }
+            if let Some(mut content) = tile.expired_content.take() {
                 content.destroy()?;
             }
             tile.content = None;
@@ -1210,7 +1612,13 @@ impl ScenePrimitive for Cesium3DTileset {
         Cesium3DTileset::pre_passes_update(self, frame)
     }
     fn update(&mut self, frame: &mut FrameState) -> Result<()> {
-        self.update_for_pass(frame, &mut TilesetPassState::new(Cesium3DTilePass::Render))
+        let mut pass = frame
+            .tileset_pass_state
+            .take()
+            .ok_or_else(|| RuntimeError::new("frameState.tilesetPassState is required"))?;
+        let result = self.update_for_pass(frame, &mut pass);
+        frame.tileset_pass_state = Some(pass);
+        result
     }
     fn post_passes_update(&mut self, frame: &mut FrameState) -> Result<()> {
         Cesium3DTileset::post_passes_update(self, frame)

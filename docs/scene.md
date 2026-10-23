@@ -40,30 +40,77 @@ protects tiles touched in the current frame. Destroying a tileset cancels its
 requests and suppresses queued events. A tileset implements `ScenePrimitive`
 and can be added directly to `scene.primitives`.
 
-These two large modules remain **partial**. Scene still needs View's tightly
-fitted depth partitions, derived shader commands, globe/translucency,
-classification, shadows, OIT, post-processing, picking and morph/controller
-integration. `SceneComponent` exposes lifecycle stages for those future ports;
-it does not implement those effects. Tileset traversal currently handles
-explicit tile trees with base replacement/additive refinement and
-most-detailed passes. Skip-LOD explicitly returns an error. Full traversal
-priority/foveated/progressive optimizations, exact non-spherical visibility,
-implicit subtree expansion, automatic external/multiple-content loading,
-expiration, styling, clipping, imagery, collision/height callbacks, shared
-model texture accounting and debug rendering remain. The existing options for
-these features do not establish support for them. Content format decoders and
-their GPU pipelines are separate work; there is no default content loader yet.
-`FrameState` is the owned data needed by this runtime, not yet the complete
-Cesium FrameState surface. Fog and Atmosphere are complete.
+`FrameState` now carries the complete upstream data surface. The required
+camera, projection, time and culling volume live in an initialized `UniformFrame`;
+other optional services/resources use owned `FrameResource` handles. Shadow,
+environment, metadata-picking, panorama and pass-state fields retain the
+upstream defaults. `Fog` and `Atmosphere` are complete.
 
-`tools/cesium/fixtures/scene-runtime.mjs` invokes actual CesiumJS methods for
-**124 scenarios**: 54 Scene frame/event/error sequences, five fog sequences
-(480 updates), six Atmosphere cases and 59 tileset loading/lifecycle/traversal
-cases. `tests/scene_runtime.rs` replays them and tests asynchronous wakeups,
-cancellation, destruction, flight preload restoration, relative metadata and
-nested resources, command ordering and execution through the Rust renderer.
-The reference Scene harness supplies explicit host operations; it does not
-claim browser rendering or visual parity.
+Traversal now implements the base, skip-LOD and most-detailed algorithms,
+including empty/external ancestors, descendant fallback, mixed-content selection
+depths, priority holders, progressive/foveated priorities, movement deferral,
+request deduplication and child-union optimization. Visibility and distance use
+sphere, oriented-box, region and S2 volumes. Bounds are rebuilt when transforms
+or exaggeration change, rather than on every frame.
+
+`from_url` installs `TilesetResourceLoader` by default. It expands external
+JSON and implicit subtrees, fetching external subtree buffers and applying
+availability, URI templates, metadata bounds/errors and child-subtree headers.
+`from_ion_asset_id` uses the existing Ion resource and credentials/credits.
+Multiple contents load concurrently and preserve successful contents when a
+sibling fails. Statistics account for each pending request and shared GPU
+texture identity. Expired content remains available during replacement;
+accepted refreshes update accounting, clear the expiry date after download,
+and destroy structural descendants when needed. Collision height callbacks
+support cancellation, including callbacks already queued for after-render.
+
+Renderable formats require a `RenderableTileFactory` or a custom
+`TilesetContentLoader`. Missing decoders report an error; structural content
+and raw bytes never stand in for rendered models. A content implementation
+owns its format-specific processing, rendering, CPU geometry, aggregate
+metrics and GPU texture identities.
+
+`SceneView` fits command bounds to depth partitions, builds pass bins,
+tracks shadow ranges/debug overlap masks and dispatches movement start/end
+with Cesium's camera tolerance and delay. Call `initialize_frame` with an
+absolute monotonic timestamp to advance flights and movement-event timing.
+`SceneCommand::from_draw` retains geometry, program, textures, uniforms,
+instancing and draw ranges. Build the program with
+`ShaderProgram::from_sources` (or `ShaderCache`) so Scene can derive log-depth,
+HDR, depth-only and pick shaders from original fragments. Metadata-pick shader
+configuration uses `PickMetadataShader`. Compiled variants are reused across
+submissions. `framebuffer` and `viewport` route clears and draws to a target;
+`draw_passes` exposes the same path for caller-supplied render/pick/depth flags.
+It does not decode picked objects or sampled heights.
+
+Scene and Cesium3DTileset remain **partial**. Scene still needs globe and
+translucency integration, classification, shadows, OIT/post-processing, full
+Picking, 2D viewport wrapping/WebVR and controller/morph/terrain integration.
+Tileset rendering still needs styling, clipping, imagery, environment/lighting,
+debug rendering and the mixed-LOD stencil/backface pass. Selecting a mixed-LOD
+tree is supported; drawing its overlap correctly requires that rendering pass.
+`SceneComponent` lifecycle hooks do not implement those effects. Existing
+runtime options do not establish support for missing rendering features.
+
+`tools/cesium/fixtures/scene-runtime.mjs` supplies **124 scenarios** (54 Scene,
+five fog sequences with 480 updates, six Atmosphere, 59 tileset).
+`scene-completion.mjs` adds **292 scenarios**: two FrameState, 48 View fitting,
+144 traversal, 18 implicit expansion, 47 derived shader, nine camera movement
+and 24 dynamic-SSE cases. `tests/scene_runtime.rs` also checks cancellation,
+expiration, shared textures, partial content failure, resource bases, CPU
+height queries and renderer/resource ownership. The reference frame harness
+uses explicit host operations and does not establish full browser Scene parity.
+
+`scripts/check-scene.sh` compares **24 actual WebGL2 pixel results** with
+CesiumJS DerivedCommand, covering log depth, HDR, render/pick/depth passes,
+framebuffer targets, retained texture/uniform inputs and variant reuse. The
+checks exercise Rust Scene's executable command path, not visual parity for
+the unported globe/effects/picking subsystems.
+
+```bash
+cargo test --test scene_completion --test scene_runtime
+bash scripts/check-scene.sh
+```
 
 ## Camera
 

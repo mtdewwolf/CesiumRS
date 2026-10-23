@@ -43,25 +43,38 @@ macro_rules! string_enum {
 }
 
 pub mod alpha_mode;
+mod tileset_expansion;
+pub use tileset_expansion::derive_implicit_volume;
+mod tileset_content;
+pub use tileset_content::{
+    HeightSubscription, ImplicitContentRequest, MultipleTilesetContent, RenderableTileFactory, TileContentFailure,
+    TileExpansion, TilesetResourceLoader,
+};
+mod tileset_traversal;
+pub use tileset_traversal::{TileTraversalState, TilesetVolume};
 pub mod cesium_3d_tileset;
 pub use cesium_3d_tileset::{
-    Cesium3DTileset, TileContentFuture, TileContentMetrics, TileContentRequest, TileId, TilesetCache, TilesetContent,
-    TilesetContentLoader, TilesetEvent, TilesetOptions, TilesetPassState, TilesetStatistics, TilesetTile,
-    TilesetTraversalKind,
+    Cesium3DTileset, FeatureIdLabel, TileContentFuture, TileContentMetrics, TileContentRequest, TileId, TilesetCache,
+    TilesetContent, TilesetContentLoader, TilesetEvent, TilesetOptions, TilesetPassState, TilesetStatistics,
+    TilesetTile, TilesetTraversalKind,
 };
 pub mod atmosphere;
+pub mod derived_command;
+pub use derived_command::{DerivedCommand, PickMetadataShader, SceneDrawMode};
 pub mod fog;
 pub mod frame_state;
 // Keep the upstream Scene/Scene.js module path.
 #[allow(clippy::module_inception)]
 pub mod scene;
+pub mod view;
 pub use atmosphere::Atmosphere;
 pub use fog::{Fog, FrameFog};
-pub use frame_state::{FramePasses, FrameState};
+pub use frame_state::{FramePasses, FrameResource, FrameShadowState, FrameState};
 pub use scene::{
-    RendererSceneBackend, Scene, SceneBackend, SceneCommand, SceneComponent, SceneEventKind, SceneNotification,
-    SceneOptions, ScenePrimitive, SceneRenderRequest, SceneStage, SceneSubmission,
+    RendererSceneBackend, Scene, SceneBackend, SceneCommand, SceneCommandFilter, SceneComponent, SceneDrawOptions,
+    SceneEventKind, SceneNotification, SceneOptions, ScenePrimitive, SceneRenderRequest, SceneStage, SceneSubmission,
 };
+pub use view::{DebugFrustumStatistics, FrustumCommands, SceneView};
 pub mod arc_gis_base_map_type;
 pub mod attribute_type;
 pub mod axis;

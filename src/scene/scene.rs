@@ -30,24 +30,64 @@ pub enum SceneStage {
     PostPasses,
     CreditEnd,
 }
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SceneSubmission {
     pub pass: Pass,
     pub frustum: usize,
     pub near: f64,
     pub far: f64,
+    pub draw_mode: super::SceneDrawMode,
+    pub framebuffer: Option<super::FrameResource>,
+    pub viewport: Option<Viewport>,
+    pub metadata: renderer::DrawMetadata,
 }
 pub type SceneExecute = Rc<dyn Fn(SceneSubmission) -> Result<()>>;
+pub type SceneCommandFilter = Rc<dyn Fn(&SceneCommand) -> bool>;
+/// Owned inputs for an executable draw, including uniforms, instancing and
+/// texture lifetimes. ShaderProgram::from_sources enables automatic variants.
+pub struct SceneDrawOptions<G: Gl> {
+    pub vertices: Rc<renderer::VertexArray<G>>,
+    pub program: Rc<renderer::ShaderProgram<G>>,
+    pub state: renderer::RenderState,
+    pub primitive_type: PrimitiveType,
+    pub offset: usize,
+    pub count: Option<usize>,
+    pub instance_count: u32,
+    pub uniforms: Vec<(String, renderer::UniformValue)>,
+    pub uniform_map: Option<renderer::UniformMap>,
+    pub textures: Vec<(String, Rc<dyn renderer::SampledTexture<G>>)>,
+    pub framebuffer: Option<Rc<renderer::Framebuffer<G>>>,
+    pub pick_metadata: Option<super::PickMetadataShader>,
+}
+impl<G: Gl> SceneDrawOptions<G> {
+    pub fn new(vertices: Rc<renderer::VertexArray<G>>, program: Rc<renderer::ShaderProgram<G>>) -> Self {
+        Self {
+            vertices,
+            program,
+            state: Default::default(),
+            primitive_type: PrimitiveType::Triangles,
+            offset: 0,
+            count: None,
+            instance_count: 0,
+            uniforms: Vec::new(),
+            uniform_map: None,
+            textures: Vec::new(),
+            framebuffer: None,
+            pick_metadata: None,
+        }
+    }
+}
 #[derive(Clone)]
 pub struct SceneCommand {
     pub id: String,
     pub pass: Pass,
     pub metadata: renderer::DrawMetadata,
     pub execute: SceneExecute,
+    pub is_clear: bool,
 }
 impl SceneCommand {
     pub fn new(id: impl Into<String>, pass: Pass, execute: SceneExecute) -> Self {
-        Self { id: id.into(), pass, metadata: renderer::DrawMetadata::default(), execute }
+        Self { id: id.into(), pass, metadata: renderer::DrawMetadata::default(), execute, is_clear: false }
     }
     /// Own the resources while the command is queued; DrawCommand borrows them
     /// only for submission, so Scene never stores dangling resource references.
@@ -60,24 +100,143 @@ impl SceneCommand {
         state: renderer::RenderState,
         metadata: renderer::DrawMetadata,
     ) -> Self {
-        let copy = metadata.clone();
+        let mut options = SceneDrawOptions::new(vertices, program);
+        options.state = state;
+        Self::from_draw(id, context, pass, metadata, options)
+    }
+    pub fn from_draw<G: Gl + 'static>(
+        id: impl Into<String>,
+        context: Context<G>,
+        pass: Pass,
+        metadata: renderer::DrawMetadata,
+        options: SceneDrawOptions<G>,
+    ) -> Self {
+        use super::DerivedCommand;
+        let programs = std::cell::RefCell::new(std::collections::HashMap::<
+            (super::SceneDrawMode, Option<String>),
+            Rc<renderer::ShaderProgram<G>>,
+        >::new());
         Self {
             id: id.into(),
             pass,
             metadata,
-            execute: Rc::new(move |_| {
-                let mut command = renderer::DrawCommand::new(&vertices, &program);
+            is_clear: false,
+            execute: Rc::new(move |submission| {
+                let mode = submission.draw_mode;
+                let key = (mode, submission.metadata.pick_id.clone());
+                let cached = { programs.borrow().get(&key).cloned() };
+                let program = if mode == super::SceneDrawMode::default() {
+                    Rc::clone(&options.program)
+                } else if let Some(p) = cached {
+                    p
+                } else {
+                    let mut source = options.program.source_options().cloned().ok_or_else(|| {
+                        RuntimeError::new("Scene shader variants require ShaderProgram::from_sources")
+                    })?;
+                    if mode.logarithmic_depth {
+                        source = DerivedCommand::logarithmic_depth(&source);
+                    }
+                    if mode.high_dynamic_range && !mode.pick && !mode.depth_only {
+                        source = DerivedCommand::hdr(&source);
+                    }
+                    if mode.depth_only {
+                        source = DerivedCommand::depth_only(&source);
+                    } else if mode.pick_metadata {
+                        if let Some(info) = &options.pick_metadata {
+                            source = DerivedCommand::pick_metadata(&source, info);
+                        }
+                    } else if mode.pick {
+                        if let Some(id) = &submission.metadata.pick_id {
+                            source = DerivedCommand::pick(&source, id);
+                        } else {
+                            source = DerivedCommand::depth_only(&source);
+                        }
+                    }
+                    let program = Rc::new(renderer::ShaderProgram::from_sources(&context, &source)?);
+                    programs.borrow_mut().insert(key, Rc::clone(&program));
+                    program
+                };
+                let mut command = renderer::DrawCommand::new(&options.vertices, &program);
                 command.pass = Some(pass);
-                command.render_state = state.clone();
-                command.metadata = copy.clone();
-                command.execute(&context, &PassState::default())
+                command.render_state =
+                    if mode.depth_only || mode.pick && !mode.pick_metadata && submission.metadata.pick_id.is_none() {
+                        DerivedCommand::depth_only_render_state(&options.state)
+                    } else if mode.pick || mode.pick_metadata {
+                        DerivedCommand::pick_render_state(&options.state)
+                    } else {
+                        options.state.clone()
+                    };
+                command.metadata = submission.metadata;
+                command.primitive_type = options.primitive_type;
+                command.offset = options.offset;
+                command.count = options.count;
+                command.instance_count = options.instance_count;
+                command.uniforms = options.uniforms.clone();
+                command.uniform_map = options.uniform_map.clone();
+                command.samplers = options.textures.iter().map(|(n, t)| (n.clone(), t.as_ref())).collect();
+                command.framebuffer = options.framebuffer.clone();
+                let framebuffer = submission
+                    .framebuffer
+                    .as_ref()
+                    .map(|f| {
+                        f.get::<Rc<renderer::Framebuffer<G>>>()
+                            .cloned()
+                            .ok_or_else(|| RuntimeError::new("Scene framebuffer has a different renderer type"))
+                    })
+                    .transpose()?;
+                command
+                    .execute(&context, &PassState { framebuffer, viewport: submission.viewport, ..Default::default() })
             }),
         }
+    }
+    pub fn clear<G: Gl + 'static>(id: impl Into<String>, context: Context<G>, command: ClearCommand<G>) -> Self {
+        let pass = command.pass.unwrap_or(Pass::Opaque);
+        let mut result = Self::new(
+            id,
+            pass,
+            Rc::new(move |s| {
+                let framebuffer = s
+                    .framebuffer
+                    .as_ref()
+                    .map(|f| {
+                        f.get::<Rc<renderer::Framebuffer<G>>>()
+                            .cloned()
+                            .ok_or_else(|| RuntimeError::new("Scene framebuffer has a different renderer type"))
+                    })
+                    .transpose()?;
+                command.execute(&context, &PassState { framebuffer, viewport: s.viewport, ..Default::default() })
+            }),
+        );
+        result.is_clear = true;
+        result
     }
 }
 /// The GPU surface. Scene owns frame decisions and command ordering; the
 /// backend applies uniforms, clears and executes the selected commands.
 pub trait SceneBackend {
+    fn set_render_target(
+        &mut self,
+        framebuffer: Option<&super::FrameResource>,
+        _viewport: Option<Viewport>,
+    ) -> Result<()> {
+        if framebuffer.is_some() {
+            return Err(RuntimeError::new("Scene backend does not support framebuffer targets"));
+        }
+        Ok(())
+    }
+    fn capabilities(&self) -> Result<renderer::ContextCapabilities> {
+        Ok(renderer::ContextCapabilities::default())
+    }
+    fn limits(&self) -> Result<renderer::ContextLimits> {
+        Ok(renderer::ContextLimits {
+            minimum_aliased_line_width: 1.,
+            maximum_aliased_line_width: 1.,
+            ..Default::default()
+        })
+    }
+    fn frame_context(&self) -> Option<super::FrameResource> {
+        None
+    }
     fn dimensions(&self) -> Result<[u32; 2]>;
     fn begin_frame(&mut self, frame: &FrameState) -> Result<()>;
     fn clear(&mut self, color: Color, depth: Option<f64>, stencil: Option<i32>) -> Result<()>;
@@ -96,13 +255,39 @@ impl<G: Gl> RendererSceneBackend<G> {
         Self { context, textures: FrameTextures::default(), pass_state: PassState::default() }
     }
 }
-impl<G: Gl> SceneBackend for RendererSceneBackend<G> {
+impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
+    fn set_render_target(
+        &mut self,
+        framebuffer: Option<&super::FrameResource>,
+        viewport: Option<Viewport>,
+    ) -> Result<()> {
+        self.pass_state.framebuffer = framebuffer
+            .map(|f| {
+                f.get::<Rc<renderer::Framebuffer<G>>>()
+                    .cloned()
+                    .ok_or_else(|| RuntimeError::new("Scene framebuffer has a different renderer type"))
+            })
+            .transpose()?;
+        self.pass_state.viewport = viewport;
+        Ok(())
+    }
+    fn capabilities(&self) -> Result<renderer::ContextCapabilities> {
+        self.context.capabilities()
+    }
+    fn limits(&self) -> Result<renderer::ContextLimits> {
+        self.context.limits()
+    }
+    fn frame_context(&self) -> Option<super::FrameResource> {
+        Some(super::FrameResource::new(self.context.clone()))
+    }
     fn dimensions(&self) -> Result<[u32; 2]> {
         self.context.drawing_buffer_size()
     }
     fn begin_frame(&mut self, frame: &FrameState) -> Result<()> {
         let [width, height] = self.dimensions()?;
-        self.pass_state.viewport = Some(Viewport { x: 0, y: 0, width, height });
+        if self.pass_state.viewport.is_none() {
+            self.pass_state.viewport = Some(Viewport { x: 0, y: 0, width, height });
+        }
         self.context.begin_frame();
         self.context.update_frame(&frame.uniform, &self.textures)
     }
@@ -144,7 +329,9 @@ impl<G: Gl> SceneBackend for RendererSceneBackend<G> {
                 renderer::UniformFrustum::OrthographicOffCenter(f)
             }
         };
-        self.context.uniform_state().update_frustum_snapshot(&camera.frustum);
+        let mut state = self.context.uniform_state();
+        state.update_camera_snapshot(&frame.uniform.camera, frame.uniform.map_projection.ellipsoid())?;
+        state.update_frustum_snapshot(&camera.frustum);
         Ok(())
     }
     fn execute(&mut self, command: &SceneCommand, submission: SceneSubmission) -> Result<()> {
@@ -213,6 +400,8 @@ pub struct SceneOptions {
     pub far_to_near_ratio: f64,
     pub logarithmic_depth_far_to_near_ratio: f64,
     pub near_to_far_distance_2d: f64,
+    pub debug_show_frustums: bool,
+    pub camera_event_wait_time: f64,
 }
 impl Default for SceneOptions {
     fn default() -> Self {
@@ -226,12 +415,18 @@ impl Default for SceneOptions {
             far_to_near_ratio: 1000.,
             logarithmic_depth_far_to_near_ratio: 1e9,
             near_to_far_distance_2d: 1.75e6,
+            debug_show_frustums: false,
+            camera_event_wait_time: 500.,
         }
     }
 }
 pub struct Scene<B: SceneBackend> {
     pub backend: B,
+    pub capabilities: renderer::ContextCapabilities,
+    pub context_limits: renderer::ContextLimits,
+    pub msaa_samples: u32,
     pub camera: Camera,
+    pub view: super::SceneView,
     pub frame_state: FrameState,
     pub options: SceneOptions,
     pub background_color: Color,
@@ -247,16 +442,29 @@ pub struct Scene<B: SceneBackend> {
     pub minimum_aliased_line_width: f64,
     pub maximum_aliased_line_width: f64,
     pub occluder: Option<Occluder>,
+    pub framebuffer: Option<super::FrameResource>,
+    pub viewport: Option<Viewport>,
+    pub debug_command_filter: Option<SceneCommandFilter>,
     render_requested: SceneRenderRequest,
     last_render_time: Option<JulianDate>,
-    last_camera: Option<(Cartesian3, Cartesian3, Cartesian3, Matrix4, super::CameraFrustum)>,
+    camera_event_clock_ms: f64,
     hdr_dirty: bool,
     log_depth_dirty: bool,
     shader_frame_count: u32,
     destroyed: bool,
 }
 impl<B: SceneBackend> Scene<B> {
-    pub fn new(backend: B, mut camera_options: CameraOptions, options: SceneOptions, time: JulianDate) -> Result<Self> {
+    pub fn new(
+        backend: B,
+        mut camera_options: CameraOptions,
+        mut options: SceneOptions,
+        time: JulianDate,
+    ) -> Result<Self> {
+        let capabilities = backend.capabilities()?;
+        let context_limits = backend.limits()?;
+        options.logarithmic_depth_buffer &= capabilities.fragment_depth;
+        options.high_dynamic_range &=
+            capabilities.depth_texture && (capabilities.color_buffer_float || capabilities.color_buffer_half_float);
         let [width, height] = backend.dimensions()?;
         camera_options.drawing_buffer_width = width as f64;
         camera_options.drawing_buffer_height = height as f64;
@@ -274,12 +482,20 @@ impl<B: SceneBackend> Scene<B> {
         let volume = camera.frustum.compute_culling_volume(snapshot.position, snapshot.direction, snapshot.up);
         let mut uniform = UniformFrame::new(snapshot, time);
         uniform.map_projection = projection;
-        let frame_state = FrameState::new(uniform, volume, [width, height]);
+        let mut frame_state = FrameState::new(uniform, volume, [width, height]);
+        frame_state.context = backend.frame_context();
+        frame_state.context_capabilities = capabilities.clone();
         let mut fog = Fog::default();
         fog.enabled = earth;
         let mut result = Self {
             backend,
+            minimum_aliased_line_width: context_limits.minimum_aliased_line_width,
+            maximum_aliased_line_width: context_limits.maximum_aliased_line_width,
+            msaa_samples: 4.min(context_limits.maximum_samples),
+            context_limits,
+            capabilities,
             camera,
+            view: super::SceneView::default(),
             frame_state,
             options,
             background_color: Color::BLACK,
@@ -292,18 +508,20 @@ impl<B: SceneBackend> Scene<B> {
             events: Event::new(),
             rethrow_render_errors: false,
             minimum_disable_depth_test_distance: 0.,
-            minimum_aliased_line_width: 1.,
-            maximum_aliased_line_width: 1.,
             occluder: None,
+            framebuffer: None,
+            viewport: None,
+            debug_command_filter: None,
             render_requested: SceneRenderRequest(Arc::new(AtomicBool::new(true))),
             last_render_time: None,
-            last_camera: None,
+            camera_event_clock_ms: 0.,
             hdr_dirty: false,
             log_depth_dirty: false,
             shader_frame_count: 0,
             destroyed: false,
         };
         result.frame_state.render_request = Some(result.request_handle());
+        result.view.initialize_camera(&result.camera);
         result.update_frame_state();
         Ok(result)
     }
@@ -329,13 +547,57 @@ impl<B: SceneBackend> Scene<B> {
     pub fn is_destroyed(&self) -> bool {
         self.destroyed
     }
+    pub fn high_dynamic_range_supported(&self) -> bool {
+        self.capabilities.depth_texture
+            && (self.capabilities.color_buffer_float || self.capabilities.color_buffer_half_float)
+    }
     pub fn set_high_dynamic_range(&mut self, value: bool) {
-        if value != self.options.high_dynamic_range {
-            self.options.high_dynamic_range = value;
-            self.hdr_dirty = true;
+        let value = value && self.high_dynamic_range_supported();
+        self.hdr_dirty = value != self.options.high_dynamic_range;
+        self.options.high_dynamic_range = value;
+    }
+    pub fn pick_position_supported(&self) -> bool {
+        self.capabilities.depth_texture
+    }
+    pub fn sample_height_supported(&self) -> bool {
+        self.capabilities.depth_texture
+    }
+    pub fn clamp_to_height_supported(&self) -> bool {
+        self.capabilities.depth_texture
+    }
+    pub fn invert_classification_supported(&self) -> bool {
+        self.capabilities.depth_texture
+    }
+    pub fn msaa_supported(&self) -> bool {
+        self.capabilities.webgl2
+    }
+    pub fn set_msaa_samples(&mut self, value: u32) {
+        self.msaa_samples = value.min(self.context_limits.maximum_samples);
+    }
+    pub fn set_pixel_ratio(&mut self, value: f64) {
+        self.camera.pixel_ratio = value;
+        self.frame_state.pixel_ratio = value;
+    }
+    pub fn set_minimum_disable_depth_test_distance(&mut self, value: f64) -> Result<()> {
+        if value < 0. {
+            return Err(RuntimeError::new("minimumDisableDepthTestDistance must be greater than or equal to 0.0."));
+        }
+        self.minimum_disable_depth_test_distance = value;
+        Ok(())
+    }
+    pub fn get_compressed_texture_format_supported(&self, format: &str) -> bool {
+        match format {
+            "s3tc" | "WEBGL_compressed_texture_s3tc" => self.capabilities.s3tc,
+            "pvrtc" | "WEBGL_compressed_texture_pvrtc" => self.capabilities.pvrtc,
+            "etc" | "WEBGL_compressed_texture_etc" => self.capabilities.etc,
+            "etc1" | "WEBGL_compressed_texture_etc1" => self.capabilities.etc1,
+            "astc" | "WEBGL_compressed_texture_astc" => self.capabilities.astc,
+            "bc7" | "EXT_texture_compression_bptc" => self.capabilities.bc7,
+            _ => false,
         }
     }
     pub fn set_logarithmic_depth_buffer(&mut self, value: bool) {
+        let value = value && self.capabilities.fragment_depth;
         if value != self.options.logarithmic_depth_buffer {
             self.options.logarithmic_depth_buffer = value;
             self.log_depth_dirty = true;
@@ -364,6 +626,7 @@ impl<B: SceneBackend> Scene<B> {
     }
     pub fn initialize_frame(&mut self, monotonic_seconds: f64) -> Result<()> {
         self.alive()?;
+        self.camera_event_clock_ms = monotonic_seconds * 1000.;
         if self.shader_frame_count == 120 {
             self.shader_frame_count = 0;
             self.stage(SceneStage::ReleaseResources)?;
@@ -380,11 +643,22 @@ impl<B: SceneBackend> Scene<B> {
         let snapshot = self.camera.uniform_camera();
         frame.command_list.clear();
         frame.executed_commands.clear();
+        frame.shadow_maps.clear();
+        frame.minimum_terrain_height = 0.;
+        frame.minimum_disable_depth_test_distance = Some(self.minimum_disable_depth_test_distance);
+        frame.maximum_screen_space_error = 2.;
+        frame.atmosphere = Some(self.atmosphere);
+        frame.light = Some(frame.uniform.light);
+        frame.scene_3d_only = self.options.scene_3d_only;
+        frame.pixel_ratio = self.camera.pixel_ratio;
+        frame.occluder = self.occluder;
+        frame.tileset_pass_state = None;
         frame.mode = self.camera.mode();
         frame.morph_time = frame.mode.get_morph_time().unwrap_or(frame.morph_time);
         frame.culling_volume =
             self.camera.frustum.compute_culling_volume(snapshot.position, snapshot.direction, snapshot.up);
         frame.uniform.camera = snapshot;
+        frame.camera_position_local = self.camera.position;
         frame.camera_position_delta = self.camera.position_wc_delta_magnitude;
         frame.camera_position_delta_last_frame = self.camera.position_wc_delta_magnitude_last_frame;
         frame.camera_time_since_moved = self.camera.time_since_moved;
@@ -397,7 +671,9 @@ impl<B: SceneBackend> Scene<B> {
         frame.uniform.background_color = self.background_color;
         frame.uniform.minimum_disable_depth_test_distance = self.minimum_disable_depth_test_distance;
         frame.uniform.atmosphere = Some(self.atmosphere.uniform());
-        frame.use_log_depth = self.options.logarithmic_depth_buffer;
+        frame.use_log_depth = self.options.logarithmic_depth_buffer
+            && matches!(self.camera.frustum, super::CameraFrustum::Perspective(_));
+        frame.uniform.split_position = frame.split_position;
         frame.passes = FramePasses::default();
     }
     fn pre_passes(&mut self) -> Result<()> {
@@ -424,12 +700,14 @@ impl<B: SceneBackend> Scene<B> {
         self.notify(SceneEventKind::PreUpdate, time, None);
         self.frame_state.new_frame = false;
         let snapshot = self.camera.uniform_camera();
-        let pose = (snapshot.position, snapshot.direction, snapshot.up, self.camera.transform(), self.camera.frustum);
         self.frame_state.culling_volume =
             self.camera.frustum.compute_culling_volume(snapshot.position, snapshot.direction, snapshot.up);
         self.frame_state.uniform.camera = snapshot;
-        let camera_changed = self.last_camera != Some(pose);
-        self.last_camera = Some(pose);
+        let camera_changed = self.view.check_for_camera_updates(
+            &mut self.camera,
+            self.camera_event_clock_ms,
+            self.options.camera_event_wait_time,
+        );
         let mut should_render = !self.options.request_render_mode
             || self.render_requested()
             || camera_changed
@@ -510,11 +788,18 @@ impl<B: SceneBackend> Scene<B> {
         self.render(time)
     }
     fn draw_frame(&mut self) -> Result<()> {
+        self.draw_passes(FramePasses { render: true, ..Default::default() })
+    }
+    /// Draw the current view with caller-supplied pass flags and target. Picking
+    /// owns hit decoding/readback; this executes the same primitive and shader
+    /// path as a normal frame without changing frame numbers or firing events.
+    pub fn draw_passes(&mut self, passes: FramePasses) -> Result<()> {
+        self.alive()?;
         let [width, height] = self.backend.dimensions()?;
         self.frame_state.drawing_buffer_width = width;
         self.frame_state.drawing_buffer_height = height;
         self.update_frame_state();
-        self.frame_state.passes.render = true;
+        self.frame_state.passes = passes;
         let mut color = self.background_color;
         if self.options.high_dynamic_range {
             color.red = color.red.powf(self.options.gamma);
@@ -522,6 +807,13 @@ impl<B: SceneBackend> Scene<B> {
             color.blue = color.blue.powf(self.options.gamma);
         }
         self.frame_state.uniform.background_color = color;
+        self.frame_state.background_color = Some(color);
+        self.frame_state.tileset_pass_state =
+            Some(super::TilesetPassState::new(if passes.pick || passes.depth || passes.pick_voxel {
+                super::Cesium3DTilePass::Pick
+            } else {
+                super::Cesium3DTilePass::Render
+            }));
         let camera = &self.frame_state.uniform.camera;
         self.fog.update(
             &mut self.frame_fog,
@@ -530,9 +822,11 @@ impl<B: SceneBackend> Scene<B> {
             camera.position,
             camera.direction,
         );
+        self.frame_state.fog = self.frame_fog;
         self.frame_state.uniform.fog_density = self.frame_fog.density;
         self.frame_state.uniform.fog_visual_density_scalar = self.frame_fog.visual_density_scalar;
         self.frame_state.uniform.fog_minimum_brightness = self.frame_fog.minimum_brightness;
+        self.backend.set_render_target(self.framebuffer.as_ref(), self.viewport)?;
         self.backend.begin_frame(&self.frame_state)?;
         self.stage(SceneStage::Environment)?;
         if self.primitives_show {
@@ -548,83 +842,83 @@ impl<B: SceneBackend> Scene<B> {
         self.backend.end_frame()
     }
     pub fn is_visible(&self, command: &SceneCommand) -> bool {
-        let Some(bounds) = &command.metadata.bounding_volume else {
-            return true;
-        };
-        if !command.metadata.cull {
-            return true;
-        }
-        self.frame_state.culling_volume.compute_visibility(bounds) != Intersect::Outside
-            && !(command.metadata.occlude
-                && self.occluder.as_ref().is_some_and(|o| !o.is_bounding_sphere_visible(bounds)))
+        command.visible_in(&self.frame_state.culling_volume, self.occluder.as_ref())
     }
     fn execute_pass(&mut self, pass: Pass, frustum: usize, near: f64, far: f64) -> Result<()> {
         let camera = self.frame_state.uniform.camera.position;
-        let mut commands: Vec<_> = self
-            .frame_state
-            .command_list
-            .iter()
-            .filter(|c| c.pass == pass && !c.metadata.pick_only && self.is_visible(c))
-            .cloned()
-            .collect();
-        if pass == Pass::Translucent {
+        let mut commands = if frustum == usize::MAX {
+            self.frame_state.command_list.iter().filter(|c| c.pass == pass).cloned().collect::<Vec<_>>()
+        } else {
+            self.view.frustum_commands_list[frustum].commands[pass as usize].clone()
+        };
+        commands
+            .retain(|c| !c.metadata.pick_only || self.frame_state.passes.pick || self.frame_state.passes.pick_voxel);
+        if matches!(pass, Pass::Translucent | Pass::Voxels | Pass::GaussianSplats) {
+            let front_to_back = pass == Pass::Translucent && !self.frame_state.passes.render;
             commands.sort_by(|a, b| {
-                let distance =
-                    |c: &SceneCommand| c.metadata.bounding_volume.map_or(0., |s| s.distance_squared_to(camera));
-                distance(b).total_cmp(&distance(a))
+                let distance = |c: &SceneCommand| {
+                    if pass == Pass::GaussianSplats {
+                        c.metadata.bounding_volume.map_or(0., |s| s.center.distance_squared(camera))
+                    } else {
+                        c.distance_squared(camera)
+                    }
+                };
+                if front_to_back {
+                    distance(a).total_cmp(&distance(b))
+                } else {
+                    distance(b).total_cmp(&distance(a))
+                }
             });
         }
         for command in commands {
-            if frustum != usize::MAX {
-                if let Some(bounds) = command.metadata.bounding_volume {
-                    let range = bounds.compute_plane_distances(
-                        self.frame_state.uniform.camera.position,
-                        self.frame_state.uniform.camera.direction,
-                    );
-                    if range.stop < near
-                        || range.start > far
-                        || (command.metadata.execute_in_closest_frustum && frustum > 0 && range.start <= near)
-                    {
-                        continue;
-                    }
-                } else if command.metadata.execute_in_closest_frustum && frustum > 0 {
-                    continue;
-                }
+            if self.debug_command_filter.as_ref().is_some_and(|f| !f(&command)) {
+                continue;
             }
-            let submission = SceneSubmission { pass, frustum, near, far };
-            self.backend.execute(&command, submission)?;
+            let passes = self.frame_state.passes;
+            let draw_mode = if command.is_clear || matches!(pass, Pass::Compute | Pass::Environment | Pass::Overlay) {
+                super::SceneDrawMode::default()
+            } else {
+                super::SceneDrawMode {
+                    logarithmic_depth: self.frame_state.use_log_depth,
+                    high_dynamic_range: self.options.high_dynamic_range
+                        && !passes.pick
+                        && !passes.pick_voxel
+                        && !passes.depth,
+                    depth_only: passes.depth,
+                    pick: passes.pick && !passes.depth && !self.frame_state.picking_metadata,
+                    pick_metadata: passes.pick
+                        && !passes.depth
+                        && self.frame_state.picking_metadata
+                        && command.metadata.pick_metadata_allowed,
+                }
+            };
+            let submission = SceneSubmission {
+                pass,
+                frustum,
+                near,
+                far,
+                draw_mode,
+                framebuffer: self.framebuffer.clone(),
+                viewport: self.viewport,
+                metadata: command.metadata.clone(),
+            };
+            self.backend.execute(&command, submission.clone())?;
             self.frame_state.executed_commands.push(submission);
         }
         Ok(())
     }
     fn execute_commands(&mut self) -> Result<()> {
+        self.view.create_potentially_visible_set(&mut self.frame_state, &self.options)?;
         self.execute_pass(Pass::Compute, usize::MAX, 0., 0.)?;
         let (_, _, range, _) = self.frame_state.uniform.camera.frustum.parameters();
-        self.execute_pass(Pass::Environment, usize::MAX, range[0], range[1])?;
-        let ratio = if self.options.logarithmic_depth_buffer {
-            self.options.logarithmic_depth_far_to_near_ratio
-        } else {
-            self.options.far_to_near_ratio
-        };
-        if ratio <= 1. || !ratio.is_finite() {
-            return Err(RuntimeError::new("farToNearRatio must be finite and greater than one"));
+        if !self.frame_state.passes.pick && !self.frame_state.passes.pick_voxel {
+            self.execute_pass(Pass::Environment, usize::MAX, range[0], range[1])?;
         }
-        let mut ranges = Vec::new();
-        let mut near = range[0].max(1e-8);
-        while near < range[1] {
-            let far = if self.frame_state.mode == SceneMode::Scene2D {
-                (near + self.options.near_to_far_distance_2d).min(range[1])
-            } else {
-                (near * ratio).min(range[1])
-            };
-            if far <= near {
-                return Err(RuntimeError::new("invalid frustum range"));
-            }
-            ranges.push((near, far));
-            near = far;
-        }
+        let ranges: Vec<_> = self.view.frustum_commands_list.iter().map(|f| (f.near, f.far)).collect();
         for (index, (near, far)) in ranges.into_iter().enumerate().rev() {
-            self.backend.set_frustum(&self.frame_state, near, far)?;
+            let opaque_near =
+                if index == 0 || self.frame_state.mode == SceneMode::Scene2D { near } else { near * 0.9999 };
+            self.backend.set_frustum(&self.frame_state, opaque_near, far)?;
             self.backend.clear(self.background_color, Some(1.), Some(0))?;
             for pass in [
                 Pass::Globe,
@@ -632,14 +926,16 @@ impl<B: SceneBackend> Scene<B> {
                 Pass::Cesium3DTileEdges,
                 Pass::Cesium3DTile,
                 Pass::Cesium3DTileClassification,
-                Pass::Cesium3DTileClassificationIgnoreShow,
-                Pass::Opaque,
-                Pass::Translucent,
                 Pass::Voxels,
+                Pass::Opaque,
                 Pass::GaussianSplats,
             ] {
-                self.execute_pass(pass, index, near, far)?;
+                self.execute_pass(pass, index, opaque_near, far)?;
             }
+            if index != 0 && self.frame_state.mode != SceneMode::Scene2D {
+                self.backend.set_frustum(&self.frame_state, near, far)?;
+            }
+            self.execute_pass(Pass::Translucent, index, near, far)?;
         }
         Ok(())
     }

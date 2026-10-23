@@ -11,6 +11,102 @@ mod browser {
         JsValue::from_str(&e.to_string())
     }
     #[wasm_bindgen]
+    pub fn scene_draw_variants(gl: JsValue, config: &str) -> Result<String, JsValue> {
+        use cesium_rs::scene::*;
+        use std::rc::Rc;
+        struct Commands(Vec<SceneCommand>);
+        impl ScenePrimitive for Commands {
+            fn pre_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn update(&mut self, f: &mut FrameState) -> Result<(), RuntimeError> {
+                f.command_list.extend(self.0.clone());
+                Ok(())
+            }
+            fn post_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn update_for_pass(&mut self, _: &mut FrameState, _: Cesium3DTilePass) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+            fn destroy(&mut self) -> Result<(), RuntimeError> {
+                Ok(())
+            }
+        }
+        let config: serde_json::Value = serde_json::from_str(config).map_err(error)?;
+        let flag = |n: &str| config[n].as_bool().unwrap_or(false);
+        let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let quad = ViewportQuad::new(&ctx).map_err(error)?;
+        let source=ShaderSource::new("uniform sampler2D image;uniform vec4 u_pickColor;void main(){out_FragColor=texture(image,vec2(0.5));\n#ifdef HDR\nout_FragColor.rgb*=0.5;\n#endif\n}");
+        let program = Rc::new(
+            ShaderProgram::from_sources(&ctx, &ViewportQuad::<BrowserGl>::shader_options(source)).map_err(error)?,
+        );
+        let mut texture_options = TextureOptions::rgba(1, 1);
+        texture_options.flip_y = false;
+        texture_options.sampler = Sampler::NEAREST;
+        let texture = Rc::new(Texture::new(&ctx, texture_options, Some(&[200, 100, 50, 255])).map_err(error)?);
+        let mut options = SceneDrawOptions::new(quad.vertex_array().clone(), program);
+        options.textures.push(("image".into(), texture));
+        options
+            .uniforms
+            .push(("u_pickColor".into(), UniformValue::Float(vec![25. / 255., 50. / 255., 75. / 255., 1.])));
+        let command = SceneCommand::from_draw(
+            "quad",
+            ctx.clone(),
+            Pass::Opaque,
+            DrawMetadata {
+                pick_id: Some("u_pickColor".into()),
+                execute_in_closest_frustum: true,
+                ..Default::default()
+            },
+            options,
+        );
+        let mut scene = Scene::new(
+            RendererSceneBackend::new(ctx.clone()),
+            CameraOptions::new(8., 8.),
+            SceneOptions {
+                logarithmic_depth_buffer: flag("log"),
+                high_dynamic_range: flag("hdr"),
+                ..Default::default()
+            },
+            JulianDate::new(2451545., 0., TimeStandard::Tai),
+        )
+        .map_err(error)?;
+        scene.primitives.push(Box::new(Commands(vec![command])));
+        let target = if flag("target") {
+            let color = Rc::new(Texture::new(&ctx, TextureOptions::rgba(8, 8), None).map_err(error)?);
+            let target = Rc::new(
+                Framebuffer::new(
+                    &ctx,
+                    FramebufferOptions { colors: vec![Attachment::Texture(color)], ..Default::default() },
+                )
+                .map_err(error)?,
+            );
+            scene.framebuffer = Some(FrameResource::new(Rc::clone(&target)));
+            Some(target)
+        } else {
+            None
+        };
+        scene.viewport = Some(Viewport { x: 0, y: 0, width: 8, height: 8 });
+        let passes = FramePasses {
+            render: !flag("pick") && !flag("depth"),
+            pick: flag("pick"),
+            depth: flag("depth"),
+            ..Default::default()
+        };
+        scene.draw_passes(passes).map_err(error)?;
+        // Repeat to exercise variant reuse and all retained GPU input lifetimes.
+        scene.draw_passes(passes).map_err(error)?;
+        let bytes = ctx
+            .read_pixels_from(ReadState {
+                framebuffer: target.as_deref(),
+                region: TextureRegion { x: 4, y: 4, width: 1, height: 1 },
+            })
+            .map_err(error)?
+            .bytes;
+        Ok(json!({"pixels":bytes,"executed":scene.frame_state.executed_commands.len()}).to_string())
+    }
+    #[wasm_bindgen]
     pub fn renderer_buffers(gl: JsValue) -> Result<String, JsValue> {
         let ctx = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
         let b = Buffer::new(

@@ -26,6 +26,15 @@ impl Host {
     }
 }
 impl SceneBackend for Host {
+    fn capabilities(&self) -> Result<cesium_rs::renderer::ContextCapabilities, RuntimeError> {
+        Ok(cesium_rs::renderer::ContextCapabilities {
+            webgl2: true,
+            fragment_depth: true,
+            depth_texture: true,
+            color_buffer_float: true,
+            ..Default::default()
+        })
+    }
     fn dimensions(&self) -> Result<[u32; 2], RuntimeError> {
         Ok([800, 600])
     }
@@ -577,7 +586,7 @@ impl cesium_rs::renderer::Gl for Gpu {
     fn invoke(
         &self,
         name: &str,
-        _: &[cesium_rs::renderer::GlValue<u32>],
+        args: &[cesium_rs::renderer::GlValue<u32>],
     ) -> Result<cesium_rs::renderer::GlValue<u32>, RuntimeError> {
         use cesium_rs::renderer::GlValue;
         self.calls.lock().unwrap().push(name.into());
@@ -587,6 +596,9 @@ impl cesium_rs::renderer::Gl for Gpu {
             return Ok(GlValue::Object(id));
         }
         Ok(match name {
+            "getParameter" if matches!(args.first(),Some(GlValue::Number(p)) if [cesium_rs::core::webgl_constants::ALIASED_LINE_WIDTH_RANGE,cesium_rs::core::webgl_constants::ALIASED_POINT_SIZE_RANGE,cesium_rs::core::webgl_constants::MAX_VIEWPORT_DIMS].contains(&(*p as u32))) => {
+                GlValue::Numbers(vec![1., 16384.])
+            }
             "getParameter" => GlValue::Number(16384.),
             "getExtension" => GlValue::Object(0),
             "getShaderParameter" | "getProgramParameter" => GlValue::Bool(true),
@@ -600,7 +612,17 @@ fn scene_executes_owned_draw_resources_through_renderer_backend() {
     let gpu = Gpu::default();
     let context = Context::new_webgl2(gpu.clone());
     let quad = ViewportQuad::new(&context).unwrap();
-    let program = Rc::new(ShaderProgram::new(&context, "vs", "fs", &[]).unwrap());
+    let program = Rc::new(
+        ShaderProgram::from_sources(
+            &context,
+            &cesium_rs::renderer::ShaderProgramOptions {
+                vertex_shader_source: cesium_rs::renderer::ShaderSource::new("void main(){gl_Position=vec4(0.0);}"),
+                fragment_shader_source: cesium_rs::renderer::ShaderSource::new("void main(){out_FragColor=vec4(1.0);}"),
+                attribute_locations: Default::default(),
+            },
+        )
+        .unwrap(),
+    );
     let command = SceneCommand::draw(
         "quad",
         context.clone(),
@@ -733,4 +755,235 @@ fn tileset_fetches_relative_metadata_and_preserves_nested_resource_bases() {
         "https://example.com/nested/models/child.glb?v=nested-v2&key=ok"
     );
     assert_eq!(tileset.resource.url(), "https://example.com/tiles/tileset.json?token=test");
+}
+
+struct StructuralTransport {
+    requests: std::cell::RefCell<Vec<String>>,
+}
+impl resource::ResourceTransport for StructuralTransport {
+    fn execute(&self, r: resource::HttpRequest) -> RequestFuture<resource::HttpResponse> {
+        self.requests.borrow_mut().push(r.url.clone());
+        let value = if r.url.ends_with("main.json") {
+            json!({"asset":{"version":"1.1"},"geometricError":100,"root":{"boundingVolume":{"sphere":[0,0,0,100]},"geometricError":0,"content":{"uri":"nested/tileset.json"}}})
+        } else if r.url.ends_with("nested/tileset.json") {
+            json!({"asset":{"version":"1.1"},"geometricError":100,"root":{"boundingVolume":{"box":[0,0,0,10,0,0,0,10,0,0,0,10]},"geometricError":0,"content":{"uri":"model/{level}/{x}/{y}.glb"},"implicitTiling":{"subdivisionScheme":"QUADTREE","subtreeLevels":1,"availableLevels":1,"subtrees":{"uri":"subtree/{level}/{x}/{y}.json"}}}})
+        } else if r.url.ends_with("subtree/0/0/0.json") {
+            json!({"tileAvailability":{"constant":1},"contentAvailability":{"constant":1},"childSubtreeAvailability":{"constant":0}})
+        } else {
+            json!({"asset":{"version":"2.0"}})
+        };
+        Box::pin(std::future::ready(Ok(resource::HttpResponse {
+            status: 200,
+            body: serde_json::to_vec(&value).unwrap(),
+            headers: vec![],
+        })))
+    }
+}
+#[test]
+fn default_loader_expands_external_and_implicit_resources_and_reports_missing_decoders() {
+    use futures_util::FutureExt;
+    let transport = Rc::new(StructuralTransport { requests: Default::default() });
+    let client = ResourceClient::new(transport.clone());
+    let options = TilesetOptions {
+        foveated_screen_space_error: false,
+        dynamic_screen_space_error: false,
+        cull_requests_while_moving: false,
+        ..Default::default()
+    };
+    let mut t =
+        Cesium3DTileset::from_url(Resource::new("https://example.com/main.json").unwrap(), &client, options, None)
+            .now_or_never()
+            .unwrap()
+            .unwrap();
+    let errors = Arc::new(Mutex::new(Vec::new()));
+    let events = errors.clone();
+    t.events.borrow_mut().add_event_listener(move |e| {
+        if let TilesetEvent::TileFailed { message, .. } = e {
+            events.lock().unwrap().push(message.clone());
+        }
+    });
+    let mut f = unrestricted_frame();
+    for i in 1..=5 {
+        f.frame_number = i;
+        t.pre_passes_update(&mut f).unwrap();
+        t.update_for_pass(&mut f, &mut TilesetPassState::new(Cesium3DTilePass::Render)).unwrap();
+    }
+    assert_eq!(
+        &*transport.requests.borrow(),
+        &[
+            "https://example.com/main.json",
+            "https://example.com/nested/tileset.json",
+            "https://example.com/nested/subtree/0/0/0.json",
+            "https://example.com/nested/model/0/0/0.glb"
+        ]
+    );
+    assert_eq!(t.statistics.number_of_tiles_total, 3);
+    assert_eq!(t.statistics.number_of_tiles_with_content_ready, 0);
+    assert_eq!(t.total_memory_usage_in_bytes(), 0);
+    assert_eq!(&*errors.lock().unwrap(), &["No renderable content factory for gltf"]);
+}
+
+struct SharedContent {
+    trace: Trace,
+}
+impl TilesetContent for SharedContent {
+    fn metrics(&self) -> TileContentMetrics {
+        TileContentMetrics { features: 2, geometry_bytes: 50, texture_bytes: 110, ..Default::default() }
+    }
+    fn texture_allocations(&self) -> Vec<(Option<String>, u64)> {
+        vec![(Some("texture-1".into()), 100), (None, 10)]
+    }
+    fn process(&mut self, _: &FrameState) -> Result<bool, RuntimeError> {
+        Ok(true)
+    }
+    fn update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+    fn pick(&self, _: &Ray, _: &FrameState) -> Result<Option<Cartesian3>, RuntimeError> {
+        Ok(None)
+    }
+    fn destroy(&mut self) -> Result<(), RuntimeError> {
+        self.trace.lock().unwrap().push("destroy".into());
+        Ok(())
+    }
+}
+#[test]
+fn multiple_requests_poll_concurrently_preserve_partial_success_and_count_shared_textures() {
+    let loader = Rc::new(Loader::default());
+    let trace: Trace = Default::default();
+    let mut t=Cesium3DTileset::from_json(Resource::new("https://example.com/tileset.json").unwrap(),&json!({"asset":{"version":"1.1"},"geometricError":100,"root":{"boundingVolume":{"sphere":[0,0,0,10]},"geometricError":0,"contents":[{"uri":"a.glb"},{"uri":"b.glb"},{"uri":"c.glb"}]}}),TilesetOptions{foveated_screen_space_error:false,..Default::default()},Some(loader.clone())).unwrap();
+    let errors = Arc::new(Mutex::new(Vec::new()));
+    let events = errors.clone();
+    t.events.borrow_mut().add_event_listener(move |e| {
+        if let TilesetEvent::TileFailed { url, message, .. } = e {
+            events.lock().unwrap().push((url.clone(), message.clone()));
+        }
+    });
+    let mut f = unrestricted_frame();
+    t.pre_passes_update(&mut f).unwrap();
+    t.update_for_pass(&mut f, &mut TilesetPassState::new(Cesium3DTilePass::Render)).unwrap();
+    assert_eq!(t.statistics.number_of_pending_requests, 3);
+    // Resolve the last request before the first: join_all must poll every one.
+    assert!(loader.senders.borrow_mut().remove(2).send(Ok(Box::new(SharedContent { trace: trace.clone() }))).is_ok());
+    t.pre_passes_update(&mut f).unwrap();
+    assert_eq!(t.statistics.number_of_pending_requests, 2);
+    assert!(loader.senders.borrow_mut().remove(1).send(Err(RuntimeError::new("bad content"))).is_ok());
+    assert!(loader.senders.borrow_mut().remove(0).send(Ok(Box::new(SharedContent { trace: trace.clone() }))).is_ok());
+    t.pre_passes_update(&mut f).unwrap();
+    assert_eq!(t.statistics.number_of_pending_requests, 0);
+    assert_eq!(t.statistics.number_of_tiles_with_content_ready, 1);
+    assert_eq!(t.statistics.geometry_byte_length, 100);
+    assert_eq!(t.statistics.textures_byte_length, 120);
+    assert_eq!(t.statistics.textures_reference_counter_by_id["texture-1"], 2);
+    assert_eq!(&*errors.lock().unwrap(), &[(Some("https://example.com/b.glb".into()), "bad content".into())]);
+    t.unload_tile(0).unwrap();
+    assert_eq!(t.total_memory_usage_in_bytes(), 0);
+    assert!(t.statistics.textures_reference_counter_by_id.is_empty());
+    assert_eq!(trace.lock().unwrap().len(), 2);
+}
+#[test]
+fn expired_content_remains_live_until_the_replacement_is_ready() {
+    let loader = Rc::new(Loader::default());
+    let old: Trace = Default::default();
+    let new: Trace = Default::default();
+    let ready = Rc::new(Cell::new(false));
+    let mut t = simple_tileset(
+        TilesetOptions { foveated_screen_space_error: false, ..Default::default() },
+        Some(loader.clone()),
+    );
+    t.tiles[0].expire_duration = Some(1.);
+    t.install_content(0, Box::new(Content { ready: Rc::new(Cell::new(true)), trace: old.clone() })).unwrap();
+    let mut f = unrestricted_frame();
+    t.pre_passes_update(&mut f).unwrap();
+    assert_eq!(t.statistics.number_of_tiles_with_content_ready, 1);
+    f.time = epoch().add_seconds(2.);
+    f.frame_number = 2;
+    t.pre_passes_update(&mut f).unwrap();
+    t.update_for_pass(&mut f, &mut TilesetPassState::new(Cesium3DTilePass::Render)).unwrap();
+    assert_eq!(t.tiles[0].state, Cesium3DTileContentState::Loading);
+    assert!(t.tiles[0].expired_content.is_some());
+    assert_eq!(t.total_memory_usage_in_bytes(), 0);
+    assert!(old.lock().unwrap().is_empty());
+    assert!(loader.requests.borrow()[0].resource.url().contains("expired="));
+    assert_eq!(t.tiles[0].content_resource.as_ref().unwrap().url(), "https://example.com/model.glb");
+    assert!(loader
+        .senders
+        .borrow_mut()
+        .remove(0)
+        .send(Ok(Box::new(Content { ready: ready.clone(), trace: new.clone() })))
+        .is_ok());
+    t.pre_passes_update(&mut f).unwrap();
+    assert!(t.tiles[0].expire_date.is_none());
+    assert_eq!(t.tiles[0].state, Cesium3DTileContentState::Processing);
+    t.update_for_pass(&mut f, &mut TilesetPassState::new(Cesium3DTilePass::Render)).unwrap();
+    assert!(old.lock().unwrap().is_empty());
+    ready.set(true);
+    t.pre_passes_update(&mut f).unwrap();
+    t.update_for_pass(&mut f, &mut TilesetPassState::new(Cesium3DTilePass::Render)).unwrap();
+    assert_eq!(&*old.lock().unwrap(), &["destroy"]);
+    assert_eq!(t.statistics.number_of_tiles_with_content_ready, 1);
+    assert_eq!(t.total_memory_usage_in_bytes(), 125);
+    assert_eq!(t.tiles[0].expire_date, Some(f.time.add_seconds(1.)));
+    t.destroy().unwrap();
+    assert_eq!(&*new.lock().unwrap(), &["destroy"]);
+}
+
+struct SphereContent(BoundingSphere);
+impl TilesetContent for SphereContent {
+    fn metrics(&self) -> TileContentMetrics {
+        Default::default()
+    }
+    fn process(&mut self, _: &FrameState) -> Result<bool, RuntimeError> {
+        Ok(true)
+    }
+    fn update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+    fn pick(&self, ray: &Ray, _: &FrameState) -> Result<Option<Cartesian3>, RuntimeError> {
+        Ok(intersection_tests::ray_sphere(ray, &self.0).map(|i| ray.get_point(i.start)))
+    }
+    fn destroy(&mut self) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+}
+#[test]
+fn cpu_height_queries_and_cancelled_height_callbacks() {
+    let sphere = BoundingSphere::new(Cartesian3::new(6378137., 0., 0.), 10.);
+    let mut t=Cesium3DTileset::from_json(Resource::new("https://example.com/tileset.json").unwrap(),&json!({"asset":{"version":"1.1"},"geometricError":1000,"root":{"boundingVolume":{"sphere":[6378137,0,0,10]},"geometricError":0,"content":{"uri":"a.glb"}}}),TilesetOptions{enable_collision:true,enable_pick:true,foveated_screen_space_error:false,..Default::default()},None).unwrap();
+    let mut f = unrestricted_frame();
+    f.uniform.camera.position = Cartesian3::new(6378237., 0., 0.);
+    f.frame_number = 5;
+    t.install_content(0, Box::new(SphereContent(sphere))).unwrap();
+    let invocations = Rc::new(Cell::new(0));
+    let callback = invocations.clone();
+    let subscription = t.update_height(Cartographic::new(0., 0., 0.), move || callback.set(callback.get() + 1), None);
+    t.pre_passes_update(&mut f).unwrap();
+    t.update_for_pass(&mut f, &mut TilesetPassState::new(Cesium3DTilePass::Render)).unwrap();
+    assert_eq!(t.selected_tiles, vec![0]);
+    assert!((t.get_height(Cartographic::new(0., 0., 0.), &f, None).unwrap().unwrap() - 10.).abs() < 1e-6);
+    t.tiles[0].expire_date = Some(epoch().add_seconds(-1.));
+    f.frame_number += 1;
+    t.update_for_pass(&mut f, &mut TilesetPassState::new(Cesium3DTilePass::Render)).unwrap();
+    assert!(t.tiles[0].expired_content.is_some());
+    assert!((t.get_height(Cartographic::new(0., 0., 0.), &f, None).unwrap().unwrap() - 10.).abs() < 1e-6);
+    subscription.cancel();
+    for callback in std::mem::take(&mut f.after_render) {
+        callback().unwrap();
+    }
+    assert_eq!(invocations.get(), 0);
+    t.options.enable_pick = false;
+    assert!(t.get_height(Cartographic::new(0., 0., 0.), &f, None).unwrap().is_none());
+    f.context_capabilities.webgl2 = true;
+    assert!(t.get_height(Cartographic::new(0., 0., 0.), &f, None).unwrap().is_some());
+    let callback = invocations.clone();
+    let subscription = t.update_height(Cartographic::new(0., 0., 0.), move || callback.set(callback.get() + 1), None);
+    f.frame_number += 2;
+    t.pre_passes_update(&mut f).unwrap();
+    t.update_for_pass(&mut f, &mut TilesetPassState::new(Cesium3DTilePass::Render)).unwrap();
+    for callback in std::mem::take(&mut f.after_render) {
+        callback().unwrap();
+    }
+    assert_eq!(invocations.get(), 1);
+    t.destroy().unwrap();
+    assert!(!subscription.is_active());
 }

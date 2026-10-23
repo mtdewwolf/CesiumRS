@@ -4027,18 +4027,48 @@
     "note": "Density/height/direction falloff, mode and height disabling, renderability and frame parameters; five CesiumJS sequences with 480 updates."
   },
   "Scene/FrameState": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::frame_state",
-    "note": "Owned frame snapshots, passes, command queues, deferred callbacks, dimensions, camera motion, fog/atmosphere renderer inputs and async render-request waker. Remaining Cesium FrameState fields and GPU subsystem integration are pending."
+    "note": "Complete FrameState data surface and defaults, including services, environment, shadow state, metadata picking, pass overrides and deferred callbacks. Typed resource handles retain subsystem ownership; UniformFrame requires an initialized camera/projection/time/culling volume instead of JS undefined. Two direct CesiumJS default/service cases in scene_completion."
   },
   "Scene/Scene": {
     "status": "partial",
     "rust": "scene::scene",
-    "note": "Frame/event/error ordering, request-render decisions, flight preloading, deferred callbacks, fog/atmosphere, primitive stages and executable renderer commands; 54 direct CesiumJS sequences plus Rust renderer/future integration. View fitting, derived commands, globe, advanced classification/effects, picking and controller/morph integrations remain; see docs/scene.md."
+    "note": "Frame/event/error ordering, request-render decisions, camera movement events, flight preloading, deferred callbacks, exact View depth fitting, executable log-depth/HDR/depth/pick shaders, uniforms/textures and framebuffer targets. 54 frame sequences, 48 View cases, nine movement sequences and 24 WebGL2 pixel comparisons. Globe/translucency, classification/effects/shadows/OIT, complete Picking and controller/morph/terrain integration remain; docs/scene.md."
   },
   "Scene/Cesium3DTileset": {
     "status": "partial",
     "rust": "scene::cesium_3d_tileset",
-    "note": "JSON/schema/resource/tree loading, transforms/bounds, explicit-tree base and most-detailed selection, async content processing/cancellation, pass state, progress/events, memory/LRU and CPU picks; 59 CesiumJS scenarios plus Rust integration. Skip-LOD, full traversal optimizations, content decoders, implicit/external/multiple expansion, styling/clipping/imagery/collision and other integrations remain; docs/scene.md lists limits."
+    "note": "JSON/schema/Ion loading, exact volumes, base/skip/most-detailed traversal with foveated/progressive priorities, external/multiple/implicit content expansion, expiry, CPU height queries/callbacks, async lifecycle, shared texture accounting and LRU. Reference trees, S2/metadata expansion and lifecycle tests. Rendering formats require a content factory; styling/clipping/imagery/environment/debug and mixed-LOD stencil rendering remain; docs/scene.md."
+  },
+  "Scene/DerivedCommand": {
+    "status": "ported",
+    "rust": "scene::derived_command",
+    "note": "Depth-only, logarithmic depth, HDR, pick and metadata-pick shader transformations/render states with ShaderCache support. Original ShaderSource fragments survive compilation. 47 direct CesiumJS cases; Scene GPU integration checks 24 WebGL2 pixel comparisons."
+  },
+  "Scene/Cesium3DTilesetBaseTraversal": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tileset / tileset_traversal",
+    "note": "Source traversal over owned tile IDs: replacement/additive selection, empty/external descendants, ancestor fallback, mixed-content selection depths, request/cache bookkeeping and priority holders. 144 direct CesiumJS deep-tree cases across base/skip/most-detailed passes in scene_completion; rendering and tile-specific clipping remain owned by their respective modules."
+  },
+  "Scene/Cesium3DTilesetSkipTraversal": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tileset / tileset_traversal",
+    "note": "Source traversal over owned tile IDs: replacement/additive selection, empty/external descendants, ancestor fallback, mixed-content selection depths, request/cache bookkeeping and priority holders. 144 direct CesiumJS deep-tree cases across base/skip/most-detailed passes in scene_completion; rendering and tile-specific clipping remain owned by their respective modules."
+  },
+  "Scene/Cesium3DTilesetMostDetailedTraversal": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tileset / tileset_traversal",
+    "note": "Source traversal over owned tile IDs: replacement/additive selection, empty/external descendants, ancestor fallback, mixed-content selection depths, request/cache bookkeeping and priority holders. 144 direct CesiumJS deep-tree cases across base/skip/most-detailed passes in scene_completion; rendering and tile-specific clipping remain owned by their respective modules."
+  },
+  "Scene/Cesium3DTilesetTraversal": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tileset / tileset_traversal",
+    "note": "Shared traversal, child sorting, selection/style tracking, visibility/union optimization, touch/request deduplication, motion/foveated deferral and priority extrema. Validated with 144 direct CesiumJS traversal cases; the tile owns its content/visibility implementation."
+  },
+  "Scene/View": {
+    "status": "partial",
+    "rust": "scene::view",
+    "note": "Camera equality/movement events, potentially-visible set, exact frustum fitting/binning, compute/overlay routing, shadow ranges and debug overlap statistics. 48 fitting and nine movement cases. View GPU resource ownership for picking, globe depth/translucency, OIT, classification and edges remains."
   }
 }
