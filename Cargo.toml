@@ -91,3 +91,9 @@ required-features = ["browser"]
 name = "renderer_completion_validation"
 crate-type = ["cdylib"]
 required-features = ["browser"]
+
+# Browser side of the CesiumJS parity benchmark (tools/cesium/bench). A raw
+# C-ABI module: it needs no wasm-bindgen and no browser feature.
+[[example]]
+name = "parity_bench_wasm"
+crate-type = ["cdylib"]

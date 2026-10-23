@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add the CesiumJS parity benchmark (`scripts/bench.sh`, [docs](docs/benchmarks.md)). It times 14 workloads on identical inputs: CesiumRS native and wasm against CesiumJS in Node and Chromium. Every output is checked against the CesiumJS fixtures or a cross-side checksum before it is timed.
+
 - Add View-owned depth/framebuffer resources, weighted MRT/two-pass OIT, translucent classification plumbing, metadata decoding, depth/drill/ray/height picking and queued most-detailed preload requests. Add pinned-source fixtures and GPU comparisons; Scene, View, Picking and Cesium3DTileset remain partial pending the documented integrations and validation.
 
 - Complete Scene Camera and CameraFlightPath: 3D/2D/Columbus navigation, view fitting, picking, change events, timed flights, callbacks, preload culling and position correction. Validate 1,161 CesiumJS scenarios, renderer snapshots, concurrent cameras and callback resource cleanup.
