@@ -54,7 +54,9 @@ pub mod blend_function;
 pub mod blend_option;
 pub mod blending_state;
 pub mod bounding_volume_semantics;
+pub mod camera;
 pub mod camera_event_type;
+pub mod camera_flight_path;
 pub mod cesium_3d_tile_color_blend_mode;
 pub mod cesium_3d_tile_content_state;
 pub mod cesium_3d_tile_content_type;
@@ -158,7 +160,14 @@ pub use bing_maps_style::BingMapsStyle;
 pub use blend_equation::BlendEquation;
 pub use blend_function::BlendFunction;
 pub use blend_option::BlendOption;
+pub use camera::{
+    Camera, CameraCorrectionTween, CameraDestination, CameraError, CameraFlightOptions, CameraFrustum, CameraOffset,
+    CameraOptions, CameraOrientation, CameraSurface, CameraView,
+};
 pub use camera_event_type::CameraEventType;
+pub use camera_flight_path::{
+    CameraEasing, CameraFlightCallback, CameraFlightPath, CameraFlightPathOptions, CameraFlightTween,
+};
 pub use cesium_3d_tile_color_blend_mode::Cesium3DTileColorBlendMode;
 pub use cesium_3d_tile_content_state::Cesium3DTileContentState;
 pub use cesium_3d_tile_content_type::Cesium3DTileContentType;

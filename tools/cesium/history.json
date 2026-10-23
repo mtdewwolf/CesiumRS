@@ -342,5 +342,21 @@
     "ported": 814,
     "implemented": 0,
     "validatedPercent": 41.92
+  },
+  {
+    "milestone": "Scene Camera navigation",
+    "date": "2026-10-23",
+    "percent": 42.44,
+    "ported": 814,
+    "implemented": 0,
+    "validatedPercent": 41.92
+  },
+  {
+    "milestone": "Scene Camera complete",
+    "date": "2026-10-23",
+    "percent": 43.11,
+    "ported": 816,
+    "implemented": 0,
+    "validatedPercent": 43.11
   }
 ]

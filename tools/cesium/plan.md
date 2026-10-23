@@ -66,22 +66,21 @@ applications can implement the existing `Gl` host contract.
 
 ### Scene
 
-Scene has **104 of 482 modules** ported, in two batches.
+Scene has **141 of 482 modules** fully ported, including Camera and
+CameraFlightPath. The validated batches cover the foundations, all 24
+GltfPipeline utilities, 3D Metadata schemas/tables/entities, tile bounding
+volumes and implicit tiling.
 
-- **Foundations:** the enums and stateless helpers the rest of Scene
-  imports. That covers the render-state constants and presets, scene and
-  globe state, 3D Tiles and 3D Metadata types (including BigInt-aware
-  `MetadataComponentType`), glTF attribute semantics, light and option types,
-  and `Splitter`. They are replayed against 1,428 direct CesiumJS cases.
-- **`GltfPipeline`:** all 24 glTF JSON utilities, including `parseGlb`,
-  `updateVersion` (glTF 0.8 and 1.0 to 2.0), `addDefaults`,
-  `removeUnusedElements` and `ForEach`. They run over a `Gltf` document whose
-  buffer sources travel in a side table. 410 direct cases cover 0.8, 1.0 and
-  2.0 documents and GLB containers.
+Large remaining modules are prioritized by upstream size, with prerequisites
+implemented first. Camera (3,990 lines) and CameraFlightPath (577) now cover
+navigation, fitting, picking, change events, renderer snapshots, timed flights,
+callbacks, preload culling and correction tweens. Their 1,161 direct CesiumJS
+scenarios pass; hosts supply the clock and consume the controller input gate.
+Flight state is owned per camera instead of using shared JavaScript scratch.
 
-Next come the glTF and 3D Tiles loaders, the metadata schema and table
-classes, and the 3D Tiles content parsers; after them, the frame-driven
-modules. See [Scene](docs/scene.md).
+Next continue Scene orchestration (5,293 lines), then Cesium3DTileset, Model,
+ScreenSpaceCameraController and GltfLoader, implementing their prerequisites
+as needed. See [Scene](docs/scene.md) for APIs and validation.
 
 
 ### Workers completion
