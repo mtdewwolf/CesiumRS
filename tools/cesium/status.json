@@ -3950,5 +3950,60 @@
     "status": "ported",
     "rust": "scene::implicit_metadata_view",
     "note": "One row of a subtree's MetadataTable through the MetadataEntity trait; views share the table behind a lock. Direct CesiumJS cases in tests/scene_metadata_tables.rs."
+  },
+  "Scene/TileBoundingVolume": {
+    "status": "ported",
+    "rust": "scene::tile_bounding_volume",
+    "note": "Rust trait replaces the abstract prototype; boundingVolume is a typed accessor on each volume. A TileBoundingVolumeFrame carries the FrameState fields the volumes read (mode, camera positionWC and positionCartographic, map projection). createDebugVolume returns the outline GeometryInstances (geometry created, id outline, color attribute) that Cesium wraps in a flat, opaque PerInstanceColorAppearance Primitive. Validated through the four volumes in tests/scene_tiling.rs."
+  },
+  "Scene/TileBoundingSphere": {
+    "status": "ported",
+    "rust": "scene::tile_bounding_sphere",
+    "note": "Zero radius becomes EPSILON7, distance, plane intersection, update and the sphere outline debug volume. Direct CesiumJS cases in tests/scene_tiling.rs."
+  },
+  "Scene/TileOrientedBoundingBox": {
+    "status": "ported",
+    "rust": "scene::tile_oriented_bounding_box",
+    "note": "Degenerate half-axes replaced by EPSILON7 perpendicular axes (every zero-axis combination), distance, plane intersection, update and the 2x2x2 box outline debug volume. Direct CesiumJS cases in tests/scene_tiling.rs."
+  },
+  "Scene/TileBoundingRegion": {
+    "status": "ported",
+    "rust": "scene::tile_bounding_region",
+    "note": "Corner and edge-plane construction (including the north and south of the equator plane shifts), 3D and 2D/Columbus/morphing distances with the map projection, the lazy computeBoundingVolumes option, plane intersection and the extruded rectangle outline. Direct CesiumJS cases in tests/scene_tiling.rs."
+  },
+  "Scene/TileBoundingS2Cell": {
+    "status": "ported",
+    "rust": "scene::tile_bounding_s2_cell",
+    "note": "Top, bottom and side planes, Cramer's-rule vertices, edge normals, the face/edge/vertex distance cases, plane intersection and the six coplanar outline instances. An invalid token returns None where S2Cell.fromToken throws. Direct CesiumJS cases in tests/scene_tiling.rs."
+  },
+  "Scene/BoundingVolumeSemantics": {
+    "status": "ported",
+    "rust": "scene::bounding_volume_semantics",
+    "note": "TILE_ and CONTENT_ bounding box, region, sphere and height semantics over any MetadataEntity. A BoundingVolumePrefix enum replaces the string prefix, so the DeveloperError for other prefixes cannot occur. Direct CesiumJS cases in tests/scene_tiling.rs."
+  },
+  "Scene/ImplicitTileCoordinates": {
+    "status": "ported",
+    "rust": "scene::implicit_tile_coordinates",
+    "note": "Quadtree and octree coordinates with Cesium's 32-bit shift arithmetic: child, Morton and tile indices, descendant, ancestor, offset, child and subtree coordinates, ancestry, equality, template values and fromMortonIndex/fromTileIndex, with the range DeveloperErrors as MetadataError::Developer. Direct CesiumJS cases in tests/scene_tiling.rs."
+  },
+  "Scene/ImplicitAvailabilityBitstream": {
+    "status": "ported",
+    "rust": "scene::implicit_availability_bitstream",
+    "note": "Constant and bitstream availability, the exact-length RuntimeError, optional set-bit counting and getBit (None out of range, where Cesium throws). Direct CesiumJS cases in tests/scene_tiling.rs."
+  },
+  "Scene/ImplicitTileset": {
+    "status": "ported",
+    "rust": "scene::implicit_tileset",
+    "note": "implicitTiling and the 3DTILES_implicit_tiling extension, the supported bounding volume RuntimeError, subtree and content URI templates (contents, content and 3DTILES_multiple_contents), the tile header template and availableLevels/maximumLevel. Direct CesiumJS cases in tests/scene_tiling.rs."
+  },
+  "Scene/ImplicitSubtree": {
+    "status": "ported",
+    "rust": "scene::implicit_subtree",
+    "note": "Binary and JSON subtrees: chunk parsing (RangeError and SyntaxError), active buffer and buffer view marking, subarray clamping, constant and bitstream tile/content/child availability, 3DTILES_metadata and property-table tile and content metadata, subtree metadata, jump buffers with their typed-array wrapping, tile and child subtree indices and metadata views. External buffers come from a caller-supplied load_buffer callback instead of ResourceCache, and the subtree is built synchronously. Direct CesiumJS cases in tests/scene_tiling.rs."
+  },
+  "Scene/ImplicitSubtreeCache": {
+    "status": "ported",
+    "rust": "scene::implicit_subtree_cache",
+    "note": "Ancestor-first, then oldest-first eviction past maximumSubtreeCount (never the subtree just added), find by coordinates in queue order and the missing-parent DeveloperError after insertion. Generic over a CachedSubtree trait. Direct CesiumJS cases in tests/scene_tiling.rs."
   }
 }

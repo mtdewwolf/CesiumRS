@@ -39,6 +39,8 @@ pub enum MetadataError {
     Type(String),
     Range(String),
     Runtime(String),
+    /// A JavaScript `SyntaxError`, such as `JSON.parse` on malformed text.
+    Syntax(String),
 }
 
 impl std::fmt::Display for MetadataError {
@@ -48,6 +50,7 @@ impl std::fmt::Display for MetadataError {
             Self::Type(m) => ("TypeError", m),
             Self::Range(m) => ("RangeError", m),
             Self::Runtime(m) => ("RuntimeError", m),
+            Self::Syntax(m) => ("SyntaxError", m),
         };
         write!(f, "{kind}: {message}")
     }
