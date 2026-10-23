@@ -148,12 +148,79 @@ cargo test --test scene_gltf_pipeline
 TZ=UTC node tools/cesium/fixtures/generate.mjs gltf_pipeline/updateVersion
 ```
 
+## 3D Metadata batch
+
+The third batch is in progress. It has **14 modules** so far, in two parts.
+
+- **Schema:** `MetadataEnumValue`, `MetadataEnum`, `MetadataClassProperty`,
+  `MetadataClass`, `MetadataSchema`, `getMetadataClassProperty` and
+  `MetadataEntity`. `MetadataEntity` is an abstract class in Cesium; here it
+  is a trait, and its static helpers are module functions.
+- **Tables:** `MetadataTableProperty`, `MetadataTable`, `JsonMetadataTable`,
+  `BatchTableHierarchy`, `PropertyTable`, `PropertyAttributeProperty` and
+  `PropertyAttribute`.
+
+### Rust shape
+
+- **Values:** a `MetadataValue` holds what Cesium keeps in plain JavaScript
+  values and in its Cartesian and Matrix classes. Where a value may be
+  missing, `undefined` is `Option::None`; `Null` is JSON `null`. The model
+  reproduces the JavaScript behaviour Cesium relies on:
+  - `JsMap` keeps JavaScript key order, with array-index keys first;
+  - `BigInt`s stay `BigInt`s, and mixing them with numbers is a `TypeError`;
+  - `+` concatenates once an operand is an array or a Cartesian;
+  - pack and unpack use Cesium's duck typing, so a missing component is
+    NaN.
+
+  Errors are `MetadataError`s, named after the JavaScript error each one
+  stands for.
+- **Binary tables:** a `MetadataTableProperty` reads its buffer views with
+  JavaScript's typed-array rules:
+  - offsets must be aligned and lengths must fit, or it is a `RangeError`;
+  - 64-bit offsets are a `TypeError`;
+  - 64-bit values are `BigInt`s.
+
+  A string property unpacks on first read, as in Cesium, and then has no
+  typed array; so does a variable-length array whose length a write changes.
+  Inside an array value, an element Cesium reads as `undefined` is `Null`.
+- **Mutation:** reads that unpack, and every write, take `&mut self`.
+- **Hierarchy:** `BatchTableHierarchy` walks parents with an explicit stack.
+  It always runs Cesium's debug validation (cycles, out-of-range parents),
+  without recursion.
+- **Known deviations:**
+  - **Owned bytes:** each table property owns a copy of the bytes it reads.
+    In Cesium a write goes into the glTF buffer that other views share.
+  - **Not ported:** the 64-bit fallbacks for platforms without
+    `BigInt64Array`, and `PropertyTable`'s GPU texture.
+  - **Non-numeric ids:** hierarchy ids that are not JSON numbers read as
+    `undefined`.
+
+### Validation
+
+`tools/cesium/fixtures/scene-metadata.mjs` and
+`scene-metadata-tables.mjs` generate the fixtures from the real modules.
+Table cases build one object and run a script of reads and writes against
+it, so state carries from one step to the next.
+
+- **Schema:** `tests/scene_metadata.rs` compares 11,804 cases exactly. It
+  skips 514 debug-only preconditions.
+- **Tables:** `tests/scene_metadata_tables.rs` compares 100 cases holding
+  4,288 scripted operations. Each operation must match Cesium's value, or
+  the name of the error Cesium throws. Eight cases that fail a debug-only
+  check at construction are skipped.
+
+```bash
+cargo test --test scene_metadata --test scene_metadata_tables
+TZ=UTC node tools/cesium/fixtures/generate.mjs MetadataTableProperty
+```
+
 ## Next
 
 The next batches build on these:
 
 - the glTF and 3D Tiles resource loaders on top of `GltfPipeline`;
-- the 3D Metadata schema and table classes;
+- the rest of 3D Metadata: the tileset, tile, content and group entities,
+  property textures, `StructuralMetadata` and the parsers;
 - 3D Tiles content parsers;
 - then the frame-driven modules (`FrameState`, `Camera`, `Primitive`, the
   globe and the tile traversal) on top of the Renderer's typed frame

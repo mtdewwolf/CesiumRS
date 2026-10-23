@@ -329,10 +329,10 @@
   },
   {
     "milestone": "3D Metadata",
-    "date": "2026-10-22",
-    "percent": 39.73,
-    "ported": 786,
+    "date": "2026-10-23",
+    "percent": 40.45,
+    "ported": 793,
     "implemented": 0,
-    "validatedPercent": 39.73
+    "validatedPercent": 40.45
   }
 ]

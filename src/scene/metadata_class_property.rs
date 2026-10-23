@@ -17,7 +17,8 @@ use std::sync::Arc;
 type Result<T> = std::result::Result<T, MetadataError>;
 
 /// `transformationFunction(value, offset, scale)`; `None` is `undefined`.
-pub type ValueTransform = dyn Fn(&MetadataValue, Option<&MetadataValue>, Option<&MetadataValue>) -> Result<MetadataValue>;
+pub type ValueTransform =
+    dyn Fn(&MetadataValue, Option<&MetadataValue>, Option<&MetadataValue>) -> Result<MetadataValue>;
 
 /// `new MetadataClassProperty(options)`. Unset fields take Cesium's defaults.
 #[derive(Clone, Debug, Default)]
@@ -813,7 +814,7 @@ fn is_cartesian(math: MathType) -> bool {
     matches!(math, MathType::Cartesian2 | MathType::Cartesian3 | MathType::Cartesian4)
 }
 
-fn component_count(math: MathType) -> usize {
+pub(crate) fn component_count(math: MathType) -> usize {
     match math {
         MathType::Number => 1,
         MathType::Cartesian2 => 2,
@@ -824,7 +825,7 @@ fn component_count(math: MathType) -> usize {
     }
 }
 
-fn from_components(math: MathType, c: &[f64]) -> MetadataValue {
+pub(crate) fn from_components(math: MathType, c: &[f64]) -> MetadataValue {
     match math {
         MathType::Cartesian2 => MetadataValue::Cartesian2(Cartesian2::unpack(c, 0)),
         MathType::Cartesian3 => MetadataValue::Cartesian3(Cartesian3::unpack(c, 0)),
@@ -848,6 +849,12 @@ fn unpack(math: MathType, value: &MetadataValue) -> Result<MetadataValue> {
 fn unpack_array(math: MathType, value: &MetadataValue) -> Result<MetadataValue> {
     let Some(items) = array_like(value) else { return Err(developer("Expected array to be defined")) };
     let n = component_count(math);
+    if items.len() < n {
+        return Err(developer(format!(
+            "Expected array.length to be greater than or equal to {n}, actual value was {}",
+            items.len()
+        )));
+    }
     if items.len() % n != 0 {
         return Err(developer(format!("array length must be a multiple of {n}.")));
     }

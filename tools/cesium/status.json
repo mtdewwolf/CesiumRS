@@ -3865,5 +3865,40 @@
     "status": "ported",
     "rust": "scene::metadata_entity",
     "note": "Rust trait for the abstract class; the static has/get/set (by id and by semantic) and getPropertyIds helpers over ordered raw properties, with no-data, defaults, normalization, value transforms and vector/matrix packing. Direct CesiumJS cases in tests/scene_metadata.rs."
+  },
+  "Scene/MetadataTableProperty": {
+    "status": "ported",
+    "rust": "scene::metadata_table_property",
+    "note": "Binary column over buffer views: numeric (with BigInt 64-bit), boolean bit fields, UTF-8 strings, enums, fixed and variable-length arrays, EXT_feature_metadata names, table-level offset/scale, lazy unpacking of strings and resized arrays, typed-array RangeErrors and BigInt TypeErrors. Each property owns a copy of its bytes rather than a view on the glTF buffer; the BigInt-less fallbacks are not ported. Direct CesiumJS cases in tests/scene_metadata_tables.rs."
+  },
+  "Scene/MetadataTable": {
+    "status": "ported",
+    "rust": "scene::metadata_table",
+    "note": "Binary property table with class defaults, semantics and typed-array access. Direct CesiumJS cases in tests/scene_metadata_tables.rs."
+  },
+  "Scene/JsonMetadataTable": {
+    "status": "ported",
+    "rust": "scene::json_metadata_table",
+    "note": "3D Tiles 1.0 JSON batch table properties with JavaScript indexing (holes, objects, strings) and strict-mode writes. Direct CesiumJS cases in tests/scene_metadata_tables.rs."
+  },
+  "Scene/BatchTableHierarchy": {
+    "status": "ported",
+    "rust": "scene::batch_table_hierarchy",
+    "note": "3DTILES_batch_table_hierarchy with JSON and binary ids and instance properties, single- and multi-parent traversal, inherited read-only properties and the debug validation (run iteratively). Direct CesiumJS cases in tests/scene_metadata_tables.rs."
+  },
+  "Scene/PropertyTable": {
+    "status": "ported",
+    "rust": "scene::property_table",
+    "note": "Binary, hierarchy and JSON sources in Cesium's order, with class queries. The GPU texture is not ported. Direct CesiumJS cases in tests/scene_metadata_tables.rs."
+  },
+  "Scene/PropertyAttributeProperty": {
+    "status": "ported",
+    "rust": "scene::property_attribute_property",
+    "note": "Attribute name and the unpacked offset/scale the shader applies. Direct CesiumJS cases in tests/scene_metadata_tables.rs."
+  },
+  "Scene/PropertyAttribute": {
+    "status": "ported",
+    "rust": "scene::property_attribute",
+    "note": "Properties of one class stored in vertex attributes. Direct CesiumJS cases in tests/scene_metadata_tables.rs."
   }
 }
