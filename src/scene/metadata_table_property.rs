@@ -141,7 +141,7 @@ impl MetadataTypedArray {
         let offset = view.byte_offset as f64;
         let read64 = |name| -> Result<Vec<[u8; 8]>> {
             let (offset, length) = checked_range(name, 8, view.buffer, offset, length)?;
-            Ok(view.buffer[offset..offset + length * 8].chunks_exact(8).map(|c| c.try_into().unwrap()).collect())
+            Ok(view.buffer[offset..offset + length * 8].as_chunks::<8>().0.to_vec())
         };
         Ok(match component_type {
             MetadataComponentType::Int64 => {
