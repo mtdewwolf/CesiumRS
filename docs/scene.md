@@ -4,6 +4,129 @@
 has one Rust module per Cesium module, as `core` does. `Scene/Model/...`
 modules live under `scene::model`.
 
+## Camera
+
+`scene::Camera` starts the large, frame-driven Scene modules. It is the
+largest prerequisite of `Scene` itself (3,990 upstream lines). The port covers:
+
+- cached local/world position and orientation, cartographic position,
+  transform/inverse transform, view/inverse view, and heading/pitch/roll;
+- 3D, 2D and Columbus View reference frames, including rotated local frames
+  and Geographic/Web Mercator projections;
+- move, look, twist, rotate and zoom controls, constrained-axis rotations,
+  2D clamping and infinite map scrolling;
+- `setView`, `lookAt`, `lookAtTransform`, rectangle fitting and
+  `viewBoundingSphere`;
+- perspective and orthographic pick rays, ellipsoid/map picking, projected
+  sphere distances, pixel sizes, horizon-based view rectangles and frustum
+  switching;
+- camera change events, position deltas and cloning;
+- `flyTo`, `flyHome`, `flyToBoundingSphere`, flight cancellation/completion,
+  preload culling volumes and `createCorrectPositionTween`.
+
+`CameraOptions` supplies the projection, canvas and drawing-buffer sizes,
+pixel ratio, map mode, Scene ellipsoid and zoom limits. The Scene ellipsoid
+and the projection's ellipsoid can differ. `CameraSurface` optionally supplies
+globe/depth picks for orthographic-width calculations; the nearer hit wins.
+`update_camera_changed(timestamp_ms)` takes an explicit monotonic time.
+`move_start` and `move_end` events are exposed for the future Scene/controller
+integration, as Cesium's Scene owns their dispatch.
+
+The local pose fields are mutable. Derived-state getters take `&mut self`
+because Cesium normalizes edited orientations on read. `set_transform`
+preserves world pose while changing reference frames. `update(mode)` checks
+the frustum and changes the coordinate interpretation; it does not perform
+the Scene transitioner's pose conversion. `CameraView`, `CameraDestination`,
+`CameraOrientation` and `CameraOffset` replace JavaScript option unions.
+`uniform_camera()` produces the renderer's existing `UniformCamera` snapshot.
+
+```rust
+use cesium_rs::{core::Cartesian3, scene::{Camera, CameraOffset, CameraOptions}};
+let mut camera = Camera::new(CameraOptions::new(800.0, 600.0));
+camera.look_at(
+    Cartesian3::new(6_378_137.0, 0.0, 0.0),
+    CameraOffset::Cartesian(Cartesian3::new(0.0, -1000.0, 1000.0)),
+).unwrap();
+let frame_camera = camera.uniform_camera();
+```
+
+`tools/cesium/fixtures/scene-camera.mjs` and `scene-camera-flights.mjs` call
+the real CesiumJS Camera, CameraFlightPath and TweenCollection with explicit
+host inputs. `tests/scene_camera.rs` replays **1,161 scenarios** (793 navigation,
+327 flight/lifecycle and 41 direct CameraFlightPath descriptors), including
+seeded operation sequences, and checks the renderer snapshot.
+Errors inside a scenario are recorded and compared, including Cesium's
+debug error when an invalid horizon fallback is needed inside the ellipsoid.
+
+`Camera` and `CameraFlightPath` are complete. Flight options include duration,
+end transform, maximum altitude, forced longitude/route weighting, pitch
+adjustment, built-in or custom easing, and completion/cancellation callbacks.
+Heading and roll interpolate around the shorter angular interval; altitude
+and pitch curves match Cesium in 3D, 2D and Columbus View. Orthographic flights
+and sphere fits are covered too.
+
+### Flight ownership and host timing
+
+`fly_to(CameraFlightOptions)` queues a flight. Call
+`update_flights(time_seconds)` once per frame with an absolute monotonic time.
+The first update starts the tween; easing applies before path interpolation.
+This scheduler implements the Camera use of `TweenCollection`; the general
+Scene TweenCollection module remains separate work. `enable_inputs` exposes
+the controller gate: it is disabled while creating a flight and restored
+after the user callback runs. The host/controller must read that gate.
+
+Callbacks receive `&mut Camera` and can start another flight. Natural
+completion clears the active flight before the completion callback. Forced
+`complete_flight()` follows Cesium's cancellation-then-completion order, so
+both callbacks run. Replacement flights cancel their predecessors. Tests also
+check that cancellation releases captured resources and that callbacks can
+enqueue another flight on the same frame.
+
+Flight starts, completion destinations and callbacks belong to each camera.
+This deliberately replaces Cesium's shared `scratchStart` and `newOptions`
+objects: concurrent cameras cannot overwrite one another's flight state.
+Callbacks run without holding internal `RefCell` borrows. Camera uses Rust
+ownership instead of the JavaScript object's shared scratch and closure state.
+
+`preload_flight_culling_volume` exposes the destination culling planes.
+`preload_flight_camera` optionally supplies an existing preload camera, matching
+Cesium's reuse behavior; a temporary clone is otherwise used. 2D flights do
+not generate preload planes. `fly_home` in morphing mode emits
+`morph_completion_requested`, which the Scene transitioner handles.
+
+`CameraFlightPath::create_tween` also exposes a descriptor directly. Its
+`update(camera, time)` consumes the interpolated time value (in seconds),
+and `complete`/`cancel` run the lifecycle wrappers. A zero-duration direct
+descriptor applies its destination on completion; `fly_to` with an explicit
+non-positive duration immediately calls `set_view`. A correction descriptor's
+`update` instead consumes its eased 0-to-1 fraction and converts the corrected
+world position back into the camera's current reference frame.
+
+Two upstream behaviors are preserved: `complete_flight()` re-applies its
+destination with `setView`'s default conversion, and the positional argument
+dispatch in CameraFlightPath uses `flyOverLongitude` as Columbus View's pitch
+adjustment threshold. The tests exercise those behaviors against CesiumJS.
+The viewer in `src/camera.rs` remains a separate viewer helper.
+
+```rust
+use cesium_rs::{core::Cartesian3, scene::{Camera, CameraDestination, CameraFlightOptions, CameraOptions}};
+let mut camera = Camera::new(CameraOptions::new(800.0, 600.0));
+let mut flight = CameraFlightOptions::new(CameraDestination::Cartesian(
+    Cartesian3::new(7_000_000.0, 1_000_000.0, 2_000_000.0),
+));
+flight.duration = Some(2.0);
+camera.fly_to(flight).unwrap();
+camera.update_flights(10.0).unwrap(); // starts the flight
+camera.update_flights(11.0).unwrap(); // midpoint
+camera.update_flights(12.0).unwrap(); // completion
+```
+
+```bash
+cargo test --test scene_camera
+TZ=UTC node tools/cesium/fixtures/generate.mjs scene/Camera
+TZ=UTC node tools/cesium/fixtures/generate.mjs scene/CameraFlights scene/CameraFlightPath
+```
+
 ## Foundations batch
 
 The first batch covers **80 modules**. These are the enums and stateless

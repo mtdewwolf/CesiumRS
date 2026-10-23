@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 41.9% implemented; 41.9% validated** (814 validated modules, 0 implemented awaiting validation, and 0 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
+**Status: 43.1% implemented; 43.1% validated** (816 validated modules, 0 implemented awaiting validation, and 0 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
 
 ## What is ported
 
@@ -64,7 +64,7 @@ TaskProcessor message contract. `transferTypedArrayTest` is n/a.
 
 ### Scene underway
 
-**104 of 482 Scene modules** are ported, in two batches.
+**141 of 482 Scene modules** are fully ported, including Camera and CameraFlightPath.
 
 The first covers the enums and stateless helpers the rest of Scene builds on:
 - the blend, depth and stencil constants and presets, returned as renderer
@@ -77,6 +77,12 @@ The first covers the enums and stateless helpers the rest of Scene builds on:
 The second ports all 24 `GltfPipeline` utilities: `parseGlb`, the glTF 0.8
 and 1.0 to 2.0 upgrade, `addDefaults`, `removeUnusedElements`, `ForEach` and
 the accessor readers.
+
+Work on the largest modules starts with Camera, a prerequisite of Scene's
+frame loop. It supports 3D/2D/Columbus navigation, reference frames, view
+fitting, picking, change events, timed flights, callbacks, preload culling and
+position correction, checked against 1,161 CesiumJS scenarios. Hosts drive
+the flight clock and controller input gate. See [Scene](docs/scene.md#camera).
 
 The third, 3D Metadata, has 24 modules so far:
 - the schema classes and the `MetadataEntity` helpers;
@@ -141,7 +147,7 @@ The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **43,173 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **44,334 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
 
 ```bash
 cargo test --all-features                    # all fixtures + native host integration

@@ -3621,10 +3621,20 @@
     "rust": "scene::billboard_load_state",
     "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
   },
+  "Scene/Camera": {
+    "status": "ported",
+    "rust": "scene::camera",
+    "note": "Reference frames, navigation, fitting, picking, change events, renderer snapshots, flyTo/flyHome/sphere flights, completion/cancellation, preload culling and correction tweens. 1120 Camera scenarios plus 41 CameraFlightPath cases; explicit host clock/input gate and per-camera flight ownership replace Scene/shared JS scratch. See docs/scene.md."
+  },
   "Scene/CameraEventType": {
     "status": "ported",
     "rust": "scene::camera_event_type",
     "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
+  },
+  "Scene/CameraFlightPath": {
+    "status": "ported",
+    "rust": "scene::camera_flight_path",
+    "note": "Executable flight descriptors with altitude/pitch curves, angular wrapping, weighted longitude routes, custom easing and lifecycle wrappers in 3D/2D/Columbus. Validated by 41 direct descriptor and 327 Camera flight scenarios. Owned starts replace shared scratch; explicit host time."
   },
   "Scene/VerticalOrigin": {
     "status": "ported",
