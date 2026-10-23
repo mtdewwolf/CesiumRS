@@ -3865,5 +3865,90 @@
     "status": "ported",
     "rust": "scene::metadata_entity",
     "note": "Rust trait for the abstract class; the static has/get/set (by id and by semantic) and getPropertyIds helpers over ordered raw properties, with no-data, defaults, normalization, value transforms and vector/matrix packing. Direct CesiumJS cases in tests/scene_metadata.rs."
+  },
+  "Scene/MetadataTableProperty": {
+    "status": "ported",
+    "rust": "scene::metadata_table_property",
+    "note": "Binary column over buffer views: numeric (with BigInt 64-bit), boolean bit fields, UTF-8 strings, enums, fixed and variable-length arrays, EXT_feature_metadata names, table-level offset/scale, lazy unpacking of strings and resized arrays, typed-array RangeErrors and BigInt TypeErrors. Each property owns a copy of its bytes rather than a view on the glTF buffer; the BigInt-less fallbacks are not ported. Direct CesiumJS cases in tests/scene_metadata_tables.rs."
+  },
+  "Scene/MetadataTable": {
+    "status": "ported",
+    "rust": "scene::metadata_table",
+    "note": "Binary property table with class defaults, semantics and typed-array access. Direct CesiumJS cases in tests/scene_metadata_tables.rs."
+  },
+  "Scene/JsonMetadataTable": {
+    "status": "ported",
+    "rust": "scene::json_metadata_table",
+    "note": "3D Tiles 1.0 JSON batch table properties with JavaScript indexing (holes, objects, strings) and strict-mode writes. Direct CesiumJS cases in tests/scene_metadata_tables.rs."
+  },
+  "Scene/BatchTableHierarchy": {
+    "status": "ported",
+    "rust": "scene::batch_table_hierarchy",
+    "note": "3DTILES_batch_table_hierarchy with JSON and binary ids and instance properties, single- and multi-parent traversal, inherited read-only properties and the debug validation (run iteratively). Direct CesiumJS cases in tests/scene_metadata_tables.rs."
+  },
+  "Scene/PropertyTable": {
+    "status": "ported",
+    "rust": "scene::property_table",
+    "note": "Binary, hierarchy and JSON sources in Cesium's order, with class queries. The GPU texture is not ported. Direct CesiumJS cases in tests/scene_metadata_tables.rs."
+  },
+  "Scene/PropertyAttributeProperty": {
+    "status": "ported",
+    "rust": "scene::property_attribute_property",
+    "note": "Attribute name and the unpacked offset/scale the shader applies. Direct CesiumJS cases in tests/scene_metadata_tables.rs."
+  },
+  "Scene/PropertyAttribute": {
+    "status": "ported",
+    "rust": "scene::property_attribute",
+    "note": "Properties of one class stored in vertex attributes. Direct CesiumJS cases in tests/scene_metadata_tables.rs."
+  },
+  "Scene/GroupMetadata": {
+    "status": "ported",
+    "rust": "scene::group_metadata",
+    "note": "Entity JSON with a class, through the MetadataEntity trait. The entity owns a copy of its properties, so writes do not reach the tileset JSON. Dictionary-form groups keep their id. Direct CesiumJS cases in tests/scene_metadata_entities.rs."
+  },
+  "Scene/TilesetMetadata": {
+    "status": "ported",
+    "rust": "scene::tileset_metadata",
+    "note": "Entity JSON with a class, through the MetadataEntity trait. The entity owns a copy of its properties, so writes do not reach the tileset JSON. Direct CesiumJS cases in tests/scene_metadata_entities.rs."
+  },
+  "Scene/TileMetadata": {
+    "status": "ported",
+    "rust": "scene::tile_metadata",
+    "note": "Entity JSON with a class, through the MetadataEntity trait. The entity owns a copy of its properties, so writes do not reach the tileset JSON. Missing properties read as empty, where Cesium's helpers fail a debug check. Direct CesiumJS cases in tests/scene_metadata_entities.rs."
+  },
+  "Scene/ContentMetadata": {
+    "status": "ported",
+    "rust": "scene::content_metadata",
+    "note": "Entity JSON with a class, through the MetadataEntity trait. The entity owns a copy of its properties, so writes do not reach the tileset JSON. Missing properties read as empty, where Cesium's helpers fail a debug check. Direct CesiumJS cases in tests/scene_metadata_entities.rs."
+  },
+  "Scene/ImplicitSubtreeMetadata": {
+    "status": "ported",
+    "rust": "scene::implicit_subtree_metadata",
+    "note": "Entity JSON with a class, through the MetadataEntity trait. The entity owns a copy of its properties, so writes do not reach the tileset JSON. Direct CesiumJS cases in tests/scene_metadata_entities.rs."
+  },
+  "Scene/Cesium3DTilesetMetadata": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tileset_metadata",
+    "note": "Tileset entity (metadata or the older tileset key) and groups as an array or the older sorted dictionary. Direct CesiumJS cases in tests/scene_metadata_entities.rs."
+  },
+  "Scene/findGroupMetadata": {
+    "status": "ported",
+    "rust": "scene::find_group_metadata",
+    "note": "Group by index or dictionary id, from the content header or its 3DTILES_metadata extension. Direct CesiumJS cases in tests/scene_metadata_entities.rs."
+  },
+  "Scene/findTileMetadata": {
+    "status": "ported",
+    "rust": "scene::find_tile_metadata",
+    "note": "Tile metadata from the 1.1 metadata or the extension; the one-time missing-schema warning is not printed. Direct CesiumJS cases in tests/scene_metadata_entities.rs."
+  },
+  "Scene/findContentMetadata": {
+    "status": "ported",
+    "rust": "scene::find_content_metadata",
+    "note": "Content metadata from the 1.1 metadata or the extension; the one-time missing-schema warning is not printed. Direct CesiumJS cases in tests/scene_metadata_entities.rs."
+  },
+  "Scene/ImplicitMetadataView": {
+    "status": "ported",
+    "rust": "scene::implicit_metadata_view",
+    "note": "One row of a subtree's MetadataTable through the MetadataEntity trait; views share the table behind a lock. Direct CesiumJS cases in tests/scene_metadata_tables.rs."
   }
 }

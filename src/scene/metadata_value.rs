@@ -339,9 +339,11 @@ impl<T> FromIterator<(String, T)> for JsMap<T> {
     }
 }
 
-/// The entries of a JSON object in `for...in` order.
+/// The entries of a JSON object in `for...in` order; an array's are its
+/// indices.
 pub(crate) fn json_entries(value: Option<&Value>) -> Vec<(String, &Value)> {
     match value {
+        Some(Value::Array(items)) => items.iter().enumerate().map(|(i, v)| (i.to_string(), v)).collect(),
         Some(Value::Object(map)) => crate::scene::gltf_pipeline::js::object_keys(map)
             .into_iter()
             .map(|k| {
