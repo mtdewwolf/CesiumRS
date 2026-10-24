@@ -85,7 +85,7 @@ const view = (bytes, pad = 0) => ({ buffer: [...new Array(pad).fill(0), ...bytes
 
 // The property JSON and buffer views of rows of a class property, with
 // buffer view ids from `base`.
-function encode(cp, rows, opts = {}) {
+export function encode(cp, rows, opts = {}) {
   const base = opts.base ?? 0;
   const legacy = opts.legacy ?? false;
   const elements = rows.map((r) => (cp.isArray ? r : [r]));
@@ -130,7 +130,7 @@ function encode(cp, rows, opts = {}) {
   return { property, views };
 }
 
-function makeViews(views) {
+export function makeViews(views) {
   const out = {};
   for (const [id, v] of Object.entries(views)) {
     const buffer = new Uint8Array(v.buffer).buffer;

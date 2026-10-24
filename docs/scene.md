@@ -360,8 +360,86 @@ turns a missing or null element into 0; a missing array is not iterable and
 reading a property of null throws a `TypeError`.
 
 Tests: `tests/scene_gpm.rs`, 35 pinned cases from
-`tools/cesium/fixtures/scene-gpm.mjs`. `GltfMeshPrimitiveGpmLoader` follows
-property textures and `StructuralMetadata`.
+`tools/cesium/fixtures/scene-gpm.mjs`. `GltfMeshPrimitiveGpmLoader`, which
+turns per-point error textures into `StructuralMetadata`, is still to come.
+
+## Structural metadata
+
+`StructuralMetadata` is a model's 3D Metadata: its schema with the property
+tables, property textures and property attributes that use it. Three parsers
+build it:
+
+- `parse_structural_metadata` reads `EXT_structural_metadata`;
+- `parse_feature_metadata_legacy` reads the deprecated `EXT_feature_metadata`,
+  storing its dictionaries in UTF-16 key order with the keys as ids
+  (`MetadataId::Key`) and rewriting feature textures as property textures;
+- `parse_batch_table` transcodes a 3D Tiles 1.0 batch table into a generated
+  `_batchTable` class: JSON arrays become a `JsonMetadataTable`, the
+  hierarchy a `BatchTableHierarchy`, and binary properties either a binary
+  `MetadataTable` or, for point clouds, a `PropertyAttribute` whose values
+  are returned as custom vertex attributes.
+
+`PropertyTexture` and `PropertyTextureProperty` read a texture info plus
+`channels`. The model's textures are passed by glTF index (`GltfTextures`),
+so `StructuralMetadata`, `PropertyTexture` and `PropertyTextureProperty` are
+generic over the GL host. `get_metadata_property` finds the property texture
+property a metadata pick reads.
+
+`parse_structural_metadata` also packs each property table's GPU-compatible
+properties into an RGBA8 texture: one row per class property, in class order,
+one texel per feature, padded with zeros. Properties the table leaves out are
+filled with their `noData` value, written as CesiumJS writes it. Component `k`
+of array element `j` lands at `bytesPerElement * i + j + k`, without scaling
+by the component size. An enum property has no component type, so filling
+one fails; so does a scalar array, which is indexed as if it were wrapped
+twice. A failed fill, or a table wider or taller than the context's maximum
+texture size, leaves the table without a texture. The parsers return what
+CesiumJS logs as `StructuralMetadataWarning`s; `id()` names the one-time
+warnings CesiumJS logs once per process. Without a context no texture is
+made. The table holds its texture as a `FrameResource` wrapping an
+`Rc<Texture<G>>`.
+
+`parse_batch_table` follows JavaScript for binary property offsets:
+`binaryBody.byteOffset + property.byteOffset` concatenates when the offset is
+a string, and a missing offset is NaN, which the typed array reads as 0, so
+the first byte of the tile buffer rather than of the body. Misaligned and
+out-of-range views are `RangeError`s. Attribute names are sanitized as in
+`ModelUtility.sanitizeGlslIdentifier`; empty and repeated names get
+`property_N` placeholders, and INT, UNSIGNED_INT and DOUBLE values are cast
+to floats.
+
+A texture reader's `scale` is a number. When a metadata property has a vector
+`scale`, which shares the texture info's key, CesiumJS copies the array onto
+the reader, and the port reads NaN.
+
+Tests: `tests/scene_structural_metadata.rs`, 54 pinned cases from
+`tools/cesium/fixtures/scene-structural-metadata.mjs`. Property table textures
+are compared by the bytes uploaded: the fixture stubs `Texture.create`, and
+the test host records `texImage2D`.
+
+```bash
+cargo test --test scene_structural_metadata
+TZ=UTC node tools/cesium/fixtures/generate.mjs PropertyTextureProperty PropertyTexture StructuralMetadata getMetadataProperty parseStructuralMetadata parseFeatureMetadataLegacy parseBatchTable
+```
+
+## Tile content helpers
+
+`preprocess_3d_tile_content` identifies a payload by its magic number, with
+`glTF` renamed `glb`. JSON is identified by `root`, `asset`,
+`tileAvailability`, `type` or `voxelTable`, checked in that order, so a
+tileset, which also has an asset, is not taken for a glTF. A binary payload is
+the input slice.
+
+`TileReplacementQueue` is the globe's least-recently-rendered tile list.
+CesiumJS links the tiles themselves; the port keeps the links in the queue,
+keyed by tile id. `trim_tiles` takes a callback that frees an eligible tile
+and reports whether it was eligible. `Cesium3DContentGroup` holds a content's
+group metadata, an owned copy.
+
+Tests: `tests/scene_tile_content.rs`, 40 pinned cases from
+`tools/cesium/fixtures/scene-tile-content.mjs`. They include nine replacement
+queue scripts, compared after each of 498 steps, front to back and back to
+front.
 
 ## Camera
 
