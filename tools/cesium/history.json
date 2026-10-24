@@ -422,5 +422,13 @@
     "ported": 848,
     "implemented": 2,
     "validatedPercent": 46.02
+  },
+  {
+    "milestone": "glTF image and texture loaders",
+    "date": "2026-10-24",
+    "percent": 48.02,
+    "ported": 850,
+    "implemented": 2,
+    "validatedPercent": 46.2
   }
 ]
