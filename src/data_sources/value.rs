@@ -189,3 +189,15 @@ impl PropertyValue for JsonReference {
         json_string(&self.0.borrow())
     }
 }
+
+impl PropertyValue for crate::scene::HeightReference {
+    fn property_equals(&self, other: &Self) -> bool {
+        self == other
+    }
+    fn has_equals_method(&self) -> bool {
+        false
+    }
+    fn property_string(&self) -> String {
+        (*self as i32).to_string()
+    }
+}

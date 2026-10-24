@@ -4404,7 +4404,7 @@
   "Scene/ConeEmitter": {
     "status": "ported",
     "rust": "scene::particle_emitter",
-    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30\u00b0 default. Emitted particles match bit for bit."
+    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30° default. Emitted particles match bit for bit."
   },
   "Scene/SphereEmitter": {
     "status": "ported",
@@ -4485,5 +4485,35 @@
     "status": "ported",
     "rust": "data_sources::velocity_orientation_property",
     "note": "Velocity-based rotation/quaternion orientation, ellipsoid identity updates and value equality, position forwarding and owned scratch. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/createPropertyDescriptor": {
+    "status": "ported",
+    "rust": "data_sources::create_property_descriptor",
+    "note": "Owned accessor slots, constant/custom factories, identity suppression and child-change forwarding. Four reference traces; failed conversion and reentrant replacement preserve subscriptions."
+  },
+  "DataSources/createRawPropertyDescriptor": {
+    "status": "ported",
+    "rust": "data_sources::create_raw_property_descriptor",
+    "note": "Raw owned accessor slots without constant wrapping; two pinned reference traces. RAII subscriptions replace JavaScript accessor backing fields."
+  },
+  "DataSources/PropertyBag": {
+    "status": "ported",
+    "rust": "data_sources::property_bag",
+    "note": "Ordered heterogeneous DynamicValue/component fields, factories, evaluation/result reuse, merge and equality; nine reference scenarios. Removed fields detach children; evaluation snapshots fields and reads the clock once."
+  },
+  "DataSources/Entity": {
+    "status": "ported",
+    "rust": "data_sources::entity",
+    "note": "Typed component slots, metadata, custom fields, scoped type registry, hierarchy/show, availability, merge and model/height transforms; 93 reference scenarios. Graphics slots accept EntityComponent; concrete Graphics classes and automatic raw graphics-object coercion remain separate unported modules. Strong parent/weak children reject cycles."
+  },
+  "DataSources/EntityCollection": {
+    "status": "ported",
+    "rust": "data_sources::entity_collection",
+    "note": "ID-indexed membership, batching/coalescing, reentrant changes, show and availability bounds; five reference scenarios. All removed child subscriptions detach, including suspended additions."
+  },
+  "DataSources/ReferenceProperty": {
+    "status": "ported",
+    "rust": "data_sources::reference_property",
+    "note": "Lazy escaped/nested references, change forwarding, equality, getType and fixed/requested-frame evaluation; 13 reference scenarios. Weak collection ownership and membership checks prevent stale targets during suspended ID replacement."
   }
 }

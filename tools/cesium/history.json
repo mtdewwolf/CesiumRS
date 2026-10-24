@@ -478,5 +478,13 @@
     "ported": 902,
     "implemented": 2,
     "validatedPercent": 48.34
+  },
+  {
+    "milestone": "DataSources entities and references",
+    "date": "2026-10-24",
+    "percent": 50.67,
+    "ported": 908,
+    "implemented": 2,
+    "validatedPercent": 48.85
   }
 ]

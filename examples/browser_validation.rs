@@ -105,6 +105,59 @@ mod browser {
         Ok(())
     }
     #[wasm_bindgen]
+    pub fn validate_entity_runtime() -> Result<(), JsValue> {
+        use cesium_rs::data_sources::*;
+        let now = JulianDate::from_date(js_sys::Date::now());
+        let bag = Rc::new(PropertyBag::new());
+        let callback = Rc::new(CallbackProperty::new(
+            Rc::new(move |time, _| Ok(Some(JulianDate::seconds_difference(time, &now)))),
+            false,
+        ));
+        bag.add_property("elapsed", Some(PropertyInput::Component(PropertyComponent::wrap(callback))), None)
+            .map_err(err)?;
+        let value = bag.get_value(None, None).map_err(err)?;
+        assert!(matches!(value[0].1, Some(DynamicValue::Number(t)) if (0. ..2.).contains(&t)));
+        let parent = Entity::new(EntityOptions::default()).map_err(err)?;
+        assert!(!parent.id().is_empty());
+        let child = Entity::new(EntityOptions {
+            id: Some("child".into()),
+            parent: Some(parent.clone()),
+            properties: Some(bag.clone()),
+            position: Some(Rc::new(ConstantPositionProperty::new(
+                Some(Cartesian3::new(6378137., 0., 0.)),
+                ReferenceFrame::Fixed,
+            ))),
+            ..Default::default()
+        })
+        .map_err(err)?;
+        let collection = EntityCollection::new();
+        let notifications = Rc::new(std::cell::Cell::new(0));
+        let count = notifications.clone();
+        let _guard = collection.collection_changed().add_listener(move |change| {
+            assert_eq!(change.added.len(), 2);
+            count.set(count.get() + 1);
+        });
+        collection.suspend_events();
+        collection.add(parent.clone()).map_err(err)?;
+        collection.add(child.clone()).map_err(err)?;
+        parent.set_show(false);
+        assert!(!child.is_showing());
+        parent.set_show(true);
+        collection.resume_events().map_err(err)?;
+        assert_eq!(notifications.get(), 1);
+        let reference = ReferenceProperty::from_string(collection.clone(), "child#properties.elapsed").map_err(err)?;
+        assert!(matches!(reference.get_value(None, None).map_err(err)?,
+            Some(DynamicValue::Number(t)) if (0. ..2.).contains(&t)));
+        assert!(child.compute_model_matrix(&now, None).map_err(err)?.is_some());
+        assert_eq!(bag.definition_changed().number_of_listeners(), 1);
+        drop(reference);
+        drop(collection);
+        assert!(child.entity_collection().is_none());
+        drop(child);
+        assert_eq!(bag.definition_changed().number_of_listeners(), 0);
+        Ok(())
+    }
+    #[wasm_bindgen]
     pub async fn validate_workers(base_url: String) -> Result<(), JsValue> {
         let mut processor = TaskProcessor::new(Rc::new(BrowserTaskWorker::new("echo", base_url)), Some(1));
         let init = processor.init_web_assembly_module(WebAssemblyOptions {
