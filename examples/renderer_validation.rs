@@ -38,7 +38,14 @@ mod browser {
         let quad = ViewportQuad::new(&context).map_err(error)?;
         let shader=Rc::new(ShaderProgram::from_sources(&context,&ShaderProgramOptions{vertex_shader_source:ShaderSource::new("in vec4 position;\nuniform float distance;\nuniform float scale;\nvoid main(){gl_Position=czm_projection*vec4(position.xy*scale*distance*0.5,-distance,1.0);}"),fragment_shader_source:ShaderSource::new("uniform vec4 color;\nvoid main(){out_FragColor=color;}"),attribute_locations:std::collections::BTreeMap::from([("position".into(),0)])}).map_err(error)?);
         let mut commands = Vec::new();
-        let order = if config["reverse"] == true { vec![0, 3, 2, 1] } else { vec![0, 1, 2, 3] };
+        let classification = config["classify"] == true;
+        let order = if classification {
+            vec![0]
+        } else if config["reverse"] == true {
+            vec![0, 3, 2, 1]
+        } else {
+            vec![0, 1, 2, 3]
+        };
         for i in order {
             let mut options = SceneDrawOptions::new(quad.vertex_array().clone(), shader.clone());
             options.state.depth_test.enabled = true;
@@ -47,7 +54,12 @@ mod browser {
                 options.state.depth_mask = false;
             }
             options.uniforms = vec![
-                ("distance".into(), UniformValue::Float(vec![[1100., 1000., 950., 900.][i]])),
+                (
+                    "distance".into(),
+                    UniformValue::Float(vec![
+                        [if config["occluded"] == true { 925. } else { 1100. }, 1000., 950., 900.][i],
+                    ]),
+                ),
                 ("scale".into(), UniformValue::Float(vec![if i == 0 { 0.65 } else { 1. }])),
                 (
                     "color".into(),
@@ -61,7 +73,37 @@ mod browser {
             commands.push(SceneCommand::from_draw(
                 i.to_string(),
                 context.clone(),
-                if i == 0 { Pass::Opaque } else { Pass::Translucent },
+                if classification {
+                    if config["tile"] == true {
+                        Pass::Cesium3DTile
+                    } else {
+                        Pass::Globe
+                    }
+                } else if i == 0 {
+                    Pass::Opaque
+                } else {
+                    Pass::Translucent
+                },
+                DrawMetadata {
+                    bounding_volume: Some(BoundingSphere::new(Cartesian3::new(6378137., 0., 0.), 300.)),
+                    execute_in_closest_frustum: true,
+                    ..Default::default()
+                },
+                options,
+            ));
+        }
+        if classification {
+            let shader = Rc::new(ShaderProgram::from_sources(&context,
+                &ViewportQuad::<BrowserGl>::shader_options(ShaderSource {
+                    defines: vec!["LOG_DEPTH_READ_ONLY".into()],
+                    ..ShaderSource::new("in vec2 v_textureCoordinates;\nvoid main(){float d=czm_unpackDepth(texture(czm_globeDepthTexture,v_textureCoordinates));out_FragColor=vec4(d,d,d,1.0);}")
+                })).map_err(error)?);
+            let mut options = SceneDrawOptions::new(quad.vertex_array().clone(), shader);
+            options.state.depth_mask = false;
+            commands.push(SceneCommand::from_draw(
+                "classification-depth",
+                context.clone(),
+                Pass::Cesium3DTileClassification,
                 DrawMetadata {
                     bounding_volume: Some(BoundingSphere::new(Cartesian3::new(6378137., 0., 0.), 300.)),
                     execute_in_closest_frustum: true,
@@ -81,7 +123,7 @@ mod browser {
             JulianDate::new(2451545., 0., TimeStandard::Tai),
         )
         .map_err(error)?;
-        scene.msaa_samples = 1;
+        scene.msaa_samples = config["samples"].as_u64().unwrap_or(1) as u32;
         scene.camera.position = Cartesian3::new(6379137., 0., 0.);
         scene.camera.direction = -Cartesian3::UNIT_X;
         scene.camera.up = Cartesian3::UNIT_Z;
