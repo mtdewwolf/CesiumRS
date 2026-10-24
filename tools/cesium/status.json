@@ -4345,5 +4345,40 @@
     "status": "ported",
     "rust": "scene::cesium_3d_content_group",
     "note": "Holds a content's group metadata (an owned copy, as GroupMetadata owns its properties). Direct CesiumJS cases in tests/scene_tile_content.rs."
+  },
+  "DataSources/CallbackProperty": {
+    "status": "ported",
+    "rust": "data_sources::callback_property",
+    "note": "Lazy time/result callbacks, callback identity, constant flag, injectable/browser clocks and reentrant callback replacement. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
+  },
+  "DataSources/CompositeProperty": {
+    "status": "ported",
+    "rust": "data_sources::composite_property",
+    "note": "Interval-selected properties, time/result forwarding, equality and deduplicated child subscriptions rewired before notification; weak ownership. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
+  },
+  "DataSources/ConstantProperty": {
+    "status": "ported",
+    "rust": "data_sources::constant_property",
+    "note": "Typed stored values, change suppression, equality, value extraction and toString; owned math clones and reference-identity adapters. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
+  },
+  "DataSources/Property": {
+    "status": "ported",
+    "rust": "data_sources::property",
+    "note": "Typed optional-value contract and equality/default helpers, including cloned-default result behavior; local Rc events and owned values replace dynamic JS objects. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
+  },
+  "DataSources/PropertyArray": {
+    "status": "ported",
+    "rust": "data_sources::property_array",
+    "note": "Time-coherent child snapshots (native reentrancy contract; docs/data-sources.md), undefined/null compaction, equality and deduplicated child listeners with weak forwarding and RAII cleanup. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
+  },
+  "DataSources/SampledProperty": {
+    "status": "ported",
+    "rust": "data_sources::sampled_property",
+    "note": "Packed/individual/bulk sorted samples and replacement, scalar/vector/quaternion codecs, Linear/Lagrange/Hermite/custom interpolation, derivatives, bounded extrapolation, equality and sample removal. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
+  },
+  "DataSources/TimeIntervalCollectionProperty": {
+    "status": "ported",
+    "rust": "data_sources::time_interval_collection_property",
+    "note": "Observable Core interval collections, raw value cloning, inclusion/overlap/removal, identity merging and fallible source-compatible equality. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
   }
 }

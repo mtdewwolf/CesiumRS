@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Fix reentrant DataSources callbacks: preserve renewed subscriptions and evaluate PropertyArray children from one definition. Add regressions for renewal/cancellation, stale handles, duplicate registration counts and array replacement; document the native lifecycle contracts.
+
+- Start DataSources with seven property modules: typed constant/callback/array properties, sampled interpolation and derivatives, raw interval values and composites. Validate 206 pinned CesiumJS scenarios, native callback/ownership lifecycle and browser default clocks. Entity and document loaders remain unported.
+
 - Port the rest of 3D Metadata and four 3D Tiles helpers. The metadata modules are `PropertyTextureProperty`, `PropertyTexture`, `StructuralMetadata`, `getMetadataProperty` and the three parsers: `parseStructuralMetadata` (including the RGBA8 property table texture), `parseFeatureMetadataLegacy` and `parseBatchTable`. The helpers are `preprocess3DTileContent`, `TileReplacementQueue` and `Cesium3DContentGroup`. `PropertyTable` now carries its texture and accepts legacy string ids (`MetadataId`). 94 pinned CesiumJS cases.
 
 - Port the `NGA_gpm_local` extension: `GltfGpmLoader` and nine data classes (anchor points, correlation groups, `Spdcf`, `GltfGpmLocal`, per-point error textures and metadata), with 35 pinned CesiumJS cases.

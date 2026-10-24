@@ -46,6 +46,7 @@
 pub mod api;
 pub mod camera;
 pub mod core;
+pub mod data_sources;
 pub mod geodesic;
 pub mod mesh;
 pub mod renderer;

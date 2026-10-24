@@ -12,6 +12,41 @@ mod browser {
         JsValue::from_str(&e.to_string())
     }
     #[wasm_bindgen]
+    pub fn validate_property_clock() -> Result<(), JsValue> {
+        use cesium_rs::data_sources::*;
+        let now = JulianDate::from_date(js_sys::Date::now());
+        let callback: PropertyCallback<f64> =
+            Rc::new(move |time, _| Ok(Some(JulianDate::seconds_difference(time, &now))));
+        let p = Rc::new(CallbackProperty::new(callback, false));
+        let value = p.get_value(None, None).map_err(err)?.unwrap();
+        assert!((0. ..2.).contains(&value));
+        let array = PropertyArray::new(Some(vec![p.clone(), p.clone()]));
+        let values = array.get_value(None, None).map_err(err)?.unwrap();
+        assert_eq!(values[0], values[1]);
+        let samples = SampledProperty::<f64>::new(None);
+        samples.add_samples(&[now.add_seconds(-60.), now.add_seconds(60.)], &[-60., 60.], None).map_err(err)?;
+        assert!((0. ..2.).contains(&samples.get_value(None, None).map_err(err)?.unwrap()));
+        let intervals = TimeIntervalCollectionProperty::new();
+        intervals.intervals().add_interval(TimeInterval::new(
+            now.add_seconds(-60.),
+            now.add_seconds(60.),
+            true,
+            true,
+            Some(Rc::new(42.)),
+        ));
+        assert_eq!(intervals.get_value(None, None).map_err(err)?, Some(42.));
+        let composite = CompositeProperty::new();
+        composite.intervals().add_interval(TimeInterval::new(
+            now.add_seconds(-60.),
+            now.add_seconds(60.),
+            true,
+            true,
+            Some(p as PropertyRef<f64>),
+        ));
+        assert!((0. ..2.).contains(&composite.get_value(None, None).map_err(err)?.unwrap()));
+        Ok(())
+    }
+    #[wasm_bindgen]
     pub async fn validate_workers(base_url: String) -> Result<(), JsValue> {
         let mut processor = TaskProcessor::new(Rc::new(BrowserTaskWorker::new("echo", base_url)), Some(1));
         let init = processor.init_web_assembly_module(WebAssemblyOptions {
