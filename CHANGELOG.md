@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Port the glTF loader foundations: `ModelComponents`, `GltfLoaderUtil`, `ResourceCacheKey`, `ResourceCacheStatistics`, `DracoLoader` and `GltfDracoLoader`, with 283 pinned CesiumJS cases (the Draco loaders through the real `decodeDraco` worker). `ResourceLoader::process` now returns `Result`. Fix `js_number_to_string`, which wrote values in [1e-7, 1e-6) in fixed notation where JavaScript uses an exponent.
+
 - Fix MSAA opaque occlusion in OIT and update packed 3D Tiles depth before classification; expand Scene GPU comparisons to 416. Start the model pipeline with five validated resource/JSON/buffer-view loaders, including glTF upgrades, shared requests, cancellation and meshopt filters.
 
 - Add View-owned depth/framebuffer resources, weighted MRT/two-pass OIT, translucent classification plumbing, metadata decoding, depth/drill/ray/height picking and queued most-detailed preload requests. Add pinned-source fixtures and GPU comparisons; Scene, View, Picking and Cesium3DTileset remain partial pending the documented integrations and validation.

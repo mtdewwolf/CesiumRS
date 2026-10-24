@@ -66,7 +66,7 @@ applications can implement the existing `Gl` host contract.
 
 ### Scene
 
-Scene has **143 of 482 modules** fully ported, including Camera and
+Scene has **172 of 482 modules** fully ported, including Camera and
 CameraFlightPath. The validated batches cover the foundations, all 24
 GltfPipeline utilities, 3D Metadata schemas/tables/entities, tile bounding
 volumes and implicit tiling.
@@ -85,8 +85,11 @@ progress and cache eviction. Fog and Atmosphere are fully ported. The new batch
 has 124 CesiumJS scenarios and Rust integration checks; these do not establish
 full rendering or traversal parity. FrameState also remains partial.
 
-Continue the Scene/View and tileset traversal/content integrations, then Model,
-ScreenSpaceCameraController and GltfLoader. Skip-LOD and content format loading
+The glTF loader foundations are in: ModelComponents, GltfLoaderUtil,
+ResourceCacheKey, ResourceCacheStatistics, DracoLoader and GltfDracoLoader.
+Next is ResourceCache with the vertex, index, image and texture loaders, then
+GltfLoader. Continue the Scene/View and tileset traversal/content integrations,
+then Model and ScreenSpaceCameraController. Skip-LOD and content format loading
 are explicit gaps; the runtime currently requires a caller-supplied content
 loader. See [Scene](docs/scene.md) for APIs, validation and remaining work.
 

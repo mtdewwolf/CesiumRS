@@ -391,3 +391,14 @@ pub use gltf_json_loader::{GltfJsonInput, GltfJsonLoader, LoadedGltfJson};
 
 pub mod gltf_buffer_view_loader;
 pub use gltf_buffer_view_loader::GltfBufferViewLoader;
+
+pub mod model_components;
+pub mod gltf_loader_util;
+pub mod resource_cache_key;
+pub use resource_cache_key::{IndexBufferKeyOptions, SchemaSource, VertexBufferKeyOptions};
+pub mod resource_cache_statistics;
+pub use resource_cache_statistics::ResourceCacheStatistics;
+pub mod draco_loader;
+pub use draco_loader::DracoLoader;
+pub mod gltf_draco_loader;
+pub use gltf_draco_loader::{DecodedDraco, GltfDracoLoader};

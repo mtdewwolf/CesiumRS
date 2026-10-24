@@ -214,10 +214,57 @@ shared `BufferLoader` lease; views release their own leases after loading.
 
 Ninety-three pinned-source cases cover these five modules. Native tests cover
 shared/failing loads, cancellation, retained byte views and feeding JSON/GLB
-loads into buffer views. A global ResourceCache, GPU vertex/index/texture/image
-loaders, the main GltfLoader/Model pipeline and built-in renderable tile factory
-remain to be ported. The default tileset loader still requires a factory for
-renderable tile content.
+loads into buffer views.
+
+### Loader foundations
+
+`ModelComponents` holds what GltfLoader will produce: all 27 data classes with
+their upstream defaults and `DEFAULT_*` constants. JavaScript shares objects
+between them; Rust stores indices into the owning array instead (node
+`children`, skin `joints`, animation targets and scene roots index
+`Components::nodes`; a node's `skin` indexes `Components::skins`; a channel's
+`sampler` indexes its animation's samplers). GPU buffers and textures make the
+types generic over `Gl`, and texture readers share one `Rc<Texture>` as
+JavaScript readers share one texture. Values whose JavaScript type depends on
+the accessor (`min`, `max`, `constant`, quantization ranges, animation outputs)
+are a `MathValue`. `structuralMetadata` and `modelPrimitiveImagery` arrive with
+StructuralMetadata and ModelPrimitiveImagery.
+
+`GltfLoaderUtil` picks a texture's image (WebP, then Basis, when supported),
+builds glTF samplers with the compressed-texture no-mipmap fallback, and builds
+`KHR_texture_transform` texture readers. As upstream, a reader without the
+extension has no transform and keeps the texture info's `scale`, even when that
+is undefined.
+
+`ResourceCacheKey` builds every key ResourceCache shares loaders under. Two
+loaders share a resource exactly when their keys are equal, so keys follow
+JavaScript to the character: template literals print a missing `byteOffset` as
+`undefined` and `+` turns it into `NaN`; schema keys use `JSON.stringify`'s
+property order and number formatting; a meshopt buffer view keys on the
+compressed range and the meshopt buffer id while reading the view's own buffer
+for its URI, as upstream does. Hosts pass the context id that upstream reads
+from `frameState.context.id`. `ResourceCacheStatistics` counts geometry and
+texture bytes once per cache key from sizes the caller passes.
+
+`DracoLoader` owns its `decodeDraco` task processor instead of keeping one in
+static state. The first request creates it with the host's `TaskWorker` and
+starts the decoder module; the result is observed on later requests, where the
+JavaScript promise callbacks would have run, so the first request returns
+`None` as upstream does. `GltfDracoLoader` takes its buffer view from the host
+cache in `load` (upstream's `resourceCache.getBufferViewLoader`), then schedules
+the decode in `process`: FLOAT attributes skip Draco's dequantization transforms
+so they stay quantized for the shader. Each `process` call first settles a
+finished decode. Unloading releases the buffer view lease. `ResourceLoader::process`
+now returns `Result`, since upstream's `process` throws.
+
+Tests: `tests/scene_resource_cache.rs` (ResourceCacheKey, statistics,
+GltfLoaderUtil, ModelComponents; 270 cases) and `tests/scene_draco_loaders.rs`
+(DracoLoader timelines and seven GltfDracoLoader scenarios through the real
+`decodeDraco` worker, including decode failures, buffer view failures, destroy
+during load and lease release). A ResourceCache, the GPU vertex/index/texture/
+image loaders, the main GltfLoader/Model pipeline and the built-in renderable
+tile factory remain to be ported. The default tileset loader still requires a
+factory for renderable tile content.
 
 ## Camera
 
@@ -628,7 +675,8 @@ TZ=UTC node tools/cesium/fixtures/generate.mjs ImplicitSubtree
 
 The next batches build on these:
 
-- the glTF and 3D Tiles resource loaders on top of `GltfPipeline`;
+- ResourceCache and the vertex, index, image and texture loaders, then
+  GltfLoader and the 3D Tiles resource loaders;
 - the rest of 3D Metadata: property textures, `StructuralMetadata`,
   `PickedMetadataInfo` and the parsers;
 - 3D Tiles content parsers;

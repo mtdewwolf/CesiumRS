@@ -406,5 +406,13 @@
     "ported": 841,
     "implemented": 2,
     "validatedPercent": 45.13
+  },
+  {
+    "milestone": "glTF loader foundations",
+    "date": "2026-10-24",
+    "percent": 47.54,
+    "ported": 847,
+    "implemented": 2,
+    "validatedPercent": 45.91
   }
 ]

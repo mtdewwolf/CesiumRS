@@ -13,8 +13,10 @@ pub trait ResourceLoader {
     fn is_destroyed(&self) -> bool;
     fn destroy(&self);
     fn state(&self) -> ResourceLoaderState;
-    fn process(&self, _frame: &FrameState) -> bool {
-        false
+    /// Upstream returns whether the resource is ready and throws when
+    /// processing fails; the error is `Err` here.
+    fn process(&self, _frame: &FrameState) -> Result<bool, RuntimeError> {
+        Ok(false)
     }
     fn get_error(message: &str, error: Option<&RuntimeError>) -> RuntimeError
     where
