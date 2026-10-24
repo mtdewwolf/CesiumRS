@@ -268,7 +268,8 @@ function presentAttributes(attributes) {
   return out;
 }
 
-function present(result) {
+/** Plain JSON for a worker result; typed array types become GL datatypes. */
+export function present(result) {
   if (result === true || result == null) return result ?? null;
   if (result.indexArray) {
     const typed = result.indexArray.typedArray;

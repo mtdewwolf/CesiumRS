@@ -251,6 +251,22 @@ the main GltfLoader/Model pipeline and built-in renderable tile factory still
 need porting. The default tileset loader requires a factory for renderable tile
 content.
 
+`model_components` supplies the 27 glTF data classes, animated-property enum
+and material defaults. Shared node/skin/sampler references are indices; buffers
+and texture readers use the renderer's typed resources. Structural metadata and
+primitive imagery references use optional `FrameResource` handles pending their
+runtime modules. A further 293 pinned cases cover these defaults and constants,
+texture/cache-key edge cases, and decoder initialization and failure timelines.
+The additional suites live under `tests/fixtures/scene/foundations` where their
+module names overlap the cache/GPU suites.
+
+`DracoLoader` initializes a host-supplied decoder worker lazily, leaving the
+first decode pending until initialization settles. Falsy and rejected module
+initializations remain errors on subsequent requests. `GltfDracoLoader::from_host`
+uses this initialized worker with a buffer-view factory; the ResourceCache
+constructor keeps the portable worker and explicit cache leases. Both paths
+share one frame-driven loader and release pending tasks on unload/destruction.
+
 ## Camera
 
 `scene::Camera` starts the large, frame-driven Scene modules. It is the

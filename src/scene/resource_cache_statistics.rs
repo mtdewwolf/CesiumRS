@@ -8,6 +8,9 @@ pub struct ResourceCacheStatistics {
     textures: HashMap<String, u64>,
 }
 impl ResourceCacheStatistics {
+    pub fn new() -> Self {
+        Self::default()
+    }
     pub fn clear(&mut self) {
         *self = Self::default();
     }

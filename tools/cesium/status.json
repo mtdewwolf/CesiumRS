@@ -4174,17 +4174,17 @@
   "Scene/GltfLoaderUtil": {
     "status": "ported",
     "rust": "scene::gltf_loader_util",
-    "note": "Image format selection, glTF samplers and KHR_texture_transform readers; 29 pinned cases. ModelTextureReader is a typed value, not a claim of ModelComponents completion."
+    "note": "Image format selection, validated samplers and KHR_texture_transform texture readers; 99 pinned cases across both suites. Typed ModelComponents texture readers and FrameResource reader facade share transform helpers."
   },
   "Scene/ResourceCacheKey": {
     "status": "ported",
     "rust": "scene::resource_cache_key",
-    "note": "All pinned cache identities including meshopt, Draco, SPZ, images, textures, context/CPU variants and JS schema stringification; 106 pinned cases."
+    "note": "All cache identities and JS JSON/property/number semantics, including missing fields and meshopt buffer-ID quirks; 284 pinned cases. Typed ResourceCache facade and public functions share one implementation."
   },
   "Scene/ResourceCacheStatistics": {
     "status": "ported",
     "rust": "scene::resource_cache_statistics",
-    "note": "Deduplicated CPU/GPU geometry and texture byte accounting, removal and clear; pinned sequence and loader integration checks."
+    "note": "Deduplicated CPU/GPU geometry and texture byte accounting, removal and clear; four pinned sequences plus loader integration checks."
   },
   "Scene/ResourceCache": {
     "status": "partial",
@@ -4194,7 +4194,7 @@
   "Scene/GltfDracoLoader": {
     "status": "ported",
     "rust": "scene::gltf_draco_loader",
-    "note": "Cached buffer views, shared capacity-limited TaskProcessor, frame-driven decoding, float-transform skipping, errors and cancellation. Real pinned Draco worker fixtures and native capacity/failure/destruction checks. Portable worker decodes when polled; hosts can supply a background worker."
+    "note": "Cached or host-supplied buffer views, capacity-limited task processing, decoder initialization, frame-driven decoding, quantization skips, errors and cancellation. Nine pinned real-codec scenarios plus native capacity/failure/destruction checks; hosts can use background workers."
   },
   "Scene/GltfVertexBufferLoader": {
     "status": "partial",
@@ -4205,5 +4205,15 @@
     "status": "ported",
     "rust": "scene::gltf_geometry_loader",
     "note": "Buffer-view/Draco indices, unaligned byte offsets, actual GPU allocation, deferred uploads, CPU retention and destruction/accounting; nine pinned cases, native failure checks and WebGL1/2 GPU comparisons."
+  },
+  "Scene/ModelComponents": {
+    "status": "ported",
+    "rust": "scene::model_components",
+    "note": "All 27 data classes and AnimatedPropertyType with upstream defaults and DEFAULT_* constants. Shared node/skin/sampler references are indices into their owning arrays; GPU buffers and textures are generic over the Gl host, with textures shared through Rc. StructuralMetadata and ModelPrimitiveImagery references use optional FrameResource handles pending those runtime modules. 29 pinned default/constant cases."
+  },
+  "Scene/DracoLoader": {
+    "status": "ported",
+    "rust": "scene::draco_loader",
+    "note": "Owned (not static) decodeDraco task processor created on the first request with the host TaskWorker: module initialization, deferred readiness, falsy/failed initialization errors and concurrency of hardwareConcurrency - 1. Pinned scheduling timelines for buffer views and point clouds."
   }
 }

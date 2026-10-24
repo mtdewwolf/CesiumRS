@@ -66,7 +66,7 @@ applications can implement the existing `Gl` host contract.
 
 ### Scene
 
-Scene has **171 of 482 modules** fully ported, including Camera and
+Scene has **173 of 482 modules** fully ported, including Camera and
 CameraFlightPath. The validated batches cover the foundations, all 24
 GltfPipeline utilities, 3D Metadata schemas/tables/entities, tile bounding
 volumes and implicit tiling.
@@ -87,7 +87,7 @@ full rendering or traversal parity. FrameState has since been validated; Scene, 
 
 Continue model prerequisites: image/texture/SPZ resources, then the main
 GltfLoader/Model pipeline. ResourceCache and vertex loading remain partial;
-Draco and GPU index loading are validated. ScreenSpaceCameraController,
+Draco, ModelComponents and GPU index loading are validated. ScreenSpaceCameraController,
 Scene/View picking integrations and built-in renderable tile content remain
 gaps; the runtime currently requires a caller-supplied content loader. See [Scene](docs/scene.md) for APIs, validation and remaining work.
 

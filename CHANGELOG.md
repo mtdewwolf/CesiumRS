@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Integrate ModelComponents and initialized Draco workers with the shared model cache and GPU loaders. Preserve both parity suites (293 additional cases), unify cache key/texture helpers, and retain lease cancellation and renderer ownership across the overlapping Scene batches.
+
 - Add shared model resource caching, glTF texture utilities and frame-driven Draco/vertex/index loading, with 184 new CesiumJS cases and 24 WebGL comparisons. Cache and vertex loading remain partial pending image/texture/SPZ paths; the main GltfLoader/Model pipeline remains unported. Correct JavaScript number stringification at the `1e-7` boundary for schema cache identities.
 
 - Fix MSAA opaque occlusion in OIT and update packed 3D Tiles depth before classification; expand Scene GPU comparisons to 416. Start the model pipeline with five validated resource/JSON/buffer-view loaders, including glTF upgrades, shared requests, cancellation and meshopt filters.

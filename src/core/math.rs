@@ -427,6 +427,8 @@ pub fn js_number_to_string(value: f64) -> String {
     if value == 0.0 {
         return "0".into();
     }
+    // Fixed notation for 1e-6 <= |value| < 1e21 (the spec's -6 < n <= 21);
+    // 5e-7 prints as "5e-7", not "0.0000005".
     let abs = value.abs();
     if (1e-6..1e21).contains(&abs) {
         return format!("{value}");

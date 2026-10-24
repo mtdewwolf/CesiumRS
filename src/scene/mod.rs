@@ -410,3 +410,9 @@ pub use gltf_geometry_loader::{
     BufferUploadBudget, GltfIndexBufferLoader, GltfResource, GltfVertexBufferLoader, GpuBufferOptions,
     ModelQuantization, VertexBufferSource,
 };
+
+pub mod draco_loader;
+pub mod model_components;
+pub use draco_loader::{DracoLoader, DracoTask};
+pub use gltf_draco_loader::DecodedDraco;
+pub use resource_cache_key::{IndexBufferKeyOptions, SchemaSource, VertexBufferKeyOptions};

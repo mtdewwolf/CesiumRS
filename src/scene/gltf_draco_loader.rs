@@ -2,8 +2,8 @@
 use super::{
     gltf_pipeline::BufferSource,
     resource_loader::{loader_error, ManagedLoader},
-    CacheLease, FrameState, GltfBufferViewLoader, ResourceLoadFuture, ResourceLoader, ResourceLoaderState,
-    SceneRenderRequest,
+    CacheLease, DracoLoader, FrameState, GltfBufferViewLoader, LoadedGltfJson, ResourceLoadFuture, ResourceLoader,
+    ResourceLoaderState, SceneRenderRequest,
 };
 use crate::core::{ProcessedTask, RuntimeError, TaskFuture, TaskProcessor, TaskWorker, WebAssemblyOptions};
 use futures_util::FutureExt;
@@ -29,11 +29,34 @@ impl TaskWorker<Value, Value> for DracoDecodeWorker {
     fn cancel_task(&self, _: u64) {}
     fn terminate(&self) {}
 }
+#[derive(Clone, Debug, PartialEq)]
+pub struct DecodedDraco {
+    pub indices: Value,
+    pub vertex_attributes: Value,
+}
+enum ViewLease {
+    Cached(CacheLease<GltfBufferViewLoader>),
+    Owned(Rc<GltfBufferViewLoader>),
+}
+impl ViewLease {
+    fn loader(&self) -> Rc<GltfBufferViewLoader> {
+        match self {
+            Self::Cached(l) => l.loader(),
+            Self::Owned(l) => l.clone(),
+        }
+    }
+}
+type ViewFactory = Box<dyn FnOnce() -> Result<Rc<GltfBufferViewLoader>, RuntimeError>>;
+enum Decoder {
+    Processor(Rc<RefCell<TaskProcessor<Value, Value>>>),
+    Initialized(Rc<DracoLoader>),
+}
 pub struct GltfDracoLoader {
     data: ManagedLoader<BufferSource>,
-    child: Rc<RefCell<Option<CacheLease<GltfBufferViewLoader>>>>,
+    child: Rc<RefCell<Option<ViewLease>>>,
+    factory: RefCell<Option<ViewFactory>>,
     parameters: Value,
-    decoder: Rc<RefCell<TaskProcessor<Value, Value>>>,
+    decoder: Decoder,
     task: RefCell<Option<ProcessedTask<Value, Value>>>,
     decoded: RefCell<Option<Arc<Value>>>,
 }
@@ -44,6 +67,43 @@ impl GltfDracoLoader {
         extension: &Value,
         child: CacheLease<GltfBufferViewLoader>,
         decoder: Rc<RefCell<TaskProcessor<Value, Value>>>,
+        key: Option<String>,
+    ) -> Result<Self, RuntimeError> {
+        Self::with_source(
+            gltf,
+            primitive,
+            extension,
+            Some(ViewLease::Cached(child)),
+            None,
+            Decoder::Processor(decoder),
+            key,
+        )
+    }
+    pub fn from_host(
+        gltf: Arc<LoadedGltfJson>,
+        primitive: Value,
+        extension: Value,
+        factory: impl FnOnce() -> Result<Rc<GltfBufferViewLoader>, RuntimeError> + 'static,
+        decoder: Rc<DracoLoader>,
+        key: Option<String>,
+    ) -> Result<Self, RuntimeError> {
+        Self::with_source(
+            &gltf.json,
+            &primitive,
+            &extension,
+            None,
+            Some(Box::new(factory)),
+            Decoder::Initialized(decoder),
+            key,
+        )
+    }
+    fn with_source(
+        gltf: &Value,
+        primitive: &Value,
+        extension: &Value,
+        child: Option<ViewLease>,
+        factory: Option<ViewFactory>,
+        decoder: Decoder,
         key: Option<String>,
     ) -> Result<Self, RuntimeError> {
         let id =
@@ -78,12 +138,17 @@ impl GltfDracoLoader {
         }
         Ok(Self {
             data: ManagedLoader::new(key, None),
-            child: Rc::new(RefCell::new(Some(child))),
+            child: Rc::new(RefCell::new(child)),
+            factory: RefCell::new(factory),
             parameters: json!({"bufferView":view,"compressedAttributes":extension["attributes"],"dequantizeInShader":true,"attributesToSkipTransform":skip}),
             decoder,
             task: RefCell::new(None),
             decoded: RefCell::new(None),
         })
+    }
+    pub fn decoded_draco(&self) -> Option<DecodedDraco> {
+        self.decoded_data()
+            .map(|v| DecodedDraco { indices: v["indices"].clone(), vertex_attributes: v["vertexAttributes"].clone() })
     }
     pub fn decoded_data(&self) -> Option<Arc<Value>> {
         self.decoded.borrow().clone()
@@ -117,6 +182,7 @@ impl ResourceLoader for GltfDracoLoader {
     }
     fn unload(&self) {
         self.task.borrow_mut().take();
+        self.factory.borrow_mut().take();
         self.child.borrow_mut().take();
         self.data.unload();
         self.decoded.borrow_mut().take();
@@ -126,13 +192,23 @@ impl ResourceLoader for GltfDracoLoader {
         self.data.destroy();
     }
     fn load(&self) -> ResourceLoadFuture {
-        let child = self.child.borrow().as_ref().map(CacheLease::loader);
+        let started = if self.is_destroyed() {
+            Ok(())
+        } else if let Some(factory) = self.factory.borrow_mut().take() {
+            factory().map(|view| {
+                *self.child.borrow_mut() = Some(ViewLease::Owned(view));
+            })
+        } else {
+            Ok(())
+        };
+        let child = self.child.borrow().as_ref().map(ViewLease::loader);
         let owner = Rc::downgrade(&self.child);
         self.data.load_with_state("Failed to load Draco".into(), ResourceLoaderState::Processing, move || {
             let request = child.as_ref().map(|c| c.load());
             let weak = child.as_ref().map(Rc::downgrade);
             async move {
                 let result = async move {
+                    started?;
                     request.ok_or_else(|| RuntimeError::new("Draco buffer view was unloaded"))?.await?;
                     weak.and_then(|w| w.upgrade())
                         .and_then(|l| l.typed_array())
@@ -176,7 +252,18 @@ impl ResourceLoader for GltfDracoLoader {
         };
         let mut parameters = self.parameters.clone();
         parameters["array"] = json!(bytes.bytes());
-        let task = self.decoder.borrow_mut().schedule_task(parameters);
+        let task = match &self.decoder {
+            Decoder::Processor(decoder) => decoder.borrow_mut().schedule_task(parameters),
+            Decoder::Initialized(decoder) => {
+                let task = decoder.decode_buffer_view(parameters)?;
+                if task.is_none() && !decoder.is_ready() {
+                    if let Some(request) = &frame.render_request {
+                        request.request_render();
+                    }
+                }
+                task
+            }
+        };
         if let Some(task) = task {
             *self.task.borrow_mut() = Some(task);
             if let Some(request) = &frame.render_request {

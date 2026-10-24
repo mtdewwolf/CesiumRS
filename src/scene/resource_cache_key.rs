@@ -1,8 +1,345 @@
-//! Pinned ResourceCacheKey identities for shared glTF resources and contexts.
-use super::{GltfLoaderUtil, SupportedImageFormats};
-use crate::core::{resource::DerivedResourceOptions, uri_helpers::get_absolute_uri, Resource, RuntimeError};
+//! CesiumJS `ResourceCacheKey`: the strings ResourceCache shares loaders under.
+//!
+//! Keys are built from glTF JSON with JavaScript's semantics, because two
+//! loaders share a resource exactly when their keys are equal:
+//! - template literals print values as JavaScript does (`undefined` for a
+//!   missing `byteOffset`, numbers through `Number#toString`);
+//! - `byteOffset + byteLength` is JavaScript `+` (a missing operand is NaN);
+//! - reading a property of a missing buffer, view, accessor or image is the
+//!   `TypeError` JavaScript throws.
+//!
+//! The options' debug-build `DeveloperError` checks are not ported: Rust
+//! builds the key as release CesiumJS does. The schema source is an enum, so
+//! "exactly one of schema and resource" holds by construction. Upstream reads
+//! `frameState.context.id`; Rust callers pass the context id.
+
+use super::gltf_loader_util::{create_sampler, get_image_id_from_texture};
+use super::gltf_pipeline::{js, PipelineError};
+use super::{has_extension, SupportedImageFormats};
+use crate::core::math::js_number_to_string;
+use crate::core::resource::DerivedResourceOptions;
+use crate::core::uri_helpers::get_absolute_uri;
+use crate::core::Resource;
 use serde_json::Value;
-type Result<T> = std::result::Result<T, RuntimeError>;
+
+/// `${value}` in a template literal.
+fn template(value: Option<&Value>) -> String {
+    value.map_or_else(|| "undefined".into(), js::key)
+}
+
+/// JavaScript `a + b` for the JSON values a key adds: numeric addition, or
+/// concatenation when either side is a string, array or object.
+fn add(a: Option<&Value>, b: Option<&Value>) -> String {
+    let stringy = |v: Option<&Value>| matches!(v, Some(Value::String(_) | Value::Array(_) | Value::Object(_)));
+    if stringy(a) || stringy(b) {
+        return template(a) + &template(b);
+    }
+    js_number_to_string(js::to_number(a) + js::to_number(b))
+}
+
+/// `JSON.stringify` of parsed JSON: object keys in JavaScript property order,
+/// numbers as `Number#toString` writes them, non-finite numbers as `null`.
+pub fn json_stringify(value: &Value) -> String {
+    match value {
+        Value::Null => "null".into(),
+        Value::Bool(b) => b.to_string(),
+        Value::Number(n) => {
+            let v = n.as_f64().unwrap_or(f64::NAN);
+            if v.is_finite() {
+                js_number_to_string(v)
+            } else {
+                "null".into()
+            }
+        }
+        Value::String(_) => serde_json::to_string(value).unwrap_or_default(),
+        Value::Array(items) => format!("[{}]", items.iter().map(json_stringify).collect::<Vec<_>>().join(",")),
+        Value::Object(map) => {
+            let fields = js::object_keys(map)
+                .into_iter()
+                .map(|k| format!("{}:{}", serde_json::to_string(&k).unwrap_or_default(), json_stringify(&map[&k])))
+                .collect::<Vec<_>>();
+            format!("{{{}}}", fields.join(","))
+        }
+    }
+}
+
+fn external_resource_key(resource: &Resource) -> String {
+    get_absolute_uri(&resource.url(), None)
+}
+
+fn embedded_buffer_key(parent: &Resource, buffer_id: Option<&Value>) -> String {
+    format!("{}-buffer-id-{}", external_resource_key(parent), template(buffer_id))
+}
+
+fn derived_key(base: &Resource, uri: &Value) -> Result<String, PipelineError> {
+    let options = DerivedResourceOptions { url: Some(js::key(uri)), ..Default::default() };
+    let resource = base
+        .get_derived_resource(options)
+        .ok_or_else(|| PipelineError::Type(format!("Invalid URL: {}", js::key(uri))))?;
+    Ok(external_resource_key(&resource))
+}
+
+fn buffer_key(
+    buffer: Option<&Value>,
+    buffer_id: Option<&Value>,
+    gltf_resource: &Resource,
+    base_resource: &Resource,
+) -> Result<String, PipelineError> {
+    let buffer = js::object(buffer, "uri")?;
+    match js::get(Some(buffer), "uri").filter(|v| !v.is_null()) {
+        Some(uri) => derived_key(base_resource, uri),
+        None => Ok(embedded_buffer_key(gltf_resource, buffer_id)),
+    }
+}
+
+/// `${byteOffset}-${byteOffset + byteLength}`, read from `EXT_meshopt_compression` when present.
+fn buffer_view_range(buffer_view: &Value) -> String {
+    let (offset, length) = if has_extension(buffer_view, "EXT_meshopt_compression") {
+        let meshopt = js::get(js::get(Some(buffer_view), "extensions"), "EXT_meshopt_compression");
+        let offset = js::get(meshopt, "byteOffset").filter(|v| !v.is_null()).cloned().unwrap_or(Value::from(0));
+        (Some(offset), js::get(meshopt, "byteLength").cloned())
+    } else {
+        (js::get(Some(buffer_view), "byteOffset").cloned(), js::get(Some(buffer_view), "byteLength").cloned())
+    };
+    format!("{}-{}", template(offset.as_ref()), add(offset.as_ref(), length.as_ref()))
+}
+
+/// The buffer and range of buffer view `id`: `<buffer key>-range-<range>`.
+fn buffer_view_source_key(
+    gltf: &Value,
+    buffer_view_id: &Value,
+    gltf_resource: &Resource,
+    base_resource: &Resource,
+) -> Result<String, PipelineError> {
+    let buffer_view = js::object(js::index(js::get(Some(gltf), "bufferViews"), buffer_view_id), "buffer")?;
+    let buffer_id = js::get(Some(buffer_view), "buffer");
+    let buffer = buffer_id.and_then(|id| js::index(js::get(Some(gltf), "buffers"), id));
+    let buffer_key = buffer_key(buffer, buffer_id, gltf_resource, base_resource)?;
+    Ok(format!("{buffer_key}-range-{}", buffer_view_range(buffer_view)))
+}
+
+fn draco_key(
+    gltf: &Value,
+    draco: &Value,
+    gltf_resource: &Resource,
+    base_resource: &Resource,
+) -> Result<String, PipelineError> {
+    let view = js::get(Some(draco), "bufferView").cloned().unwrap_or(Value::Null);
+    buffer_view_source_key(gltf, &view, gltf_resource, base_resource)
+}
+
+/// SPZ always reads buffer view 0.
+fn spz_key(gltf: &Value, gltf_resource: &Resource, base_resource: &Resource) -> Result<String, PipelineError> {
+    buffer_view_source_key(gltf, &Value::from(0), gltf_resource, base_resource)
+}
+
+fn image_key(
+    gltf: &Value,
+    image_id: Option<&Value>,
+    gltf_resource: &Resource,
+    base_resource: &Resource,
+) -> Result<String, PipelineError> {
+    let image = js::object(image_id.and_then(|id| js::index(js::get(Some(gltf), "images"), id)), "bufferView")?;
+    if let Some(uri) = js::get(Some(image), "uri").filter(|v| !v.is_null()) {
+        return derived_key(base_resource, uri);
+    }
+    let view = js::get(Some(image), "bufferView").cloned().unwrap_or(Value::Null);
+    buffer_view_source_key(gltf, &view, gltf_resource, base_resource)
+}
+
+/// A metadata schema, given inline or as an external resource.
+#[derive(Clone, Copy)]
+pub enum SchemaSource<'a> {
+    Embedded(&'a Value),
+    External(&'a Resource),
+}
+
+/// `ResourceCacheKey.getSchemaCacheKey`.
+pub fn get_schema_cache_key(source: SchemaSource) -> String {
+    match source {
+        SchemaSource::Embedded(schema) => format!("embedded-schema:{}", json_stringify(schema)),
+        SchemaSource::External(resource) => format!("external-schema:{}", external_resource_key(resource)),
+    }
+}
+
+/// `ResourceCacheKey.getExternalBufferCacheKey`.
+pub fn get_external_buffer_cache_key(resource: &Resource) -> String {
+    format!("external-buffer:{}", external_resource_key(resource))
+}
+
+/// `ResourceCacheKey.getEmbeddedBufferCacheKey`.
+pub fn get_embedded_buffer_cache_key(parent_resource: &Resource, buffer_id: usize) -> String {
+    format!("embedded-buffer:{}", embedded_buffer_key(parent_resource, Some(&Value::from(buffer_id))))
+}
+
+/// `ResourceCacheKey.getGltfCacheKey`.
+pub fn get_gltf_cache_key(gltf_resource: &Resource) -> String {
+    format!("gltf:{}", external_resource_key(gltf_resource))
+}
+
+/// `ResourceCacheKey.getBufferViewCacheKey`. As upstream, a meshopt view keys
+/// on the compressed range and the meshopt buffer's id, but on the view's own
+/// `buffer` for whether that buffer is external.
+pub fn get_buffer_view_cache_key(
+    gltf: &Value,
+    buffer_view_id: usize,
+    gltf_resource: &Resource,
+    base_resource: &Resource,
+) -> Result<String, PipelineError> {
+    let buffer_view =
+        js::object(js::index(js::get(Some(gltf), "bufferViews"), &Value::from(buffer_view_id)), "buffer")?;
+    let mut buffer_id = js::get(Some(buffer_view), "buffer");
+    let buffer = buffer_id.and_then(|id| js::index(js::get(Some(gltf), "buffers"), id));
+    if has_extension(buffer_view, "EXT_meshopt_compression") {
+        buffer_id = js::get(js::get(js::get(Some(buffer_view), "extensions"), "EXT_meshopt_compression"), "buffer");
+    }
+    let buffer_key = buffer_key(buffer, buffer_id, gltf_resource, base_resource)?;
+    Ok(format!("buffer-view:{buffer_key}-range-{}", buffer_view_range(buffer_view)))
+}
+
+/// `ResourceCacheKey.getDracoCacheKey` for a `KHR_draco_mesh_compression` extension object.
+pub fn get_draco_cache_key(
+    gltf: &Value,
+    draco: &Value,
+    gltf_resource: &Resource,
+    base_resource: &Resource,
+) -> Result<String, PipelineError> {
+    Ok(format!("draco:{}", draco_key(gltf, draco, gltf_resource, base_resource)?))
+}
+
+/// `ResourceCacheKey.getSpzCacheKey`.
+pub fn get_spz_cache_key(
+    gltf: &Value,
+    gltf_resource: &Resource,
+    base_resource: &Resource,
+) -> Result<String, PipelineError> {
+    Ok(format!("spz:{}", spz_key(gltf, gltf_resource, base_resource)?))
+}
+
+/// Options of `ResourceCacheKey.getVertexBufferCacheKey`.
+#[derive(Clone, Copy)]
+pub struct VertexBufferKeyOptions<'a> {
+    pub gltf: &'a Value,
+    pub gltf_resource: &'a Resource,
+    pub base_resource: &'a Resource,
+    pub context_id: &'a str,
+    pub buffer_view_id: Option<usize>,
+    /// The primitive's `KHR_draco_mesh_compression` extension object.
+    pub draco: Option<&'a Value>,
+    /// Whether the primitive is `KHR_spz_gaussian_splats_compression`-compressed.
+    pub spz: bool,
+    pub attribute_semantic: Option<&'a str>,
+    pub dequantize: bool,
+    pub load_buffer: bool,
+    pub load_typed_array: bool,
+}
+
+fn suffix(dequantize: bool, load_buffer: bool, load_typed_array: bool, context_id: &str) -> String {
+    let mut suffix = String::new();
+    if dequantize {
+        suffix += "-dequantize";
+    }
+    if load_buffer {
+        suffix += &format!("-buffer-context-{context_id}");
+    }
+    if load_typed_array {
+        suffix += "-typed-array";
+    }
+    suffix
+}
+
+/// `ResourceCacheKey.getVertexBufferCacheKey`.
+pub fn get_vertex_buffer_cache_key(o: VertexBufferKeyOptions) -> Result<String, PipelineError> {
+    let suffix = suffix(o.dequantize, o.load_buffer, o.load_typed_array, o.context_id);
+    let semantic = o.attribute_semantic.unwrap_or("undefined");
+    if let Some(draco) = o.draco.filter(|v| !v.is_null()) {
+        let key = draco_key(o.gltf, draco, o.gltf_resource, o.base_resource)?;
+        return Ok(format!("vertex-buffer:{key}-draco-{semantic}{suffix}"));
+    }
+    if o.spz {
+        let key = spz_key(o.gltf, o.gltf_resource, o.base_resource)?;
+        return Ok(format!("vertex-buffer:{key}-spz-{semantic}{suffix}"));
+    }
+    let view = o.buffer_view_id.map_or(Value::Null, Value::from);
+    let key = buffer_view_source_key(o.gltf, &view, o.gltf_resource, o.base_resource)?;
+    Ok(format!("vertex-buffer:{key}{suffix}"))
+}
+
+/// Options of `ResourceCacheKey.getIndexBufferCacheKey`.
+#[derive(Clone, Copy)]
+pub struct IndexBufferKeyOptions<'a> {
+    pub gltf: &'a Value,
+    pub accessor_id: usize,
+    pub gltf_resource: &'a Resource,
+    pub base_resource: &'a Resource,
+    pub context_id: &'a str,
+    pub draco: Option<&'a Value>,
+    pub load_buffer: bool,
+    pub load_typed_array: bool,
+}
+
+/// `ResourceCacheKey.getIndexBufferCacheKey`.
+pub fn get_index_buffer_cache_key(o: IndexBufferKeyOptions) -> Result<String, PipelineError> {
+    let suffix = suffix(false, o.load_buffer, o.load_typed_array, o.context_id);
+    if let Some(draco) = o.draco.filter(|v| !v.is_null()) {
+        let key = draco_key(o.gltf, draco, o.gltf_resource, o.base_resource)?;
+        return Ok(format!("index-buffer:{key}-draco{suffix}"));
+    }
+    let accessor =
+        js::object(js::index(js::get(Some(o.gltf), "accessors"), &Value::from(o.accessor_id)), "bufferView")?;
+    let view_id = js::get(Some(accessor), "bufferView");
+    let buffer_view = js::object(view_id.and_then(|id| js::index(js::get(Some(o.gltf), "bufferViews"), id)), "buffer")?;
+    let buffer_id = js::get(Some(buffer_view), "buffer");
+    let buffer = buffer_id.and_then(|id| js::index(js::get(Some(o.gltf), "buffers"), id));
+    let buffer_key = buffer_key(buffer, buffer_id, o.gltf_resource, o.base_resource)?;
+    fn field<'a>(v: &'a Value, k: &str) -> Option<&'a Value> {
+        js::get(Some(v), k)
+    }
+    let accessor_key = format!(
+        "{}-{}-{}-{}",
+        add(field(buffer_view, "byteOffset"), field(accessor, "byteOffset")),
+        template(field(accessor, "componentType")),
+        template(field(accessor, "type")),
+        template(field(accessor, "count")),
+    );
+    Ok(format!("index-buffer:{buffer_key}-accessor-{accessor_key}{suffix}"))
+}
+
+/// `ResourceCacheKey.getImageCacheKey`.
+pub fn get_image_cache_key(
+    gltf: &Value,
+    image_id: usize,
+    gltf_resource: &Resource,
+    base_resource: &Resource,
+) -> Result<String, PipelineError> {
+    Ok(format!("image:{}", image_key(gltf, Some(&Value::from(image_id)), gltf_resource, base_resource)?))
+}
+
+/// `ResourceCacheKey.getTextureCacheKey`: the image the context will load
+/// (see `GltfLoaderUtil.getImageIdFromTexture`) and its sampler.
+pub fn get_texture_cache_key(
+    gltf: &Value,
+    texture_info: &Value,
+    gltf_resource: &Resource,
+    base_resource: &Resource,
+    supported_image_formats: SupportedImageFormats,
+    context_id: &str,
+) -> Result<String, PipelineError> {
+    let texture_id = js::get(Some(texture_info), "index").cloned().unwrap_or(Value::Null);
+    let image_id = get_image_id_from_texture(gltf, &texture_id, supported_image_formats)?;
+    let image_key = image_key(gltf, image_id, gltf_resource, base_resource)?;
+    let sampler = create_sampler(gltf, texture_info, false)?;
+    Ok(format!(
+        "texture:{image_key}-sampler-{}-{}-{}-{}-context-{context_id}",
+        sampler.wrap_s as u32,
+        sampler.wrap_t as u32,
+        sampler.minification_filter as u32,
+        sampler.magnification_filter as u32
+    ))
+}
+
+// Typed cache-factory API. Both entry points use the same pinned key helpers.
+use crate::core::RuntimeError;
 #[derive(Clone, Copy)]
 pub struct GltfKeyContext<'a> {
     pub gltf: &'a Value,
@@ -17,24 +354,14 @@ pub struct BufferKeyOptions<'a> {
     pub dequantize: bool,
 }
 impl BufferKeyOptions<'_> {
-    fn suffix(self) -> Result<String> {
+    fn context(self) -> Result<String, RuntimeError> {
         if !self.load_buffer && !self.load_typed_array {
             return Err(RuntimeError::new("At least one of loadBuffer and loadTypedArray must be true."));
         }
-        let mut suffix = String::new();
-        if self.dequantize {
-            suffix.push_str("-dequantize");
+        if self.load_buffer && self.context_id.is_none() {
+            return Err(RuntimeError::new("GPU buffer keys require a context ID"));
         }
-        if self.load_buffer {
-            suffix += &format!(
-                "-buffer-context-{}",
-                self.context_id.ok_or_else(|| RuntimeError::new("GPU buffer keys require a context ID"))?
-            );
-        }
-        if self.load_typed_array {
-            suffix += "-typed-array";
-        }
-        Ok(suffix)
+        Ok(self.context_id.unwrap_or("").into())
     }
 }
 pub enum VertexKeySource<'a> {
@@ -43,199 +370,87 @@ pub enum VertexKeySource<'a> {
     Spz { extension: &'a Value, semantic: &'a str },
 }
 pub struct ResourceCacheKey;
-fn external(resource: &Resource) -> String {
-    get_absolute_uri(&resource.url(), None)
-}
-fn embedded(parent: &Resource, id: usize) -> String {
-    format!("{}-buffer-id-{id}", external(parent))
-}
-fn at(array: &Value, id: usize) -> Result<&Value> {
-    array.get(id).ok_or_else(|| RuntimeError::new("glTF cache key index out of bounds"))
-}
-fn id(value: &Value) -> Result<usize> {
-    value
-        .as_u64()
-        .and_then(|v| usize::try_from(v).ok())
-        .ok_or_else(|| RuntimeError::new("Invalid glTF cache key index"))
-}
-fn number(value: &Value) -> String {
-    value.as_f64().map(crate::core::math::js_number_to_string).unwrap_or_else(|| {
-        if value.is_null() {
-            "undefined".into()
-        } else {
-            value.to_string()
-        }
-    })
-}
-fn view_range(view: &Value) -> String {
-    let (offset, length) =
-        if let Some(meshopt) = view.pointer("/extensions/EXT_meshopt_compression").filter(|v| !v.is_null()) {
-            (meshopt["byteOffset"].as_f64().unwrap_or(0.), meshopt["byteLength"].as_f64())
-        } else {
-            (view["byteOffset"].as_f64().unwrap_or(f64::NAN), view["byteLength"].as_f64())
-        };
-    format!(
-        "{}-{}",
-        crate::core::math::js_number_to_string(offset),
-        crate::core::math::js_number_to_string(offset + length.unwrap_or(f64::NAN))
-    )
-}
-fn buffer_key(context: GltfKeyContext<'_>, buffer: &Value, buffer_id: usize) -> Result<String> {
-    if let Some(uri) = buffer["uri"].as_str() {
-        let resource = context
-            .base_resource
-            .get_derived_resource(DerivedResourceOptions { url: Some(uri.into()), ..Default::default() })
-            .ok_or_else(|| RuntimeError::new("Invalid glTF buffer URI"))?;
-        Ok(external(&resource))
-    } else {
-        Ok(embedded(context.gltf_resource, buffer_id))
-    }
-}
-fn draco_key(context: GltfKeyContext<'_>, extension: &Value) -> Result<String> {
-    let view = at(&context.gltf["bufferViews"], id(&extension["bufferView"])?)?;
-    let buffer_id = id(&view["buffer"])?;
-    Ok(format!(
-        "{}-range-{}",
-        buffer_key(context, at(&context.gltf["buffers"], buffer_id)?, buffer_id)?,
-        view_range(view)
-    ))
-}
-fn image_key(context: GltfKeyContext<'_>, image_id: usize) -> Result<String> {
-    let image = at(&context.gltf["images"], image_id)?;
-    if let Some(uri) = image["uri"].as_str() {
-        return context
-            .base_resource
-            .get_derived_resource(DerivedResourceOptions { url: Some(uri.into()), ..Default::default() })
-            .map(|r| external(&r))
-            .ok_or_else(|| RuntimeError::new("Invalid image URI"));
-    }
-    let view = at(&context.gltf["bufferViews"], id(&image["bufferView"])?)?;
-    let buffer_id = id(&view["buffer"])?;
-    Ok(format!(
-        "{}-range-{}",
-        buffer_key(context, at(&context.gltf["buffers"], buffer_id)?, buffer_id)?,
-        view_range(view)
-    ))
+fn runtime<T>(result: Result<T, PipelineError>) -> Result<T, RuntimeError> {
+    result.map_err(|e| RuntimeError::new(e.to_string()))
 }
 impl ResourceCacheKey {
-    pub fn schema(schema: Option<&Value>, resource: Option<&Resource>) -> Result<String> {
-        match (schema, resource) {
-            (Some(schema), None) => Ok(format!("embedded-schema:{}", stringify(schema))),
-            (None, Some(resource)) => Ok(format!("external-schema:{}", external(resource))),
-            _ => Err(RuntimeError::new("One of options.schema and options.resource must be defined.")),
-        }
+    pub fn schema(schema: Option<&Value>, resource: Option<&Resource>) -> Result<String, RuntimeError> {
+        Ok(get_schema_cache_key(match (schema, resource) {
+            (Some(s), None) => SchemaSource::Embedded(s),
+            (None, Some(r)) => SchemaSource::External(r),
+            _ => return Err(RuntimeError::new("One of options.schema and options.resource must be defined.")),
+        }))
     }
     pub fn external_buffer(resource: &Resource) -> String {
-        format!("external-buffer:{}", external(resource))
+        get_external_buffer_cache_key(resource)
     }
-    pub fn embedded_buffer(parent: &Resource, buffer_id: usize) -> String {
-        format!("embedded-buffer:{}", embedded(parent, buffer_id))
+    pub fn embedded_buffer(resource: &Resource, id: usize) -> String {
+        get_embedded_buffer_cache_key(resource, id)
     }
     pub fn gltf(resource: &Resource) -> String {
-        format!("gltf:{}", external(resource))
+        get_gltf_cache_key(resource)
     }
-    pub fn buffer_view(context: GltfKeyContext<'_>, view_id: usize) -> Result<String> {
-        let view = at(&context.gltf["bufferViews"], view_id)?;
-        let original = id(&view["buffer"])?;
-        // Preserve the pinned key helper's original-buffer lookup before
-        // applying meshopt's buffer ID override. Loading uses the override.
-        let buffer = at(&context.gltf["buffers"], original)?;
-        let buffer_id =
-            view.pointer("/extensions/EXT_meshopt_compression/buffer").map(id).transpose()?.unwrap_or(original);
-        Ok(format!("buffer-view:{}-range-{}", buffer_key(context, buffer, buffer_id)?, view_range(view)))
+    pub fn buffer_view(c: GltfKeyContext<'_>, id: usize) -> Result<String, RuntimeError> {
+        runtime(get_buffer_view_cache_key(c.gltf, id, c.gltf_resource, c.base_resource))
     }
-    pub fn draco(context: GltfKeyContext<'_>, extension: &Value) -> Result<String> {
-        Ok(format!("draco:{}", draco_key(context, extension)?))
+    pub fn draco(c: GltfKeyContext<'_>, extension: &Value) -> Result<String, RuntimeError> {
+        runtime(get_draco_cache_key(c.gltf, extension, c.gltf_resource, c.base_resource))
     }
-    pub fn spz(context: GltfKeyContext<'_>) -> Result<String> {
-        Ok(format!("spz:{}", draco_key(context, &serde_json::json!({"bufferView":0}))?))
+    pub fn spz(c: GltfKeyContext<'_>) -> Result<String, RuntimeError> {
+        runtime(get_spz_cache_key(c.gltf, c.gltf_resource, c.base_resource))
     }
     pub fn vertex_buffer(
-        context: GltfKeyContext<'_>,
+        c: GltfKeyContext<'_>,
         source: VertexKeySource<'_>,
         options: BufferKeyOptions<'_>,
-    ) -> Result<String> {
-        let suffix = options.suffix()?;
-        let key = match source {
-            VertexKeySource::BufferView(id) => {
-                let view = at(&context.gltf["bufferViews"], id)?;
-                let buffer_id = crate::scene::resource_cache_key::id(&view["buffer"])?;
-                format!(
-                    "{}-range-{}",
-                    buffer_key(context, at(&context.gltf["buffers"], buffer_id)?, buffer_id)?,
-                    view_range(view)
-                )
-            }
-            VertexKeySource::Draco { extension, semantic } => {
-                format!("{}-draco-{semantic}", draco_key(context, extension)?)
-            }
-            VertexKeySource::Spz { extension: _, semantic } => {
-                format!("{}-spz-{semantic}", draco_key(context, &serde_json::json!({"bufferView":0}))?)
-            }
+    ) -> Result<String, RuntimeError> {
+        let context = options.context()?;
+        let (buffer_view_id, draco, spz, attribute_semantic) = match source {
+            VertexKeySource::BufferView(id) => (Some(id), None, false, None),
+            VertexKeySource::Draco { extension, semantic } => (None, Some(extension), false, Some(semantic)),
+            VertexKeySource::Spz { semantic, .. } => (None, None, true, Some(semantic)),
         };
-        Ok(format!("vertex-buffer:{key}{suffix}"))
+        runtime(get_vertex_buffer_cache_key(VertexBufferKeyOptions {
+            gltf: c.gltf,
+            gltf_resource: c.gltf_resource,
+            base_resource: c.base_resource,
+            context_id: &context,
+            buffer_view_id,
+            draco,
+            spz,
+            attribute_semantic,
+            dequantize: options.dequantize,
+            load_buffer: options.load_buffer,
+            load_typed_array: options.load_typed_array,
+        }))
     }
     pub fn index_buffer(
-        context: GltfKeyContext<'_>,
+        c: GltfKeyContext<'_>,
         accessor_id: usize,
         draco: Option<&Value>,
-        mut options: BufferKeyOptions<'_>,
-    ) -> Result<String> {
-        options.dequantize = false;
-        let suffix = options.suffix()?;
-        let key = if let Some(draco) = draco {
-            format!("{}-draco", draco_key(context, draco)?)
-        } else {
-            let accessor = at(&context.gltf["accessors"], accessor_id)?;
-            let view = at(&context.gltf["bufferViews"], id(&accessor["bufferView"])?)?;
-            let buffer_id = id(&view["buffer"])?;
-            let offset =
-                view["byteOffset"].as_f64().unwrap_or(f64::NAN) + accessor["byteOffset"].as_f64().unwrap_or(f64::NAN);
-            format!(
-                "{}-accessor-{}-{}-{}-{}",
-                buffer_key(context, at(&context.gltf["buffers"], buffer_id)?, buffer_id)?,
-                crate::core::math::js_number_to_string(offset),
-                number(&accessor["componentType"]),
-                accessor["type"].as_str().unwrap_or("undefined"),
-                number(&accessor["count"])
-            )
-        };
-        Ok(format!("index-buffer:{key}{suffix}"))
+        options: BufferKeyOptions<'_>,
+    ) -> Result<String, RuntimeError> {
+        let context = options.context()?;
+        runtime(get_index_buffer_cache_key(IndexBufferKeyOptions {
+            gltf: c.gltf,
+            accessor_id,
+            gltf_resource: c.gltf_resource,
+            base_resource: c.base_resource,
+            context_id: &context,
+            draco,
+            load_buffer: options.load_buffer,
+            load_typed_array: options.load_typed_array,
+        }))
     }
-    pub fn image(context: GltfKeyContext<'_>, image_id: usize) -> Result<String> {
-        Ok(format!("image:{}", image_key(context, image_id)?))
+    pub fn image(c: GltfKeyContext<'_>, id: usize) -> Result<String, RuntimeError> {
+        runtime(get_image_cache_key(c.gltf, id, c.gltf_resource, c.base_resource))
     }
     pub fn texture(
-        context: GltfKeyContext<'_>,
+        c: GltfKeyContext<'_>,
         info: &Value,
         formats: SupportedImageFormats,
-        context_id: &str,
-    ) -> Result<String> {
-        let image_id = GltfLoaderUtil::image_id(context.gltf, id(&info["index"])?, formats)?;
-        let sampler = GltfLoaderUtil::create_sampler(context.gltf, info, false)?;
-        Ok(format!(
-            "texture:{}-sampler-{}-{}-{}-{}-context-{context_id}",
-            image_key(context, image_id)?,
-            sampler.wrap_s as u32,
-            sampler.wrap_t as u32,
-            sampler.minification_filter as u32,
-            sampler.magnification_filter as u32
-        ))
-    }
-}
-
-fn stringify(value: &Value) -> String {
-    match value {
-        Value::Number(n) => crate::core::math::js_number_to_string(n.as_f64().expect("JSON number")),
-        Value::Array(values) => format!("[{}]", values.iter().map(stringify).collect::<Vec<_>>().join(",")),
-        Value::Object(_) => format!(
-            "{{{}}}",
-            super::gltf_pipeline::js::for_in(Some(value))
-                .iter()
-                .map(|key| format!("{}:{}", serde_json::to_string(key).expect("key"), stringify(&value[key])))
-                .collect::<Vec<_>>()
-                .join(",")
-        ),
-        _ => value.to_string(),
+        context: &str,
+    ) -> Result<String, RuntimeError> {
+        runtime(get_texture_cache_key(c.gltf, info, c.gltf_resource, c.base_resource, formats, context))
     }
 }
