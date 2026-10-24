@@ -4380,5 +4380,55 @@
     "status": "ported",
     "rust": "data_sources::time_interval_collection_property",
     "note": "Observable Core interval collections, raw value cloning, inclusion/overlap/removal, identity merging and fallible source-compatible equality. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
+  },
+  "DataSources/PositionProperty": {
+    "status": "ported",
+    "rust": "data_sources::position_property",
+    "note": "Typed position contract, explicit FIXED/INERTIAL conversions, TEME fallback, loaded IAU/EOP data and injectable central-body transforms/clocks. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/ConstantPositionProperty": {
+    "status": "ported",
+    "rust": "data_sources::constant_position_property",
+    "note": "Owned positions and reference-frame updates, fixed-frame constant detection, converted result reuse, equality and atomic definition events. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/CallbackPositionProperty": {
+    "status": "ported",
+    "rust": "data_sources::callback_position_property",
+    "note": "Lazy callbacks in their declared frame, fixed/requested-frame conversion, callback identity, constant flags and reentrant callback replacement. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/SampledPositionProperty": {
+    "status": "ported",
+    "rust": "data_sources::sampled_position_property",
+    "note": "Cartesian sample/derivative packing, delegated interpolation/extrapolation, bulk/packed samples and removals, reference-frame conversion and equality. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/TimeIntervalCollectionPositionProperty": {
+    "status": "ported",
+    "rust": "data_sources::time_interval_collection_position_property",
+    "note": "Observable raw Cartesian intervals, fixed/requested-frame evaluation, boundaries, equality and definition events. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/CompositePositionProperty": {
+    "status": "ported",
+    "rust": "data_sources::composite_position_property",
+    "note": "Interval-selected position properties, requested-frame forwarding, reference-frame metadata, equality and weak child subscriptions. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/PositionPropertyArray": {
+    "status": "ported",
+    "rust": "data_sources::position_property_array",
+    "note": "Shared-time evaluation in a requested frame, snapshot children, undefined filtering, result compaction, equality and child subscription cleanup. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/ScaledPositionProperty": {
+    "status": "ported",
+    "rust": "data_sources::scaled_position_property",
+    "note": "Ellipsoid geodetic-surface projection after reference-frame conversion, child identity, replacement and weak forwarded events. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/VelocityVectorProperty": {
+    "status": "ported",
+    "rust": "data_sources::velocity_vector_property",
+    "note": "Forward/backward finite differences at 1/60 second, normalized/raw velocity, constant/undefined/stationary cases, position replacement and equality. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/VelocityOrientationProperty": {
+    "status": "ported",
+    "rust": "data_sources::velocity_orientation_property",
+    "note": "Velocity-based rotation/quaternion orientation, ellipsoid identity updates and value equality, position forwarding and owned scratch. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
   }
 }

@@ -161,9 +161,22 @@ and CompositeProperty. The batch includes 206 pinned CesiumJS scenarios,
 Owned values, Rc property references, local definition events and observable Core
 intervals provide the prerequisites for Entity and document loading.
 
-Next implement position/velocity/orientation properties, PropertyBag and entity
-collections, followed by graphics definitions, data-source collections and the
-loaders. CzmlDataSource and KmlDataSource are the largest loaders; their property
+Position/velocity/orientation properties are now validated below. Next implement
+PropertyBag and entity collections, followed by graphics definitions, data-source
+collections and the loaders. CzmlDataSource and KmlDataSource are the largest loaders; their property
 and entity dependencies come first. GeoJSON and GPX follow the same foundation.
 No entity, visualizer or document-loader module is counted as complete by this
 batch. See [DataSources API and validation](docs/data-sources.md).
+
+
+### DataSources positions and motion
+
+DataSources has 17 of 108 modules validated. Ten position/motion modules add
+fixed/inertial conversion, constant/callback/sampled positions, interval and
+composite positions, position arrays, surface scaling, velocity and orientation.
+PositionContext reuses Core transforms with TEME fallback, loaded IAU/EOP data
+or a custom central-body transform. The batch adds 412 pinned scenarios, eight
+native lifecycle checks and real browser evaluation with omitted times.
+
+Next implement PropertyBag and Entity/EntityCollection, then graphics definitions,
+data-source collections and document loading. See [DataSources](docs/data-sources.md).

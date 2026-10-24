@@ -462,5 +462,13 @@
     "ported": 881,
     "implemented": 2,
     "validatedPercent": 47.66
+  },
+  {
+    "milestone": "DataSources positions and motion",
+    "date": "2026-10-24",
+    "percent": 49.94,
+    "ported": 891,
+    "implemented": 2,
+    "validatedPercent": 48.12
   }
 ]

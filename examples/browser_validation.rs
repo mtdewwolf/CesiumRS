@@ -47,6 +47,64 @@ mod browser {
         Ok(())
     }
     #[wasm_bindgen]
+    pub fn validate_position_clocks() -> Result<(), JsValue> {
+        use cesium_rs::data_sources::*;
+        let now = JulianDate::from_date(js_sys::Date::now());
+        let callback = Rc::new(CallbackPositionProperty::new(
+            Rc::new(move |time, _| {
+                let t = JulianDate::seconds_difference(time, &now);
+                Ok(Some(Cartesian3::new(6378137. + 120. * t, 30. * t, 5. * t)))
+            }),
+            false,
+            ReferenceFrame::Fixed,
+        ));
+        let value = callback.get_value(None, None).map_err(err)?.unwrap();
+        assert!((6378137. ..6378377.).contains(&value.x));
+        let constant = ConstantPositionProperty::new(Some(Cartesian3::UNIT_X), ReferenceFrame::Inertial);
+        assert!((constant.get_value(None, None).map_err(err)?.unwrap().magnitude() - 1.).abs() < 1e-12);
+        let array = PositionPropertyArray::new(Some(vec![callback.clone(), callback.clone()]), ReferenceFrame::Fixed);
+        let values = array.get_value(None, None).map_err(err)?.unwrap();
+        assert_eq!(values[0], values[1]);
+        let sampled = SampledPositionProperty::new(ReferenceFrame::Fixed, 0);
+        sampled
+            .add_samples(
+                &[now.add_seconds(-60.), now.add_seconds(60.)],
+                &[Cartesian3::new(-60., 0., 0.), Cartesian3::new(60., 0., 0.)],
+                None,
+            )
+            .map_err(err)?;
+        assert!((0. ..2.).contains(&sampled.get_value(None, None).map_err(err)?.unwrap().x));
+        let raw = TimeIntervalCollectionPositionProperty::new(ReferenceFrame::Fixed);
+        raw.intervals().add_interval(TimeInterval::new(
+            now.add_seconds(-60.),
+            now.add_seconds(60.),
+            true,
+            true,
+            Some(Rc::new(Cartesian3::UNIT_X)),
+        ));
+        assert_eq!(raw.get_value(None, None).map_err(err)?, Some(Cartesian3::UNIT_X));
+        let composite = CompositePositionProperty::new(ReferenceFrame::Fixed);
+        composite.intervals().add_interval(TimeInterval::new(
+            now.add_seconds(-60.),
+            now.add_seconds(60.),
+            true,
+            true,
+            Some(callback.clone() as PositionPropertyRef),
+        ));
+        assert!((6378137. ..6378377.).contains(&composite.get_value(None, None).map_err(err)?.unwrap().x));
+        let scaled = ScaledPositionProperty::new(Some(Rc::new(ConstantPositionProperty::new(
+            Some(Cartesian3::new(12756274., 0., 0.)),
+            ReferenceFrame::Fixed,
+        ))));
+        assert!((scaled.get_value(None, None).map_err(err)?.unwrap().x - 6378137.).abs() < 1e-6);
+        let velocity = VelocityVectorProperty::new(Some(callback.clone()), false);
+        assert!((119. ..121.).contains(&velocity.get_value(None, None).map_err(err)?.unwrap().x));
+        let orientation = VelocityOrientationProperty::new(Some(callback), None);
+        let q = orientation.get_value(None, None).map_err(err)?.unwrap();
+        assert!((q.magnitude() - 1.).abs() < 1e-12);
+        Ok(())
+    }
+    #[wasm_bindgen]
     pub async fn validate_workers(base_url: String) -> Result<(), JsValue> {
         let mut processor = TaskProcessor::new(Rc::new(BrowserTaskWorker::new("echo", base_url)), Some(1));
         let init = processor.init_web_assembly_module(WebAssemblyOptions {
