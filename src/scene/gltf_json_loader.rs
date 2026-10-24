@@ -17,7 +17,7 @@ use crate::core::{
 };
 use futures_util::{future::join_all, FutureExt};
 use serde_json::Value;
-use std::{collections::BTreeMap, sync::Arc};
+use std::{cell::RefCell, collections::BTreeMap, rc::Rc, sync::Arc};
 #[derive(Clone, Debug)]
 pub enum GltfJsonInput {
     Document(Gltf),
@@ -37,6 +37,8 @@ pub struct GltfJsonLoader {
     base: Resource,
     client: ResourceClient,
     input: Option<GltfJsonInput>,
+    cache: Option<super::WeakResourceCache>,
+    buffer_leases: Rc<RefCell<Vec<super::CacheLease<BufferLoader>>>>,
 }
 impl GltfJsonLoader {
     pub fn new(
@@ -46,7 +48,19 @@ impl GltfJsonLoader {
         input: Option<GltfJsonInput>,
         cache_key: Option<String>,
     ) -> Self {
-        Self { data: ManagedLoader::new(cache_key, None), resource, base, client, input }
+        Self {
+            data: ManagedLoader::new(cache_key, None),
+            resource,
+            base,
+            client,
+            input,
+            cache: None,
+            buffer_leases: Rc::new(RefCell::new(Vec::new())),
+        }
+    }
+    pub fn with_resource_cache(mut self, cache: super::WeakResourceCache) -> Self {
+        self.cache = Some(cache);
+        self
     }
     pub fn gltf(&self) -> Option<Arc<LoadedGltfJson>> {
         self.data.value()
@@ -64,7 +78,27 @@ fn derive(base: &Resource, uri: &str) -> Result<Resource, RuntimeError> {
     base.get_derived_resource(DerivedResourceOptions { url: Some(uri.into()), ..Default::default() })
         .ok_or_else(|| RuntimeError::new("Invalid glTF buffer URI"))
 }
-async fn prepare(mut gltf: Gltf, base: Resource, client: ResourceClient) -> Result<LoadedGltfJson, RuntimeError> {
+enum SourceBuffer {
+    Owned(BufferLoader),
+    Cached(super::CacheLease<BufferLoader>),
+}
+impl std::ops::Deref for SourceBuffer {
+    type Target = BufferLoader;
+    fn deref(&self) -> &BufferLoader {
+        match self {
+            Self::Owned(loader) => loader,
+            Self::Cached(lease) => lease,
+        }
+    }
+}
+async fn prepare(
+    mut gltf: Gltf,
+    parent: Resource,
+    base: Resource,
+    client: ResourceClient,
+    cache: Option<super::WeakResourceCache>,
+) -> Result<(LoadedGltfJson, Vec<super::CacheLease<BufferLoader>>), RuntimeError> {
+    let mut leases = Vec::new();
     pipeline::add_pipeline_extras(&mut gltf.json).map_err(pipeline_error)?;
     let buffers = Collection::TopLevel("buffers");
     let mut embedded = Vec::new();
@@ -101,7 +135,12 @@ async fn prepare(mut gltf: Gltf, base: Resource, client: ResourceClient) -> Resu
             let buffer = for_each::get(&gltf.json, buffers, &id).expect("enumerated buffer");
             if gltf.buffer_source(&id.value()).is_none() {
                 if let Some(uri) = buffer["uri"].as_str() {
-                    let loader = BufferLoader::new(None, Some(derive(&base, uri)?), Some(client.clone()), None)?;
+                    let resource = derive(&base, uri)?;
+                    let loader = if let Some(cache) = cache.as_ref().and_then(|cache| cache.upgrade()) {
+                        SourceBuffer::Cached(cache.external_buffer_loader(resource)?)
+                    } else {
+                        SourceBuffer::Owned(BufferLoader::new(None, Some(resource), Some(client.clone()), None)?)
+                    };
                     let request = loader.load();
                     external.push((id, loader, request));
                 }
@@ -111,12 +150,15 @@ async fn prepare(mut gltf: Gltf, base: Resource, client: ResourceClient) -> Resu
             request.await?;
             loader
                 .typed_array()
-                .map(|bytes| (id, bytes))
+                .map(|bytes| (id, bytes, loader))
                 .ok_or_else(|| RuntimeError::new("Buffer loader was destroyed"))
         }))
         .await;
         for result in results {
-            let (id, bytes) = result?;
+            let (id, bytes, loader) = result?;
+            if let SourceBuffer::Cached(lease) = loader {
+                leases.push(lease);
+            }
             let marker = gltf.add_source(bytes);
             for_each::get_mut(&mut gltf.json, buffers, &id).expect("enumerated buffer")["extras"]["_pipeline"]
                 ["source"] = marker;
@@ -131,6 +173,12 @@ async fn prepare(mut gltf: Gltf, base: Resource, client: ResourceClient) -> Resu
         if let Some(source) = gltf.buffer_source(&id.value()) {
             let index = id.key().parse().map_err(|_| RuntimeError::new("Invalid upgraded glTF buffer ID"))?;
             buffer_sources.insert(index, source.clone());
+            if let Some(uri) = buffer["uri"].as_str() {
+                let key = super::ResourceCacheKey::external_buffer(&derive(&base, uri)?);
+                if let Some(lease) = leases.iter().find(|lease| lease.cache_key() == Some(&key)) {
+                    lease.replace_typed_array(source.clone());
+                }
+            }
             if buffer.get("uri").is_none_or(Value::is_null) {
                 embedded_buffers.insert(index, source.clone());
             }
@@ -149,7 +197,14 @@ async fn prepare(mut gltf: Gltf, base: Resource, client: ResourceClient) -> Resu
             }
         }
     }
-    Ok(LoadedGltfJson { json: gltf.json, embedded_buffers, buffer_sources })
+    if let Some(cache) = cache.as_ref().and_then(|cache| cache.upgrade()) {
+        for (id, source) in &embedded_buffers {
+            let lease = cache.embedded_buffer_loader(&parent, *id, Some(source.clone()))?;
+            lease.load().await?;
+            leases.push(lease);
+        }
+    }
+    Ok((LoadedGltfJson { json: gltf.json, embedded_buffers, buffer_sources }, leases))
 }
 // ModelUtility's pinned JSON compatibility check. Rendering support is supplied
 // by the later Model pipeline; recognizing an extension does not implement it.
@@ -198,14 +253,18 @@ impl ResourceLoader for GltfJsonLoader {
         self.data.is_destroyed()
     }
     fn unload(&self) {
+        self.buffer_leases.borrow_mut().clear();
         self.data.unload();
     }
     fn destroy(&self) {
+        self.unload();
         self.data.destroy();
     }
     fn load(&self) -> ResourceLoadFuture {
         let (resource, base, client, input) =
             (self.resource.clone(), self.base.clone(), self.client.clone(), self.input.clone());
+        let cache = self.cache.clone();
+        let buffer_leases = Rc::downgrade(&self.buffer_leases);
         let message = format!("Failed to load glTF: {}", resource.url());
         self.data.load(message, move || {
             async move {
@@ -232,7 +291,11 @@ impl ResourceLoader for GltfJsonLoader {
                         }
                     }
                 };
-                prepare(gltf, base, client).await.map(Arc::new)
+                let (gltf, leases) = prepare(gltf, resource, base, client, cache).await?;
+                if let Some(owner) = buffer_leases.upgrade() {
+                    *owner.borrow_mut() = leases;
+                }
+                Ok(Arc::new(gltf))
             }
             .boxed_local()
         })

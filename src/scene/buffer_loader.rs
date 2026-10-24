@@ -31,6 +31,11 @@ impl BufferLoader {
     pub fn typed_array(&self) -> Option<BufferSource> {
         self.data.value()
     }
+    // Legacy upgrades rewrite shared JS ArrayBuffers in place. Rust's pipeline
+    // uses copy-on-write sources, so publish the upgraded view to the cache.
+    pub(crate) fn replace_typed_array(&self, source: BufferSource) {
+        self.data.replace_value(source);
+    }
 }
 impl ResourceLoader for BufferLoader {
     fn cache_key(&self) -> Option<&str> {
