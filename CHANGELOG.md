@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Port the `NGA_gpm_local` extension: `GltfGpmLoader` and nine data classes (anchor points, correlation groups, `Spdcf`, `GltfGpmLocal`, per-point error textures and metadata), with 35 pinned CesiumJS cases.
+
 - Port the 3D Tiles binary content parsers: `Cesium3DTileFeatureTable`, `B3dmParser` (current and both legacy headers), `I3dmParser` and `PntsParser` (quantized positions, all color and normal encodings, binary globals, Draco point compression). 59 pinned CesiumJS tiles cover JavaScript's typed-array errors, unaligned glb copies and every parser error.
 
 - Integrate ModelComponents and initialized Draco workers with the shared model cache and GPU loaders. Preserve both parity suites (293 additional cases), unify cache key/texture helpers, and retain lease cancellation and renderer ownership across the overlapping Scene batches.

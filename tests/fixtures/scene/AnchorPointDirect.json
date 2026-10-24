@@ -1,0 +1,1 @@
+{"module":"AnchorPointDirect","cesium":"23.0.0","cases":[{"f":"construct","a":[[1,2,3],[0.1,-0.2,0.3]],"r":{"position":[1,2,3],"adjustmentParams":[0.1,-0.2,0.3]}},{"f":"construct","a":[[-6378137,0,1e-9],[0,0,0]],"r":{"position":[-6378137,0,1e-9],"adjustmentParams":[0,0,0]}}]}

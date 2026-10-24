@@ -313,6 +313,28 @@ cargo test --test scene_tile_formats
 TZ=UTC node tools/cesium/fixtures/generate.mjs Cesium3DTileFeatureTable B3dmParser I3dmParser PntsParser
 ```
 
+## NGA_gpm_local extension
+
+`scene::model::extensions::gpm` holds the `NGA_gpm_local` (generic point-cloud
+model) classes: `AnchorPointDirect`, `AnchorPointIndirect`, `CorrelationGroup`,
+`Spdcf`, `GltfGpmLocal`, `PpeSource`, `PpeMetadata`, `PpeTexture` and
+`MeshPrimitiveGpmLocal`, plus `GltfGpmLoader`, which reads the extension JSON.
+
+`GltfGpmLocal` has two constructors, `direct` and `indirect`. Upstream checks
+in debug builds that each storage type has only its own fields; the
+constructors make other combinations impossible. The `Spdcf` range checks are
+debug-build `DeveloperError`s and are not ported. `PpeSource::SigR` keeps
+upstream's value, `"VARZ"`.
+
+`GltfGpmLoader` reads JSON as JavaScript does: `Cartesian3.fromArray` leaves a
+missing element undefined (NaN), while the covariance `Matrix3` constructor
+turns a missing or null element into 0; a missing array is not iterable and
+reading a property of null throws a `TypeError`.
+
+Tests: `tests/scene_gpm.rs`, 35 pinned cases from
+`tools/cesium/fixtures/scene-gpm.mjs`. `GltfMeshPrimitiveGpmLoader` follows
+property textures and `StructuralMetadata`.
+
 ## Camera
 
 `scene::Camera` starts the large, frame-driven Scene modules. It is the
