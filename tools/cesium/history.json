@@ -408,11 +408,19 @@
     "validatedPercent": 45.13
   },
   {
-    "milestone": "glTF loader foundations",
+    "milestone": "Model resource cache and geometry loaders",
     "date": "2026-10-24",
-    "percent": 47.54,
-    "ported": 847,
+    "percent": 47.38,
+    "ported": 846,
     "implemented": 2,
-    "validatedPercent": 45.91
+    "validatedPercent": 45.56
+  },
+  {
+    "milestone": "Integrate glTF loader foundations and model cache",
+    "date": "2026-10-24",
+    "percent": 47.84,
+    "ported": 848,
+    "implemented": 2,
+    "validatedPercent": 46.02
   }
 ]

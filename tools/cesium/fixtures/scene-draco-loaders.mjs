@@ -202,5 +202,5 @@ export default async function dracoLoaders() {
     BufferLoader._fetchArrayBuffer = original.fetch;
     resetDraco();
   }
-  return [draco, gltfDraco];
+  return [draco, {...gltfDraco,dir:'foundations'}];
 }

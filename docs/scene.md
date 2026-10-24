@@ -138,7 +138,7 @@ expiration, shared textures, partial content failure, resource bases, CPU
 height queries and renderer/resource ownership. The reference frame harness
 uses explicit host operations and does not establish full browser Scene parity.
 
-`scripts/check-scene.sh` compares **416 actual GPU results** with
+`scripts/check-scene.sh` compares **440 actual GPU results** with
 CesiumJS. The original 24 WebGL2 cases cover log depth, HDR, render/pick/depth
 passes, framebuffer targets and retained uniforms/textures. Another 48 phase
 comparisons cover float and byte plane textures, mutation/partial upload,
@@ -214,57 +214,58 @@ shared `BufferLoader` lease; views release their own leases after loading.
 
 Ninety-three pinned-source cases cover these five modules. Native tests cover
 shared/failing loads, cancellation, retained byte views and feeding JSON/GLB
-loads into buffer views.
+loads into buffer views. The next batch adds 184 pinned-source cases for cache identities/statistics,
+cache ownership traces, glTF texture utilities, Draco decoding and vertex/index
+loader lifecycles. Twenty-four additional WebGL1/2 comparisons exercise real
+uploads, byte readbacks, indexed triangle pixels, CPU retention and last-lease
+GPU destruction across all three index datatypes and synchronous/deferred uploads.
 
-### Loader foundations
+`ResourceCache` is owned by the application or model pipeline; clones share a
+pool. Keep a `CacheLease<T>` while using a resource. Cloning a lease increments
+its reference count; dropping the last lease destroys the loader and releases
+its children. `loader()` returns an observation handle without extending the
+cache lease. CPU keys share data across contexts; GPU keys include context IDs.
+JSON loaders register embedded/upgraded buffers, and buffer views release their
+child leases when their bytes are available. Legacy upgrades publish rewritten
+external animation bytes back to the cache. Clearing a cache destroys dependent
+resources before their sources. Cache keys preserve pinned-source quirks.
 
-`ModelComponents` holds what GltfLoader will produce: all 27 data classes with
-their upstream defaults and `DEFAULT_*` constants. JavaScript shares objects
-between them; Rust stores indices into the owning array instead (node
-`children`, skin `joints`, animation targets and scene roots index
-`Components::nodes`; a node's `skin` indexes `Components::skins`; a channel's
-`sampler` indexes its animation's samplers). GPU buffers and textures make the
-types generic over `Gl`, and texture readers share one `Rc<Texture>` as
-JavaScript readers share one texture. Values whose JavaScript type depends on
-the accessor (`min`, `max`, `constant`, quantization ranges, animation outputs)
-are a `MathValue`. `structuralMetadata` and `modelPrimitiveImagery` arrive with
-StructuralMetadata and ModelPrimitiveImagery.
+`GltfDracoLoader` shares a capacity-limited `TaskProcessor`. Await `load()` for
+the compressed view, then call `process(&frame)` until it returns `Ok(true)`.
+Decoded data includes explicit index datatype information at the native wire
+boundary. Quantization metadata preserves shader dequantization and octahedral
+normal encoding. The portable worker decodes when polled; applications can use
+`set_draco_decoder` with a host worker for background decoding. Dropping the last
+lease cancels pending tasks and returns decoder capacity.
 
-`GltfLoaderUtil` picks a texture's image (WebP, then Basis, when supported),
-builds glTF samplers with the compressed-texture no-mipmap fallback, and builds
-`KHR_texture_transform` texture readers. As upstream, a reader without the
-extension has no transform and keeps the texture info's `scale`, even when that
-is undefined.
+`GltfVertexBufferLoader` and `GltfIndexBufferLoader` can retain CPU data, upload
+GPU buffers, or do both. Provide a renderer context for GPU loads. For deferred
+uploads, store `Rc<BufferUploadBudget>` in `FrameState.job_scheduler` and reset
+the quota each frame; a missing quota permits immediate upload. An exhausted
+quota leaves the loader pending. `process` propagates decode/allocation errors.
+This budget is a host adapter, not a port of the complete JobScheduler.
 
-`ResourceCacheKey` builds every key ResourceCache shares loaders under. Two
-loaders share a resource exactly when their keys are equal, so keys follow
-JavaScript to the character: template literals print a missing `byteOffset` as
-`undefined` and `+` turns it into `NaN`; schema keys use `JSON.stringify`'s
-property order and number formatting; a meshopt buffer view keys on the
-compressed range and the meshopt buffer id while reading the view's own buffer
-for its URI, as upstream does. Hosts pass the context id that upstream reads
-from `frameState.context.id`. `ResourceCacheStatistics` counts geometry and
-texture bytes once per cache key from sizes the caller passes.
+ResourceCache remains partial pending image, texture and SPZ factories. The
+vertex loader remains partial pending SPZ attributes. Image/texture/SPZ loaders,
+the main GltfLoader/Model pipeline and built-in renderable tile factory still
+need porting. The default tileset loader requires a factory for renderable tile
+content.
 
-`DracoLoader` owns its `decodeDraco` task processor instead of keeping one in
-static state. The first request creates it with the host's `TaskWorker` and
-starts the decoder module; the result is observed on later requests, where the
-JavaScript promise callbacks would have run, so the first request returns
-`None` as upstream does. `GltfDracoLoader` takes its buffer view from the host
-cache in `load` (upstream's `resourceCache.getBufferViewLoader`), then schedules
-the decode in `process`: FLOAT attributes skip Draco's dequantization transforms
-so they stay quantized for the shader. Each `process` call first settles a
-finished decode. Unloading releases the buffer view lease. `ResourceLoader::process`
-now returns `Result`, since upstream's `process` throws.
+`model_components` supplies the 27 glTF data classes, animated-property enum
+and material defaults. Shared node/skin/sampler references are indices; buffers
+and texture readers use the renderer's typed resources. Structural metadata and
+primitive imagery references use optional `FrameResource` handles pending their
+runtime modules. A further 293 pinned cases cover these defaults and constants,
+texture/cache-key edge cases, and decoder initialization and failure timelines.
+The additional suites live under `tests/fixtures/scene/foundations` where their
+module names overlap the cache/GPU suites.
 
-Tests: `tests/scene_resource_cache.rs` (ResourceCacheKey, statistics,
-GltfLoaderUtil, ModelComponents; 270 cases) and `tests/scene_draco_loaders.rs`
-(DracoLoader timelines and seven GltfDracoLoader scenarios through the real
-`decodeDraco` worker, including decode failures, buffer view failures, destroy
-during load and lease release). A ResourceCache, the GPU vertex/index/texture/
-image loaders, the main GltfLoader/Model pipeline and the built-in renderable
-tile factory remain to be ported. The default tileset loader still requires a
-factory for renderable tile content.
+`DracoLoader` initializes a host-supplied decoder worker lazily, leaving the
+first decode pending until initialization settles. Falsy and rejected module
+initializations remain errors on subsequent requests. `GltfDracoLoader::from_host`
+uses this initialized worker with a buffer-view factory; the ResourceCache
+constructor keeps the portable worker and explicit cache leases. Both paths
+share one frame-driven loader and release pending tasks on unload/destruction.
 
 ## Camera
 
@@ -675,8 +676,7 @@ TZ=UTC node tools/cesium/fixtures/generate.mjs ImplicitSubtree
 
 The next batches build on these:
 
-- ResourceCache and the vertex, index, image and texture loaders, then
-  GltfLoader and the 3D Tiles resource loaders;
+- the glTF and 3D Tiles resource loaders on top of `GltfPipeline`;
 - the rest of 3D Metadata: property textures, `StructuralMetadata`,
   `PickedMetadataInfo` and the parsers;
 - 3D Tiles content parsers;

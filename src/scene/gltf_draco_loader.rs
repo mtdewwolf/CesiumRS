@@ -1,276 +1,275 @@
-//! CesiumJS `GltfDracoLoader`: loads a `KHR_draco_mesh_compression` buffer
-//! view, then decodes it on the [`DracoLoader`] during `process`.
-//!
-//! `load` takes the buffer view loader from the host's resource cache (the
-//! `get_buffer_view_loader` callback, upstream's `resourceCache.getBufferViewLoader`)
-//! and leaves the loader PROCESSING. Each `process` call first settles a
-//! decode that has finished — where JavaScript's promise callbacks would have
-//! run between frames — then schedules the decode when the bytes are ready.
-//! FLOAT attributes skip Draco's dequantization transforms so they stay
-//! quantized for the shader (`dequantizeInShader`).
-//!
-//! Unloading releases this loader's buffer view lease, as upstream's
-//! `resourceCache.unload` does. Decode results are the `decodeDraco` worker's
-//! JSON `indexArray` and `attributeData`.
-
-use super::gltf_json_loader::LoadedGltfJson;
-use super::gltf_pipeline::{js, BufferSource};
-use super::resource_loader::loader_error;
-use super::{DracoLoader, FrameState, GltfBufferViewLoader, ResourceLoadFuture, ResourceLoader, ResourceLoaderState};
-use crate::core::task_processor::ProcessedTask;
-use crate::core::{ComponentDatatype, RuntimeError};
+//! Buffer-view loading followed by frame-driven, concurrency-limited Draco work.
+use super::{
+    gltf_pipeline::BufferSource,
+    resource_loader::{loader_error, ManagedLoader},
+    CacheLease, DracoLoader, FrameState, GltfBufferViewLoader, LoadedGltfJson, ResourceLoadFuture, ResourceLoader,
+    ResourceLoaderState, SceneRenderRequest,
+};
+use crate::core::{ProcessedTask, RuntimeError, TaskFuture, TaskProcessor, TaskWorker, WebAssemblyOptions};
 use futures_util::FutureExt;
 use serde_json::{json, Value};
-use std::cell::RefCell;
-use std::future::Future;
-use std::pin::Pin;
-use std::rc::Rc;
-use std::sync::Arc;
-use std::task::{Context, Poll, Waker};
-
-/// `decodedData`: the decoded index array and vertex attributes.
+use std::{
+    cell::RefCell,
+    future::Future,
+    pin::Pin,
+    rc::Rc,
+    sync::Arc,
+    task::{Context, Poll, Waker},
+};
+/// Portable fallback. Native/browser hosts can supply a TaskProcessor backed by
+/// their worker implementation; the same capacity and cancellation rules apply.
+pub struct DracoDecodeWorker;
+impl TaskWorker<Value, Value> for DracoDecodeWorker {
+    fn run(&self, _: u64, parameters: Value) -> TaskFuture<Value> {
+        Box::pin(async move { crate::workers::decode_draco(&parameters) })
+    }
+    fn init_web_assembly_module(&self, _: WebAssemblyOptions) -> TaskFuture<Value> {
+        Box::pin(async { Ok(Value::Bool(true)) })
+    }
+    fn cancel_task(&self, _: u64) {}
+    fn terminate(&self) {}
+}
 #[derive(Clone, Debug, PartialEq)]
 pub struct DecodedDraco {
     pub indices: Value,
     pub vertex_attributes: Value,
 }
-
-type ViewLoaderFactory = Box<dyn FnOnce() -> Result<Rc<GltfBufferViewLoader>, RuntimeError>>;
-
-struct Inner {
-    gltf: Option<Arc<LoadedGltfJson>>,
-    primitive: Option<Value>,
-    draco: Value,
-    get_buffer_view_loader: Option<ViewLoaderFactory>,
-    buffer_view_loader: Option<Rc<GltfBufferViewLoader>>,
-    buffer_view_typed_array: Option<BufferSource>,
-    decode: Option<ProcessedTask<Value, Value>>,
-    decode_started: bool,
-    decoded_data: Option<DecodedDraco>,
-    draco_error: Option<RuntimeError>,
-    state: ResourceLoaderState,
-    promise: Option<ResourceLoadFuture>,
-    destroyed: bool,
+enum ViewLease {
+    Cached(CacheLease<GltfBufferViewLoader>),
+    Owned(Rc<GltfBufferViewLoader>),
 }
-
-impl Inner {
-    fn unload(&mut self) {
-        self.buffer_view_loader = None;
-        self.buffer_view_typed_array = None;
-        self.decoded_data = None;
-        self.gltf = None;
-        self.primitive = None;
-    }
-
-    /// `handleError`: unload, fail, and return the error to throw.
-    fn fail(&mut self, error: &RuntimeError) -> RuntimeError {
-        self.unload();
-        self.state = ResourceLoaderState::Failed;
-        loader_error("Failed to load Draco", Some(error))
+impl ViewLease {
+    fn loader(&self) -> Rc<GltfBufferViewLoader> {
+        match self {
+            Self::Cached(l) => l.loader(),
+            Self::Owned(l) => l.clone(),
+        }
     }
 }
-
+type ViewFactory = Box<dyn FnOnce() -> Result<Rc<GltfBufferViewLoader>, RuntimeError>>;
+enum Decoder {
+    Processor(Rc<RefCell<TaskProcessor<Value, Value>>>),
+    Initialized(Rc<DracoLoader>),
+}
 pub struct GltfDracoLoader {
-    key: Option<String>,
-    decoder: Rc<DracoLoader>,
-    inner: Rc<RefCell<Inner>>,
+    data: ManagedLoader<BufferSource>,
+    child: Rc<RefCell<Option<ViewLease>>>,
+    factory: RefCell<Option<ViewFactory>>,
+    parameters: Value,
+    decoder: Decoder,
+    task: RefCell<Option<ProcessedTask<Value, Value>>>,
+    decoded: RefCell<Option<Arc<Value>>>,
 }
-
-/// The Draco attribute type a glTF attribute name maps to, by semantic prefix.
-fn draco_attribute_type(attribute: &str) -> Option<&'static str> {
-    [("POSITION", "POSITION"), ("NORMAL", "NORMAL"), ("COLOR", "COLOR"), ("TEXCOORD", "TEX_COORD")]
-        .into_iter()
-        .find(|(semantic, _)| attribute.starts_with(semantic))
-        .map(|(_, draco)| draco)
-}
-
 impl GltfDracoLoader {
-    /// `primitive` is the glTF primitive and `draco` its `KHR_draco_mesh_compression` object.
     pub fn new(
+        gltf: &Value,
+        primitive: &Value,
+        extension: &Value,
+        child: CacheLease<GltfBufferViewLoader>,
+        decoder: Rc<RefCell<TaskProcessor<Value, Value>>>,
+        key: Option<String>,
+    ) -> Result<Self, RuntimeError> {
+        Self::with_source(
+            gltf,
+            primitive,
+            extension,
+            Some(ViewLease::Cached(child)),
+            None,
+            Decoder::Processor(decoder),
+            key,
+        )
+    }
+    pub fn from_host(
         gltf: Arc<LoadedGltfJson>,
         primitive: Value,
-        draco: Value,
-        get_buffer_view_loader: impl FnOnce() -> Result<Rc<GltfBufferViewLoader>, RuntimeError> + 'static,
+        extension: Value,
+        factory: impl FnOnce() -> Result<Rc<GltfBufferViewLoader>, RuntimeError> + 'static,
         decoder: Rc<DracoLoader>,
-        cache_key: Option<String>,
-    ) -> Self {
-        Self {
-            key: cache_key,
-            decoder,
-            inner: Rc::new(RefCell::new(Inner {
-                gltf: Some(gltf),
-                primitive: Some(primitive),
-                draco,
-                get_buffer_view_loader: Some(Box::new(get_buffer_view_loader)),
-                buffer_view_loader: None,
-                buffer_view_typed_array: None,
-                decode: None,
-                decode_started: false,
-                decoded_data: None,
-                draco_error: None,
-                state: ResourceLoaderState::Unloaded,
-                promise: None,
-                destroyed: false,
-            })),
-        }
+        key: Option<String>,
+    ) -> Result<Self, RuntimeError> {
+        Self::with_source(
+            &gltf.json,
+            &primitive,
+            &extension,
+            None,
+            Some(Box::new(factory)),
+            Decoder::Initialized(decoder),
+            key,
+        )
     }
-
-    pub fn decoded_data(&self) -> Option<DecodedDraco> {
-        self.inner.borrow().decoded_data.clone()
-    }
-
-    /// The decode request `process` sends to the `decodeDraco` worker.
-    fn decode_options(inner: &Inner, bytes: &BufferSource) -> Result<Value, RuntimeError> {
-        let type_error = |e: super::gltf_pipeline::PipelineError| RuntimeError::new(e.to_string());
-        let gltf = &inner.gltf.as_ref().ok_or_else(|| RuntimeError::new("glTF was unloaded"))?.json;
-        let draco = &inner.draco;
-        let buffer_view_id = js::get(Some(draco), "bufferView").cloned().unwrap_or(Value::Null);
-        let buffer_view = js::index(js::get(Some(gltf), "bufferViews"), &buffer_view_id).cloned();
-        let attributes = js::get(inner.primitive.as_ref(), "attributes");
-        let mut skip: Vec<&str> = Vec::new();
-        for attribute in js::for_in(attributes) {
-            let Some(draco_type) = draco_attribute_type(&attribute) else { continue };
-            let accessor_id = js::get(attributes, &attribute).cloned().unwrap_or(Value::Null);
-            let accessor = js::object(js::index(js::get(Some(gltf), "accessors"), &accessor_id), "componentType")
-                .map_err(type_error)?;
-            let float = js::get(Some(accessor), "componentType").and_then(Value::as_f64)
-                == Some(ComponentDatatype::Float as u32 as f64);
-            if float && !skip.contains(&draco_type) {
-                skip.push(draco_type);
+    fn with_source(
+        gltf: &Value,
+        primitive: &Value,
+        extension: &Value,
+        child: Option<ViewLease>,
+        factory: Option<ViewFactory>,
+        decoder: Decoder,
+        key: Option<String>,
+    ) -> Result<Self, RuntimeError> {
+        let id =
+            extension["bufferView"].as_u64().ok_or_else(|| RuntimeError::new("Invalid Draco buffer view"))? as usize;
+        let view = gltf["bufferViews"].get(id).ok_or_else(|| RuntimeError::new("Invalid Draco buffer view"))?;
+        let mut skip = Vec::<String>::new();
+        if let Some(attributes) = primitive["attributes"].as_object() {
+            for (name, id) in attributes {
+                let Some(id) = id.as_u64() else {
+                    continue;
+                };
+                if gltf["accessors"][id as usize]["componentType"] != 5126 {
+                    continue;
+                }
+                let kind = if name.starts_with("POSITION") {
+                    Some("POSITION")
+                } else if name.starts_with("NORMAL") {
+                    Some("NORMAL")
+                } else if name.starts_with("COLOR") {
+                    Some("COLOR")
+                } else if name.starts_with("TEXCOORD") {
+                    Some("TEX_COORD")
+                } else {
+                    None
+                };
+                if let Some(kind) = kind {
+                    if !skip.iter().any(|s| s == kind) {
+                        skip.push(kind.into());
+                    }
+                }
             }
         }
-        let mut options = json!({
-            "array": bytes.bytes(),
-            "dequantizeInShader": true,
-            "attributesToSkipTransform": skip,
-        });
-        if let Some(view) = buffer_view {
-            options["bufferView"] = view;
+        Ok(Self {
+            data: ManagedLoader::new(key, None),
+            child: Rc::new(RefCell::new(child)),
+            factory: RefCell::new(factory),
+            parameters: json!({"bufferView":view,"compressedAttributes":extension["attributes"],"dequantizeInShader":true,"attributesToSkipTransform":skip}),
+            decoder,
+            task: RefCell::new(None),
+            decoded: RefCell::new(None),
+        })
+    }
+    pub fn decoded_draco(&self) -> Option<DecodedDraco> {
+        self.decoded_data()
+            .map(|v| DecodedDraco { indices: v["indices"].clone(), vertex_attributes: v["vertexAttributes"].clone() })
+    }
+    pub fn decoded_data(&self) -> Option<Arc<Value>> {
+        self.decoded.borrow().clone()
+    }
+    fn complete(&self, result: Result<Value, RuntimeError>) -> Result<bool, RuntimeError> {
+        self.child.borrow_mut().take();
+        self.data.unload();
+        match result {
+            Ok(result) => {
+                *self.decoded.borrow_mut() =
+                    Some(Arc::new(json!({"indices":result["indexArray"],"vertexAttributes":result["attributeData"]})));
+                self.data.set_state(ResourceLoaderState::Ready);
+                Ok(true)
+            }
+            Err(error) => {
+                self.data.set_state(ResourceLoaderState::Failed);
+                Err(loader_error("Failed to load Draco", Some(&error)))
+            }
         }
-        if let Some(compressed) = js::get(Some(draco), "attributes") {
-            options["compressedAttributes"] = compressed.clone();
-        }
-        Ok(options)
     }
 }
-
 impl ResourceLoader for GltfDracoLoader {
     fn cache_key(&self) -> Option<&str> {
-        self.key.as_deref()
+        self.data.key.as_deref()
     }
-
     fn state(&self) -> ResourceLoaderState {
-        self.inner.borrow().state
+        self.data.state()
     }
-
     fn is_destroyed(&self) -> bool {
-        self.inner.borrow().destroyed
+        self.data.is_destroyed()
     }
-
     fn unload(&self) {
-        self.inner.borrow_mut().unload();
+        self.task.borrow_mut().take();
+        self.factory.borrow_mut().take();
+        self.child.borrow_mut().take();
+        self.data.unload();
+        self.decoded.borrow_mut().take();
     }
-
     fn destroy(&self) {
-        let mut inner = self.inner.borrow_mut();
-        inner.unload();
-        inner.decode = None;
-        inner.destroyed = true;
+        self.unload();
+        self.data.destroy();
     }
-
     fn load(&self) -> ResourceLoadFuture {
-        let mut inner = self.inner.borrow_mut();
-        if let Some(promise) = &inner.promise {
-            return promise.clone();
-        }
-        inner.state = ResourceLoaderState::Loading;
-        // Upstream's async function runs synchronously up to its first await:
-        // it gets the buffer view loader and starts loading it here.
-        let factory = inner.get_buffer_view_loader.take();
-        let started = factory
-            .ok_or_else(|| RuntimeError::new("Buffer view loader was already requested"))
-            .and_then(|get| get())
-            .map(|view| {
-                let request = view.load();
-                // The pending load must not keep the lease alive after unload.
-                let weak_view = Rc::downgrade(&view);
-                inner.buffer_view_loader = Some(view);
-                (weak_view, request)
-            });
-        let weak = Rc::downgrade(&self.inner);
-        let promise = match started {
-            Err(error) => {
-                let error = inner.fail(&error);
-                futures_util::future::ready(Err(error)).boxed_local().shared()
-            }
-            Ok((view, request)) => async move {
-                let result = request.await;
-                let Some(inner) = weak.upgrade() else { return Ok(false) };
-                let mut inner = inner.borrow_mut();
-                if inner.destroyed {
-                    return Ok(false);
+        let started = if self.is_destroyed() {
+            Ok(())
+        } else if let Some(factory) = self.factory.borrow_mut().take() {
+            factory().map(|view| {
+                *self.child.borrow_mut() = Some(ViewLease::Owned(view));
+            })
+        } else {
+            Ok(())
+        };
+        let child = self.child.borrow().as_ref().map(ViewLease::loader);
+        let owner = Rc::downgrade(&self.child);
+        self.data.load_with_state("Failed to load Draco".into(), ResourceLoaderState::Processing, move || {
+            let request = child.as_ref().map(|c| c.load());
+            let weak = child.as_ref().map(Rc::downgrade);
+            async move {
+                let result = async move {
+                    started?;
+                    request.ok_or_else(|| RuntimeError::new("Draco buffer view was unloaded"))?.await?;
+                    weak.and_then(|w| w.upgrade())
+                        .and_then(|l| l.typed_array())
+                        .ok_or_else(|| RuntimeError::new("Draco buffer view was unloaded"))
                 }
-                match result {
-                    Ok(_) => {
-                        inner.buffer_view_typed_array = view.upgrade().and_then(|view| view.typed_array());
-                        inner.state = ResourceLoaderState::Processing;
-                        Ok(true)
+                .await;
+                if result.is_err() {
+                    if let Some(owner) = owner.upgrade() {
+                        owner.borrow_mut().take();
                     }
-                    Err(error) => Err(inner.fail(&error)),
                 }
+                result
             }
             .boxed_local()
-            .shared(),
-        };
-        inner.promise = Some(promise.clone());
-        promise
+        })
     }
-
-    fn process(&self, _frame: &FrameState) -> Result<bool, RuntimeError> {
-        let mut inner = self.inner.borrow_mut();
-        if let Some(task) = inner.decode.as_mut() {
-            match Pin::new(task).poll(&mut Context::from_waker(Waker::noop())) {
-                Poll::Ready(Ok(results)) => {
-                    inner.decode = None;
-                    // Unload everything except the decoded data.
-                    inner.unload();
-                    inner.decoded_data = Some(DecodedDraco {
-                        indices: results.get("indexArray").cloned().unwrap_or(Value::Null),
-                        vertex_attributes: results.get("attributeData").cloned().unwrap_or(Value::Null),
-                    });
-                    inner.state = ResourceLoaderState::Ready;
-                }
-                Poll::Ready(Err(error)) => {
-                    inner.decode = None;
-                    inner.draco_error = Some(error);
-                }
-                Poll::Pending => {}
-            }
+    fn process(&self, frame: &FrameState) -> Result<bool, RuntimeError> {
+        if self.is_destroyed() {
+            return Err(RuntimeError::new("Draco loader was destroyed"));
         }
-        if inner.state == ResourceLoaderState::Ready {
+        if self.state() == ResourceLoaderState::Ready {
             return Ok(true);
         }
-        if inner.state != ResourceLoaderState::Processing {
+        if self.state() != ResourceLoaderState::Processing {
             return Ok(false);
         }
-        if let Some(error) = inner.draco_error.clone() {
-            return Err(inner.fail(&error));
-        }
-        let Some(bytes) = inner.buffer_view_typed_array.clone() else {
-            return Ok(false);
-        };
-        if inner.decode_started {
-            return Ok(false);
-        }
-        let options = Self::decode_options(&inner, &bytes)?;
-        match self.decoder.decode_buffer_view(options)? {
-            // Cannot schedule the task this frame.
-            None => Ok(false),
-            Some(task) => {
-                inner.decode = Some(task);
-                inner.decode_started = true;
-                Ok(false)
+        let pending = self.task.borrow_mut().take();
+        if let Some(mut task) = pending {
+            let waker = frame.render_request.as_ref().map(SceneRenderRequest::waker);
+            let mut context = Context::from_waker(waker.as_ref().unwrap_or(Waker::noop()));
+            match Pin::new(&mut task).poll(&mut context) {
+                Poll::Ready(result) => return self.complete(result),
+                Poll::Pending => {
+                    *self.task.borrow_mut() = Some(task);
+                    return Ok(false);
+                }
             }
         }
+        let Some(bytes) = self.data.value() else {
+            return Ok(false);
+        };
+        let mut parameters = self.parameters.clone();
+        parameters["array"] = json!(bytes.bytes());
+        let task = match &self.decoder {
+            Decoder::Processor(decoder) => decoder.borrow_mut().schedule_task(parameters),
+            Decoder::Initialized(decoder) => {
+                let task = decoder.decode_buffer_view(parameters)?;
+                if task.is_none() && !decoder.is_ready() {
+                    if let Some(request) = &frame.render_request {
+                        request.request_render();
+                    }
+                }
+                task
+            }
+        };
+        if let Some(task) = task {
+            *self.task.borrow_mut() = Some(task);
+            if let Some(request) = &frame.render_request {
+                request.request_render();
+            }
+        }
+        Ok(false)
     }
 }

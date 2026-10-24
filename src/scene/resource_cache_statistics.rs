@@ -1,59 +1,39 @@
-//! CesiumJS `ResourceCacheStatistics`: GPU memory counted once per cache key.
-//!
-//! Upstream reads `cacheKey`, `buffer.sizeInBytes`, `typedArray.byteLength` and
-//! `texture.sizeInBytes` from the loader. Rust callers pass those sizes, so the
-//! statistics do not depend on the loader types.
-
+//! Counts each cache key once, including retained CPU copies of GPU geometry.
 use std::collections::HashMap;
-
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Default, Clone, Debug)]
 pub struct ResourceCacheStatistics {
-    pub geometry_byte_length: usize,
-    pub textures_byte_length: usize,
-    geometry_sizes: HashMap<String, usize>,
-    texture_sizes: HashMap<String, usize>,
+    pub geometry_byte_length: u64,
+    pub textures_byte_length: u64,
+    geometry: HashMap<String, u64>,
+    textures: HashMap<String, u64>,
 }
-
 impl ResourceCacheStatistics {
     pub fn new() -> Self {
         Self::default()
     }
-
     pub fn clear(&mut self) {
         *self = Self::default();
     }
-
-    /// Counts a vertex or index buffer loader's GPU buffer and typed array,
-    /// once per cache key.
-    pub fn add_geometry_loader(
-        &mut self,
-        cache_key: &str,
-        buffer_bytes: Option<usize>,
-        typed_array_bytes: Option<usize>,
-    ) {
-        if self.geometry_sizes.contains_key(cache_key) {
+    pub fn add_geometry_loader(&mut self, key: &str, gpu_bytes: Option<u64>, cpu_bytes: Option<u64>) {
+        if self.geometry.contains_key(key) {
             return;
         }
-        let total = buffer_bytes.unwrap_or(0) + typed_array_bytes.unwrap_or(0);
-        self.geometry_byte_length += total;
-        self.geometry_sizes.insert(cache_key.to_string(), total);
+        let size = gpu_bytes.unwrap_or(0) + cpu_bytes.unwrap_or(0);
+        self.geometry.insert(key.into(), size);
+        self.geometry_byte_length += size;
     }
-
-    /// Counts a texture loader's texture, once per cache key.
-    pub fn add_texture_loader(&mut self, cache_key: &str, texture_bytes: usize) {
-        if self.texture_sizes.contains_key(cache_key) {
+    pub fn add_texture_loader(&mut self, key: &str, size: u64) {
+        if self.textures.contains_key(key) {
             return;
         }
-        self.textures_byte_length += texture_bytes;
-        self.texture_sizes.insert(cache_key.to_string(), texture_bytes);
+        self.textures.insert(key.into(), size);
+        self.textures_byte_length += size;
     }
-
-    /// Stops counting whatever was counted for this cache key.
-    pub fn remove_loader(&mut self, cache_key: &str) {
-        if let Some(size) = self.geometry_sizes.remove(cache_key) {
+    pub fn remove_loader(&mut self, key: &str) {
+        if let Some(size) = self.geometry.remove(key) {
             self.geometry_byte_length -= size;
         }
-        if let Some(size) = self.texture_sizes.remove(cache_key) {
+        if let Some(size) = self.textures.remove(key) {
             self.textures_byte_length -= size;
         }
     }

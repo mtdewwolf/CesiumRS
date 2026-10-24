@@ -116,6 +116,18 @@ pub fn create_model_texture_reader<G: Gl>(
     channels: Option<String>,
     texture: Option<Rc<Texture<G>>>,
 ) -> TextureReader<G> {
+    let (tex_coord, transform) = texture_coordinates(texture_info);
+    TextureReader {
+        index: number(js::get(Some(texture_info), "index")),
+        texture,
+        tex_coord,
+        scale: number(js::get(Some(texture_info), "scale")),
+        transform,
+        channels,
+    }
+}
+
+fn texture_coordinates(texture_info: &Value) -> (f64, Option<Matrix3>) {
     let mut tex_coord = number(js::get(Some(texture_info), "texCoord")).unwrap_or(0.0);
     let mut transform = None;
     let texture_transform = js::get(js::get(Some(texture_info), "extensions"), "KHR_texture_transform");
@@ -139,12 +151,52 @@ pub fn create_model_texture_reader<G: Gl>(
             1.0,
         ));
     }
-    TextureReader {
-        index: number(js::get(Some(texture_info), "index")),
-        texture,
-        tex_coord,
-        scale: number(js::get(Some(texture_info), "scale")),
-        transform,
-        channels,
+    (tex_coord, transform)
+}
+
+/// Texture reader for hosts that expose renderer resources through FrameState.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ModelTextureReader {
+    pub index: Option<usize>,
+    pub texture: Option<super::FrameResource>,
+    pub tex_coord: u32,
+    pub scale: Option<f64>,
+    pub transform: Option<Matrix3>,
+    pub channels: Option<String>,
+}
+pub struct GltfLoaderUtil;
+impl GltfLoaderUtil {
+    pub fn image_id(
+        gltf: &Value,
+        texture_id: usize,
+        formats: SupportedImageFormats,
+    ) -> Result<usize, crate::core::RuntimeError> {
+        get_image_id_from_texture(gltf, &Value::from(texture_id), formats)
+            .map_err(|e| crate::core::RuntimeError::new(e.to_string()))?
+            .and_then(Value::as_u64)
+            .and_then(|v| usize::try_from(v).ok())
+            .ok_or_else(|| crate::core::RuntimeError::new("Invalid glTF image ID"))
+    }
+    pub fn create_sampler(
+        gltf: &Value,
+        info: &Value,
+        compressed_no_mipmap: bool,
+    ) -> Result<Sampler, crate::core::RuntimeError> {
+        create_sampler(gltf, info, compressed_no_mipmap).map_err(|e| crate::core::RuntimeError::new(e.to_string()))
+    }
+    pub fn create_model_texture_reader(
+        info: &Value,
+        channels: Option<String>,
+        texture: Option<super::FrameResource>,
+    ) -> Result<ModelTextureReader, crate::core::RuntimeError> {
+        let (tex_coord, transform) = texture_coordinates(info);
+        Ok(ModelTextureReader {
+            index: info["index"].as_u64().map(|v| v as usize),
+            texture,
+            tex_coord: tex_coord as u32,
+            scale: info["scale"].as_f64(),
+            transform,
+            channels,
+        })
     }
 }

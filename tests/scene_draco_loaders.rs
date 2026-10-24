@@ -30,7 +30,8 @@ impl TaskWorker<Value, Value> for Worker {
     fn run(&self, _: u64, parameters: Value) -> TaskFuture<Value> {
         let mut keys: Vec<&String> = parameters.as_object().unwrap().keys().collect();
         keys.sort();
-        let bytes = parameters.get("array").or_else(|| parameters.get("buffer")).and_then(Value::as_array).map_or(0, Vec::len);
+        let bytes =
+            parameters.get("array").or_else(|| parameters.get("buffer")).and_then(Value::as_array).map_or(0, Vec::len);
         let field = |k: &str| parameters.get(k).cloned().unwrap_or(Value::Null);
         self.scheduled.borrow_mut().push(json!({
             "task": keys,
@@ -46,7 +47,9 @@ impl TaskWorker<Value, Value> for Worker {
         Box::pin(std::future::ready(result))
     }
     fn init_web_assembly_module(&self, options: WebAssemblyOptions) -> TaskFuture<Value> {
-        self.scheduled.borrow_mut().push(json!({"init": {"name": DracoLoader::WORKER_NAME, "wasmBinaryFile": options.wasm_binary_file}}));
+        self.scheduled
+            .borrow_mut()
+            .push(json!({"init": {"name": DracoLoader::WORKER_NAME, "wasmBinaryFile": options.wasm_binary_file}}));
         let result = match self.init.as_str() {
             "reject" => Err(RuntimeError::new("Worker failed to start")),
             other => Ok(Value::Bool(other == "true")),
@@ -67,31 +70,36 @@ fn poll<F: Future + Unpin>(future: &mut F) -> Poll<F::Output> {
 
 #[test]
 fn draco_loader() {
-    run("scene", "DracoLoader", |_| EXACT, |f, a| {
-        (f == "schedule").then_some(())?;
-        let w = worker(s(&a[0]));
-        let decoder = DracoLoader::new(w.clone(), 1);
-        let parameters = a[2].clone();
-        let calls: Vec<Value> = (0..3)
-            .map(|_| {
-                let task = if s(&a[1]) == "bufferView" {
-                    decoder.decode_buffer_view(parameters.clone())
-                } else {
-                    decoder.decode_point_cloud(parameters.clone())
-                };
-                match task {
-                    Ok(None) => json!("undefined"),
-                    Ok(Some(mut task)) => {
-                        assert!(poll(&mut task).is_ready());
-                        json!("task")
+    run(
+        "scene",
+        "DracoLoader",
+        |_| EXACT,
+        |f, a| {
+            (f == "schedule").then_some(())?;
+            let w = worker(s(&a[0]));
+            let decoder = DracoLoader::new(w.clone(), 1);
+            let parameters = a[2].clone();
+            let calls: Vec<Value> = (0..3)
+                .map(|_| {
+                    let task = if s(&a[1]) == "bufferView" {
+                        decoder.decode_buffer_view(parameters.clone())
+                    } else {
+                        decoder.decode_point_cloud(parameters.clone())
+                    };
+                    match task {
+                        Ok(None) => json!("undefined"),
+                        Ok(Some(mut task)) => {
+                            assert!(poll(&mut task).is_ready());
+                            json!("task")
+                        }
+                        Err(e) => json!({"error": e.message}),
                     }
-                    Err(e) => json!({"error": e.message}),
-                }
-            })
-            .collect();
-        let scheduled = w.scheduled.borrow().clone();
-        ok(json!({"calls": calls, "scheduled": scheduled}))
-    });
+                })
+                .collect();
+            let scheduled = w.scheduled.borrow().clone();
+            ok(json!({"calls": calls, "scheduled": scheduled}))
+        },
+    );
 }
 
 struct FailingTransport;
@@ -106,7 +114,11 @@ fn frame() -> FrameState {
     let mut c = Camera::new(CameraOptions::new(800., 600.));
     let camera = c.uniform_camera();
     let culling = c.frustum.compute_culling_volume(camera.position, camera.direction, camera.up);
-    FrameState::new(cesium_rs::renderer::UniformFrame::new(camera, JulianDate::new(2451545., 0., TimeStandard::Tai)), culling, [800, 600])
+    FrameState::new(
+        cesium_rs::renderer::UniformFrame::new(camera, JulianDate::new(2451545., 0., TimeStandard::Tai)),
+        culling,
+        [800, 600],
+    )
 }
 
 fn gltf_draco(scenario: &str, a: &[Value]) -> Value {
@@ -117,7 +129,11 @@ fn gltf_draco(scenario: &str, a: &[Value]) -> Value {
     if a[5] == true {
         bytes[44..4 + raw.len()].fill(7);
     }
-    let gltf = Arc::new(LoadedGltfJson { json: document.clone(), embedded_buffers: BTreeMap::new(), buffer_sources: BTreeMap::new() });
+    let gltf = Arc::new(LoadedGltfJson {
+        json: document.clone(),
+        embedded_buffers: BTreeMap::new(),
+        buffer_sources: BTreeMap::new(),
+    });
     let w = worker(s(&a[4]));
     let decoder = Rc::new(DracoLoader::new(w.clone(), 1));
     let view_id = a[2]["bufferView"].as_u64().unwrap() as usize;
@@ -138,11 +154,13 @@ fn gltf_draco(scenario: &str, a: &[Value]) -> Value {
             Ok(view)
         }
     };
-    let loader = GltfDracoLoader::new(gltf, a[1].clone(), a[2].clone(), factory, decoder, Some("draco".into()));
+    let loader =
+        GltfDracoLoader::from_host(gltf, a[1].clone(), a[2].clone(), factory, decoder, Some("draco".into())).unwrap();
     let frame = frame();
     let mut steps = Vec::new();
     let snapshot = |steps: &mut Vec<Value>, step: &str, extra: Value| {
-        let mut entry = json!({"step": step, "state": loader.state() as u32, "decoded": loader.decoded_data().is_some()});
+        let mut entry =
+            json!({"step": step, "state": loader.state() as u32, "decoded": loader.decoded_draco().is_some()});
         entry.as_object_mut().unwrap().extend(extra.as_object().unwrap().clone());
         steps.push(entry);
     };
@@ -174,19 +192,19 @@ fn gltf_draco(scenario: &str, a: &[Value]) -> Value {
         // A released lease is upstream's resourceCache.unload of the buffer view loader.
         "unloaded": if released { vec![view_key] } else { vec![] },
     });
-    if let Some(decoded) = loader.decoded_data() {
+    if let Some(decoded) = loader.decoded_draco() {
         result["decoded"] = json!({"indices": decoded.indices, "vertexAttributes": decoded.vertex_attributes});
     }
     if scenario == "unloadAfterReady" {
         loader.unload();
-        result["afterUnload"] = json!({"decoded": loader.decoded_data().is_some(), "state": loader.state() as u32});
+        result["afterUnload"] = json!({"decoded": loader.decoded_draco().is_some(), "state": loader.state() as u32});
     }
     result
 }
 
 #[test]
 fn gltf_draco_loader() {
-    run("scene", "GltfDracoLoader", |_| EXACT, |f, a| ok(gltf_draco(f, a)));
+    run("scene/foundations", "GltfDracoLoader", |_| EXACT, |f, a| ok(gltf_draco(f, a)));
 }
 
 #[test]

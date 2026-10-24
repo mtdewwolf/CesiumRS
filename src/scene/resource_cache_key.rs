@@ -337,3 +337,120 @@ pub fn get_texture_cache_key(
         sampler.magnification_filter as u32
     ))
 }
+
+// Typed cache-factory API. Both entry points use the same pinned key helpers.
+use crate::core::RuntimeError;
+#[derive(Clone, Copy)]
+pub struct GltfKeyContext<'a> {
+    pub gltf: &'a Value,
+    pub gltf_resource: &'a Resource,
+    pub base_resource: &'a Resource,
+}
+#[derive(Clone, Copy, Default)]
+pub struct BufferKeyOptions<'a> {
+    pub load_buffer: bool,
+    pub load_typed_array: bool,
+    pub context_id: Option<&'a str>,
+    pub dequantize: bool,
+}
+impl BufferKeyOptions<'_> {
+    fn context(self) -> Result<String, RuntimeError> {
+        if !self.load_buffer && !self.load_typed_array {
+            return Err(RuntimeError::new("At least one of loadBuffer and loadTypedArray must be true."));
+        }
+        if self.load_buffer && self.context_id.is_none() {
+            return Err(RuntimeError::new("GPU buffer keys require a context ID"));
+        }
+        Ok(self.context_id.unwrap_or("").into())
+    }
+}
+pub enum VertexKeySource<'a> {
+    BufferView(usize),
+    Draco { extension: &'a Value, semantic: &'a str },
+    Spz { extension: &'a Value, semantic: &'a str },
+}
+pub struct ResourceCacheKey;
+fn runtime<T>(result: Result<T, PipelineError>) -> Result<T, RuntimeError> {
+    result.map_err(|e| RuntimeError::new(e.to_string()))
+}
+impl ResourceCacheKey {
+    pub fn schema(schema: Option<&Value>, resource: Option<&Resource>) -> Result<String, RuntimeError> {
+        Ok(get_schema_cache_key(match (schema, resource) {
+            (Some(s), None) => SchemaSource::Embedded(s),
+            (None, Some(r)) => SchemaSource::External(r),
+            _ => return Err(RuntimeError::new("One of options.schema and options.resource must be defined.")),
+        }))
+    }
+    pub fn external_buffer(resource: &Resource) -> String {
+        get_external_buffer_cache_key(resource)
+    }
+    pub fn embedded_buffer(resource: &Resource, id: usize) -> String {
+        get_embedded_buffer_cache_key(resource, id)
+    }
+    pub fn gltf(resource: &Resource) -> String {
+        get_gltf_cache_key(resource)
+    }
+    pub fn buffer_view(c: GltfKeyContext<'_>, id: usize) -> Result<String, RuntimeError> {
+        runtime(get_buffer_view_cache_key(c.gltf, id, c.gltf_resource, c.base_resource))
+    }
+    pub fn draco(c: GltfKeyContext<'_>, extension: &Value) -> Result<String, RuntimeError> {
+        runtime(get_draco_cache_key(c.gltf, extension, c.gltf_resource, c.base_resource))
+    }
+    pub fn spz(c: GltfKeyContext<'_>) -> Result<String, RuntimeError> {
+        runtime(get_spz_cache_key(c.gltf, c.gltf_resource, c.base_resource))
+    }
+    pub fn vertex_buffer(
+        c: GltfKeyContext<'_>,
+        source: VertexKeySource<'_>,
+        options: BufferKeyOptions<'_>,
+    ) -> Result<String, RuntimeError> {
+        let context = options.context()?;
+        let (buffer_view_id, draco, spz, attribute_semantic) = match source {
+            VertexKeySource::BufferView(id) => (Some(id), None, false, None),
+            VertexKeySource::Draco { extension, semantic } => (None, Some(extension), false, Some(semantic)),
+            VertexKeySource::Spz { semantic, .. } => (None, None, true, Some(semantic)),
+        };
+        runtime(get_vertex_buffer_cache_key(VertexBufferKeyOptions {
+            gltf: c.gltf,
+            gltf_resource: c.gltf_resource,
+            base_resource: c.base_resource,
+            context_id: &context,
+            buffer_view_id,
+            draco,
+            spz,
+            attribute_semantic,
+            dequantize: options.dequantize,
+            load_buffer: options.load_buffer,
+            load_typed_array: options.load_typed_array,
+        }))
+    }
+    pub fn index_buffer(
+        c: GltfKeyContext<'_>,
+        accessor_id: usize,
+        draco: Option<&Value>,
+        options: BufferKeyOptions<'_>,
+    ) -> Result<String, RuntimeError> {
+        let context = options.context()?;
+        runtime(get_index_buffer_cache_key(IndexBufferKeyOptions {
+            gltf: c.gltf,
+            accessor_id,
+            gltf_resource: c.gltf_resource,
+            base_resource: c.base_resource,
+            context_id: &context,
+            draco,
+            load_buffer: options.load_buffer,
+            load_typed_array: options.load_typed_array,
+        }))
+    }
+    pub fn image(c: GltfKeyContext<'_>, id: usize) -> Result<String, RuntimeError> {
+        runtime(get_image_cache_key(c.gltf, id, c.gltf_resource, c.base_resource))
+    }
+    pub fn texture(
+        c: GltfKeyContext<'_>,
+        info: &Value,
+        formats: SupportedImageFormats,
+        context: &str,
+    ) -> Result<String, RuntimeError> {
+        runtime(get_texture_cache_key(c.gltf, info, c.gltf_resource, c.base_resource, formats, context))
+    }
+}

@@ -14,9 +14,21 @@ struct Meshopt {
     mode: String,
     filter: String,
 }
+enum BufferLease {
+    Owned(Rc<BufferLoader>),
+    Cached(super::CacheLease<BufferLoader>),
+}
+impl BufferLease {
+    fn loader(&self) -> Rc<BufferLoader> {
+        match self {
+            Self::Owned(loader) => loader.clone(),
+            Self::Cached(lease) => lease.loader(),
+        }
+    }
+}
 pub struct GltfBufferViewLoader {
     data: ManagedLoader<BufferSource>,
-    child: Rc<RefCell<Option<Rc<BufferLoader>>>>,
+    child: Rc<RefCell<Option<BufferLease>>>,
     offset: usize,
     length: usize,
     meshopt: Option<Meshopt>,
@@ -75,11 +87,20 @@ impl GltfBufferViewLoader {
             .transpose()?;
         Ok(Self {
             data: ManagedLoader::new(key, None),
-            child: Rc::new(RefCell::new(Some(loader))),
+            child: Rc::new(RefCell::new(Some(BufferLease::Owned(loader)))),
             offset: integer(layout, "byteOffset", Some(0))?,
             length: integer(layout, "byteLength", None)?,
             meshopt,
         })
+    }
+    pub fn from_cached_buffer(
+        view: &Value,
+        lease: super::CacheLease<BufferLoader>,
+        key: Option<String>,
+    ) -> Result<Self, RuntimeError> {
+        let result = Self::from_buffer_loader(view, lease.loader(), key)?;
+        *result.child.borrow_mut() = Some(BufferLease::Cached(lease));
+        Ok(result)
     }
     pub fn typed_array(&self) -> Option<BufferSource> {
         self.data.value()
@@ -104,7 +125,7 @@ impl ResourceLoader for GltfBufferViewLoader {
         self.data.destroy();
     }
     fn load(&self) -> ResourceLoadFuture {
-        let child = self.child.borrow().clone();
+        let child = self.child.borrow().as_ref().map(BufferLease::loader);
         let (offset, length, meshopt) = (self.offset, self.length, self.meshopt.clone());
         let lease = Rc::downgrade(&self.child);
         self.data.load("Failed to load buffer view".into(), move || {

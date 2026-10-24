@@ -17,9 +17,8 @@
 //! - Values whose JavaScript type depends on the accessor type (numbers,
 //!   Cartesians, matrices, quaternions) are a [`MathValue`].
 //! - `type` fields are `attribute_type` / `stage_type`.
-//! - `Components.structuralMetadata` and `Primitive.modelPrimitiveImagery` hold
-//!   StructuralMetadata and ModelPrimitiveImagery, which are not ported yet;
-//!   they are added with those modules.
+//! - StructuralMetadata and ModelPrimitiveImagery references use FrameResource
+//!   handles until their typed runtime modules are ported.
 
 use super::{AlphaMode, AttributeType, Axis, InstanceAttributeSemantic, VertexAttributeSemantic};
 use crate::core::{
@@ -214,7 +213,7 @@ impl<G: Gl> Default for MorphTarget<G> {
     }
 }
 
-/// `ModelComponents.Primitive`. `modelPrimitiveImagery` is added with ModelPrimitiveImagery.
+/// `ModelComponents.Primitive`.
 #[derive(Clone)]
 pub struct Primitive<G: Gl> {
     pub attributes: Vec<Attribute<G>>,
@@ -226,6 +225,7 @@ pub struct Primitive<G: Gl> {
     pub property_texture_ids: Vec<usize>,
     pub property_attribute_ids: Vec<usize>,
     pub outline_coordinates: Option<Attribute<G>>,
+    pub model_primitive_imagery: Option<super::FrameResource>,
 }
 
 impl<G: Gl> Default for Primitive<G> {
@@ -240,6 +240,7 @@ impl<G: Gl> Default for Primitive<G> {
             property_texture_ids: Vec::new(),
             property_attribute_ids: Vec::new(),
             outline_coordinates: None,
+            model_primitive_imagery: None,
         }
     }
 }
@@ -373,7 +374,6 @@ pub struct Asset {
 }
 
 /// `ModelComponents.Components`: everything the loader produced.
-/// `structuralMetadata` is added with StructuralMetadata.
 #[derive(Clone)]
 pub struct Components<G: Gl> {
     pub asset: Asset,
@@ -382,6 +382,7 @@ pub struct Components<G: Gl> {
     pub skins: Vec<Skin>,
     pub animations: Vec<Animation>,
     pub articulations: Vec<Articulation>,
+    pub structural_metadata: Option<super::FrameResource>,
     pub up_axis: Option<Axis>,
     pub forward_axis: Option<Axis>,
     pub transform: Matrix4,
@@ -397,6 +398,7 @@ impl<G: Gl> Default for Components<G> {
             skins: Vec::new(),
             animations: Vec::new(),
             articulations: Vec::new(),
+            structural_metadata: None,
             up_axis: None,
             forward_axis: None,
             transform: Matrix4::IDENTITY,
