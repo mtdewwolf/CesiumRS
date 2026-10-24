@@ -58,6 +58,7 @@ try{
    eq([actual.internalFormat,actual.width,actual.height,Array.from(actual.bufferView)],[expected[1],expected[3],expected[4],expected[5]],'WASM legacy ETC1S '+format+' parity');
   }
   const lifecycle=await import('/target/browser-validation/validation.js');await lifecycle.default();
+  lifecycle.validate_property_clock();eq(true,true,'DataSources default browser clocks and shared array time');
   await lifecycle.validate_workers(location.href);passed.push('Rust browser worker initialization, capacity, errors and destroy');
   const video=()=>{const v=document.createElement('video');Object.defineProperties(v,{readyState:{value:2},duration:{value:20},currentTime:{value:0,writable:true}});return v;};
   await lifecycle.validate_dropped_io(location.href);passed.push('unpolled HTTP/image futures abort without unhandled rejections');

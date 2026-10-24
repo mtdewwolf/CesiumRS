@@ -35,7 +35,7 @@ Along the way, `core::js_math` made the port's `sin`, `cos`, `log` and the other
    - ✅ network heightmap/quantized and 3D Tiles terrain providers, Google Earth Enterprise metadata and terrain, world-terrain factories. Ion resources/geocoding and platform clients are now validated. Bing, Google, Pelias, OpenCage and coordinate geocoders pass deterministic parsing, request construction, attribution and error fixtures.
 11. ✅ **Contracts and host behavior:** interpolation/packing interfaces, geometry factories, video bindings, terrain sampling, screen-space gestures and canvas text/pin rendering validated.
 
-Core, Renderer, Shaders and Workers have reached 100% of applicable modules; Scene is the active package. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. The viewer already runs on Core — it was migrated ahead of 100% Core so the two implementations could not drift apart. After Core, proceed to Renderer and Scene.
+Core, Renderer, Shaders and Workers have reached 100% of applicable modules; Scene remains in progress; DataSources property foundations are now active. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. The viewer already runs on Core — it was migrated ahead of 100% Core so the two implementations could not drift apart. After Core, proceed to Renderer and Scene.
 
 ### Validated partial-module batch
 
@@ -148,3 +148,20 @@ fails its replay. Two root exports differ from their upstream `.glsl` file
 because Cesium's build drops unescaped backslashes; the port keeps the export.
 The renderer still assembles programs from the pinned builtin table. See
 [Shaders](docs/shaders.md).
+
+
+### DataSources property foundations
+
+Seven of 108 DataSources modules are validated: Property, ConstantProperty,
+CallbackProperty, PropertyArray, SampledProperty, TimeIntervalCollectionProperty
+and CompositeProperty. The batch includes 206 pinned CesiumJS scenarios,
+10 native ownership/callback integration tests and real browser clock checks.
+Owned values, Rc property references, local definition events and observable Core
+intervals provide the prerequisites for Entity and document loading.
+
+Next implement position/velocity/orientation properties, PropertyBag and entity
+collections, followed by graphics definitions, data-source collections and the
+loaders. CzmlDataSource and KmlDataSource are the largest loaders; their property
+and entity dependencies come first. GeoJSON and GPX follow the same foundation.
+No entity, visualizer or document-loader module is counted as complete by this
+batch. See [DataSources API and validation](docs/data-sources.md).

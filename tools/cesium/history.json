@@ -446,5 +446,13 @@
     "ported": 864,
     "implemented": 2,
     "validatedPercent": 46.74
+  },
+  {
+    "milestone": "DataSources property foundations",
+    "date": "2026-10-24",
+    "percent": 48.99,
+    "ported": 871,
+    "implemented": 2,
+    "validatedPercent": 47.17
   }
 ]
