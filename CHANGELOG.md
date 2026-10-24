@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Port `Particle`, the `ParticleEmitter` trait and the box, circle, cone and sphere emitters (seeded emission matches CesiumJS bit for bit), plus `PointCloudShading`, `ImageryLayerFeatureInfo`, `KeyframeNode`, `ImageryConfiguration` and `DiscardEmptyTileImagePolicy`. 65 pinned CesiumJS cases.
+
 - Fix reentrant DataSources callbacks: preserve renewed subscriptions and evaluate PropertyArray children from one definition. Add regressions for renewal/cancellation, stale handles, duplicate registration counts and array replacement; document the native lifecycle contracts.
 
 - Start DataSources with seven property modules: typed constant/callback/array properties, sampled interpolation and derivatives, raw interval values and composites. Validate 206 pinned CesiumJS scenarios, native callback/ownership lifecycle and browser default clocks. Entity and document loaders remain unported.

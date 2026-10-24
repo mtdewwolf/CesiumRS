@@ -1,0 +1,1 @@
+{"module":"DiscardEmptyTileImagePolicy","cesium":"23.0.0","cases":[{"f":"policy","a":[],"r":{"src":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=","shared":true,"ready":[true,true],"discardEmpty":[true,true],"discardOther":false,"discardCopy":false}}]}

@@ -462,5 +462,13 @@
     "ported": 881,
     "implemented": 2,
     "validatedPercent": 47.66
+  },
+  {
+    "milestone": "Particles and imagery helpers",
+    "date": "2026-10-24",
+    "percent": 49.7,
+    "ported": 892,
+    "implemented": 2,
+    "validatedPercent": 47.87
   }
 ]
