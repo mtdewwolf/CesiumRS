@@ -175,14 +175,15 @@ fn decode_meshopt(bytes: &[u8], m: Meshopt) -> Result<Vec<u8>, RuntimeError> {
     match (m.filter.as_str(), m.stride) {
         ("NONE", _) => {}
         ("OCTAHEDRAL", 4) => {
-            let mut values =
-                output.chunks_exact(4).map(|v| <[u8; 4]>::try_from(v).expect("stride")).collect::<Vec<_>>();
+            let mut values = output.as_chunks::<4>().0.to_vec();
             filter::decode_filter_oct_8(&mut values);
             output = values.into_iter().flatten().collect();
         }
         ("OCTAHEDRAL", 8) | ("QUATERNION", 8) => {
             let mut values = output
-                .chunks_exact(8)
+                .as_chunks::<8>()
+                .0
+                .iter()
                 .map(|v| std::array::from_fn(|i| u16::from_le_bytes([v[2 * i], v[2 * i + 1]])))
                 .collect::<Vec<[u16; 4]>>();
             if m.filter == "OCTAHEDRAL" {
@@ -206,8 +207,7 @@ fn decode_meshopt(bytes: &[u8], m: Meshopt) -> Result<Vec<u8>, RuntimeError> {
             output = values.into_iter().flatten().flat_map(u16::to_le_bytes).collect();
         }
         ("EXPONENTIAL", stride) if stride % 4 == 0 => {
-            let mut values =
-                output.chunks_exact(4).map(|v| u32::from_le_bytes(v.try_into().expect("word"))).collect::<Vec<_>>();
+            let mut values = output.as_chunks::<4>().0.iter().copied().map(u32::from_le_bytes).collect::<Vec<_>>();
             filter::decode_filter_exp(&mut values);
             output = values.into_iter().flat_map(u32::to_le_bytes).collect();
         }
