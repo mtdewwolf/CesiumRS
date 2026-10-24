@@ -398,5 +398,13 @@
     "ported": 836,
     "implemented": 2,
     "validatedPercent": 44.89
+  },
+  {
+    "milestone": "Scene depth ordering fixes and model resource loaders",
+    "date": "2026-10-24",
+    "percent": 46.76,
+    "ported": 841,
+    "implemented": 2,
+    "validatedPercent": 45.13
   }
 ]
