@@ -422,5 +422,13 @@
     "ported": 848,
     "implemented": 2,
     "validatedPercent": 46.02
+  },
+  {
+    "milestone": "3D Tiles content parsers",
+    "date": "2026-10-24",
+    "percent": 48.1,
+    "ported": 852,
+    "implemented": 2,
+    "validatedPercent": 46.28
   }
 ]

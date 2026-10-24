@@ -416,3 +416,12 @@ pub mod model_components;
 pub use draco_loader::{DracoLoader, DracoTask};
 pub use gltf_draco_loader::DecodedDraco;
 pub use resource_cache_key::{IndexBufferKeyOptions, SchemaSource, VertexBufferKeyOptions};
+
+pub mod cesium_3d_tile_feature_table;
+pub use cesium_3d_tile_feature_table::{Cesium3DTileFeatureTable, GlobalProperty};
+pub mod b3dm_parser;
+pub use b3dm_parser::{ParsedB3dm, TileFormatWarning};
+pub mod i3dm_parser;
+pub use i3dm_parser::ParsedI3dm;
+pub mod pnts_parser;
+pub use pnts_parser::{ParsedPnts, PntsAttribute, PntsDraco};
