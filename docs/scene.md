@@ -295,6 +295,52 @@ uses this initialized worker with a buffer-view factory; the ResourceCache
 constructor keeps the portable worker and explicit cache leases. Both paths
 share one frame-driven loader and release pending tasks on unload/destruction.
 
+## 3D Tiles content parsers
+
+`Cesium3DTileFeatureTable`, `B3dmParser`, `I3dmParser` and `PntsParser` read
+the binary 3D Tiles 1.0 tile formats. Each parser takes the tile buffer as an
+`Arc<Vec<u8>>` and a byte offset into it (non-zero inside composite tiles) and
+returns its sections as `BufferSource`s: the feature table binary and an
+aligned glb are views into the tile buffer, the batch table binary is copied
+so the tile buffer can be released, and a glb that is not 4-byte aligned is
+copied, as upstream does.
+
+Byte handling follows JavaScript's typed-array rules, because those decide
+which tiles load and which fail:
+- reading a header word past the end is the DataView `RangeError`;
+- a section past the end, or a negative glb length from a short `byteLength`,
+  is the Uint8Array `RangeError` — except for an unaligned glb, whose copy
+  uses `subarray` and so clamps to an empty glb;
+- a feature table property view must start at a multiple of its element size
+  relative to the whole tile buffer.
+
+`B3dmParser` recognizes both legacy headers by a batch table length of at
+least 0x22000000, the first byte of the JSON or glb a legacy header puts
+there. Upstream's `deprecationWarning` calls are returned as
+`TileFormatWarning`s.
+
+`Cesium3DTileFeatureTable` caches one typed array per semantic, so a later
+request with another component type returns the first array; a binary global
+is a one-element typed array (`GlobalProperty::Binary`), and arithmetic reads
+it with `ToNumber`, as `PntsParser` does for a binary `POINTS_LENGTH`. JSON
+properties go through `createTypedArray`: a JSON number makes that many zeros.
+
+`PntsParser` parses only what `3DTILES_draco_point_compression` does not
+provide, keeps upstream's `hasConstantColor` (always false here, since it
+reads a property the parse never sets), drops an empty batch table and
+removes batch table properties that point into a missing binary body unless
+Draco decodes them; the removed names replace upstream's one-time warning.
+
+Tests: `tests/scene_tile_formats.rs`, 59 pinned tiles and call sequences from
+`tools/cesium/fixtures/scene-tile-formats.mjs`, built byte by byte and covering
+every error path. The B3dm/I3dm/Pnts loaders that turn these into model
+components come with GltfLoader.
+
+```bash
+cargo test --test scene_tile_formats
+TZ=UTC node tools/cesium/fixtures/generate.mjs Cesium3DTileFeatureTable B3dmParser I3dmParser PntsParser
+```
+
 ## Camera
 
 `scene::Camera` starts the large, frame-driven Scene modules. It is the
@@ -707,6 +753,6 @@ The next batches build on these:
 - the glTF and 3D Tiles resource loaders on top of `GltfPipeline`;
 - the rest of 3D Metadata: property textures, `StructuralMetadata`,
   `PickedMetadataInfo` and the parsers;
-- 3D Tiles content parsers;
+- the B3dm, I3dm and Pnts loaders on top of the content parsers;
 - completion of Scene/FrameState and tileset traversal, followed by Primitive,
   globe, picking and effect integrations on the Renderer's typed snapshots.

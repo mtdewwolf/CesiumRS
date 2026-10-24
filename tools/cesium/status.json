@@ -4196,6 +4196,26 @@
     "rust": "scene::gltf_draco_loader",
     "note": "Cached or host-supplied buffer views, capacity-limited task processing, decoder initialization, frame-driven decoding, quantization skips, errors and cancellation. Nine pinned real-codec scenarios plus native capacity/failure/destruction checks; hosts can use background workers."
   },
+  "Scene/Cesium3DTileFeatureTable": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_feature_table",
+    "note": "JSON and binary global/per-feature properties with the per-semantic typed-array cache (the first component type wins), componentType overrides, createTypedArray conversion of JSON values, and JavaScript typed-array RangeErrors for unaligned or out-of-range views relative to the tile buffer. Nine pinned call sequences."
+  },
+  "Scene/B3dmParser": {
+    "status": "ported",
+    "rust": "scene::b3dm_parser",
+    "note": "Current and both legacy headers, feature/batch table sections, zero-copy feature table and glb views with copied batch binaries, unaligned-glb copies, embedded byte offsets, and upstream's DataView/Uint8Array/JSON errors. Deprecation warnings are returned. 16 pinned tiles."
+  },
+  "Scene/I3dmParser": {
+    "status": "ported",
+    "rust": "scene::i3dm_parser",
+    "note": "Embedded glb and URI formats, feature/batch table sections, unaligned copies, embedded byte offsets and version/format/feature-table errors. Ten pinned tiles."
+  },
+  "Scene/PntsParser": {
+    "status": "ported",
+    "rust": "scene::pnts_parser",
+    "note": "Float and quantized positions, RGBA/RGB/RGB565/constant colors, float and oct-encoded normals, batch IDs, binary or JSON globals (including one-element typed-array POINTS_LENGTH/BATCH_LENGTH), RTC centers, 3DTILES_draco_point_compression buffers and combined properties, empty batch tables and removal of unresolved binary references (names returned instead of a one-time warning). Keeps upstream's always-false hasConstantColor. 24 pinned tiles including every error path."
+  },
   "Scene/GltfVertexBufferLoader": {
     "status": "partial",
     "rust": "scene::gltf_geometry_loader",
