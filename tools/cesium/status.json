@@ -4515,5 +4515,15 @@
     "status": "ported",
     "rust": "data_sources::reference_property",
     "note": "Lazy escaped/nested references, change forwarding, equality, getType and fixed/requested-frame evaluation; 13 reference scenarios. Weak collection ownership and membership checks prevent stale targets during suspended ID replacement."
+  },
+  "Scene/GltfStructuralMetadataLoader": {
+    "status": "ported",
+    "rust": "scene::gltf_structural_metadata_loader",
+    "note": "Owned loader over the shared ResourceCache: buffer views, textures and the embedded or external schema gathered in JavaScript key order and leased in upstream's order (synchronous texture failures, deferred buffer view/schema failures), EXT_structural_metadata or legacy parsing once textures are uploaded, buffer views released after parsing, destroy during loading. 8 pinned lifecycles in tests/scene_metadata_loaders.rs, including cache entry counts."
+  },
+  "Scene/Model/Extensions/Gpm/GltfMeshPrimitiveGpmLoader": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::gltf_mesh_primitive_gpm_loader",
+    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale × 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
   }
 }

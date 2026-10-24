@@ -464,3 +464,5 @@ pub mod keyframe_node;
 pub use keyframe_node::{KeyframeLoadState, KeyframeNode};
 pub mod discard_empty_tile_image_policy;
 pub use discard_empty_tile_image_policy::DiscardEmptyTileImagePolicy;
+pub mod gltf_structural_metadata_loader;
+pub use gltf_structural_metadata_loader::{GltfStructuralMetadataLoader, GltfStructuralMetadataLoaderOptions};

@@ -360,8 +360,19 @@ turns a missing or null element into 0; a missing array is not iterable and
 reading a property of null throws a `TypeError`.
 
 Tests: `tests/scene_gpm.rs`, 35 pinned cases from
-`tools/cesium/fixtures/scene-gpm.mjs`. `GltfMeshPrimitiveGpmLoader`, which
-turns per-point error textures into `StructuralMetadata`, is still to come.
+`tools/cesium/fixtures/scene-gpm.mjs`.
+
+`GltfMeshPrimitiveGpmLoader` loads a mesh primitive's per-point error (PPE)
+textures and exposes them two ways: as `MeshPrimitiveGpmLocal`, and as
+`StructuralMetadata` with one property texture per PPE texture. Each texture
+gets a class with a single normalized UINT8 property, named after the
+texture's source. Its offset and scale come from the texture, with the scale
+multiplied by 255. CesiumJS caches these schemas for the whole page, keyed by
+the classes' JSON, and numbers new ones `PPE_TEXTURE_SCHEMA_n` by the cache's
+size. The port keeps the cache per thread. Textures that share an index share
+one lease. `PpeTexture` has no name, so the property textures are unnamed, as
+upstream's `ppeTexture.name` is undefined. It is covered in
+`tests/scene_metadata_loaders.rs`, below.
 
 ## Structural metadata
 
@@ -420,6 +431,29 @@ the test host records `texImage2D`.
 ```bash
 cargo test --test scene_structural_metadata
 TZ=UTC node tools/cesium/fixtures/generate.mjs PropertyTextureProperty PropertyTexture StructuralMetadata getMetadataProperty parseStructuralMetadata parseFeatureMetadataLegacy parseBatchTable
+```
+
+`GltfStructuralMetadataLoader` is the glTF loader's path to this metadata.
+Like CesiumJS, it is owned by the glTF loader rather than cached, and it
+leases its buffer views, textures and schema from the shared `ResourceCache`.
+Ids are gathered in JavaScript object key order, and leases are requested in
+upstream's order: buffer views, then textures, then the schema. Upstream's
+async ordering decides which failure is reported. A texture that cannot be
+requested fails `load` synchronously. A bad buffer view or schema rejects the
+load when awaited. `process` waits for every texture upload, then parses
+`EXT_structural_metadata` (with property table textures) or the legacy
+extension, and releases the buffer views. A loader destroyed while loading
+resolves to false.
+
+Tests: `tests/scene_metadata_loaders.rs`, 15 pinned lifecycles of both loaders
+from `tools/cesium/fixtures/scene-metadata-loaders.mjs`. They run the real
+CesiumJS loaders through its ResourceCache, with images, schema requests and
+texture creation stubbed. The comparisons cover states, deferred uploads, the
+parsed metadata, failures, cache entry counts and GPM schema ids.
+
+```bash
+cargo test --test scene_metadata_loaders
+TZ=UTC node tools/cesium/fixtures/generate.mjs GltfStructuralMetadataLoader GltfMeshPrimitiveGpmLoader
 ```
 
 ## Tile content helpers
