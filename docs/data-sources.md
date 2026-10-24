@@ -53,11 +53,22 @@ application state; the callback argument is the emitting `DefinitionChanged`
 event. Weak forwarding prevents child/parent ownership cycles, and dropping an
 array or composite removes its child subscriptions.
 
-Listener additions and removals during dispatch settle after that dispatch,
-matching the pinned Cesium Event. A listener removed by an earlier listener still
-runs during the current dispatch. This local adapter supports `Rc` callbacks;
-Core's existing `Send` event API is unchanged. Mutation completes before property
-notifications, allowing observers to query or change the new definition.
+Listener additions and removals during dispatch settle after that dispatch.
+A listener removed by an earlier listener still runs during the current dispatch.
+Renewing a removed subscription creates a new registration, so deferred removal
+and stale handles cannot erase its replacement. Duplicate subscriptions share
+one registration and listener count, including during dispatch. This local
+adapter supports `Rc` callbacks; Core's existing `Send` event API is unchanged.
+Mutation completes before property notifications, allowing observers to query or
+change the new definition.
+
+PropertyArray evaluates a snapshot of its children. A child callback can replace,
+shorten or clear the array: the current evaluation finishes with the original
+children, and the next evaluation uses the replacement. These two reentrancy
+contracts deliberately differ from pinned CesiumJS, which can lose a renewed
+subscription and can mix array definitions or throw during evaluation. Native
+regression tests cover renewal/cancellation, stale handles, repeated forwarded
+changes and all replacement lengths.
 
 `PropertyIntervals` delegates interval algorithms to Core and emits local events
 after releasing the collection's mutable borrow. Its `read()` guard exposes Core
@@ -98,11 +109,12 @@ modes, durations, numeric/date/ISO packed inputs and removals. Interval fixtures
 cover inclusions, overlap/splitting, merging, equality and subscription changes.
 Additional fixtures exercise listener edits and nested dispatch.
 
-`tests/data_sources_lifecycle.rs` adds **10 native integration tests** for result
+`tests/data_sources_lifecycle.rs` adds **14 native integration tests** for result
 ownership, callbacks replacing themselves, observers reading/mutating committed
 state, custom interpolation caching, coherent clocks, listener cleanup and weak
-ownership. The Chromium Core harness executes all five time-dependent property
-classes with omitted times through the browser WASM adapter.
+ownership and reentrant array/subscription changes. The Chromium Core harness
+executes all five time-dependent property classes with omitted times through the
+browser WASM adapter.
 
 Next, implement position/velocity/orientation properties, the property bag and
 entity collections. Then port graphics definitions, data-source collections and

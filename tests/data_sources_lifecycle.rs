@@ -208,3 +208,123 @@ fn event_dispatch_defers_edits_and_duplicate_listeners_share_identity() {
     drop(second);
     assert_eq!(event.number_of_listeners(), 2);
 }
+
+#[test]
+fn subscriptions_renewed_during_dispatch_keep_their_new_identity() {
+    for renewals in [1, 2] {
+        for keep in [false, true] {
+            let event = DefinitionChanged::new();
+            let registration = Rc::new(RefCell::new(None::<Subscription>));
+            let callback = Rc::new(RefCell::new(None::<std::rc::Weak<dyn Fn(&DefinitionChanged)>>));
+            let calls = Rc::new(Cell::new(0));
+            let (current, weak_callback, seen) = (registration.clone(), callback.clone(), calls.clone());
+            let listener: PropertyListener = Rc::new(move |event| {
+                seen.set(seen.get() + 1);
+                for _ in 0..renewals {
+                    let old = current.borrow_mut().take();
+                    drop(old);
+                    let next = event.subscribe(weak_callback.borrow().as_ref().unwrap().upgrade().unwrap());
+                    *current.borrow_mut() = Some(next);
+                }
+                if !keep {
+                    let last = current.borrow_mut().take();
+                    drop(last);
+                }
+            });
+            *callback.borrow_mut() = Some(Rc::downgrade(&listener));
+            *registration.borrow_mut() = Some(event.subscribe(listener.clone()));
+            let stale = event.subscribe(listener);
+            event.raise();
+            assert_eq!(calls.get(), 1);
+            assert_eq!(event.number_of_listeners(), usize::from(keep));
+            drop(stale);
+            for _ in 0..2 {
+                let previous = calls.get();
+                event.raise();
+                assert_eq!(calls.get(), previous + usize::from(keep));
+                assert_eq!(event.number_of_listeners(), usize::from(keep));
+            }
+            drop(registration.borrow_mut().take());
+            assert_eq!(event.number_of_listeners(), 0);
+            assert!(callback.borrow().as_ref().unwrap().upgrade().is_none());
+        }
+    }
+}
+
+#[test]
+fn duplicate_subscriptions_during_dispatch_count_one_registration() {
+    let event = DefinitionChanged::new();
+    let duplicates = Rc::new(RefCell::new(Vec::new()));
+    let callback = Rc::new(RefCell::new(None::<std::rc::Weak<dyn Fn(&DefinitionChanged)>>));
+    let (handles, weak_callback) = (duplicates.clone(), callback.clone());
+    let listener: PropertyListener = Rc::new(move |event| {
+        handles.borrow_mut().push(event.subscribe(weak_callback.borrow().as_ref().unwrap().upgrade().unwrap()));
+        assert_eq!(event.number_of_listeners(), 1);
+    });
+    *callback.borrow_mut() = Some(Rc::downgrade(&listener));
+    let original = event.subscribe(listener);
+    event.raise();
+    event.raise();
+    assert_eq!(event.number_of_listeners(), 1);
+    drop(original);
+    duplicates.borrow_mut().clear();
+    assert_eq!(event.number_of_listeners(), 0);
+}
+
+#[test]
+fn property_array_keeps_forwarding_when_observers_reset_the_same_children() {
+    let child = Rc::new(ConstantProperty::new(Some(1.)));
+    let parent = Rc::new(PropertyArray::new(Some(vec![child.clone(), child.clone()])));
+    let weak = Rc::downgrade(&parent);
+    let (changing, calls) = (Rc::new(Cell::new(false)), Rc::new(Cell::new(0)));
+    let child_to_keep = child.clone();
+    let seen = calls.clone();
+    let _guard = parent.definition_changed().add_listener(move |_| {
+        if !changing.replace(true) {
+            seen.set(seen.get() + 1);
+            weak.upgrade().unwrap().set_value(Some(vec![child_to_keep.clone(), child_to_keep.clone()]));
+            changing.set(false);
+        }
+    });
+    for value in [2., 3., 4.] {
+        child.set_value(Some(value));
+        assert_eq!(calls.get(), (value - 1.) as usize);
+        assert_eq!(child.definition_changed().number_of_listeners(), 1);
+        assert_eq!(parent.get_value(Some(&date(0.)), None).unwrap(), Some(vec![value, value]));
+    }
+    drop(parent);
+    assert_eq!(child.definition_changed().number_of_listeners(), 0);
+}
+
+#[test]
+fn array_evaluation_uses_one_definition_when_a_child_replaces_it() {
+    for replacement in
+        [None, Some(vec![]), Some(vec![99.]), Some(vec![99., 100., 101.]), Some(vec![99., 100., 101., 102.])]
+    {
+        let link = Rc::new(RefCell::new(None::<std::rc::Weak<PropertyArray<f64>>>));
+        let weak = link.clone();
+        let next = replacement.clone();
+        let child = Rc::new(CallbackProperty::new(
+            Rc::new(move |_, _| {
+                let value = next
+                    .as_ref()
+                    .map(|v| v.iter().map(|v| Rc::new(ConstantProperty::new(Some(*v))) as PropertyRef<f64>).collect());
+                weak.borrow().as_ref().unwrap().upgrade().unwrap().set_value(value);
+                Ok(Some(1.))
+            }),
+            false,
+        ));
+        let parent = Rc::new(PropertyArray::new(Some(vec![
+            child.clone(),
+            Rc::new(ConstantProperty::new(Some(2.))),
+            Rc::new(ConstantProperty::new(Some(3.))),
+        ])));
+        *link.borrow_mut() = Some(Rc::downgrade(&parent));
+        let mut result = vec![7., 8., 9., 10.];
+        assert_eq!(parent.get_value(Some(&date(0.)), Some(&mut result)).unwrap(), Some(vec![1., 2., 3.]));
+        assert_eq!(result, vec![1., 2., 3.]);
+        assert_eq!(parent.get_value(Some(&date(0.)), None).unwrap(), replacement);
+        assert_eq!(child.definition_changed().number_of_listeners(), 0);
+        assert!(parent.is_constant());
+    }
+}

@@ -64,16 +64,11 @@ impl<T: PropertyValue> Property<Vec<T>> for PropertyArray<T> {
         mut result: Option<&mut Vec<T>>,
     ) -> Result<Option<Vec<T>>, RuntimeError> {
         let time = time.copied().unwrap_or_else(|| (self.clock)());
-        let Some(length) = self.value.borrow().as_ref().map(Vec::len) else { return Ok(None) };
-        let mut values = Vec::with_capacity(length);
-        for i in 0..length {
-            let property = self
-                .value
-                .borrow()
-                .as_ref()
-                .and_then(|v| v.get(i))
-                .cloned()
-                .ok_or_else(|| RuntimeError::new("Cannot read properties of undefined (reading 'getValue')"))?;
+        // A callback may replace this array's definition. Keep its original
+        // children alive and release the borrow before evaluating any of them.
+        let Some(properties) = self.value.borrow().clone() else { return Ok(None) };
+        let mut values = Vec::with_capacity(properties.len());
+        for (i, property) in properties.iter().enumerate() {
             if let Some(value) = property
                 .get_value(Some(&time), result.as_deref_mut().and_then(|r| r.get_mut(i)))?
                 .filter(PropertyValue::is_defined)

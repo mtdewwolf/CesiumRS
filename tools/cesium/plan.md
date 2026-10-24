@@ -157,7 +157,7 @@ The renderer still assembles programs from the pinned builtin table. See
 Seven of 108 DataSources modules are validated: Property, ConstantProperty,
 CallbackProperty, PropertyArray, SampledProperty, TimeIntervalCollectionProperty
 and CompositeProperty. The batch includes 206 pinned CesiumJS scenarios,
-10 native ownership/callback integration tests and real browser clock checks.
+14 native ownership/callback integration tests and real browser clock checks.
 Owned values, Rc property references, local definition events and observable Core
 intervals provide the prerequisites for Entity and document loading.
 

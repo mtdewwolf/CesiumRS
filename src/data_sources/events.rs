@@ -53,26 +53,24 @@ impl DefinitionChanged {
     }
     pub fn subscribe(&self, listener: PropertyListener) -> Subscription {
         let inner = &self.0;
-        let existing = if inner.invoking.get() {
-            inner.pending.borrow().iter().find(|s| Rc::ptr_eq(&s.listener, &listener)).map(|s| s.id)
-        } else {
-            inner.slots.borrow().iter().flatten().find(|s| Rc::ptr_eq(&s.listener, &listener)).map(|s| s.id)
+        let existing = {
+            let removed = inner.removed.borrow();
+            let slots = inner.slots.borrow();
+            let pending = inner.pending.borrow();
+            slots
+                .iter()
+                .flatten()
+                .chain(pending.iter())
+                .find(|s| !removed.contains(&s.id) && Rc::ptr_eq(&s.listener, &listener))
+                .map(|s| s.id)
         };
         if let Some(id) = existing {
             return Subscription { event: Rc::downgrade(inner), id: Some(id) };
         }
-        let id = inner
-            .slots
-            .borrow()
-            .iter()
-            .flatten()
-            .find(|s| Rc::ptr_eq(&s.listener, &listener))
-            .map(|s| s.id)
-            .unwrap_or_else(|| {
-                let id = inner.next.get();
-                inner.next.set(id + 1);
-                id
-            });
+        // A removed registration may still be in the current dispatch. Its
+        // replacement needs a fresh identity so stale handles cannot remove it.
+        let id = inner.next.get();
+        inner.next.set(id + 1);
         let slot = Slot { id, listener };
         inner.count.set(inner.count.get() + 1);
         if inner.invoking.get() {
@@ -89,7 +87,8 @@ impl DefinitionChanged {
         self.subscribe(Rc::new(listener))
     }
     /// Additions/removals during dispatch settle after the current raise,
-    /// matching the pinned Event's deferred changes. No borrow spans a callback.
+    /// preserving deferred changes. Renewed registrations survive removals of
+    /// their previous identity. No borrow spans a callback.
     pub fn raise(&self) {
         let inner = &self.0;
         inner.depth.set(inner.depth.get() + 1);
@@ -105,12 +104,19 @@ impl DefinitionChanged {
         }
         inner.invoking.set(false);
         let pending = std::mem::take(&mut *inner.pending.borrow_mut());
+        let removed = std::mem::take(&mut *inner.removed.borrow_mut());
         for slot in pending {
-            if !inner.slots.borrow().iter().flatten().any(|s| Rc::ptr_eq(&s.listener, &slot.listener)) {
+            if !removed.contains(&slot.id)
+                && !inner
+                    .slots
+                    .borrow()
+                    .iter()
+                    .flatten()
+                    .any(|s| !removed.contains(&s.id) && Rc::ptr_eq(&s.listener, &slot.listener))
+            {
                 inner.slots.borrow_mut().push(Some(slot));
             }
         }
-        let removed = std::mem::take(&mut *inner.removed.borrow_mut());
         let old = {
             let mut slots = inner.slots.borrow_mut();
             slots

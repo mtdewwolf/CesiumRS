@@ -4369,7 +4369,7 @@
   "DataSources/PropertyArray": {
     "status": "ported",
     "rust": "data_sources::property_array",
-    "note": "Time-coherent child evaluation, undefined/null compaction, equality and deduplicated child listeners with weak forwarding and RAII cleanup. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
+    "note": "Time-coherent child snapshots (native reentrancy contract; docs/data-sources.md), undefined/null compaction, equality and deduplicated child listeners with weak forwarding and RAII cleanup. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
   },
   "DataSources/SampledProperty": {
     "status": "ported",
