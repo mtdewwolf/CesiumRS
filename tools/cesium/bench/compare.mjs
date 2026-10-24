@@ -5,8 +5,10 @@
 //   node tools/cesium/bench/compare.mjs [--dir target/bench-results] [--out report.md]
 //
 // Ratios below 1 mean CesiumRS is faster. A workload is flagged when either
-// side failed its fixture check, when CesiumRS and CesiumJS checksums differ,
-// or when wasm is more than 1.5x slower than CesiumJS in the same browser.
+// side failed its fixture check, when CesiumRS and CesiumJS checksums differ
+// or are not finite numbers, or when wasm is more than 1.5x slower than
+// CesiumJS in the same browser. Checksums are compared with the CesiumJS Node
+// run; without it, workloads that have no fixtures are listed as unverified.
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -60,6 +62,10 @@ const jsSetups = ["cesiumjs-node", "cesiumjs-chromium"].filter((js) => reports[j
 const rsSetups = present.map(([rs]) => rs);
 const flags = [];
 const notes = [];
+// CesiumRS results whose checksum had no CesiumJS Node result to compare with.
+const unverified = [];
+let compared = 0;
+let uncompared = 0;
 
 const header = ["Workload", "Cases", ...jsSetups, ...rsSetups.flatMap((rs) => [rs, PAIRS.find((p) => p[0] === rs)[2]])];
 const rows = [];
@@ -98,9 +104,21 @@ for (const id of ids) {
   const reference = results["cesiumjs-node"]?.[id];
   for (const rs of Object.keys(results).filter((s) => s.startsWith("cesiumrs"))) {
     const e = results[rs][id];
-    if (!timed(e) || !timed(reference)) continue;
+    if (!timed(e)) continue;
+    if (!timed(reference)) {
+      uncompared++;
+      // Without fixtures the checksum is the only correctness check.
+      if (e.status === "checksum-only") unverified.push(`${id}: ${rs}`);
+      continue;
+    }
+    compared++;
     const a = e.checksum;
     const b = reference.checksum;
+    // JSON writes NaN and infinities as null, which arithmetic would read as 0.
+    if (!Number.isFinite(a) || !Number.isFinite(b)) {
+      flags.push(`${id}: ${rs} checksum ${a} or CesiumJS ${b} is not a finite number`);
+      continue;
+    }
     const rel = Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b), 1e-300);
     if (!(rel <= CHECKSUM_REL) && !(a === 0 && b === 0)) {
       flags.push(`${id}: ${rs} checksum ${a} differs from CesiumJS ${b} (relative ${rel.toExponential(2)})`);
@@ -118,6 +136,16 @@ const env = Object.values(reports)
   .map((r) => `- **${r.setup}**: ${r.runtime}; ${r.host?.os}/${r.host?.arch}, ${r.host?.cpus} CPUs; ${r.settings?.samples} samples of ≥${r.settings?.sampleMs} ms${r.debugBuild ? "; **debug build**" : ""}`)
   .join("\n");
 
+const allClear =
+  uncompared === 0
+    ? "- All fixture checks passed and every CesiumRS checksum matches CesiumJS."
+    : compared === 0
+      ? "- All fixture checks passed. No CesiumRS checksums were compared: there are no CesiumJS Node results to compare them with."
+      : `- All fixture checks passed. ${compared} CesiumRS checksums match CesiumJS; ${uncompared} could not be compared because there is no CesiumJS Node result for them.`;
+const unverifiedSection = unverified.length
+  ? `\n### Unverified\n\nThese have no fixtures and no CesiumJS Node checksum to compare with, so nothing checked their output:\n\n${unverified.map((u) => `- ${u}`).join("\n")}\n`
+  : "";
+
 const md = `# CesiumJS vs CesiumRS parity benchmark
 
 Median time per pass over each workload's inputs. Ratios are CesiumRS ÷ CesiumJS in the same kind of runtime; below 1× means CesiumRS is faster.
@@ -126,8 +154,8 @@ ${table(header, rows)}
 
 ## Checks
 
-${flags.length ? flags.map((f) => `- ${f}`).join("\n") : "- All fixture checks passed and every CesiumRS checksum matches CesiumJS."}
-${notes.length ? `\n### CesiumJS engine drift\n\n${notes.map((n) => `- ${n}`).join("\n")}\n` : ""}
+${flags.length ? flags.map((f) => `- ${f}`).join("\n") : allClear}
+${unverifiedSection}${notes.length ? `\n### CesiumJS engine drift\n\n${notes.map((n) => `- ${n}`).join("\n")}\n` : ""}
 ## First pass (cold, in workload order)
 
 ${table(firstHead, firstRows)}
@@ -140,4 +168,5 @@ ${env}
 writeFileSync(out, md);
 console.log(md);
 console.error(`wrote ${out}`);
+if (unverified.length) console.error(`${unverified.length} results unverified: no fixtures and no CesiumJS Node checksum`);
 process.exitCode = flags.some((f) => /mismatch|error|checksum/.test(f)) ? 1 : 0;

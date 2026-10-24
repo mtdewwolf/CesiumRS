@@ -37,7 +37,7 @@ The wasm setups need `rustup target add wasm32-unknown-unknown`. The browser set
 | `terrain.heightmap65`, `terrain.heightmap257` | generated tile | the same, 65×65 and 257×257 Uint16 | checksum |
 | `workers.dracoMesh5k`, `workers.dracoMesh130k` | generated mesh | Draco mesh decode, 5,000 and 130,050 triangles | checksum |
 
-Fixture inputs are under `tests/fixtures`. The fixtures are small by design, so `tools/cesium/bench/inputs.mjs` generates tile-sized heightmaps and Draco meshes into `target/bench-inputs`, deterministically. Those have no recorded result. Instead, `compare.mjs` requires each CesiumRS checksum to match the CesiumJS checksum within 1e-9, relative. Each side computes the checksum the same way and in the same order: sums of output positions, vertices, indices or coordinates.
+Fixture inputs are under `tests/fixtures`. The fixtures are small by design, so `tools/cesium/bench/inputs.mjs` generates tile-sized heightmaps and Draco meshes into `target/bench-inputs`, deterministically. Those have no recorded result. Instead, `compare.mjs` requires each CesiumRS checksum to match the CesiumJS checksum within 1e-9, relative. Each side computes the checksum the same way and in the same order: sums of output positions, vertices, indices or coordinates. A checksum that is not a finite number (a failed decode returns NaN, which JSON writes as `null`) is flagged. The CesiumJS checksums come from the Node run; when it is missing, the report lists the generated workloads as unverified instead of passing them.
 
 ## Method
 
