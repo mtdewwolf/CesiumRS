@@ -424,19 +424,27 @@
     "validatedPercent": 46.02
   },
   {
+    "milestone": "glTF image and texture loaders",
+    "date": "2026-10-24",
+    "percent": 48.02,
+    "ported": 850,
+    "implemented": 2,
+    "validatedPercent": 46.2
+  },
+  {
     "milestone": "3D Tiles content parsers",
     "date": "2026-10-24",
-    "percent": 48.1,
-    "ported": 852,
+    "percent": 48.28,
+    "ported": 854,
     "implemented": 2,
-    "validatedPercent": 46.28
+    "validatedPercent": 46.46
   },
   {
     "milestone": "NGA_gpm_local extension",
     "date": "2026-10-24",
-    "percent": 48.38,
-    "ported": 862,
+    "percent": 48.56,
+    "ported": 864,
     "implemented": 2,
-    "validatedPercent": 46.56
+    "validatedPercent": 46.74
   }
 ]

@@ -425,3 +425,9 @@ pub mod i3dm_parser;
 pub use i3dm_parser::ParsedI3dm;
 pub mod pnts_parser;
 pub use pnts_parser::{ParsedPnts, PntsAttribute, PntsDraco};
+
+pub mod gltf_image_loader;
+pub use gltf_image_loader::{GltfImage, GltfImageLoader, LoadedGltfImage};
+
+pub mod gltf_texture_loader;
+pub use gltf_texture_loader::{GltfTextureLoader, GltfTextureOptions, ModelImageHost, ResourceUploadBudget};

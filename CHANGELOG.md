@@ -6,6 +6,8 @@
 
 - Port the 3D Tiles binary content parsers: `Cesium3DTileFeatureTable`, `B3dmParser` (current and both legacy headers), `I3dmParser` and `PntsParser` (quantized positions, all color and normal encodings, binary globals, Draco point compression). 59 pinned CesiumJS tiles cover JavaScript's typed-array errors, unaligned glb copies and every parser error.
 
+- Port glTF image and texture loaders with 119 pinned cases and 128 additional WebGL1/2 comparisons. Add cached image decoding, KTX2/Basis mip chains, deferred texture uploads, NPOT resizing, cancellation and GPU resource accounting. Extend upload budgets to separate geometry and texture work; ResourceCache and vertex loading remain partial pending SPZ.
+
 - Integrate ModelComponents and initialized Draco workers with the shared model cache and GPU loaders. Preserve both parity suites (293 additional cases), unify cache key/texture helpers, and retain lease cancellation and renderer ownership across the overlapping Scene batches.
 
 - Add shared model resource caching, glTF texture utilities and frame-driven Draco/vertex/index loading, with 184 new CesiumJS cases and 24 WebGL comparisons. Cache and vertex loading remain partial pending image/texture/SPZ paths; the main GltfLoader/Model pipeline remains unported. Correct JavaScript number stringification at the `1e-7` boundary for schema cache identities.
