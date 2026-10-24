@@ -4164,11 +4164,46 @@
   "Scene/GltfJsonLoader": {
     "status": "ported",
     "rust": "scene::gltf_json_loader",
-    "note": "JSON, bytes, URI and GLB ingestion; data URI buffers, legacy upgrades, defaults, extension compatibility checks and pipeline cleanup. Owns embedded and upgraded buffer sources in lieu of a global ResourceCache. 28 pinned cases and native JSON/GLB-to-buffer-view integration."
+    "note": "JSON, bytes, URI and GLB ingestion; data URI buffers, legacy upgrades, defaults, required-extension checks and pipeline cleanup. Shares embedded and upgraded buffers through optional ResourceCache leases. 28 pinned cases and native JSON/GLB-to-buffer-view integration."
   },
   "Scene/GltfBufferViewLoader": {
     "status": "ported",
     "rust": "scene::gltf_buffer_view_loader",
     "note": "Zero-copy views, external/embedded/legacy-upgraded buffers, shared BufferLoader leases and meshopt v0/v1 attributes, triangle/index decoding and octahedral/quaternion/exponential filters. 44 pinned cases plus bounds/failure/cancellation and JSON/GLB integration tests."
+  },
+  "Scene/GltfLoaderUtil": {
+    "status": "ported",
+    "rust": "scene::gltf_loader_util",
+    "note": "Image format selection, glTF samplers and KHR_texture_transform readers; 29 pinned cases. ModelTextureReader is a typed value, not a claim of ModelComponents completion."
+  },
+  "Scene/ResourceCacheKey": {
+    "status": "ported",
+    "rust": "scene::resource_cache_key",
+    "note": "All pinned cache identities including meshopt, Draco, SPZ, images, textures, context/CPU variants and JS schema stringification; 106 pinned cases."
+  },
+  "Scene/ResourceCacheStatistics": {
+    "status": "ported",
+    "rust": "scene::resource_cache_statistics",
+    "note": "Deduplicated CPU/GPU geometry and texture byte accounting, removal and clear; pinned sequence and loader integration checks."
+  },
+  "Scene/ResourceCache": {
+    "status": "partial",
+    "rust": "scene::resource_cache",
+    "note": "Typed owner-scoped cache, reference-counted leases, ordered destruction, shared schema/JSON/buffer/view/Draco/vertex/index factories and memory accounting. Image, texture and SPZ factories remain unported. Four pinned ownership traces, native dependency/cancellation and real GPU lease checks."
+  },
+  "Scene/GltfDracoLoader": {
+    "status": "ported",
+    "rust": "scene::gltf_draco_loader",
+    "note": "Cached buffer views, shared capacity-limited TaskProcessor, frame-driven decoding, float-transform skipping, errors and cancellation. Real pinned Draco worker fixtures and native capacity/failure/destruction checks. Portable worker decodes when polled; hosts can supply a background worker."
+  },
+  "Scene/GltfVertexBufferLoader": {
+    "status": "partial",
+    "rust": "scene::gltf_geometry_loader",
+    "note": "Buffer-view and Draco CPU/GPU loading, quantization metadata, upload budgets, retained arrays and statistics; 33 pinned cases and WebGL1/2 indexed draw/readback checks. SPZ attributes remain unported."
+  },
+  "Scene/GltfIndexBufferLoader": {
+    "status": "ported",
+    "rust": "scene::gltf_geometry_loader",
+    "note": "Buffer-view/Draco indices, unaligned byte offsets, actual GPU allocation, deferred uploads, CPU retention and destruction/accounting; nine pinned cases, native failure checks and WebGL1/2 GPU comparisons."
   }
 }

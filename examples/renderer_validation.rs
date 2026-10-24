@@ -11,6 +11,107 @@ mod browser {
         JsValue::from_str(&e.to_string())
     }
     #[wasm_bindgen]
+    pub async fn scene_geometry_buffers(gl: JsValue, config: &str) -> Result<String, JsValue> {
+        use cesium_rs::scene::{gltf_pipeline::BufferSource, *};
+        use std::{collections::BTreeMap, rc::Rc, sync::Arc};
+        struct NoTransport;
+        impl ResourceTransport for NoTransport {
+            fn execute(&self, _: HttpRequest) -> RequestFuture<HttpResponse> {
+                panic!("unexpected fetch")
+            }
+        }
+        let config: serde_json::Value = serde_json::from_str(config).map_err(error)?;
+        let webgl1 = config["webgl1"] == true;
+        let context = if webgl1 {
+            Context::new_webgl1(BrowserGl::new_webgl1(gl).map_err(error)?)
+        } else {
+            Context::new_webgl2(BrowserGl::new(gl).map_err(error)?)
+        };
+        let cache = ResourceCache::new(ResourceClient::new(Rc::new(NoTransport)));
+        let raw = config["raw"].as_array().unwrap().iter().map(|v| v.as_u64().unwrap() as u8).collect();
+        let sources = BTreeMap::from([(0, BufferSource::new(raw))]);
+        let resource = Resource::new("https://geometry.test/triangle.gltf").unwrap();
+        let request = GltfResource {
+            document: Arc::new(LoadedGltfJson {
+                json: config["gltf"].clone(),
+                embedded_buffers: sources.clone(),
+                buffer_sources: sources,
+            }),
+            base: resource.clone(),
+            resource,
+        };
+        let seed = cache
+            .embedded_buffer_loader(&request.resource, 0, request.document.embedded_buffers.get(&0).cloned())
+            .map_err(error)?;
+        let mut camera = Camera::new(CameraOptions::new(8., 8.));
+        let snapshot = camera.uniform_camera();
+        let culling = camera.frustum.compute_culling_volume(snapshot.position, snapshot.direction, snapshot.up);
+        let mut frame = FrameState::new(
+            UniformFrame::new(snapshot, JulianDate::new(2451545., 0., TimeStandard::Tai)),
+            culling,
+            [8, 8],
+        );
+        let budget = Rc::new(BufferUploadBudget::new(0));
+        frame.job_scheduler = Some(FrameResource::new(budget.clone()));
+        let options = GpuBufferOptions {
+            asynchronous: config["asynchronous"] == true,
+            load_buffer: true,
+            load_typed_array: config["retain"] == true,
+        };
+        let vertex = cache
+            .vertex_buffer_loader(&request, VertexBufferSource::BufferView(0), Some(context.clone()), options)
+            .map_err(error)?;
+        let duplicate = cache
+            .vertex_buffer_loader(&request, VertexBufferSource::BufferView(0), Some(context.clone()), options)
+            .map_err(error)?;
+        let shared = vertex.ptr_eq(&duplicate);
+        let index = cache.index_buffer_loader(&request, 0, None, Some(context.clone()), options).map_err(error)?;
+        vertex.load().await.map_err(error)?;
+        index.load().await.map_err(error)?;
+        let deferred = vec![vertex.process(&frame).map_err(error)?, index.process(&frame).map_err(error)?];
+        budget.reset(2);
+        vertex.process(&frame).map_err(error)?;
+        index.process(&frame).map_err(error)?;
+        let vb = vertex.buffer().unwrap();
+        let ib = index.buffer().unwrap();
+        let readback = if webgl1 {
+            None
+        } else {
+            Some(vec![
+                vb.get_buffer_data(0, vb.size_in_bytes()).map_err(error)?,
+                ib.get_buffer_data(0, ib.size_in_bytes()).map_err(error)?,
+            ])
+        };
+        let va = VertexArray::new(&context, vec![VertexAttribute::buffer(0, vb.clone(), 2)], Some(ib.clone()))
+            .map_err(error)?;
+        let program = ShaderProgram::from_sources(
+            &context,
+            &ShaderProgramOptions {
+                vertex_shader_source: ShaderSource::new(
+                    "in vec2 position;void main(){gl_Position=vec4(position,0.,1.);}",
+                ),
+                fragment_shader_source: ShaderSource::new("void main(){out_FragColor=vec4(0.25,0.5,0.75,1.);}"),
+                attribute_locations: BTreeMap::from([("position".into(), 0)]),
+            },
+        )
+        .map_err(error)?;
+        ClearCommand::all().execute(&context, &PassState::default()).map_err(error)?;
+        DrawCommand::new(&va, &program).execute(&context, &PassState::default()).map_err(error)?;
+        let pixels = context.read_pixels(TextureRegion { x: 0, y: 0, width: 8, height: 8 }).map_err(error)?;
+        let retained = vec![vertex.typed_array().is_some(), index.typed_array().is_some()];
+        let size = cache.statistics().borrow().geometry_byte_length;
+        drop(vertex);
+        let alive = !vb.is_destroyed();
+        drop(duplicate);
+        drop(index);
+        drop(seed);
+        let result = json!({"deferred":deferred,"shared":shared,"readback":readback,"pixels":pixels,"retained":retained,"geometry":size,"aliveWithLease":alive,"destroyed":[vb.is_destroyed(),ib.is_destroyed()],"remaining":cache.len(),"finalGeometry":cache.statistics().borrow().geometry_byte_length});
+        va.destroy().map_err(error)?;
+        program.destroy().map_err(error)?;
+        context.destroy().map_err(error)?;
+        Ok(result.to_string())
+    }
+    #[wasm_bindgen]
     pub fn scene_oit(gl: JsValue, config: &str) -> Result<String, JsValue> {
         use cesium_rs::scene::*;
         use std::rc::Rc;

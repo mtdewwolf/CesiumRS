@@ -13,8 +13,8 @@ pub trait ResourceLoader {
     fn is_destroyed(&self) -> bool;
     fn destroy(&self);
     fn state(&self) -> ResourceLoaderState;
-    fn process(&self, _frame: &FrameState) -> bool {
-        false
+    fn process(&self, _frame: &FrameState) -> Result<bool, RuntimeError> {
+        Ok(false)
     }
     fn get_error(message: &str, error: Option<&RuntimeError>) -> RuntimeError
     where
@@ -63,6 +63,12 @@ impl<T: Clone + 'static> ManagedLoader<T> {
     pub fn value(&self) -> Option<T> {
         self.inner.borrow().value.clone()
     }
+    pub fn replace_value(&self, value: T) {
+        let mut inner = self.inner.borrow_mut();
+        if !inner.destroyed {
+            inner.value = Some(value);
+        }
+    }
     pub fn state(&self) -> ResourceLoaderState {
         self.inner.borrow().state
     }
@@ -81,9 +87,20 @@ impl<T: Clone + 'static> ManagedLoader<T> {
         }
         inner.request = None;
     }
+    pub fn set_state(&self, state: ResourceLoaderState) {
+        self.inner.borrow_mut().state = state;
+    }
     pub fn load(
         &self,
         error_message: String,
+        create: impl FnOnce() -> LocalBoxFuture<'static, Result<T, RuntimeError>>,
+    ) -> ResourceLoadFuture {
+        self.load_with_state(error_message, ResourceLoaderState::Ready, create)
+    }
+    pub fn load_with_state(
+        &self,
+        error_message: String,
+        success_state: ResourceLoaderState,
         create: impl FnOnce() -> LocalBoxFuture<'static, Result<T, RuntimeError>>,
     ) -> ResourceLoadFuture {
         let mut inner = self.inner.borrow_mut();
@@ -120,7 +137,7 @@ impl<T: Clone + 'static> ManagedLoader<T> {
             match result {
                 Ok(Ok(value)) => {
                     inner.value = Some(value);
-                    inner.state = ResourceLoaderState::Ready;
+                    inner.state = success_state;
                     Ok(true)
                 }
                 Ok(Err(error)) => {

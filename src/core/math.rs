@@ -428,7 +428,7 @@ pub fn js_number_to_string(value: f64) -> String {
         return "0".into();
     }
     let abs = value.abs();
-    if (1e-7..1e21).contains(&abs) {
+    if (1e-6..1e21).contains(&abs) {
         return format!("{value}");
     }
     // Rust's `{:e}` gives the same shortest digits; JS writes an explicit `+`.

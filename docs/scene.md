@@ -138,7 +138,7 @@ expiration, shared textures, partial content failure, resource bases, CPU
 height queries and renderer/resource ownership. The reference frame harness
 uses explicit host operations and does not establish full browser Scene parity.
 
-`scripts/check-scene.sh` compares **416 actual GPU results** with
+`scripts/check-scene.sh` compares **440 actual GPU results** with
 CesiumJS. The original 24 WebGL2 cases cover log depth, HDR, render/pick/depth
 passes, framebuffer targets and retained uniforms/textures. Another 48 phase
 comparisons cover float and byte plane textures, mutation/partial upload,
@@ -214,10 +214,42 @@ shared `BufferLoader` lease; views release their own leases after loading.
 
 Ninety-three pinned-source cases cover these five modules. Native tests cover
 shared/failing loads, cancellation, retained byte views and feeding JSON/GLB
-loads into buffer views. A global ResourceCache, GPU vertex/index/texture/image
-loaders, the main GltfLoader/Model pipeline and built-in renderable tile factory
-remain to be ported. The default tileset loader still requires a factory for
-renderable tile content.
+loads into buffer views. The next batch adds 184 pinned-source cases for cache identities/statistics,
+cache ownership traces, glTF texture utilities, Draco decoding and vertex/index
+loader lifecycles. Twenty-four additional WebGL1/2 comparisons exercise real
+uploads, byte readbacks, indexed triangle pixels, CPU retention and last-lease
+GPU destruction across all three index datatypes and synchronous/deferred uploads.
+
+`ResourceCache` is owned by the application or model pipeline; clones share a
+pool. Keep a `CacheLease<T>` while using a resource. Cloning a lease increments
+its reference count; dropping the last lease destroys the loader and releases
+its children. `loader()` returns an observation handle without extending the
+cache lease. CPU keys share data across contexts; GPU keys include context IDs.
+JSON loaders register embedded/upgraded buffers, and buffer views release their
+child leases when their bytes are available. Legacy upgrades publish rewritten
+external animation bytes back to the cache. Clearing a cache destroys dependent
+resources before their sources. Cache keys preserve pinned-source quirks.
+
+`GltfDracoLoader` shares a capacity-limited `TaskProcessor`. Await `load()` for
+the compressed view, then call `process(&frame)` until it returns `Ok(true)`.
+Decoded data includes explicit index datatype information at the native wire
+boundary. Quantization metadata preserves shader dequantization and octahedral
+normal encoding. The portable worker decodes when polled; applications can use
+`set_draco_decoder` with a host worker for background decoding. Dropping the last
+lease cancels pending tasks and returns decoder capacity.
+
+`GltfVertexBufferLoader` and `GltfIndexBufferLoader` can retain CPU data, upload
+GPU buffers, or do both. Provide a renderer context for GPU loads. For deferred
+uploads, store `Rc<BufferUploadBudget>` in `FrameState.job_scheduler` and reset
+the quota each frame; a missing quota permits immediate upload. An exhausted
+quota leaves the loader pending. `process` propagates decode/allocation errors.
+This budget is a host adapter, not a port of the complete JobScheduler.
+
+ResourceCache remains partial pending image, texture and SPZ factories. The
+vertex loader remains partial pending SPZ attributes. Image/texture/SPZ loaders,
+the main GltfLoader/Model pipeline and built-in renderable tile factory still
+need porting. The default tileset loader requires a factory for renderable tile
+content.
 
 ## Camera
 
