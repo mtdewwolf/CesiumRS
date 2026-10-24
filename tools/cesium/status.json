@@ -4189,7 +4189,7 @@
   "Scene/ResourceCache": {
     "status": "partial",
     "rust": "scene::resource_cache",
-    "note": "Typed owner-scoped cache, reference-counted leases, ordered destruction, shared schema/JSON/buffer/view/Draco/vertex/index factories and memory accounting. Image, texture and SPZ factories remain unported. Four pinned ownership traces, native dependency/cancellation and real GPU lease checks."
+    "note": "Typed owner-scoped cache, reference-counted leases, ordered destruction, shared schema/JSON/buffer/view/Draco/vertex/index/image/texture factories and memory accounting. SPZ factory remains unported. Pinned ownership traces, native dependency/cancellation and real GPU lease checks."
   },
   "Scene/GltfDracoLoader": {
     "status": "ported",
@@ -4215,5 +4215,15 @@
     "status": "ported",
     "rust": "scene::draco_loader",
     "note": "Owned (not static) decodeDraco task processor created on the first request with the host TaskWorker: module initialization, deferred readiness, falsy/failed initialization errors and concurrency of hardwareConcurrency - 1. Pinned scheduling timelines for buffer views and point clouds."
+  },
+  "Scene/GltfImageLoader": {
+    "status": "ported",
+    "rust": "scene::gltf_image_loader",
+    "note": "Shared embedded/URI/data-URI image loading, signature-based PNG/JPEG/WebP host decoding, real KTX2/Basis transcoding and mip splitting; unload, error chains and cancellation. 79 pinned cases, pending decode/transport ownership checks and real browser decoding/GPU comparisons."
+  },
+  "Scene/GltfTextureLoader": {
+    "status": "ported",
+    "rust": "scene::gltf_texture_loader",
+    "note": "Cached image leases, deferred uploads, glTF samplers, compressed no-mipmap fallback, NPOT host resizing, typed/compressed mip chains, destruction and statistics. 40 pinned cases plus real PNG/JPEG/WebP/KTX2 WebGL1/2 comparisons, quota separation, error/retry and shared-decode checks."
   }
 }

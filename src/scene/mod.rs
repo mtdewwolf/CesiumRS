@@ -416,3 +416,9 @@ pub mod model_components;
 pub use draco_loader::{DracoLoader, DracoTask};
 pub use gltf_draco_loader::DecodedDraco;
 pub use resource_cache_key::{IndexBufferKeyOptions, SchemaSource, VertexBufferKeyOptions};
+
+pub mod gltf_image_loader;
+pub use gltf_image_loader::{GltfImage, GltfImageLoader, LoadedGltfImage};
+
+pub mod gltf_texture_loader;
+pub use gltf_texture_loader::{GltfTextureLoader, GltfTextureOptions, ModelImageHost, ResourceUploadBudget};

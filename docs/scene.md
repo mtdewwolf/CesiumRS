@@ -138,7 +138,7 @@ expiration, shared textures, partial content failure, resource bases, CPU
 height queries and renderer/resource ownership. The reference frame harness
 uses explicit host operations and does not establish full browser Scene parity.
 
-`scripts/check-scene.sh` compares **440 actual GPU results** with
+`scripts/check-scene.sh` compares **568 actual GPU results** with
 CesiumJS. The original 24 WebGL2 cases cover log depth, HDR, render/pick/depth
 passes, framebuffer targets and retained uniforms/textures. Another 48 phase
 comparisons cover float and byte plane textures, mutation/partial upload,
@@ -245,11 +245,39 @@ the quota each frame; a missing quota permits immediate upload. An exhausted
 quota leaves the loader pending. `process` propagates decode/allocation errors.
 This budget is a host adapter, not a port of the complete JobScheduler.
 
-ResourceCache remains partial pending image, texture and SPZ factories. The
-vertex loader remains partial pending SPZ attributes. Image/texture/SPZ loaders,
-the main GltfLoader/Model pipeline and built-in renderable tile factory still
-need porting. The default tileset loader requires a factory for renderable tile
-content.
+`GltfImageLoader` shares embedded buffer views and external/data-URI image
+requests. Embedded PNG, JPEG and WebP are identified by byte signatures, with
+`flipY: false` and color conversion disabled at the host boundary. KTX2 uses the
+existing Rust/Basis codec and preserves explicit mip chains. Image decoding
+uses `ImageHost`; applications provide their decoder, and browsers use
+`BrowserImageHost`. Keep the image host and supported KTX2 formats consistent
+within each cache. Destroying the final lease aborts pending work; the request
+scheduler cleans up cancelled transport jobs on its next update.
+
+`GltfTextureLoader` selects the supported image, shares its loader, then uploads
+a texture during `process`. Implement `ModelImageHost<G>` for a custom host;
+its default uploads RGBA pixels, while the browser implementation uploads the
+original DOM image/bitmap. Raster textures retain glTF's orientation and resize
+to powers of two when the sampler requires it, including on WebGL2 as upstream
+does. Compressed textures without supplied mips downgrade mipmap filters;
+supplied KTX2 mip levels keep their upstream orientation and accounting rules.
+Place `Rc<ResourceUploadBudget>` in `FrameState.job_scheduler` for independent
+`buffers` and `textures` quotas, or retain the existing buffer-only budget.
+Reset the quotas each frame. A failed allocation preserves the loaded image for
+retry; image-load failures release dependencies and retain their error chain.
+
+The image/texture batch adds 119 pinned cases and 128 real WebGL comparisons,
+including PNG/JPEG/WebP decoding, URI and embedded images, KTX2/Basis uploads,
+NPOT resizing, supplied/generated mips, sampled pixels, memory counts and
+last-lease destruction. The pinned RGB mip path retains the base image's unpack
+alignment: the upstream Green4x4Mipmap RGB asset therefore produces
+`INVALID_OPERATION` for its tightly packed 2x2 level. The comparisons preserve
+and check this source behavior; RGBA and compressed mip chains upload normally.
+
+ResourceCache remains partial pending the SPZ factory, and the vertex loader
+remains partial pending SPZ attributes. The SPZ loader, main GltfLoader/Model
+pipeline and built-in renderable tile factory still need porting. The default
+tileset loader requires a factory for renderable tile content.
 
 `model_components` supplies the 27 glTF data classes, animated-property enum
 and material defaults. Shared node/skin/sampler references are indices; buffers
