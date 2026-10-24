@@ -345,6 +345,9 @@ pub trait SceneBackend {
     fn copy_globe_depth(&mut self, _frame: &FrameState) -> Result<()> {
         Ok(())
     }
+    fn update_tileset_depth(&mut self, _frame: &FrameState) -> Result<()> {
+        Ok(())
+    }
     fn capture_pick_depth(&mut self, _frame: &FrameState, _index: usize) -> Result<()> {
         Ok(())
     }
@@ -443,6 +446,11 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
         if self.oit_active {
             let resources = self.view_resources.as_ref().expect("initialized");
             let mut resources = resources.borrow_mut();
+            // Opaque commands wrote the multisample target; OIT samples the
+            // resolved depth texture, so resolve before adjustment and draws.
+            if let Some(globe) = &resources.globe_depth {
+                globe.prepare_color_textures(false)?;
+            }
             let oit = resources.oit.as_mut().expect("supported");
             oit.adjust(&self.context, &self.pass_state)?;
             self.oit_used = true;
@@ -522,6 +530,18 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
             if let Some(resources) = &self.view_resources {
                 if let Some(globe) = &mut resources.borrow_mut().globe_depth {
                     globe.execute_copy_depth(&self.context, &self.pass_state)?;
+                }
+            }
+        }
+        Ok(())
+    }
+    fn update_tileset_depth(&mut self, _frame: &FrameState) -> Result<()> {
+        if self.using_globe_depth {
+            if let Some(resources) = &self.view_resources {
+                if let Some(globe) = &mut resources.borrow_mut().globe_depth {
+                    globe.prepare_color_textures(false)?;
+                    let depth = globe.depth_stencil_texture().cloned();
+                    globe.execute_update_depth(&self.context, &self.pass_state, depth)?;
                 }
             }
         }
@@ -1444,7 +1464,17 @@ impl<B: SceneBackend> Scene<B> {
                 Pass::Opaque,
                 Pass::GaussianSplats,
             ] {
+                if self.frame_state.passes.depth
+                    && matches!(pass, Pass::TerrainClassification | Pass::Cesium3DTileClassification)
+                {
+                    continue;
+                }
                 self.execute_pass(pass, index, opaque_near, far)?;
+                if pass == Pass::Cesium3DTile
+                    && !self.view.frustum_commands_list[index].commands[pass as usize].is_empty()
+                {
+                    self.backend.update_tileset_depth(&self.frame_state)?;
+                }
                 if pass == Pass::Globe {
                     self.backend.copy_globe_depth(&self.frame_state)?;
                 }
