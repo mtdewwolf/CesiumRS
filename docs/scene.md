@@ -441,6 +441,43 @@ Tests: `tests/scene_tile_content.rs`, 40 pinned cases from
 queue scripts, compared after each of 498 steps, front to back and back to
 front.
 
+## Particles, imagery helpers and keyframe nodes
+
+`Particle` and the emitters are the parts of the particle system that are
+independent of rendering. `ParticleEmitter` is a trait with four
+implementations: `BoxEmitter`, `CircleEmitter`, `ConeEmitter` and
+`SphereEmitter`. Each sets only the particle's position and velocity. Like
+CesiumJS, they draw from the seeded Mersenne Twister behind
+`core::math::random_between`, and trigonometry is V8-exact, so a seeded run
+emits the same particles bit for bit. A particle's `image` is a
+`FrameResource` the host owns, and `Particle::update` takes the optional
+per-particle callback as a `ParticleUpdateFunction`.
+
+`PointCloudShading` holds the attenuation and eye dome lighting options. Its
+`is_supported` reads context capabilities, as
+`PointCloudEyeDomeLighting.isSupported` does.
+
+`ImageryLayerFeatureInfo` picks a feature name the way CesiumJS does: the
+first truthy property called `name`, then `title`, then one whose key contains
+"name", then "title". The comparisons ignore ASCII case only, like the
+non-Unicode `/i` regular expressions. Its HTML description nests a table for
+each object or array value, skips `null` values and converts others with
+JavaScript's `String`.
+
+`ImageryConfiguration` snapshots a layer's appearance through the
+`ImageryLayerSettings` trait. `DiscardEmptyTileImagePolicy` discards the
+shared empty image by identity. The host decodes `EMPTY_IMAGE_URI` once and
+gives the shared image to each policy. `KeyframeNode` is generic over the
+voxel spatial node and its content.
+
+Tests: `tests/scene_particles_imagery.rs`, 65 pinned cases from
+`tools/cesium/fixtures/scene-particles-imagery.mjs`.
+
+```bash
+cargo test --test scene_particles_imagery
+TZ=UTC node tools/cesium/fixtures/generate.mjs Particle ParticleEmitter BoxEmitter CircleEmitter ConeEmitter SphereEmitter PointCloudShading ImageryLayerFeatureInfo KeyframeNode ImageryConfiguration DiscardEmptyTileImagePolicy
+```
+
 ## Camera
 
 `scene::Camera` starts the large, frame-driven Scene modules. It is the
