@@ -138,7 +138,7 @@ expiration, shared textures, partial content failure, resource bases, CPU
 height queries and renderer/resource ownership. The reference frame harness
 uses explicit host operations and does not establish full browser Scene parity.
 
-`scripts/check-scene.sh` compares **352 actual GPU results** with
+`scripts/check-scene.sh` compares **416 actual GPU results** with
 CesiumJS. The original 24 WebGL2 cases cover log depth, HDR, render/pick/depth
 passes, framebuffer targets and retained uniforms/textures. Another 48 phase
 comparisons cover float and byte plane textures, mutation/partial upload,
@@ -151,8 +151,13 @@ rectangle order, transparent fragments, high-DPI coordinates, edge padding,
 sync/async readback and WebGL1 fallback. This does not establish visual parity
 for unported globe/effects or the newly added picking APIs. Another 64
 comparisons cover the View depth/framebuffer resources with WebGL1/WebGL2,
-HDR, MSAA, scissor and stencil. Sixteen compare actual OIT draws across MRT,
-two-pass fallback, log depth, HDR and reversed submission order.
+HDR, MSAA, scissor and stencil. Sixty-four compare actual OIT draws across MRT,
+two-pass fallback, log depth, HDR, reversed submission order, one/four samples
+and opaque occlusion. Sixteen further comparisons probe the packed depth
+available to classification after globe/tile draws with HDR, log depth and MSAA.
+Scene resolves opaque depth before OIT and updates packed tile depth before
+classification. Depth-only picks skip classification passes. These probes cover
+the depth handoff; full classification-volume rendering still needs validation.
 
 `scene-transforms.mjs` and `scene-picking.mjs` add **452 reference cases**:
 259 transforms, 81 pick culling/rectangle inputs and 112 framebuffer spiral
@@ -181,6 +186,38 @@ that support these features implement clipping uploads and masked stencil clears
 cargo test --test scene_completion --test scene_runtime
 bash scripts/check-scene.sh
 ```
+
+## Model resource loaders
+
+The first model-runtime dependencies now implement the shared `ResourceLoader`
+lifecycle: `BufferLoader`, `MetadataSchemaLoader`, `GltfJsonLoader` and
+`GltfBufferViewLoader`. Calling `load()` repeatedly shares one request and
+failure result. Awaiting returns true when data is available, or false if the
+loader was destroyed while pending. `unload()` releases data; `destroy()` also
+cancels pending work. ResourceClient's host scheduler processes cancelled
+transport requests on its next update. Dropping the final owner also cancels
+pending work. Embedded buffer/schema loads retain the upstream UNLOADED state
+because their data already exists before loading.
+
+`GltfJsonLoader` accepts a parsed pipeline document, a byte view, or a resource
+URL. It parses GLB/JSON, decodes data URI buffers, upgrades legacy glTF, fills
+defaults, checks the pinned required-extension list and removes pipeline extras.
+The result owns cleaned JSON plus embedded and legacy-upgraded buffer sources;
+views consume rewritten bytes without refetching old data. Recognizing required
+extensions here does not implement their model rendering stages.
+
+`GltfBufferViewLoader` produces shared byte views or decompresses
+`EXT_meshopt_compression`: vertex codecs v0/v1, triangle and sequence indices,
+and octahedral, quaternion and exponential filters. Its quaternion filter fixes
+the signed-component handling missing in meshopt-rs 0.1.2. Hosts can supply a
+shared `BufferLoader` lease; views release their own leases after loading.
+
+Ninety-three pinned-source cases cover these five modules. Native tests cover
+shared/failing loads, cancellation, retained byte views and feeding JSON/GLB
+loads into buffer views. A global ResourceCache, GPU vertex/index/texture/image
+loaders, the main GltfLoader/Model pipeline and built-in renderable tile factory
+remain to be ported. The default tileset loader still requires a factory for
+renderable tile content.
 
 ## Camera
 

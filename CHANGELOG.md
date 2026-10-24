@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix MSAA opaque occlusion in OIT and update packed 3D Tiles depth before classification; expand Scene GPU comparisons to 416. Start the model pipeline with five validated resource/JSON/buffer-view loaders, including glTF upgrades, shared requests, cancellation and meshopt filters.
+
 - Add View-owned depth/framebuffer resources, weighted MRT/two-pass OIT, translucent classification plumbing, metadata decoding, depth/drill/ray/height picking and queued most-detailed preload requests. Add pinned-source fixtures and GPU comparisons; Scene, View, Picking and Cesium3DTileset remain partial pending the documented integrations and validation.
 
 - Complete Scene Camera and CameraFlightPath: 3D/2D/Columbus navigation, view fitting, picking, change events, timed flights, callbacks, preload culling and position correction. Validate 1,161 CesiumJS scenarios, renderer snapshots, concurrent cameras and callback resource cleanup.

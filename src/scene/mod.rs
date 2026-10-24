@@ -378,3 +378,16 @@ pub(crate) fn strip_set_index(semantic: &str) -> &str {
         _ => semantic,
     }
 }
+
+pub mod resource_loader;
+pub use resource_loader::{ResourceLoadFuture, ResourceLoader};
+pub mod buffer_loader;
+pub use buffer_loader::BufferLoader;
+pub mod metadata_schema_loader;
+pub use metadata_schema_loader::MetadataSchemaLoader;
+
+pub mod gltf_json_loader;
+pub use gltf_json_loader::{GltfJsonInput, GltfJsonLoader, LoadedGltfJson};
+
+pub mod gltf_buffer_view_loader;
+pub use gltf_buffer_view_loader::GltfBufferViewLoader;

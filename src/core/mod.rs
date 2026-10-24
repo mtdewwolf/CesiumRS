@@ -488,3 +488,4 @@ pub mod ground_polyline_geometry;
 pub use ground_polyline_geometry::GroundPolylineGeometry;
 
 mod meshopt_vertex;
+pub(crate) use meshopt_vertex::decode as decode_meshopt_vertices;
