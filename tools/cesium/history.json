@@ -448,11 +448,19 @@
     "validatedPercent": 46.74
   },
   {
+    "milestone": "Structural metadata and tile helpers",
+    "date": "2026-10-24",
+    "percent": 49.05,
+    "ported": 874,
+    "implemented": 2,
+    "validatedPercent": 47.23
+  },
+  {
     "milestone": "DataSources property foundations",
     "date": "2026-10-24",
-    "percent": 48.99,
-    "ported": 871,
+    "percent": 49.48,
+    "ported": 881,
     "implemented": 2,
-    "validatedPercent": 47.17
+    "validatedPercent": 47.66
   }
 ]

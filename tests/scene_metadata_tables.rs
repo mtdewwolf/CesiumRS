@@ -319,13 +319,14 @@ fn property_table() {
             };
             let mut t = PropertyTable::new(PropertyTableOptions {
                 name: spec.get("name").and_then(Value::as_str).map(str::to_string),
-                id: spec.get("id").map(idx),
+                id: spec.get("id").map(|i| MetadataId::Index(idx(i))),
                 count,
                 extras: spec.get("extras").cloned(),
                 extensions: spec.get("extensions").cloned(),
                 metadata_table,
                 json_metadata_table,
                 batch_table_hierarchy,
+                texture: None,
             });
             script(&a[1], |op, x| match op {
                 "info" => Ok(json!([

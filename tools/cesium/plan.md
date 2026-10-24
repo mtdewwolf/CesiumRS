@@ -66,7 +66,7 @@ applications can implement the existing `Gl` host contract.
 
 ### Scene
 
-Scene has **189 of 482 modules** fully ported, including Camera and
+Scene has **199 of 482 modules** fully ported, including Camera and
 CameraFlightPath. The validated batches cover the foundations, all 24
 GltfPipeline utilities, 3D Metadata schemas/tables/entities, tile bounding
 volumes and implicit tiling.
@@ -86,8 +86,10 @@ has 124 CesiumJS scenarios and Rust integration checks; these do not establish
 full rendering or traversal parity. FrameState has since been validated; Scene, View, Picking and Cesium3DTileset remain partial.
 
 The 3D Tiles binary content parsers (Cesium3DTileFeatureTable, B3dmParser,
-I3dmParser, PntsParser) and the NGA_gpm_local data classes with GltfGpmLoader
-are validated; the B3dm/I3dm/Pnts loaders that build
+I3dmParser, PntsParser), the NGA_gpm_local data classes with GltfGpmLoader,
+and the rest of 3D Metadata (property textures, StructuralMetadata and its
+three parsers) are validated, with preprocess3DTileContent,
+TileReplacementQueue and Cesium3DContentGroup; the B3dm/I3dm/Pnts loaders that build
 model components from them come with GltfLoader. Continue model prerequisites: SPZ resources, then the main
 GltfLoader/Model pipeline. ResourceCache and vertex loading remain partial;
 Draco, ModelComponents, image/texture and GPU index loading are validated. ScreenSpaceCameraController,
