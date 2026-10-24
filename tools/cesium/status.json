@@ -3721,6 +3721,56 @@
     "rust": "scene::model::extensions::gpm::storage_type",
     "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
   },
+  "Scene/Model/Extensions/Gpm/AnchorPointDirect": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::anchor_point_direct",
+    "note": "Position and adjustment parameters for direct storage. Pinned construction cases plus every GltfGpmLoader direct document."
+  },
+  "Scene/Model/Extensions/Gpm/AnchorPointIndirect": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::anchor_point_indirect",
+    "note": "Position, adjustment parameters and covariance for indirect storage. Pinned construction and loader cases."
+  },
+  "Scene/Model/Extensions/Gpm/CorrelationGroup": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::correlation_group",
+    "note": "Group flags (the JSON as given), rotation thetas and Spdcf parameters. Pinned construction and loader cases."
+  },
+  "Scene/Model/Extensions/Gpm/Spdcf": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::spdcf",
+    "note": "A/alpha/beta/T correlation parameters; the range checks are debug-build DeveloperErrors and are not ported. Pinned cases."
+  },
+  "Scene/Model/Extensions/Gpm/PpeSource": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::ppe_source",
+    "note": "All seven sources, keeping upstream's SIGR value of \"VARZ\"."
+  },
+  "Scene/Model/Extensions/Gpm/PpeMetadata": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::ppe_metadata",
+    "note": "Optional min/max and the source string as given. Pinned cases."
+  },
+  "Scene/Model/Extensions/Gpm/PpeTexture": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::ppe_texture",
+    "note": "Per-point error texture reference with traits, noData, offset, scale, index and texCoord. Pinned cases."
+  },
+  "Scene/Model/Extensions/Gpm/MeshPrimitiveGpmLocal": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::mesh_primitive_gpm_local",
+    "note": "A primitive's per-point error textures. Pinned cases."
+  },
+  "Scene/Model/Extensions/Gpm/GltfGpmLocal": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::gltf_gpm_local",
+    "note": "Direct and indirect storage through two constructors, so the debug-build storage consistency errors cannot occur; upstream's getters are kept. Pinned cases."
+  },
+  "Scene/Model/Extensions/Gpm/GltfGpmLoader": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::gltf_gpm_loader",
+    "note": "NGA_gpm_local JSON to GltfGpmLocal: storage type dispatch and error, direct anchor points and upper-triangle covariance, indirect anchor points and correlation groups. JavaScript semantics for short arrays (undefined Cartesian elements, zero matrix elements), non-iterable arrays and null objects. 13 pinned documents."
+  },
   "Scene/GltfPipeline/usesExtension": {
     "status": "ported",
     "rust": "scene::gltf_pipeline::uses_extension",

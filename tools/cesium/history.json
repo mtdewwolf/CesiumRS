@@ -438,5 +438,13 @@
     "ported": 854,
     "implemented": 2,
     "validatedPercent": 46.46
+  },
+  {
+    "milestone": "NGA_gpm_local extension",
+    "date": "2026-10-24",
+    "percent": 48.56,
+    "ported": 864,
+    "implemented": 2,
+    "validatedPercent": 46.74
   }
 ]

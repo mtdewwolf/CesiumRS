@@ -1,0 +1,1 @@
+{"module":"PpeMetadata","cesium":"23.0.0","cases":[{"f":"construct","a":[0,10,"SIGX"],"r":{"min":0,"max":10,"source":"SIGX"}},{"f":"construct","a":[null,null,"VARZ"],"r":{"min":null,"max":null,"source":"VARZ"}},{"f":"construct","a":[-1.5,null,"SIGR"],"r":{"min":-1.5,"max":null,"source":"SIGR"}},{"f":"construct","a":[null,4,"custom"],"r":{"min":null,"max":4,"source":"custom"}}]}
