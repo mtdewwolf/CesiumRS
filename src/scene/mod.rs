@@ -324,7 +324,7 @@ pub use metadata_table_property::{ByteView, MetadataTableProperty, MetadataTyped
 pub use metadata_value::{JsMap, MetadataError, MetadataValue, Numeric};
 pub use property_attribute::PropertyAttribute;
 pub use property_attribute_property::PropertyAttributeProperty;
-pub use property_table::{PropertyTable, PropertyTableOptions};
+pub use property_table::{MetadataId, PropertyTable, PropertyTableOptions};
 pub use tile_bounding_region::{TileBoundingRegion, TileBoundingRegionOptions};
 pub use tile_bounding_s2_cell::{TileBoundingS2Cell, TileBoundingS2CellOptions};
 pub use tile_bounding_sphere::TileBoundingSphere;
@@ -431,3 +431,24 @@ pub use gltf_image_loader::{GltfImage, GltfImageLoader, LoadedGltfImage};
 
 pub mod gltf_texture_loader;
 pub use gltf_texture_loader::{GltfTextureLoader, GltfTextureOptions, ModelImageHost, ResourceUploadBudget};
+
+pub mod property_texture_property;
+pub use property_texture_property::{GltfTextures, PropertyTextureProperty};
+pub mod property_texture;
+pub use property_texture::PropertyTexture;
+pub mod structural_metadata;
+pub use structural_metadata::{StructuralMetadata, StructuralMetadataOptions, StructuralMetadataWarning};
+pub mod get_metadata_property;
+pub use get_metadata_property::get_metadata_property;
+pub mod parse_structural_metadata;
+pub use parse_structural_metadata::{parse_structural_metadata, ParseStructuralMetadataOptions};
+pub mod parse_feature_metadata_legacy;
+pub use parse_feature_metadata_legacy::{parse_feature_metadata_legacy, ParseFeatureMetadataLegacyOptions};
+pub mod parse_batch_table;
+pub use parse_batch_table::{parse_batch_table, ParseBatchTableOptions};
+pub mod preprocess_3d_tile_content;
+pub use preprocess_3d_tile_content::{preprocess_3d_tile_content, PreprocessedTileContent, TileContentPayload};
+pub mod tile_replacement_queue;
+pub use tile_replacement_queue::TileReplacementQueue;
+pub mod cesium_3d_content_group;
+pub use cesium_3d_content_group::Cesium3DContentGroup;

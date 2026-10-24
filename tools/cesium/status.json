@@ -4295,5 +4295,55 @@
     "status": "ported",
     "rust": "scene::gltf_texture_loader",
     "note": "Cached image leases, deferred uploads, glTF samplers, compressed no-mipmap fallback, NPOT host resizing, typed/compressed mip chains, destruction and statistics. 40 pinned cases plus real PNG/JPEG/WebP/KTX2 WebGL1/2 comparisons, quota separation, error/retry and shared-decode checks."
+  },
+  "Scene/PropertyTextureProperty": {
+    "status": "ported",
+    "rust": "scene::property_texture_property",
+    "note": "Texture info plus channels: a texture reader over the model's textures by glTF index, channel indices as \"rgba\" letters with charAt's truncation and out-of-range empties, and offset/scale inherited from the class property and unpacked for uniforms. A metadata vector scale shares the texture info's scale key; the reader keeps only a number. 12 pinned cases in tests/scene_structural_metadata.rs."
+  },
+  "Scene/PropertyTexture": {
+    "status": "ported",
+    "rust": "scene::property_texture",
+    "note": "Properties of one class stored in textures, keyed in JavaScript order; ids are indices or legacy dictionary keys (MetadataId). Direct CesiumJS cases in tests/scene_structural_metadata.rs."
+  },
+  "Scene/StructuralMetadata": {
+    "status": "ported",
+    "rust": "scene::structural_metadata",
+    "note": "Schema with property tables, textures and attributes; table count, byte length, statistics and lookups. destroy is Drop. Generic over the GL host for its property textures. Direct CesiumJS cases in tests/scene_structural_metadata.rs."
+  },
+  "Scene/getMetadataProperty": {
+    "status": "ported",
+    "rust": "scene::get_metadata_property",
+    "note": "First property texture of the class with the property; attributes are not searched, as upstream. Direct CesiumJS cases in tests/scene_structural_metadata.rs."
+  },
+  "Scene/parseStructuralMetadata": {
+    "status": "ported",
+    "rust": "scene::parse_structural_metadata",
+    "note": "EXT_structural_metadata tables, textures and attributes, plus the RGBA8 property table texture: every GPU-compatible class property in class order, missing ones filled with noData written as upstream does (unscaled j + k offsets, enum and array-of-scalar failures), size checks against the context limit, and console/one-time warnings returned. Textures are uploaded through the Renderer and compared byte for byte; 13 pinned cases."
+  },
+  "Scene/parseFeatureMetadataLegacy": {
+    "status": "ported",
+    "rust": "scene::parse_feature_metadata_legacy",
+    "note": "EXT_feature_metadata feature tables and textures sorted by UTF-16 key with string ids, channel strings to indices, and texture info deep-combined with each property. 3 pinned extensions in tests/scene_structural_metadata.rs."
+  },
+  "Scene/parseBatchTable": {
+    "status": "ported",
+    "rust": "scene::parse_batch_table",
+    "note": "3D Tiles 1.0 batch tables: JSON, hierarchy (including the deprecated HIERARCHY) and binary properties as a transcoded _batchTable class, either a binary MetadataTable or point cloud property attributes with custom vertex attributes (sanitized GLSL names, placeholders, Draco arrays, float casts). JavaScript's byte offset arithmetic and typed-array RangeErrors; warnings returned. 16 pinned batch tables."
+  },
+  "Scene/preprocess3DTileContent": {
+    "status": "ported",
+    "rust": "scene::preprocess_3d_tile_content",
+    "note": "Binary payloads by magic number (glTF renamed glb), JSON by root/asset/tileAvailability/type/voxelTable in upstream's order, and its errors including null JSON. 29 pinned payloads in tests/scene_tile_content.rs."
+  },
+  "Scene/TileReplacementQueue": {
+    "status": "ported",
+    "rust": "scene::tile_replacement_queue",
+    "note": "Least-recently-rendered tile list with the start-of-frame marker and trimming; the queue keeps the links by tile id and unloads through a callback. Nine pinned scripts (one fixed, eight random, 498 steps) compared after every step in both directions."
+  },
+  "Scene/Cesium3DContentGroup": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_content_group",
+    "note": "Holds a content's group metadata (an owned copy, as GroupMetadata owns its properties). Direct CesiumJS cases in tests/scene_tile_content.rs."
   }
 }
