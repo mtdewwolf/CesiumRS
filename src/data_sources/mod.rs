@@ -1,4 +1,4 @@
-//! Typed, time-varying entity properties and their definition-change events.
+//! Time-varying properties, typed entity components, collections and references.
 pub mod events;
 pub use events::{DefinitionChanged, PropertyListener, Subscription, WeakDefinitionChanged};
 pub mod property;
@@ -44,3 +44,26 @@ pub mod velocity_vector_property;
 pub use velocity_vector_property::VelocityVectorProperty;
 pub mod velocity_orientation_property;
 pub use velocity_orientation_property::VelocityOrientationProperty;
+pub mod change_event;
+pub use change_event::{ChangeEvent, ChangeListener, WeakChangeEvent};
+pub mod dynamic_value;
+pub use dynamic_value::{BagValues, ComponentValue, DynamicValue};
+pub mod entity_component;
+pub use entity_component::{ComponentRef, EntityComponent, PositionComponent, PropertyComponent, PropertyInput};
+pub mod create_property_descriptor;
+pub use create_property_descriptor::{
+    create_property_descriptor, ComponentFactory, PropertyChange, PropertyDescriptor,
+};
+pub mod create_raw_property_descriptor;
+pub use create_raw_property_descriptor::create_raw_property_descriptor;
+pub mod property_bag;
+pub use property_bag::PropertyBag;
+
+pub mod entity;
+pub use entity::{
+    Availability, Entity, EntityChange, EntityOptions, EntityRef, EntityTypeRegistry, HeightReferenceOptions,
+};
+pub mod entity_collection;
+pub use entity_collection::{CollectionChange, EntityCollection, EntityCollectionOptions, EntitySource};
+pub mod reference_property;
+pub use reference_property::ReferenceProperty;

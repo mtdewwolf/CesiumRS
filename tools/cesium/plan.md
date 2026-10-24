@@ -161,9 +161,9 @@ and CompositeProperty. The batch includes 206 pinned CesiumJS scenarios,
 Owned values, Rc property references, local definition events and observable Core
 intervals provide the prerequisites for Entity and document loading.
 
-Position/velocity/orientation properties are now validated below. Next implement
-PropertyBag and entity collections, followed by graphics definitions, data-source
-collections and the loaders. CzmlDataSource and KmlDataSource are the largest loaders; their property
+Position/velocity/orientation properties and the entity foundation are now
+validated below. Next implement composite collections, graphics definitions,
+data-source clocks/collections and the loaders. CzmlDataSource and KmlDataSource are the largest loaders; their property
 and entity dependencies come first. GeoJSON and GPX follow the same foundation.
 No entity, visualizer or document-loader module is counted as complete by this
 batch. See [DataSources API and validation](docs/data-sources.md).
@@ -178,5 +178,22 @@ PositionContext reuses Core transforms with TEME fallback, loaded IAU/EOP data
 or a custom central-body transform. The batch adds 412 pinned scenarios, eight
 native lifecycle checks and real browser evaluation with omitted times.
 
-Next implement PropertyBag and Entity/EntityCollection, then graphics definitions,
-data-source collections and document loading. See [DataSources](docs/data-sources.md).
+PropertyBag, Entity/EntityCollection and references are now validated below.
+See [DataSources](docs/data-sources.md).
+
+
+### DataSources entity foundation
+
+DataSources has 23 of 108 modules validated. Six modules add property/raw accessor
+slots, heterogeneous PropertyBag values, Entity hierarchy/availability/transforms,
+batched EntityCollection membership and lazy ReferenceProperty paths. The batch
+adds 126 pinned scenarios, 14 native lifecycle checks and browser ownership/clock
+coverage, bringing DataSources to 744 reference cases.
+
+Entity graphics slots accept typed EntityComponent implementations; concrete
+Graphics classes and automatic raw graphics-object conversion remain unported.
+Scoped registries replace JavaScript prototype registration. Weak references and
+RAII subscriptions prevent ownership cycles and stale removed-child callbacks.
+
+Next implement CompositeEntityCollection, concrete graphics definitions,
+DataSourceClock/data-source collections and loaders. See [DataSources](docs/data-sources.md).

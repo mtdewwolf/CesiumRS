@@ -1,9 +1,9 @@
 # DataSources
 
-The first **17 of 108 DataSources modules** are ported against `@cesium/engine`
-23.0.0. They provide typed values, position/reference-frame conversion and motion
-properties needed by Entity and the document loaders. Entity, visualizers, CZML,
-KML, GeoJSON and GPX remain unported. Scene status is tracked separately in [scene.md](scene.md).
+The first **23 of 108 DataSources modules** are ported against `@cesium/engine`
+23.0.0. They provide values, positions, motion, property bags, entities, collections
+and references. Concrete graphics classes, composite collections, visualizers,
+CZML, KML, GeoJSON and GPX remain unported. Scene status is tracked separately in [scene.md](scene.md).
 
 | Cesium module | Rust API | Behavior |
 | --- | --- | --- |
@@ -24,6 +24,12 @@ KML, GeoJSON and GPX remain unported. Scene status is tracked separately in [sce
 | `ScaledPositionProperty` | `ScaledPositionProperty` | Ellipsoid geodetic-surface projection of a position |
 | `VelocityVectorProperty` | `VelocityVectorProperty` | Normalized direction or raw velocity with endpoint fallback |
 | `VelocityOrientationProperty` | `VelocityOrientationProperty` | Motion-derived quaternion orientation and ellipsoid settings |
+| `createPropertyDescriptor` | `create_property_descriptor` | Owned slots, value factories, identity suppression and child change forwarding |
+| `createRawPropertyDescriptor` | `create_raw_property_descriptor` | Raw slots without automatic ConstantProperty wrapping |
+| `PropertyBag` | `PropertyBag` | Ordered heterogeneous fields, result reuse, equality, clone/merge contracts and child events |
+| `Entity` | `Entity` and `EntityTypeRegistry` | Component slots, hierarchy/show, availability, merge and model/height transforms |
+| `EntityCollection` | `EntityCollection` | ID lookup, membership, batched/reentrant notifications, show and availability bounds |
+| `ReferenceProperty` | `ReferenceProperty` | Lazy nested/escaped references, type/frame forwarding, equality and target changes |
 
 ## Values, time and ownership
 
@@ -167,6 +173,57 @@ Orientation uses Core's position/velocity rotation and quaternion conversion;
 it also preserves the earlier position used by a backward difference. Each
 evaluation owns its scratch values, allowing nested motion evaluations.
 
+## Entities and components
+
+`Entity::new(EntityOptions)` returns `Rc<Entity>`. It supports every built-in
+slot name, named/custom properties, tracking frames, parents, show propagation,
+availability, merging, model matrices and height-reference transforms. Matrix
+methods take an explicit time and optional reusable result; terrain capability
+queries take the renderer's depth-texture support. Availability reuses observable
+`PropertyIntervals<()>`.
+
+`PropertyInput` holds a raw `DynamicValue` or `Rc<dyn EntityComponent>`.
+`DynamicValue` supports null, booleans, numbers, strings, Cartesian vectors,
+quaternions, colors, matrices, dates, identity-bearing JSON and evaluated records.
+`None` represents undefined. `PropertyComponent::wrap` adapts supported typed
+properties; `PositionComponent::wrap` preserves position/frame behavior. Adapters
+preserve the underlying property's identity across repeated wrapping.
+
+`EntityComponent` supplies evaluation, definition events, equality and optional
+clone/merge, nested-property, material-type and position contracts. Graphics slots
+accept these typed components. **Concrete Graphics classes and automatic raw
+JavaScript graphics-object conversion are not ported by this batch.** Position,
+properties and ordinary property slots have their native conversions. Custom
+`EntityTypeRegistry` factories are scoped and shared explicitly, replacing
+JavaScript's mutable Entity prototype; registration affects subsequently created
+entities. Raw custom fields use the raw descriptor contract.
+
+`PropertyBag` preserves field insertion order and JavaScript integer-key ordering
+for object inputs/results. Evaluation reads one clock value and snapshots fields;
+removed fields no longer notify the bag. A supplied result retains unrelated keys.
+Merge invokes a component's merge method when available, cloning an absent source
+component only when both clone and merge are supported; otherwise it shares the
+component. PropertyBag itself has no clone contract, matching Cesium.
+
+`ChangeEvent<T>` adds named payloads with the same local `Subscription` semantics
+as definition events. Entity changes expose weak entity pointers and old/new
+inputs; collection changes contain owned added/removed/changed snapshots. Parent
+edges are strong, child lists and collection back-pointers are weak, and parent
+cycles are rejected. Collections own their entities and detach all membership
+subscriptions on removal, including entities added and removed while suspended.
+Callbacks run after mutable state borrows have been released.
+
+`ReferenceProperty::from_string(collection, "vehicle#properties.speed")` resolves
+lazily; backslashes escape dots, hashes and backslashes in identifiers/paths.
+`as_position()` supplies a typed position-property facade. References retain their
+collection and target entity weakly: the application must keep the collection
+alive. Collection owners are weak too. Each resolution verifies current membership,
+including replacement under event suspension, and discards retired target
+subscriptions. Source notification timing is retained for normal operations.
+Factory errors leave existing values/subscriptions intact, and reentrant setters
+cannot reinstall a retired slot's child subscription. These ownership/reentrancy
+guarantees are deliberate native improvements over the pinned source.
+
 ## Validation and remaining work
 
 `tests/data_sources_properties.rs` replays **206 pinned CesiumJS scenarios** across
@@ -191,8 +248,17 @@ exercise reentrant callbacks/arrays, composite rewiring, subscription cleanup,
 coherent clocks, transform errors, nested motion and delayed Earth data. The
 Chromium harness also evaluates every position/motion class with omitted times.
 
-Next, implement the property bag and entity collections. Then port graphics definitions, data-source collections and
-the loaders in dependency order. The largest document modules are CzmlDataSource
+`tests/data_sources_entities.rs` adds **126 pinned scenarios** across the six
+entity modules: descriptors, object-key ordering, component factories and merges,
+show hierarchy, availability, model/height matrices, scratch reuse, collection
+coalescing/reentrancy and escaped references. **14 native lifecycle tests** cover
+payload nesting/drop, descriptor renewal/failure, child removal, parent ownership,
+old-value lifetimes and suspended ID replacement. The Chromium harness checks
+browser clocks, batching, hierarchy, reference evaluation and listener cleanup.
+DataSources now has **744 pinned scenarios** overall.
+
+Next, implement CompositeEntityCollection, concrete graphics definitions,
+DataSourceClock/data-source collections and the loaders in dependency order. The largest document modules are CzmlDataSource
 (5,142 upstream lines), KmlDataSource (4,249), GeoJsonDataSource (1,064) and
 GpxDataSource (1,018). Their property/entity dependencies must exist before their
 loader behavior can be completed and validated.
