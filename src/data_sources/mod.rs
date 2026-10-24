@@ -21,3 +21,26 @@ pub mod time_interval_collection_property;
 pub use time_interval_collection_property::TimeIntervalCollectionProperty;
 pub mod composite_property;
 pub use composite_property::CompositeProperty;
+
+pub mod position_property;
+pub use position_property::{FrameConversion, FrameTransform, PositionContext, PositionProperty, PositionPropertyRef};
+pub mod constant_position_property;
+pub use constant_position_property::ConstantPositionProperty;
+pub mod callback_position_property;
+pub use callback_position_property::CallbackPositionProperty;
+pub mod sampled_position_property;
+pub use sampled_position_property::SampledPositionProperty;
+pub mod time_interval_collection_position_property;
+pub use time_interval_collection_position_property::TimeIntervalCollectionPositionProperty;
+
+pub mod composite_position_property;
+mod interval_subscriptions;
+pub use composite_position_property::CompositePositionProperty;
+pub mod position_property_array;
+pub use position_property_array::PositionPropertyArray;
+pub mod scaled_position_property;
+pub use scaled_position_property::ScaledPositionProperty;
+pub mod velocity_vector_property;
+pub use velocity_vector_property::VelocityVectorProperty;
+pub mod velocity_orientation_property;
+pub use velocity_orientation_property::VelocityOrientationProperty;

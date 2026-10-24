@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 49.7% implemented; 47.9% validated** (892 validated modules, 2 implemented awaiting validation, and 6 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
+**Status: 50.2% implemented; 48.3% validated** (902 validated modules, 2 implemented awaiting validation, and 6 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
 
 ## What is ported
 
@@ -147,7 +147,7 @@ The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **46,988 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **47,400 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
 
 ```bash
 cargo test --all-features                    # all fixtures + native host integration
@@ -167,7 +167,8 @@ This leaves other fixture files untouched.
 ## DataSources properties
 
 `src/data_sources` provides typed constant, callback, array, sampled and interval
-properties: seven validated modules with 206 pinned CesiumJS cases. Sampling
+properties: 17 validated modules with 618 pinned CesiumJS cases, including position frames,
+velocity and orientation. Sampling
 supports Linear, Lagrange and Hermite interpolation, derivatives, quaternion
 conversion and bounded extrapolation. Definition events support local Rc
 callbacks and release child subscriptions with their owners. Entity, visualizers
@@ -198,7 +199,7 @@ Near-antipodal routes use a deterministic great-circle approximation when Vincen
 3. ✅ **Shaders complete:** all 307 `Source/Shaders` modules match their CesiumJS exports byte for byte; see [Shaders](docs/shaders.md).
 4. ✅ **Workers complete:** all 52 applicable modules, including `decodeDraco` with `dequantizeInShader`; see [Workers](docs/workers.md).
 5. **Scene:** 210 of 482 modules validated, with six partial and two unchecked. Resource caching and Draco/GPU geometry loading are in progress. The b3dm/i3dm/pnts parsers and 3D Metadata parsing are validated. Next: SPZ loading, the GltfLoader/Model pipeline with its structural metadata loader, and the 3D Tiles content loaders; see [Scene](docs/scene.md).
-6. **DataSources:** 7 of 108 modules validated. Constant, callback, array, sampled and interval/composite properties are available; next are position properties and Entity/EntityCollection, then document loaders. See [DataSources](docs/data-sources.md).
+6. **DataSources:** 17 of 108 modules validated. Typed properties, frame-aware positions, velocity and orientation are available; next are PropertyBag and Entity/EntityCollection, then document loaders. See [DataSources](docs/data-sources.md).
 
 ## Examples and benchmarks
 

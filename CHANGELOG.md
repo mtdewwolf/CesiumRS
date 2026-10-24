@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Port ten DataSources position/motion modules: reference-frame conversion, constant/callback/sampled positions, interval/composite positions, arrays, surface scaling, velocity and orientation. Validate 412 pinned scenarios, native lifecycle/ownership and browser clocks; share Core Earth/Moon transforms through PositionContext.
+
 - Port `Particle`, the `ParticleEmitter` trait and the box, circle, cone and sphere emitters (seeded emission matches CesiumJS bit for bit), plus `PointCloudShading`, `ImageryLayerFeatureInfo`, `KeyframeNode`, `ImageryConfiguration` and `DiscardEmptyTileImagePolicy`. 65 pinned CesiumJS cases.
 
 - Fix reentrant DataSources callbacks: preserve renewed subscriptions and evaluate PropertyArray children from one definition. Add regressions for renewal/cancellation, stale handles, duplicate registration counts and array replacement; document the native lifecycle contracts.
