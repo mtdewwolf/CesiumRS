@@ -137,6 +137,9 @@ impl ResourceCache {
             client,
         }
     }
+    pub(crate) fn client(&self) -> ResourceClient {
+        self.client.clone()
+    }
     pub fn downgrade(&self) -> WeakResourceCache {
         WeakResourceCache { inner: Rc::downgrade(&self.inner), client: self.client.clone() }
     }

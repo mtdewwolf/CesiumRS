@@ -11,6 +11,89 @@ mod browser {
         JsValue::from_str(&e.to_string())
     }
     #[wasm_bindgen]
+    pub async fn scene_image_texture(gl: JsValue, config: &str) -> Result<String, JsValue> {
+        use cesium_rs::{
+            core::{
+                browser_host::{BrowserImageHost, BrowserTransport},
+                ktx2_transcoder::SupportedTextureFormats,
+            },
+            scene::{gltf_pipeline::BufferSource, *},
+        };
+        use std::{collections::BTreeMap, rc::Rc, sync::Arc};
+        let c: serde_json::Value = serde_json::from_str(config).map_err(error)?;
+        let context = if c["webgl1"] == true {
+            Context::new_webgl1(BrowserGl::new_webgl1(gl).map_err(error)?)
+        } else {
+            Context::new_webgl2(BrowserGl::new(gl).map_err(error)?)
+        };
+        let cache = ResourceCache::new(ResourceClient::new(Rc::new(BrowserTransport::default())));
+        let raw = c["raw"].as_array().unwrap().iter().map(|v| v.as_u64().unwrap() as u8).collect::<Vec<_>>();
+        let sources = BTreeMap::from([(0, BufferSource::new(raw))]);
+        let resource = Resource::new(c["resource"].as_str().unwrap()).unwrap();
+        let request = GltfResource {
+            document: Arc::new(LoadedGltfJson {
+                json: c["gltf"].clone(),
+                embedded_buffers: sources.clone(),
+                buffer_sources: sources,
+            }),
+            base: resource.clone(),
+            resource,
+        };
+        let seed = cache
+            .embedded_buffer_loader(&request.resource, 0, request.document.buffer_sources.get(&0).cloned())
+            .map_err(error)?;
+        let host = Rc::new(BrowserImageHost);
+        let options = GltfTextureOptions {
+            asynchronous: c["asynchronous"] == true,
+            supported_texture_formats: SupportedTextureFormats { s3tc: c["s3tc"] == true, ..Default::default() },
+            ..Default::default()
+        };
+        let loader = cache
+            .texture_loader(&request, json!({"index":0}), context.clone(), host.clone(), options)
+            .map_err(error)?;
+        let duplicate =
+            cache.texture_loader(&request, json!({"index":0}), context.clone(), host, options).map_err(error)?;
+        let shared = loader.ptr_eq(&duplicate);
+        loader.load().await.map_err(error)?;
+        let loaded = cache.len();
+        let mut camera = Camera::new(CameraOptions::new(8., 8.));
+        let snapshot = camera.uniform_camera();
+        let culling = camera.frustum.compute_culling_volume(snapshot.position, snapshot.direction, snapshot.up);
+        let mut frame = FrameState::new(
+            UniformFrame::new(snapshot, JulianDate::new(2451545., 0., TimeStandard::Tai)),
+            culling,
+            [8, 8],
+        );
+        let quota = Rc::new(ResourceUploadBudget::new(0, 0));
+        frame.job_scheduler = Some(FrameResource::new(quota.clone()));
+        let first = loader.process(&frame).map_err(error)?;
+        quota.reset(0, 1);
+        let ready = loader.process(&frame).map_err(error)?;
+        let texture = loader.texture().unwrap();
+        let sampler = texture.sampler();
+        let bytes = texture.size_in_bytes();
+        let statistics = cache.statistics().borrow().textures_byte_length;
+        let processed = cache.len();
+        let quad = ViewportQuad::new(&context).map_err(error)?;
+        let program=ShaderProgram::from_sources(&context,&ViewportQuad::<BrowserGl>::shader_options(ShaderSource::new("in vec2 v_textureCoordinates;uniform sampler2D image;uniform float scale;void main(){out_FragColor=texture(image,v_textureCoordinates*scale);}"))).map_err(error)?;
+        let mut command = DrawCommand::new(quad.vertex_array(), &program);
+        command.textures = vec![("image".into(), &*texture)];
+        command.uniforms.push(("scale".into(), UniformValue::Float(vec![c["scale"].as_f64().unwrap_or(2.) as f32])));
+        ClearCommand::all().execute(&context, &PassState::default()).map_err(error)?;
+        command.execute(&context, &PassState::default()).map_err(error)?;
+        let pixels = context.read_pixels(TextureRegion { x: 0, y: 0, width: 8, height: 8 }).map_err(error)?;
+        drop(loader);
+        let alive = !texture.is_destroyed();
+        drop(duplicate);
+        drop(seed);
+        let result = json!({"shared":shared,"loadedEntries":loaded,"processedEntries":processed,"first":first,"ready":ready,"dimensions":texture.dimensions(),"format":texture.pixel_format()as u32,"flipY":texture.flip_y(),"preMultiplyAlpha":texture.pre_multiply_alpha(),"sampler":[sampler.wrap_s as u32,sampler.wrap_t as u32,sampler.minification_filter as u32,sampler.magnification_filter as u32],"bytes":bytes,"statistics":statistics,"pixels":pixels,"aliveWithLease":alive,"destroyed":texture.is_destroyed(),"remaining":cache.len(),"finalStatistics":cache.statistics().borrow().textures_byte_length});
+        drop(command);
+        quad.destroy().map_err(error)?;
+        program.destroy().map_err(error)?;
+        context.destroy().map_err(error)?;
+        Ok(result.to_string())
+    }
+    #[wasm_bindgen]
     pub async fn scene_geometry_buffers(gl: JsValue, config: &str) -> Result<String, JsValue> {
         use cesium_rs::scene::{gltf_pipeline::BufferSource, *};
         use std::{collections::BTreeMap, rc::Rc, sync::Arc};

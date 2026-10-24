@@ -59,7 +59,7 @@ impl BufferUploadBudget {
     pub fn reset(&self, jobs: usize) {
         self.remaining.set(jobs);
     }
-    fn claim(&self) -> bool {
+    pub(crate) fn claim(&self) -> bool {
         let n = self.remaining.get();
         if n == 0 {
             false
@@ -344,10 +344,14 @@ impl<G: Gl + 'static> GeometryLoader<G> {
         }
         if self.options.load_buffer && self.options.asynchronous {
             if let Some(scheduler) = &frame.job_scheduler {
-                let budget = scheduler
-                    .get::<Rc<BufferUploadBudget>>()
-                    .ok_or_else(|| RuntimeError::new("Unsupported buffer upload scheduler"))?;
-                if !budget.claim() {
+                let allowed = if let Some(b) = scheduler.get::<Rc<BufferUploadBudget>>() {
+                    b.claim()
+                } else if let Some(b) = scheduler.get::<Rc<ResourceUploadBudget>>() {
+                    b.buffers.claim()
+                } else {
+                    return Err(RuntimeError::new("Unsupported buffer upload scheduler"));
+                };
+                if !allowed {
                     return Ok(false);
                 }
             }
