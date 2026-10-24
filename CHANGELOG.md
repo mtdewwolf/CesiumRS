@@ -4,6 +4,24 @@
 
 - Add the CesiumJS parity benchmark (`scripts/bench.sh`, [docs](docs/benchmarks.md)). It times 14 workloads on identical inputs: CesiumRS native and wasm against CesiumJS in Node and Chromium. Every output is checked against the CesiumJS fixtures or a cross-side checksum before it is timed.
 
+- Fix reentrant DataSources callbacks: preserve renewed subscriptions and evaluate PropertyArray children from one definition. Add regressions for renewal/cancellation, stale handles, duplicate registration counts and array replacement; document the native lifecycle contracts.
+
+- Start DataSources with seven property modules: typed constant/callback/array properties, sampled interpolation and derivatives, raw interval values and composites. Validate 206 pinned CesiumJS scenarios, native callback/ownership lifecycle and browser default clocks. Entity and document loaders remain unported.
+
+- Port the rest of 3D Metadata and four 3D Tiles helpers. The metadata modules are `PropertyTextureProperty`, `PropertyTexture`, `StructuralMetadata`, `getMetadataProperty` and the three parsers: `parseStructuralMetadata` (including the RGBA8 property table texture), `parseFeatureMetadataLegacy` and `parseBatchTable`. The helpers are `preprocess3DTileContent`, `TileReplacementQueue` and `Cesium3DContentGroup`. `PropertyTable` now carries its texture and accepts legacy string ids (`MetadataId`). 94 pinned CesiumJS cases.
+
+- Port the `NGA_gpm_local` extension: `GltfGpmLoader` and nine data classes (anchor points, correlation groups, `Spdcf`, `GltfGpmLocal`, per-point error textures and metadata), with 35 pinned CesiumJS cases.
+
+- Port the 3D Tiles binary content parsers: `Cesium3DTileFeatureTable`, `B3dmParser` (current and both legacy headers), `I3dmParser` and `PntsParser` (quantized positions, all color and normal encodings, binary globals, Draco point compression). 59 pinned CesiumJS tiles cover JavaScript's typed-array errors, unaligned glb copies and every parser error.
+
+- Port glTF image and texture loaders with 119 pinned cases and 128 additional WebGL1/2 comparisons. Add cached image decoding, KTX2/Basis mip chains, deferred texture uploads, NPOT resizing, cancellation and GPU resource accounting. Extend upload budgets to separate geometry and texture work; ResourceCache and vertex loading remain partial pending SPZ.
+
+- Integrate ModelComponents and initialized Draco workers with the shared model cache and GPU loaders. Preserve both parity suites (293 additional cases), unify cache key/texture helpers, and retain lease cancellation and renderer ownership across the overlapping Scene batches.
+
+- Add shared model resource caching, glTF texture utilities and frame-driven Draco/vertex/index loading, with 184 new CesiumJS cases and 24 WebGL comparisons. Cache and vertex loading remain partial pending image/texture/SPZ paths; the main GltfLoader/Model pipeline remains unported. Correct JavaScript number stringification at the `1e-7` boundary for schema cache identities.
+
+- Fix MSAA opaque occlusion in OIT and update packed 3D Tiles depth before classification; expand Scene GPU comparisons to 416. Start the model pipeline with five validated resource/JSON/buffer-view loaders, including glTF upgrades, shared requests, cancellation and meshopt filters.
+
 - Add View-owned depth/framebuffer resources, weighted MRT/two-pass OIT, translucent classification plumbing, metadata decoding, depth/drill/ray/height picking and queued most-detailed preload requests. Add pinned-source fixtures and GPU comparisons; Scene, View, Picking and Cesium3DTileset remain partial pending the documented integrations and validation.
 
 - Complete Scene Camera and CameraFlightPath: 3D/2D/Columbus navigation, view fitting, picking, change events, timed flights, callbacks, preload culling and position correction. Validate 1,161 CesiumJS scenarios, renderer snapshots, concurrent cameras and callback resource cleanup.

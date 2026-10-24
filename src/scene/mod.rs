@@ -324,7 +324,7 @@ pub use metadata_table_property::{ByteView, MetadataTableProperty, MetadataTyped
 pub use metadata_value::{JsMap, MetadataError, MetadataValue, Numeric};
 pub use property_attribute::PropertyAttribute;
 pub use property_attribute_property::PropertyAttributeProperty;
-pub use property_table::{PropertyTable, PropertyTableOptions};
+pub use property_table::{MetadataId, PropertyTable, PropertyTableOptions};
 pub use tile_bounding_region::{TileBoundingRegion, TileBoundingRegionOptions};
 pub use tile_bounding_s2_cell::{TileBoundingS2Cell, TileBoundingS2CellOptions};
 pub use tile_bounding_sphere::TileBoundingSphere;
@@ -378,3 +378,77 @@ pub(crate) fn strip_set_index(semantic: &str) -> &str {
         _ => semantic,
     }
 }
+
+pub mod resource_loader;
+pub use resource_loader::{ResourceLoadFuture, ResourceLoader};
+pub mod buffer_loader;
+pub use buffer_loader::BufferLoader;
+pub mod metadata_schema_loader;
+pub use metadata_schema_loader::MetadataSchemaLoader;
+
+pub mod gltf_json_loader;
+pub use gltf_json_loader::{GltfJsonInput, GltfJsonLoader, LoadedGltfJson};
+
+pub mod gltf_buffer_view_loader;
+pub use gltf_buffer_view_loader::GltfBufferViewLoader;
+
+pub mod gltf_loader_util;
+pub use gltf_loader_util::{GltfLoaderUtil, ModelTextureReader};
+pub mod resource_cache_key;
+pub use resource_cache_key::{BufferKeyOptions, GltfKeyContext, ResourceCacheKey, VertexKeySource};
+pub mod resource_cache_statistics;
+pub use resource_cache_statistics::ResourceCacheStatistics;
+
+pub mod resource_cache;
+pub use resource_cache::{CacheLease, CacheResourceKind, ResourceCache, WeakResourceCache};
+
+pub mod gltf_draco_loader;
+pub use gltf_draco_loader::{DracoDecodeWorker, GltfDracoLoader};
+
+pub mod gltf_geometry_loader;
+pub use gltf_geometry_loader::{
+    BufferUploadBudget, GltfIndexBufferLoader, GltfResource, GltfVertexBufferLoader, GpuBufferOptions,
+    ModelQuantization, VertexBufferSource,
+};
+
+pub mod draco_loader;
+pub mod model_components;
+pub use draco_loader::{DracoLoader, DracoTask};
+pub use gltf_draco_loader::DecodedDraco;
+pub use resource_cache_key::{IndexBufferKeyOptions, SchemaSource, VertexBufferKeyOptions};
+
+pub mod cesium_3d_tile_feature_table;
+pub use cesium_3d_tile_feature_table::{Cesium3DTileFeatureTable, GlobalProperty};
+pub mod b3dm_parser;
+pub use b3dm_parser::{ParsedB3dm, TileFormatWarning};
+pub mod i3dm_parser;
+pub use i3dm_parser::ParsedI3dm;
+pub mod pnts_parser;
+pub use pnts_parser::{ParsedPnts, PntsAttribute, PntsDraco};
+
+pub mod gltf_image_loader;
+pub use gltf_image_loader::{GltfImage, GltfImageLoader, LoadedGltfImage};
+
+pub mod gltf_texture_loader;
+pub use gltf_texture_loader::{GltfTextureLoader, GltfTextureOptions, ModelImageHost, ResourceUploadBudget};
+
+pub mod property_texture_property;
+pub use property_texture_property::{GltfTextures, PropertyTextureProperty};
+pub mod property_texture;
+pub use property_texture::PropertyTexture;
+pub mod structural_metadata;
+pub use structural_metadata::{StructuralMetadata, StructuralMetadataOptions, StructuralMetadataWarning};
+pub mod get_metadata_property;
+pub use get_metadata_property::get_metadata_property;
+pub mod parse_structural_metadata;
+pub use parse_structural_metadata::{parse_structural_metadata, ParseStructuralMetadataOptions};
+pub mod parse_feature_metadata_legacy;
+pub use parse_feature_metadata_legacy::{parse_feature_metadata_legacy, ParseFeatureMetadataLegacyOptions};
+pub mod parse_batch_table;
+pub use parse_batch_table::{parse_batch_table, ParseBatchTableOptions};
+pub mod preprocess_3d_tile_content;
+pub use preprocess_3d_tile_content::{preprocess_3d_tile_content, PreprocessedTileContent, TileContentPayload};
+pub mod tile_replacement_queue;
+pub use tile_replacement_queue::TileReplacementQueue;
+pub mod cesium_3d_content_group;
+pub use cesium_3d_content_group::Cesium3DContentGroup;

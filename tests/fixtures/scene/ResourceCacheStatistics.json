@@ -1,0 +1,1 @@
+{"module":"ResourceCacheStatistics","cesium":"23.0.0","cases":[{"f":"sequence","a":[[["geometry","a",8,4],["geometry","a",100,100],["texture","a",16],["geometry","b",0,0],["remove","absent"],["remove","a"],["texture","b",4],["clear"],["remove","b"]]],"r":[[12,0],[12,0],[12,16],[12,16],[12,16],[0,0],[0,4],[0,0],[0,0]]}]}

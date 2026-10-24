@@ -3721,6 +3721,56 @@
     "rust": "scene::model::extensions::gpm::storage_type",
     "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
   },
+  "Scene/Model/Extensions/Gpm/AnchorPointDirect": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::anchor_point_direct",
+    "note": "Position and adjustment parameters for direct storage. Pinned construction cases plus every GltfGpmLoader direct document."
+  },
+  "Scene/Model/Extensions/Gpm/AnchorPointIndirect": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::anchor_point_indirect",
+    "note": "Position, adjustment parameters and covariance for indirect storage. Pinned construction and loader cases."
+  },
+  "Scene/Model/Extensions/Gpm/CorrelationGroup": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::correlation_group",
+    "note": "Group flags (the JSON as given), rotation thetas and Spdcf parameters. Pinned construction and loader cases."
+  },
+  "Scene/Model/Extensions/Gpm/Spdcf": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::spdcf",
+    "note": "A/alpha/beta/T correlation parameters; the range checks are debug-build DeveloperErrors and are not ported. Pinned cases."
+  },
+  "Scene/Model/Extensions/Gpm/PpeSource": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::ppe_source",
+    "note": "All seven sources, keeping upstream's SIGR value of \"VARZ\"."
+  },
+  "Scene/Model/Extensions/Gpm/PpeMetadata": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::ppe_metadata",
+    "note": "Optional min/max and the source string as given. Pinned cases."
+  },
+  "Scene/Model/Extensions/Gpm/PpeTexture": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::ppe_texture",
+    "note": "Per-point error texture reference with traits, noData, offset, scale, index and texCoord. Pinned cases."
+  },
+  "Scene/Model/Extensions/Gpm/MeshPrimitiveGpmLocal": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::mesh_primitive_gpm_local",
+    "note": "A primitive's per-point error textures. Pinned cases."
+  },
+  "Scene/Model/Extensions/Gpm/GltfGpmLocal": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::gltf_gpm_local",
+    "note": "Direct and indirect storage through two constructors, so the debug-build storage consistency errors cannot occur; upstream's getters are kept. Pinned cases."
+  },
+  "Scene/Model/Extensions/Gpm/GltfGpmLoader": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::gltf_gpm_loader",
+    "note": "NGA_gpm_local JSON to GltfGpmLocal: storage type dispatch and error, direct anchor points and upper-triangle covariance, indirect anchor points and correlation groups. JavaScript semantics for short arrays (undefined Cartesian elements, zero matrix elements), non-iterable arrays and null objects. 13 pinned documents."
+  },
   "Scene/GltfPipeline/usesExtension": {
     "status": "ported",
     "rust": "scene::gltf_pipeline::uses_extension",
@@ -4034,7 +4084,7 @@
   "Scene/Scene": {
     "status": "partial",
     "rust": "scene::scene",
-    "note": "Executable frame/event/primitive runtime, clipping, mixed-LOD stencil, transforms and color picking; now integrates View depth/MSAA resources, weighted OIT, classification command plumbing and depth/drill/ray/metadata/height/most-detailed picking APIs. 352 GPU comparisons validate existing render/color-pick paths plus depth resources/OIT. Globe/terrain, shadows/post-processing, remaining classification/picking GPU validation and controller/morph integration remain; docs/scene.md."
+    "note": "Executable frame/event/primitive runtime, clipping, mixed-LOD stencil, transforms and color picking; now integrates View depth/MSAA resources, weighted OIT, classification command plumbing and depth/drill/ray/metadata/height/most-detailed picking APIs. 416 GPU comparisons validate existing render/color-pick paths plus depth resources/OIT and the tile-classification depth handoff. MSAA depth is resolved before OIT and packed tile depth is updated before classification. Globe/terrain, shadows/post-processing, remaining classification/picking GPU validation and controller/morph integration remain; docs/scene.md."
   },
   "Scene/Cesium3DTileset": {
     "status": "partial",
@@ -4145,5 +4195,190 @@
     "status": "implemented",
     "rust": "scene::pick_object",
     "note": "Owned metadata shader selection, class property and optional value transform; integrated with Scene metadata reads. End-to-end metadata-render validation pending."
+  },
+  "Scene/ResourceLoader": {
+    "status": "ported",
+    "rust": "scene::resource_loader",
+    "note": "Typed lifecycle trait, contextual errors, shared load futures, weak ownership and cancellation guards; pinned error/lifecycle fixtures and native cancellation tests. Host drives scheduler cleanup after cancellation."
+  },
+  "Scene/BufferLoader": {
+    "status": "ported",
+    "rust": "scene::buffer_loader",
+    "note": "Embedded byte views and ResourceClient external loads with idempotent requests, failure caching, unload/destroy and zero-copy ownership. Nine pinned lifecycle cases plus native pending-request cancellation checks."
+  },
+  "Scene/MetadataSchemaLoader": {
+    "status": "ported",
+    "rust": "scene::metadata_schema_loader",
+    "note": "Embedded or fetched schemas, shared load/failure state, unload/destruction and typed MetadataSchema parsing. Nine pinned lifecycle cases."
+  },
+  "Scene/GltfJsonLoader": {
+    "status": "ported",
+    "rust": "scene::gltf_json_loader",
+    "note": "JSON, bytes, URI and GLB ingestion; data URI buffers, legacy upgrades, defaults, required-extension checks and pipeline cleanup. Shares embedded and upgraded buffers through optional ResourceCache leases. 28 pinned cases and native JSON/GLB-to-buffer-view integration."
+  },
+  "Scene/GltfBufferViewLoader": {
+    "status": "ported",
+    "rust": "scene::gltf_buffer_view_loader",
+    "note": "Zero-copy views, external/embedded/legacy-upgraded buffers, shared BufferLoader leases and meshopt v0/v1 attributes, triangle/index decoding and octahedral/quaternion/exponential filters. 44 pinned cases plus bounds/failure/cancellation and JSON/GLB integration tests."
+  },
+  "Scene/GltfLoaderUtil": {
+    "status": "ported",
+    "rust": "scene::gltf_loader_util",
+    "note": "Image format selection, validated samplers and KHR_texture_transform texture readers; 99 pinned cases across both suites. Typed ModelComponents texture readers and FrameResource reader facade share transform helpers."
+  },
+  "Scene/ResourceCacheKey": {
+    "status": "ported",
+    "rust": "scene::resource_cache_key",
+    "note": "All cache identities and JS JSON/property/number semantics, including missing fields and meshopt buffer-ID quirks; 284 pinned cases. Typed ResourceCache facade and public functions share one implementation."
+  },
+  "Scene/ResourceCacheStatistics": {
+    "status": "ported",
+    "rust": "scene::resource_cache_statistics",
+    "note": "Deduplicated CPU/GPU geometry and texture byte accounting, removal and clear; four pinned sequences plus loader integration checks."
+  },
+  "Scene/ResourceCache": {
+    "status": "partial",
+    "rust": "scene::resource_cache",
+    "note": "Typed owner-scoped cache, reference-counted leases, ordered destruction, shared schema/JSON/buffer/view/Draco/vertex/index/image/texture factories and memory accounting. SPZ factory remains unported. Pinned ownership traces, native dependency/cancellation and real GPU lease checks."
+  },
+  "Scene/GltfDracoLoader": {
+    "status": "ported",
+    "rust": "scene::gltf_draco_loader",
+    "note": "Cached or host-supplied buffer views, capacity-limited task processing, decoder initialization, frame-driven decoding, quantization skips, errors and cancellation. Nine pinned real-codec scenarios plus native capacity/failure/destruction checks; hosts can use background workers."
+  },
+  "Scene/Cesium3DTileFeatureTable": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_feature_table",
+    "note": "JSON and binary global/per-feature properties with the per-semantic typed-array cache (the first component type wins), componentType overrides, createTypedArray conversion of JSON values, and JavaScript typed-array RangeErrors for unaligned or out-of-range views relative to the tile buffer. Nine pinned call sequences."
+  },
+  "Scene/B3dmParser": {
+    "status": "ported",
+    "rust": "scene::b3dm_parser",
+    "note": "Current and both legacy headers, feature/batch table sections, zero-copy feature table and glb views with copied batch binaries, unaligned-glb copies, embedded byte offsets, and upstream's DataView/Uint8Array/JSON errors. Deprecation warnings are returned. 16 pinned tiles."
+  },
+  "Scene/I3dmParser": {
+    "status": "ported",
+    "rust": "scene::i3dm_parser",
+    "note": "Embedded glb and URI formats, feature/batch table sections, unaligned copies, embedded byte offsets and version/format/feature-table errors. Ten pinned tiles."
+  },
+  "Scene/PntsParser": {
+    "status": "ported",
+    "rust": "scene::pnts_parser",
+    "note": "Float and quantized positions, RGBA/RGB/RGB565/constant colors, float and oct-encoded normals, batch IDs, binary or JSON globals (including one-element typed-array POINTS_LENGTH/BATCH_LENGTH), RTC centers, 3DTILES_draco_point_compression buffers and combined properties, empty batch tables and removal of unresolved binary references (names returned instead of a one-time warning). Keeps upstream's always-false hasConstantColor. 24 pinned tiles including every error path."
+  },
+  "Scene/GltfVertexBufferLoader": {
+    "status": "partial",
+    "rust": "scene::gltf_geometry_loader",
+    "note": "Buffer-view and Draco CPU/GPU loading, quantization metadata, upload budgets, retained arrays and statistics; 33 pinned cases and WebGL1/2 indexed draw/readback checks. SPZ attributes remain unported."
+  },
+  "Scene/GltfIndexBufferLoader": {
+    "status": "ported",
+    "rust": "scene::gltf_geometry_loader",
+    "note": "Buffer-view/Draco indices, unaligned byte offsets, actual GPU allocation, deferred uploads, CPU retention and destruction/accounting; nine pinned cases, native failure checks and WebGL1/2 GPU comparisons."
+  },
+  "Scene/ModelComponents": {
+    "status": "ported",
+    "rust": "scene::model_components",
+    "note": "All 27 data classes and AnimatedPropertyType with upstream defaults and DEFAULT_* constants. Shared node/skin/sampler references are indices into their owning arrays; GPU buffers and textures are generic over the Gl host, with textures shared through Rc. StructuralMetadata and ModelPrimitiveImagery references use optional FrameResource handles pending those runtime modules. 29 pinned default/constant cases."
+  },
+  "Scene/DracoLoader": {
+    "status": "ported",
+    "rust": "scene::draco_loader",
+    "note": "Owned (not static) decodeDraco task processor created on the first request with the host TaskWorker: module initialization, deferred readiness, falsy/failed initialization errors and concurrency of hardwareConcurrency - 1. Pinned scheduling timelines for buffer views and point clouds."
+  },
+  "Scene/GltfImageLoader": {
+    "status": "ported",
+    "rust": "scene::gltf_image_loader",
+    "note": "Shared embedded/URI/data-URI image loading, signature-based PNG/JPEG/WebP host decoding, real KTX2/Basis transcoding and mip splitting; unload, error chains and cancellation. 79 pinned cases, pending decode/transport ownership checks and real browser decoding/GPU comparisons."
+  },
+  "Scene/GltfTextureLoader": {
+    "status": "ported",
+    "rust": "scene::gltf_texture_loader",
+    "note": "Cached image leases, deferred uploads, glTF samplers, compressed no-mipmap fallback, NPOT host resizing, typed/compressed mip chains, destruction and statistics. 40 pinned cases plus real PNG/JPEG/WebP/KTX2 WebGL1/2 comparisons, quota separation, error/retry and shared-decode checks."
+  },
+  "Scene/PropertyTextureProperty": {
+    "status": "ported",
+    "rust": "scene::property_texture_property",
+    "note": "Texture info plus channels: a texture reader over the model's textures by glTF index, channel indices as \"rgba\" letters with charAt's truncation and out-of-range empties, and offset/scale inherited from the class property and unpacked for uniforms. A metadata vector scale shares the texture info's scale key; the reader keeps only a number. 12 pinned cases in tests/scene_structural_metadata.rs."
+  },
+  "Scene/PropertyTexture": {
+    "status": "ported",
+    "rust": "scene::property_texture",
+    "note": "Properties of one class stored in textures, keyed in JavaScript order; ids are indices or legacy dictionary keys (MetadataId). Direct CesiumJS cases in tests/scene_structural_metadata.rs."
+  },
+  "Scene/StructuralMetadata": {
+    "status": "ported",
+    "rust": "scene::structural_metadata",
+    "note": "Schema with property tables, textures and attributes; table count, byte length, statistics and lookups. destroy is Drop. Generic over the GL host for its property textures. Direct CesiumJS cases in tests/scene_structural_metadata.rs."
+  },
+  "Scene/getMetadataProperty": {
+    "status": "ported",
+    "rust": "scene::get_metadata_property",
+    "note": "First property texture of the class with the property; attributes are not searched, as upstream. Direct CesiumJS cases in tests/scene_structural_metadata.rs."
+  },
+  "Scene/parseStructuralMetadata": {
+    "status": "ported",
+    "rust": "scene::parse_structural_metadata",
+    "note": "EXT_structural_metadata tables, textures and attributes, plus the RGBA8 property table texture: every GPU-compatible class property in class order, missing ones filled with noData written as upstream does (unscaled j + k offsets, enum and array-of-scalar failures), size checks against the context limit, and console/one-time warnings returned. Textures are uploaded through the Renderer and compared byte for byte; 13 pinned cases."
+  },
+  "Scene/parseFeatureMetadataLegacy": {
+    "status": "ported",
+    "rust": "scene::parse_feature_metadata_legacy",
+    "note": "EXT_feature_metadata feature tables and textures sorted by UTF-16 key with string ids, channel strings to indices, and texture info deep-combined with each property. 3 pinned extensions in tests/scene_structural_metadata.rs."
+  },
+  "Scene/parseBatchTable": {
+    "status": "ported",
+    "rust": "scene::parse_batch_table",
+    "note": "3D Tiles 1.0 batch tables: JSON, hierarchy (including the deprecated HIERARCHY) and binary properties as a transcoded _batchTable class, either a binary MetadataTable or point cloud property attributes with custom vertex attributes (sanitized GLSL names, placeholders, Draco arrays, float casts). JavaScript's byte offset arithmetic and typed-array RangeErrors; warnings returned. 16 pinned batch tables."
+  },
+  "Scene/preprocess3DTileContent": {
+    "status": "ported",
+    "rust": "scene::preprocess_3d_tile_content",
+    "note": "Binary payloads by magic number (glTF renamed glb), JSON by root/asset/tileAvailability/type/voxelTable in upstream's order, and its errors including null JSON. 29 pinned payloads in tests/scene_tile_content.rs."
+  },
+  "Scene/TileReplacementQueue": {
+    "status": "ported",
+    "rust": "scene::tile_replacement_queue",
+    "note": "Least-recently-rendered tile list with the start-of-frame marker and trimming; the queue keeps the links by tile id and unloads through a callback. Nine pinned scripts (one fixed, eight random, 498 steps) compared after every step in both directions."
+  },
+  "Scene/Cesium3DContentGroup": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_content_group",
+    "note": "Holds a content's group metadata (an owned copy, as GroupMetadata owns its properties). Direct CesiumJS cases in tests/scene_tile_content.rs."
+  },
+  "DataSources/CallbackProperty": {
+    "status": "ported",
+    "rust": "data_sources::callback_property",
+    "note": "Lazy time/result callbacks, callback identity, constant flag, injectable/browser clocks and reentrant callback replacement. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
+  },
+  "DataSources/CompositeProperty": {
+    "status": "ported",
+    "rust": "data_sources::composite_property",
+    "note": "Interval-selected properties, time/result forwarding, equality and deduplicated child subscriptions rewired before notification; weak ownership. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
+  },
+  "DataSources/ConstantProperty": {
+    "status": "ported",
+    "rust": "data_sources::constant_property",
+    "note": "Typed stored values, change suppression, equality, value extraction and toString; owned math clones and reference-identity adapters. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
+  },
+  "DataSources/Property": {
+    "status": "ported",
+    "rust": "data_sources::property",
+    "note": "Typed optional-value contract and equality/default helpers, including cloned-default result behavior; local Rc events and owned values replace dynamic JS objects. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
+  },
+  "DataSources/PropertyArray": {
+    "status": "ported",
+    "rust": "data_sources::property_array",
+    "note": "Time-coherent child snapshots (native reentrancy contract; docs/data-sources.md), undefined/null compaction, equality and deduplicated child listeners with weak forwarding and RAII cleanup. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
+  },
+  "DataSources/SampledProperty": {
+    "status": "ported",
+    "rust": "data_sources::sampled_property",
+    "note": "Packed/individual/bulk sorted samples and replacement, scalar/vector/quaternion codecs, Linear/Lagrange/Hermite/custom interpolation, derivatives, bounded extrapolation, equality and sample removal. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
+  },
+  "DataSources/TimeIntervalCollectionProperty": {
+    "status": "ported",
+    "rust": "data_sources::time_interval_collection_property",
+    "note": "Observable Core interval collections, raw value cloning, inclusion/overlap/removal, identity merging and fallible source-compatible equality. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
   }
 }

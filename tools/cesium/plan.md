@@ -35,7 +35,7 @@ Along the way, `core::js_math` made the port's `sin`, `cos`, `log` and the other
    - ✅ network heightmap/quantized and 3D Tiles terrain providers, Google Earth Enterprise metadata and terrain, world-terrain factories. Ion resources/geocoding and platform clients are now validated. Bing, Google, Pelias, OpenCage and coordinate geocoders pass deterministic parsing, request construction, attribution and error fixtures.
 11. ✅ **Contracts and host behavior:** interpolation/packing interfaces, geometry factories, video bindings, terrain sampling, screen-space gestures and canvas text/pin rendering validated.
 
-Core, Renderer, Shaders and Workers have reached 100% of applicable modules; Scene is the active package. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. The viewer already runs on Core — it was migrated ahead of 100% Core so the two implementations could not drift apart. After Core, proceed to Renderer and Scene.
+Core, Renderer, Shaders and Workers have reached 100% of applicable modules; Scene remains in progress; DataSources property foundations are now active. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. The viewer already runs on Core — it was migrated ahead of 100% Core so the two implementations could not drift apart. After Core, proceed to Renderer and Scene.
 
 ### Validated partial-module batch
 
@@ -66,7 +66,7 @@ applications can implement the existing `Gl` host contract.
 
 ### Scene
 
-Scene has **143 of 482 modules** fully ported, including Camera and
+Scene has **199 of 482 modules** fully ported, including Camera and
 CameraFlightPath. The validated batches cover the foundations, all 24
 GltfPipeline utilities, 3D Metadata schemas/tables/entities, tile bounding
 volumes and implicit tiling.
@@ -83,12 +83,18 @@ have partial Rust runtimes: frame decisions and events, renderer submission,
 JSON/schema/tree loading, explicit-tree traversal, content futures, cancellation,
 progress and cache eviction. Fog and Atmosphere are fully ported. The new batch
 has 124 CesiumJS scenarios and Rust integration checks; these do not establish
-full rendering or traversal parity. FrameState also remains partial.
+full rendering or traversal parity. FrameState has since been validated; Scene, View, Picking and Cesium3DTileset remain partial.
 
-Continue the Scene/View and tileset traversal/content integrations, then Model,
-ScreenSpaceCameraController and GltfLoader. Skip-LOD and content format loading
-are explicit gaps; the runtime currently requires a caller-supplied content
-loader. See [Scene](docs/scene.md) for APIs, validation and remaining work.
+The 3D Tiles binary content parsers (Cesium3DTileFeatureTable, B3dmParser,
+I3dmParser, PntsParser), the NGA_gpm_local data classes with GltfGpmLoader,
+and the rest of 3D Metadata (property textures, StructuralMetadata and its
+three parsers) are validated, with preprocess3DTileContent,
+TileReplacementQueue and Cesium3DContentGroup; the B3dm/I3dm/Pnts loaders that build
+model components from them come with GltfLoader. Continue model prerequisites: SPZ resources, then the main
+GltfLoader/Model pipeline. ResourceCache and vertex loading remain partial;
+Draco, ModelComponents, image/texture and GPU index loading are validated. ScreenSpaceCameraController,
+Scene/View picking integrations and built-in renderable tile content remain
+gaps; the runtime currently requires a caller-supplied content loader. See [Scene](docs/scene.md) for APIs, validation and remaining work.
 
 
 ### Workers completion
@@ -144,3 +150,20 @@ fails its replay. Two root exports differ from their upstream `.glsl` file
 because Cesium's build drops unescaped backslashes; the port keeps the export.
 The renderer still assembles programs from the pinned builtin table. See
 [Shaders](docs/shaders.md).
+
+
+### DataSources property foundations
+
+Seven of 108 DataSources modules are validated: Property, ConstantProperty,
+CallbackProperty, PropertyArray, SampledProperty, TimeIntervalCollectionProperty
+and CompositeProperty. The batch includes 206 pinned CesiumJS scenarios,
+14 native ownership/callback integration tests and real browser clock checks.
+Owned values, Rc property references, local definition events and observable Core
+intervals provide the prerequisites for Entity and document loading.
+
+Next implement position/velocity/orientation properties, PropertyBag and entity
+collections, followed by graphics definitions, data-source collections and the
+loaders. CzmlDataSource and KmlDataSource are the largest loaders; their property
+and entity dependencies come first. GeoJSON and GPX follow the same foundation.
+No entity, visualizer or document-loader module is counted as complete by this
+batch. See [DataSources API and validation](docs/data-sources.md).

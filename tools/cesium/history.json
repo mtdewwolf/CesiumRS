@@ -398,5 +398,69 @@
     "ported": 836,
     "implemented": 2,
     "validatedPercent": 44.89
+  },
+  {
+    "milestone": "Scene depth ordering fixes and model resource loaders",
+    "date": "2026-10-24",
+    "percent": 46.76,
+    "ported": 841,
+    "implemented": 2,
+    "validatedPercent": 45.13
+  },
+  {
+    "milestone": "Model resource cache and geometry loaders",
+    "date": "2026-10-24",
+    "percent": 47.38,
+    "ported": 846,
+    "implemented": 2,
+    "validatedPercent": 45.56
+  },
+  {
+    "milestone": "Integrate glTF loader foundations and model cache",
+    "date": "2026-10-24",
+    "percent": 47.84,
+    "ported": 848,
+    "implemented": 2,
+    "validatedPercent": 46.02
+  },
+  {
+    "milestone": "glTF image and texture loaders",
+    "date": "2026-10-24",
+    "percent": 48.02,
+    "ported": 850,
+    "implemented": 2,
+    "validatedPercent": 46.2
+  },
+  {
+    "milestone": "3D Tiles content parsers",
+    "date": "2026-10-24",
+    "percent": 48.28,
+    "ported": 854,
+    "implemented": 2,
+    "validatedPercent": 46.46
+  },
+  {
+    "milestone": "NGA_gpm_local extension",
+    "date": "2026-10-24",
+    "percent": 48.56,
+    "ported": 864,
+    "implemented": 2,
+    "validatedPercent": 46.74
+  },
+  {
+    "milestone": "Structural metadata and tile helpers",
+    "date": "2026-10-24",
+    "percent": 49.05,
+    "ported": 874,
+    "implemented": 2,
+    "validatedPercent": 47.23
+  },
+  {
+    "milestone": "DataSources property foundations",
+    "date": "2026-10-24",
+    "percent": 49.48,
+    "ported": 881,
+    "implemented": 2,
+    "validatedPercent": 47.66
   }
 ]

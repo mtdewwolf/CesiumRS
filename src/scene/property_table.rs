@@ -2,38 +2,65 @@
 //! properties, from a binary [`MetadataTable`], a 3D Tiles 1.0
 //! [`JsonMetadataTable`] and a [`BatchTableHierarchy`], asked in that order.
 //!
-//! The GPU texture Cesium packs a table into is not ported.
+//! [`super::parse_structural_metadata`] packs a table's GPU-compatible
+//! properties into a texture; the table holds it as a [`FrameResource`].
 
 use super::metadata_table_property::MetadataTypedArray;
 use super::metadata_value::{developer, JsMap, MetadataError, MetadataValue};
+use super::FrameResource;
 use super::{BatchTableHierarchy, JsonMetadataTable, MetadataClass, MetadataTable, MetadataTableProperty};
 use serde_json::Value;
 use std::sync::Arc;
 
 type Result<T> = std::result::Result<T, MetadataError>;
 
+/// A property table or texture id: its index in `EXT_structural_metadata`,
+/// or its dictionary key in the legacy `EXT_feature_metadata`.
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(untagged)]
+pub enum MetadataId {
+    Index(usize),
+    Key(String),
+}
+
+impl From<usize> for MetadataId {
+    fn from(index: usize) -> Self {
+        Self::Index(index)
+    }
+}
+
+impl From<&str> for MetadataId {
+    fn from(key: &str) -> Self {
+        Self::Key(key.to_string())
+    }
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct PropertyTableOptions {
     pub name: Option<String>,
-    pub id: Option<usize>,
+    pub id: Option<MetadataId>,
     pub count: usize,
     pub extras: Option<Value>,
     pub extensions: Option<Value>,
     pub metadata_table: Option<MetadataTable>,
     pub json_metadata_table: Option<JsonMetadataTable>,
     pub batch_table_hierarchy: Option<BatchTableHierarchy>,
+    /// The table's GPU-compatible properties packed into an RGBA8 texture
+    /// (an `Rc<Texture<G>>`).
+    pub texture: Option<FrameResource>,
 }
 
 #[derive(Clone, Debug)]
 pub struct PropertyTable {
     name: Option<String>,
-    id: Option<usize>,
+    id: Option<MetadataId>,
     count: usize,
     extras: Option<Value>,
     extensions: Option<Value>,
     metadata_table: Option<MetadataTable>,
     json_metadata_table: Option<JsonMetadataTable>,
     batch_table_hierarchy: Option<BatchTableHierarchy>,
+    texture: Option<FrameResource>,
 }
 
 /// `defined(value)`.
@@ -52,6 +79,7 @@ impl PropertyTable {
             metadata_table: options.metadata_table,
             json_metadata_table: options.json_metadata_table,
             batch_table_hierarchy: options.batch_table_hierarchy,
+            texture: options.texture,
         }
     }
 
@@ -59,8 +87,13 @@ impl PropertyTable {
         self.name.as_deref()
     }
 
-    pub fn id(&self) -> Option<usize> {
-        self.id
+    pub fn id(&self) -> Option<&MetadataId> {
+        self.id.as_ref()
+    }
+
+    /// The texture the table's GPU-compatible properties are packed into.
+    pub fn texture(&self) -> Option<&FrameResource> {
+        self.texture.as_ref()
     }
 
     pub fn count(&self) -> usize {

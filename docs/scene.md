@@ -138,7 +138,7 @@ expiration, shared textures, partial content failure, resource bases, CPU
 height queries and renderer/resource ownership. The reference frame harness
 uses explicit host operations and does not establish full browser Scene parity.
 
-`scripts/check-scene.sh` compares **352 actual GPU results** with
+`scripts/check-scene.sh` compares **568 actual GPU results** with
 CesiumJS. The original 24 WebGL2 cases cover log depth, HDR, render/pick/depth
 passes, framebuffer targets and retained uniforms/textures. Another 48 phase
 comparisons cover float and byte plane textures, mutation/partial upload,
@@ -151,8 +151,13 @@ rectangle order, transparent fragments, high-DPI coordinates, edge padding,
 sync/async readback and WebGL1 fallback. This does not establish visual parity
 for unported globe/effects or the newly added picking APIs. Another 64
 comparisons cover the View depth/framebuffer resources with WebGL1/WebGL2,
-HDR, MSAA, scissor and stencil. Sixteen compare actual OIT draws across MRT,
-two-pass fallback, log depth, HDR and reversed submission order.
+HDR, MSAA, scissor and stencil. Sixty-four compare actual OIT draws across MRT,
+two-pass fallback, log depth, HDR, reversed submission order, one/four samples
+and opaque occlusion. Sixteen further comparisons probe the packed depth
+available to classification after globe/tile draws with HDR, log depth and MSAA.
+Scene resolves opaque depth before OIT and updates packed tile depth before
+classification. Depth-only picks skip classification passes. These probes cover
+the depth handoff; full classification-volume rendering still needs validation.
 
 `scene-transforms.mjs` and `scene-picking.mjs` add **452 reference cases**:
 259 transforms, 81 pick culling/rectangle inputs and 112 framebuffer spiral
@@ -181,6 +186,260 @@ that support these features implement clipping uploads and masked stencil clears
 cargo test --test scene_completion --test scene_runtime
 bash scripts/check-scene.sh
 ```
+
+## Model resource loaders
+
+The first model-runtime dependencies now implement the shared `ResourceLoader`
+lifecycle: `BufferLoader`, `MetadataSchemaLoader`, `GltfJsonLoader` and
+`GltfBufferViewLoader`. Calling `load()` repeatedly shares one request and
+failure result. Awaiting returns true when data is available, or false if the
+loader was destroyed while pending. `unload()` releases data; `destroy()` also
+cancels pending work. ResourceClient's host scheduler processes cancelled
+transport requests on its next update. Dropping the final owner also cancels
+pending work. Embedded buffer/schema loads retain the upstream UNLOADED state
+because their data already exists before loading.
+
+`GltfJsonLoader` accepts a parsed pipeline document, a byte view, or a resource
+URL. It parses GLB/JSON, decodes data URI buffers, upgrades legacy glTF, fills
+defaults, checks the pinned required-extension list and removes pipeline extras.
+The result owns cleaned JSON plus embedded and legacy-upgraded buffer sources;
+views consume rewritten bytes without refetching old data. Recognizing required
+extensions here does not implement their model rendering stages.
+
+`GltfBufferViewLoader` produces shared byte views or decompresses
+`EXT_meshopt_compression`: vertex codecs v0/v1, triangle and sequence indices,
+and octahedral, quaternion and exponential filters. Its quaternion filter fixes
+the signed-component handling missing in meshopt-rs 0.1.2. Hosts can supply a
+shared `BufferLoader` lease; views release their own leases after loading.
+
+Ninety-three pinned-source cases cover these five modules. Native tests cover
+shared/failing loads, cancellation, retained byte views and feeding JSON/GLB
+loads into buffer views. The next batch adds 184 pinned-source cases for cache identities/statistics,
+cache ownership traces, glTF texture utilities, Draco decoding and vertex/index
+loader lifecycles. Twenty-four additional WebGL1/2 comparisons exercise real
+uploads, byte readbacks, indexed triangle pixels, CPU retention and last-lease
+GPU destruction across all three index datatypes and synchronous/deferred uploads.
+
+`ResourceCache` is owned by the application or model pipeline; clones share a
+pool. Keep a `CacheLease<T>` while using a resource. Cloning a lease increments
+its reference count; dropping the last lease destroys the loader and releases
+its children. `loader()` returns an observation handle without extending the
+cache lease. CPU keys share data across contexts; GPU keys include context IDs.
+JSON loaders register embedded/upgraded buffers, and buffer views release their
+child leases when their bytes are available. Legacy upgrades publish rewritten
+external animation bytes back to the cache. Clearing a cache destroys dependent
+resources before their sources. Cache keys preserve pinned-source quirks.
+
+`GltfDracoLoader` shares a capacity-limited `TaskProcessor`. Await `load()` for
+the compressed view, then call `process(&frame)` until it returns `Ok(true)`.
+Decoded data includes explicit index datatype information at the native wire
+boundary. Quantization metadata preserves shader dequantization and octahedral
+normal encoding. The portable worker decodes when polled; applications can use
+`set_draco_decoder` with a host worker for background decoding. Dropping the last
+lease cancels pending tasks and returns decoder capacity.
+
+`GltfVertexBufferLoader` and `GltfIndexBufferLoader` can retain CPU data, upload
+GPU buffers, or do both. Provide a renderer context for GPU loads. For deferred
+uploads, store `Rc<BufferUploadBudget>` in `FrameState.job_scheduler` and reset
+the quota each frame; a missing quota permits immediate upload. An exhausted
+quota leaves the loader pending. `process` propagates decode/allocation errors.
+This budget is a host adapter, not a port of the complete JobScheduler.
+
+`GltfImageLoader` shares embedded buffer views and external/data-URI image
+requests. Embedded PNG, JPEG and WebP are identified by byte signatures, with
+`flipY: false` and color conversion disabled at the host boundary. KTX2 uses the
+existing Rust/Basis codec and preserves explicit mip chains. Image decoding
+uses `ImageHost`; applications provide their decoder, and browsers use
+`BrowserImageHost`. Keep the image host and supported KTX2 formats consistent
+within each cache. Destroying the final lease aborts pending work; the request
+scheduler cleans up cancelled transport jobs on its next update.
+
+`GltfTextureLoader` selects the supported image, shares its loader, then uploads
+a texture during `process`. Implement `ModelImageHost<G>` for a custom host;
+its default uploads RGBA pixels, while the browser implementation uploads the
+original DOM image/bitmap. Raster textures retain glTF's orientation and resize
+to powers of two when the sampler requires it, including on WebGL2 as upstream
+does. Compressed textures without supplied mips downgrade mipmap filters;
+supplied KTX2 mip levels keep their upstream orientation and accounting rules.
+Place `Rc<ResourceUploadBudget>` in `FrameState.job_scheduler` for independent
+`buffers` and `textures` quotas, or retain the existing buffer-only budget.
+Reset the quotas each frame. A failed allocation preserves the loaded image for
+retry; image-load failures release dependencies and retain their error chain.
+
+The image/texture batch adds 119 pinned cases and 128 real WebGL comparisons,
+including PNG/JPEG/WebP decoding, URI and embedded images, KTX2/Basis uploads,
+NPOT resizing, supplied/generated mips, sampled pixels, memory counts and
+last-lease destruction. The pinned RGB mip path retains the base image's unpack
+alignment: the upstream Green4x4Mipmap RGB asset therefore produces
+`INVALID_OPERATION` for its tightly packed 2x2 level. The comparisons preserve
+and check this source behavior; RGBA and compressed mip chains upload normally.
+
+ResourceCache remains partial pending the SPZ factory, and the vertex loader
+remains partial pending SPZ attributes. The SPZ loader, main GltfLoader/Model
+pipeline and built-in renderable tile factory still need porting. The default
+tileset loader requires a factory for renderable tile content.
+
+`model_components` supplies the 27 glTF data classes, animated-property enum
+and material defaults. Shared node/skin/sampler references are indices; buffers
+and texture readers use the renderer's typed resources. Structural metadata and
+primitive imagery references use optional `FrameResource` handles pending their
+runtime modules. A further 293 pinned cases cover these defaults and constants,
+texture/cache-key edge cases, and decoder initialization and failure timelines.
+The additional suites live under `tests/fixtures/scene/foundations` where their
+module names overlap the cache/GPU suites.
+
+`DracoLoader` initializes a host-supplied decoder worker lazily, leaving the
+first decode pending until initialization settles. Falsy and rejected module
+initializations remain errors on subsequent requests. `GltfDracoLoader::from_host`
+uses this initialized worker with a buffer-view factory; the ResourceCache
+constructor keeps the portable worker and explicit cache leases. Both paths
+share one frame-driven loader and release pending tasks on unload/destruction.
+
+## 3D Tiles content parsers
+
+`Cesium3DTileFeatureTable`, `B3dmParser`, `I3dmParser` and `PntsParser` read
+the binary 3D Tiles 1.0 tile formats. Each parser takes the tile buffer as an
+`Arc<Vec<u8>>` and a byte offset into it (non-zero inside composite tiles) and
+returns its sections as `BufferSource`s: the feature table binary and an
+aligned glb are views into the tile buffer, the batch table binary is copied
+so the tile buffer can be released, and a glb that is not 4-byte aligned is
+copied, as upstream does.
+
+Byte handling follows JavaScript's typed-array rules, because those decide
+which tiles load and which fail:
+- reading a header word past the end is the DataView `RangeError`;
+- a section past the end, or a negative glb length from a short `byteLength`,
+  is the Uint8Array `RangeError` — except for an unaligned glb, whose copy
+  uses `subarray` and so clamps to an empty glb;
+- a feature table property view must start at a multiple of its element size
+  relative to the whole tile buffer.
+
+`B3dmParser` recognizes both legacy headers by a batch table length of at
+least 0x22000000, the first byte of the JSON or glb a legacy header puts
+there. Upstream's `deprecationWarning` calls are returned as
+`TileFormatWarning`s.
+
+`Cesium3DTileFeatureTable` caches one typed array per semantic, so a later
+request with another component type returns the first array; a binary global
+is a one-element typed array (`GlobalProperty::Binary`), and arithmetic reads
+it with `ToNumber`, as `PntsParser` does for a binary `POINTS_LENGTH`. JSON
+properties go through `createTypedArray`: a JSON number makes that many zeros.
+
+`PntsParser` parses only what `3DTILES_draco_point_compression` does not
+provide, keeps upstream's `hasConstantColor` (always false here, since it
+reads a property the parse never sets), drops an empty batch table and
+removes batch table properties that point into a missing binary body unless
+Draco decodes them; the removed names replace upstream's one-time warning.
+
+Tests: `tests/scene_tile_formats.rs`, 59 pinned tiles and call sequences from
+`tools/cesium/fixtures/scene-tile-formats.mjs`, built byte by byte and covering
+every error path. The B3dm/I3dm/Pnts loaders that turn these into model
+components come with GltfLoader.
+
+```bash
+cargo test --test scene_tile_formats
+TZ=UTC node tools/cesium/fixtures/generate.mjs Cesium3DTileFeatureTable B3dmParser I3dmParser PntsParser
+```
+
+## NGA_gpm_local extension
+
+`scene::model::extensions::gpm` holds the `NGA_gpm_local` (generic point-cloud
+model) classes: `AnchorPointDirect`, `AnchorPointIndirect`, `CorrelationGroup`,
+`Spdcf`, `GltfGpmLocal`, `PpeSource`, `PpeMetadata`, `PpeTexture` and
+`MeshPrimitiveGpmLocal`, plus `GltfGpmLoader`, which reads the extension JSON.
+
+`GltfGpmLocal` has two constructors, `direct` and `indirect`. Upstream checks
+in debug builds that each storage type has only its own fields; the
+constructors make other combinations impossible. The `Spdcf` range checks are
+debug-build `DeveloperError`s and are not ported. `PpeSource::SigR` keeps
+upstream's value, `"VARZ"`.
+
+`GltfGpmLoader` reads JSON as JavaScript does: `Cartesian3.fromArray` leaves a
+missing element undefined (NaN), while the covariance `Matrix3` constructor
+turns a missing or null element into 0; a missing array is not iterable and
+reading a property of null throws a `TypeError`.
+
+Tests: `tests/scene_gpm.rs`, 35 pinned cases from
+`tools/cesium/fixtures/scene-gpm.mjs`. `GltfMeshPrimitiveGpmLoader`, which
+turns per-point error textures into `StructuralMetadata`, is still to come.
+
+## Structural metadata
+
+`StructuralMetadata` is a model's 3D Metadata: its schema with the property
+tables, property textures and property attributes that use it. Three parsers
+build it:
+
+- `parse_structural_metadata` reads `EXT_structural_metadata`;
+- `parse_feature_metadata_legacy` reads the deprecated `EXT_feature_metadata`,
+  storing its dictionaries in UTF-16 key order with the keys as ids
+  (`MetadataId::Key`) and rewriting feature textures as property textures;
+- `parse_batch_table` transcodes a 3D Tiles 1.0 batch table into a generated
+  `_batchTable` class: JSON arrays become a `JsonMetadataTable`, the
+  hierarchy a `BatchTableHierarchy`, and binary properties either a binary
+  `MetadataTable` or, for point clouds, a `PropertyAttribute` whose values
+  are returned as custom vertex attributes.
+
+`PropertyTexture` and `PropertyTextureProperty` read a texture info plus
+`channels`. The model's textures are passed by glTF index (`GltfTextures`),
+so `StructuralMetadata`, `PropertyTexture` and `PropertyTextureProperty` are
+generic over the GL host. `get_metadata_property` finds the property texture
+property a metadata pick reads.
+
+`parse_structural_metadata` also packs each property table's GPU-compatible
+properties into an RGBA8 texture: one row per class property, in class order,
+one texel per feature, padded with zeros. Properties the table leaves out are
+filled with their `noData` value, written as CesiumJS writes it. Component `k`
+of array element `j` lands at `bytesPerElement * i + j + k`, without scaling
+by the component size. An enum property has no component type, so filling
+one fails; so does a scalar array, which is indexed as if it were wrapped
+twice. A failed fill, or a table wider or taller than the context's maximum
+texture size, leaves the table without a texture. The parsers return what
+CesiumJS logs as `StructuralMetadataWarning`s; `id()` names the one-time
+warnings CesiumJS logs once per process. Without a context no texture is
+made. The table holds its texture as a `FrameResource` wrapping an
+`Rc<Texture<G>>`.
+
+`parse_batch_table` follows JavaScript for binary property offsets:
+`binaryBody.byteOffset + property.byteOffset` concatenates when the offset is
+a string, and a missing offset is NaN, which the typed array reads as 0, so
+the first byte of the tile buffer rather than of the body. Misaligned and
+out-of-range views are `RangeError`s. Attribute names are sanitized as in
+`ModelUtility.sanitizeGlslIdentifier`; empty and repeated names get
+`property_N` placeholders, and INT, UNSIGNED_INT and DOUBLE values are cast
+to floats.
+
+A texture reader's `scale` is a number. When a metadata property has a vector
+`scale`, which shares the texture info's key, CesiumJS copies the array onto
+the reader, and the port reads NaN.
+
+Tests: `tests/scene_structural_metadata.rs`, 54 pinned cases from
+`tools/cesium/fixtures/scene-structural-metadata.mjs`. Property table textures
+are compared by the bytes uploaded: the fixture stubs `Texture.create`, and
+the test host records `texImage2D`.
+
+```bash
+cargo test --test scene_structural_metadata
+TZ=UTC node tools/cesium/fixtures/generate.mjs PropertyTextureProperty PropertyTexture StructuralMetadata getMetadataProperty parseStructuralMetadata parseFeatureMetadataLegacy parseBatchTable
+```
+
+## Tile content helpers
+
+`preprocess_3d_tile_content` identifies a payload by its magic number, with
+`glTF` renamed `glb`. JSON is identified by `root`, `asset`,
+`tileAvailability`, `type` or `voxelTable`, checked in that order, so a
+tileset, which also has an asset, is not taken for a glTF. A binary payload is
+the input slice.
+
+`TileReplacementQueue` is the globe's least-recently-rendered tile list.
+CesiumJS links the tiles themselves; the port keeps the links in the queue,
+keyed by tile id. `trim_tiles` takes a callback that frees an eligible tile
+and reports whether it was eligible. `Cesium3DContentGroup` holds a content's
+group metadata, an owned copy.
+
+Tests: `tests/scene_tile_content.rs`, 40 pinned cases from
+`tools/cesium/fixtures/scene-tile-content.mjs`. They include nine replacement
+queue scripts, compared after each of 498 steps, front to back and back to
+front.
 
 ## Camera
 
@@ -594,6 +853,6 @@ The next batches build on these:
 - the glTF and 3D Tiles resource loaders on top of `GltfPipeline`;
 - the rest of 3D Metadata: property textures, `StructuralMetadata`,
   `PickedMetadataInfo` and the parsers;
-- 3D Tiles content parsers;
+- the B3dm, I3dm and Pnts loaders on top of the content parsers;
 - completion of Scene/FrameState and tileset traversal, followed by Primitive,
   globe, picking and effect integrations on the Renderer's typed snapshots.
