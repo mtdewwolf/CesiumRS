@@ -277,10 +277,8 @@ where
             if let Some(e) = deferred {
                 return Self::fail(&weak, e);
             }
-            for future in futures {
-                if let Err(e) = future.await {
-                    return Self::fail(&weak, e);
-                }
+            if let Err(e) = futures_util::future::try_join_all(futures).await {
+                return Self::fail(&weak, e);
             }
             let Some(inner) = weak.upgrade().filter(|i| !i.destroyed.get()) else { return Ok(false) };
             // The glTF is no longer needed.

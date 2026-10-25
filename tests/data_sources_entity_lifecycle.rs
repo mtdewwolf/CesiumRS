@@ -287,3 +287,39 @@ fn availability_notifications_keep_the_retired_interval_alive_during_dispatch() 
     e.set_availability(None);
     assert!(seen.get());
 }
+
+#[test]
+fn collection_listener_can_suspend_and_resume_without_changes() {
+    let collection = EntityCollection::new();
+    let calls = Rc::new(Cell::new(0));
+    let out = calls.clone();
+    let _guard = collection.collection_changed().add_listener(move |change| {
+        out.set(out.get() + 1);
+        assert!(out.get() < 3, "empty notifications must not refire");
+        let collection = change.collection.upgrade().unwrap();
+        collection.suspend_events();
+        collection.resume_events().unwrap();
+    });
+    collection.add(entity("a")).unwrap();
+    assert_eq!(calls.get(), 1);
+}
+
+#[test]
+fn collection_listener_can_defer_reentrant_changes_until_resume() {
+    let collection = EntityCollection::new();
+    let seen = Rc::new(RefCell::new(vec![]));
+    let out = seen.clone();
+    let once = Cell::new(false);
+    let _guard = collection.collection_changed().add_listener(move |change| {
+        out.borrow_mut().push(collection_trace(change));
+        if !once.replace(true) {
+            let collection = change.collection.upgrade().unwrap();
+            collection.add(entity("b")).unwrap();
+            collection.suspend_events();
+        }
+    });
+    collection.add(entity("a")).unwrap();
+    assert_eq!(*seen.borrow(), vec![serde_json::json!([["a"], [], []])]);
+    collection.resume_events().unwrap();
+    assert_eq!(*seen.borrow(), vec![serde_json::json!([["a"], [], []]), serde_json::json!([["b"], [], []])]);
+}
