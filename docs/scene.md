@@ -360,8 +360,19 @@ turns a missing or null element into 0; a missing array is not iterable and
 reading a property of null throws a `TypeError`.
 
 Tests: `tests/scene_gpm.rs`, 35 pinned cases from
-`tools/cesium/fixtures/scene-gpm.mjs`. `GltfMeshPrimitiveGpmLoader`, which
-turns per-point error textures into `StructuralMetadata`, is still to come.
+`tools/cesium/fixtures/scene-gpm.mjs`.
+
+`GltfMeshPrimitiveGpmLoader` loads a mesh primitive's per-point error (PPE)
+textures and exposes them two ways: as `MeshPrimitiveGpmLocal`, and as
+`StructuralMetadata` with one property texture per PPE texture. Each texture
+gets a class with a single normalized UINT8 property, named after the
+texture's source. Its offset and scale come from the texture, with the scale
+multiplied by 255. CesiumJS caches these schemas for the whole page, keyed by
+the classes' JSON, and numbers new ones `PPE_TEXTURE_SCHEMA_n` by the cache's
+size. The port keeps the cache per thread. Textures that share an index share
+one lease. `PpeTexture` has no name, so the property textures are unnamed, as
+upstream's `ppeTexture.name` is undefined. It is covered in
+`tests/scene_metadata_loaders.rs`, below.
 
 ## Structural metadata
 
@@ -422,6 +433,29 @@ cargo test --test scene_structural_metadata
 TZ=UTC node tools/cesium/fixtures/generate.mjs PropertyTextureProperty PropertyTexture StructuralMetadata getMetadataProperty parseStructuralMetadata parseFeatureMetadataLegacy parseBatchTable
 ```
 
+`GltfStructuralMetadataLoader` is the glTF loader's path to this metadata.
+Like CesiumJS, it is owned by the glTF loader rather than cached, and it
+leases its buffer views, textures and schema from the shared `ResourceCache`.
+Ids are gathered in JavaScript object key order, and leases are requested in
+upstream's order: buffer views, then textures, then the schema. Upstream's
+async ordering decides which failure is reported. A texture that cannot be
+requested fails `load` synchronously. A bad buffer view or schema rejects the
+load when awaited. `process` waits for every texture upload, then parses
+`EXT_structural_metadata` (with property table textures) or the legacy
+extension, and releases the buffer views. A loader destroyed while loading
+resolves to false.
+
+Tests: `tests/scene_metadata_loaders.rs`, 15 pinned lifecycles of both loaders
+from `tools/cesium/fixtures/scene-metadata-loaders.mjs`. They run the real
+CesiumJS loaders through its ResourceCache, with images, schema requests and
+texture creation stubbed. The comparisons cover states, deferred uploads, the
+parsed metadata, failures, cache entry counts and GPM schema ids.
+
+```bash
+cargo test --test scene_metadata_loaders
+TZ=UTC node tools/cesium/fixtures/generate.mjs GltfStructuralMetadataLoader GltfMeshPrimitiveGpmLoader
+```
+
 ## Tile content helpers
 
 `preprocess_3d_tile_content` identifies a payload by its magic number, with
@@ -440,6 +474,43 @@ Tests: `tests/scene_tile_content.rs`, 40 pinned cases from
 `tools/cesium/fixtures/scene-tile-content.mjs`. They include nine replacement
 queue scripts, compared after each of 498 steps, front to back and back to
 front.
+
+## Particles, imagery helpers and keyframe nodes
+
+`Particle` and the emitters are the parts of the particle system that are
+independent of rendering. `ParticleEmitter` is a trait with four
+implementations: `BoxEmitter`, `CircleEmitter`, `ConeEmitter` and
+`SphereEmitter`. Each sets only the particle's position and velocity. Like
+CesiumJS, they draw from the seeded Mersenne Twister behind
+`core::math::random_between`, and trigonometry is V8-exact, so a seeded run
+emits the same particles bit for bit. A particle's `image` is a
+`FrameResource` the host owns, and `Particle::update` takes the optional
+per-particle callback as a `ParticleUpdateFunction`.
+
+`PointCloudShading` holds the attenuation and eye dome lighting options. Its
+`is_supported` reads context capabilities, as
+`PointCloudEyeDomeLighting.isSupported` does.
+
+`ImageryLayerFeatureInfo` picks a feature name the way CesiumJS does: the
+first truthy property called `name`, then `title`, then one whose key contains
+"name", then "title". The comparisons ignore ASCII case only, like the
+non-Unicode `/i` regular expressions. Its HTML description nests a table for
+each object or array value, skips `null` values and converts others with
+JavaScript's `String`.
+
+`ImageryConfiguration` snapshots a layer's appearance through the
+`ImageryLayerSettings` trait. `DiscardEmptyTileImagePolicy` discards the
+shared empty image by identity. The host decodes `EMPTY_IMAGE_URI` once and
+gives the shared image to each policy. `KeyframeNode` is generic over the
+voxel spatial node and its content.
+
+Tests: `tests/scene_particles_imagery.rs`, 65 pinned cases from
+`tools/cesium/fixtures/scene-particles-imagery.mjs`.
+
+```bash
+cargo test --test scene_particles_imagery
+TZ=UTC node tools/cesium/fixtures/generate.mjs Particle ParticleEmitter BoxEmitter CircleEmitter ConeEmitter SphereEmitter PointCloudShading ImageryLayerFeatureInfo KeyframeNode ImageryConfiguration DiscardEmptyTileImagePolicy
+```
 
 ## Camera
 

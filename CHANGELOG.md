@@ -4,6 +4,14 @@
 
 - Add the CesiumJS parity benchmark (`scripts/bench.sh`, [docs](docs/benchmarks.md)). It times 14 workloads on identical inputs: CesiumRS native and wasm against CesiumJS in Node and Chromium. Every output is checked against the CesiumJS fixtures or a cross-side checksum before it is timed.
 
+- Port `GltfStructuralMetadataLoader` and `GltfMeshPrimitiveGpmLoader`. These load glTF structural metadata and NGA_gpm_local per-point error textures through the shared ResourceCache and produce `StructuralMetadata`. 15 pinned CesiumJS lifecycles run the real loaders, comparing states, deferred texture uploads, failures, cache entry counts and the PPE schema cache's ids.
+
+- Port six DataSources modules: property/raw descriptors, PropertyBag, Entity, EntityCollection and ReferenceProperty. Add typed component adapters, scoped factories, hierarchy, availability, model transforms and batched references; validate 126 pinned scenarios, 14 native lifecycle tests and browser ownership/clocks. Concrete graphics classes remain unported.
+
+- Port ten DataSources position/motion modules: reference-frame conversion, constant/callback/sampled positions, interval/composite positions, arrays, surface scaling, velocity and orientation. Validate 412 pinned scenarios, native lifecycle/ownership and browser clocks; share Core Earth/Moon transforms through PositionContext.
+
+- Port `Particle`, the `ParticleEmitter` trait and the box, circle, cone and sphere emitters (seeded emission matches CesiumJS bit for bit), plus `PointCloudShading`, `ImageryLayerFeatureInfo`, `KeyframeNode`, `ImageryConfiguration` and `DiscardEmptyTileImagePolicy`. 65 pinned CesiumJS cases.
+
 - Fix reentrant DataSources callbacks: preserve renewed subscriptions and evaluate PropertyArray children from one definition. Add regressions for renewal/cancellation, stale handles, duplicate registration counts and array replacement; document the native lifecycle contracts.
 
 - Start DataSources with seven property modules: typed constant/callback/array properties, sampled interpolation and derivatives, raw interval values and composites. Validate 206 pinned CesiumJS scenarios, native callback/ownership lifecycle and browser default clocks. Entity and document loaders remain unported.

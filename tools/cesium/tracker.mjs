@@ -17,6 +17,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import progressHistory from "./progress-history.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const source = join(here, "node_modules/@cesium/engine/Source");
@@ -190,25 +191,6 @@ mkdirSync(docs, { recursive: true });
   else history[history.length - 1] = entry;
   writeFileSync(historyFile, JSON.stringify(history, null, 2) + "\n");
 
-  const W = 720, H = 320, l = 90, r = 70, t = 44, b = 124;
-  const max = Math.max(10, Math.ceil(Math.max(...history.map((h) => h.percent)) / 10) * 10);
-  const x = (i) => l + (history.length === 1 ? (W - l - r) / 2 : (i * (W - l - r)) / (history.length - 1));
-  const y = (p) => t + (H - t - b) * (1 - p / max);
-  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${style}`;
-  svg += `<text x="0" y="18" font-weight="600">Overall implementation progress over time</text>`;
-  for (let p = 0; p <= max; p += max / 5) {
-    svg += `<rect class="bg" x="${l}" y="${y(p).toFixed(1)}" width="${W - l - r}" height="1"/>`;
-    svg += `<text class="dim" x="${l - 40}" y="${(y(p) + 4).toFixed(1)}" text-anchor="end">${p}%</text>`;
-  }
-  const pts = history.map((h, i) => `${x(i).toFixed(1)},${y(h.percent).toFixed(1)}`).join(" ");
-  svg += `<polyline points="${pts}" fill="none" stroke="#0969da" stroke-width="2.5"/>`;
-  history.forEach((h, i) => {
-    svg += `<circle class="unchecked" cx="${x(i).toFixed(1)}" cy="${y(h.percent).toFixed(1)}" r="4"/>`;
-    // Angled so long milestone names do not overlap.
-    const ly = H - b + 16;
-    svg += `<text class="dim" x="${x(i).toFixed(1)}" y="${ly}" text-anchor="end" transform="rotate(-35 ${x(i).toFixed(1)} ${ly})">${esc(h.milestone)}</text>`;
-    svg += `<text x="${x(i).toFixed(1)}" y="${(y(h.percent) - 9).toFixed(1)}" text-anchor="middle">${h.percent.toFixed(1)}%</text>`;
-  });
-  writeFileSync(join(docs, "progress-history.svg"), svg + "</svg>\n");
+  writeFileSync(join(docs, "progress-history.svg"), progressHistory(history, style));
 }
 console.log(`PORTING.md: ${all.percent.toFixed(2)}% (${all.ported} validated, ${all.implemented} unchecked implementations, ${all.partial} partial, ${all.todo} todo, ${all.na} n/a)`);

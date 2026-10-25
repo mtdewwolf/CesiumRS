@@ -59,6 +59,8 @@ try{
   }
   const lifecycle=await import('/target/browser-validation/validation.js');await lifecycle.default();
   lifecycle.validate_property_clock();eq(true,true,'DataSources default browser clocks and shared array time');
+  lifecycle.validate_position_clocks();eq(true,true,'DataSources position and motion browser clocks');
+  lifecycle.validate_entity_runtime();eq(true,true,'DataSources entity runtime and browser clocks');
   await lifecycle.validate_workers(location.href);passed.push('Rust browser worker initialization, capacity, errors and destroy');
   const video=()=>{const v=document.createElement('video');Object.defineProperties(v,{readyState:{value:2},duration:{value:20},currentTime:{value:0,writable:true}});return v;};
   await lifecycle.validate_dropped_io(location.href);passed.push('unpolled HTTP/image futures abort without unhandled rejections');

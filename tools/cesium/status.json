@@ -4380,5 +4380,150 @@
     "status": "ported",
     "rust": "data_sources::time_interval_collection_property",
     "note": "Observable Core interval collections, raw value cloning, inclusion/overlap/removal, identity merging and fallible source-compatible equality. Validated in the 206-case pinned DataSources suite and native lifecycle tests."
+  },
+  "Scene/Particle": {
+    "status": "ported",
+    "rust": "scene::particle",
+    "note": "Options with Cesium's defaults (Number.MAX_VALUE life as f64::MAX), velocity integration, the update callback, age and normalized age. Six pinned cases including update scripts with callbacks, in tests/scene_particles_imagery.rs."
+  },
+  "Scene/ParticleEmitter": {
+    "status": "ported",
+    "rust": "scene::particle_emitter",
+    "note": "Rust trait replaces the abstract class; validated through the four emitters, each of which sets only the particle's position and velocity in place. Direct CesiumJS cases in tests/scene_particles_imagery.rs."
+  },
+  "Scene/BoxEmitter": {
+    "status": "ported",
+    "rust": "scene::particle_emitter",
+    "note": "Random points in the box from Cesium's seeded Mersenne Twister, velocity away from the center; dimensions getter and setter. Emitted particles match bit for bit."
+  },
+  "Scene/CircleEmitter": {
+    "status": "ported",
+    "rust": "scene::particle_emitter",
+    "note": "Random points in the disk with V8-exact trig, velocity +Z; radius getter and setter. Emitted particles match bit for bit."
+  },
+  "Scene/ConeEmitter": {
+    "status": "ported",
+    "rust": "scene::particle_emitter",
+    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30° default. Emitted particles match bit for bit."
+  },
+  "Scene/SphereEmitter": {
+    "status": "ported",
+    "rust": "scene::particle_emitter",
+    "note": "Random points in the ball, velocity away from the center; radius getter and setter. Emitted particles match bit for bit."
+  },
+  "Scene/PointCloudShading": {
+    "status": "ported",
+    "rust": "scene::point_cloud_shading",
+    "note": "Options with Cesium's defaults; isSupported is PointCloudEyeDomeLighting's draw-buffers and fragment-depth check, over context capabilities. Direct CesiumJS cases in tests/scene_particles_imagery.rs."
+  },
+  "Scene/ImageryLayerFeatureInfo": {
+    "status": "ported",
+    "rust": "scene::imagery_layer_feature_info",
+    "note": "Name chosen by upstream's precedence (name, title, contains name, contains title; truthy values; ASCII-only case folding of the /i regexes) and the nested HTML description table with JavaScript string conversion and key order. 22 pinned cases."
+  },
+  "Scene/KeyframeNode": {
+    "status": "ported",
+    "rust": "scene::keyframe_node",
+    "note": "Voxel keyframe node generic over its spatial node and content: load states, unload, priority and keyframe comparators. Direct CesiumJS cases in tests/scene_particles_imagery.rs."
+  },
+  "Scene/Model/ImageryConfiguration": {
+    "status": "ported",
+    "rust": "scene::model::imagery_configuration",
+    "note": "Snapshot of the layer's show, alpha, brightness, contrast, hue, saturation, gamma and colorToAlpha through an ImageryLayerSettings trait; per-tile callback values are resolved by the layer. Direct CesiumJS cases in tests/scene_particles_imagery.rs."
+  },
+  "Scene/DiscardEmptyTileImagePolicy": {
+    "status": "ported",
+    "rust": "scene::discard_empty_tile_image_policy",
+    "note": "TileDiscardPolicy that discards the shared empty image by identity; the host decodes EMPTY_IMAGE_URI once and shares it. Direct CesiumJS cases in tests/scene_particles_imagery.rs."
+  },
+  "DataSources/PositionProperty": {
+    "status": "ported",
+    "rust": "data_sources::position_property",
+    "note": "Typed position contract, explicit FIXED/INERTIAL conversions, TEME fallback, loaded IAU/EOP data and injectable central-body transforms/clocks. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/ConstantPositionProperty": {
+    "status": "ported",
+    "rust": "data_sources::constant_position_property",
+    "note": "Owned positions and reference-frame updates, fixed-frame constant detection, converted result reuse, equality and atomic definition events. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/CallbackPositionProperty": {
+    "status": "ported",
+    "rust": "data_sources::callback_position_property",
+    "note": "Lazy callbacks in their declared frame, fixed/requested-frame conversion, callback identity, constant flags and reentrant callback replacement. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/SampledPositionProperty": {
+    "status": "ported",
+    "rust": "data_sources::sampled_position_property",
+    "note": "Cartesian sample/derivative packing, delegated interpolation/extrapolation, bulk/packed samples and removals, reference-frame conversion and equality. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/TimeIntervalCollectionPositionProperty": {
+    "status": "ported",
+    "rust": "data_sources::time_interval_collection_position_property",
+    "note": "Observable raw Cartesian intervals, fixed/requested-frame evaluation, boundaries, equality and definition events. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/CompositePositionProperty": {
+    "status": "ported",
+    "rust": "data_sources::composite_position_property",
+    "note": "Interval-selected position properties, requested-frame forwarding, reference-frame metadata, equality and weak child subscriptions. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/PositionPropertyArray": {
+    "status": "ported",
+    "rust": "data_sources::position_property_array",
+    "note": "Shared-time evaluation in a requested frame, snapshot children, undefined filtering, result compaction, equality and child subscription cleanup. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/ScaledPositionProperty": {
+    "status": "ported",
+    "rust": "data_sources::scaled_position_property",
+    "note": "Ellipsoid geodetic-surface projection after reference-frame conversion, child identity, replacement and weak forwarded events. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/VelocityVectorProperty": {
+    "status": "ported",
+    "rust": "data_sources::velocity_vector_property",
+    "note": "Forward/backward finite differences at 1/60 second, normalized/raw velocity, constant/undefined/stationary cases, position replacement and equality. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/VelocityOrientationProperty": {
+    "status": "ported",
+    "rust": "data_sources::velocity_orientation_property",
+    "note": "Velocity-based rotation/quaternion orientation, ellipsoid identity updates and value equality, position forwarding and owned scratch. Validated in the 412-case pinned position/motion suite and native lifecycle tests."
+  },
+  "DataSources/createPropertyDescriptor": {
+    "status": "ported",
+    "rust": "data_sources::create_property_descriptor",
+    "note": "Owned accessor slots, constant/custom factories, identity suppression and child-change forwarding. Four reference traces; failed conversion and reentrant replacement preserve subscriptions."
+  },
+  "DataSources/createRawPropertyDescriptor": {
+    "status": "ported",
+    "rust": "data_sources::create_raw_property_descriptor",
+    "note": "Raw owned accessor slots without constant wrapping; two pinned reference traces. RAII subscriptions replace JavaScript accessor backing fields."
+  },
+  "DataSources/PropertyBag": {
+    "status": "ported",
+    "rust": "data_sources::property_bag",
+    "note": "Ordered heterogeneous DynamicValue/component fields, factories, evaluation/result reuse, merge and equality; nine reference scenarios. Removed fields detach children; evaluation snapshots fields and reads the clock once."
+  },
+  "DataSources/Entity": {
+    "status": "ported",
+    "rust": "data_sources::entity",
+    "note": "Typed component slots, metadata, custom fields, scoped type registry, hierarchy/show, availability, merge and model/height transforms; 93 reference scenarios. Graphics slots accept EntityComponent; concrete Graphics classes and automatic raw graphics-object coercion remain separate unported modules. Strong parent/weak children reject cycles."
+  },
+  "DataSources/EntityCollection": {
+    "status": "ported",
+    "rust": "data_sources::entity_collection",
+    "note": "ID-indexed membership, batching/coalescing, reentrant changes, show and availability bounds; five reference scenarios. All removed child subscriptions detach, including suspended additions."
+  },
+  "DataSources/ReferenceProperty": {
+    "status": "ported",
+    "rust": "data_sources::reference_property",
+    "note": "Lazy escaped/nested references, change forwarding, equality, getType and fixed/requested-frame evaluation; 13 reference scenarios. Weak collection ownership and membership checks prevent stale targets during suspended ID replacement."
+  },
+  "Scene/GltfStructuralMetadataLoader": {
+    "status": "ported",
+    "rust": "scene::gltf_structural_metadata_loader",
+    "note": "Owned loader over the shared ResourceCache: buffer views, textures and the embedded or external schema gathered in JavaScript key order and leased in upstream's order (synchronous texture failures, deferred buffer view/schema failures), EXT_structural_metadata or legacy parsing once textures are uploaded, buffer views released after parsing, destroy during loading. 8 pinned lifecycles in tests/scene_metadata_loaders.rs, including cache entry counts."
+  },
+  "Scene/Model/Extensions/Gpm/GltfMeshPrimitiveGpmLoader": {
+    "status": "ported",
+    "rust": "scene::model::extensions::gpm::gltf_mesh_primitive_gpm_loader",
+    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale × 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
   }
 }

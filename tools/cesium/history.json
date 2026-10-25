@@ -462,5 +462,37 @@
     "ported": 881,
     "implemented": 2,
     "validatedPercent": 47.66
+  },
+  {
+    "milestone": "Particles and imagery helpers",
+    "date": "2026-10-24",
+    "percent": 49.7,
+    "ported": 892,
+    "implemented": 2,
+    "validatedPercent": 47.87
+  },
+  {
+    "milestone": "DataSources positions and motion",
+    "date": "2026-10-24",
+    "percent": 50.16,
+    "ported": 902,
+    "implemented": 2,
+    "validatedPercent": 48.34
+  },
+  {
+    "milestone": "DataSources entities and references",
+    "date": "2026-10-24",
+    "percent": 50.67,
+    "ported": 908,
+    "implemented": 2,
+    "validatedPercent": 48.85
+  },
+  {
+    "milestone": "Metadata and GPM loaders",
+    "date": "2026-10-24",
+    "percent": 50.94,
+    "ported": 910,
+    "implemented": 2,
+    "validatedPercent": 49.12
   }
 ]

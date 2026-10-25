@@ -1,14 +1,14 @@
 use super::{
+    interval_subscriptions::IntervalSubscriptions,
     property::{self, system_clock},
-    DefinitionChanged, Property, PropertyClock, PropertyIntervals, PropertyRef, PropertyValue, Subscription,
+    DefinitionChanged, Property, PropertyClock, PropertyIntervals, PropertyRef, PropertyValue,
 };
 use crate::core::{JulianDate, RuntimeError};
-use std::{any::Any, cell::RefCell, rc::Rc};
+use std::{any::Any, rc::Rc};
 pub struct CompositeProperty<T: PropertyValue> {
     intervals: PropertyIntervals<PropertyRef<T>>,
     changed: DefinitionChanged,
-    _children: Rc<RefCell<Vec<Subscription>>>,
-    _subscription: Subscription,
+    _subscriptions: IntervalSubscriptions,
     clock: PropertyClock,
 }
 impl<T: PropertyValue> Default for CompositeProperty<T> {
@@ -27,38 +27,8 @@ impl<T: PropertyValue> CompositeProperty<T> {
             _ => false,
         });
         let changed = DefinitionChanged::new();
-        let children = Rc::new(RefCell::new(Vec::<Subscription>::new()));
-        let weak = changed.downgrade();
-        let weak_core = intervals.weak_core();
-        let weak_children = Rc::downgrade(&children);
-        let subscription = intervals.changed_event().add_listener(move |_| {
-            let (Some(core), Some(children), Some(event)) =
-                (weak_core.upgrade(), weak_children.upgrade(), weak.upgrade())
-            else {
-                return;
-            };
-            let old = std::mem::take(&mut *children.borrow_mut());
-            drop(old);
-            let properties = core.borrow().intervals().iter().filter_map(|i| i.data.clone()).collect::<Vec<_>>();
-            let forward = event.downgrade();
-            let bridge: super::PropertyListener = Rc::new(move |_| {
-                if let Some(event) = forward.upgrade() {
-                    event.raise();
-                }
-            });
-            let mut subscribed = Vec::<DefinitionChanged>::new();
-            let mut subscriptions = vec![];
-            for p in properties {
-                let e = p.definition_changed();
-                if !subscribed.iter().any(|v| v.ptr_eq(e)) {
-                    subscriptions.push(e.subscribe(bridge.clone()));
-                    subscribed.push(e.clone());
-                }
-            }
-            *children.borrow_mut() = subscriptions;
-            event.raise();
-        });
-        Self { intervals, changed, _children: children, _subscription: subscription, clock }
+        let subscriptions = IntervalSubscriptions::new(&intervals, &changed, |p| p.definition_changed());
+        Self { intervals, changed, _subscriptions: subscriptions, clock }
     }
     pub fn intervals(&self) -> &PropertyIntervals<PropertyRef<T>> {
         &self.intervals
