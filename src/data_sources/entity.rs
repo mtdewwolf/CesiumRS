@@ -488,6 +488,16 @@ impl Entity {
             .collect::<Vec<_>>();
         self.merge_entries(&values)
     }
+    pub(crate) fn clean_for_composite(&self) -> Result<(), RuntimeError> {
+        for name in self.property_names() {
+            self.set_property(&name, None)?;
+        }
+        // Cesium resets these raw fields without definition notifications.
+        let name = self.name.borrow_mut().take();
+        let availability = self.availability.borrow_mut().take();
+        drop((name, availability));
+        Ok(())
+    }
     pub fn merge_values(&self, source: &[(String, PropertyInput)]) -> Result<(), RuntimeError> {
         self.merge_entries(&source.iter().map(|(name, value)| (name.clone(), Some(value.clone()))).collect::<Vec<_>>())
     }

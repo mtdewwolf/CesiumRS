@@ -510,5 +510,13 @@
     "ported": 934,
     "implemented": 2,
     "validatedPercent": 51.34
+  },
+  {
+    "milestone": "Composite entity collections",
+    "date": "2026-10-25",
+    "percent": 53.12,
+    "ported": 935,
+    "implemented": 2,
+    "validatedPercent": 51.49
   }
 ]

@@ -287,10 +287,21 @@ impl EntityCollection {
 }
 
 pub trait EntitySource: Any {
+    fn id(&self) -> &str;
+    fn values(&self) -> Vec<EntityRef>;
     fn get_by_id(&self, id: &str) -> Option<EntityRef>;
     fn collection_changed(&self) -> &ChangeEvent<CollectionChange>;
+    fn contains_source(&self, id: &str) -> bool {
+        self.id() == id
+    }
 }
 impl EntitySource for EntityCollection {
+    fn id(&self) -> &str {
+        self.id()
+    }
+    fn values(&self) -> Vec<EntityRef> {
+        self.values()
+    }
     fn get_by_id(&self, id: &str) -> Option<EntityRef> {
         self.get_by_id(id)
     }

@@ -158,6 +158,38 @@ mod browser {
         Ok(())
     }
     #[wasm_bindgen]
+    pub fn validate_composite_entities() -> Result<(), JsValue> {
+        use cesium_rs::data_sources::*;
+        let low = Entity::with_id("x");
+        let high = Entity::with_id("x");
+        low.set_property("description", Some(PropertyInput::value("low"))).map_err(err)?;
+        high.set_property("description", Some(PropertyInput::value("high"))).map_err(err)?;
+        let a = EntityCollection::new();
+        let b = EntityCollection::new();
+        a.add(low.clone()).map_err(err)?;
+        b.add(high.clone()).map_err(err)?;
+        let composite = CompositeEntityCollection::new(vec![a.clone(), b.clone()]).map_err(err)?;
+        let output = composite.get_by_id("x").unwrap();
+        let reference = ReferenceProperty::from_string(composite.clone(), "x#description").map_err(err)?;
+        assert!(matches!(reference.get_value(None, None).map_err(err)?, Some(DynamicValue::String(v)) if v == "high"));
+        composite.suspend_events();
+        composite.remove_collection(&(b.clone() as EntitySourceRef)).map_err(err)?;
+        composite.resume_events().map_err(err)?;
+        assert!(Rc::ptr_eq(&output, &composite.get_by_id("x").unwrap()));
+        assert!(matches!(reference.get_value(None, None).map_err(err)?, Some(DynamicValue::String(v)) if v == "low"));
+        low.set_property("description", Some(PropertyInput::value("updated"))).map_err(err)?;
+        assert!(
+            matches!(reference.get_value(None, None).map_err(err)?, Some(DynamicValue::String(v)) if v == "updated")
+        );
+        assert!(composite.take_error().is_none());
+        assert_eq!(high.definition_changed().number_of_listeners(), 1);
+        drop(reference);
+        drop(composite);
+        assert!(output.entity_collection().is_none());
+        assert_eq!(low.definition_changed().number_of_listeners(), 1);
+        Ok(())
+    }
+    #[wasm_bindgen]
     pub async fn validate_workers(base_url: String) -> Result<(), JsValue> {
         let mut processor = TaskProcessor::new(Rc::new(BrowserTaskWorker::new("echo", base_url)), Some(1));
         let init = processor.init_web_assembly_module(WebAssemblyOptions {
@@ -192,9 +224,7 @@ mod browser {
         });
         drop(response);
         let image_url = format!("{base_url}slow");
-        let image = BrowserImageHost
-            .load_resource_url(&image_url, false, FetchImageOptions::default())
-            .unwrap();
+        let image = BrowserImageHost.load_resource_url(&image_url, false, FetchImageOptions::default()).unwrap();
         drop(image);
         Ok(())
     }

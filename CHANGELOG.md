@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Port CompositeEntityCollection with ordered priority layers, stable entity identity, clone/merge, batched changes and availability. Validate 45 pinned scenarios and 10 native lifecycle cases; support nested composites, weak owners, deduplicated subscriptions, retired-callback guards and recoverable application component errors.
+
 - Port GltfLoader and its primitive grouping, outline and load-plan prerequisites. Add model transforms, geometry/material/metadata assembly, skins, animations, instancing, morphs, incremental textures and lifecycle cleanup. Begin the Model rendering pipeline with ModelUtility, render resources and the alpha, color, splitter, skinning, morph, geometry, dequantization, lighting, vertical-exaggeration, edge-detection, atmosphere, silhouette and classification stages. Add 645 pinned CesiumJS cases and native lifetime/streaming regressions; complete Model rendering remains pending.
 
 - Port `GltfSpzLoader` and complete `ResourceCache` and `GltfVertexBufferLoader` with SPZ Gaussian-splat attributes. `scene::spz` decodes SPZ bit for bit with the pinned `@spz-loader/core` WebAssembly, including musl's `logf`. 154 pinned CesiumJS cases cover every byte value and decoder error, the loader lifecycles and shared cache entries.

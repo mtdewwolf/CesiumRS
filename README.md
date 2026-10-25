@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 53.0% implemented; 51.3% validated** (934 validated modules, 2 implemented awaiting validation, and 4 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
+**Status: 53.1% implemented; 51.5% validated** (935 validated modules, 2 implemented awaiting validation, and 4 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
 
 ## What is ported
 
@@ -147,7 +147,7 @@ The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **48,340 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **48,385 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
 
 ```bash
 cargo test --all-features                    # all fixtures + native host integration
@@ -167,12 +167,12 @@ This leaves other fixture files untouched.
 ## DataSources properties
 
 `src/data_sources` provides typed constant, callback, array, sampled and interval
-properties, property bags, entities, collections and references: 23 validated modules
-with 744 pinned CesiumJS cases, including position frames, velocity and orientation. Sampling
+properties, property bags, entities, collections, composite collections and references: 24 validated modules
+with 789 pinned CesiumJS cases, including position frames, velocity and orientation. Sampling
 supports Linear, Lagrange and Hermite interpolation, derivatives, quaternion
 conversion and bounded extrapolation. Definition events support local Rc
 callbacks and release child subscriptions with their owners. Entity graphics slots
-use typed components; concrete graphics classes, composite collections, visualizers
+use typed components; concrete graphics classes, visualizers
 and the CZML/KML/GeoJSON/GPX loaders remain ahead. See
 [DataSources API and validation](docs/data-sources.md).
 
@@ -200,7 +200,7 @@ Near-antipodal routes use a deterministic great-circle approximation when Vincen
 3. ✅ **Shaders complete:** all 307 `Source/Shaders` modules match their CesiumJS exports byte for byte; see [Shaders](docs/shaders.md).
 4. ✅ **Workers complete:** all 52 applicable modules, including `decodeDraco` with `dequantizeInShader`; see [Workers](docs/workers.md).
 5. **Scene:** 228 of 482 modules validated, with four partial and two unchecked. The model resource loaders (ResourceCache, Draco, SPZ, vertex/index, image/texture), the b3dm/i3dm/pnts parsers, 3D Metadata parsing and the structural metadata and GPM loaders are validated. GltfLoader now builds model components; ModelUtility, render resources and the alpha, color, splitter, skinning and morph stages are validated. Next: the remaining Model rendering stages/runtime and the 3D Tiles content loaders; see [Scene](docs/scene.md).
-6. **DataSources:** 23 of 108 modules validated. Properties, positions/motion, bags, entities, collections and references are available; next are composite collections, concrete graphics classes and data-source clocks/collections, then document loaders. See [DataSources](docs/data-sources.md).
+6. **DataSources:** 24 of 108 modules validated. Properties, positions/motion, bags, entities, collections, composite collections and references are available; next are concrete graphics classes and data-source clocks/collections, then document loaders. See [DataSources](docs/data-sources.md).
 
 ## Examples and benchmarks
 

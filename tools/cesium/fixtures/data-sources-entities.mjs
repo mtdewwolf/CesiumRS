@@ -5,7 +5,7 @@ import { suite, enc } from "./lib.mjs";
 const epoch = C.JulianDate.fromIso8601("2020-01-01T00:00:00Z");
 const date = (t) => C.JulianDate.addSeconds(epoch, t, new C.JulianDate());
 const span = (a, b, data) => new C.TimeInterval({ start: date(a), stop: date(b), data });
-class FixtureComponent {
+export class FixtureComponent {
   constructor(value = {}) {
     this._definitionChanged = new C.Event();
     this.merge(value);
