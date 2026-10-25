@@ -7,7 +7,11 @@
     "fixtures": "TZ=UTC node fixtures/generate.mjs",
     "tracker": "node tracker.mjs",
     "milestone": "node tracker.mjs --milestone",
-    "renderer-assets": "node generate-renderer-assets.mjs"
+    "renderer-assets": "node generate-renderer-assets.mjs",
+    "bench:inputs": "node bench/inputs.mjs",
+    "bench:node": "node bench/node.mjs --out ../../target/bench-results/cesiumjs-node.json",
+    "bench:browser": "node bench/browser.mjs",
+    "bench:compare": "node bench/compare.mjs"
   },
   "dependencies": {
     "@cesium/engine": "23.0.0"

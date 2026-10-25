@@ -101,7 +101,7 @@ const filledFormats = {
   NORMAL_ONLY: new VertexFormat({ normal: true }),
   POSITION_AND_COLOR: VertexFormat.POSITION_AND_COLOR,
 };
-const filledOptions = a => ({ ...options(a), vertexFormat: filledFormats[a[8]], shadowVolume: a[9] });
+export const filledOptions = a => ({ ...options(a), vertexFormat: filledFormats[a[8]], shadowVolume: a[9] });
 const packedFilled = v => {
   const a = new Array(v.packedLength + 4).fill(-7);
   CorridorGeometry.pack(v, a, 2);

@@ -211,6 +211,8 @@ cargo run --example geodesic_route
 cargo run --profile bench --example benchmark
 ```
 
+`scripts/bench.sh` compares CesiumRS against CesiumJS itself, natively and in Chromium. It runs 14 workloads (Core math, geometry, terrain tessellation and Draco decoding) on the same inputs, checks every output against the CesiumJS fixtures, and reports time ratios. See [Parity benchmark](docs/benchmarks.md).
+
 ## Conventions for new ports
 
 - Mirror Cesium's API shape first; the fixture suites are the contract.

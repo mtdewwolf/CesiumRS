@@ -277,7 +277,7 @@ function polygonArgs(g, kind) {
   ];
 }
 
-function polygonOptions([h, name, height, extruded, stRotation, granularity, format, perPositionHeight, closeTop, closeBottom, arcType, shadowVolume, offset, tex]) {
+export function polygonOptions([h, name, height, extruded, stRotation, granularity, format, perPositionHeight, closeTop, closeBottom, arcType, shadowVolume, offset, tex]) {
   return {
     polygonHierarchy: hierarchyOf(h),
     ellipsoid: ellipsoids[name],
