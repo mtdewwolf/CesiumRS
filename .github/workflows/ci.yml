@@ -50,6 +50,10 @@ jobs:
       - name: wasm build browser
         run: cargo build --locked --target wasm32-unknown-unknown --features browser
 
+      # The benchmark's raw host imports are linked separately from the library.
+      - name: wasm benchmark build
+        run: cargo build --locked --release --target wasm32-unknown-unknown --example parity_bench_wasm
+
       # Freshness of web/client/generated against a release wasm build.
       # Does not need a browser.
       - name: check generated web bundle

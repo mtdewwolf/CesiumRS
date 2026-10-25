@@ -25,6 +25,7 @@ use std::cell::RefCell;
 
 #[cfg(target_arch = "wasm32")]
 mod host {
+    #[link(wasm_import_module = "env")]
     extern "C" {
         pub fn bench_now() -> f64;
     }
