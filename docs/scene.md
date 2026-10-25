@@ -344,9 +344,34 @@ render-state options while retaining shared GPU resources and uniform providers.
 The geometry stage covers 2D projection, instancing and quantized attributes;
 the remaining stages add their defines, shader lines and live uniforms.
 
-The complete Model runtime/scene graph, material, picking and remaining stages
-(including wireframe, primitive outline, clipping, custom shader and styling)
-and model draw-command construction still need porting. The built-in renderable
+The next model batch adds `B3dmLoader`, `I3dmLoader`, `PntsLoader` and
+`GeoJsonLoader` under `scene::model`. Each implements `ResourceLoader` and
+exposes model components. B3DM/I3DM wrap the shared glTF loader, preserve RTC
+transforms, and convert batch tables to structural metadata. I3DM builds
+world-space instances with quantized positions, orientation, scale and batch
+IDs. PNTS builds point attributes, colors, oct normals and metadata; its Draco
+path uses the existing decoder worker. GeoJSON converts supported points, lines
+and polygon rings to local ENU buffers. A new 22-case pinned suite compares
+component attributes, transforms, metadata counts and buffer bytes. Independent
+compressed PNTS validation remains pending. Native regressions cover delayed
+textures, texture failures, cleanup and destruction. Keep calling `process()`
+after geometry is ready while `textures_loaded()` is false.
+
+Material, feature IDs/selection, batch textures, CPU styling, metadata picking,
+clipping planes/polygons and tileset stages have 28 further pinned shader and
+uniform cases. Picking, wireframe, outline and statistics have native resource
+and lifetime tests. Texture providers live in `texture_uniform_map` on model,
+node and primitive resources; evaluate them when binding draw textures. Material
+and feature texture readers are snapshots from the stage invocation; rebuild
+those stage resources when incremental loading attaches new textures.
+
+Instancing and non-instanced 2D projection stages are implemented with persistent
+runtime state and native smoke tests. Independent CesiumJS comparison of their
+projection/matrix cases remains pending, so the tracker marks them implemented
+rather than validated.
+
+The complete Model runtime/scene graph, metadata/custom shader/IBL/point-cloud
+styling stages, and model draw-command construction still need porting. The built-in renderable
 tile factory also remains pending; the default tileset loader requires a factory
 for renderable tile content.
 

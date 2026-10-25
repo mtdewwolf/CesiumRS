@@ -3,10 +3,10 @@
 //! retain shared ownership, matching Cesium's shallow/deep copy boundaries.
 use super::{model_utility, ModelAlphaOptions, ModelLightingOptions, ModelType};
 use crate::{
-    core::{webgl_constants as gl, BoundingSphere, Cartesian3, Color, PrimitiveType, RuntimeError},
+    core::{webgl_constants as gl, BoundingSphere, Cartesian3, Color, Matrix4, PrimitiveType, RuntimeError},
     renderer::{
-        render_state::DepthTest, Buffer, Gl, Pass, RenderState, ShaderBuilder, UniformMap, UniformValue,
-        VertexAttribute,
+        render_state::DepthTest, Buffer, Gl, Pass, PickId, RenderState, ShaderBuilder, Texture, UniformMap,
+        UniformValue, VertexAttribute,
     },
     scene::{model_components as mc, ClassificationType, ColorBlendMode},
 };
@@ -23,6 +23,8 @@ use std::{
 pub struct ModelUniformState {
     pub opaque_pass: Pass,
     pub color: Color,
+    /// Whether `model.color` was explicitly defined (`defined(model.color)`).
+    pub has_color: bool,
     pub color_blend_mode: ColorBlendMode,
     pub color_blend_amount: f64,
     pub split_direction: f64,
@@ -30,6 +32,8 @@ pub struct ModelUniformState {
     pub model_type: ModelType,
     /// Whether the model may be projected to 2D in non-3D scene modes.
     pub project_to_2d: bool,
+    /// Whether CPU/GPU picking (`model._enablePick`) is enabled.
+    pub enable_pick: bool,
     /// Set for classification models.
     pub classification_type: Option<ClassificationType>,
     /// HDR light color, or `None` to use the scene light.
@@ -42,17 +46,35 @@ pub struct ModelUniformState {
     pub show_outline: bool,
     /// The model's bounding sphere, used by atmosphere and clipping stages.
     pub bounding_sphere: BoundingSphere,
+    /// Active primitive feature ID label (`model.featureIdLabel`).
+    pub feature_id_label: String,
+    /// Active instance feature ID label (`model.instanceFeatureIdLabel`).
+    pub instance_feature_id_label: String,
+    /// Whether `model.pointCloudShading.attenuation` is enabled.
+    pub point_cloud_shading_attenuation: bool,
+    /// Optional `model.pointCloudShading.normalShading` override (`Some(false)` disables point cloud normals).
+    pub point_cloud_shading_normal_shading: Option<bool>,
+    /// Whether back-face culling (`model.backFaceCulling`) is enabled.
+    pub back_face_culling: bool,
+    /// `model.modelMatrix`.
+    pub model_matrix: Matrix4,
+    /// `model.sceneGraph.computedModelMatrix`.
+    pub scene_graph_computed_model_matrix: Matrix4,
+    /// `model._pointSize`.
+    pub point_size: f64,
 }
 impl Default for ModelUniformState {
     fn default() -> Self {
         Self {
             opaque_pass: Pass::Opaque,
             color: Color::WHITE,
+            has_color: false,
             color_blend_mode: ColorBlendMode::Highlight,
             color_blend_amount: 0.5,
             split_direction: 0.,
             model_type: ModelType::Gltf,
             project_to_2d: false,
+            enable_pick: false,
             classification_type: None,
             light_color: None,
             silhouette_color: Color::RED,
@@ -61,10 +83,19 @@ impl Default for ModelUniformState {
             outline_color: Color::BLACK,
             show_outline: true,
             bounding_sphere: BoundingSphere::default(),
+            feature_id_label: "featureId_0".into(),
+            instance_feature_id_label: "instanceFeatureId_0".into(),
+            point_cloud_shading_attenuation: false,
+            point_cloud_shading_normal_shading: None,
+            back_face_culling: true,
+            model_matrix: Matrix4::IDENTITY,
+            scene_graph_computed_model_matrix: Matrix4::IDENTITY,
+            point_size: 1.,
         }
     }
 }
 pub type ModelUniformProviders = BTreeMap<String, Rc<dyn Fn() -> UniformValue>>;
+pub type ModelTextureUniformProviders<G> = BTreeMap<String, Rc<dyn Fn() -> Option<Rc<Texture<G>>>>>;
 pub struct PipelineResources {
     pub model: Rc<RefCell<ModelUniformState>>,
     pub shader_builder: ShaderBuilder,
@@ -110,15 +141,21 @@ impl PipelineResources {
 }
 pub struct ModelRenderResources<G: Gl> {
     pub pipeline: PipelineResources,
+    pub texture_uniform_map: ModelTextureUniformProviders<G>,
     pub node_render_resources: Vec<Option<NodeRenderResources<G>>>,
 }
 impl<G: Gl> ModelRenderResources<G> {
     pub fn new(model: Rc<RefCell<ModelUniformState>>) -> Self {
-        Self { pipeline: PipelineResources::new(model), node_render_resources: vec![] }
+        Self {
+            pipeline: PipelineResources::new(model),
+            texture_uniform_map: BTreeMap::new(),
+            node_render_resources: vec![],
+        }
     }
 }
 pub struct NodeRenderResources<G: Gl> {
     pub pipeline: PipelineResources,
+    pub texture_uniform_map: ModelTextureUniformProviders<G>,
     /// Index of the node in the model components/runtime scene graph.
     pub runtime_node: usize,
     pub attributes: Vec<Rc<VertexAttribute<G>>>,
@@ -133,6 +170,7 @@ impl<G: Gl> NodeRenderResources<G> {
     pub fn new(model: &ModelRenderResources<G>, runtime_node: usize) -> Self {
         Self {
             pipeline: model.pipeline.clone(),
+            texture_uniform_map: model.texture_uniform_map.clone(),
             runtime_node,
             attributes: vec![],
             attribute_index: 1,
@@ -145,6 +183,7 @@ impl<G: Gl> NodeRenderResources<G> {
 }
 pub struct PrimitiveRenderResources<G: Gl> {
     pub pipeline: PipelineResources,
+    pub texture_uniform_map: ModelTextureUniformProviders<G>,
     pub runtime_node: usize,
     pub runtime_primitive: usize,
     pub attributes: Vec<Rc<VertexAttribute<G>>>,
@@ -167,6 +206,7 @@ pub struct PrimitiveRenderResources<G: Gl> {
     pub bounding_sphere: BoundingSphere,
     pub lighting_options: ModelLightingOptions,
     pub pick_id: Option<String>,
+    pub pick_ids: Vec<Rc<PickId>>,
 }
 impl<G: Gl> PrimitiveRenderResources<G> {
     pub fn new(
@@ -194,6 +234,7 @@ impl<G: Gl> PrimitiveRenderResources<G> {
         };
         Ok(Self {
             pipeline: node.pipeline.clone(),
+            texture_uniform_map: node.texture_uniform_map.clone(),
             runtime_node: node.runtime_node,
             runtime_primitive,
             attributes: node.attributes.clone(),
@@ -219,6 +260,7 @@ impl<G: Gl> PrimitiveRenderResources<G> {
             bounding_sphere,
             lighting_options: ModelLightingOptions::default(),
             pick_id: None,
+            pick_ids: Vec::new(),
         })
     }
 }

@@ -630,3 +630,5 @@ export function sceneModelStages() {
 
   return s;
 }
+
+export {resources, primitiveResources, basePrimitive, shaderSnapshot, uv, frameState};

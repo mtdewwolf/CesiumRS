@@ -21,6 +21,20 @@ pub struct StructuralMetadataOptions<G: Gl> {
     pub extensions: Option<Value>,
 }
 
+impl<G: Gl> Default for StructuralMetadataOptions<G> {
+    fn default() -> Self {
+        Self {
+            schema: Arc::new(MetadataSchema::default()),
+            property_tables: None,
+            property_textures: Vec::new(),
+            property_attributes: Vec::new(),
+            statistics: None,
+            extras: None,
+            extensions: None,
+        }
+    }
+}
+
 pub struct StructuralMetadata<G: Gl> {
     schema: Arc<MetadataSchema>,
     property_table_count: usize,

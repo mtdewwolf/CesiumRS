@@ -11,7 +11,7 @@ use crate::{
 use futures_util::FutureExt;
 use serde_json::Value;
 use std::{
-    cell::{Cell, Ref, RefCell},
+    cell::{Cell, Ref, RefCell, RefMut},
     rc::Rc,
 };
 type Result<T> = std::result::Result<T, RuntimeError>;
@@ -160,6 +160,9 @@ where
     }
     pub fn components(&self) -> Option<Ref<'_, mc::Components<G>>> {
         Ref::filter_map(self.runtime.borrow(), |r| r.as_ref().map(|r| &r.components)).ok()
+    }
+    pub fn components_mut(&self) -> Option<RefMut<'_, mc::Components<G>>> {
+        RefMut::filter_map(self.runtime.borrow_mut(), |r| r.as_mut().map(|r| &mut r.components)).ok()
     }
     pub fn gltf_json(&self) -> Option<std::sync::Arc<LoadedGltfJson>> {
         self.json.borrow().as_ref().and_then(|l| l.loader().gltf())

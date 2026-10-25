@@ -26,10 +26,17 @@ pub struct Buffer<G: Gl> {
     kind: BufferKind,
     usage: BufferUsage,
     size: usize,
+    id: String,
 }
 impl<G: Gl> Clone for Buffer<G> {
     fn clone(&self) -> Self {
-        Self { resource: self.resource.clone(), kind: self.kind, usage: self.usage, size: self.size }
+        Self {
+            resource: self.resource.clone(),
+            kind: self.kind,
+            usage: self.usage,
+            size: self.size,
+            id: self.id.clone(),
+        }
     }
 }
 impl<G: Gl> Buffer<G> {
@@ -66,7 +73,10 @@ impl<G: Gl> Buffer<G> {
         );
         context.call("bindBuffer", &[target, GlValue::Null])?;
         result?;
-        Ok(Self { resource, kind, usage, size: length })
+        Ok(Self { resource, kind, usage, size: length, id: crate::core::create_guid::create_guid() })
+    }
+    pub fn id(&self) -> &str {
+        &self.id
     }
     pub fn same_allocation(&self, other: &Self) -> bool {
         Rc::ptr_eq(&self.resource, &other.resource)
@@ -79,6 +89,13 @@ impl<G: Gl> Buffer<G> {
     }
     pub fn kind(&self) -> BufferKind {
         self.kind
+    }
+    pub fn index_datatype(&self) -> Option<IndexDatatype> {
+        if let BufferKind::Index(d) = self.kind {
+            Some(d)
+        } else {
+            None
+        }
     }
     pub fn number_of_indices(&self) -> Option<usize> {
         if let BufferKind::Index(d) = self.kind {
