@@ -402,3 +402,88 @@ fn mesh_primitive_gpm_loader() {
         },
     );
 }
+
+/// A stalled first image must not hide the second image's decoding failure.
+struct FailingImages;
+
+impl ImageHost for FailingImages {
+    type Image = RgbaImage;
+    fn dimensions(&self, image: &RgbaImage) -> (u32, u32) {
+        (image.width, image.height)
+    }
+    fn image_from_rgba(&self, image: RgbaImage) -> Result<RgbaImage, RuntimeError> {
+        Ok(image)
+    }
+    fn image_pixels(&self, image: &RgbaImage, _: u32, _: u32) -> Result<Vec<u8>, RuntimeError> {
+        Ok(image.pixels.clone())
+    }
+    fn resize_image(&self, _: &RgbaImage, _: u32, _: u32) -> Result<RgbaImage, RuntimeError> {
+        unreachable!("failed images must never be uploaded")
+    }
+    fn decode_image<'a>(
+        &'a self,
+        _: &'a [u8],
+        _: &'a str,
+        _: ImageDecodeOptions,
+    ) -> Option<ImageFuture<'a, RgbaImage>> {
+        unreachable!("test images use external URIs")
+    }
+    fn load_resource_url<'a>(
+        &'a self,
+        url: &'a str,
+        _: bool,
+        _: FetchImageOptions,
+    ) -> Option<ImageFuture<'a, RgbaImage>> {
+        Some(if url.ends_with("a.png") {
+            Box::pin(std::future::pending())
+        } else {
+            Box::pin(std::future::ready(Err(RuntimeError::new("image decode failed"))))
+        })
+    }
+}
+
+impl ModelImageHost<Host> for FailingImages {}
+
+fn assert_later_image_failure(loader: &impl ResourceLoader, cache: &ResourceCache) {
+    let error = ready(loader.load()).expect_err("later failure must reject despite the stalled first image");
+    assert!(error.message.contains("Failed to load image: b.png"), "{error}");
+    assert_eq!(loader.state(), ResourceLoaderState::Failed);
+    assert!(cache.is_empty(), "failed loaders must release their child leases");
+}
+
+#[test]
+fn structural_metadata_observes_later_image_failure() {
+    let s = setup(&json!({}), structural_schema());
+    let loader = GltfStructuralMetadataLoader::new(GltfStructuralMetadataLoaderOptions {
+        cache: s.cache.clone(),
+        request: s.request.clone(),
+        extension: Some(json!({
+            "schema": {"classes": {}},
+            "propertyTextures": [{"properties": {"a": {"index": 0}, "b": {"index": 1}}}]
+        })),
+        extension_legacy: None,
+        context: Context::new_webgl1(Host::default()),
+        host: Rc::new(FailingImages),
+        texture_options: GltfTextureOptions::default(),
+        cache_key: None,
+    })
+    .unwrap();
+    drop(s.seed);
+    assert_later_image_failure(&loader, &s.cache);
+}
+
+#[test]
+fn gpm_observes_later_image_failure() {
+    let s = setup(&json!({}), structural_schema());
+    let loader = GltfMeshPrimitiveGpmLoader::new(GltfMeshPrimitiveGpmLoaderOptions {
+        cache: s.cache.clone(),
+        request: s.request.clone(),
+        extension: json!({"ppeTextures": [{"index": 0}, {"index": 1}]}),
+        context: Context::new_webgl1(Host::default()),
+        host: Rc::new(FailingImages),
+        texture_options: GltfTextureOptions::default(),
+        cache_key: None,
+    });
+    drop(s.seed);
+    assert_later_image_failure(&loader, &s.cache);
+}

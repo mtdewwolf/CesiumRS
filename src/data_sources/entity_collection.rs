@@ -228,11 +228,11 @@ impl EntityCollection {
     fn fire_changed(&self) {
         {
             let mut state = self.state.borrow_mut();
-            if state.firing {
-                state.refire = true;
+            if state.suspend != 0 || state.added.is_empty() && state.removed.is_empty() && state.changed.is_empty() {
                 return;
             }
-            if state.suspend != 0 || state.added.is_empty() && state.removed.is_empty() && state.changed.is_empty() {
+            if state.firing {
+                state.refire = true;
                 return;
             }
             state.firing = true;
@@ -250,7 +250,10 @@ impl EntityCollection {
             };
             self.changed.raise(event);
             let mut state = self.state.borrow_mut();
-            if !state.refire {
+            if !state.refire
+                || state.suspend != 0
+                || state.added.is_empty() && state.removed.is_empty() && state.changed.is_empty()
+            {
                 state.firing = false;
                 break;
             }
