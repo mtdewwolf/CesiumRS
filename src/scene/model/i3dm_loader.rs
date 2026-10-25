@@ -367,8 +367,12 @@ where
         let has_scale = feature_table.has_property("SCALE") || feature_table.has_property("SCALE_NON_UNIFORM");
 
         let mut translation_f32 = Self::get_positions(feature_table)?;
-        let instance_positions: Vec<Cartesian3> =
-            translation_f32.chunks_exact(3).map(|c| Cartesian3::new(c[0] as f64, c[1] as f64, c[2] as f64)).collect();
+        let instance_positions: Vec<Cartesian3> = translation_f32
+            .as_chunks::<3>()
+            .0
+            .iter()
+            .map(|c| Cartesian3::new(c[0] as f64, c[1] as f64, c[2] as f64))
+            .collect();
 
         if rtc_center.is_none_or(|c| c == Cartesian3::ZERO) {
             let bounding_sphere = BoundingSphere::from_points(&instance_positions);
