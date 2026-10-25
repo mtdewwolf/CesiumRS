@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Port GltfLoader and its primitive grouping, outline and load-plan prerequisites. Add model transforms, geometry/material/metadata assembly, skins, animations, instancing, morphs, incremental textures and lifecycle cleanup. Begin the Model rendering pipeline with ModelUtility, render resources and the alpha, color, splitter, skinning, morph, geometry, dequantization, lighting, vertical-exaggeration, edge-detection, atmosphere, silhouette and classification stages. Add 645 pinned CesiumJS cases and native lifetime/streaming regressions; complete Model rendering remains pending.
+
+- Port `GltfSpzLoader` and complete `ResourceCache` and `GltfVertexBufferLoader` with SPZ Gaussian-splat attributes. `scene::spz` decodes SPZ bit for bit with the pinned `@spz-loader/core` WebAssembly, including musl's `logf`. 154 pinned CesiumJS cases cover every byte value and decoder error, the loader lifecycles and shared cache entries.
+
 - Add the CesiumJS parity benchmark (`scripts/bench.sh`, [docs](docs/benchmarks.md)). It times 14 workloads on identical inputs: CesiumRS native and wasm against CesiumJS in Node and Chromium. Every output is checked against the CesiumJS fixtures or a cross-side checksum before it is timed.
 
 - Port `GltfStructuralMetadataLoader` and `GltfMeshPrimitiveGpmLoader`. These load glTF structural metadata and NGA_gpm_local per-point error textures through the shared ResourceCache and produce `StructuralMetadata`. 15 pinned CesiumJS lifecycles run the real loaders, comparing states, deferred texture uploads, failures, cache entry counts and the PPE schema cache's ids.

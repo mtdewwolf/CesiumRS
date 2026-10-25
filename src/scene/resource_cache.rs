@@ -18,6 +18,7 @@ pub enum CacheResourceKind {
     VertexBuffer,
     IndexBuffer,
     Draco,
+    Spz,
     Texture,
     Image,
     BufferView,
@@ -148,6 +149,13 @@ impl ResourceCache {
     }
     pub fn reference_count(&self, key: &str) -> Option<usize> {
         self.inner.entries.borrow().get(key).map(|e| e.references)
+    }
+    /// Every cache key with its reference count, as `ResourceCache.cacheEntries`.
+    pub fn entries(&self) -> Vec<(String, usize)> {
+        let mut entries =
+            self.inner.entries.borrow().iter().map(|(key, e)| (key.clone(), e.references)).collect::<Vec<_>>();
+        entries.sort();
+        entries
     }
     pub fn len(&self) -> usize {
         self.inner.entries.borrow().len()

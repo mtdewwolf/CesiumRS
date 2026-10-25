@@ -26,3 +26,24 @@ pub use model_type::ModelType;
 pub use style_commands_needed::StyleCommandsNeeded;
 pub use uniform_type::UniformType;
 pub use varying_type::VaryingType;
+
+pub mod primitive_outline_generator;
+pub use primitive_outline_generator::PrimitiveOutlineGenerator;
+pub mod model_utility;
+pub mod render_resources;
+pub use render_resources::{
+    ModelRenderResources, ModelUniformState, NodeRenderResources, PipelineResources, PrimitiveRenderResources,
+};
+pub mod alpha_pipeline_stage;
+pub mod atmosphere_pipeline_stage;
+pub mod classification_pipeline_stage;
+pub mod dequantization_pipeline_stage;
+pub mod edge_detection_pipeline_stage;
+pub mod geometry_pipeline_stage;
+pub mod lighting_pipeline_stage;
+pub mod model_color_pipeline_stage;
+pub mod model_silhouette_pipeline_stage;
+pub mod model_splitter_pipeline_stage;
+pub mod morph_targets_pipeline_stage;
+pub mod skinning_pipeline_stage;
+pub mod vertical_exaggeration_pipeline_stage;

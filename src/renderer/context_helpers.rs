@@ -14,6 +14,8 @@ pub(crate) struct ContextCache<G: Gl> {
     shaders: RefCell<Option<ShaderCache<G>>>,
     textures: RefCell<TextureCache<G>>,
     pub(crate) automatic_textures: RefCell<HashMap<String, TextureBinding<G>>>,
+    /// `context.cache.modelOutliningCache.outlineTexture`.
+    pub(crate) model_outline_texture: RefCell<Option<Rc<Texture<G>>>>,
 }
 impl<G: Gl> Default for ContextCache<G> {
     fn default() -> Self {
@@ -24,6 +26,7 @@ impl<G: Gl> Default for ContextCache<G> {
             shaders: RefCell::new(None),
             textures: RefCell::new(TextureCache::default()),
             automatic_textures: RefCell::new(HashMap::new()),
+            model_outline_texture: RefCell::new(None),
         }
     }
 }
@@ -35,6 +38,7 @@ impl<G: Gl> ContextCache<G> {
         self.quad.borrow_mut().take();
         self.shaders.borrow_mut().take();
         let _ = self.textures.borrow_mut().destroy();
+        self.model_outline_texture.borrow_mut().take();
     }
 }
 #[derive(Default)]

@@ -103,6 +103,16 @@ impl<T: Clone + 'static> ManagedLoader<T> {
         success_state: ResourceLoaderState,
         create: impl FnOnce() -> LocalBoxFuture<'static, Result<T, RuntimeError>>,
     ) -> ResourceLoadFuture {
+        self.load_optional(error_message, success_state, || create().map(|r| r.map(Some)).boxed_local())
+    }
+    /// As `load_with_state`, but work that yields `None` resolves to false and
+    /// leaves the loader LOADING, as a source loader that swallows its error does.
+    pub fn load_optional(
+        &self,
+        error_message: String,
+        success_state: ResourceLoaderState,
+        create: impl FnOnce() -> LocalBoxFuture<'static, Result<Option<T>, RuntimeError>>,
+    ) -> ResourceLoadFuture {
         let mut inner = self.inner.borrow_mut();
         if inner.destroyed {
             return futures_util::future::ready(Err(RuntimeError::new("Resource loader was destroyed")))
@@ -135,11 +145,12 @@ impl<T: Clone + 'static> ManagedLoader<T> {
                 return Ok(false);
             }
             match result {
-                Ok(Ok(value)) => {
+                Ok(Ok(Some(value))) => {
                     inner.value = Some(value);
                     inner.state = success_state;
                     Ok(true)
                 }
+                Ok(Ok(None)) => Ok(false),
                 Ok(Err(error)) => {
                     inner.value = None;
                     inner.state = ResourceLoaderState::Failed;
