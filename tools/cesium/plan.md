@@ -195,5 +195,19 @@ Graphics classes and automatic raw graphics-object conversion remain unported.
 Scoped registries replace JavaScript prototype registration. Weak references and
 RAII subscriptions prevent ownership cycles and stale removed-child callbacks.
 
-Next implement CompositeEntityCollection, concrete graphics definitions,
+CompositeEntityCollection is now validated below. Next implement concrete graphics definitions,
 DataSourceClock/data-source collections and loaders. See [DataSources](docs/data-sources.md).
+
+
+### Composite entity collections
+
+DataSources has 24 of 108 modules validated. CompositeEntityCollection adds
+ordered priority layers, identity-preserving entity composition, clone/merge,
+ordering operations, batched membership/property changes and availability. The
+batch adds 45 pinned scenarios, 10 native lifecycle checks and Chromium coverage;
+DataSources has 789 reference cases overall. Native ownership supports nested
+composites, duplicate/shared sources, weak owners and serialized callback edits.
+Application component failures are observable through an error event and retry API.
+
+Next implement concrete Graphics classes, DataSourceClock/data-source collections,
+visualizers and document loaders. See [DataSources](docs/data-sources.md).

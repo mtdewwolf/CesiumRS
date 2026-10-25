@@ -4515,5 +4515,10 @@
     "status": "ported",
     "rust": "data_sources::reference_property",
     "note": "Lazy escaped/nested references, change forwarding, equality, getType and fixed/requested-frame evaluation; 13 reference scenarios. Weak collection ownership and membership checks prevent stale targets during suspended ID replacement."
+  },
+  "DataSources/CompositeEntityCollection": {
+    "status": "ported",
+    "rust": "data_sources::composite_entity_collection",
+    "note": "Priority-ordered layers, stable entity identity, clone/merge, membership and definition updates, ordering, nested suspension, availability and weak ownership. 45 pinned scenarios and 10 native lifecycle checks; nested composites and duplicate/shared sources use deduplicated RAII subscriptions. Application component errors are observable and retryable; callback edits are serialized."
   }
 }

@@ -1,8 +1,8 @@
 # DataSources
 
-The first **23 of 108 DataSources modules** are ported against `@cesium/engine`
+The first **24 of 108 DataSources modules** are ported against `@cesium/engine`
 23.0.0. They provide values, positions, motion, property bags, entities, collections
-and references. Concrete graphics classes, composite collections, visualizers,
+and references. Concrete graphics classes, visualizers,
 CZML, KML, GeoJSON and GPX remain unported. Scene status is tracked separately in [scene.md](scene.md).
 
 | Cesium module | Rust API | Behavior |
@@ -30,6 +30,7 @@ CZML, KML, GeoJSON and GPX remain unported. Scene status is tracked separately i
 | `Entity` | `Entity` and `EntityTypeRegistry` | Component slots, hierarchy/show, availability, merge and model/height transforms |
 | `EntityCollection` | `EntityCollection` | ID lookup, membership, batched/reentrant notifications, show and availability bounds |
 | `ReferenceProperty` | `ReferenceProperty` | Lazy nested/escaped references, type/frame forwarding, equality and target changes |
+| `CompositeEntityCollection` | `CompositeEntityCollection` | Priority layers, stable entity identity, ordering, cloning/merging, batching and availability |
 
 ## Values, time and ownership
 
@@ -224,6 +225,61 @@ Factory errors leave existing values/subscriptions intact, and reentrant setters
 cannot reinstall a retired slot's child subscription. These ownership/reentrancy
 guarantees are deliberate native improvements over the pinned source.
 
+## Composite entity collections
+
+`CompositeEntityCollection::new(Vec<EntitySourceRef>)` layers collections from
+lowest to highest priority. A defined higher property wins; mergeable components
+fill missing fields from lower layers. Cloneable/mergeable components are cloned
+and can reuse an existing composite component. Other components are shared,
+including PropertyBag, matching Cesium's contracts. Composed entities retain their
+identity across layer edits while their ID remains present. Their insertion order
+follows Cesium's reverse collection/entity traversal.
+
+Layers can be ordinary EntityCollection values or nested composites. `EntitySource`
+provides ID, values, lookup, collection events and source containment; it is also
+used by ReferenceProperty. `add_collection`, removal and the raise/lower/top/bottom
+operations update layer priority. Nested `suspend_events`/`resume_events` coalesce
+output events and defer structural recomposition until the outer resume. Source
+entity changes still refresh properties during suspension. Availability bounds
+come from the composed entities.
+
+```rust
+use cesium_rs::data_sources::*;
+
+let defaults = EntityCollection::new();
+let overrides = EntityCollection::new();
+let item = Entity::with_id("vehicle");
+item.set_property("description", Some(PropertyInput::value("Override"))).unwrap();
+overrides.add(item).unwrap();
+let combined = CompositeEntityCollection::new(vec![defaults, overrides]).unwrap();
+let reference = ReferenceProperty::from_string(combined.clone(), "vehicle#description").unwrap();
+assert!(reference.is_constant());
+```
+
+`with_options` shares an EntityTypeRegistry and PositionContext with newly composed
+entities, and accepts a weak application owner. Output collection events expose
+Cesium's backing EntityCollection; its weak owner points to the outer composite,
+including while entities are staged during recomposition. Input layers are owned;
+listeners and back-pointers are weak. Duplicate layers and entities shared by
+multiple layers use one forwarding subscription per source/entity. Nested layer
+cycles are rejected. Removed or renewed registrations cannot deliver retired
+callbacks. Reentrant source/layer edits are queued until the current update ends.
+
+Application component clone/merge methods can return RuntimeError. Direct composite
+operations return that error. Automatic source callbacks report errors through
+`errors()` and retain the latest one for `take_error()`. An error can leave a
+partially composed result; fix the component and call `recompose()` to retry.
+Event suspension is balanced even on failure. This replaces JavaScript's thrown
+callback exceptions with an explicit native error channel.
+
+Pinned-source quirks are retained: if every layer sets a property to undefined,
+a definition update keeps the last composite value until a structural rebuild;
+shared property bags can be modified by merging lower-layer fields. Native
+improvements cover notifications during construction, duplicate/shared source
+ownership, cycles and reentrant callbacks. Metadata uses typed setters, and
+computed `isShowing` notifications are ignored instead of assigning a read-only
+field. The concrete Graphics classes remain separate unported modules.
+
 ## Validation and remaining work
 
 `tests/data_sources_properties.rs` replays **206 pinned CesiumJS scenarios** across
@@ -255,9 +311,16 @@ coalescing/reentrancy and escaped references. **14 native lifecycle tests** cove
 payload nesting/drop, descriptor renewal/failure, child removal, parent ownership,
 old-value lifetimes and suspended ID replacement. The Chromium harness checks
 browser clocks, batching, hierarchy, reference evaluation and listener cleanup.
-DataSources now has **744 pinned scenarios** overall.
+DataSources now has **789 pinned scenarios** overall.
 
-Next, implement CompositeEntityCollection, concrete graphics definitions,
+`tests/data_sources_composite.rs` adds **45 pinned scenarios**, including all three-
+layer priority permutations, ordering operations, membership changes, nested
+suspension, metadata, clone/merge, child mutations and event/subscription traces.
+Ten native lifecycle tests cover nested composites and references, shared inputs,
+retired callbacks, serialized edits, weak owners, staging and component failures.
+The Chromium harness checks layer removal, identity, references and cleanup.
+
+Next, implement concrete graphics definitions,
 DataSourceClock/data-source collections and the loaders in dependency order. The largest document modules are CzmlDataSource
 (5,142 upstream lines), KmlDataSource (4,249), GeoJsonDataSource (1,064) and
 GpxDataSource (1,018). Their property/entity dependencies must exist before their

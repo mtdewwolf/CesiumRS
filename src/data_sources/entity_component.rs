@@ -84,6 +84,9 @@ impl<T: ComponentValue> PropertyComponent<T> {
     pub fn wrap(property: PropertyRef<T>) -> ComponentRef {
         Rc::new(Self { property })
     }
+    pub fn property(&self) -> &PropertyRef<T> {
+        &self.property
+    }
 }
 impl<T: ComponentValue> EntityComponent for PropertyComponent<T> {
     fn identity(&self) -> *const () {

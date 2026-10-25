@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Port CompositeEntityCollection with ordered priority layers, stable entity identity, clone/merge, batched changes and availability. Validate 45 pinned scenarios and 10 native lifecycle cases; support nested composites, weak owners, deduplicated subscriptions, retired-callback guards and recoverable application component errors.
+
 - Port six DataSources modules: property/raw descriptors, PropertyBag, Entity, EntityCollection and ReferenceProperty. Add typed component adapters, scoped factories, hierarchy, availability, model transforms and batched references; validate 126 pinned scenarios, 14 native lifecycle tests and browser ownership/clocks. Concrete graphics classes remain unported.
 
 - Port ten DataSources position/motion modules: reference-frame conversion, constant/callback/sampled positions, interval/composite positions, arrays, surface scaling, velocity and orientation. Validate 412 pinned scenarios, native lifecycle/ownership and browser clocks; share Core Earth/Moon transforms through PositionContext.

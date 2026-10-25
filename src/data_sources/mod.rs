@@ -67,3 +67,5 @@ pub mod entity_collection;
 pub use entity_collection::{CollectionChange, EntityCollection, EntityCollectionOptions, EntitySource};
 pub mod reference_property;
 pub use reference_property::ReferenceProperty;
+pub mod composite_entity_collection;
+pub use composite_entity_collection::{CompositeEntityCollection, EntitySourceRef};
