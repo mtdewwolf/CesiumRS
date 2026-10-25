@@ -488,11 +488,19 @@
     "validatedPercent": 48.85
   },
   {
+    "milestone": "Metadata and GPM loaders",
+    "date": "2026-10-24",
+    "percent": 50.94,
+    "ported": 910,
+    "implemented": 2,
+    "validatedPercent": 49.12
+  },
+  {
     "milestone": "Composite entity collections",
     "date": "2026-10-25",
-    "percent": 50.82,
-    "ported": 909,
+    "percent": 51.09,
+    "ported": 911,
     "implemented": 2,
-    "validatedPercent": 49
+    "validatedPercent": 49.27
   }
 ]

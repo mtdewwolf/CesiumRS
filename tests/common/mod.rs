@@ -334,7 +334,9 @@ fn flat_scale(x: &[Value], y: &[Value]) -> Option<f64> {
     Some(scale)
 }
 
-fn close(a: &Value, b: &Value, tol: Tol) -> bool {
+/// Whether two encoded values agree within `tol`. Public so the parity
+/// benchmark (`examples/parity_bench`) checks its outputs the same way.
+pub fn close(a: &Value, b: &Value, tol: Tol) -> bool {
     match (a, b) {
         (Value::Array(x), Value::Array(y)) => {
             let tol = match flat_scale(x, y) {
