@@ -43,6 +43,35 @@ pub enum MathValue {
     Quaternion(Quaternion),
 }
 
+impl MathValue {
+    /// The value as GLSL components, in Cesium's column-major matrix order.
+    pub fn to_f32_vec(self) -> Vec<f32> {
+        match self {
+            Self::Number(v) => vec![v as f32],
+            Self::Cartesian2(v) => vec![v.x as f32, v.y as f32],
+            Self::Cartesian3(v) => vec![v.x as f32, v.y as f32, v.z as f32],
+            Self::Cartesian4(v) => vec![v.x as f32, v.y as f32, v.z as f32, v.w as f32],
+            Self::Matrix2(v) => v.0.iter().map(|&x| x as f32).collect(),
+            Self::Matrix3(v) => v.0.iter().map(|&x| x as f32).collect(),
+            Self::Matrix4(v) => v.0.iter().map(|&x| x as f32).collect(),
+            Self::Quaternion(v) => vec![v.x as f32, v.y as f32, v.z as f32, v.w as f32],
+        }
+    }
+
+    /// The number of GLSL components the value supplies.
+    pub fn component_count(self) -> usize {
+        match self {
+            Self::Number(_) => 1,
+            Self::Cartesian2(_) => 2,
+            Self::Cartesian3(_) => 3,
+            Self::Cartesian4(_) | Self::Quaternion(_) => 4,
+            Self::Matrix2(_) => 4,
+            Self::Matrix3(_) => 9,
+            Self::Matrix4(_) => 16,
+        }
+    }
+}
+
 /// An attribute's semantic: a vertex semantic, an instance semantic, or none
 /// for custom attributes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -90,7 +119,7 @@ pub struct Attribute<G: Gl> {
     pub quantization: Option<Quantization>,
     pub typed_array: Option<TypedArray>,
     pub buffer: Option<Buffer<G>>,
-    pub byte_offset: usize,
+    pub byte_offset: Option<usize>,
     pub byte_stride: Option<usize>,
 }
 
@@ -110,7 +139,7 @@ impl<G: Gl> Default for Attribute<G> {
             quantization: None,
             typed_array: None,
             buffer: None,
-            byte_offset: 0,
+            byte_offset: Some(0),
             byte_stride: None,
         }
     }
@@ -213,6 +242,14 @@ impl<G: Gl> Default for MorphTarget<G> {
     }
 }
 
+/// Edge visibility data loaded by GltfLoader's extension handler.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct EdgeVisibility {
+    pub visibility: Vec<MathValue>,
+    pub material: Option<usize>,
+    pub silhouette_normals: Option<Vec<MathValue>>,
+}
+
 /// `ModelComponents.Primitive`.
 #[derive(Clone)]
 pub struct Primitive<G: Gl> {
@@ -225,6 +262,7 @@ pub struct Primitive<G: Gl> {
     pub property_texture_ids: Vec<usize>,
     pub property_attribute_ids: Vec<usize>,
     pub outline_coordinates: Option<Attribute<G>>,
+    pub edge_visibility: Option<EdgeVisibility>,
     pub model_primitive_imagery: Option<super::FrameResource>,
 }
 
@@ -240,6 +278,7 @@ impl<G: Gl> Default for Primitive<G> {
             property_texture_ids: Vec::new(),
             property_attribute_ids: Vec::new(),
             outline_coordinates: None,
+            edge_visibility: None,
             model_primitive_imagery: None,
         }
     }
@@ -387,6 +426,8 @@ pub struct Components<G: Gl> {
     pub forward_axis: Option<Axis>,
     pub transform: Matrix4,
     pub extensions: Map<String, Value>,
+    /// Typed NGA_gpm_local extension data.
+    pub gpm_local: Option<Rc<super::model::extensions::gpm::GltfGpmLocal>>,
 }
 
 impl<G: Gl> Default for Components<G> {
@@ -403,6 +444,7 @@ impl<G: Gl> Default for Components<G> {
             forward_axis: None,
             transform: Matrix4::IDENTITY,
             extensions: Map::new(),
+            gpm_local: None,
         }
     }
 }
@@ -577,7 +619,7 @@ pub struct Material<G: Gl> {
     pub occlusion_texture: Option<TextureReader<G>>,
     pub emissive_factor: Cartesian3,
     pub alpha_mode: AlphaMode,
-    pub alpha_cutoff: f64,
+    pub alpha_cutoff: Option<f64>,
     pub double_sided: bool,
     pub unlit: bool,
     pub point_diameter: Option<f64>,
@@ -600,7 +642,7 @@ impl<G: Gl> Default for Material<G> {
             occlusion_texture: None,
             emissive_factor: Self::DEFAULT_EMISSIVE_FACTOR,
             alpha_mode: AlphaMode::Opaque,
-            alpha_cutoff: 0.5,
+            alpha_cutoff: Some(0.5),
             double_sided: false,
             unlit: false,
             point_diameter: None,

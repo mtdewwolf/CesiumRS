@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 50.9% implemented; 49.1% validated** (910 validated modules, 2 implemented awaiting validation, and 6 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
+**Status: 53.0% implemented; 51.3% validated** (934 validated modules, 2 implemented awaiting validation, and 4 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
 
 ## What is ported
 
@@ -64,7 +64,7 @@ TaskProcessor message contract. `transferTypedArrayTest` is n/a.
 
 ### Scene underway
 
-**212 of 482 Scene modules** are fully ported, including Camera and CameraFlightPath.
+**228 of 482 Scene modules** are fully ported, including Camera and CameraFlightPath.
 
 The first covers the enums and stateless helpers the rest of Scene builds on:
 - the blend, depth and stencil constants and presets, returned as renderer
@@ -92,7 +92,7 @@ The third, 3D Metadata, has 24 modules so far:
 - the tileset, tile, content, group and implicit subtree entities, and the
   lookups that find them.
 
-All are replayed against direct CesiumJS cases. Model dependencies now include typed ModelComponents, initialized Draco workers, shared resource cache leases, glTF JSON/buffer views and frame-driven Draco/GPU index loading. Image and texture loaders are validated; cache and vertex loading remain partial pending SPZ paths. The 3D Tiles binary content parsers are in: `Cesium3DTileFeatureTable`, `B3dmParser`, `I3dmParser` and `PntsParser`. So is the `NGA_gpm_local` extension: its data classes and `GltfGpmLoader`. 3D Metadata now covers property textures, `StructuralMetadata` and its three parsers (`EXT_structural_metadata`, `EXT_feature_metadata`, batch tables). [Scene](docs/scene.md).
+All are replayed against direct CesiumJS cases. Model dependencies now include typed ModelComponents, initialized Draco workers, shared resource cache leases, glTF JSON/buffer views and frame-driven Draco/GPU index loading. Image, texture and SPZ Gaussian-splat loaders are validated, completing ResourceCache and vertex loading; the SPZ decoder matches the pinned `@spz-loader/core` WebAssembly bit for bit. GltfLoader now assembles geometry, materials, feature IDs, skins, animations and metadata through these caches. ModelUtility, render resources and thirteen shader pipeline stages are validated; the complete Model renderer and scene graph remain in progress. The 3D Tiles binary content parsers are in: `Cesium3DTileFeatureTable`, `B3dmParser`, `I3dmParser` and `PntsParser`. So is the `NGA_gpm_local` extension: its data classes and `GltfGpmLoader`. 3D Metadata now covers property textures, `StructuralMetadata` and its three parsers (`EXT_structural_metadata`, `EXT_feature_metadata`, batch tables). [Scene](docs/scene.md).
 
 ### Shaders complete
 
@@ -147,7 +147,7 @@ The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **47,541 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **48,340 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
 
 ```bash
 cargo test --all-features                    # all fixtures + native host integration
@@ -199,7 +199,7 @@ Near-antipodal routes use a deterministic great-circle approximation when Vincen
 2. **Renderer complete:** all 46 modules, including Context, complete Scene-frame uniforms, cube/volume textures, atlases and shared contexts. Next: Scene and viewer integration; see [Renderer validation](docs/renderer-foundation.md).
 3. ✅ **Shaders complete:** all 307 `Source/Shaders` modules match their CesiumJS exports byte for byte; see [Shaders](docs/shaders.md).
 4. ✅ **Workers complete:** all 52 applicable modules, including `decodeDraco` with `dequantizeInShader`; see [Workers](docs/workers.md).
-5. **Scene:** 212 of 482 modules validated, with six partial and two unchecked. Resource caching and Draco/GPU geometry loading are in progress. The b3dm/i3dm/pnts parsers, 3D Metadata parsing and the structural metadata and GPM loaders are validated. Next: SPZ loading, the GltfLoader/Model pipeline and the 3D Tiles content loaders; see [Scene](docs/scene.md).
+5. **Scene:** 228 of 482 modules validated, with four partial and two unchecked. The model resource loaders (ResourceCache, Draco, SPZ, vertex/index, image/texture), the b3dm/i3dm/pnts parsers, 3D Metadata parsing and the structural metadata and GPM loaders are validated. GltfLoader now builds model components; ModelUtility, render resources and the alpha, color, splitter, skinning and morph stages are validated. Next: the remaining Model rendering stages/runtime and the 3D Tiles content loaders; see [Scene](docs/scene.md).
 6. **DataSources:** 23 of 108 modules validated. Properties, positions/motion, bags, entities, collections and references are available; next are composite collections, concrete graphics classes and data-source clocks/collections, then document loaders. See [DataSources](docs/data-sources.md).
 
 ## Examples and benchmarks

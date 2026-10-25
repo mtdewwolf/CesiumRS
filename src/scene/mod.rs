@@ -404,6 +404,10 @@ pub use resource_cache::{CacheLease, CacheResourceKind, ResourceCache, WeakResou
 
 pub mod gltf_draco_loader;
 pub use gltf_draco_loader::{DracoDecodeWorker, GltfDracoLoader};
+pub mod spz;
+pub use spz::{load_spz, GaussianCloud};
+pub mod gltf_spz_loader;
+pub use gltf_spz_loader::GltfSpzLoader;
 
 pub mod gltf_geometry_loader;
 pub use gltf_geometry_loader::{
@@ -466,3 +470,11 @@ pub mod discard_empty_tile_image_policy;
 pub use discard_empty_tile_image_policy::DiscardEmptyTileImagePolicy;
 pub mod gltf_structural_metadata_loader;
 pub use gltf_structural_metadata_loader::{GltfStructuralMetadataLoader, GltfStructuralMetadataLoaderOptions};
+
+pub mod get_mesh_primitives;
+pub use get_mesh_primitives::get_mesh_primitives;
+pub mod primitive_load_plan;
+pub use primitive_load_plan::{AttributeLoadPlan, IndicesLoadPlan, PlannedAttribute, PrimitiveLoadPlan};
+
+pub mod gltf_loader;
+pub use gltf_loader::{GltfLoader, GltfLoaderOptions};

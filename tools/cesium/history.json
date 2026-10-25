@@ -494,5 +494,21 @@
     "ported": 910,
     "implemented": 2,
     "validatedPercent": 49.12
+  },
+  {
+    "milestone": "SPZ loaders",
+    "date": "2026-10-25",
+    "percent": 51.19,
+    "ported": 913,
+    "implemented": 2,
+    "validatedPercent": 49.55
+  },
+  {
+    "milestone": "glTF components and model pipeline foundations",
+    "date": "2026-10-25",
+    "percent": 52.97,
+    "ported": 934,
+    "implemented": 2,
+    "validatedPercent": 51.34
   }
 ]

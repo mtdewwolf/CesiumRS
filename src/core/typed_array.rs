@@ -143,4 +143,9 @@ impl TypedArray {
     pub fn to_f64_vec(&self) -> Vec<f64> {
         each!(self, v => v.iter().map(|&x| f64::from(x)).collect())
     }
+
+    /// The underlying `ArrayBuffer` bytes, little-endian as WebGL uploads them.
+    pub fn to_le_bytes(&self) -> Vec<u8> {
+        each!(self, v => v.iter().flat_map(|x| x.to_le_bytes()).collect())
+    }
 }
