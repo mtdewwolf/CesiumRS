@@ -29,6 +29,18 @@ use crate::renderer::{Buffer, Gl, Texture};
 use serde_json::{Map, Value};
 use std::rc::Rc;
 
+macro_rules! impl_clone_for_gl {
+    ($name:ident { $($field:ident),* $(,)? }) => {
+        impl<G: Gl> Clone for $name<G> {
+            fn clone(&self) -> Self {
+                Self {
+                    $($field: self.$field.clone(),)*
+                }
+            }
+        }
+    };
+}
+
 /// A number, Cartesian, matrix or quaternion: whatever JavaScript type an
 /// accessor element, a constant or an animation output reads as.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -104,7 +116,6 @@ pub struct Quantization {
 }
 
 /// `ModelComponents.Attribute`: a vertex or instance attribute.
-#[derive(Clone)]
 pub struct Attribute<G: Gl> {
     pub name: Option<String>,
     pub semantic: Option<AttributeSemantic>,
@@ -122,6 +133,24 @@ pub struct Attribute<G: Gl> {
     pub byte_offset: Option<usize>,
     pub byte_stride: Option<usize>,
 }
+
+impl_clone_for_gl!(Attribute {
+    name,
+    semantic,
+    set_index,
+    component_datatype,
+    attribute_type,
+    normalized,
+    count,
+    min,
+    max,
+    constant,
+    quantization,
+    typed_array,
+    buffer,
+    byte_offset,
+    byte_stride,
+});
 
 impl<G: Gl> Default for Attribute<G> {
     fn default() -> Self {
@@ -146,13 +175,14 @@ impl<G: Gl> Default for Attribute<G> {
 }
 
 /// `ModelComponents.Indices`.
-#[derive(Clone)]
 pub struct Indices<G: Gl> {
     pub index_datatype: Option<IndexDatatype>,
     pub count: Option<usize>,
     pub buffer: Option<Buffer<G>>,
     pub typed_array: Option<TypedArray>,
 }
+
+impl_clone_for_gl!(Indices { index_datatype, count, buffer, typed_array });
 
 impl<G: Gl> Default for Indices<G> {
     fn default() -> Self {
@@ -198,7 +228,6 @@ impl Default for FeatureIdImplicitRange {
 }
 
 /// `ModelComponents.FeatureIdTexture`: feature IDs read from texture channels.
-#[derive(Clone)]
 pub struct FeatureIdTexture<G: Gl> {
     pub feature_count: Option<u32>,
     pub null_feature_id: Option<u32>,
@@ -207,6 +236,15 @@ pub struct FeatureIdTexture<G: Gl> {
     pub label: Option<String>,
     pub positional_label: Option<String>,
 }
+
+impl_clone_for_gl!(FeatureIdTexture {
+    feature_count,
+    null_feature_id,
+    property_table_id,
+    texture_reader,
+    label,
+    positional_label,
+});
 
 impl<G: Gl> Default for FeatureIdTexture<G> {
     fn default() -> Self {
@@ -223,18 +261,70 @@ impl<G: Gl> Default for FeatureIdTexture<G> {
 
 /// One entry of a primitive's or instances' `featureIds`, which JavaScript
 /// keeps as an array of the three feature ID classes.
-#[derive(Clone)]
 pub enum FeatureId<G: Gl> {
     Attribute(FeatureIdAttribute),
     ImplicitRange(FeatureIdImplicitRange),
     Texture(FeatureIdTexture<G>),
 }
 
+impl<G: Gl> Clone for FeatureId<G> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Attribute(f) => Self::Attribute(f.clone()),
+            Self::ImplicitRange(f) => Self::ImplicitRange(f.clone()),
+            Self::Texture(f) => Self::Texture(f.clone()),
+        }
+    }
+}
+
+impl<G: Gl> FeatureId<G> {
+    pub fn feature_count(&self) -> Option<u32> {
+        match self {
+            Self::Attribute(f) => f.feature_count,
+            Self::ImplicitRange(f) => f.feature_count,
+            Self::Texture(f) => f.feature_count,
+        }
+    }
+
+    pub fn null_feature_id(&self) -> Option<u32> {
+        match self {
+            Self::Attribute(f) => f.null_feature_id,
+            Self::ImplicitRange(f) => f.null_feature_id,
+            Self::Texture(f) => f.null_feature_id,
+        }
+    }
+
+    pub fn property_table_id(&self) -> Option<usize> {
+        match self {
+            Self::Attribute(f) => f.property_table_id,
+            Self::ImplicitRange(f) => f.property_table_id,
+            Self::Texture(f) => f.property_table_id,
+        }
+    }
+
+    pub fn label(&self) -> Option<&str> {
+        match self {
+            Self::Attribute(f) => f.label.as_deref(),
+            Self::ImplicitRange(f) => f.label.as_deref(),
+            Self::Texture(f) => f.label.as_deref(),
+        }
+    }
+
+    pub fn positional_label(&self) -> Option<&str> {
+        match self {
+            Self::Attribute(f) => f.positional_label.as_deref(),
+            Self::ImplicitRange(f) => f.positional_label.as_deref(),
+            Self::Texture(f) => f.positional_label.as_deref(),
+        }
+    }
+}
+
 /// `ModelComponents.MorphTarget`.
-#[derive(Clone)]
 pub struct MorphTarget<G: Gl> {
     pub attributes: Vec<Attribute<G>>,
 }
+
+impl_clone_for_gl!(MorphTarget { attributes });
 
 impl<G: Gl> Default for MorphTarget<G> {
     fn default() -> Self {
@@ -251,7 +341,6 @@ pub struct EdgeVisibility {
 }
 
 /// `ModelComponents.Primitive`.
-#[derive(Clone)]
 pub struct Primitive<G: Gl> {
     pub attributes: Vec<Attribute<G>>,
     pub morph_targets: Vec<MorphTarget<G>>,
@@ -265,6 +354,20 @@ pub struct Primitive<G: Gl> {
     pub edge_visibility: Option<EdgeVisibility>,
     pub model_primitive_imagery: Option<super::FrameResource>,
 }
+
+impl_clone_for_gl!(Primitive {
+    attributes,
+    morph_targets,
+    indices,
+    material,
+    primitive_type,
+    feature_ids,
+    property_texture_ids,
+    property_attribute_ids,
+    outline_coordinates,
+    edge_visibility,
+    model_primitive_imagery,
+});
 
 impl<G: Gl> Default for Primitive<G> {
     fn default() -> Self {
@@ -285,12 +388,13 @@ impl<G: Gl> Default for Primitive<G> {
 }
 
 /// `ModelComponents.Instances`: GPU instancing attributes and feature IDs.
-#[derive(Clone)]
 pub struct Instances<G: Gl> {
     pub attributes: Vec<Attribute<G>>,
     pub feature_ids: Vec<FeatureId<G>>,
     pub transform_in_world_space: bool,
 }
+
+impl_clone_for_gl!(Instances { attributes, feature_ids, transform_in_world_space });
 
 impl<G: Gl> Default for Instances<G> {
     fn default() -> Self {
@@ -308,7 +412,6 @@ pub struct Skin {
 
 /// `ModelComponents.Node`. `children` index [`Components::nodes`]; `skin`
 /// indexes [`Components::skins`].
-#[derive(Clone)]
 pub struct Node<G: Gl> {
     pub name: Option<String>,
     pub index: Option<usize>,
@@ -323,6 +426,21 @@ pub struct Node<G: Gl> {
     pub morph_weights: Vec<f64>,
     pub articulation_name: Option<String>,
 }
+
+impl_clone_for_gl!(Node {
+    name,
+    index,
+    children,
+    primitives,
+    instances,
+    skin,
+    matrix,
+    translation,
+    rotation,
+    scale,
+    morph_weights,
+    articulation_name,
+});
 
 impl<G: Gl> Default for Node<G> {
     fn default() -> Self {
@@ -413,7 +531,6 @@ pub struct Asset {
 }
 
 /// `ModelComponents.Components`: everything the loader produced.
-#[derive(Clone)]
 pub struct Components<G: Gl> {
     pub asset: Asset,
     pub scene: Option<Scene>,
@@ -429,6 +546,21 @@ pub struct Components<G: Gl> {
     /// Typed NGA_gpm_local extension data.
     pub gpm_local: Option<Rc<super::model::extensions::gpm::GltfGpmLocal>>,
 }
+
+impl_clone_for_gl!(Components {
+    asset,
+    scene,
+    nodes,
+    skins,
+    animations,
+    articulations,
+    structural_metadata,
+    up_axis,
+    forward_axis,
+    transform,
+    extensions,
+    gpm_local,
+});
 
 impl<G: Gl> Default for Components<G> {
     fn default() -> Self {
@@ -452,7 +584,6 @@ impl<G: Gl> Default for Components<G> {
 /// `ModelComponents.TextureReader`: a texture and how a shader samples it.
 /// `index` and `scale` are numbers from glTF JSON, so they may be undefined
 /// when `GltfLoaderUtil.createModelTextureReader` copies them.
-#[derive(Clone)]
 pub struct TextureReader<G: Gl> {
     pub texture: Option<Rc<Texture<G>>>,
     pub index: Option<f64>,
@@ -461,6 +592,8 @@ pub struct TextureReader<G: Gl> {
     pub scale: Option<f64>,
     pub channels: Option<String>,
 }
+
+impl_clone_for_gl!(TextureReader { texture, index, tex_coord, transform, scale, channels });
 
 impl<G: Gl> Default for TextureReader<G> {
     fn default() -> Self {
@@ -476,7 +609,6 @@ impl<G: Gl> Default for TextureReader<G> {
 }
 
 /// `ModelComponents.MetallicRoughness`.
-#[derive(Clone)]
 pub struct MetallicRoughness<G: Gl> {
     pub base_color_texture: Option<TextureReader<G>>,
     pub metallic_roughness_texture: Option<TextureReader<G>>,
@@ -484,6 +616,14 @@ pub struct MetallicRoughness<G: Gl> {
     pub metallic_factor: f64,
     pub roughness_factor: f64,
 }
+
+impl_clone_for_gl!(MetallicRoughness {
+    base_color_texture,
+    metallic_roughness_texture,
+    base_color_factor,
+    metallic_factor,
+    roughness_factor,
+});
 
 impl<G: Gl> MetallicRoughness<G> {
     pub const DEFAULT_BASE_COLOR_FACTOR: Cartesian4 = Cartesian4::ONE;
@@ -504,7 +644,6 @@ impl<G: Gl> Default for MetallicRoughness<G> {
 }
 
 /// `ModelComponents.SpecularGlossiness` (`KHR_materials_pbrSpecularGlossiness`).
-#[derive(Clone)]
 pub struct SpecularGlossiness<G: Gl> {
     pub diffuse_texture: Option<TextureReader<G>>,
     pub specular_glossiness_texture: Option<TextureReader<G>>,
@@ -512,6 +651,14 @@ pub struct SpecularGlossiness<G: Gl> {
     pub specular_factor: Cartesian3,
     pub glossiness_factor: f64,
 }
+
+impl_clone_for_gl!(SpecularGlossiness {
+    diffuse_texture,
+    specular_glossiness_texture,
+    diffuse_factor,
+    specular_factor,
+    glossiness_factor,
+});
 
 impl<G: Gl> SpecularGlossiness<G> {
     pub const DEFAULT_DIFFUSE_FACTOR: Cartesian4 = Cartesian4::ONE;
@@ -532,13 +679,14 @@ impl<G: Gl> Default for SpecularGlossiness<G> {
 }
 
 /// `ModelComponents.Specular` (`KHR_materials_specular`).
-#[derive(Clone)]
 pub struct Specular<G: Gl> {
     pub specular_factor: f64,
     pub specular_texture: Option<TextureReader<G>>,
     pub specular_color_factor: Cartesian3,
     pub specular_color_texture: Option<TextureReader<G>>,
 }
+
+impl_clone_for_gl!(Specular { specular_factor, specular_texture, specular_color_factor, specular_color_texture });
 
 impl<G: Gl> Specular<G> {
     pub const DEFAULT_SPECULAR_FACTOR: f64 = 1.0;
@@ -557,12 +705,13 @@ impl<G: Gl> Default for Specular<G> {
 }
 
 /// `ModelComponents.Anisotropy` (`KHR_materials_anisotropy`).
-#[derive(Clone)]
 pub struct Anisotropy<G: Gl> {
     pub anisotropy_strength: f64,
     pub anisotropy_rotation: f64,
     pub anisotropy_texture: Option<TextureReader<G>>,
 }
+
+impl_clone_for_gl!(Anisotropy { anisotropy_strength, anisotropy_rotation, anisotropy_texture });
 
 impl<G: Gl> Anisotropy<G> {
     pub const DEFAULT_ANISOTROPY_STRENGTH: f64 = 0.0;
@@ -580,7 +729,6 @@ impl<G: Gl> Default for Anisotropy<G> {
 }
 
 /// `ModelComponents.Clearcoat` (`KHR_materials_clearcoat`).
-#[derive(Clone)]
 pub struct Clearcoat<G: Gl> {
     pub clearcoat_factor: f64,
     pub clearcoat_texture: Option<TextureReader<G>>,
@@ -588,6 +736,14 @@ pub struct Clearcoat<G: Gl> {
     pub clearcoat_roughness_texture: Option<TextureReader<G>>,
     pub clearcoat_normal_texture: Option<TextureReader<G>>,
 }
+
+impl_clone_for_gl!(Clearcoat {
+    clearcoat_factor,
+    clearcoat_texture,
+    clearcoat_roughness_factor,
+    clearcoat_roughness_texture,
+    clearcoat_normal_texture,
+});
 
 impl<G: Gl> Clearcoat<G> {
     pub const DEFAULT_CLEARCOAT_FACTOR: f64 = 0.0;
@@ -607,7 +763,6 @@ impl<G: Gl> Default for Clearcoat<G> {
 }
 
 /// `ModelComponents.Material`.
-#[derive(Clone)]
 pub struct Material<G: Gl> {
     pub metallic_roughness: MetallicRoughness<G>,
     pub specular_glossiness: Option<SpecularGlossiness<G>>,
@@ -624,6 +779,23 @@ pub struct Material<G: Gl> {
     pub unlit: bool,
     pub point_diameter: Option<f64>,
 }
+
+impl_clone_for_gl!(Material {
+    metallic_roughness,
+    specular_glossiness,
+    specular,
+    anisotropy,
+    clearcoat,
+    emissive_texture,
+    normal_texture,
+    occlusion_texture,
+    emissive_factor,
+    alpha_mode,
+    alpha_cutoff,
+    double_sided,
+    unlit,
+    point_diameter,
+});
 
 impl<G: Gl> Material<G> {
     pub const DEFAULT_EMISSIVE_FACTOR: Cartesian3 = Cartesian3::ZERO;

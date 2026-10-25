@@ -93,7 +93,7 @@ TileReplacementQueue and Cesium3DContentGroup; the B3dm/I3dm/Pnts loaders that b
 model components from them remain next. The model prerequisites are
 complete: ResourceCache, GltfSpzLoader (with a bit-exact port of the pinned SPZ
 decoder), Draco, vertex/index, image/texture loading and ModelComponents are
-validated. GltfLoader now builds model components, and ModelUtility, render resources, the alpha, color, splitter, skinning and morph stages, plus geometry, dequantization, lighting, vertical exaggeration, edge detection, atmosphere, silhouette and classification pass reference validation. The complete Model scene graph, material/picking stages, buffer/texture-creating stages and draw-command integration remain next. ScreenSpaceCameraController,
+validated. GltfLoader now builds model components, and ModelUtility, render resources, the alpha, color, splitter, skinning and morph stages, plus geometry, dequantization, lighting, vertical exaggeration, edge detection, atmosphere, silhouette and classification pass reference validation. The next batch adds four tile component loaders and material, feature/picking, styling, clipping, wireframe, outline and statistics stages. Instancing/2D stages await independent parity validation. The complete Model scene graph, metadata/custom shader/IBL stages and draw-command integration remain next. ScreenSpaceCameraController,
 Scene/View picking integrations and built-in renderable tile content remain
 gaps; the runtime currently requires a caller-supplied content loader. See [Scene](docs/scene.md) for APIs, validation and remaining work.
 

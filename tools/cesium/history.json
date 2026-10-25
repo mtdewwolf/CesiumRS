@@ -518,5 +518,13 @@
     "ported": 935,
     "implemented": 2,
     "validatedPercent": 51.49
+  },
+  {
+    "milestone": "Tile component loaders and model stages",
+    "date": "2026-10-25",
+    "percent": 54.98,
+    "ported": 954,
+    "implemented": 4,
+    "validatedPercent": 52.99
   }
 ]

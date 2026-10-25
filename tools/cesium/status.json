@@ -4404,7 +4404,7 @@
   "Scene/ConeEmitter": {
     "status": "ported",
     "rust": "scene::particle_emitter",
-    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30° default. Emitted particles match bit for bit."
+    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30\u00b0 default. Emitted particles match bit for bit."
   },
   "Scene/SphereEmitter": {
     "status": "ported",
@@ -4524,7 +4524,7 @@
   "Scene/Model/Extensions/Gpm/GltfMeshPrimitiveGpmLoader": {
     "status": "ported",
     "rust": "scene::model::extensions::gpm::gltf_mesh_primitive_gpm_loader",
-    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale × 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
+    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale \u00d7 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
   },
   "DataSources/CompositeEntityCollection": {
     "status": "ported",
@@ -4640,5 +4640,110 @@
     "status": "ported",
     "rust": "scene::get_mesh_primitives",
     "note": "Primitive restart group combination and specification fallback, directly replayed with the outline/load-plan suite (139 cases total)."
+  },
+  "Scene/Model/B3dmLoader": {
+    "status": "ported",
+    "rust": "scene::model::b3dm_loader",
+    "note": "Four pinned component cases plus incremental texture success/failure and destruction regressions. Embedded glTF, RTC and batch-table metadata."
+  },
+  "Scene/Model/I3dmLoader": {
+    "status": "ported",
+    "rust": "scene::model::i3dm_loader",
+    "note": "Four pinned component cases: relative positions, RTC, quantization, rotation/scale and batch IDs; incremental texture and destruction regressions."
+  },
+  "Scene/Model/PntsLoader": {
+    "status": "ported",
+    "rust": "scene::model::pnts_loader",
+    "note": "Eight pinned component cases: RGB/RGBA/RGB565/constant colors, oct normals, quantization, RTC, batch IDs and retained 2D positions. Draco path implemented; independent compressed-content validation remains."
+  },
+  "Scene/Model/GeoJsonLoader": {
+    "status": "ported",
+    "rust": "scene::model::geo_json_loader",
+    "note": "Six pinned geometry cases covering points, lines and polygon rings; metadata, transforms and buffer bytes. Native failure/destruction coverage."
+  },
+  "Scene/Model/BatchTexturePipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::batch_texture_pipeline_stage",
+    "note": "Pinned single/multiline shader and uniform cases; shared batch/default texture providers."
+  },
+  "Scene/Model/CPUStylingPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::cpu_styling_pipeline_stage",
+    "note": "Pinned styled/uncolored shader and uniform cases; CPU styling and translucent pass providers."
+  },
+  "Scene/Model/FeatureIdPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::feature_id_pipeline_stage",
+    "note": "Pinned attribute/texture shader cases and native implicit feature ID buffer coverage."
+  },
+  "Scene/Model/MaterialPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::material_pipeline_stage",
+    "note": "Eight pinned material cases: lighting, PBR/extensions, alpha, culling and point diameter; native extension coverage. Texture readers are captured when the stage runs."
+  },
+  "Scene/Model/MetadataPickingPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::metadata_picking_pipeline_stage",
+    "note": "Pinned default metadata-picking defines and generated function, compatible with DerivedCommand substitutions."
+  },
+  "Scene/Model/ModelClippingPlanesPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::model_clipping_planes_pipeline_stage",
+    "note": "Four pinned float/byte, union/intersection shader/uniform cases; live clipping matrix/edge style."
+  },
+  "Scene/Model/ModelClippingPolygonsPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::model_clipping_polygons_pipeline_stage",
+    "note": "Two pinned inverse/ordinary shader and texture-provider cases."
+  },
+  "Scene/Model/ModelStatistics": {
+    "status": "ported",
+    "rust": "scene::model::model_statistics",
+    "note": "Native shared-buffer/texture deduplication, CPU-copy sizes, dynamic batch textures, texture lookup and clear tests."
+  },
+  "Scene/Model/NodeStatisticsPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::node_statistics_pipeline_stage",
+    "note": "Native instancing/generated-buffer deduplication tests; generated buffer handles supplied by runtime caller."
+  },
+  "Scene/Model/PrimitiveStatisticsPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::primitive_statistics_pipeline_stage",
+    "note": "Native geometry and shared-resource statistics; uses original primitive counts, independent of instance count and wireframe output."
+  },
+  "Scene/Model/PickingPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::picking_pipeline_stage",
+    "note": "Native per-primitive/per-instance pick object lookup, buffer layout and lifetime coverage; feature-table texture adapter implemented."
+  },
+  "Scene/Model/PrimitiveOutlinePipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::primitive_outline_pipeline_stage",
+    "note": "Native outline attribute and lookup texture allocation coverage; shared generator supplies the texture."
+  },
+  "Scene/Model/SelectedFeatureIdPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::selected_feature_id_pipeline_stage",
+    "note": "Four pinned attribute/texture and null-ID shader cases; semantic labels preferred over positional labels."
+  },
+  "Scene/Model/TilesetPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::tileset_pipeline_stage",
+    "note": "Pinned skip-LOD shader/uniform cases; classification stencil configuration."
+  },
+  "Scene/Model/WireframePipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::wireframe_pipeline_stage",
+    "note": "Native WebGL1 CPU and WebGL2 buffer-readback triangle wireframe indices, counts and byte accounting."
+  },
+  "Scene/Model/InstancingPipelineStage": {
+    "status": "implemented",
+    "rust": "scene::model::instancing_pipeline_stage",
+    "note": "GPU instance attributes, matrix packing, legacy world-space uniforms and 2D/CV projection implemented. Native matrix/feature ID smoke test passes; independent reference validation remains."
+  },
+  "Scene/Model/SceneMode2DPipelineStage": {
+    "status": "implemented",
+    "rust": "scene::model::scene_mode_2d_pipeline_stage",
+    "note": "Position/bounding-sphere projection, buffer retention and model-view uniforms implemented. Native projection/lifetime smoke test passes; independent reference validation remains."
   }
 }

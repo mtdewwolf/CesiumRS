@@ -43,7 +43,23 @@ impl Gl for Host {
                 self.buffers.borrow()[&self.bound.get()][offset as usize..offset as usize + b.len()].to_vec(),
             ));
         }
-        Ok(if name == "getParameter" { GlValue::Number(16384.) } else { GlValue::Null })
+        Ok(if name == "getParameter" {
+            match args.first() {
+                Some(GlValue::Number(v))
+                    if [
+                        webgl_constants::ALIASED_LINE_WIDTH_RANGE,
+                        webgl_constants::ALIASED_POINT_SIZE_RANGE,
+                        webgl_constants::MAX_VIEWPORT_DIMS,
+                    ]
+                    .contains(&(*v as u32)) =>
+                {
+                    GlValue::Numbers(vec![1., 16384.])
+                }
+                _ => GlValue::Number(16384.),
+            }
+        } else {
+            GlValue::Null
+        })
     }
 }
 struct Images;
@@ -362,4 +378,380 @@ fn incremental_textures_stream_and_fail_independently() {
         loader.destroy();
         assert!(cache.is_empty());
     }
+}
+
+fn tile_attribute<G: Gl>(a: &mc::Attribute<G>) -> Value {
+    json!({"name":a.name,"semantic":a.semantic.map(|s|s.as_str()),"setIndex":a.set_index,"type":a.attribute_type.map(|v|v.as_str()),"datatype":a.component_datatype.map(|v|v as u32),"count":a.count,"min":a.min.map(math),"max":a.max.map(math),"constant":a.constant.map(math),"normalized":a.normalized,"array":a.typed_array.as_ref().map(array),"buffer":buffer(&a.buffer),"quantization":a.quantization.as_ref().map(|q|json!({"oct":q.oct_encoded,"zxy":q.oct_encoded_zxy,"range":q.normalization_range.map(math),"offset":q.quantized_volume_offset.map(math),"step":q.quantized_volume_step_size.map(math)}))})
+}
+fn tile_features<G: Gl>(features: &[mc::FeatureId<G>]) -> Value {
+    features.iter().map(|f|json!({"count":f.feature_count(),"table":f.property_table_id(),"set":if let mc::FeatureId::Attribute(a)=f {a.set_index}else{None},"positional":f.positional_label()})).collect()
+}
+fn tile_snapshot<G: Gl + 'static>(c: &mc::Components<G>) -> Value {
+    json!({"transform":c.transform.enc(),"up":c.up_axis.map(|v|v as u32),"forward":c.forward_axis.map(|v|v as u32),"metadata":c.structural_metadata.as_ref().and_then(|r|r.get::<Rc<StructuralMetadata<G>>>()).map(|m|json!({"tables":m.property_table_count(),"attributes":m.property_attributes().len()})),"nodes":c.nodes.iter().map(|n|json!({"instances":n.instances.as_ref().map(|i|json!({"world":i.transform_in_world_space,"attributes":i.attributes.iter().map(tile_attribute).collect::<Vec<_>>(),"features":tile_features(&i.feature_ids)})),"primitives":n.primitives.iter().map(|p|json!({"type":p.primitive_type.map(|v|v as u32),"attributes":p.attributes.iter().map(tile_attribute).collect::<Vec<_>>(),"indices":p.indices.as_ref().map(|i|json!({"count":i.count,"type":i.index_datatype.or_else(||i.buffer.as_ref().and_then(Buffer::index_datatype)).map(|v|v as u32),"bytes":buffer(&i.buffer)})),"features":tile_features(&p.feature_ids),"material":p.material.as_ref().map(|m|json!({"unlit":m.unlit,"alpha":m.alpha_mode.as_str(),"metallic":m.metallic_roughness.metallic_factor,"roughness":m.metallic_roughness.roughness_factor}))})).collect::<Vec<_>>()})).collect::<Vec<_>>()})
+}
+
+#[test]
+fn model_tile_loaders_match_cesium() {
+    use cesium_rs::scene::model::*;
+    run(
+        "scene",
+        "ModelTileLoaders",
+        |_| Tol { abs: 1e-6, rel: 1e-6, vector: false },
+        |_, args| {
+            let c = &args[0];
+            let cache = ResourceCache::new(ResourceClient::new(Rc::new(Transport)));
+            let context = Context::new_webgl2(Host::default());
+            let bytes = std::sync::Arc::new(
+                c["bytes"]
+                    .as_array()
+                    .map(|a| a.iter().map(|v| v.as_u64().unwrap() as u8).collect())
+                    .unwrap_or_default(),
+            );
+            macro_rules! load {
+                ($loader:expr) => {{
+                    let loader = $loader;
+                    ready(loader.load()).unwrap();
+                    let mut done = false;
+                    for _ in 0..50 {
+                        if loader.process(&frame()).unwrap() {
+                            done = true;
+                            break;
+                        }
+                    }
+                    assert!(done, "loader did not become ready");
+                    let actual = tile_snapshot(&loader.components().unwrap());
+                    loader.destroy();
+                    assert!(loader.components().is_none());
+                    actual
+                }};
+            }
+            let actual = match s(&c["kind"]) {
+                "geo" => load!(GeoJsonLoader::new(c["geo"].clone(), context)),
+                "pnts" => load!(PntsLoader::new(
+                    bytes,
+                    None,
+                    context,
+                    PntsLoaderOptions { load_attributes_for_2d: c["keep"] == true, ..Default::default() }
+                )),
+                "b3dm" => load!(B3dmLoader::new(
+                    cache,
+                    Resource::new("https://loader.test/model.b3dm").unwrap(),
+                    None,
+                    bytes,
+                    None,
+                    context,
+                    Rc::new(Images),
+                    B3dmLoaderOptions { asynchronous: false, incrementally_load_textures: false, ..Default::default() }
+                )),
+                "i3dm" => load!(I3dmLoader::new(
+                    cache,
+                    Resource::new("https://loader.test/model.i3dm").unwrap(),
+                    None,
+                    bytes,
+                    None,
+                    context,
+                    Rc::new(Images),
+                    I3dmLoaderOptions { asynchronous: false, incrementally_load_textures: false, ..Default::default() }
+                )),
+                other => panic!("unknown loader {other}"),
+            };
+            Some(Out::Ok(actual))
+        },
+    );
+}
+
+fn model_tile_bytes(kind: &str, gltf: &Value) -> std::sync::Arc<Vec<u8>> {
+    let mut doc = serde_json::to_vec(gltf).unwrap();
+    while !doc.len().is_multiple_of(4) {
+        doc.push(b' ');
+    }
+    let mut glb = vec![];
+    for word in [0x46546c67, 2, 20 + doc.len() as u32, doc.len() as u32, 0x4e4f534a] {
+        glb.extend(word.to_le_bytes());
+    }
+    glb.extend(doc);
+    let header = if kind == "i3dm" { 32 } else { 28 };
+    let mut ft = serde_json::to_vec(&if kind == "i3dm" {
+        json!({"INSTANCES_LENGTH":1,"POSITION":[1,2,3]})
+    } else {
+        json!({"BATCH_LENGTH":0})
+    })
+    .unwrap();
+    while !(header + ft.len()).is_multiple_of(8) {
+        ft.push(b' ');
+    }
+    let mut bytes = kind.as_bytes().to_vec();
+    for word in [1, (header + ft.len() + glb.len()) as u32, ft.len() as u32, 0, 0, 0] {
+        bytes.extend(word.to_le_bytes());
+    }
+    if kind == "i3dm" {
+        bytes.extend(1u32.to_le_bytes());
+    }
+    bytes.extend(ft);
+    bytes.extend(glb);
+    std::sync::Arc::new(bytes)
+}
+
+#[test]
+fn tile_loaders_keep_streaming_textures_after_geometry_is_ready() {
+    use cesium_rs::scene::model::*;
+    for kind in ["b3dm", "i3dm"] {
+        for fail in [false, true] {
+            let cache = ResourceCache::new(ResourceClient::new(Rc::new(Transport)));
+            let allow = Rc::new(Cell::new(false));
+            let mut input = basic_input(false);
+            input["images"] = json!([{"uri":"x.png"}]);
+            input["textures"] = json!([{"source":0}]);
+            input["materials"] = json!([{"pbrMetallicRoughness":{"baseColorTexture":{"index":0}}}]);
+            input["meshes"][0]["primitives"][0]["material"] = json!(0);
+            let bytes = model_tile_bytes(kind, &input);
+            let host = Rc::new(DelayedImages { allow: allow.clone(), fail });
+            let ctx = Context::new_webgl2(Host::default());
+            let resource = Resource::new("https://loader.test/tile").unwrap();
+            macro_rules! check {
+                ($loader:expr) => {{
+                    let loader = $loader;
+                    assert!(ready(loader.load()).unwrap());
+                    assert!(loader.process(&frame()).unwrap());
+                    assert!(!loader.textures_loaded());
+                    allow.set(true);
+                    if fail {
+                        assert!(loader.process(&frame()).is_err());
+                        assert!(!loader.textures_loaded());
+                    } else {
+                        assert!(loader.process(&frame()).unwrap());
+                        assert!(loader.textures_loaded());
+                        assert!(loader.components().unwrap().nodes[0].primitives[0]
+                            .material
+                            .as_ref()
+                            .unwrap()
+                            .metallic_roughness
+                            .base_color_texture
+                            .as_ref()
+                            .unwrap()
+                            .texture
+                            .is_some());
+                    }
+                    loader.destroy();
+                    assert!(cache.is_empty());
+                    assert!(!ready(loader.load()).unwrap());
+                    assert!(!loader.process(&frame()).unwrap());
+                }};
+            }
+            if kind == "b3dm" {
+                check!(B3dmLoader::new(
+                    cache.clone(),
+                    resource,
+                    None,
+                    bytes,
+                    None,
+                    ctx,
+                    host,
+                    B3dmLoaderOptions { asynchronous: false, ..Default::default() }
+                ));
+            } else {
+                check!(I3dmLoader::new(
+                    cache.clone(),
+                    resource,
+                    None,
+                    bytes,
+                    None,
+                    ctx,
+                    host,
+                    I3dmLoaderOptions { asynchronous: false, ..Default::default() }
+                ));
+            }
+        }
+    }
+}
+
+#[test]
+fn geojson_failure_and_destroy_do_not_recreate_components() {
+    use cesium_rs::scene::model::GeoJsonLoader;
+    let loader =
+        GeoJsonLoader::new(json!({"type":"FeatureCollection","features":[]}), Context::new_webgl2(Host::default()));
+    assert!(loader.process(&frame()).is_err());
+    assert_eq!(loader.state(), ResourceLoaderState::Failed);
+    assert!(!loader.process(&frame()).unwrap());
+    let loader = GeoJsonLoader::new(
+        json!({"type":"Feature","geometry":{"type":"Point","coordinates":[0,0]},"properties":{}}),
+        Context::new_webgl2(Host::default()),
+    );
+    loader.destroy();
+    assert!(!loader.process(&frame()).unwrap());
+    assert!(loader.components().is_none());
+}
+
+#[test]
+fn model_statistics_deduplicate_shared_geometry_and_track_batch_texture_growth() {
+    use cesium_rs::scene::model::{
+        model_statistics::BatchTextureStatistics, node_statistics_pipeline_stage as ns,
+        primitive_statistics_pipeline_stage as ps, *,
+    };
+    let ctx = Context::new_webgl2(Host::default());
+    let b = Buffer::new(&ctx, BufferKind::Vertex, BufferUsage::StaticDraw, BufferData::Size(36)).unwrap();
+    let p = mc::Primitive {
+        primitive_type: Some(PrimitiveType::Triangles),
+        attributes: vec![mc::Attribute {
+            semantic: Some(mc::AttributeSemantic::Vertex(VertexAttributeSemantic::Position)),
+            count: Some(6),
+            buffer: Some(b.clone()),
+            typed_array: Some(TypedArray::Float32(vec![0.; 9])),
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
+    let mut stats = ModelStatistics::new();
+    ps::count_geometry(&mut stats, &p);
+    ps::count_geometry(&mut stats, &p);
+    assert_eq!((stats.triangles_length, stats.geometry_byte_length), (4, 72));
+    let node = mc::Node {
+        instances: Some(mc::Instances { attributes: p.attributes.clone(), ..Default::default() }),
+        ..Default::default()
+    };
+    ns::process(
+        &mut stats,
+        &node,
+        &ns::NodeRuntimeBuffers {
+            instancing_transforms_buffer: Some(b.clone()),
+            instancing_transforms_buffer_2d: None,
+            instancing_translation_buffer_2d: None,
+        },
+    );
+    assert_eq!(stats.geometry_byte_length, 72);
+    let batch = BatchTextureStatistics::new("batch", 16);
+    stats.add_batch_texture(&batch);
+    stats.add_batch_texture(&batch);
+    batch.byte_length.set(32);
+    assert_eq!(stats.textures_byte_length(), 32);
+    let texture = ctx.default_texture().unwrap();
+    stats.add_texture(&texture);
+    stats.add_texture(&texture);
+    assert_eq!(stats.get_texture_ids(), &[texture.id().to_string()]);
+    assert_eq!(stats.get_texture_byte_length_by_id(texture.id()), Some(texture.size_in_bytes()));
+    assert_eq!(stats.textures_byte_length(), 32 + texture.size_in_bytes());
+    stats.clear();
+    assert_eq!((stats.geometry_byte_length, stats.textures_byte_length()), (0, 0));
+    assert!(stats.get_texture_ids().is_empty());
+    let clone = b.clone();
+    assert_eq!(b.id(), clone.id());
+    drop(clone);
+    drop(b);
+    let other = Buffer::new(&ctx, BufferKind::Vertex, BufferUsage::StaticDraw, BufferData::Size(36)).unwrap();
+    assert_ne!(p.attributes[0].buffer.as_ref().unwrap().id(), other.id());
+}
+
+#[test]
+fn wireframe_outline_and_pick_resources_work_with_real_buffer_storage() {
+    use cesium_rs::scene::model::{picking_pipeline_stage::ModelPickObject, *};
+    let ctx = Context::new_webgl2(Host::default());
+    for webgl2 in [false, true] {
+        let context = if webgl2 { ctx.clone() } else { Context::new_webgl1(Host::default()) };
+        let indices = TypedArray::Uint16(vec![0, 1, 2]);
+        let bytes = indices.to_le_bytes();
+        let ib = Buffer::new(
+            &context,
+            BufferKind::Index(IndexDatatype::UnsignedShort),
+            BufferUsage::StaticDraw,
+            BufferData::Bytes(&bytes),
+        )
+        .unwrap();
+        let primitive = mc::Primitive {
+            primitive_type: Some(PrimitiveType::Triangles),
+            attributes: vec![mc::Attribute {
+                semantic: Some(mc::AttributeSemantic::Vertex(VertexAttributeSemantic::Position)),
+                count: Some(3),
+                min: Some(mc::MathValue::Cartesian3(Cartesian3::ZERO)),
+                max: Some(mc::MathValue::Cartesian3(Cartesian3::ONE)),
+                ..Default::default()
+            }],
+            indices: Some(mc::Indices {
+                buffer: Some(ib),
+                index_datatype: Some(IndexDatatype::UnsignedShort),
+                count: Some(3),
+                typed_array: Some(indices),
+            }),
+            ..Default::default()
+        };
+        let m = ModelRenderResources::new(Rc::new(RefCell::new(ModelUniformState::default())));
+        let n = NodeRenderResources::new(&m, 0);
+        let mut p = PrimitiveRenderResources::new(&n, 0, &primitive, None, None).unwrap();
+        let mut stats = ModelStatistics::new();
+        wireframe_pipeline_stage::process(&mut p, &primitive, &context, &mut stats).unwrap();
+        assert!(p.wireframe_index_buffer.is_some());
+        assert_eq!(
+            context.host().buffers.borrow()[&context.host().next.get()],
+            TypedArray::Uint16(vec![0, 1, 1, 2, 2, 0]).to_le_bytes()
+        );
+        assert_eq!(p.count, Some(6));
+        assert_eq!(p.primitive_type, Some(PrimitiveType::Lines));
+        assert_eq!(stats.geometry_byte_length, 12);
+        let node = mc::Node::default();
+        picking_pipeline_stage::process(&mut p, &node, &primitive, &context, &mut stats, false, &[]).unwrap();
+        assert_eq!(p.pick_id.as_deref(), Some("czm_pickColor"));
+        let id = p.pick_ids[0].color.to_rgba();
+        assert_eq!(context.pick_object::<ModelPickObject>(id).unwrap().instance_id, None);
+        drop(p);
+        assert!(context.pick_object::<ModelPickObject>(id).is_none());
+    }
+    let coords = Buffer::new(&ctx, BufferKind::Vertex, BufferUsage::StaticDraw, BufferData::Size(36)).unwrap();
+    let primitive = mc::Primitive {
+        attributes: vec![mc::Attribute {
+            semantic: Some(mc::AttributeSemantic::Vertex(VertexAttributeSemantic::Position)),
+            count: Some(3),
+            min: Some(mc::MathValue::Cartesian3(Cartesian3::ZERO)),
+            max: Some(mc::MathValue::Cartesian3(Cartesian3::ONE)),
+            ..Default::default()
+        }],
+        outline_coordinates: Some(mc::Attribute {
+            buffer: Some(coords),
+            attribute_type: Some(AttributeType::Vec3),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+    let model = ModelRenderResources::new(Rc::new(RefCell::new(ModelUniformState::default())));
+    let mut node_resources = NodeRenderResources::new(&model, 0);
+    node_resources.has_instances = true;
+    node_resources.instance_count = 2;
+    let mut p = PrimitiveRenderResources::new(&node_resources, 0, &primitive, None, None).unwrap();
+    primitive_outline_pipeline_stage::process(&mut p, &primitive, &ctx).unwrap();
+    assert!(p.texture_uniform_map["model_outlineTexture"]().is_some());
+    let node = mc::Node { instances: Some(mc::Instances::default()), ..Default::default() };
+    picking_pipeline_stage::process(&mut p, &node, &primitive, &ctx, &mut ModelStatistics::new(), true, &[]).unwrap();
+    assert_eq!(p.pick_ids.len(), 2);
+    for (i, pick) in p.pick_ids.iter().enumerate() {
+        assert_eq!(ctx.pick_object::<ModelPickObject>(pick.color.to_rgba()).unwrap().instance_id, Some(i));
+    }
+    let attr = p.attributes.last().unwrap();
+    assert_eq!(attr.instance_divisor, 1);
+    let AttributeSource::Buffer(buffer) = &attr.source else { panic!() };
+    assert_eq!(buffer.size_in_bytes(), 32);
+}
+
+#[test]
+fn clipping_texture_providers_follow_updates_and_use_defaults() {
+    use cesium_rs::scene::model::{model_clipping_polygons_pipeline_stage as stage, *};
+    let ctx = Context::new_webgl2(Host::default());
+    let fallback = ctx.default_texture().unwrap();
+    let clipping = Rc::new(RefCell::new(None));
+    let mut model = ModelRenderResources::new(Rc::new(RefCell::new(ModelUniformState::default())));
+    stage::process(
+        &mut model,
+        &stage::ModelClippingPolygonsState {
+            inverse: false,
+            compute_polygon_bounds_length: 1,
+            clipping_texture: clipping.clone(),
+            extents_texture: Rc::new(RefCell::new(None)),
+            default_texture: Some(fallback.clone()),
+        },
+    );
+    let node = NodeRenderResources::new(&model, 0);
+    let provider = &node.texture_uniform_map["model_clippingDistance"];
+    assert_eq!(provider().unwrap().id(), fallback.id());
+    let distance = ctx.default_normal_texture().unwrap();
+    *clipping.borrow_mut() = Some(distance.clone());
+    assert_eq!(provider().unwrap().id(), distance.id());
+    *clipping.borrow_mut() = None;
+    assert_eq!(provider().unwrap().id(), fallback.id());
 }

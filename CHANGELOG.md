@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Port B3dmLoader, I3dmLoader, PntsLoader and GeoJsonLoader, with 22 pinned component/buffer cases and texture streaming, failure and destruction regressions. Add material, feature selection, metadata picking, CPU styling, batch texture, clipping, picking, wireframe, outline and statistics stages; 28 pinned stage cases check shader sources and uniforms. Instancing and 2D projection stages have native smoke coverage; independent parity validation and full Model runtime integration remain pending.
+
 - Port CompositeEntityCollection with ordered priority layers, stable entity identity, clone/merge, batched changes and availability. Validate 45 pinned scenarios and 10 native lifecycle cases; support nested composites, weak owners, deduplicated subscriptions, retired-callback guards and recoverable application component errors.
 
 - Port GltfLoader and its primitive grouping, outline and load-plan prerequisites. Add model transforms, geometry/material/metadata assembly, skins, animations, instancing, morphs, incremental textures and lifecycle cleanup. Begin the Model rendering pipeline with ModelUtility, render resources and the alpha, color, splitter, skinning, morph, geometry, dequantization, lighting, vertical-exaggeration, edge-detection, atmosphere, silhouette and classification stages. Add 645 pinned CesiumJS cases and native lifetime/streaming regressions; complete Model rendering remains pending.

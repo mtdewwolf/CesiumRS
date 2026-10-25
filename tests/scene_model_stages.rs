@@ -424,3 +424,171 @@ fn model_stages_match_cesium() {
         },
     );
 }
+
+fn next_stage_snapshot(r: &PipelineResources, textures: &ModelTextureUniformProviders<Host>) -> Value {
+    let mut out = shader_snapshot(r);
+    let mut values = uniforms(r);
+    for name in textures.keys() {
+        values[name] = Value::Null;
+    }
+    out["uniforms"] = values;
+    out
+}
+
+#[test]
+fn next_model_stages_match_cesium() {
+    let context = Context::new_webgl2(Host);
+    run(
+        "scene",
+        "ModelNextStages",
+        |_| Tol { abs: 1e-6, rel: 1e-6, vector: false },
+        |_, a| {
+            let c = &a[0];
+            let yes = |key: &str| c[key] == true;
+            let state = Rc::new(RefCell::new(ModelUniformState {
+                feature_id_label: "buildings".into(),
+                instance_feature_id_label: "instances".into(),
+                has_color: yes("color"),
+                back_face_culling: !yes("noCull"),
+                point_cloud_shading_normal_shading: c["normalShading"].as_bool(),
+                ..Default::default()
+            }));
+            let mut m = ModelRenderResources::<Host>::new(state);
+            let n = NodeRenderResources::new(&m, 0);
+            let mut primitive = base_primitive(if yes("normals") {
+                vec![mc::Attribute {
+                    semantic: Some(mc::AttributeSemantic::Vertex(VertexAttributeSemantic::Normal)),
+                    attribute_type: Some(AttributeType::Vec3),
+                    constant: Some(mc::MathValue::Cartesian3(Cartesian3::UNIT_Z)),
+                    ..Default::default()
+                }]
+            } else {
+                vec![]
+            });
+            primitive.material = Some(mc::Material::default());
+            let node = mc::Node::default();
+            let mut p = PrimitiveRenderResources::new(&n, 0, &primitive, None, None).unwrap();
+            match s(&c["stage"]) {
+                "metadata" => metadata_picking_pipeline_stage::process(&mut p).unwrap(),
+                "cpu" => cpu_styling_pipeline_stage::process(&mut p),
+                "tileset" => tileset_pipeline_stage::process(&mut p, yes("skip")),
+                "batch" => batch_texture_pipeline_stage::process(
+                    &mut p,
+                    Rc::new(RefCell::new(batch_texture_pipeline_stage::BatchTextureState {
+                        features_length: 4,
+                        batch_texture: None,
+                        default_texture: None,
+                        texture_step: Cartesian4::new(0.1, 0.2, 0.3, 0.4),
+                        texture_dimensions: Cartesian2::new(4., common::n(&c["rows"])),
+                    })),
+                ),
+                "selected" | "feature" => {
+                    geometry_pipeline_stage::process(&mut p, &primitive, SceneMode::Scene3D, false, true).unwrap();
+                    let null_feature_id = c["nullId"].as_u64().map(|v| v as u32);
+                    primitive.feature_ids = vec![if yes("texture") {
+                        mc::FeatureId::Texture(mc::FeatureIdTexture {
+                            feature_count: Some(4),
+                            property_table_id: Some(0),
+                            label: Some("buildings".into()),
+                            positional_label: Some("featureId_0".into()),
+                            null_feature_id,
+                            texture_reader: Some(mc::TextureReader {
+                                tex_coord: 0.,
+                                channels: Some("rg".into()),
+                                ..Default::default()
+                            }),
+                        })
+                    } else {
+                        mc::FeatureId::Attribute(mc::FeatureIdAttribute {
+                            feature_count: Some(4),
+                            property_table_id: Some(0),
+                            set_index: Some(0),
+                            label: Some("buildings".into()),
+                            positional_label: Some("featureId_0".into()),
+                            null_feature_id,
+                        })
+                    }];
+                    if s(&c["stage"]) == "selected" {
+                        selected_feature_id_pipeline_stage::process(&mut p, &node, &primitive).unwrap();
+                    } else {
+                        feature_id_pipeline_stage::process(
+                            &mut p,
+                            &node,
+                            &primitive,
+                            &context,
+                            &mut ModelStatistics::default(),
+                            &mut vec![],
+                        )
+                        .unwrap();
+                    }
+                }
+                "material" => {
+                    let mat = primitive.material.as_mut().unwrap();
+                    mat.unlit = yes("unlit");
+                    mat.double_sided = yes("doubleSided");
+                    mat.alpha_mode = match c["alphaMode"].as_str() {
+                        Some("BLEND") => AlphaMode::Blend,
+                        Some("MASK") => AlphaMode::Mask,
+                        _ => AlphaMode::Opaque,
+                    };
+                    mat.alpha_cutoff = Some(0.3);
+                    mat.point_diameter = c["diameter"].as_f64();
+                    mat.metallic_roughness.metallic_factor = 0.4;
+                    mat.metallic_roughness.roughness_factor = 0.7;
+                    mat.metallic_roughness.base_color_factor = Cartesian4::new(0.2, 0.3, 0.4, 0.5);
+                    if yes("specular") {
+                        mat.specular = Some(mc::Specular { specular_factor: 0.5, ..Default::default() });
+                    }
+                    if yes("anisotropy") {
+                        mat.anisotropy = Some(mc::Anisotropy {
+                            anisotropy_strength: 0.6,
+                            anisotropy_rotation: 0.7,
+                            ..Default::default()
+                        });
+                    }
+                    if yes("clearcoat") {
+                        mat.clearcoat = Some(mc::Clearcoat {
+                            clearcoat_factor: 0.8,
+                            clearcoat_roughness_factor: 0.9,
+                            ..Default::default()
+                        });
+                    }
+                    material_pipeline_stage::process(&mut p, &primitive, &context, 2.);
+                }
+                "planes" => {
+                    let mut planes = ClippingPlaneCollection::default();
+                    planes.add(ClippingPlane::handle(Cartesian3::UNIT_X, 0.));
+                    planes.edge_color = Color::new(0.2, 0.3, 0.4, 0.5);
+                    planes.edge_width = 3.;
+                    planes.union_clipping_regions = yes("union");
+                    model_clipping_planes_pipeline_stage::process(
+                        &mut m,
+                        &model_clipping_planes_pipeline_stage::ModelClippingPlanesState {
+                            clipping_planes: Rc::new(RefCell::new(planes)),
+                            clipping_planes_matrix: Rc::new(RefCell::new(Matrix4::IDENTITY)),
+                            use_float_texture: yes("float"),
+                            max_texture_size: 4096,
+                            default_texture: None,
+                        },
+                    );
+                    return Some(Out::Ok(next_stage_snapshot(&m, &m.texture_uniform_map)));
+                }
+                "polygons" => {
+                    model_clipping_polygons_pipeline_stage::process(
+                        &mut m,
+                        &model_clipping_polygons_pipeline_stage::ModelClippingPolygonsState {
+                            inverse: yes("inverse"),
+                            compute_polygon_bounds_length: 2,
+                            clipping_texture: Rc::new(RefCell::new(None)),
+                            extents_texture: Rc::new(RefCell::new(None)),
+                            default_texture: None,
+                        },
+                    );
+                    return Some(Out::Ok(next_stage_snapshot(&m, &m.texture_uniform_map)));
+                }
+                other => panic!("unknown stage {other}"),
+            }
+            Some(Out::Ok(next_stage_snapshot(&p, &p.texture_uniform_map)))
+        },
+    );
+}
