@@ -274,10 +274,81 @@ alignment: the upstream Green4x4Mipmap RGB asset therefore produces
 `INVALID_OPERATION` for its tightly packed 2x2 level. The comparisons preserve
 and check this source behavior; RGBA and compressed mip chains upload normally.
 
-ResourceCache remains partial pending the SPZ factory, and the vertex loader
-remains partial pending SPZ attributes. The SPZ loader, main GltfLoader/Model
-pipeline and built-in renderable tile factory still need porting. The default
-tileset loader requires a factory for renderable tile content.
+`GltfSpzLoader` loads `KHR_gaussian_splatting_compression_spz_2` data. Like
+upstream, it always reads buffer view 0 and requests that view when loading.
+`scene::spz::load_spz` ports the pinned `@spz-loader/core` 0.3.0 decoder that
+upstream calls: SPZ versions 1-3, 24-bit fixed-point or half-float positions,
+first-three and smallest-three quaternions, and the wrapper's exponentiated
+scales, sigmoid alphas and scaled colors. Results match the WebAssembly bit for
+bit. That includes musl's table-driven `logf`, which the `libm` crate's FreeBSD
+`logf` does not match. Invalid data returns the C++ decoder's reason
+(`deserializePackedGaussians: read error`, unsupported version or SH degree, too
+many points). The binding itself aborts with "divide by zero" after printing that
+reason. Gzip failures and empty clouds also fail.
+
+Call `process(&frame)` after loading: the first call decodes and returns false.
+Upstream's decode promise settles before the next frame, so the result applies at
+the first call with a later `frame_number`. That call returns true, or
+`Failed to load SPZ` with the reason. Calls in the starting frame return false,
+as upstream's pending promise does.
+
+`VertexBufferSource::Spz` reads one attribute of the shared cloud: `POSITION`,
+scales and rotations, `COLOR_0` as RGBA8 with alpha, or a spherical-harmonic
+coefficient (`KHR_gaussian_splatting:` or `_` prefix,
+`SH_DEGREE_<l>_COEF_<n>`). The SPZ loader is leased when loading, as upstream
+does. Upstream also swallows SPZ load failures: the attribute's `load()` then
+resolves to false and the attribute stays LOADING. Decode failures fail the
+attribute that first observes them, and attributes processed afterwards stay
+pending. Coefficients the cloud lacks read as NaN, as JavaScript's undefined
+array reads do. An unrecognized semantic has no typed array, so it cannot
+upload a GPU buffer.
+
+The SPZ batch adds 154 pinned cases against the real WebAssembly decoder and
+loaders. They cover every byte value through each transform, every decoder
+error, all three versions and SH degrees, and attribute lifecycles with deferred
+uploads, failures and the cache entries shared through one SPZ loader and buffer
+view. ResourceCache and GltfVertexBufferLoader are now fully validated.
+
+`GltfLoader` now builds typed model components from the shared JSON, geometry,
+image/texture and metadata loaders. Await `load()`, then call `process(frame)`
+until it returns true. Resource futures are polled each frame. Upload budgets
+spread GPU work over frames; `incrementally_load_textures` allows geometry to
+become ready while textures stream. Texture load errors are reported without
+discarding ready geometry. `components()` borrows the resulting graph.
+
+The loader covers accessor deinterleaving and quantization, Draco/SPZ sources,
+primitive restart groups, outlines, morph targets, GPU instancing, node
+transforms, skins and animation channels, PBR material factors/textures, modern
+and legacy feature IDs, structural metadata, GPM and edge visibility. The
+`NGA_gpm_local` root extension is available as typed `Components::gpm_local`.
+Undefined accessor offsets and material alpha cutoffs retain `None`.
+`release_gltf_json` drops the JSON cache lease after parsing; transient document
+references are released after geometry processing.
+
+Three prerequisite ports (`get_mesh_primitives`, `PrimitiveLoadPlan`, and
+`PrimitiveOutlineGenerator`) pass 139 direct cases. The main loader adds 48
+reference scenarios plus cancellation, cache cleanup, upload quota, generated
+buffer ownership and incremental texture regressions. Native tests check outline
+lookup texture caching. Geometry/texture uploads use the existing renderer host
+contract; these tests do not establish complete Model rendering parity.
+
+The Model pipeline starts with `model::model_utility` (371 direct cases), model,
+node and primitive render resources, and the alpha, model color, splitter,
+skinning, morph-target, geometry, dequantization, lighting,
+vertical-exaggeration, edge-detection, atmosphere, silhouette and classification
+stages (87 direct cases). Shader sources, attribute layouts, render states and
+numeric uniforms are checked against CesiumJS. `ModelUniformState` and shared
+joint/weight arrays supply live uniforms; `renderer_uniform_map()` adapts the
+stage providers to `DrawCommand`. Child resources clone shader, alpha and
+render-state options while retaining shared GPU resources and uniform providers.
+The geometry stage covers 2D projection, instancing and quantized attributes;
+the remaining stages add their defines, shader lines and live uniforms.
+
+The complete Model runtime/scene graph, material, picking and remaining stages
+(including wireframe, primitive outline, clipping, custom shader and styling)
+and model draw-command construction still need porting. The built-in renderable
+tile factory also remains pending; the default tileset loader requires a factory
+for renderable tile content.
 
 `model_components` supplies the 27 glTF data classes, animated-property enum
 and material defaults. Shared node/skin/sampler references are indices; buffers
@@ -334,7 +405,7 @@ Draco decodes them; the removed names replace upstream's one-time warning.
 Tests: `tests/scene_tile_formats.rs`, 59 pinned tiles and call sequences from
 `tools/cesium/fixtures/scene-tile-formats.mjs`, built byte by byte and covering
 every error path. The B3dm/I3dm/Pnts loaders that turn these into model
-components come with GltfLoader.
+component builders remain to be ported.
 
 ```bash
 cargo test --test scene_tile_formats

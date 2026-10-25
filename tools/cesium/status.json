@@ -4237,9 +4237,9 @@
     "note": "Deduplicated CPU/GPU geometry and texture byte accounting, removal and clear; four pinned sequences plus loader integration checks."
   },
   "Scene/ResourceCache": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::resource_cache",
-    "note": "Typed owner-scoped cache, reference-counted leases, ordered destruction, shared schema/JSON/buffer/view/Draco/vertex/index/image/texture factories and memory accounting. SPZ factory remains unported. Pinned ownership traces, native dependency/cancellation and real GPU lease checks."
+    "note": "Typed owner-scoped cache, reference-counted leases, ordered destruction, shared schema/JSON/buffer/view/Draco/SPZ/vertex/index/image/texture factories and memory accounting. Pinned ownership traces (including SPZ attributes sharing one decoder and buffer view), native dependency/cancellation and real GPU lease checks."
   },
   "Scene/GltfDracoLoader": {
     "status": "ported",
@@ -4267,9 +4267,9 @@
     "note": "Float and quantized positions, RGBA/RGB/RGB565/constant colors, float and oct-encoded normals, batch IDs, binary or JSON globals (including one-element typed-array POINTS_LENGTH/BATCH_LENGTH), RTC centers, 3DTILES_draco_point_compression buffers and combined properties, empty batch tables and removal of unresolved binary references (names returned instead of a one-time warning). Keeps upstream's always-false hasConstantColor. 24 pinned tiles including every error path."
   },
   "Scene/GltfVertexBufferLoader": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::gltf_geometry_loader",
-    "note": "Buffer-view and Draco CPU/GPU loading, quantization metadata, upload budgets, retained arrays and statistics; 33 pinned cases and WebGL1/2 indexed draw/readback checks. SPZ attributes remain unported."
+    "note": "Buffer-view, Draco and SPZ CPU/GPU loading, quantization metadata, upload budgets, retained arrays and statistics. SPZ positions, scales, rotations, RGBA colors and spherical-harmonic coefficients with both semantic prefixes; the SPZ loader is requested at load time and its load failures are swallowed, as upstream. 33 pinned cases plus 104 SPZ lifecycles, and WebGL1/2 indexed draw/readback checks."
   },
   "Scene/GltfIndexBufferLoader": {
     "status": "ported",
@@ -4530,5 +4530,115 @@
     "status": "ported",
     "rust": "data_sources::composite_entity_collection",
     "note": "Priority-ordered layers, stable entity identity, clone/merge, membership and definition updates, ordering, nested suspension, availability and weak ownership. 45 pinned scenarios and 10 native lifecycle checks; nested composites and duplicate/shared sources use deduplicated RAII subscriptions. Application component errors are observable and retryable; callback edits are serialized."
+  },
+  "Scene/GltfLoader": {
+    "status": "ported",
+    "rust": "scene::gltf_loader",
+    "note": "Frame-driven cached geometry/texture/metadata loading into typed ModelComponents. Nodes, transforms, skins, animations, instancing, morph targets, outlines, SPZ, materials, modern/legacy feature IDs, GPM and edge visibility; 48 CesiumJS cases plus cancellation, upload quotas, streaming/failure and GPU lifetime regressions. Existing Draco/resource loaders supply compressed geometry."
+  },
+  "Scene/GltfSpzLoader": {
+    "status": "ported",
+    "rust": "scene::gltf_spz_loader",
+    "note": "Buffer view 0 requested at load time, frame-driven decoding whose result applies at the next frame (upstream's decode promise settles between frames), decode failures and shared leases. scene::spz ports the pinned @spz-loader/core 0.3.0 decoder bit for bit: SPZ versions 1-3, fixed-point and half positions, first-three and smallest-three quaternions, musl's logf and the JavaScript exp/sigmoid/color conversions. 46 decoder inputs (including every byte value and every error) and three lifecycles against the real WASM; errors carry the C++ reason instead of the binding's 'divide by zero' abort."
+  },
+  "Scene/Model/AlphaPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::alpha_pipeline_stage",
+    "note": "Opaque/translucent pass selection, culling/depth/blending and live alpha-cutoff uniform; generated source and state compared directly."
+  },
+  "Scene/Model/AtmospherePipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::atmosphere_pipeline_stage",
+    "note": "Fog/atmosphere defines, world-position varying, atmosphere shader source and the live in-fog uniform; exact shader and uniform comparisons."
+  },
+  "Scene/Model/ClassificationPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::classification_pipeline_stage",
+    "note": "Batch length/offset generation from indices and feature ids, split-by-batch defines and classification shader source; direct cases including missing positions."
+  },
+  "Scene/Model/DequantizationPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::dequantization_pipeline_stage",
+    "note": "Quantized attribute dequantization functions, normalization/oct-encoding and dequantization shader lines; exact source comparisons."
+  },
+  "Scene/Model/EdgeDetectionPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::edge_detection_pipeline_stage",
+    "note": "Edge-detection fragment defines and source for outlines; exact shader comparison."
+  },
+  "Scene/Model/GeometryPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::geometry_pipeline_stage",
+    "note": "Processed attributes, position/normal/tangent/bitangent varyings, 2D projection, instancing and quantized attributes; 8 direct cases compare vertex/fragment source and attribute locations."
+  },
+  "Scene/Model/LightingPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::lighting_pipeline_stage",
+    "note": "Lighting model defines, unlit/PBR shader source and lighting uniforms; exact source comparisons."
+  },
+  "Scene/Model/ModelSilhouettePipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::model_silhouette_pipeline_stage",
+    "note": "Silhouette color/size uniforms, picking ids and live uniform refresh; assigned-id and shader comparisons."
+  },
+  "Scene/Model/VerticalExaggerationPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::vertical_exaggeration_pipeline_stage",
+    "note": "Vertical exaggeration defines and shader lines, including relative height and 2D modes; exact source comparisons."
+  },
+  "Scene/Model/ModelColorPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::model_color_pipeline_stage",
+    "note": "Color/blend uniforms, source GLSL, translucent passes and invisible-model color masks with silhouette handling; live updates checked."
+  },
+  "Scene/Model/ModelRenderResources": {
+    "status": "ported",
+    "rust": "scene::model::render_resources",
+    "note": "Model pipeline resources, depth defaults and shared live model uniform state. Child resources clone mutable shader/render-state/alpha configuration; constructors validated in the 55-case pipeline suite."
+  },
+  "Scene/Model/ModelSplitterPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::model_splitter_pipeline_stage",
+    "note": "Fragment split define/source and live direction uniform; exact source comparisons in the model pipeline suite."
+  },
+  "Scene/Model/ModelUtility": {
+    "status": "ported",
+    "rust": "scene::model::model_utility",
+    "note": "Component lookup, transforms, quantized attribute shader information, position bounds, culling, axis correction and GLSL identifiers; 371 reference cases and native lookup/bounds checks."
+  },
+  "Scene/Model/MorphTargetsPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::morph_targets_pipeline_stage",
+    "note": "Position/normal/tangent morph attributes and weighted GLSL functions, ignoring unsupported semantics; live weight providers and direct shader/layout comparisons."
+  },
+  "Scene/Model/NodeRenderResources": {
+    "status": "ported",
+    "rust": "scene::model::render_resources",
+    "note": "Node resources inherit cloned model configuration and track attributes, instancing and child primitive resources. Runtime nodes use component indices."
+  },
+  "Scene/Model/PrimitiveOutlineGenerator": {
+    "status": "ported",
+    "rust": "scene::model::primitive_outline_generator",
+    "note": "Edge-order matching, vertex copies, sparse coordinates, index widening and typed-array attribute updates; 106 direct reference inputs plus load-plan cases. Context-owned outline lookup texture."
+  },
+  "Scene/Model/PrimitiveRenderResources": {
+    "status": "ported",
+    "rust": "scene::model::render_resources",
+    "note": "Primitive counts, indices, position bounds, instancing translations, bounding spheres and lighting defaults with isolated shader/render-state/alpha configuration."
+  },
+  "Scene/Model/SkinningPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::skinning_pipeline_stage",
+    "note": "Joint/weight-set skinning GLSL and live matrix-array uniforms, including multiple attribute sets; direct shader comparisons."
+  },
+  "Scene/PrimitiveLoadPlan": {
+    "status": "ported",
+    "rust": "scene::primitive_load_plan",
+    "note": "Attribute/morph/index output plans, outline post-processing and Gaussian splat CPU retention; GPU uploads and ownership validated against direct CesiumJS cases."
+  },
+  "Scene/getMeshPrimitives": {
+    "status": "ported",
+    "rust": "scene::get_mesh_primitives",
+    "note": "Primitive restart group combination and specification fallback, directly replayed with the outline/load-plan suite (139 cases total)."
   }
 }
