@@ -1,7 +1,9 @@
 //! `Scene/Model`: the glTF model runtime. One Rust module per Cesium module.
 
 pub mod cartesian_rectangle;
+pub mod custom_shader;
 pub mod custom_shader_mode;
+pub mod custom_shader_pipeline_stage;
 pub mod custom_shader_translucency_mode;
 pub mod extensions;
 pub mod imagery_configuration;
@@ -11,11 +13,18 @@ pub mod model_alpha_options;
 pub mod model_lighting_options;
 pub mod model_type;
 pub mod style_commands_needed;
+pub mod texture_manager;
+pub mod texture_uniform;
 pub mod uniform_type;
 pub mod varying_type;
 
 pub use cartesian_rectangle::CartesianRectangle;
+pub use custom_shader::{
+    CustomShader, CustomShaderOptions, CustomShaderUniformValue, FragmentVariableSets, UniformSpecifier, VariableSet,
+    VertexVariableSets,
+};
 pub use custom_shader_mode::CustomShaderMode;
+pub use custom_shader_pipeline_stage::{CustomShaderWarning, CustomShaderWarnings};
 pub use custom_shader_translucency_mode::CustomShaderTranslucencyMode;
 pub use imagery_configuration::{ImageryConfiguration, ImageryLayerSettings};
 pub use imagery_flags::ImageryFlags;
@@ -24,6 +33,8 @@ pub use model_alpha_options::ModelAlphaOptions;
 pub use model_lighting_options::ModelLightingOptions;
 pub use model_type::ModelType;
 pub use style_commands_needed::StyleCommandsNeeded;
+pub use texture_manager::{sampler_requires_mipmap, LoadedImageSource, TextureManager, TextureManagerWarning};
+pub use texture_uniform::{TextureUniform, TextureUniformOptions};
 pub use uniform_type::UniformType;
 pub use varying_type::VaryingType;
 
@@ -80,5 +91,5 @@ pub mod wireframe_pipeline_stage;
 pub mod model_feature;
 pub mod model_feature_table;
 pub use model_feature::ModelFeature;
-pub use model_feature_table::{ModelFeatureTable, ModelFeatureStyle};
+pub use model_feature_table::{ModelFeatureStyle, ModelFeatureTable};
 pub mod metadata_pipeline_stage;

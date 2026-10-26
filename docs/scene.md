@@ -401,8 +401,19 @@ RGBA `[128, 128, 128, 255]` for the expected 1.5/3.0 values. Six further referen
 traces cover feature visibility/color/style/property sequences, and native tests
 cover texture uploads/retries, pick identity, inheritance and destruction.
 
-The complete Model runtime/scene graph, custom shader/IBL/point-cloud styling
-stages, and model draw-command construction still need porting. The built-in renderable
+`CustomShader` parses user GLSL callbacks, uniforms, varyings and built-in
+variable references (`vsInput`/`fsInput` attributes, feature IDs, metadata, material),
+validating shader abbreviations and coordinate spaces against CesiumJS.
+`CustomShaderPipelineStage` generates typed `VertexInput`/`FragmentInput` structs,
+initialization functions, uniform and varying bindings, lighting model overrides and
+translucency mode overrides, with graceful fallback on primitives missing metadata
+properties. `TextureManager` and `TextureUniform` handle frame-driven texture
+upload queues, mipmaps, WebGL1 POT resizing and fallback to context default textures.
+Twenty-two pinned reference cases and debug precondition checks pass in
+`tests/scene_model_custom_shader.rs`.
+
+The complete Model runtime/scene graph, IBL/point-cloud styling stages, and
+model draw-command construction still need porting. The built-in renderable
 tile factory also remains pending; the default tileset loader requires a factory
 for renderable tile content.
 
