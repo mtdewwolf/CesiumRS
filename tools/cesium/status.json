@@ -4737,14 +4737,14 @@
     "note": "Native WebGL1 CPU and WebGL2 buffer-readback triangle wireframe indices, counts and byte accounting."
   },
   "Scene/Model/InstancingPipelineStage": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::model::instancing_pipeline_stage",
-    "note": "GPU instance attributes, matrix packing, legacy world-space uniforms and 2D/CV projection implemented. Native matrix/feature ID smoke test passes; independent reference validation remains."
+    "note": "GPU instance attributes, matrix packing, legacy world-space uniforms and 2D/CV projection. Validated against pinned ModelStagesBatch2 fixtures."
   },
   "Scene/Model/SceneMode2DPipelineStage": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::model::scene_mode_2d_pipeline_stage",
-    "note": "Position/bounding-sphere projection, buffer retention and model-view uniforms implemented. Native projection/lifetime smoke test passes; independent reference validation remains."
+    "note": "Position and bounding-sphere projection to 2D / Columbus View, buffer retention and model-view uniforms. Validated against pinned ModelStagesBatch2 fixtures."
   },
   "Scene/BatchTexture": {
     "status": "ported",
@@ -4785,5 +4785,25 @@
     "status": "ported",
     "rust": "scene::model::texture_uniform",
     "note": "Typed-array and URL texture uniform options, samplers, and preconditions matching CesiumJS. Tested in tests/scene_model_custom_shader.rs."
+  },
+  "Scene/Model/ModelReader": {
+    "status": "ported",
+    "rust": "scene::model::model_reader",
+    "note": "Attribute buffer deinterleaving, normalization, dequantization, oct decoding, ZXY swizzle, 3D transform, index buffer reading and triangle strip/fan conversions. Validated against pinned ModelReader fixtures."
+  },
+  "Scene/Model/ImageBasedLightingPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::image_based_lighting_pipeline_stage",
+    "note": "Adds image-based lighting defines, spherical harmonics coefficients uniform, specular environment maps, and reference frame matrix. Validated against pinned ModelStagesBatch2 fixtures."
+  },
+  "Scene/Model/PointCloudStylingPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::point_cloud_styling_pipeline_stage",
+    "note": "Runtime point cloud styling, attenuation parameters, and back-face culling for 3D and 2D/ortho scene modes. Validated against pinned ModelStagesBatch2 fixtures."
+  },
+  "Scene/Model/EdgeVisibilityPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::edge_visibility_pipeline_stage",
+    "note": "Derived line list edge geometry and shader bindings for EXT_mesh_primitive_edge_visibility data. Validated against pinned ModelStagesBatch2 fixtures."
   }
 }

@@ -6,7 +6,7 @@ use crate::{
     core::{webgl_constants as gl, BoundingSphere, Cartesian3, Color, Matrix4, PrimitiveType, RuntimeError},
     renderer::{
         render_state::DepthTest, Buffer, Gl, Pass, PickId, RenderState, ShaderBuilder, Texture, UniformMap,
-        UniformValue, VertexAttribute,
+        UniformValue, VertexArray, VertexAttribute,
     },
     scene::{model_components as mc, ClassificationType, ColorBlendMode},
 };
@@ -215,6 +215,7 @@ pub struct PrimitiveRenderResources<G: Gl> {
     pub lighting_options: ModelLightingOptions,
     pub pick_id: Option<String>,
     pub pick_ids: Vec<Rc<PickId>>,
+    pub edge_geometry: Option<EdgeGeometry<G>>,
 }
 impl<G: Gl> PrimitiveRenderResources<G> {
     pub fn new(
@@ -270,6 +271,7 @@ impl<G: Gl> PrimitiveRenderResources<G> {
             lighting_options: ModelLightingOptions::default(),
             pick_id: None,
             pick_ids: Vec::new(),
+            edge_geometry: None,
         })
     }
 }
@@ -291,3 +293,10 @@ macro_rules! pipeline_access {
 pipeline_access!(ModelRenderResources);
 pipeline_access!(NodeRenderResources);
 pipeline_access!(PrimitiveRenderResources);
+
+pub struct EdgeGeometry<G: Gl> {
+    pub vertex_array: Option<VertexArray<G>>,
+    pub index_count: usize,
+    pub primitive_type: PrimitiveType,
+    pub pass: Pass,
+}

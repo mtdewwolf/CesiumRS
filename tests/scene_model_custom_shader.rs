@@ -285,6 +285,7 @@ fn stage_resources(shader: Option<Rc<CustomShader<Host>>>) -> PrimitiveRenderRes
         lighting_options: ModelLightingOptions::default(),
         pick_id: None,
         pick_ids: Vec::new(),
+        edge_geometry: None,
     }
 }
 

@@ -412,7 +412,14 @@ upload queues, mipmaps, WebGL1 POT resizing and fallback to context default text
 Twenty-two pinned reference cases and debug precondition checks pass in
 `tests/scene_model_custom_shader.rs`.
 
-The complete Model runtime/scene graph, IBL/point-cloud styling stages, and
+`ModelReader` provides typed buffer deinterleaving, normalization, dequantization,
+oct decoding, index reading, and triangle strip/fan conversions (21 pinned cases in
+`tests/scene_model_reader.rs`). `InstancingPipelineStage`, `SceneMode2DPipelineStage`,
+`ImageBasedLightingPipelineStage`, `PointCloudStylingPipelineStage`, and
+`EdgeVisibilityPipelineStage` are validated against CesiumJS with 15 pinned reference
+cases in `tests/scene_model_stages_batch2.rs`.
+
+The complete Model runtime/scene graph, imagery pipeline stages, and
 model draw-command construction still need porting. The built-in renderable
 tile factory also remains pending; the default tileset loader requires a factory
 for renderable tile content.
