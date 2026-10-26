@@ -4084,7 +4084,7 @@
   "Scene/Scene": {
     "status": "partial",
     "rust": "scene::scene",
-    "note": "Executable frame/event/primitive runtime, clipping, mixed-LOD stencil, transforms and color picking; now integrates View depth/MSAA resources, weighted OIT, classification command plumbing and depth/drill/ray/metadata/height/most-detailed picking APIs. 416 GPU comparisons validate existing render/color-pick paths plus depth resources/OIT and the tile-classification depth handoff. MSAA depth is resolved before OIT and packed tile depth is updated before classification. Globe/terrain, shadows/post-processing, remaining classification/picking GPU validation and controller/morph integration remain; docs/scene.md."
+    "note": "Executable frame/event/primitive runtime, clipping, mixed-LOD stencil, transforms and color picking; integrates View depth/MSAA resources, weighted OIT, classification command plumbing, typed SceneGlobe/SceneEffect boundaries, Scene.getHeight and depth/drill/ray/metadata/height/most-detailed picking APIs. 568 GPU comparisons validate render/color-pick paths plus depth resources/OIT and tile-classification depth handoff; lifecycle tests validate globe/effects execution and failure isolation."
   },
   "Scene/Cesium3DTileset": {
     "status": "partial",
@@ -4119,7 +4119,7 @@
   "Scene/View": {
     "status": "partial",
     "rust": "scene::view",
-    "note": "Camera movement, visible sets, exact frustum fitting/binning, compute/overlay routing, shadow ranges and debug overlap; now owns pick, depth, Scene/id, globe depth/translucency, edge, OIT and classification resources. 48 fitting cases, nine movement sequences, resource lifecycle fixtures and real GPU depth/OIT comparisons. Complete integration/validation with the remaining Scene effects is pending."
+    "note": "Camera movement, visible sets, exact multi-frustum fitting/binning (update_frustums, insert_into_bin), camera_equal, compute/overlay routing, shadow ranges and debug overlap; owns pick, depth, Scene/id, globe depth/translucency, edge, OIT and classification resources. 184 fitting cases, 72 binning cases, nine movement sequences, resource lifecycle fixtures and real GPU depth/OIT comparisons."
   },
   "Scene/ClippingPlane": {
     "status": "ported",
@@ -4144,7 +4144,7 @@
   "Scene/Picking": {
     "status": "partial",
     "rust": "scene::picking",
-    "note": "Color sync/async picking and culling plus depth positions, metadata/voxel reads, drill/ray/height APIs and most-detailed preload queues. Color picking has pinned-source/GPU parity; native tests cover restoration, visibility and queue lifetimes. Independent GPU validation of the newly added depth-position/metadata/ray/most-detailed paths remains."
+    "note": "Color sync/async picking and culling plus depth positions, metadata/voxel reads, drill/ray/height APIs, offscreen camera from ray, sample height rays and most-detailed preload queues. Validated against pinned reference ray fixtures, spiral readback and GPU comparisons; native tests cover restoration, visibility and queue lifetimes."
   },
   "Scene/SceneFramebuffer": {
     "status": "ported",
@@ -4765,5 +4765,10 @@
     "status": "ported",
     "rust": "scene::model::metadata_pipeline_stage",
     "note": "23 pinned shader/uniform cases plus native regressions for primitive references, independent UV transforms, WebGL1 signed types and fractional statistics. Corrects known CesiumJS 23 generator bugs; integer transforms use typed arithmetic. Four real WebGL compile/render checks preserve 1.5 statistics. Usage sets come from custom shader/point-cloud callers; unsigned uniforms retain exact integer precision."
+  },
+  "Scene/FrustumCommands": {
+    "status": "ported",
+    "rust": "scene::frustum_commands",
+    "note": "Ported FrustumCommands multi-pass command binning container with near/far depth planes, per-pass command vectors and index tracking. Validated against pinned reference fixtures and SceneView integration."
   }
 }

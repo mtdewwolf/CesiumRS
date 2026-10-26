@@ -1729,6 +1729,12 @@ impl ScenePrimitive for Cesium3DTileset {
     fn update_for_pass(&mut self, frame: &mut FrameState, pass: Cesium3DTilePass) -> Result<()> {
         Cesium3DTileset::update_for_pass(self, frame, &mut TilesetPassState::new(pass))
     }
+    fn height_at(&self, cartographic: &Cartographic, frame: &FrameState) -> Result<Option<f64>> {
+        if !self.options.show || !self.options.enable_collision {
+            return Ok(None);
+        }
+        self.get_height(*cartographic, frame, None)
+    }
     fn destroy(&mut self) -> Result<()> {
         Cesium3DTileset::destroy(self)
     }

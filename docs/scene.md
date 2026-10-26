@@ -125,15 +125,14 @@ and classification plumbing does not supply the unported globe primitives.
 Tileset rendering still needs styling, polygon clipping, imagery, environment/lighting
 and debug rendering. Plane clipping and the mixed-LOD stencil/backface pass
 now execute through the native renderer.
-`SceneComponent` lifecycle hooks do not implement those effects. Existing
-runtime options do not establish support for missing rendering features.
+`SceneGlobe` and `SceneEffect` provide typed lifecycle and query boundaries for globe/terrain and scene-wide effects; `Scene.getHeight` aggregates terrain and collision-enabled 3D Tiles heights. Existing runtime options do not establish support for missing rendering features.
 
 `tools/cesium/fixtures/scene-runtime.mjs` supplies **124 scenarios** (54 Scene,
 five fog sequences with 480 updates, six Atmosphere, 59 tileset).
 `scene-completion.mjs` adds **377 scenarios**: two FrameState, 48 View fitting,
 180 traversal (including clipped trees), 18 implicit expansion, 47 derived shader,
 nine camera movement, 24 dynamic-SSE, 21 clipping plane/collection, 24 stencil
-state and four mixed-LOD command sequences. `tests/scene_runtime.rs` also checks cancellation,
+state and four mixed-LOD command sequences. `scene-frustum-commands.mjs` adds **six FrustumCommands cases**, `scene-view.mjs` adds **184 View fitting/camera-equal cases** and **72 ViewBins binning cases**, and `scene-picking.mjs` adds **20 PickingRay** and **four PickHeightRay cases**. `tests/scene_runtime.rs` also checks cancellation,
 expiration, shared textures, partial content failure, resource bases, CPU
 height queries and renderer/resource ownership. The reference frame harness
 uses explicit host operations and does not establish full browser Scene parity.

@@ -105,17 +105,20 @@ pub mod picking;
 pub use pick_framebuffer::{PickFramebuffer, PickReadback, PickedObject};
 pub use picking::Picking;
 // Keep the upstream Scene/Scene.js module path.
+pub mod frustum_commands;
 #[allow(clippy::module_inception)]
 pub mod scene;
 pub mod view;
 pub use atmosphere::Atmosphere;
 pub use fog::{Fog, FrameFog};
 pub use frame_state::{FramePasses, FrameResource, FrameShadowState, FrameState};
+pub use frustum_commands::FrustumCommands;
 pub use scene::{
     RendererSceneBackend, Scene, SceneBackend, SceneCommand, SceneCommandFilter, SceneComponent, SceneDrawOptions,
-    SceneEventKind, SceneNotification, SceneOptions, ScenePrimitive, SceneRenderRequest, SceneStage, SceneSubmission,
+    SceneEffect, SceneEventKind, SceneGlobe, SceneNotification, SceneOptions, ScenePrimitive, SceneRenderRequest,
+    SceneStage, SceneSubmission,
 };
-pub use view::{DebugFrustumStatistics, FrustumCommands, SceneView};
+pub use view::{DebugFrustumStatistics, SceneView};
 pub mod arc_gis_base_map_type;
 pub mod attribute_type;
 pub mod axis;
