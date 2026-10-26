@@ -1,9 +1,11 @@
 # DataSources
 
-The first **24 of 108 DataSources modules** are ported against `@cesium/engine`
-23.0.0. They provide values, positions, motion, property bags, entities, collections
-and references. Concrete graphics classes, visualizers,
-CZML, KML, GeoJSON and GPX remain unported. Scene status is tracked separately in [scene.md](scene.md).
+**41 of 108 DataSources modules** are ported against `@cesium/engine` 23.0.0,
+with two more partial. They provide values, positions, motion, property bags,
+entities, collections, references, the seventeen concrete graphics classes and
+a Color material. Visualizers, the remaining material types, CZML, KML, GeoJSON
+and GPX remain unported. Scene status is tracked separately in
+[scene.md](scene.md).
 
 | Cesium module | Rust API | Behavior |
 | --- | --- | --- |
@@ -31,6 +33,10 @@ CZML, KML, GeoJSON and GPX remain unported. Scene status is tracked separately i
 | `EntityCollection` | `EntityCollection` | ID lookup, membership, batched/reentrant notifications, show and availability bounds |
 | `ReferenceProperty` | `ReferenceProperty` | Lazy nested/escaped references, type/frame forwarding, equality and target changes |
 | `CompositeEntityCollection` | `CompositeEntityCollection` | Priority layers, stable entity identity, ordering, cloning/merging, batching and availability |
+| `BillboardGraphics` … `WallGraphics` (16 classes) | `BillboardGraphics` … `WallGraphics` | Every documented graphics slot, raw ConstantProperty wrapping, accessor definition events, upstream merge field order, shared-property cloning and Entity/composite coercion; 20 pinned Graphics scenarios |
+| `ModelGraphics` | `ModelGraphics` (partial) | Scalar slots, events, clone/merge and explicit PropertyBag nested merging; clone-with-result keeps existing shadows. Raw `nodeTransformations` object coercion needs `NodeTransformationProperty` |
+| `ColorMaterialProperty` | `ColorMaterialProperty` | Color property, white default, `getType`, constant flag, equality and forwarded definition changes |
+| `createMaterialPropertyDescriptor` | `create_material_property_descriptor` (partial) | Color inputs become `ColorMaterialProperty`; string/Resource/canvas/video need the unported `ImageMaterialProperty` |
 
 ## Values, time and ownership
 
@@ -192,8 +198,7 @@ preserve the underlying property's identity across repeated wrapping.
 
 `EntityComponent` supplies evaluation, definition events, equality and optional
 clone/merge, nested-property, material-type and position contracts. Graphics slots
-accept these typed components. **Concrete Graphics classes and automatic raw
-JavaScript graphics-object conversion are not ported by this batch.** Position,
+accept these typed components and raw graphics option objects. Position,
 properties and ordinary property slots have their native conversions. Custom
 `EntityTypeRegistry` factories are scoped and shared explicitly, replacing
 JavaScript's mutable Entity prototype; registration affects subsequently created
@@ -224,6 +229,43 @@ subscriptions. Source notification timing is retained for normal operations.
 Factory errors leave existing values/subscriptions intact, and reentrant setters
 cannot reinstall a retired slot's child subscription. These ownership/reentrancy
 guarantees are deliberate native improvements over the pinned source.
+
+## Graphics definitions
+
+Each concrete graphics class owns one typed accessor slot per documented Cesium
+field. All slots start undefined: the defaults shown in Cesium's JSDoc belong to
+visualizers, not constructors. Constructors accept the same raw values as
+Cesium's `merge(options)` and follow its field order. Assigning a raw value
+creates a ConstantProperty, while assigning a property component retains its
+identity. Changed assignments emit the graphics object's definition event, and a
+child property's change is forwarded with the old value equal to the new one.
+
+`clone()` without a result constructs the new object from the source, so it uses
+the merge field list. `clone(result)` overwrites the clone field list. Both share
+ordinary property objects. Model node-transformations and articulations bags
+are copied and merged separately. Cesium's
+asymmetries are retained: `ModelGraphics::clone(result)` does not copy `shadows`
+and leaves the target's existing value in place, while `clone()` does copy it.
+`merge` only fills missing slots. Entity composition clones a missing graphics
+component and merges an existing one, so composite collections preserve the same
+field-sharing contract as entities.
+
+`EntityComponent::get_property` exposes graphics fields, so
+`ReferenceProperty::from_string(collection, "vehicle#box.show")` and nested
+material paths resolve through the same resolution machinery as positions and
+property bags. Entities coerce raw graphics option objects into typed components;
+`PolygonGraphics` also converts a raw position array into a holes-empty hierarchy
+value. ModelGraphics raw `articulations` and `environmentMapOptions` objects
+become PropertyBags, and explicit PropertyBag node transformations and
+articulations merge hierarchically.
+
+Material coercion covers `Color` inputs, producing `ColorMaterialProperty`.
+`ImageMaterialProperty` and the other material classes are not ported, so string,
+`Resource`, canvas and video material inputs return an explicit unsupported
+error. `Plane`, `NearFarScalar`, `DistanceDisplayCondition`, `PolygonHierarchy`
+and similar values currently travel through `DynamicValue::Json`; nested
+PropertyBag coercion for raw `nodeTransformations` objects still needs
+`NodeTransformationProperty`.
 
 ## Composite entity collections
 
@@ -278,7 +320,7 @@ shared property bags can be modified by merging lower-layer fields. Native
 improvements cover notifications during construction, duplicate/shared source
 ownership, cycles and reentrant callbacks. Metadata uses typed setters, and
 computed `isShowing` notifications are ignored instead of assigning a read-only
-field. The concrete Graphics classes remain separate unported modules.
+field.
 
 ## Validation and remaining work
 
@@ -311,7 +353,7 @@ coalescing/reentrancy and escaped references. **14 native lifecycle tests** cove
 payload nesting/drop, descriptor renewal/failure, child removal, parent ownership,
 old-value lifetimes and suspended ID replacement. The Chromium harness checks
 browser clocks, batching, hierarchy, reference evaluation and listener cleanup.
-DataSources now has **789 pinned scenarios** overall.
+The entity batch brought DataSources to 789 pinned scenarios overall.
 
 `tests/data_sources_composite.rs` adds **45 pinned scenarios**, including all three-
 layer priority permutations, ordering operations, membership changes, nested
@@ -320,8 +362,19 @@ Ten native lifecycle tests cover nested composites and references, shared inputs
 retired callbacks, serialized edits, weak owners, staging and component failures.
 The Chromium harness checks layer removal, identity, references and cleanup.
 
-Next, implement concrete graphics definitions,
-DataSourceClock/data-source collections and the loaders in dependency order. The largest document modules are CzmlDataSource
+`tests/data_sources_graphics.rs` adds **20 pinned Graphics scenarios** across all
+seventeen graphics classes plus ColorMaterialProperty. They cover undefined
+construction, raw option order, ConstantProperty wrapping, accessor events,
+child-change traces, clone and clone-into, merge precedence, ModelGraphics shadow
+and nested-bag behavior, PolygonGraphics hierarchy coercion and material
+evaluation. `tests/data_sources_graphics_lifecycle.rs` adds **thirteen native
+integration tests** for Entity coercion, nested references, event forwarding,
+composite cloning/merging, shared field identity and unsupported material
+inputs. DataSources now has **809 pinned scenarios** overall.
+
+Next, implement the remaining material properties, `NodeTransformationProperty`
+and its raw PropertyBag factories, DataSourceClock/data-source collections and
+the loaders in dependency order. The largest document modules are CzmlDataSource
 (5,142 upstream lines), KmlDataSource (4,249), GeoJsonDataSource (1,064) and
 GpxDataSource (1,018). Their property/entity dependencies must exist before their
 loader behavior can be completed and validated.

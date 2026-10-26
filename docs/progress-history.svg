@@ -9,11 +9,11 @@
   .history-area{fill-opacity:.08}
   @media (prefers-color-scheme:dark){.history-line{stroke:#58a6ff}.history-point,.history-area{fill:#58a6ff}}
 </style>
-<title id="history-title">CesiumRS implementation progress: 64.6%</title>
-<desc id="history-description">74 chronological milestones, Oct 16, 2026 – Oct 26, 2026. Progress increased from 0.0% to 64.6%. Latest milestone: Model draws, picking and tile content. The horizontal axis counts milestones; every milestone is retained in the line.</desc>
+<title id="history-title">CesiumRS implementation progress: 65.8%</title>
+<desc id="history-description">75 chronological milestones, Oct 16, 2026 – Oct 26, 2026. Progress increased from 0.0% to 65.8%. Latest milestone: DataSources graphics definitions. The horizontal axis counts milestones; every milestone is retained in the line.</desc>
 <text class="history-heading" x="16" y="28">Implementation progress</text>
-<text class="dim" x="16" y="51">74 milestones · Oct 16, 2026 – Oct 26, 2026</text>
-<text class="history-value" x="616" y="35" text-anchor="end">64.6%</text>
+<text class="dim" x="16" y="51">75 milestones · Oct 16, 2026 – Oct 26, 2026</text>
+<text class="history-value" x="616" y="35" text-anchor="end">65.8%</text>
 <text class="dim" x="616" y="60" text-anchor="end">implemented</text>
 <rect class="bg" x="60" y="240.0" width="556" height="1"/>
 <text class="dim history-axis" x="48" y="245.0" text-anchor="end">0%</text>
@@ -25,85 +25,86 @@
 <text class="dim history-axis" x="48" y="131.0" text-anchor="end">60%</text>
 <rect class="bg" x="60" y="88.0" width="556" height="1"/>
 <text class="dim history-axis" x="48" y="93.0" text-anchor="end">80%</text>
-<polygon class="history-area" points="60.0,240 60.0,240.0 67.6,225.9 75.2,223.6 82.8,223.1 90.5,222.6 98.1,221.8 105.7,218.9 113.3,215.6 120.9,214.0 128.5,213.7 136.2,211.6 143.8,209.7 151.4,207.5 159.0,206.0 166.6,204.8 174.2,204.1 181.9,203.4 189.5,202.9 197.1,202.3 204.7,201.8 212.3,201.4 219.9,200.4 227.6,200.1 235.2,198.4 242.8,196.7 250.4,196.7 258.0,196.2 265.6,190.5 273.3,188.3 280.9,185.1 288.5,184.7 296.1,181.1 303.7,180.8 311.3,180.3 319.0,179.5 326.6,179.4 334.2,179.4 341.8,178.6 349.4,178.6 357.0,178.6 364.7,178.5 372.3,178.5 379.9,175.7 387.5,170.4 395.1,170.3 402.7,167.8 410.4,165.8 418.0,162.4 425.6,160.4 433.2,159.4 440.8,158.1 448.4,155.5 456.1,154.4 463.7,153.9 471.3,153.1 478.9,151.6 486.5,151.2 494.1,150.0 501.8,149.1 509.4,148.8 517.0,148.3 524.6,147.7 532.2,146.8 539.8,146.0 547.5,145.6 555.1,144.7 562.7,143.7 570.3,143.2 577.9,142.7 585.5,139.4 593.2,139.1 600.8,135.5 608.4,120.2 616.0,117.3 616.0,240"/>
-<polyline class="history-line" points="60.0,240.0 67.6,225.9 75.2,223.6 82.8,223.1 90.5,222.6 98.1,221.8 105.7,218.9 113.3,215.6 120.9,214.0 128.5,213.7 136.2,211.6 143.8,209.7 151.4,207.5 159.0,206.0 166.6,204.8 174.2,204.1 181.9,203.4 189.5,202.9 197.1,202.3 204.7,201.8 212.3,201.4 219.9,200.4 227.6,200.1 235.2,198.4 242.8,196.7 250.4,196.7 258.0,196.2 265.6,190.5 273.3,188.3 280.9,185.1 288.5,184.7 296.1,181.1 303.7,180.8 311.3,180.3 319.0,179.5 326.6,179.4 334.2,179.4 341.8,178.6 349.4,178.6 357.0,178.6 364.7,178.5 372.3,178.5 379.9,175.7 387.5,170.4 395.1,170.3 402.7,167.8 410.4,165.8 418.0,162.4 425.6,160.4 433.2,159.4 440.8,158.1 448.4,155.5 456.1,154.4 463.7,153.9 471.3,153.1 478.9,151.6 486.5,151.2 494.1,150.0 501.8,149.1 509.4,148.8 517.0,148.3 524.6,147.7 532.2,146.8 539.8,146.0 547.5,145.6 555.1,144.7 562.7,143.7 570.3,143.2 577.9,142.7 585.5,139.4 593.2,139.1 600.8,135.5 608.4,120.2 616.0,117.3"/>
+<polygon class="history-area" points="60.0,240 60.0,240.0 67.5,225.9 75.0,223.6 82.5,223.1 90.1,222.6 97.6,221.8 105.1,218.9 112.6,215.6 120.1,214.0 127.6,213.7 135.1,211.6 142.6,209.7 150.2,207.5 157.7,206.0 165.2,204.8 172.7,204.1 180.2,203.4 187.7,202.9 195.2,202.3 202.8,201.8 210.3,201.4 217.8,200.4 225.3,200.1 232.8,198.4 240.3,196.7 247.8,196.7 255.4,196.2 262.9,190.5 270.4,188.3 277.9,185.1 285.4,184.7 292.9,181.1 300.4,180.8 307.9,180.3 315.5,179.5 323.0,179.4 330.5,179.4 338.0,178.6 345.5,178.6 353.0,178.6 360.5,178.5 368.1,178.5 375.6,175.7 383.1,170.4 390.6,170.3 398.1,167.8 405.6,165.8 413.1,162.4 420.6,160.4 428.2,159.4 435.7,158.1 443.2,155.5 450.7,154.4 458.2,153.9 465.7,153.1 473.2,151.6 480.8,151.2 488.3,150.0 495.8,149.1 503.3,148.8 510.8,148.3 518.3,147.7 525.8,146.8 533.4,146.0 540.9,145.6 548.4,144.7 555.9,143.7 563.4,143.2 570.9,142.7 578.4,139.4 585.9,139.1 593.5,135.5 601.0,120.2 608.5,117.3 616.0,114.9 616.0,240"/>
+<polyline class="history-line" points="60.0,240.0 67.5,225.9 75.0,223.6 82.5,223.1 90.1,222.6 97.6,221.8 105.1,218.9 112.6,215.6 120.1,214.0 127.6,213.7 135.1,211.6 142.6,209.7 150.2,207.5 157.7,206.0 165.2,204.8 172.7,204.1 180.2,203.4 187.7,202.9 195.2,202.3 202.8,201.8 210.3,201.4 217.8,200.4 225.3,200.1 232.8,198.4 240.3,196.7 247.8,196.7 255.4,196.2 262.9,190.5 270.4,188.3 277.9,185.1 285.4,184.7 292.9,181.1 300.4,180.8 307.9,180.3 315.5,179.5 323.0,179.4 330.5,179.4 338.0,178.6 345.5,178.6 353.0,178.6 360.5,178.5 368.1,178.5 375.6,175.7 383.1,170.4 390.6,170.3 398.1,167.8 405.6,165.8 413.1,162.4 420.6,160.4 428.2,159.4 435.7,158.1 443.2,155.5 450.7,154.4 458.2,153.9 465.7,153.1 473.2,151.6 480.8,151.2 488.3,150.0 495.8,149.1 503.3,148.8 510.8,148.3 518.3,147.7 525.8,146.8 533.4,146.0 540.9,145.6 548.4,144.7 555.9,143.7 563.4,143.2 570.9,142.7 578.4,139.4 585.9,139.1 593.5,135.5 601.0,120.2 608.5,117.3 616.0,114.9"/>
 <circle class="history-point" cx="60.0" cy="240.0" r="4"><title>1. Start · 2026-10-16 · 0.0%</title></circle>
-<circle fill="transparent" cx="67.6" cy="225.9" r="3"><title>2. Math + geometry · 2026-10-17 · 7.4%</title></circle>
-<circle fill="transparent" cx="75.2" cy="223.6" r="3"><title>3. Time + Sun/Moon · 2026-10-17 · 8.6%</title></circle>
-<circle fill="transparent" cx="82.8" cy="223.1" r="3"><title>4. Spatial orders + packing · 2026-10-17 · 8.9%</title></circle>
-<circle fill="transparent" cx="90.5" cy="222.6" r="3"><title>5. Spline foundations · 2026-10-17 · 9.1%</title></circle>
-<circle fill="transparent" cx="98.1" cy="221.8" r="3"><title>6. Earth &amp; Moon frames · 2026-10-18 · 9.6%</title></circle>
-<circle fill="transparent" cx="105.7" cy="218.9" r="3"><title>7. Splines, queues, tiling · 2026-10-18 · 11.1%</title></circle>
-<circle fill="transparent" cx="113.3" cy="215.6" r="3"><title>8. Geometries: 50% Core · 2026-10-18 · 12.8%</title></circle>
-<circle fill="transparent" cx="120.9" cy="214.0" r="3"><title>9. Core utilities · 2026-10-18 · 13.7%</title></circle>
-<circle fill="transparent" cx="128.5" cy="213.7" r="3"><title>10. PolygonPipeline + earcut · 2026-10-18 · 13.9%</title></circle>
-<circle fill="transparent" cx="136.2" cy="211.6" r="3"><title>11. GeometryPipeline · 2026-10-18 · 14.9%</title></circle>
-<circle fill="transparent" cx="143.8" cy="209.7" r="3"><title>12. Ellipses + rectangles · 2026-10-18 · 15.9%</title></circle>
-<circle fill="transparent" cx="151.4" cy="207.5" r="3"><title>13. Polygons · 2026-10-18 · 17.1%</title></circle>
-<circle fill="transparent" cx="159.0" cy="206.0" r="3"><title>14. Polylines + walls · 2026-10-18 · 17.9%</title></circle>
-<circle fill="transparent" cx="166.6" cy="204.8" r="3"><title>15. Polyline volumes and corridor outlines · 2026-10-18 · 18.5%</title></circle>
-<circle fill="transparent" cx="174.2" cy="204.1" r="3"><title>16. Filled corridors · 2026-10-18 · 18.9%</title></circle>
-<circle fill="transparent" cx="181.9" cy="203.4" r="3"><title>17. Terrain encoding and heightmaps (75% Core) · 2026-10-18 · 19.2%</title></circle>
-<circle fill="transparent" cx="189.5" cy="202.9" r="3"><title>18. Terrain provider and availability · 2026-10-18 · 19.5%</title></circle>
-<circle fill="transparent" cx="197.1" cy="202.3" r="3"><title>19. Terrain mesh and picking · 2026-10-19 · 19.8%</title></circle>
-<circle fill="transparent" cx="204.7" cy="201.8" r="3"><title>20. Heightmap terrain data and LERC · 2026-10-19 · 20.1%</title></circle>
-<circle fill="transparent" cx="212.3" cy="201.4" r="3"><title>21. S2 cells and higher Hilbert levels · 2026-10-19 · 20.3%</title></circle>
-<circle fill="transparent" cx="219.9" cy="200.4" r="3"><title>22. Quantized terrain meshes and upsampling · 2026-10-19 · 20.8%</title></circle>
-<circle fill="transparent" cx="227.6" cy="200.1" r="3"><title>23. Terrain bounds and concrete providers · 2026-10-19 · 21.0%</title></circle>
-<circle fill="transparent" cx="235.2" cy="198.4" r="3"><title>24. Core resource foundations (validation deferred) · 2026-10-19 · 21.9%</title></circle>
-<circle fill="transparent" cx="242.8" cy="196.7" r="3"><title>25. Complete partial Core implementations; validation deferred · 2026-10-19 · 22.8%</title></circle>
-<circle fill="transparent" cx="250.4" cy="196.7" r="3"><title>26. Validate Core foundations and browser/native hosts · 2026-10-19 · 22.8%</title></circle>
-<circle fill="transparent" cx="258.0" cy="196.2" r="3"><title>27. Ion and platform clients · 2026-10-19 · 23.1%</title></circle>
-<circle fill="transparent" cx="265.6" cy="190.5" r="3"><title>28. Complete and validate all applicable Core modules · 2026-10-20 · 26.1%</title></circle>
-<circle fill="transparent" cx="273.3" cy="188.3" r="3"><title>29. Renderer foundation · 2026-10-20 · 27.2%</title></circle>
-<circle fill="transparent" cx="280.9" cy="185.1" r="3"><title>30. Renderer resources and shaders · 2026-10-20 · 28.9%</title></circle>
-<circle fill="transparent" cx="288.5" cy="184.7" r="3"><title>31. Renderer targets and compute · 2026-10-21 · 29.1%</title></circle>
-<circle fill="transparent" cx="296.1" cy="181.1" r="3"><title>32. Renderer complete · 2026-10-21 · 31.0%</title></circle>
-<circle fill="transparent" cx="303.7" cy="180.8" r="3"><title>33. Workers geometry entry points and batch dispatch · 2026-10-21 · 31.1%</title></circle>
-<circle fill="transparent" cx="311.3" cy="180.3" r="3"><title>34. Workers terrain and packet boundaries · 2026-10-21 · 31.4%</title></circle>
-<circle fill="transparent" cx="319.0" cy="179.5" r="3"><title>35. Workers vector tiles · 2026-10-21 · 31.9%</title></circle>
-<circle fill="transparent" cx="326.6" cy="179.4" r="3"><title>36. Workers Gaussian splats · 2026-10-21 · 31.9%</title></circle>
-<circle fill="transparent" cx="334.2" cy="179.4" r="3"><title>37. transferTypedArrayTest n/a · 2026-10-22 · 31.9%</title></circle>
-<circle fill="transparent" cx="341.8" cy="178.6" r="3"><title>38. Workers decodeI3S · 2026-10-22 · 32.3%</title></circle>
-<circle fill="transparent" cx="349.4" cy="178.6" r="3"><title>39. combineGeometry · 2026-10-22 · 32.3%</title></circle>
-<circle fill="transparent" cx="357.0" cy="178.6" r="3"><title>40. createTaskProcessorWorker · 2026-10-22 · 32.3%</title></circle>
-<circle fill="transparent" cx="364.7" cy="178.5" r="3"><title>41. decodeDraco · 2026-10-22 · 32.4%</title></circle>
-<circle fill="transparent" cx="372.3" cy="178.5" r="3"><title>42. Shaders skeleton · 2026-10-22 · 32.4%</title></circle>
-<circle fill="transparent" cx="379.9" cy="175.7" r="3"><title>43. Builtin, Appearances and Materials shaders · 2026-10-22 · 33.8%</title></circle>
-<circle fill="transparent" cx="387.5" cy="170.4" r="3"><title>44. Shaders complete · 2026-10-22 · 36.6%</title></circle>
-<circle fill="transparent" cx="395.1" cy="170.3" r="3"><title>45. Workers complete · 2026-10-22 · 36.7%</title></circle>
-<circle fill="transparent" cx="402.7" cy="167.8" r="3"><title>46. Scene foundations · 2026-10-22 · 38.0%</title></circle>
-<circle fill="transparent" cx="410.4" cy="165.8" r="3"><title>47. GltfPipeline · 2026-10-22 · 39.0%</title></circle>
-<circle fill="transparent" cx="418.0" cy="162.4" r="3"><title>48. 3D Metadata · 2026-10-23 · 40.8%</title></circle>
-<circle fill="transparent" cx="425.6" cy="160.4" r="3"><title>49. Scene tiling · 2026-10-23 · 41.9%</title></circle>
-<circle fill="transparent" cx="433.2" cy="159.4" r="3"><title>50. Scene Camera navigation · 2026-10-23 · 42.4%</title></circle>
-<circle fill="transparent" cx="440.8" cy="158.1" r="3"><title>51. Scene Camera complete · 2026-10-23 · 43.1%</title></circle>
-<circle fill="transparent" cx="448.4" cy="155.5" r="3"><title>52. Scene and tileset runtime foundations · 2026-10-23 · 44.5%</title></circle>
-<circle fill="transparent" cx="456.1" cy="154.4" r="3"><title>53. Scene traversal, content expansion and executable shader variants · 2026-10-23 · 45.1%</title></circle>
-<circle fill="transparent" cx="463.7" cy="153.9" r="3"><title>54. Plane clipping and mixed-LOD stencil rendering · 2026-10-23 · 45.3%</title></circle>
-<circle fill="transparent" cx="471.3" cy="153.1" r="3"><title>55. Scene transforms and color picking · 2026-10-23 · 45.7%</title></circle>
-<circle fill="transparent" cx="478.9" cy="151.6" r="3"><title>56. Scene depth resources, OIT and picking checkpoint · 2026-10-23 · 46.5%</title></circle>
-<circle fill="transparent" cx="486.5" cy="151.2" r="3"><title>57. Scene depth ordering fixes and model resource loaders · 2026-10-24 · 46.8%</title></circle>
-<circle fill="transparent" cx="494.1" cy="150.0" r="3"><title>58. Model resource cache and geometry loaders · 2026-10-24 · 47.4%</title></circle>
-<circle fill="transparent" cx="501.8" cy="149.1" r="3"><title>59. Integrate glTF loader foundations and model cache · 2026-10-24 · 47.8%</title></circle>
-<circle fill="transparent" cx="509.4" cy="148.8" r="3"><title>60. glTF image and texture loaders · 2026-10-24 · 48.0%</title></circle>
-<circle fill="transparent" cx="517.0" cy="148.3" r="3"><title>61. 3D Tiles content parsers · 2026-10-24 · 48.3%</title></circle>
-<circle fill="transparent" cx="524.6" cy="147.7" r="3"><title>62. NGA_gpm_local extension · 2026-10-24 · 48.6%</title></circle>
-<circle fill="transparent" cx="532.2" cy="146.8" r="3"><title>63. Structural metadata and tile helpers · 2026-10-24 · 49.0%</title></circle>
-<circle fill="transparent" cx="539.8" cy="146.0" r="3"><title>64. DataSources property foundations · 2026-10-24 · 49.5%</title></circle>
-<circle fill="transparent" cx="547.5" cy="145.6" r="3"><title>65. Particles and imagery helpers · 2026-10-24 · 49.7%</title></circle>
-<circle fill="transparent" cx="555.1" cy="144.7" r="3"><title>66. DataSources positions and motion · 2026-10-24 · 50.2%</title></circle>
-<circle fill="transparent" cx="562.7" cy="143.7" r="3"><title>67. DataSources entities and references · 2026-10-24 · 50.7%</title></circle>
-<circle fill="transparent" cx="570.3" cy="143.2" r="3"><title>68. Metadata and GPM loaders · 2026-10-24 · 50.9%</title></circle>
-<circle fill="transparent" cx="577.9" cy="142.7" r="3"><title>69. SPZ loaders · 2026-10-25 · 51.2%</title></circle>
-<circle fill="transparent" cx="585.5" cy="139.4" r="3"><title>70. glTF components and model pipeline foundations · 2026-10-25 · 53.0%</title></circle>
-<circle fill="transparent" cx="593.2" cy="139.1" r="3"><title>71. Composite entity collections · 2026-10-25 · 53.1%</title></circle>
-<circle fill="transparent" cx="600.8" cy="135.5" r="3"><title>72. Tile component loaders and model stages · 2026-10-25 · 55.0%</title></circle>
-<circle fill="transparent" cx="608.4" cy="120.2" r="3"><title>73. Model features and metadata shader pipeline · 2026-10-26 · 63.0%</title></circle>
-<circle class="history-point" cx="616.0" cy="117.3" r="4"><title>74. Model draws, picking and tile content · 2026-10-26 · 64.6%</title></circle>
+<circle fill="transparent" cx="67.5" cy="225.9" r="3"><title>2. Math + geometry · 2026-10-17 · 7.4%</title></circle>
+<circle fill="transparent" cx="75.0" cy="223.6" r="3"><title>3. Time + Sun/Moon · 2026-10-17 · 8.6%</title></circle>
+<circle fill="transparent" cx="82.5" cy="223.1" r="3"><title>4. Spatial orders + packing · 2026-10-17 · 8.9%</title></circle>
+<circle fill="transparent" cx="90.1" cy="222.6" r="3"><title>5. Spline foundations · 2026-10-17 · 9.1%</title></circle>
+<circle fill="transparent" cx="97.6" cy="221.8" r="3"><title>6. Earth &amp; Moon frames · 2026-10-18 · 9.6%</title></circle>
+<circle fill="transparent" cx="105.1" cy="218.9" r="3"><title>7. Splines, queues, tiling · 2026-10-18 · 11.1%</title></circle>
+<circle fill="transparent" cx="112.6" cy="215.6" r="3"><title>8. Geometries: 50% Core · 2026-10-18 · 12.8%</title></circle>
+<circle fill="transparent" cx="120.1" cy="214.0" r="3"><title>9. Core utilities · 2026-10-18 · 13.7%</title></circle>
+<circle fill="transparent" cx="127.6" cy="213.7" r="3"><title>10. PolygonPipeline + earcut · 2026-10-18 · 13.9%</title></circle>
+<circle fill="transparent" cx="135.1" cy="211.6" r="3"><title>11. GeometryPipeline · 2026-10-18 · 14.9%</title></circle>
+<circle fill="transparent" cx="142.6" cy="209.7" r="3"><title>12. Ellipses + rectangles · 2026-10-18 · 15.9%</title></circle>
+<circle fill="transparent" cx="150.2" cy="207.5" r="3"><title>13. Polygons · 2026-10-18 · 17.1%</title></circle>
+<circle fill="transparent" cx="157.7" cy="206.0" r="3"><title>14. Polylines + walls · 2026-10-18 · 17.9%</title></circle>
+<circle fill="transparent" cx="165.2" cy="204.8" r="3"><title>15. Polyline volumes and corridor outlines · 2026-10-18 · 18.5%</title></circle>
+<circle fill="transparent" cx="172.7" cy="204.1" r="3"><title>16. Filled corridors · 2026-10-18 · 18.9%</title></circle>
+<circle fill="transparent" cx="180.2" cy="203.4" r="3"><title>17. Terrain encoding and heightmaps (75% Core) · 2026-10-18 · 19.2%</title></circle>
+<circle fill="transparent" cx="187.7" cy="202.9" r="3"><title>18. Terrain provider and availability · 2026-10-18 · 19.5%</title></circle>
+<circle fill="transparent" cx="195.2" cy="202.3" r="3"><title>19. Terrain mesh and picking · 2026-10-19 · 19.8%</title></circle>
+<circle fill="transparent" cx="202.8" cy="201.8" r="3"><title>20. Heightmap terrain data and LERC · 2026-10-19 · 20.1%</title></circle>
+<circle fill="transparent" cx="210.3" cy="201.4" r="3"><title>21. S2 cells and higher Hilbert levels · 2026-10-19 · 20.3%</title></circle>
+<circle fill="transparent" cx="217.8" cy="200.4" r="3"><title>22. Quantized terrain meshes and upsampling · 2026-10-19 · 20.8%</title></circle>
+<circle fill="transparent" cx="225.3" cy="200.1" r="3"><title>23. Terrain bounds and concrete providers · 2026-10-19 · 21.0%</title></circle>
+<circle fill="transparent" cx="232.8" cy="198.4" r="3"><title>24. Core resource foundations (validation deferred) · 2026-10-19 · 21.9%</title></circle>
+<circle fill="transparent" cx="240.3" cy="196.7" r="3"><title>25. Complete partial Core implementations; validation deferred · 2026-10-19 · 22.8%</title></circle>
+<circle fill="transparent" cx="247.8" cy="196.7" r="3"><title>26. Validate Core foundations and browser/native hosts · 2026-10-19 · 22.8%</title></circle>
+<circle fill="transparent" cx="255.4" cy="196.2" r="3"><title>27. Ion and platform clients · 2026-10-19 · 23.1%</title></circle>
+<circle fill="transparent" cx="262.9" cy="190.5" r="3"><title>28. Complete and validate all applicable Core modules · 2026-10-20 · 26.1%</title></circle>
+<circle fill="transparent" cx="270.4" cy="188.3" r="3"><title>29. Renderer foundation · 2026-10-20 · 27.2%</title></circle>
+<circle fill="transparent" cx="277.9" cy="185.1" r="3"><title>30. Renderer resources and shaders · 2026-10-20 · 28.9%</title></circle>
+<circle fill="transparent" cx="285.4" cy="184.7" r="3"><title>31. Renderer targets and compute · 2026-10-21 · 29.1%</title></circle>
+<circle fill="transparent" cx="292.9" cy="181.1" r="3"><title>32. Renderer complete · 2026-10-21 · 31.0%</title></circle>
+<circle fill="transparent" cx="300.4" cy="180.8" r="3"><title>33. Workers geometry entry points and batch dispatch · 2026-10-21 · 31.1%</title></circle>
+<circle fill="transparent" cx="307.9" cy="180.3" r="3"><title>34. Workers terrain and packet boundaries · 2026-10-21 · 31.4%</title></circle>
+<circle fill="transparent" cx="315.5" cy="179.5" r="3"><title>35. Workers vector tiles · 2026-10-21 · 31.9%</title></circle>
+<circle fill="transparent" cx="323.0" cy="179.4" r="3"><title>36. Workers Gaussian splats · 2026-10-21 · 31.9%</title></circle>
+<circle fill="transparent" cx="330.5" cy="179.4" r="3"><title>37. transferTypedArrayTest n/a · 2026-10-22 · 31.9%</title></circle>
+<circle fill="transparent" cx="338.0" cy="178.6" r="3"><title>38. Workers decodeI3S · 2026-10-22 · 32.3%</title></circle>
+<circle fill="transparent" cx="345.5" cy="178.6" r="3"><title>39. combineGeometry · 2026-10-22 · 32.3%</title></circle>
+<circle fill="transparent" cx="353.0" cy="178.6" r="3"><title>40. createTaskProcessorWorker · 2026-10-22 · 32.3%</title></circle>
+<circle fill="transparent" cx="360.5" cy="178.5" r="3"><title>41. decodeDraco · 2026-10-22 · 32.4%</title></circle>
+<circle fill="transparent" cx="368.1" cy="178.5" r="3"><title>42. Shaders skeleton · 2026-10-22 · 32.4%</title></circle>
+<circle fill="transparent" cx="375.6" cy="175.7" r="3"><title>43. Builtin, Appearances and Materials shaders · 2026-10-22 · 33.8%</title></circle>
+<circle fill="transparent" cx="383.1" cy="170.4" r="3"><title>44. Shaders complete · 2026-10-22 · 36.6%</title></circle>
+<circle fill="transparent" cx="390.6" cy="170.3" r="3"><title>45. Workers complete · 2026-10-22 · 36.7%</title></circle>
+<circle fill="transparent" cx="398.1" cy="167.8" r="3"><title>46. Scene foundations · 2026-10-22 · 38.0%</title></circle>
+<circle fill="transparent" cx="405.6" cy="165.8" r="3"><title>47. GltfPipeline · 2026-10-22 · 39.0%</title></circle>
+<circle fill="transparent" cx="413.1" cy="162.4" r="3"><title>48. 3D Metadata · 2026-10-23 · 40.8%</title></circle>
+<circle fill="transparent" cx="420.6" cy="160.4" r="3"><title>49. Scene tiling · 2026-10-23 · 41.9%</title></circle>
+<circle fill="transparent" cx="428.2" cy="159.4" r="3"><title>50. Scene Camera navigation · 2026-10-23 · 42.4%</title></circle>
+<circle fill="transparent" cx="435.7" cy="158.1" r="3"><title>51. Scene Camera complete · 2026-10-23 · 43.1%</title></circle>
+<circle fill="transparent" cx="443.2" cy="155.5" r="3"><title>52. Scene and tileset runtime foundations · 2026-10-23 · 44.5%</title></circle>
+<circle fill="transparent" cx="450.7" cy="154.4" r="3"><title>53. Scene traversal, content expansion and executable shader variants · 2026-10-23 · 45.1%</title></circle>
+<circle fill="transparent" cx="458.2" cy="153.9" r="3"><title>54. Plane clipping and mixed-LOD stencil rendering · 2026-10-23 · 45.3%</title></circle>
+<circle fill="transparent" cx="465.7" cy="153.1" r="3"><title>55. Scene transforms and color picking · 2026-10-23 · 45.7%</title></circle>
+<circle fill="transparent" cx="473.2" cy="151.6" r="3"><title>56. Scene depth resources, OIT and picking checkpoint · 2026-10-23 · 46.5%</title></circle>
+<circle fill="transparent" cx="480.8" cy="151.2" r="3"><title>57. Scene depth ordering fixes and model resource loaders · 2026-10-24 · 46.8%</title></circle>
+<circle fill="transparent" cx="488.3" cy="150.0" r="3"><title>58. Model resource cache and geometry loaders · 2026-10-24 · 47.4%</title></circle>
+<circle fill="transparent" cx="495.8" cy="149.1" r="3"><title>59. Integrate glTF loader foundations and model cache · 2026-10-24 · 47.8%</title></circle>
+<circle fill="transparent" cx="503.3" cy="148.8" r="3"><title>60. glTF image and texture loaders · 2026-10-24 · 48.0%</title></circle>
+<circle fill="transparent" cx="510.8" cy="148.3" r="3"><title>61. 3D Tiles content parsers · 2026-10-24 · 48.3%</title></circle>
+<circle fill="transparent" cx="518.3" cy="147.7" r="3"><title>62. NGA_gpm_local extension · 2026-10-24 · 48.6%</title></circle>
+<circle fill="transparent" cx="525.8" cy="146.8" r="3"><title>63. Structural metadata and tile helpers · 2026-10-24 · 49.0%</title></circle>
+<circle fill="transparent" cx="533.4" cy="146.0" r="3"><title>64. DataSources property foundations · 2026-10-24 · 49.5%</title></circle>
+<circle fill="transparent" cx="540.9" cy="145.6" r="3"><title>65. Particles and imagery helpers · 2026-10-24 · 49.7%</title></circle>
+<circle fill="transparent" cx="548.4" cy="144.7" r="3"><title>66. DataSources positions and motion · 2026-10-24 · 50.2%</title></circle>
+<circle fill="transparent" cx="555.9" cy="143.7" r="3"><title>67. DataSources entities and references · 2026-10-24 · 50.7%</title></circle>
+<circle fill="transparent" cx="563.4" cy="143.2" r="3"><title>68. Metadata and GPM loaders · 2026-10-24 · 50.9%</title></circle>
+<circle fill="transparent" cx="570.9" cy="142.7" r="3"><title>69. SPZ loaders · 2026-10-25 · 51.2%</title></circle>
+<circle fill="transparent" cx="578.4" cy="139.4" r="3"><title>70. glTF components and model pipeline foundations · 2026-10-25 · 53.0%</title></circle>
+<circle fill="transparent" cx="585.9" cy="139.1" r="3"><title>71. Composite entity collections · 2026-10-25 · 53.1%</title></circle>
+<circle fill="transparent" cx="593.5" cy="135.5" r="3"><title>72. Tile component loaders and model stages · 2026-10-25 · 55.0%</title></circle>
+<circle fill="transparent" cx="601.0" cy="120.2" r="3"><title>73. Model features and metadata shader pipeline · 2026-10-26 · 63.0%</title></circle>
+<circle fill="transparent" cx="608.5" cy="117.3" r="3"><title>74. Model draws, picking and tile content · 2026-10-26 · 64.6%</title></circle>
+<circle class="history-point" cx="616.0" cy="114.9" r="4"><title>75. DataSources graphics definitions · 2026-10-26 · 65.8%</title></circle>
 <text class="dim history-axis" x="60.0" y="263" text-anchor="middle">1</text>
-<text class="dim history-axis" x="242.8" y="263" text-anchor="middle">25</text>
-<text class="dim history-axis" x="433.2" y="263" text-anchor="middle">50</text>
-<text class="dim history-axis" x="616.0" y="263" text-anchor="middle">74</text>
+<text class="dim history-axis" x="247.8" y="263" text-anchor="middle">26</text>
+<text class="dim history-axis" x="428.2" y="263" text-anchor="middle">50</text>
+<text class="dim history-axis" x="616.0" y="263" text-anchor="middle">75</text>
 <text class="dim" x="338" y="289" text-anchor="middle">Milestones, chronological order</text>
 </svg>

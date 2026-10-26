@@ -207,11 +207,11 @@ adds 126 pinned scenarios, 14 native lifecycle checks and browser ownership/cloc
 coverage, bringing DataSources to 744 reference cases.
 
 Entity graphics slots accept typed EntityComponent implementations; concrete
-Graphics classes and automatic raw graphics-object conversion remain unported.
+Graphics definitions and supported raw graphics-object conversion are described below.
 Scoped registries replace JavaScript prototype registration. Weak references and
 RAII subscriptions prevent ownership cycles and stale removed-child callbacks.
 
-CompositeEntityCollection is now validated below. Next implement concrete graphics definitions,
+CompositeEntityCollection is now validated below. Next implement data-source clocks, collections and loaders,
 DataSourceClock/data-source collections and loaders. See [DataSources](docs/data-sources.md).
 
 
@@ -221,9 +221,33 @@ DataSources has 24 of 108 modules validated. CompositeEntityCollection adds
 ordered priority layers, identity-preserving entity composition, clone/merge,
 ordering operations, batched membership/property changes and availability. The
 batch adds 45 pinned scenarios, 10 native lifecycle checks and Chromium coverage;
-DataSources has 789 reference cases overall. Native ownership supports nested
+The entity batch brought DataSources to 789 reference cases. Native ownership supports nested
 composites, duplicate/shared sources, weak owners and serialized callback edits.
 Application component failures are observable through an error event and retry API.
 
-Next implement concrete Graphics classes, DataSourceClock/data-source collections,
-visualizers and document loaders. See [DataSources](docs/data-sources.md).
+### DataSources graphics definitions
+
+DataSources has 41 of 108 modules validated and two partial. This batch adds all
+seventeen concrete graphics classes, `ColorMaterialProperty` and the material
+descriptor coercion for Color inputs. It adds 20 pinned CesiumJS scenarios and
+thirteen native ownership/integration tests.
+
+Graphics slots start undefined and visualizer defaults are not constructor
+defaults. Raw assignment creates a ConstantProperty and emits a definition
+event; child changes forward with old equal to new; clone and merge share the
+underlying property objects. `clone(result)` overwrites the upstream clone field
+list, including the pinned ModelGraphics quirk that leaves `result.shadows`
+untouched. Entity slots coerce raw option objects into typed components, nested
+references reach graphics fields, and composite entity collections clone and
+merge graphics definitions. PolygonGraphics converts a position array into a
+holes-empty hierarchy. ModelGraphics merges explicit PropertyBag values for
+node transformations and articulations.
+
+Limitations are explicit rather than claimed complete. ModelGraphics raw
+nodeTransformations object coercion needs NodeTransformationProperty, and its
+status is partial. Material support covers Color only: ImageMaterialProperty,
+the remaining material classes and string/Resource material inputs remain todo.
+DynamicValue still represents Plane, NearFarScalar, DistanceDisplayCondition and
+PolygonHierarchy as JSON payloads rather than typed variants. Visualizers,
+DataSourceClock/data-source collections and document loaders are next. See
+[DataSources](docs/data-sources.md).

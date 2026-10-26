@@ -6,6 +6,11 @@ use super::{
     PositionComponent, PositionContext, PositionPropertyRef, PropertyBag, PropertyChange, PropertyComponent,
     PropertyDescriptor, PropertyInput, PropertyIntervals, PropertyRef, Subscription,
 };
+use super::{
+    BillboardGraphics, BoxGraphics, Cesium3DTilesetGraphics, CorridorGraphics, CylinderGraphics, EllipseGraphics,
+    EllipsoidGraphics, LabelGraphics, ModelGraphics, PathGraphics, PlaneGraphics, PointGraphics, PolygonGraphics,
+    PolylineGraphics, PolylineVolumeGraphics, RectangleGraphics, WallGraphics,
+};
 use crate::core::*;
 use crate::scene::{height_reference::is_height_reference_clamp, HeightReference};
 use std::{
@@ -377,11 +382,34 @@ impl Entity {
         }
         if GRAPHICS.contains(&name) {
             let name = name.to_owned();
-            return Some(Rc::new(move |_| {
-                Err(RuntimeError::new(format!("{name} requires a typed graphics component")))
-            }));
+            return Some(Rc::new(move |value| Self::graphics_component(&name, value)));
         }
         ENTITY_PROPERTY_NAMES.contains(&name).then(|| Rc::new(constant_component) as ComponentFactory)
+    }
+    /// Coerces a raw Entity graphics option (a record/JSON object) into the
+    /// matching typed graphics component. Typed components set directly are
+    /// left untouched by the property descriptor.
+    fn graphics_component(name: &str, value: DynamicValue) -> Result<ComponentRef, RuntimeError> {
+        Ok(match name {
+            "billboard" => Rc::new(BillboardGraphics::from_dynamic(value)?) as ComponentRef,
+            "box" => Rc::new(BoxGraphics::from_dynamic(value)?) as ComponentRef,
+            "tileset" => Rc::new(Cesium3DTilesetGraphics::from_dynamic(value)?) as ComponentRef,
+            "corridor" => Rc::new(CorridorGraphics::from_dynamic(value)?) as ComponentRef,
+            "cylinder" => Rc::new(CylinderGraphics::from_dynamic(value)?) as ComponentRef,
+            "ellipse" => Rc::new(EllipseGraphics::from_dynamic(value)?) as ComponentRef,
+            "ellipsoid" => Rc::new(EllipsoidGraphics::from_dynamic(value)?) as ComponentRef,
+            "label" => Rc::new(LabelGraphics::from_dynamic(value)?) as ComponentRef,
+            "model" => Rc::new(ModelGraphics::from_dynamic(value)?) as ComponentRef,
+            "path" => Rc::new(PathGraphics::from_dynamic(value)?) as ComponentRef,
+            "plane" => Rc::new(PlaneGraphics::from_dynamic(value)?) as ComponentRef,
+            "point" => Rc::new(PointGraphics::from_dynamic(value)?) as ComponentRef,
+            "polygon" => Rc::new(PolygonGraphics::from_dynamic(value)?) as ComponentRef,
+            "polyline" => Rc::new(PolylineGraphics::from_dynamic(value)?) as ComponentRef,
+            "polylineVolume" => Rc::new(PolylineVolumeGraphics::from_dynamic(value)?) as ComponentRef,
+            "rectangle" => Rc::new(RectangleGraphics::from_dynamic(value)?) as ComponentRef,
+            "wall" => Rc::new(WallGraphics::from_dynamic(value)?) as ComponentRef,
+            _ => return Err(RuntimeError::new(format!("{name} is not a graphics property"))),
+        })
     }
     fn ensure_field(&self, name: &str, custom: bool) -> Result<PropertyDescriptor, RuntimeError> {
         if let Some(field) = self.fields.borrow().iter().find(|f| f.name() == name).cloned() {
@@ -532,10 +560,13 @@ impl Entity {
             if let Some(target) = target.filter(PropertyInput::is_defined) {
                 if let PropertyInput::Component(target) = target {
                     if target.supports_merge() {
-                        let PropertyInput::Component(source) = value else {
-                            return Err(RuntimeError::new("merge source must be a component"));
-                        };
-                        target.merge_component(&**source)?;
+                        match value {
+                            PropertyInput::Component(source) => target.merge_component(&**source)?,
+                            PropertyInput::Value(value) if GRAPHICS.contains(&name.as_str()) => {
+                                target.merge_dynamic_options(value.clone())?;
+                            }
+                            _ => return Err(RuntimeError::new("merge source must be a component")),
+                        }
                     }
                 }
             } else if let PropertyInput::Component(component) = value {

@@ -29,6 +29,9 @@ pub trait EntityComponent: Any {
     fn merge_component(&self, _source: &dyn EntityComponent) -> Result<(), RuntimeError> {
         Err(RuntimeError::new("component.merge is not a function"))
     }
+    fn merge_dynamic_options(&self, _source: DynamicValue) -> Result<(), RuntimeError> {
+        Err(RuntimeError::new("component.merge is not a function"))
+    }
     fn clone_component(&self, _result: Option<ComponentRef>) -> Result<ComponentRef, RuntimeError> {
         Err(RuntimeError::new("component.clone is not a function"))
     }
