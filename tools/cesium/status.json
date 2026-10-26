@@ -4827,19 +4827,19 @@
     "note": "GLSL shader generation for float and uint8 textures with union and intersection clipping modes validated against CesiumJS reference."
   },
   "Scene/Primitive": {
-    "status": "implemented",
+    "status": "partial",
     "rust": "scene::primitive",
-    "note": "Frustum culling, geometry combining, and draw command creation implemented; parity fixtures unrun."
+    "note": "Partial options and CPU geometry preparation. Constructor fixtures and native failure regressions only. Nonempty drawable geometry returns an explicit unsupported-rendering error; GPU commands, batch tables, asynchronous creation and rendering parity remain unimplemented."
   },
   "Scene/PrimitiveCollection": {
-    "status": "implemented",
+    "status": "partial",
     "rust": "scene::primitive_collection",
-    "note": "Composite primitive tree management and update dispatching implemented; parity fixtures unrun."
+    "note": "Partial native index-based collection API. Pinned reference cases cover ordering, nested update dispatch (including hidden collections), and destruction policy; identity-based membership, collection events and the full upstream surface remain unported."
   },
   "Scene/PrimitivePipeline": {
-    "status": "implemented",
+    "status": "partial",
     "rust": "scene::primitive_pipeline",
-    "note": "Geometry combination, batch ID assignment, and pick offset tracking implemented; parity fixtures unrun."
+    "note": "Partial CPU geometry combination, batch IDs and pick offsets. This duplicate Scene implementation has no direct reference suite; 2D projection, high/low position encoding and complete result parity remain unvalidated. The separately validated Workers/combineGeometry port is unchanged."
   },
   "Scene/ShadowVolumeAppearance": {
     "status": "implemented",

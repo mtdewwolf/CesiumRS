@@ -1,16 +1,17 @@
-//! CesiumJS `Primitive`: combines batched geometry instances with an
-//! [`Appearance`] and submits draw commands to the [`FrameState`].
+//! Partial CesiumJS `Primitive` scaffold for geometry combination and options.
+//!
+//! GPU resource creation, batch tables and executable draw commands are not
+//! implemented. Updating a drawable primitive returns an error rather than
+//! claiming readiness and queuing commands that do nothing.
 
 use super::{
     appearance::Appearance,
     primitive_pipeline::{CombineGeometryParameters, PrimitivePipeline},
     primitive_state::PrimitiveState,
-    scene::{Result, SceneCommand, ScenePrimitive},
-    FrameState, SceneMode, ShadowMode,
+    scene::{Result, ScenePrimitive},
+    FrameState, ShadowMode,
 };
-use crate::core::{BoundingSphere, Geometry, GeometryInstance, Intersect, Matrix4};
-use crate::renderer::Pass;
-use std::rc::Rc;
+use crate::core::{BoundingSphere, Geometry, GeometryInstance, Matrix4, RuntimeError};
 
 /// Options for creating a [`Primitive`].
 pub struct PrimitiveOptions {
@@ -51,7 +52,7 @@ impl Default for PrimitiveOptions {
     }
 }
 
-/// A primitive representing batched geometry in the scene.
+/// Partial primitive options and geometry preparation; rendering is unsupported.
 pub struct Primitive {
     pub show: bool,
     pub model_matrix: Matrix4,
@@ -72,7 +73,6 @@ pub struct Primitive {
     bounding_spheres: Vec<Option<BoundingSphere>>,
     bounding_spheres_cv: Vec<Option<BoundingSphere>>,
     state: PrimitiveState,
-    commands: Vec<SceneCommand>,
     destroyed: bool,
 }
 
@@ -97,7 +97,6 @@ impl Primitive {
             bounding_spheres: Vec::new(),
             bounding_spheres_cv: Vec::new(),
             state: PrimitiveState::Ready,
-            commands: Vec::new(),
             destroyed: false,
         }
     }
@@ -144,7 +143,12 @@ impl Primitive {
                 self.geometries = results.geometries.unwrap_or_default();
                 self.bounding_spheres = results.bounding_spheres;
                 self.bounding_spheres_cv = results.bounding_spheres_cv;
-                self.create_commands(frame)?;
+                if !self.geometries.is_empty() {
+                    self.state = PrimitiveState::Failed;
+                    return Err(RuntimeError::new(
+                        "Primitive rendering is not implemented: executable GPU command creation is required",
+                    ));
+                }
                 self.state = PrimitiveState::Complete;
                 Ok(())
             }
@@ -154,23 +158,6 @@ impl Primitive {
             }
         }
     }
-
-    fn create_commands(&mut self, _frame: &FrameState) -> Result<()> {
-        self.commands.clear();
-        let appearance = match &self.appearance {
-            Some(app) => app,
-            None => return Ok(()),
-        };
-
-        let pass = if appearance.is_translucent() { Pass::Translucent } else { Pass::Opaque };
-
-        for (i, _) in self.geometries.iter().enumerate() {
-            let command = SceneCommand::new(format!("primitive_{i}"), pass, Rc::new(|_| Ok(())));
-            self.commands.push(command);
-        }
-
-        Ok(())
-    }
 }
 
 impl ScenePrimitive for Primitive {
@@ -179,40 +166,18 @@ impl ScenePrimitive for Primitive {
     }
 
     fn update(&mut self, frame: &mut FrameState) -> Result<()> {
-        if !self.show || self.state == PrimitiveState::Failed {
+        if self.destroyed {
+            return Err(RuntimeError::new("Primitive has been destroyed"));
+        }
+        if self.state == PrimitiveState::Failed {
+            return Err(RuntimeError::new("Primitive creation previously failed"));
+        }
+        if !self.show || self.appearance.is_none() {
             return Ok(());
         }
 
         if self.state == PrimitiveState::Ready {
             self.combine(frame)?;
-        }
-
-        if self.state != PrimitiveState::Complete {
-            return Ok(());
-        }
-
-        let is_cv = matches!(frame.mode, SceneMode::ColumbusView | SceneMode::Scene2D);
-        for (i, command) in self.commands.iter().enumerate() {
-            let bs = if is_cv {
-                self.bounding_spheres_cv.get(i).and_then(|b| *b)
-            } else {
-                self.bounding_spheres.get(i).and_then(|b| *b)
-            };
-
-            let visible = if self.cull {
-                if let Some(sphere) = bs {
-                    let transformed = sphere.transform(&self.model_matrix);
-                    frame.culling_volume.compute_visibility(&transformed) != Intersect::Outside
-                } else {
-                    true
-                }
-            } else {
-                true
-            };
-
-            if visible {
-                frame.command_list.push(command.clone());
-            }
         }
 
         Ok(())
@@ -228,7 +193,6 @@ impl ScenePrimitive for Primitive {
 
     fn destroy(&mut self) -> Result<()> {
         self.destroyed = true;
-        self.commands.clear();
         self.geometries.clear();
         self.bounding_spheres.clear();
         self.bounding_spheres_cv.clear();

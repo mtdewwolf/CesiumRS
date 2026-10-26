@@ -1046,18 +1046,33 @@ TZ=UTC node tools/cesium/fixtures/generate.mjs ImplicitSubtree
 
 ## Primitives, appearances, materials, and clipping polygons
 
-The foundations for scene drawing, custom shaders, appearances, and clipping are ported and validated:
+Pinned CesiumJS 23.0.0 fixtures cover appearance shader sources and render states,
+material Fabric source generation and uniform renaming, clipping polygon CPU data,
+and the numerical `PrimitiveState` values. These fixtures do not establish GPU
+rendering parity for the primitive runtime.
 
-- **Primitive lifecycle & collections:** `PrimitiveState` encodes numerical pipeline lifecycle stages. `Primitive` handles frustum culling, batch table binding, and command updates. `PrimitiveCollection` provides composite primitive trees, and `PrimitivePipeline` combines geometries with batch ID assignments and pick offsets.
-- **Appearances:** `Appearance` trait and `AppearanceState` provide shader composition, translucent blending, and render state management. Concrete ports include `MaterialAppearance` (`Basic`, `Textured`, `All`), `EllipsoidSurfaceAppearance`, `PerInstanceColorAppearance`, `PolylineColorAppearance`, `PolylineMaterialAppearance` (with `#define POLYLINE_DASH` detection), `DebugAppearance` (for arbitrary vertex/instance attributes), and `ShadowVolumeAppearance`.
-- **Material & Fabric:** `Material` implements the complete CesiumJS fabric specification parser, token replacement, uniform name remapping, sub-material chaining, and 25 built-in material types (`Color`, `Image`, `DiffuseMap`, `AlphaMap`, `Grid`, `Stripe`, `Checkerboard`, `Water`, `RimLighting`, etc.) with full translucency evaluation rules.
-- **Clipping Polygons:** `ClippingPolygon`, `ClippingPolygonCollection`, and `getClippingFunction` provide planar and spherical clipping polygon definitions, cartographic bounds, spherical extents, float/uint8 texture packing, and GLSL clipping shader generation for union and intersection regions.
+- `Primitive` is partial: constructor options and CPU geometry preparation exist.
+  Updating nonempty drawable geometry returns an explicit error because GPU
+  resource creation, batch tables and executable draw commands are unimplemented.
+  It does not queue placeholder commands or report that drawable geometry is ready.
+- `PrimitiveCollection` has a partial native API using owned children and indices.
+  Reference cases cover ordering, nested frame dispatch and destruction policy.
+  Identity-based membership and collection events remain unported.
+- `PrimitivePipeline` is partial and has no direct Scene reference suite. Its CPU
+  combination path is missing 2D projection and high/low position encoding.
+  The existing, independently validated `Workers/combineGeometry` path is separate.
+- Appearance and material fixtures cover source generation and metadata for the
+  listed concrete appearances and 25 built-in materials. `ShadowVolumeAppearance`
+  awaits direct fixture validation. Material texture loading and final rendered
+  pixels are outside these fixture suites.
+- Clipping polygon fixtures cover cartographic bounds, spherical extents, CPU
+  packing, texture size calculations and clipping shader text. They do not test
+  GPU texture uploads or final scene clipping.
 
-### Validation
+Run the reference replays and native unsupported-rendering regressions with:
 
-All 12 test suites match pinned CesiumJS 23.0.0 fixtures with 100% pass rate:
 ```bash
-cargo test --test scene_interaction_effects
+cargo test --test scene_interaction_effects --test scene_primitive_runtime
 ```
 
 ## Next

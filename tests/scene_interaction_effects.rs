@@ -711,7 +711,11 @@ fn clipping_polygon_collection() {
                 let big = ClippingPolygonCollection::get_texture_resolution(None, 5000, 2048);
                 Some(Out::Ok(json!([[one[0], one[1]], [two[0], two[1]], [big[0], big[1]],])))
             }
-            "supported" => Some(Out::Ok(json!([true, false, Value::Null]))),
+            "supported" => Some(Out::Ok(json!([
+                ClippingPolygonCollection::is_supported(Some(true)),
+                ClippingPolygonCollection::is_supported(Some(false)),
+                ClippingPolygonCollection::is_supported(None),
+            ]))),
             _ => None,
         },
     );

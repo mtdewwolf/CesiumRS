@@ -33,6 +33,8 @@ export default async function sceneInteractionEffects() {
   const PolylineMaterialAppearance = await scene("PolylineMaterialAppearance");
   const DebugAppearance = await scene("DebugAppearance");
   const PrimitiveState = await scene("PrimitiveState");
+  const Primitive = await scene("Primitive");
+  const PrimitiveCollection = await scene("PrimitiveCollection");
   const ClippingPolygon = await scene("ClippingPolygon");
   const ClippingPolygonCollection = await scene("ClippingPolygonCollection");
   const getClippingFunction = await scene("getClippingFunction");
@@ -287,6 +289,71 @@ export default async function sceneInteractionEffects() {
   {
     const s = add("PrimitiveState");
     s.add("values", [], () => ({ ...PrimitiveState }));
+  }
+
+  // Constructor metadata only: these cases do not exercise Primitive rendering.
+  {
+    const s = add("Primitive");
+    for (const options of [{}, { show: false, asynchronous: false, allowPicking: false, cull: false }]) {
+      s.add("options", [options], (options) => {
+        const p = new Primitive(options);
+        return {
+          show: p.show,
+          asynchronous: p.asynchronous,
+          allowPicking: p.allowPicking,
+          cull: p.cull,
+          compressVertices: p.compressVertices,
+          releaseGeometryInstances: p.releaseGeometryInstances,
+          ready: p.ready,
+          destroyed: p.isDestroyed(),
+        };
+      });
+    }
+  }
+
+  {
+    const s = add("PrimitiveCollection");
+    const operations = [["raise", 0], ["raiseToTop", 0], ["lower", 2], ["lowerToBottom", 1], ["remove", 1]];
+    s.add("order", [operations], (operations) => {
+      const c = new PrimitiveCollection({ destroyPrimitives: false });
+      for (const id of ["a", "b", "c"]) c.add({ id });
+      const snapshot = () => Array.from({ length: c.length }, (_, i) => c.get(i).id);
+      const result = [snapshot()];
+      for (const [op, index] of operations) {
+        c[op](c.get(index));
+        result.push(snapshot());
+      }
+      return result;
+    });
+    for (const show of [true, false]) {
+      s.add("dispatch", [show], (show) => {
+        const log = [];
+        const c = new PrimitiveCollection({ show });
+        const nested = new PrimitiveCollection();
+        nested.add({
+          prePassesUpdate: () => log.push("pre"),
+          update: () => log.push("update"),
+          updateForPass: () => log.push("pass"),
+          postPassesUpdate: () => log.push("post"),
+        });
+        c.add(nested);
+        c.prePassesUpdate({});
+        c.update({});
+        c.updateForPass({}, {});
+        c.postPassesUpdate({});
+        return log;
+      });
+    }
+    for (const destroyPrimitives of [true, false]) {
+      s.add("destroy", [destroyPrimitives], (destroyPrimitives) => {
+        const log = [];
+        const c = new PrimitiveCollection({ destroyPrimitives });
+        for (const id of ["a", "b"]) c.add({ destroy: () => log.push(id) });
+        c.remove(c.get(0));
+        c.destroy();
+        return { log, destroyed: c.isDestroyed() };
+      });
+    }
   }
 
   // ---- ClippingPolygon ----
