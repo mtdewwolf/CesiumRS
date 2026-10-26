@@ -359,10 +359,8 @@ impl ScreenSpaceCameraController {
         }
     }
     fn translate(&mut self, c: &mut Camera, start: Cartesian2, m: CameraMovement, env: ControllerEnvironment) {
-        if c.mode() == SceneMode::ColumbusView {
-            if self.continue_strafe(c, start, m) {
-                return;
-            }
+        if c.mode() == SceneMode::ColumbusView && self.continue_strafe(c, start, m) {
+            return;
         }
         let (Some(a), Some(b)) = (c.get_pick_ray(m.start_position), c.get_pick_ray(m.end_position)) else {
             return;
