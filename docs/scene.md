@@ -1121,6 +1121,41 @@ cargo test --test scene_tiling
 TZ=UTC node tools/cesium/fixtures/generate.mjs ImplicitSubtree
 ```
 
+## Primitives, appearances, materials, and clipping polygons
+
+Pinned CesiumJS 23.0.0 fixtures cover appearance shader sources and render states,
+material Fabric source generation and uniform renaming, clipping polygon CPU data,
+and the numerical `PrimitiveState` values. These fixtures do not establish GPU
+rendering parity for the primitive runtime.
+
+- `Primitive` is partial: constructor options and CPU geometry preparation exist.
+  Updating nonempty drawable geometry returns an explicit error because GPU
+  resource creation, batch tables and executable draw commands are unimplemented.
+  It does not queue placeholder commands or report that drawable geometry is ready.
+- `PrimitiveCollection` has a partial native API using owned children and indices.
+  Reference cases cover ordering, nested frame dispatch and destruction policy.
+  Identity-based membership and collection events remain unported.
+- `PrimitivePipeline` is partial and has no direct Scene reference suite. Its CPU
+  combination path is missing 2D projection and high/low position encoding.
+  The existing, independently validated `Workers/combineGeometry` path is separate.
+- Appearance and material fixtures cover source generation and metadata for the
+  listed concrete appearances and 25 built-in materials. `ShadowVolumeAppearance`
+  awaits direct fixture validation. Material texture loading and final rendered
+  pixels are outside these fixture suites.
+  Renderer hosts call `Material::uniform_bindings()` at submission time to get
+  current values from the whole sub-material tree, with exact generated names.
+  Complete supplied render states retain all fields, including explicit `false`
+  settings. Returned and notified clipping-polygon handles preserve identity.
+- Clipping polygon fixtures cover cartographic bounds, spherical extents, CPU
+  packing, texture size calculations and clipping shader text. They do not test
+  GPU texture uploads or final scene clipping.
+
+Run the reference replays and native unsupported-rendering regressions with:
+
+```bash
+cargo test --test scene_interaction_effects --test scene_primitive_runtime
+```
+
 ## 3D Tiles styling
 
 `Expression`, `ConditionsExpression`, `StyleExpression` and `Cesium3DTileStyle`

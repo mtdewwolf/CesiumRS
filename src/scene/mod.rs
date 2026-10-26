@@ -34,7 +34,7 @@ macro_rules! string_enum {
         impl $name {
             pub const ALL: &'static [Self] = &[$(Self::$variant),+];
             /// Cesium's value.
-            pub fn as_str(self) -> &'static str { match self { $(Self::$variant => $value),+ } }
+            pub const fn as_str(self) -> &'static str { match self { $(Self::$variant => $value),+ } }
             pub fn from_str_value(value: &str) -> Option<Self> { Self::ALL.iter().copied().find(|v| v.as_str() == value) }
             /// The Cesium constant name.
             pub fn name(self) -> &'static str { match self { $(Self::$variant => $key),+ } }
@@ -526,6 +526,43 @@ pub use primitive_load_plan::{AttributeLoadPlan, IndicesLoadPlan, PlannedAttribu
 
 pub mod gltf_loader;
 pub use gltf_loader::{GltfLoader, GltfLoaderOptions};
+
+// Interaction, primitives and effects.
+pub mod appearance;
+pub use appearance::{default_render_state, Appearance, AppearanceState};
+pub mod clipping_polygon;
+pub use clipping_polygon::{ClippingPolygon, ClippingPolygonOptions};
+pub mod clipping_polygon_collection;
+pub use clipping_polygon_collection::{
+    ClippingPolygonCollection, ClippingPolygonCollectionOptions, ClippingPolygonEvent, PackedClippingPolygons,
+};
+pub mod get_clipping_function;
+pub mod material;
+pub use material::{
+    Fabric, Material, MaterialCache, MaterialCubeMap, MaterialImage, MaterialOptions, MaterialValue, TranslucentRule,
+};
+pub mod material_appearance;
+pub use material_appearance::{MaterialAppearance, MaterialAppearanceOptions, MaterialSupport};
+pub mod ellipsoid_surface_appearance;
+pub use ellipsoid_surface_appearance::{EllipsoidSurfaceAppearance, EllipsoidSurfaceAppearanceOptions};
+pub mod per_instance_color_appearance;
+pub use per_instance_color_appearance::{PerInstanceColorAppearance, PerInstanceColorAppearanceOptions};
+pub mod polyline_color_appearance;
+pub use polyline_color_appearance::{PolylineColorAppearance, PolylineColorAppearanceOptions};
+pub mod polyline_material_appearance;
+pub use polyline_material_appearance::{PolylineMaterialAppearance, PolylineMaterialAppearanceOptions};
+pub mod debug_appearance;
+pub use debug_appearance::{DebugAppearance, DebugAppearanceOptions};
+pub mod primitive_state;
+pub use primitive_state::PrimitiveState;
+pub mod primitive_pipeline;
+pub use primitive_pipeline::{CombineGeometryParameters, CombineGeometryResults, PickOffset, PrimitivePipeline};
+pub mod primitive;
+pub use primitive::{Primitive, PrimitiveOptions};
+pub mod primitive_collection;
+pub use primitive_collection::{PrimitiveCollection, PrimitiveCollectionOptions};
+pub mod shadow_volume_appearance;
+pub use shadow_volume_appearance::{ShaderDependencies, ShadowVolumeAppearance};
 
 pub mod imagery_provider;
 pub use imagery_provider::{

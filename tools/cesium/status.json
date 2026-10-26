@@ -5015,5 +5015,85 @@
     "status": "ported",
     "rust": "scene::model::model_scene_graph",
     "note": "Scene graph construction from ModelComponents, hierarchy evaluation, axis correction, 2D projection, and dirty propagation."
+  },
+  "Scene/PrimitiveState": {
+    "status": "ported",
+    "rust": "scene::primitive_state",
+    "note": "Numerical primitive states match CesiumJS reference."
+  },
+  "Scene/Appearance": {
+    "status": "ported",
+    "rust": "scene::appearance",
+    "note": "Default render states, appearance trait, and shader composition logic validated against CesiumJS reference."
+  },
+  "Scene/MaterialAppearance": {
+    "status": "ported",
+    "rust": "scene::material_appearance",
+    "note": "Basic, Textured, and All support modes, material shader integration, and flat/faceForward configurations validated against CesiumJS reference."
+  },
+  "Scene/EllipsoidSurfaceAppearance": {
+    "status": "ported",
+    "rust": "scene::ellipsoid_surface_appearance",
+    "note": "Surface geometry appearance with aboveGround and flat options validated against CesiumJS reference."
+  },
+  "Scene/PerInstanceColorAppearance": {
+    "status": "ported",
+    "rust": "scene::per_instance_color_appearance",
+    "note": "Flat and standard per-instance color appearances with Phong shading validated against CesiumJS reference."
+  },
+  "Scene/PolylineColorAppearance": {
+    "status": "ported",
+    "rust": "scene::polyline_color_appearance",
+    "note": "Polyline per-instance color appearance with gamma-corrected output validated against CesiumJS reference."
+  },
+  "Scene/PolylineMaterialAppearance": {
+    "status": "ported",
+    "rust": "scene::polyline_material_appearance",
+    "note": "Polyline material appearance with dash define injection validated against CesiumJS reference."
+  },
+  "Scene/DebugAppearance": {
+    "status": "ported",
+    "rust": "scene::debug_appearance",
+    "note": "Debug visualization for vertex and per-instance attributes across float/vec2/vec3/vec4 datatypes validated against CesiumJS reference."
+  },
+  "Scene/Material": {
+    "status": "ported",
+    "rust": "scene::material",
+    "note": "Fabric specification parser, 25 built-in material types, uniform name renaming, sub-materials, and translucency evaluation validated against 33 reference cases."
+  },
+  "Scene/ClippingPolygon": {
+    "status": "ported",
+    "rust": "scene::clipping_polygon",
+    "note": "Cartographic bounds calculation, spherical extents, and identity comparisons validated against CesiumJS reference."
+  },
+  "Scene/ClippingPolygonCollection": {
+    "status": "ported",
+    "rust": "scene::clipping_polygon_collection",
+    "note": "Collection management, extents merging, texture resolution calculation, and lifecycle events validated against CesiumJS reference."
+  },
+  "Scene/getClippingFunction": {
+    "status": "ported",
+    "rust": "scene::get_clipping_function",
+    "note": "GLSL shader generation for float and uint8 textures with union and intersection clipping modes validated against CesiumJS reference."
+  },
+  "Scene/Primitive": {
+    "status": "partial",
+    "rust": "scene::primitive",
+    "note": "Partial options and CPU geometry preparation. Constructor fixtures and native failure regressions only. Nonempty drawable geometry returns an explicit unsupported-rendering error; GPU commands, batch tables, asynchronous creation and rendering parity remain unimplemented."
+  },
+  "Scene/PrimitiveCollection": {
+    "status": "partial",
+    "rust": "scene::primitive_collection",
+    "note": "Partial native index-based collection API. Pinned reference cases cover ordering, nested update dispatch (including hidden collections), and destruction policy; identity-based membership, collection events and the full upstream surface remain unported."
+  },
+  "Scene/PrimitivePipeline": {
+    "status": "partial",
+    "rust": "scene::primitive_pipeline",
+    "note": "Partial CPU geometry combination, batch IDs and pick offsets. This duplicate Scene implementation has no direct reference suite; 2D projection, high/low position encoding and complete result parity remain unvalidated. The separately validated Workers/combineGeometry port is unchanged."
+  },
+  "Scene/ShadowVolumeAppearance": {
+    "status": "implemented",
+    "rust": "scene::shadow_volume_appearance",
+    "note": "Classification fragment shader synthesis for 3D Tiles and terrain clamping implemented; parity fixtures unrun."
   }
 }
