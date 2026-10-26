@@ -542,5 +542,13 @@
     "ported": 1025,
     "implemented": 6,
     "validatedPercent": 61.15
+  },
+  {
+    "milestone": "DataSources graphics definitions",
+    "date": "2026-10-26",
+    "percent": 65.84,
+    "ported": 1042,
+    "implemented": 6,
+    "validatedPercent": 62.32
   }
 ]

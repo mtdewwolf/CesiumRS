@@ -48,6 +48,11 @@ impl<T: 'static> ChangeEvent<T> {
     pub fn downgrade(&self) -> WeakChangeEvent<T> {
         WeakChangeEvent { base: self.base.downgrade(), payload: Rc::downgrade(&self.payload) }
     }
+    /// The underlying local definition event, for typed components that expose
+    /// Cesium's `definitionChanged` contract.
+    pub fn definition_changed(&self) -> &DefinitionChanged {
+        &self.base
+    }
     pub fn number_of_listeners(&self) -> usize {
         self.base.number_of_listeners()
     }
