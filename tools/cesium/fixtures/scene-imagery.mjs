@@ -360,6 +360,7 @@ export default async function sceneImagery() {
       const s = add("MapboxStyleImageryProvider");
       const options = [
         ["defaults", { styleId: "streets-v11", accessToken: "tok-style" }],
+        ["explicitFalse", { styleId: "streets-v11", accessToken: "tok-style", scaleFactor: false }],
         [
           "custom",
           {

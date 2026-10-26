@@ -659,10 +659,12 @@ host image fetches and KTX2 transcoding.
   retina tile suffixing (`@2x`), and minimum-level tile count validation.
 - `MapboxImageryProvider` and `MapboxStyleImageryProvider`: Mapbox v4 and Styles
   API raster tile request construction with access token query parameters.
+  `scale_factor: None` omits the Styles API scale suffix; `Some(true)` and
+  `Some(false)` both select `@2x`, matching CesiumJS's defined-value check.
 - `SingleTileImageryProvider`: single geographic imagery tile provider with
   level-0 caching and asynchronous `from_url` dimension discovery.
 
-Tests: `tests/scene_imagery.rs`, 44 pinned reference cases from
+Tests: `tests/scene_imagery.rs`, 46 pinned reference cases from
 `tools/cesium/fixtures/scene-imagery.mjs`.
 
 ```bash

@@ -19,7 +19,9 @@ pub struct MapboxStyleImageryProviderOptions {
     pub style_id: String,
     pub access_token: String,
     pub tilesize: Option<u32>,
-    pub scale_factor: bool,
+    /// Cesium selects @2x whenever scaleFactor is defined, even if false.
+    /// None preserves the default URL without a scale suffix.
+    pub scale_factor: Option<bool>,
     pub rectangle: Option<Rectangle>,
     pub minimum_level: Option<u32>,
     pub maximum_level: Option<u32>,
@@ -35,7 +37,7 @@ impl MapboxStyleImageryProviderOptions {
             style_id: style_id.into(),
             access_token: access_token.into(),
             tilesize: None,
-            scale_factor: false,
+            scale_factor: None,
             rectangle: None,
             minimum_level: None,
             maximum_level: None,
@@ -59,7 +61,7 @@ impl<H: ImageHost + 'static> MapboxStyleImageryProvider<H> {
 
         let username = options.username.unwrap_or_else(|| "mapbox".to_owned());
         let tilesize = options.tilesize.unwrap_or(512);
-        let scale_factor = if options.scale_factor { "@2x" } else { "" };
+        let scale_factor = if options.scale_factor.is_some() { "@2x" } else { "" };
         let style_id = options.style_id;
 
         let mut template_url = resource.get_url_component(true, false);

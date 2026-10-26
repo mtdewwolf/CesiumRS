@@ -587,12 +587,17 @@ fn mapbox_style_imagery_provider() {
                 let name = s(&a[0]);
                 let options = match name {
                     "defaults" => MapboxStyleImageryProviderOptions::new("streets-v11", "tok-style"),
+                    "explicitFalse" => {
+                        let mut opt = MapboxStyleImageryProviderOptions::new("streets-v11", "tok-style");
+                        opt.scale_factor = Some(false);
+                        opt
+                    }
                     "custom" => {
                         let mut opt = MapboxStyleImageryProviderOptions::new("outdoors-v11", "tok-custom");
                         opt.url = Some(Resource::new("https://custom.style.com/v1/").unwrap());
                         opt.username = Some("custom-user".into());
                         opt.tilesize = Some(256);
-                        opt.scale_factor = true;
+                        opt.scale_factor = Some(true);
                         opt.minimum_level = Some(2);
                         opt.maximum_level = Some(15);
                         opt.credit = Some(Credit::new("Custom Style Credit", true));
@@ -623,12 +628,17 @@ fn mapbox_style_imagery_provider() {
                 let name = s(&a[0]);
                 let options = match name {
                     "defaults" => MapboxStyleImageryProviderOptions::new("streets-v11", "tok-style"),
+                    "explicitFalse" => {
+                        let mut opt = MapboxStyleImageryProviderOptions::new("streets-v11", "tok-style");
+                        opt.scale_factor = Some(false);
+                        opt
+                    }
                     "custom" => {
                         let mut opt = MapboxStyleImageryProviderOptions::new("outdoors-v11", "tok-custom");
                         opt.url = Some(Resource::new("https://custom.style.com/v1/").unwrap());
                         opt.username = Some("custom-user".into());
                         opt.tilesize = Some(256);
-                        opt.scale_factor = true;
+                        opt.scale_factor = Some(true);
                         opt.minimum_level = Some(2);
                         opt.maximum_level = Some(15);
                         opt.credit = Some(Credit::new("Custom Style Credit", true));
