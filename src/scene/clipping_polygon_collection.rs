@@ -18,10 +18,16 @@ pub struct ClippingPolygonCollectionOptions {
 }
 
 /// An added/removed polygon notification.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct ClippingPolygonEvent {
     pub polygon: ClippingPolygon,
     pub index: usize,
+}
+
+impl Clone for ClippingPolygonEvent {
+    fn clone(&self) -> Self {
+        Self { polygon: self.polygon.clone_with_id(), index: self.index }
+    }
 }
 
 /// The packed float data for a clipping polygon texture pair.
@@ -134,10 +140,10 @@ impl ClippingPolygonCollection {
 
     pub fn add(&mut self, polygon: ClippingPolygon) -> ClippingPolygon {
         let index = self.polygons.len();
-        let event = ClippingPolygonEvent { polygon: polygon.clone(), index };
+        let event = ClippingPolygonEvent { polygon: polygon.clone_with_id(), index };
         self.polygons.push(polygon);
         self.polygon_added.raise_event(&event);
-        self.polygons.last().cloned().expect("just pushed")
+        self.polygons.last().map(ClippingPolygon::clone_with_id).expect("just pushed")
     }
 
     pub fn contains(&self, polygon: &ClippingPolygon) -> bool {

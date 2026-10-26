@@ -1142,6 +1142,10 @@ rendering parity for the primitive runtime.
   listed concrete appearances and 25 built-in materials. `ShadowVolumeAppearance`
   awaits direct fixture validation. Material texture loading and final rendered
   pixels are outside these fixture suites.
+  Renderer hosts call `Material::uniform_bindings()` at submission time to get
+  current values from the whole sub-material tree, with exact generated names.
+  Complete supplied render states retain all fields, including explicit `false`
+  settings. Returned and notified clipping-polygon handles preserve identity.
 - Clipping polygon fixtures cover cartographic bounds, spherical extents, CPU
   packing, texture size calculations and clipping shader text. They do not test
   GPU texture uploads or final scene clipping.

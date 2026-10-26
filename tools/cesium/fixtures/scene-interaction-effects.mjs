@@ -85,6 +85,26 @@ export default async function sceneInteractionEffects() {
   // ---- Material ----
   {
     const s = add("Material");
+    const bindings = (m) => Object.entries(m._uniforms).map(([name, get]) => [name, get()]);
+    s.add("bindingPrefix", [], () => {
+      const m = new Material({ fabric: {
+        type: "TestPrefixBinding",
+        uniforms: { color_scale: 2, color: Color.RED },
+        components: { diffuse: "color.rgb * color_scale" },
+      } });
+      m.uniforms.color = new Color(0, 1, 0, 0.25);
+      return bindings(m);
+    });
+    s.add("subMaterialBindings", [], () => {
+      const m = new Material({ fabric: {
+        type: "TestLiveSub",
+        uniforms: { color: Color.BLUE },
+        materials: { sub: { type: "Color" } },
+        components: { diffuse: "color.rgb + sub.diffuse" },
+      } });
+      m.materials.sub.uniforms.color = new Color(0.2, 0.4, 0.6, 0.8);
+      return { parent: bindings(m), child: bindings(m.materials.sub) };
+    });
     const types = [
       "Color",
       "Image",
@@ -198,6 +218,7 @@ export default async function sceneInteractionEffects() {
       [true, true, null],
       [false, true, null],
       [true, false, { depthMask: true, cull: { enabled: true, face: 1029 } }],
+      [true, true, { depthMask: false, depthTest: { enabled: false }, cull: { enabled: false }, blending: { enabled: false } }],
     ];
     for (const [translucent, closed, existing] of defaults) {
       s.add("getDefaultRenderState", [translucent, closed, existing], (t, c, e) =>
@@ -392,6 +413,20 @@ export default async function sceneInteractionEffects() {
   }
   {
     const s = add("ClippingPolygonCollection");
+    s.add("addIdentity", [polygons[0]], (positions) => {
+      const c = new ClippingPolygonCollection();
+      const polygon = new ClippingPolygon({ positions });
+      let added, removed;
+      c.polygonAdded.addEventListener((p) => { added = p; });
+      c.polygonRemoved.addEventListener((p) => { removed = p; });
+      const returned = c.add(polygon);
+      const containsReturned = c.contains(returned);
+      const removedReturned = c.remove(returned);
+      return {
+        returnedSame: returned === polygon, eventSame: added === polygon,
+        containsReturned, removedReturned, removedEventSame: removed === polygon,
+      };
+    });
     const makeCollection = (positions, options = {}) =>
       new ClippingPolygonCollection({ polygons: positions.map((p) => new ClippingPolygon({ positions: p })), ...options });
     s.add("empty", [], () => {

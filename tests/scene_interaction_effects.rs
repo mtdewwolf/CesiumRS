@@ -94,7 +94,9 @@ fn appearance_defaults() {
                 let closed = a[1].as_bool().unwrap();
                 let mut existing: Option<RenderState> = None;
                 if let Some(obj) = a[2].as_object() {
-                    let mut rs = RenderState::default();
+                    // JS fixtures supply sparse states; the Rust API accepts a
+                    // complete state, so materialize omitted JS defaults first.
+                    let mut rs = default_render_state(translucent, closed, None);
                     if let Some(dm) = obj.get("depthMask").and_then(Value::as_bool) {
                         rs.depth_mask = dm;
                     }
@@ -106,11 +108,24 @@ fn appearance_defaults() {
                             rs.cull.face = face as u32;
                         }
                     }
+                    if let Some(enabled) = a[2].pointer("/depthTest/enabled").and_then(Value::as_bool) {
+                        rs.depth_test.enabled = enabled;
+                    }
+                    if let Some(enabled) = a[2].pointer("/blending/enabled").and_then(Value::as_bool) {
+                        rs.blending.enabled = enabled;
+                    }
                     existing = Some(rs);
                 }
                 let rs = default_render_state(translucent, closed, existing);
                 let mask = !translucent && a[2].is_null();
-                Out::Ok(rs_snapshot(&rs, mask, mask))
+                let mut snapshot = rs_snapshot(&rs, mask, mask);
+                if a[2].get("cull").is_some() {
+                    snapshot["cull"] = json!({
+                        "enabled": rs.cull.enabled,
+                        "face": if closed || a[2].pointer("/cull/face").is_some() { json!(rs.cull.face) } else { Value::Null },
+                    });
+                }
+                Out::Ok(snapshot)
             })
         },
     );
@@ -352,6 +367,10 @@ fn enc_mat_val(v: &MaterialValue) -> Value {
     }
 }
 
+fn binding_values(m: &Material) -> Value {
+    json!(m.uniform_bindings().iter().map(|(name, value)| json!([name, enc_mat_val(value)])).collect::<Vec<_>>())
+}
+
 fn material_snapshot(m: &Material) -> Value {
     let uniforms: Vec<Value> = m
         .uniforms
@@ -361,7 +380,7 @@ fn material_snapshot(m: &Material) -> Value {
             json!([k, val])
         })
         .collect();
-    let uniform_bindings: Vec<String> = m.uniform_bindings.iter().map(|(k, _)| k.clone()).collect();
+    let uniform_bindings: Vec<String> = m.uniform_bindings().into_iter().map(|(k, _)| k).collect();
     let materials: Vec<String> = m.materials.iter().map(|(k, _)| k.clone()).collect();
     json!({
         "type": m.type_name,
@@ -380,6 +399,31 @@ fn material_cases() {
         "Material",
         |_| EXACT,
         |f, a| match f {
+            "bindingPrefix" => {
+                let mut m = Material::new(MaterialOptions {
+                    fabric: Fabric::new("TestPrefixBinding")
+                        .uniform("color_scale", MaterialValue::Float(2.))
+                        .uniform("color", MaterialValue::from_color(Color::RED))
+                        .component("diffuse", "color.rgb * color_scale"),
+                    ..Default::default()
+                });
+                m.set_uniform("color", MaterialValue::from_color(Color::new(0., 1., 0., 0.25))).unwrap();
+                Some(Out::Ok(binding_values(&m)))
+            }
+            "subMaterialBindings" => {
+                let mut m = Material::new(MaterialOptions {
+                    fabric: Fabric::new("TestLiveSub")
+                        .uniform("color", MaterialValue::from_color(Color::BLUE))
+                        .sub_material("sub", Fabric::new("Color"))
+                        .component("diffuse", "color.rgb + sub.diffuse"),
+                    ..Default::default()
+                });
+                m.materials[0]
+                    .1
+                    .set_uniform("color", MaterialValue::from_color(Color::new(0.2, 0.4, 0.6, 0.8)))
+                    .unwrap();
+                Some(Out::Ok(json!({ "parent": binding_values(&m), "child": binding_values(&m.materials[0].1) })))
+            }
             "fromType" => {
                 let type_name = a[0].as_str().unwrap();
                 Some(Out::Ok(material_snapshot(&Material::from_type(type_name))))
@@ -587,6 +631,31 @@ fn clipping_polygon_collection() {
         "ClippingPolygonCollection",
         |_| EXACT,
         |f, a| match f {
+            "addIdentity" => {
+                use std::sync::{Arc, Mutex};
+                let mut c = ClippingPolygonCollection::default();
+                let added = Arc::new(Mutex::new(None::<ClippingPolygonEvent>));
+                let removed = Arc::new(Mutex::new(None::<ClippingPolygonEvent>));
+                let capture = Arc::clone(&added);
+                c.polygon_added.add_event_listener(move |event| *capture.lock().unwrap() = Some(event.clone()));
+                let capture = Arc::clone(&removed);
+                c.polygon_removed.add_event_listener(move |event| *capture.lock().unwrap() = Some(event.clone()));
+                let polygon = ClippingPolygon::new(ClippingPolygonOptions {
+                    positions: parse_cartesian3_array(&a[0]),
+                    ellipsoid: None,
+                });
+                let id = polygon.id;
+                let returned = c.add(polygon);
+                let event_same = added.lock().unwrap().as_ref().unwrap().polygon.id == id;
+                let contains_returned = c.contains(&returned);
+                let removed_returned = c.remove(&returned);
+                let removed_same = removed.lock().unwrap().as_ref().is_some_and(|e| e.polygon.id == id);
+                Some(Out::Ok(json!({
+                    "returnedSame": returned.id == id, "eventSame": event_same,
+                    "containsReturned": contains_returned, "removedReturned": removed_returned,
+                    "removedEventSame": removed_same,
+                })))
+            }
             "empty" => {
                 let c = ClippingPolygonCollection::default();
                 Some(Out::Ok(json!({

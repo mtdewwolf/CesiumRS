@@ -280,8 +280,9 @@ pub struct Material {
     pub materials: Vec<(String, Material)>,
     /// The original uniform values by name, in fabric order.
     pub uniforms: Vec<(String, MaterialValue)>,
-    /// Renamed uniform values (`name_count`), ready for the renderer.
-    pub uniform_bindings: Vec<(String, MaterialValue)>,
+    /// Exact original/generated identifiers for this material's own uniforms.
+    /// Values are read from the material tree at submission time.
+    uniform_binding_names: Vec<(String, String)>,
     pub translucent: Option<bool>,
     pub minification_filter: TextureMinificationFilter,
     pub magnification_filter: TextureMagnificationFilter,
@@ -300,7 +301,7 @@ impl std::fmt::Debug for Material {
             .field("shader_source", &self.shader_source)
             .field("materials", &self.materials)
             .field("uniforms", &self.uniforms)
-            .field("uniform_bindings", &self.uniform_bindings)
+            .field("uniform_bindings", &self.uniform_bindings())
             .field("translucent", &self.translucent)
             .field("minification_filter", &self.minification_filter)
             .field("magnification_filter", &self.magnification_filter)
@@ -329,7 +330,7 @@ impl Material {
             shader_source: String::new(),
             materials: Vec::new(),
             uniforms: Vec::new(),
-            uniform_bindings: Vec::new(),
+            uniform_binding_names: Vec::new(),
             translucent: options.translucent,
             minification_filter: options.minification_filter.unwrap_or(TextureMinificationFilter::Linear),
             magnification_filter: options.magnification_filter.unwrap_or(TextureMagnificationFilter::Linear),
@@ -371,6 +372,26 @@ impl Material {
         self.uniforms.iter().find(|(n, _)| n == name).map(|(_, v)| v)
     }
 
+    /// Resolve renderer bindings (`name_count`) from the current material tree.
+    /// Call at submission time so uniform edits and texture resolution on any child
+    /// are reflected in the parent's uniforms. Returned values are a snapshot.
+    pub fn uniform_bindings(&self) -> Vec<(String, MaterialValue)> {
+        let mut bindings = Vec::new();
+        self.collect_uniform_bindings(&mut bindings);
+        bindings
+    }
+
+    fn collect_uniform_bindings(&self, bindings: &mut Vec<(String, MaterialValue)>) {
+        for (original, generated) in &self.uniform_binding_names {
+            if let Some(value) = self.uniform(original) {
+                bindings.push((generated.clone(), value.clone()));
+            }
+        }
+        for (_, child) in &self.materials {
+            child.collect_uniform_bindings(bindings);
+        }
+    }
+
     /// Replaces a uniform's value, keeping its declared type.
     pub fn set_uniform(&mut self, name: &str, value: MaterialValue) -> Result<(), RuntimeError> {
         let datas = &mut self.uniforms;
@@ -385,12 +406,7 @@ impl Material {
                 value.glsl_type()
             )));
         }
-        slot.1 = value.clone();
-        // Keep the renamed binding in sync.
-        let renamed = self.uniform_bindings.iter_mut().find(|(n, _)| n == name || n.starts_with(&format!("{name}_")));
-        if let Some((_, v)) = renamed {
-            *v = value;
-        }
+        slot.1 = value;
         Ok(())
     }
 
@@ -427,7 +443,7 @@ impl Material {
         self.shader_source = String::new();
         self.materials.clear();
         self.uniforms.clear();
-        self.uniform_bindings.clear();
+        self.uniform_binding_names.clear();
 
         let cached =
             with_material_cache(|c| c.get(&self.type_name).cloned().map(|f| (f, c.get_translucent(&self.type_name))));
@@ -498,7 +514,7 @@ impl Material {
             return Err(RuntimeError::new(format!("strict: shader source does not use uniform '{uniform_id}'.")));
         }
         self.uniforms.push((uniform_id.to_string(), value.clone()));
-        self.uniform_bindings.push((new_id, value.clone()));
+        self.uniform_binding_names.push((uniform_id.to_string(), new_id));
         Ok(())
     }
 
@@ -512,11 +528,6 @@ impl Material {
                 ..MaterialOptions::default()
             })?;
             self.count = sub.count;
-            for (name, value) in sub.uniform_bindings.drain(..) {
-                if !self.uniform_bindings.iter().any(|(n, _)| *n == name) {
-                    self.uniform_bindings.push((name, value));
-                }
-            }
             let original_method = "czm_getMaterial";
             let new_method = format!("{original_method}_{}", self.count);
             self.count += 1;
@@ -563,6 +574,9 @@ impl Material {
             self.uniforms.iter().find(|(_, value)| matches!(value, MaterialValue::Sampler2D(MaterialImage::Url(_))))
         {
             return Err(RuntimeError::new(format!("material texture '{name}' has not been loaded")));
+        }
+        for (_, child) in &mut self.materials {
+            child.update_textures()?;
         }
         Ok(())
     }

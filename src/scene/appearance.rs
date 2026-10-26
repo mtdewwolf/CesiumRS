@@ -76,6 +76,9 @@ pub trait Appearance {
 /// `combine(existing, defaults)` does. Cesium's `existing` is a partial render
 /// state; Rust callers supply the complete state they want.
 pub fn default_render_state(translucent: bool, closed: bool, existing: Option<RenderState>) -> RenderState {
+    if let Some(existing) = existing {
+        return existing;
+    }
     let mut rs = RenderState::default();
     rs.depth_test.enabled = true;
     if translucent {
@@ -85,20 +88,6 @@ pub fn default_render_state(translucent: bool, closed: bool, existing: Option<Re
     if closed {
         rs.cull.enabled = true;
         rs.cull.face = CullFace::Back.value();
-    }
-    if let Some(existing) = existing {
-        if existing.depth_mask {
-            rs.depth_mask = true;
-        }
-        if existing.depth_test.enabled {
-            rs.depth_test = existing.depth_test;
-        }
-        if existing.cull.enabled {
-            rs.cull = existing.cull;
-        }
-        if existing.blending.enabled {
-            rs.blending = existing.blending;
-        }
     }
     rs
 }
