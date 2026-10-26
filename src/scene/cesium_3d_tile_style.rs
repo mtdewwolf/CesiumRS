@@ -166,6 +166,18 @@ macro_rules! style_field {
     };
 }
 
+impl PartialEq for Cesium3DTileStyle {
+    fn eq(&self, other: &Self) -> bool {
+        self.style == other.style
+    }
+}
+
+impl Default for Cesium3DTileStyle {
+    fn default() -> Self {
+        Self::new(None).expect("empty style never fails")
+    }
+}
+
 impl Cesium3DTileStyle {
     pub fn new(style: Option<&Json>) -> Result<Self, RuntimeError> {
         let style = match style {

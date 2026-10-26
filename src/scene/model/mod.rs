@@ -80,5 +80,5 @@ pub mod wireframe_pipeline_stage;
 pub mod model_feature;
 pub mod model_feature_table;
 pub use model_feature::ModelFeature;
-pub use model_feature_table::{ModelFeatureTable, ModelFeatureStyle};
+pub use model_feature_table::{ModelFeatureStyle, ModelFeatureTable};
 pub mod metadata_pipeline_stage;
