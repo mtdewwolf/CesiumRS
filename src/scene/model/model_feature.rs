@@ -11,6 +11,29 @@ use std::{
     rc::{Rc, Weak},
 };
 type Result<T> = std::result::Result<T, RuntimeError>;
+impl<G: Gl> crate::scene::expression::StyleFeature for ModelFeature<G> {
+    fn property_inherited(&self, name: &str) -> Option<crate::scene::expression::StyleValue> {
+        self.get_property_inherited(name).ok().flatten().map(style_value)
+    }
+}
+fn style_value(value: MetadataValue) -> crate::scene::expression::StyleValue {
+    use crate::scene::expression::StyleValue as V;
+    match value {
+        MetadataValue::Null => V::Null,
+        MetadataValue::Boolean(v) => V::Boolean(v),
+        MetadataValue::Number(v) => V::Number(v),
+        MetadataValue::BigInt(v) => V::Number(v as f64),
+        MetadataValue::String(v) => V::String(v),
+        MetadataValue::Array(v) => V::Array(v.into_iter().map(style_value).collect()),
+        MetadataValue::Cartesian2(v) => V::Cartesian2(v),
+        MetadataValue::Cartesian3(v) => V::Cartesian3(v),
+        MetadataValue::Cartesian4(v) => V::Cartesian4(v),
+        MetadataValue::Object(v) => V::from_json(&v),
+        MetadataValue::Matrix2(v) => V::Array(v.0.into_iter().map(V::Number).collect()),
+        MetadataValue::Matrix3(v) => V::Array(v.0.into_iter().map(V::Number).collect()),
+        MetadataValue::Matrix4(v) => V::Array(v.0.into_iter().map(V::Number).collect()),
+    }
+}
 pub struct ModelFeature<G: Gl> {
     pub(crate) table: Weak<FeatureTableInner<G>>,
     pub(crate) id: usize,

@@ -534,5 +534,13 @@
     "ported": 1022,
     "implemented": 3,
     "validatedPercent": 60.66
+  },
+  {
+    "milestone": "Model draws, picking and tile content",
+    "date": "2026-10-26",
+    "percent": 64.6,
+    "ported": 1025,
+    "implemented": 6,
+    "validatedPercent": 61.15
   }
 ]

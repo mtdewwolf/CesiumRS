@@ -186,6 +186,19 @@ impl MultipleTilesetContent {
     }
 }
 impl TilesetContent for MultipleTilesetContent {
+    fn configure_model(&mut self, state: &TileContentModelState) {
+        for content in &mut self.contents {
+            content.configure_model(state);
+        }
+    }
+    fn process_with_frame(&mut self, frame: &mut FrameState) -> Result<bool, RuntimeError> {
+        let mut ready = true;
+        for content in &mut self.contents {
+            ready &= content.process_with_frame(frame)?;
+        }
+        self.ready |= ready;
+        Ok(self.ready)
+    }
     fn is_renderable(&self) -> bool {
         self.contents.iter().any(|c| c.is_renderable())
     }

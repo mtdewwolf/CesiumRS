@@ -54,7 +54,7 @@ pub struct PointCloudShadingProperties {
 /// This is the typed boundary between the runtime lane and the render lane's
 /// `Model`: fill it once from the model's public properties before configuring
 /// pipelines and mutate it when those properties change.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ModelPipelineProperties {
     /// `frameState.context.webgl2`.
     pub use_webgl2: bool,
@@ -543,6 +543,8 @@ impl<G: Gl, D> ModelSceneGraph<G, D> {
 
     /// Configures the model-level pipeline stages for this frame.
     pub fn configure_pipeline(&mut self, frame_state: &FrameState, properties: &ModelPipelineProperties) {
+        self.pipeline = properties.clone();
+        self.project_to_2d = properties.project_to_2d;
         self.model_pipeline_stages.clear();
 
         if properties.has_color {
