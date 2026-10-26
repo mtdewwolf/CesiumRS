@@ -48,22 +48,19 @@ impl<G: Gl> ModelPrimitiveImagery<G> {
     }
 
     pub fn mapped_positions_for_ellipsoid(&self, ellipsoid: &Ellipsoid) -> Option<&MappedPositions> {
-        self.mapped_positions_per_ellipsoid
-            .iter()
-            .find(|m| &m.ellipsoid == ellipsoid)
+        self.mapped_positions_per_ellipsoid.iter().find(|m| m.ellipsoid() == ellipsoid)
     }
 
     /// Uploads GPU vertex buffers for the computed projection texture coordinates.
-    pub fn upload_imagery_tex_coord_attributes(&mut self, context: &Context<G>) -> Result<(), crate::core::RuntimeError> {
+    pub fn upload_imagery_tex_coord_attributes(
+        &mut self,
+        context: &Context<G>,
+    ) -> Result<(), crate::core::RuntimeError> {
         for attr in &mut self.imagery_tex_coord_attributes_per_projection {
             if let Some(ref ta) = attr.typed_array {
                 let bytes = ta.to_le_bytes();
-                let buffer = Buffer::new(
-                    context,
-                    BufferKind::Vertex,
-                    BufferUsage::StaticDraw,
-                    BufferData::Bytes(&bytes),
-                )?;
+                let buffer =
+                    Buffer::new(context, BufferKind::Vertex, BufferUsage::StaticDraw, BufferData::Bytes(&bytes))?;
                 attr.buffer = Some(buffer);
             }
         }

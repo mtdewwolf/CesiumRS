@@ -1,29 +1,9 @@
 //! CesiumJS `Scene/Model/ModelImageryMapping`: computes projected texture
 //! coordinates for primitives draped with imagery.
 
-use crate::core::{BoundingRectangle, Cartesian2, Cartesian3, Cartographic, Ellipsoid, MapProjection, Rectangle};
+use crate::core::{BoundingRectangle, Cartesian2, Cartesian3, Cartographic, MapProjection, Rectangle};
 
-/// Collection of cartographic positions and their bounding rectangle for an ellipsoid.
-#[derive(Clone, Debug, PartialEq)]
-pub struct MappedPositions {
-    pub cartographic_positions: Vec<Cartographic>,
-    pub cartographic_bounding_rectangle: Rectangle,
-    pub ellipsoid: Ellipsoid,
-}
-
-impl MappedPositions {
-    pub fn new(
-        cartographic_positions: Vec<Cartographic>,
-        cartographic_bounding_rectangle: Rectangle,
-        ellipsoid: Ellipsoid,
-    ) -> Self {
-        Self { cartographic_positions, cartographic_bounding_rectangle, ellipsoid }
-    }
-
-    pub fn num_positions(&self) -> usize {
-        self.cartographic_positions.len()
-    }
-}
+pub use super::mapped_positions::MappedPositions;
 
 /// Helper methods for computing imagery texture coordinates.
 pub struct ModelImageryMapping;
@@ -78,11 +58,15 @@ impl ModelImageryMapping {
         mapped_positions: &MappedPositions,
         projection: &dyn MapProjection,
     ) -> Vec<f32> {
-        Self::create_texture_coordinates(
-            &mapped_positions.cartographic_positions,
-            &mapped_positions.cartographic_bounding_rectangle,
+        let mut coordinates = Self::create_texture_coordinates(
+            mapped_positions.cartographic_positions(),
+            mapped_positions.cartographic_bounding_rectangle(),
             projection,
-        )
+        );
+        // Cesium allocates numPositions * 2 entries even when the shared
+        // iterable has more positions (excess writes are ignored).
+        coordinates.resize(mapped_positions.num_positions() * 2, 0.0);
+        coordinates
     }
 
     /// Computes normalized texture coordinates `[u, v]` for positions projected by `projection`.

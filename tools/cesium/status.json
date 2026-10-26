@@ -4955,5 +4955,65 @@
     "status": "ported",
     "rust": "scene::itwin_data",
     "note": "Bentley iTwin platform mesh export, reality data types, and geospatial features URL helpers. Validated in tests/scene_styling_support.rs."
+  },
+  "Scene/Model/ModelRuntimeNode": {
+    "status": "ported",
+    "rust": "scene::model::model_runtime_node",
+    "note": "Runtime node hierarchy, local/computed transform tracking, TRS updates, joint matrices, and stage pipeline execution."
+  },
+  "Scene/Model/ModelNode": {
+    "status": "ported",
+    "rust": "scene::model::model_node",
+    "note": "Public node wrapper with user matrix overrides, visibility toggles, and original transform restoration."
+  },
+  "Scene/Model/ModelSkin": {
+    "status": "ported",
+    "rust": "scene::model::model_skin",
+    "note": "Joint hierarchy mapping, inverse bind matrices, and joint matrix computation."
+  },
+  "Scene/Model/ModelMatrixUpdateStage": {
+    "status": "ported",
+    "rust": "scene::model::model_matrix_update_stage",
+    "note": "Hierarchical transform propagation, dirty node traversal, and draw command modelMatrix/cullFace updates validated against CesiumJS fixtures."
+  },
+  "Scene/Model/ModelArticulation": {
+    "status": "ported",
+    "rust": "scene::model::model_articulation",
+    "note": "AGI_articulations support with ordered stage execution and dirty flag propagation validated against CesiumJS fixtures."
+  },
+  "Scene/Model/ModelArticulationStage": {
+    "status": "ported",
+    "rust": "scene::model::model_articulation_stage",
+    "note": "All 10 articulation stage types (translation, rotation, uniform/non-uniform scale) with min/max clamping validated against CesiumJS fixtures."
+  },
+  "Scene/Model/ModelAnimation": {
+    "status": "ported",
+    "rust": "scene::model::model_animation",
+    "note": "Gltf animation evaluation, channel execution, playback timing, looping, and lifecycle events."
+  },
+  "Scene/Model/ModelAnimationChannel": {
+    "status": "ported",
+    "rust": "scene::model::model_animation_channel",
+    "note": "TRS spline sampler with STEP, LINEAR, and CUBICSPLINE hermite interpolation validated against CesiumJS fixtures."
+  },
+  "Scene/Model/ModelAnimationCollection": {
+    "status": "ported",
+    "rust": "scene::model::model_animation_collection",
+    "note": "Animation collection management, JulianDate animation time advancing, and event dispatch."
+  },
+  "Scene/Model/ModelRuntimePrimitive": {
+    "status": "ported",
+    "rust": "scene::model::model_runtime_primitive",
+    "note": "Pipeline stage selection and configuration across 2D/3D modes, morphs, skins, vertical exaggeration, styles, and wireframes validated against CesiumJS fixtures."
+  },
+  "Scene/Model/MappedPositions": {
+    "status": "ported",
+    "rust": "scene::model::mapped_positions",
+    "note": "Geographic rectangle cartographic position mapping on ellipsoids validated against CesiumJS fixtures."
+  },
+  "Scene/Model/ModelSceneGraph": {
+    "status": "ported",
+    "rust": "scene::model::model_scene_graph",
+    "note": "Scene graph construction from ModelComponents, hierarchy evaluation, axis correction, 2D projection, and dirty propagation."
   }
 }

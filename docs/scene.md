@@ -408,7 +408,7 @@ initialization functions, uniform and varying bindings, lighting model overrides
 translucency mode overrides, with graceful fallback on primitives missing metadata
 properties. `TextureManager` and `TextureUniform` handle frame-driven texture
 upload queues, mipmaps, WebGL1 POT resizing and fallback to context default textures.
-Twenty-two pinned reference cases and debug precondition checks pass in
+Forty-six pinned reference cases and debug precondition checks pass in
 `tests/scene_model_custom_shader.rs`.
 
 `ModelReader` provides typed buffer deinterleaving, normalization, dequantization,
@@ -425,10 +425,30 @@ coordinate allocation, and dynamic shader generation (defines, varyings, attribu
 `sampleAndBlend`, and `blendBaseColorWithImagery`). Forty-one pinned reference cases validate
 them in `tests/scene_model_imagery.rs`.
 
-The complete Model runtime/scene graph, model draw-command construction, Model facade,
+Model draw-command construction, the Model facade,
 and Model3DTileContent remain in progress. The built-in renderable
 tile factory also remains pending; the default tileset loader requires a factory
 for renderable tile content.
+
+## Model runtime and scene graph
+
+`scene::model` provides the glTF runtime transform hierarchy, skinning, articulation, animation, and primitive pipeline stage orchestration:
+
+- `ModelSceneGraph`: builds the runtime scene graph from parsed `ModelComponents`. Manages root node hierarchies, axis correction (glTF Y-up to Cesium Z-up conversions), model matrix updates, 2D/Columbus View map projection, skin matrices, and dirty propagation.
+- `ModelRuntimeNode` & `ModelNode`: non-recursive hierarchy nodes maintaining local TRS transforms, ancestor matrices (`transform_to_root`), computed transforms, and joint matrix caching. `ModelNode` provides the public handle with user-specified matrix overrides, visibility toggles, and transform resets.
+- `ModelSkin`: manages joint node hierarchies and inverse bind matrices, computing joint matrices (`jointWorldTransform * inverseBindMatrix`) for skeletal mesh skinning.
+- `ModelMatrixUpdateStage`: traverses dirty node subtrees non-recursively, updates `transform_to_root` matrices down the tree, and computes draw command model matrices and backface/frontface cull winding reversals under negative determinant transformations.
+- `ModelArticulation` & `ModelArticulationStage`: ports `AGI_articulations` glTF extension support with all 10 stage types (`xTranslate`, `yTranslate`, `zTranslate`, `xRotate`, `yRotate`, `zRotate`, `xScale`, `yScale`, `zScale`, `uniformScale`), clamping to stage limits, and matrix composition.
+- `ModelAnimation`, `ModelAnimationChannel`, & `ModelAnimationCollection`: keyframe animation player with spline evaluation (STEP, LINEAR, and CUBICSPLINE hermite splines for translation, rotation, scale, and morph weights), playback speed/direction, start/stop/update events, and looping modes (`CLAMP`, `REPEAT`, `MIRRORED_REPEAT`) driven by `JulianDate`.
+- `ModelRuntimePrimitive`: selects and configures pipeline stages across 2D/3D modes, morph targets, skins, vertical exaggeration, styles, wireframe, and feature IDs. Adapts runtime draw commands to the host renderer.
+- `MappedPositions`: shares cartographic positions, their explicit count, bounds and ellipsoid with model imagery projection.
+
+Tests: `tests/scene_model_runtime.rs`, 28 pinned reference cases generated from CesiumJS 23.0.0 (`tools/cesium/fixtures/scene-model-runtime.mjs`), plus 4 native lifecycle and ownership test suites.
+
+```bash
+cargo test --test scene_model_runtime
+TZ=UTC node tools/cesium/fixtures/generate.mjs scene-model-runtime
+```
 
 `model_components` supplies the 27 glTF data classes, animated-property enum
 and material defaults. Shared node/skin/sampler references are indices; buffers
