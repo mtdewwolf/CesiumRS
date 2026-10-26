@@ -241,7 +241,7 @@ fn create_cubic_spline<T: crate::core::hermite_spline::HermitePoint>(
     let mut cubic_points = Vec::with_capacity(points.len() / 3);
     let mut in_tangents = Vec::with_capacity(points.len() / 3);
     let mut out_tangents = Vec::with_capacity(points.len() / 3);
-    for triple in points.chunks_exact(3) {
+    for triple in points.as_chunks::<3>().0 {
         in_tangents.push(triple[0]);
         cubic_points.push(triple[1]);
         out_tangents.push(triple[2]);
