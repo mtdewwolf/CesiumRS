@@ -79,7 +79,16 @@ impl StyleValue {
             Self::Boolean(b) => b.to_string(),
             Self::Number(n) => js_number_to_string(*n),
             Self::String(s) => s.clone(),
-            Self::Array(a) => a.iter().map(Self::js_string).collect::<Vec<_>>().join(","),
+            Self::Array(a) => a
+                .iter()
+                .map(|value| match value {
+                    // Array.prototype.join treats null and undefined as empty
+                    // elements, including when arrays are converted to numbers.
+                    Self::Null | Self::Undefined => String::new(),
+                    _ => value.js_string(),
+                })
+                .collect::<Vec<_>>()
+                .join(","),
             Self::Cartesian2(v) => {
                 format!("({}, {})", js_number_to_string(v.x), js_number_to_string(v.y))
             }

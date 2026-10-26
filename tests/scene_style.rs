@@ -84,6 +84,10 @@ fn reference_expression() {
         "Expression",
         |_| TIGHT,
         |f, a| match f {
+            "arrayCoercion" => Some(match Expression::new(s(&a[0]), None).and_then(|p| p.evaluate(None)) {
+                Ok(value) => Out::Ok(enc_style_value(&value)),
+                Err(error) => Out::Err(error.to_string()),
+            }),
             "evaluate" => {
                 let src = a[0].as_str().unwrap();
                 let props_list = a[1].as_array().unwrap();

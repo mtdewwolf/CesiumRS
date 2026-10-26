@@ -1058,8 +1058,8 @@ and GLSL shader generator.
 - `Cesium3DTileStyle` manages the styling expression properties (`show`, `color`,
   `pointSize`, label formatting), invalidating and caching GLSL shader functions
   identically to upstream.
-- Tested against pinned CesiumJS engine evaluations with 149 test cases in
-  `tests/scene_style.rs`.
+- Tested against pinned CesiumJS engine evaluations with 160 test cases,
+  including null/undefined array coercion, in `tests/scene_style.rs`.
 
 ```bash
 cargo test --test scene_style

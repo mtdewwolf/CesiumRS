@@ -76,6 +76,21 @@ export default async function sceneStyle() {
   // ---- Expression evaluation ----
   {
     const s = add("Expression");
+    for (const expression of [
+      "Number([])",
+      "Number([null])",
+      "Number([undefined])",
+      "Number([[null]])",
+      "Number([null, undefined])",
+      "Number(['12.5'])",
+      "String([null])",
+      "String([undefined])",
+      "String([1, null, undefined, [null, 2]])",
+      "isNaN([null])",
+      "isFinite([undefined])",
+    ]) {
+      s.add("arrayCoercion", [expression], (src) => new Expression(src).evaluate());
+    }
     const expressions = [
       "1",
       "1.5",
