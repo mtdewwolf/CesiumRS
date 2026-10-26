@@ -1101,6 +1101,48 @@ cargo test --test scene_tiling
 TZ=UTC node tools/cesium/fixtures/generate.mjs ImplicitSubtree
 ```
 
+## 3D Tiles styling
+
+`Expression`, `ConditionsExpression`, `StyleExpression` and `Cesium3DTileStyle`
+port the 3D Tiles Styling language parser, evaluator, feature property accessors,
+and GLSL shader generator.
+
+- Expressions are tokenized and parsed into a runtime AST with component-wise vector
+  math, color conversions (CSS names, hex, rgb, rgba, hsl, hsla), regex match/test,
+  and variable substitution.
+- GLSL generation supports boolean/float coercion, vector constructors, ternary
+  conditionals, component swizzling, and translucency detection.
+- `Cesium3DTileStyle` manages the styling expression properties (`show`, `color`,
+  `pointSize`, label formatting), invalidating and caching GLSL shader functions
+  identically to upstream.
+- Tested against pinned CesiumJS engine evaluations with 160 test cases,
+  including null/undefined array coercion, in `tests/scene_style.rs`.
+
+```bash
+cargo test --test scene_style
+TZ=UTC node tools/cesium/fixtures/generate.mjs Expression ConditionsExpression Cesium3DTileStyle
+```
+
+
+### 3D Tiles utilities, statistics, heatmap and attributions
+
+- `Cesium3DTilePassState`: Pass descriptor and camera/culling volume overrides for 3D Tiles update and rendering passes.
+- `Cesium3DTilesetStatistics`: Tracks frame command counts, processing/ready tile counts, triangle/point/feature counts, and texture memory with duplicate texture deduplication for `Model3DTileContent`.
+- `Cesium3DTilesetCache`: Sentinel-partitioned LRU cache over `core::DoublyLinkedList` managing per-frame tile touches and memory trimming passes.
+- `Cesium3DTilesetHeatmap`: Dynamic six-color heatmap palette lerping across min/max tile property ranges or explicit reference intervals.
+- `Cesium3DTileStyleEngine`: Manages tile styling dirtiness, timestamps, and selective style application over visible tiles.
+- `Cesium3DTileOptimizations`: Implements the `checkChildrenWithinParent` bounding box projection algorithm for tile culling optimization hints.
+- `CreditDisplay`: Manages screen and lightbox attributions, frequency-based sorting, delimiter formatting, and Ion logo deduplication.
+- `computeFlyToLocationForRectangle`: Camera height positioning over bounding rectangles adjusted for terrain sample points.
+- `createOsmBuildingsAsync`: Construction options and default styling expressions for Cesium OSM Buildings (Ion asset 96188).
+- `createGooglePhotorealistic3DTileset`: Configuration options, Ion asset 2275207, and Google Maps API 3D Tiles endpoint integration.
+- `ITwinData`: Bentley iTwin Platform mesh export URL transformation, reality data type checks, and geospatial features queries.
+
+```bash
+cargo test --test scene_styling_support
+TZ=UTC node tools/cesium/fixtures/generate.mjs Cesium3DTilesetStatistics Cesium3DTilesetHeatmap Cesium3DTileOptimizations
+```
+
 ## Next
 
 The next batches build on these:

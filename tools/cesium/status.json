@@ -4880,5 +4880,80 @@
     "status": "ported",
     "rust": "scene::model::model_primitive_imagery",
     "note": "Per-ellipsoid mapped positions, per-layer coverages, texture coordinate attributes and vertex buffer uploads. Validated in tests/scene_model_imagery.rs."
+  },
+  "Scene/Expression": {
+    "status": "ported",
+    "rust": "scene::expression",
+    "note": "3D Tiles Styling language parser, evaluator and GLSL generator. Direct CesiumJS cases in tests/scene_style.rs."
+  },
+  "Scene/ConditionsExpression": {
+    "status": "ported",
+    "rust": "scene::conditions_expression",
+    "note": "Conditional style expression chain and shader generation. Direct CesiumJS cases in tests/scene_style.rs."
+  },
+  "Scene/StyleExpression": {
+    "status": "ported",
+    "rust": "scene::style_expression",
+    "note": "StyleExpression trait contract implemented by Expression and ConditionsExpression."
+  },
+  "Scene/Cesium3DTileStyle": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_style",
+    "note": "3D Tiles style definition, property accessors, and shader generation. Direct CesiumJS cases in tests/scene_style.rs."
+  },
+  "Scene/Cesium3DTilePassState": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_pass_state",
+    "note": "Per-pass 3D tiles traversal state, camera, and culling volume overrides. Validated in tests/scene_styling_support.rs."
+  },
+  "Scene/Cesium3DTilesetStatistics": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tileset_statistics",
+    "note": "3D Tiles statistics, memory, features, points, and texture reference counting. Pinned reference validation in tests/scene_styling_support.rs."
+  },
+  "Scene/Cesium3DTilesetCache": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tileset_cache",
+    "note": "Sentinel-partitioned LRU cache for 3D tiles with trimming and unload passes. Validated in tests/scene_styling_support.rs."
+  },
+  "Scene/Cesium3DTilesetHeatmap": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tileset_heatmap",
+    "note": "Heatmap tile colorization, dynamic/reference min/max tracking, and gradient interpolation. Pinned reference validation in tests/scene_styling_support.rs."
+  },
+  "Scene/Cesium3DTileStyleEngine": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_style_engine",
+    "note": "3D Tiles styling engine, dirty state tracking, and per-tile style application. Validated in tests/scene_styling_support.rs."
+  },
+  "Scene/Cesium3DTileOptimizations": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_optimizations",
+    "note": "Tile childrenWithinParent bounding box projection and containment checks. Pinned reference validation in tests/scene_styling_support.rs."
+  },
+  "Scene/CreditDisplay": {
+    "status": "ported",
+    "rust": "scene::credit_display",
+    "note": "Screen and lightbox attribution manager, frequency sorting, delimiter handling, and Ion credit deduplication. Validated in tests/scene_styling_support.rs."
+  },
+  "Scene/computeFlyToLocationForRectangle": {
+    "status": "ported",
+    "rust": "scene::compute_fly_to_location_for_rectangle",
+    "note": "Camera position calculation to view a rectangle adjusted for terrain. Validated in tests/scene_styling_support.rs."
+  },
+  "Scene/createOsmBuildingsAsync": {
+    "status": "ported",
+    "rust": "scene::create_osm_buildings_async",
+    "note": "Cesium OSM Buildings tileset helper, style expression, and Ion asset 96188. Validated in tests/scene_styling_support.rs."
+  },
+  "Scene/createGooglePhotorealistic3DTileset": {
+    "status": "ported",
+    "rust": "scene::create_google_photorealistic_3d_tileset",
+    "note": "Google Photorealistic 3D Tiles configuration, Ion asset 2275207, and Map Tiles endpoint. Validated in tests/scene_styling_support.rs."
+  },
+  "Scene/ITwinData": {
+    "status": "ported",
+    "rust": "scene::itwin_data",
+    "note": "Bentley iTwin platform mesh export, reality data types, and geospatial features URL helpers. Validated in tests/scene_styling_support.rs."
   }
 }

@@ -143,11 +143,54 @@ pub mod cesium_3d_tileset_metadata;
 pub mod classification_type;
 pub mod cloud_type;
 pub mod color_blend_mode;
+pub mod conditions_expression;
 pub mod content_metadata;
 pub mod cull_face;
 pub mod depth_function;
 pub mod directional_light;
 pub mod dynamic_atmosphere_lighting_type;
+pub use conditions_expression::ConditionsExpression;
+pub mod expression;
+pub use expression::{Expression, RegExpValue, ShaderState, StyleFeature, StyleValue};
+pub mod style_expression;
+pub use style_expression::StyleExpression;
+pub mod cesium_3d_tile_style;
+pub use cesium_3d_tile_style::{Cesium3DTileStyle, StyleInput};
+pub mod cesium_3d_tile_optimizations;
+pub use cesium_3d_tile_optimizations::{
+    check_oriented_bounding_boxes_within_parent, project_half_axes_onto_axis, Cesium3DTileOptimizations,
+};
+pub mod cesium_3d_tile_pass_state;
+pub use cesium_3d_tile_pass_state::{Cesium3DTilePassState, Cesium3DTilePassStateOptions};
+pub mod cesium_3d_tile_style_engine;
+pub use cesium_3d_tile_style_engine::{Cesium3DTileStyleEngine, StyleableTile};
+pub mod cesium_3d_tileset_cache;
+pub use cesium_3d_tileset_cache::Cesium3DTilesetCache;
+pub mod cesium_3d_tileset_heatmap;
+pub use cesium_3d_tileset_heatmap::{compute_heatmap_color, Cesium3DTilesetHeatmap, HEATMAP_COLORS};
+pub mod cesium_3d_tileset_statistics;
+pub use cesium_3d_tileset_statistics::{Cesium3DTilesetStatistics, SimpleTileContentCounts, TileContentCounts};
+pub mod compute_fly_to_location_for_rectangle;
+pub use compute_fly_to_location_for_rectangle::{
+    compute_fly_to_location_for_rectangle, rectangle_terrain_sample_points,
+};
+pub mod create_google_photorealistic_3d_tileset;
+pub use create_google_photorealistic_3d_tileset::{
+    GooglePhotorealistic3DTilesetConfig, GooglePhotorealisticApiOptions, GooglePhotorealisticSource,
+    DEFAULT_GOOGLE_TILES_CACHE_BYTES, DEFAULT_GOOGLE_TILES_CACHE_OVERFLOW_BYTES, GOOGLE_PHOTOREALISTIC_ION_ASSET_ID,
+};
+pub mod create_osm_buildings_async;
+pub use create_osm_buildings_async::{
+    default_osm_buildings_style, default_osm_buildings_style_expression, CreateOsmBuildingsOptions,
+    CESIUM_OSM_BUILDINGS_ION_ASSET_ID,
+};
+pub mod credit_display;
+pub use credit_display::{CreditDisplay, CreditDisplayElement};
+pub mod itwin_data;
+pub use itwin_data::{
+    geospatial_features_url, imodel_export_to_tileset_url, is_supported_reality_data_mesh_type,
+    is_supported_reality_data_source_type, RealityDataTilesetOptions,
+};
 pub mod expression_node_type;
 pub mod find_content_metadata;
 pub mod find_group_metadata;
