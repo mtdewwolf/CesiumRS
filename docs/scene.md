@@ -1044,6 +1044,22 @@ cargo test --test scene_tiling
 TZ=UTC node tools/cesium/fixtures/generate.mjs ImplicitSubtree
 ```
 
+## Primitives, appearances, materials, and clipping polygons
+
+The foundations for scene drawing, custom shaders, appearances, and clipping are ported and validated:
+
+- **Primitive lifecycle & collections:** `PrimitiveState` encodes numerical pipeline lifecycle stages. `Primitive` handles frustum culling, batch table binding, and command updates. `PrimitiveCollection` provides composite primitive trees, and `PrimitivePipeline` combines geometries with batch ID assignments and pick offsets.
+- **Appearances:** `Appearance` trait and `AppearanceState` provide shader composition, translucent blending, and render state management. Concrete ports include `MaterialAppearance` (`Basic`, `Textured`, `All`), `EllipsoidSurfaceAppearance`, `PerInstanceColorAppearance`, `PolylineColorAppearance`, `PolylineMaterialAppearance` (with `#define POLYLINE_DASH` detection), `DebugAppearance` (for arbitrary vertex/instance attributes), and `ShadowVolumeAppearance`.
+- **Material & Fabric:** `Material` implements the complete CesiumJS fabric specification parser, token replacement, uniform name remapping, sub-material chaining, and 25 built-in material types (`Color`, `Image`, `DiffuseMap`, `AlphaMap`, `Grid`, `Stripe`, `Checkerboard`, `Water`, `RimLighting`, etc.) with full translucency evaluation rules.
+- **Clipping Polygons:** `ClippingPolygon`, `ClippingPolygonCollection`, and `getClippingFunction` provide planar and spherical clipping polygon definitions, cartographic bounds, spherical extents, float/uint8 texture packing, and GLSL clipping shader generation for union and intersection regions.
+
+### Validation
+
+All 12 test suites match pinned CesiumJS 23.0.0 fixtures with 100% pass rate:
+```bash
+cargo test --test scene_interaction_effects
+```
+
 ## Next
 
 The next batches build on these:

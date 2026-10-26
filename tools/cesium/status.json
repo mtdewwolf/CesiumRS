@@ -4765,5 +4765,85 @@
     "status": "ported",
     "rust": "scene::model::metadata_pipeline_stage",
     "note": "23 pinned shader/uniform cases plus native regressions for primitive references, independent UV transforms, WebGL1 signed types and fractional statistics. Corrects known CesiumJS 23 generator bugs; integer transforms use typed arithmetic. Four real WebGL compile/render checks preserve 1.5 statistics. Usage sets come from custom shader/point-cloud callers; unsigned uniforms retain exact integer precision."
+  },
+  "Scene/PrimitiveState": {
+    "status": "ported",
+    "rust": "scene::primitive_state",
+    "note": "Numerical primitive states match CesiumJS reference."
+  },
+  "Scene/Appearance": {
+    "status": "ported",
+    "rust": "scene::appearance",
+    "note": "Default render states, appearance trait, and shader composition logic validated against CesiumJS reference."
+  },
+  "Scene/MaterialAppearance": {
+    "status": "ported",
+    "rust": "scene::material_appearance",
+    "note": "Basic, Textured, and All support modes, material shader integration, and flat/faceForward configurations validated against CesiumJS reference."
+  },
+  "Scene/EllipsoidSurfaceAppearance": {
+    "status": "ported",
+    "rust": "scene::ellipsoid_surface_appearance",
+    "note": "Surface geometry appearance with aboveGround and flat options validated against CesiumJS reference."
+  },
+  "Scene/PerInstanceColorAppearance": {
+    "status": "ported",
+    "rust": "scene::per_instance_color_appearance",
+    "note": "Flat and standard per-instance color appearances with Phong shading validated against CesiumJS reference."
+  },
+  "Scene/PolylineColorAppearance": {
+    "status": "ported",
+    "rust": "scene::polyline_color_appearance",
+    "note": "Polyline per-instance color appearance with gamma-corrected output validated against CesiumJS reference."
+  },
+  "Scene/PolylineMaterialAppearance": {
+    "status": "ported",
+    "rust": "scene::polyline_material_appearance",
+    "note": "Polyline material appearance with dash define injection validated against CesiumJS reference."
+  },
+  "Scene/DebugAppearance": {
+    "status": "ported",
+    "rust": "scene::debug_appearance",
+    "note": "Debug visualization for vertex and per-instance attributes across float/vec2/vec3/vec4 datatypes validated against CesiumJS reference."
+  },
+  "Scene/Material": {
+    "status": "ported",
+    "rust": "scene::material",
+    "note": "Fabric specification parser, 25 built-in material types, uniform name renaming, sub-materials, and translucency evaluation validated against 33 reference cases."
+  },
+  "Scene/ClippingPolygon": {
+    "status": "ported",
+    "rust": "scene::clipping_polygon",
+    "note": "Cartographic bounds calculation, spherical extents, and identity comparisons validated against CesiumJS reference."
+  },
+  "Scene/ClippingPolygonCollection": {
+    "status": "ported",
+    "rust": "scene::clipping_polygon_collection",
+    "note": "Collection management, extents merging, texture resolution calculation, and lifecycle events validated against CesiumJS reference."
+  },
+  "Scene/getClippingFunction": {
+    "status": "ported",
+    "rust": "scene::get_clipping_function",
+    "note": "GLSL shader generation for float and uint8 textures with union and intersection clipping modes validated against CesiumJS reference."
+  },
+  "Scene/Primitive": {
+    "status": "implemented",
+    "rust": "scene::primitive",
+    "note": "Frustum culling, geometry combining, and draw command creation implemented; parity fixtures unrun."
+  },
+  "Scene/PrimitiveCollection": {
+    "status": "implemented",
+    "rust": "scene::primitive_collection",
+    "note": "Composite primitive tree management and update dispatching implemented; parity fixtures unrun."
+  },
+  "Scene/PrimitivePipeline": {
+    "status": "implemented",
+    "rust": "scene::primitive_pipeline",
+    "note": "Geometry combination, batch ID assignment, and pick offset tracking implemented; parity fixtures unrun."
+  },
+  "Scene/ShadowVolumeAppearance": {
+    "status": "implemented",
+    "rust": "scene::shadow_volume_appearance",
+    "note": "Classification fragment shader synthesis for 3D Tiles and terrain clamping implemented; parity fixtures unrun."
   }
 }
