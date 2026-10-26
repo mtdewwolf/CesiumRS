@@ -105,17 +105,20 @@ pub mod picking;
 pub use pick_framebuffer::{PickFramebuffer, PickReadback, PickedObject};
 pub use picking::Picking;
 // Keep the upstream Scene/Scene.js module path.
+pub mod frustum_commands;
 #[allow(clippy::module_inception)]
 pub mod scene;
 pub mod view;
 pub use atmosphere::Atmosphere;
 pub use fog::{Fog, FrameFog};
 pub use frame_state::{FramePasses, FrameResource, FrameShadowState, FrameState};
+pub use frustum_commands::FrustumCommands;
 pub use scene::{
     RendererSceneBackend, Scene, SceneBackend, SceneCommand, SceneCommandFilter, SceneComponent, SceneDrawOptions,
-    SceneEventKind, SceneNotification, SceneOptions, ScenePrimitive, SceneRenderRequest, SceneStage, SceneSubmission,
+    SceneEffect, SceneEventKind, SceneGlobe, SceneNotification, SceneOptions, ScenePrimitive, SceneRenderRequest,
+    SceneStage, SceneSubmission,
 };
-pub use view::{DebugFrustumStatistics, FrustumCommands, SceneView};
+pub use view::{DebugFrustumStatistics, SceneView};
 pub mod arc_gis_base_map_type;
 pub mod attribute_type;
 pub mod axis;
@@ -480,3 +483,32 @@ pub use primitive_load_plan::{AttributeLoadPlan, IndicesLoadPlan, PlannedAttribu
 
 pub mod gltf_loader;
 pub use gltf_loader::{GltfLoader, GltfLoaderOptions};
+
+pub mod imagery_provider;
+pub use imagery_provider::{
+    image_error, report_image_error, ImageryErrorEvent, ImageryFeatureFuture, ImageryFuture, ImageryImage,
+    ImageryLoader, ImageryProvider, ImageryProviderError,
+};
+pub mod get_feature_info_format;
+pub use get_feature_info_format::{FeatureInfoCallback, FeatureInfoResponse, FeatureInfoType, GetFeatureInfoFormat};
+pub mod url_template_imagery_provider;
+pub use url_template_imagery_provider::{
+    CustomTag, CustomTagArgs, UrlTemplateImageryProvider, UrlTemplateImageryProviderOptions,
+};
+pub mod discard_missing_tile_image_policy;
+pub use discard_missing_tile_image_policy::{DiscardMissingTileImagePolicy, DiscardMissingTileImagePolicyOptions};
+
+pub mod open_street_map_imagery_provider;
+pub use open_street_map_imagery_provider::{
+    OpenStreetMapImageryProvider, OpenStreetMapImageryProviderOptions, DEFAULT_OSM_CREDIT, DEFAULT_OSM_URL,
+};
+pub mod mapbox_imagery_provider;
+pub use mapbox_imagery_provider::{
+    MapboxImageryProvider, MapboxImageryProviderOptions, DEFAULT_MAPBOX_CREDIT, DEFAULT_MAPBOX_URL,
+};
+pub mod mapbox_style_imagery_provider;
+pub use mapbox_style_imagery_provider::{
+    MapboxStyleImageryProvider, MapboxStyleImageryProviderOptions, DEFAULT_MAPBOX_STYLE_URL,
+};
+pub mod single_tile_imagery_provider;
+pub use single_tile_imagery_provider::{SingleTileImageryProvider, SingleTileImageryProviderOptions};

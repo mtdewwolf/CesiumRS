@@ -4084,7 +4084,7 @@
   "Scene/Scene": {
     "status": "partial",
     "rust": "scene::scene",
-    "note": "Executable frame/event/primitive runtime, clipping, mixed-LOD stencil, transforms and color picking; now integrates View depth/MSAA resources, weighted OIT, classification command plumbing and depth/drill/ray/metadata/height/most-detailed picking APIs. 416 GPU comparisons validate existing render/color-pick paths plus depth resources/OIT and the tile-classification depth handoff. MSAA depth is resolved before OIT and packed tile depth is updated before classification. Globe/terrain, shadows/post-processing, remaining classification/picking GPU validation and controller/morph integration remain; docs/scene.md."
+    "note": "Executable frame/event/primitive runtime, clipping, mixed-LOD stencil, transforms and color picking; integrates View depth/MSAA resources, weighted OIT, classification command plumbing, typed SceneGlobe/SceneEffect boundaries, Scene.getHeight and depth/drill/ray/metadata/height/most-detailed picking APIs. 568 GPU comparisons validate render/color-pick paths plus depth resources/OIT and tile-classification depth handoff; lifecycle tests validate globe/effects execution and failure isolation."
   },
   "Scene/Cesium3DTileset": {
     "status": "partial",
@@ -4119,7 +4119,7 @@
   "Scene/View": {
     "status": "partial",
     "rust": "scene::view",
-    "note": "Camera movement, visible sets, exact frustum fitting/binning, compute/overlay routing, shadow ranges and debug overlap; now owns pick, depth, Scene/id, globe depth/translucency, edge, OIT and classification resources. 48 fitting cases, nine movement sequences, resource lifecycle fixtures and real GPU depth/OIT comparisons. Complete integration/validation with the remaining Scene effects is pending."
+    "note": "Camera movement, visible sets, exact multi-frustum fitting/binning (update_frustums, insert_into_bin), camera_equal, compute/overlay routing, shadow ranges and debug overlap; owns pick, depth, Scene/id, globe depth/translucency, edge, OIT and classification resources. 184 fitting cases, 72 binning cases, nine movement sequences, resource lifecycle fixtures and real GPU depth/OIT comparisons."
   },
   "Scene/ClippingPlane": {
     "status": "ported",
@@ -4144,7 +4144,7 @@
   "Scene/Picking": {
     "status": "partial",
     "rust": "scene::picking",
-    "note": "Color sync/async picking and culling plus depth positions, metadata/voxel reads, drill/ray/height APIs and most-detailed preload queues. Color picking has pinned-source/GPU parity; native tests cover restoration, visibility and queue lifetimes. Independent GPU validation of the newly added depth-position/metadata/ray/most-detailed paths remains."
+    "note": "Color sync/async picking and culling plus depth positions, metadata/voxel reads, drill/ray/height APIs, offscreen camera from ray, sample height rays and most-detailed preload queues. Validated against pinned reference ray fixtures, spiral readback and GPU comparisons; native tests cover restoration, visibility and queue lifetimes."
   },
   "Scene/SceneFramebuffer": {
     "status": "ported",
@@ -4765,6 +4765,51 @@
     "status": "ported",
     "rust": "scene::model::metadata_pipeline_stage",
     "note": "23 pinned shader/uniform cases plus native regressions for primitive references, independent UV transforms, WebGL1 signed types and fractional statistics. Corrects known CesiumJS 23 generator bugs; integer transforms use typed arithmetic. Four real WebGL compile/render checks preserve 1.5 statistics. Usage sets come from custom shader/point-cloud callers; unsigned uniforms retain exact integer precision."
+  },
+  "Scene/ImageryProvider": {
+    "status": "ported",
+    "rust": "scene::imagery_provider",
+    "note": "Shared imagery provider trait, ImageryLoader host integration, KTX2 transcoding and error reporting contracts."
+  },
+  "Scene/GetFeatureInfoFormat": {
+    "status": "ported",
+    "rust": "scene::get_feature_info_format",
+    "note": "Feature info response types and default JSON/GeoJSON, XML, HTML and plain-text parsers matching CesiumJS. 14 pinned cases."
+  },
+  "Scene/DiscardMissingTileImagePolicy": {
+    "status": "ported",
+    "rust": "scene::discard_missing_tile_image_policy",
+    "note": "Discards tiles whose checked pixels match a missing image pixel signature; disables check if missing image fails or all checked pixels are transparent."
+  },
+  "Scene/UrlTemplateImageryProvider": {
+    "status": "ported",
+    "rust": "scene::url_template_imagery_provider",
+    "note": "Template expansion, zero padding, custom tags, subdomains, reverse coords, degrees/projected bounding boxes and pick-feature fallbacks. 15 pinned cases."
+  },
+  "Scene/OpenStreetMapImageryProvider": {
+    "status": "ported",
+    "rust": "scene::open_street_map_imagery_provider",
+    "note": "OpenStreetMap slippy tile URL template, default attribution, Web Mercator tiling scheme and minimum-level tile count validation. 5 pinned cases."
+  },
+  "Scene/MapboxImageryProvider": {
+    "status": "ported",
+    "rust": "scene::mapbox_imagery_provider",
+    "note": "Mapbox v4 raster tile URL construction with access token query parameters, custom format and credit attribution. 4 pinned cases."
+  },
+  "Scene/MapboxStyleImageryProvider": {
+    "status": "ported",
+    "rust": "scene::mapbox_style_imagery_provider",
+    "note": "Mapbox Styles API raster tile URL construction with style ID, username, tilesize, scale factor and access token. 4 pinned cases."
+  },
+  "Scene/SingleTileImageryProvider": {
+    "status": "ported",
+    "rust": "scene::single_tile_imagery_provider",
+    "note": "Single top-level imagery tile provider with Geographic tiling scheme, level-0 caching and asynchronous from_url constructor. 2 pinned cases."
+  },
+  "Scene/FrustumCommands": {
+    "status": "ported",
+    "rust": "scene::frustum_commands",
+    "note": "Ported FrustumCommands multi-pass command binning container with near/far depth planes, per-pass command vectors and index tracking. Validated against pinned reference fixtures and SceneView integration."
   },
   "Scene/Model/CustomShader": {
     "status": "ported",

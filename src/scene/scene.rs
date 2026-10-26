@@ -1,7 +1,7 @@
 //! Portable Scene frame orchestration and executable renderer submission.
 //! Optional Scene components attach to stages; absent features do not enqueue
 //! commands. Advanced effect/picking components remain separate ports.
-use super::{Atmosphere, Camera, CameraOptions, Fog, FrameFog, FramePasses, FrameState, SceneMode};
+use super::{Atmosphere, Camera, CameraOptions, Fog, FrameFog, FramePasses, FrameState, HeightReference, SceneMode};
 use crate::{
     core::*,
     renderer::{self, ClearCommand, Context, FrameTextures, Gl, Pass, PassState, UniformFrame, Viewport},
@@ -802,10 +802,41 @@ pub trait ScenePrimitive {
     fn update(&mut self, frame: &mut FrameState) -> Result<()>;
     fn post_passes_update(&mut self, frame: &mut FrameState) -> Result<()>;
     fn update_for_pass(&mut self, frame: &mut FrameState, pass: super::Cesium3DTilePass) -> Result<()>;
+    /// Height of a collidable surface at a cartographic position, used by
+    /// `Scene::get_height`. Tilesets return a hit only when shown and
+    /// collision-enabled; other primitives have no height.
+    fn height_at(&self, _cartographic: &Cartographic, _frame: &FrameState) -> Result<Option<f64>> {
+        Ok(None)
+    }
     fn destroy(&mut self) -> Result<()>;
 }
 pub trait SceneComponent {
     fn stage(&mut self, stage: SceneStage, frame: &mut FrameState) -> Result<()>;
+    fn destroy(&mut self) -> Result<()>;
+}
+/// Typed boundary for the globe. Globe implementation lives in its own slice;
+/// Scene drives its frame lifecycle and queries terrain heights without
+/// duplicating globe internals.
+pub trait SceneGlobe {
+    /// Whether the globe contributes terrain heights and geometry. Hidden
+    /// globes still receive `update`/`render` calls, which they skip.
+    fn show(&self) -> bool {
+        true
+    }
+    /// Pre-pass tile/imagery work; runs before commands are built.
+    fn update(&mut self, frame: &mut FrameState) -> Result<()>;
+    /// Enqueue globe commands for the current frame.
+    fn render(&mut self, frame: &mut FrameState) -> Result<()>;
+    /// Loaded terrain height at the position, or `None` when no tile covers it.
+    fn get_height(&self, cartographic: &Cartographic) -> Option<f64>;
+    fn destroy(&mut self) -> Result<()>;
+}
+/// Typed boundary for scene-wide effects such as shadow maps and
+/// post-processing. `update` runs while the frame is being built and
+/// `render` runs after framebuffer resolution, before overlays.
+pub trait SceneEffect {
+    fn update(&mut self, frame: &mut FrameState) -> Result<()>;
+    fn render(&mut self, frame: &mut FrameState) -> Result<()>;
     fn destroy(&mut self) -> Result<()>;
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -897,6 +928,8 @@ pub struct Scene<B: SceneBackend> {
     pub frame_fog: FrameFog,
     pub primitives: Vec<Box<dyn ScenePrimitive>>,
     pub components: Vec<Box<dyn SceneComponent>>,
+    pub globe: Option<Box<dyn SceneGlobe>>,
+    pub effects: Vec<Box<dyn SceneEffect>>,
     pub primitives_show: bool,
     pub events: Event<SceneNotification>,
     pub rethrow_render_errors: bool,
@@ -978,6 +1011,8 @@ impl<B: SceneBackend> Scene<B> {
             frame_fog: FrameFog::default(),
             primitives: Vec::new(),
             components: Vec::new(),
+            globe: None,
+            effects: Vec::new(),
             primitives_show: true,
             events: Event::new(),
             rethrow_render_errors: false,
@@ -1157,12 +1192,52 @@ impl<B: SceneBackend> Scene<B> {
         frame.uniform.split_position = frame.split_position;
         frame.passes = FramePasses::default();
     }
+    /// Cesium's `Scene.getHeight`: the greatest height reported by collidable
+    /// 3D Tiles and the globe at `cartographic`. `height_reference` selects
+    /// which sources to ignore; `None` behaves like `CLAMP_TO_GROUND`.
+    pub fn get_height(
+        &self,
+        cartographic: Option<&Cartographic>,
+        height_reference: Option<HeightReference>,
+    ) -> Result<Option<f64>> {
+        let Some(cartographic) = cartographic else {
+            return Ok(None);
+        };
+        let ignore_3d_tiles =
+            matches!(height_reference, Some(HeightReference::ClampToTerrain | HeightReference::RelativeToTerrain));
+        let ignore_terrain =
+            matches!(height_reference, Some(HeightReference::ClampTo3DTile | HeightReference::RelativeTo3DTile));
+        let mut max_height = f64::NEG_INFINITY;
+        if !ignore_3d_tiles {
+            for primitive in &self.primitives {
+                if let Some(height) = primitive.height_at(cartographic, &self.frame_state)? {
+                    max_height = max_height.max(height);
+                }
+            }
+        }
+        if !ignore_terrain {
+            if let Some(globe) = &self.globe {
+                if globe.show() {
+                    if let Some(height) = globe.get_height(cartographic) {
+                        max_height = max_height.max(height);
+                    }
+                }
+            }
+        }
+        Ok((max_height > f64::NEG_INFINITY).then_some(max_height))
+    }
     fn pre_passes(&mut self) -> Result<()> {
         self.pick_position_cache.clear();
         self.frame_state.clipping_plane_updates.clear();
         self.stage(SceneStage::ResetBudgets)?;
         for p in &mut self.primitives {
             p.pre_passes_update(&mut self.frame_state)?;
+        }
+        if let Some(globe) = &mut self.globe {
+            globe.update(&mut self.frame_state)?;
+        }
+        for effect in &mut self.effects {
+            effect.update(&mut self.frame_state)?;
         }
         for planes in std::mem::take(&mut self.frame_state.clipping_plane_updates) {
             self.backend.update_clipping_planes(&mut planes.borrow_mut())?;
@@ -1345,11 +1420,19 @@ impl<B: SceneBackend> Scene<B> {
                 p.update(&mut self.frame_state)?;
             }
         }
+        if let Some(globe) = &mut self.globe {
+            globe.render(&mut self.frame_state)?;
+        }
         self.backend.clear(color, None, Some(0))?;
         self.frame_state.command_list.retain(SceneCommand::shown);
         self.execute_commands()?;
         self.stage(SceneStage::Resolve)?;
         self.backend.resolve_framebuffers(&self.frame_state)?;
+        if passes.render {
+            for effect in &mut self.effects {
+                effect.render(&mut self.frame_state)?;
+            }
+        }
         if !passes.pick && !passes.pick_voxel && !passes.depth {
             self.execute_pass(Pass::Overlay, usize::MAX, 0., 0.)?;
         }
@@ -1504,8 +1587,15 @@ impl<B: SceneBackend> Scene<B> {
         for c in &mut self.components {
             c.destroy()?;
         }
+        if let Some(mut globe) = self.globe.take() {
+            globe.destroy()?;
+        }
+        for effect in &mut self.effects {
+            effect.destroy()?;
+        }
         self.primitives.clear();
         self.components.clear();
+        self.effects.clear();
         self.frame_state.after_render.clear();
         self.detailed_picks.clear();
         self.camera.cancel_flight();
