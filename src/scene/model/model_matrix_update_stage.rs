@@ -46,40 +46,74 @@ impl ModelMatrixUpdateStage {
         }
 
         let mut updated = Vec::new();
-        let mut stack = Vec::new();
-        for &root in scene_graph.root_nodes() {
-            let Some(node) = scene_graph.runtime_node(root) else {
+        let mut visited = vec![false; scene_graph.runtime_nodes().len()];
+
+        // Traverse top-down from root nodes:
+        let mut stack: Vec<(usize, bool)> = scene_graph.root_nodes().iter().map(|&r| (r, false)).collect();
+        while let Some((node_index, parent_dirty)) = stack.pop() {
+            if node_index >= visited.len() {
+                continue;
+            }
+            visited[node_index] = true;
+            let Some(node) = scene_graph.runtime_node_mut(node_index) else {
                 continue;
             };
-            if node.is_transform_dirty() {
-                stack.push(root);
+            let is_dirty = parent_dirty || node.is_transform_dirty();
+            if is_dirty {
+                node.update_computed_transform();
+                let computed = *node.computed_transform();
+                node.mark_transform_clean();
+                updated.push(node_index);
+
+                let children = node.children().to_vec();
+                for child_index in children {
+                    if let Some(child) = scene_graph.runtime_node_mut(child_index) {
+                        child.set_transform_to_root(computed);
+                    }
+                    stack.push((child_index, true));
+                }
+            } else {
+                let children = node.children().to_vec();
+                for child_index in children {
+                    stack.push((child_index, false));
+                }
             }
         }
 
-        while let Some(node_index) = stack.pop() {
-            let Some(node) = scene_graph.runtime_node_mut(node_index) else {
+        // Catch any disconnected dirty nodes:
+        for node_index in 0..visited.len() {
+            if visited[node_index] {
+                continue;
+            }
+            let Some(node) = scene_graph.runtime_node(node_index) else {
                 continue;
             };
             if !node.is_transform_dirty() {
                 continue;
             }
-            node.update_computed_transform();
-            let computed = *node.computed_transform();
-            updated.push(node_index);
-
-            let children = node.children().to_vec();
-            node.mark_transform_clean();
-            for child_index in children {
-                let Some(child) = scene_graph.runtime_node_mut(child_index) else {
+            let mut sub_stack = vec![node_index];
+            while let Some(current_index) = sub_stack.pop() {
+                if current_index < visited.len() {
+                    visited[current_index] = true;
+                }
+                let Some(current) = scene_graph.runtime_node_mut(current_index) else {
                     continue;
                 };
-                child.set_transform_to_root(computed);
-                // Children inherit the dirty state from their parent, so their
-                // draw commands are rebuilt even if they were clean before.
-                child.mark_transform_dirty();
-                stack.push(child_index);
+                current.update_computed_transform();
+                let computed = *current.computed_transform();
+                current.mark_transform_clean();
+                updated.push(current_index);
+
+                let children = current.children().to_vec();
+                for child_index in children {
+                    if let Some(child) = scene_graph.runtime_node_mut(child_index) {
+                        child.set_transform_to_root(computed);
+                    }
+                    sub_stack.push(child_index);
+                }
             }
         }
+
         updated
     }
 

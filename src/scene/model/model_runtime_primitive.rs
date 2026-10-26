@@ -155,7 +155,7 @@ impl<G: Gl, D> ModelRuntimePrimitive<G, D> {
 
         let has_custom_shader = properties.custom_shader.is_some();
         let materials_enabled = match &properties.custom_shader {
-            Some(custom_shader) => custom_shader.has_fragment_shader || !custom_shader.replace_material,
+            Some(custom_shader) => !custom_shader.has_fragment_shader || !custom_shader.replace_material,
             None => true,
         };
         let has_quantization = model_utility::has_quantized_attributes(Some(&primitive.attributes));

@@ -28,8 +28,8 @@ impl ModelArticulationStage {
         Ok(Self {
             name: stage.name.clone(),
             stage_type,
-            minimum_value: stage.minimum_value.unwrap_or(0.0),
-            maximum_value: stage.maximum_value.unwrap_or(0.0),
+            minimum_value: stage.minimum_value.unwrap_or(f64::NEG_INFINITY),
+            maximum_value: stage.maximum_value.unwrap_or(f64::INFINITY),
             current_value: stage.initial_value.unwrap_or(0.0),
         })
     }

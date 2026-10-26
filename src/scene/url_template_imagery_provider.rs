@@ -176,6 +176,9 @@ impl<H: ImageHost + 'static> UrlTemplateImageryProvider<H> {
             return Some(custom(&CustomTagArgs { x, y, level, ..Default::default() }));
         }
         if key == "s" {
+            if self.subdomains.is_empty() {
+                return None;
+            }
             // Cesium indexes the array with JavaScript's `%`, which keeps the
             // sign, so a negative index leaves the placeholder in place.
             let index = (x + y + level as i32) % self.subdomains.len() as i32;

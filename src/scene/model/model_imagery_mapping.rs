@@ -83,8 +83,8 @@ impl ModelImageryMapping {
 
         for pos in cartographic_positions {
             let projected = projection.project(pos);
-            let u = (projected.x - bounding_rectangle.x) * inv_w;
-            let v = (projected.y - bounding_rectangle.y) * inv_h;
+            let u = ((projected.x - bounding_rectangle.x) * inv_w).clamp(0.0, 1.0);
+            let v = ((projected.y - bounding_rectangle.y) * inv_h).clamp(0.0, 1.0);
             uvs.push(u as f32);
             uvs.push(v as f32);
         }
