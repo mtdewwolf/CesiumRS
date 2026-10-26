@@ -4745,5 +4745,25 @@
     "status": "implemented",
     "rust": "scene::model::scene_mode_2d_pipeline_stage",
     "note": "Position/bounding-sphere projection, buffer retention and model-view uniforms implemented. Native projection/lifetime smoke test passes; independent reference validation remains."
+  },
+  "Scene/BatchTexture": {
+    "status": "ported",
+    "rust": "scene::batch_texture",
+    "note": "Lazy quantized feature colors/show alpha, nearest-sampled GPU textures, per-feature PickIds and upload retry/destruction. Pinned feature traces plus native allocation, identity, and failure tests."
+  },
+  "Scene/Model/ModelFeature": {
+    "status": "ported",
+    "rust": "scene::model::model_feature",
+    "note": "Stable weak-table feature handles, model owner identity, show/color/property access, semantic inheritance and copied metadata. Six pinned operation traces and native lifetime/inheritance tests."
+  },
+  "Scene/Model/ModelFeatureTable": {
+    "status": "ported",
+    "rust": "scene::model::model_feature_table",
+    "note": "Feature identity, metadata/class access, callback-based style evaluation, opaque/translucent command selection and frame-driven batch/pick textures. Live pipeline/statistics adapters; tile content can supply pick objects. Six pinned traces and native lifecycle/upload tests."
+  },
+  "Scene/Model/MetadataPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::metadata_pipeline_stage",
+    "note": "21 pinned shader/uniform cases for attributes, textures, packed tables, value transforms, class/statistics structs, texture transforms, WebGL1 fallbacks and usage pruning. Usage sets are supplied by custom shader/point-cloud callers; includes exact unsigned uniforms."
   }
 }

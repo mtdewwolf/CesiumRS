@@ -370,8 +370,30 @@ runtime state and native smoke tests. Independent CesiumJS comparison of their
 projection/matrix cases remains pending, so the tracker marks them implemented
 rather than validated.
 
-The complete Model runtime/scene graph, metadata/custom shader/IBL/point-cloud
-styling stages, and model draw-command construction still need porting. The built-in renderable
+`ModelFeature` and `ModelFeatureTable` now manage stable feature handles,
+property/class queries, semantic inheritance and callback-based style evaluation.
+A feature retains a weak reference to its table and a table retains a weak model
+owner, avoiding pick-registry ownership cycles. `BatchTexture` lazily allocates
+show/alpha and quantized color arrays, uploads nearest-sampled feature textures
+at frame boundaries, and owns per-feature pick IDs. Failed uploads can be retried.
+Table `batch_pipeline_source()` and `picking_pipeline_source()` adapters follow
+new textures automatically; `batch_statistics()` supplies live memory accounting.
+Tile-content callers can use `update_with_pick_objects()` to supply their own
+feature objects. The style callbacks accept typed feature handles; expression
+parsing and complete tile-content integration remain separate work.
+
+`MetadataPipelineStage` emits metadata, class and statistics structs and
+initialization for property attributes, property textures and GPU-packed tables.
+It handles property/texture transforms, shared samplers, shader-stage restrictions
+and WebGL1 fallback. `MetadataUsage` records vertex/fragment property use from
+custom-shader and point-cloud callers so unused table reads can be skipped while
+preserving packed row indices. Twenty-one pinned shader/uniform cases include
+unsigned transforms beyond float32's exact integer range. Six further reference
+traces cover feature visibility/color/style/property sequences, and native tests
+cover texture uploads/retries, pick identity, inheritance and destruction.
+
+The complete Model runtime/scene graph, custom shader/IBL/point-cloud styling
+stages, and model draw-command construction still need porting. The built-in renderable
 tile factory also remains pending; the default tileset loader requires a factory
 for renderable tile content.
 
