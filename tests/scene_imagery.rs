@@ -774,3 +774,16 @@ fn single_tile_imagery_provider_request_and_caching() {
     // requesting outside level 0 or x!=0 / y!=0 yields None
     assert!(p.request_image(1, 0, 0).is_none());
 }
+
+#[test]
+fn url_template_imagery_provider_empty_subdomains_does_not_panic() {
+    let host = Rc::new(Images { log: Rc::default() });
+    let log = Rc::new(RefCell::new(vec![]));
+    let client_img = client(log, true);
+    let mut options = url_options("https://{s}.example.com/{z}/{x}/{y}.png");
+    // Explicitly configure empty subdomains
+    options.subdomains = Some(vec![]);
+    let provider = UrlTemplateImageryProvider::new(ImageryLoader::new(client_img, host), options).unwrap();
+    // Manually clearing or testing image_tag when empty:
+    assert!(provider.image_tag("s", 0, 0, 0).is_some());
+}

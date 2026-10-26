@@ -36,6 +36,7 @@ pub struct ModelAnimationCollection {
     pub animate_while_paused: bool,
 
     runtime_animations: Vec<ModelAnimation>,
+    stopped_animations: Vec<ModelAnimation>,
     previous_time: Option<JulianDate>,
     pending_events: Vec<PendingAnimationEvent>,
     next_id: usize,
@@ -54,6 +55,7 @@ impl ModelAnimationCollection {
             animation_removed: Event::new(),
             animate_while_paused: false,
             runtime_animations: Vec::new(),
+            stopped_animations: Vec::new(),
             previous_time: None,
             pending_events: Vec::new(),
             next_id: 0,
@@ -199,13 +201,19 @@ impl ModelAnimationCollection {
                     }
                 }
                 PendingAnimationEvent::Stop(args) => {
-                    if let Some(animation) = self.find_mut(args.animation) {
+                    let animation = self
+                        .runtime_animations
+                        .iter_mut()
+                        .find(|a| a.id() == args.animation)
+                        .or_else(|| self.stopped_animations.iter_mut().find(|a| a.id() == args.animation));
+                    if let Some(animation) = animation {
                         animation.stop.raise_event(&args);
                     }
                 }
                 PendingAnimationEvent::Removed(args) => self.animation_removed.raise_event(&args),
             }
         }
+        self.stopped_animations.clear();
     }
 
     fn find_mut(&mut self, animation_id: usize) -> Option<&mut ModelAnimation> {
@@ -342,6 +350,7 @@ impl ModelAnimationCollection {
             if let Some(index) = self.runtime_animations.iter().position(|a| a.id() == animation_id) {
                 let animation = self.runtime_animations.remove(index);
                 self.pending_events.push(PendingAnimationEvent::Removed(animation.event_args()));
+                self.stopped_animations.push(animation);
             }
         }
 

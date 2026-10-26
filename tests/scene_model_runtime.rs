@@ -756,3 +756,207 @@ fn model_scene_graph_full_lifecycle() {
     let computed_matrix = *graph.computed_model_matrix();
     assert_ne!(computed_matrix, Matrix4::IDENTITY);
 }
+
+#[test]
+fn model_matrix_update_stage_updates_dirty_child_node_when_root_is_clean() {
+    let components = mc::Components::<Host> {
+        nodes: vec![
+            mc::Node {
+                index: Some(0),
+                name: Some("Root".into()),
+                matrix: Some(Matrix4::IDENTITY),
+                children: vec![1],
+                ..Default::default()
+            },
+            mc::Node {
+                index: Some(1),
+                name: Some("Child".into()),
+                matrix: Some(Matrix4::from_translation(Cartesian3::new(10.0, 0.0, 0.0))),
+                ..Default::default()
+            },
+        ],
+        scene: Some(mc::Scene { nodes: vec![0] }),
+        ..Default::default()
+    };
+
+    let mut graph = ModelSceneGraph::<Host, MockDrawCommand>::new(
+        components,
+        ModelSceneGraphOptions::default(),
+    )
+    .unwrap();
+
+    let mut camera = Camera::new(CameraOptions::new(8.0, 8.0));
+    let frame_state = FrameState::new(
+        UniformFrame::new(camera.uniform_camera(), JulianDate::new(2451545.0, 0.0, TimeStandard::Tai)),
+        CullingVolume::default(),
+        [8, 8],
+    );
+
+    // Initially clean everything
+    let _ = ModelMatrixUpdateStage::update_transforms(&mut graph, &frame_state);
+    assert!(!graph.runtime_node(0).unwrap().is_transform_dirty());
+    assert!(!graph.runtime_node(1).unwrap().is_transform_dirty());
+
+    // Only mutate Child (node 1); Root (node 0) remains clean
+    let child_handle = graph.nodes_by_name().get("Child").unwrap().clone();
+    let new_mat = Matrix4::from_translation(Cartesian3::new(25.0, 5.0, 0.0));
+    child_handle.set_matrix(&mut graph, Some(&new_mat));
+
+    assert!(!graph.runtime_node(0).unwrap().is_transform_dirty());
+    assert!(graph.runtime_node(1).unwrap().is_transform_dirty());
+
+    let updated = ModelMatrixUpdateStage::update_transforms(&mut graph, &frame_state);
+    assert!(updated.contains(&1), "dirty child node must be included in updated transforms");
+    assert!(!graph.runtime_node(1).unwrap().is_transform_dirty());
+    assert_eq!(
+        *graph.runtime_node(1).unwrap().computed_transform(),
+        new_mat
+    );
+}
+
+#[test]
+fn model_runtime_primitive_materials_enabled_respects_custom_shader_modes() {
+    use cesium_rs::scene::model::model_scene_graph::CustomShaderPipelineProperties;
+    let properties_replace = ModelPipelineProperties {
+        custom_shader: Some(CustomShaderPipelineProperties {
+            has_fragment_shader: true,
+            replace_material: true,
+        }),
+        ..Default::default()
+    };
+    let mut prim = ModelRuntimePrimitive::<Host>::new(0, 0);
+    let node = mc::Node::<Host>::default();
+    let primitive = mc::Primitive::<Host>::default();
+    let mut req_edge = false;
+
+    prim.configure_pipeline(&properties_replace, &node, &primitive, SceneMode::Scene3D, true, 1.0, &mut req_edge);
+    assert!(
+        !prim.pipeline_stages.contains(&PrimitivePipelineStage::Material),
+        "Material stage should be omitted when custom fragment shader replaces material"
+    );
+
+    let properties_vertex_only = ModelPipelineProperties {
+        custom_shader: Some(CustomShaderPipelineProperties {
+            has_fragment_shader: false,
+            replace_material: true,
+        }),
+        ..Default::default()
+    };
+    prim.configure_pipeline(&properties_vertex_only, &node, &primitive, SceneMode::Scene3D, true, 1.0, &mut req_edge);
+    assert!(
+        prim.pipeline_stages.contains(&PrimitivePipelineStage::Material),
+        "Material stage should remain enabled when custom shader is vertex-only"
+    );
+
+    let properties_modify = ModelPipelineProperties {
+        custom_shader: Some(CustomShaderPipelineProperties {
+            has_fragment_shader: true,
+            replace_material: false,
+        }),
+        ..Default::default()
+    };
+    prim.configure_pipeline(&properties_modify, &node, &primitive, SceneMode::Scene3D, true, 1.0, &mut req_edge);
+    assert!(
+        prim.pipeline_stages.contains(&PrimitivePipelineStage::Material),
+        "Material stage should remain enabled when custom shader modifies material without replacing"
+    );
+}
+
+#[test]
+fn model_animation_collection_fires_stop_event_with_remove_on_stop() {
+    let components = mc::Components::<Host> {
+        nodes: vec![mc::Node {
+            index: Some(0),
+            name: Some("Target".into()),
+            translation: Some(Cartesian3::ZERO),
+            ..Default::default()
+        }],
+        scene: Some(mc::Scene { nodes: vec![0] }),
+        ..Default::default()
+    };
+    let mut graph = ModelSceneGraph::<Host, ()>::new(components, ModelSceneGraphOptions::default()).unwrap();
+    let mut collection = ModelAnimationCollection::new();
+
+    let animation = mc::Animation {
+        name: Some("TestAnim".into()),
+        samplers: vec![mc::AnimationSampler {
+            input: vec![0.0, 1.0],
+            output: vec![
+                mc::MathValue::Cartesian3(Cartesian3::new(0.0, 0.0, 0.0)),
+                mc::MathValue::Cartesian3(Cartesian3::new(1.0, 0.0, 0.0)),
+            ],
+            interpolation: Some(InterpolationType::Linear),
+        }],
+        channels: vec![mc::AnimationChannel {
+            sampler: Some(0),
+            target: Some(mc::AnimationTarget {
+                node: Some(0),
+                path: Some(mc::AnimatedPropertyType::Translation),
+            }),
+        }],
+    };
+
+    let start_date = JulianDate::new(2451545.0, 0.0, TimeStandard::Tai);
+    let options = ModelAnimationOptions {
+        name: Some("TestAnim".into()),
+        start_time: Some(start_date),
+        stop_time: Some(start_date.add_seconds(1.0)),
+        remove_on_stop: true,
+        ..Default::default()
+    };
+
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Arc;
+    let anim_id = collection.add(&[animation], graph.runtime_nodes(), &options).unwrap();
+    let stopped_received = Arc::new(AtomicBool::new(false));
+    let stopped_flag = stopped_received.clone();
+    collection.get_mut(0).unwrap().stop.add_event_listener(move |_| {
+        stopped_flag.store(true, Ordering::Relaxed);
+    });
+
+    // Start playing at t=0
+    collection.update(&start_date, false, graph.runtime_nodes_mut()).unwrap();
+    collection.raise_pending_events();
+    assert!(!stopped_received.load(Ordering::Relaxed));
+
+    // Advance past stop time at t=2.0s
+    let stop_date = start_date.add_seconds(2.0);
+    collection.update(&stop_date, false, graph.runtime_nodes_mut()).unwrap();
+    assert!(!collection.contains(anim_id), "animation should be removed from active set");
+
+    // Raise pending events: stop event must be dispatched
+    collection.raise_pending_events();
+    assert!(stopped_received.load(Ordering::Relaxed), "stop event listener must be invoked even when remove_on_stop is true");
+}
+
+#[test]
+fn model_articulation_stage_unconstrained_range() {
+    let stage_components = mc::ArticulationStage {
+        name: Some("UnconstrainedRoll".into()),
+        stage_type: Some(ArticulationStageType::XRotate),
+        minimum_value: None,
+        maximum_value: None,
+        initial_value: None,
+    };
+    let mut stage = ModelArticulationStage::new(&stage_components).unwrap();
+    assert!(stage.set_current_value(45.0));
+    assert_eq!(stage.current_value(), 45.0);
+    assert!(stage.set_current_value(-90.0));
+    assert_eq!(stage.current_value(), -90.0);
+}
+
+#[test]
+fn model_imagery_mapping_clamps_uvs() {
+    use cesium_rs::scene::model::model_imagery_mapping::ModelImageryMapping;
+    let rect = Rectangle::from_degrees(-10.0, -10.0, 10.0, 10.0);
+    let projection = GeographicProjection::default();
+    // Position slightly outside west border:
+    let positions = vec![
+        Cartographic::from_degrees(-10.0001, 0.0, 0.0),
+        Cartographic::from_degrees(10.0001, 0.0, 0.0),
+    ];
+    let uvs = ModelImageryMapping::create_texture_coordinates(&positions, &rect, &projection);
+    assert_eq!(uvs[0], 0.0, "u should be clamped to 0.0");
+    assert_eq!(uvs[2], 1.0, "u should be clamped to 1.0");
+}
+
