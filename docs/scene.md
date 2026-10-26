@@ -1044,6 +1044,28 @@ cargo test --test scene_tiling
 TZ=UTC node tools/cesium/fixtures/generate.mjs ImplicitSubtree
 ```
 
+## 3D Tiles styling
+
+`Expression`, `ConditionsExpression`, `StyleExpression` and `Cesium3DTileStyle`
+port the 3D Tiles Styling language parser, evaluator, feature property accessors,
+and GLSL shader generator.
+
+- Expressions are tokenized and parsed into a runtime AST with component-wise vector
+  math, color conversions (CSS names, hex, rgb, rgba, hsl, hsla), regex match/test,
+  and variable substitution.
+- GLSL generation supports boolean/float coercion, vector constructors, ternary
+  conditionals, component swizzling, and translucency detection.
+- `Cesium3DTileStyle` manages the styling expression properties (`show`, `color`,
+  `pointSize`, label formatting), invalidating and caching GLSL shader functions
+  identically to upstream.
+- Tested against pinned CesiumJS engine evaluations with 149 test cases in
+  `tests/scene_style.rs`.
+
+```bash
+cargo test --test scene_style
+TZ=UTC node tools/cesium/fixtures/generate.mjs Expression ConditionsExpression Cesium3DTileStyle
+```
+
 ## Next
 
 The next batches build on these:

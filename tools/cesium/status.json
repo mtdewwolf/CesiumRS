@@ -4765,5 +4765,25 @@
     "status": "ported",
     "rust": "scene::model::metadata_pipeline_stage",
     "note": "23 pinned shader/uniform cases plus native regressions for primitive references, independent UV transforms, WebGL1 signed types and fractional statistics. Corrects known CesiumJS 23 generator bugs; integer transforms use typed arithmetic. Four real WebGL compile/render checks preserve 1.5 statistics. Usage sets come from custom shader/point-cloud callers; unsigned uniforms retain exact integer precision."
+  },
+  "Scene/Expression": {
+    "status": "ported",
+    "rust": "scene::expression",
+    "note": "3D Tiles Styling language parser, evaluator and GLSL generator. Direct CesiumJS cases in tests/scene_style.rs."
+  },
+  "Scene/ConditionsExpression": {
+    "status": "ported",
+    "rust": "scene::conditions_expression",
+    "note": "Conditional style expression chain and shader generation. Direct CesiumJS cases in tests/scene_style.rs."
+  },
+  "Scene/StyleExpression": {
+    "status": "ported",
+    "rust": "scene::style_expression",
+    "note": "StyleExpression trait contract implemented by Expression and ConditionsExpression."
+  },
+  "Scene/Cesium3DTileStyle": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_style",
+    "note": "3D Tiles style definition, property accessors, and shader generation. Direct CesiumJS cases in tests/scene_style.rs."
   }
 }
