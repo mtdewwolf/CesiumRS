@@ -176,6 +176,7 @@ struct PipelineKey {
     ibl: ImageBasedLightingOptions,
     point: PointCloudStylingOptions,
 }
+type ImageUpdate<G> = Rc<dyn Fn(&CustomShader<G>, u32) -> Result<()>>;
 type MatrixValues = Rc<RefCell<Vec<Matrix4>>>;
 type MorphValues = Rc<RefCell<Vec<f64>>>;
 
@@ -237,7 +238,7 @@ pub struct Model<G: Gl + 'static> {
     previous_matrix: Matrix4,
     custom_warnings: CustomShaderWarnings,
     style_dirty: bool,
-    image_update: Option<Rc<dyn Fn(&CustomShader<G>, u32) -> Result<()>>>,
+    image_update: Option<ImageUpdate<G>>,
 }
 impl<G: Gl + 'static> Model<G> {
     pub fn new(
@@ -837,6 +838,8 @@ impl<G: Gl + 'static> Model<G> {
         for node_index in node_indices {
             let mut node = graph.components().nodes[node_index].clone();
             let mut node_resources = NodeRenderResources::new(&resources, node_index);
+            let components_transform = graph.components().transform;
+            let axis_correction_matrix = *graph.axis_correction_matrix();
             let runtime = graph.runtime_node_mut(node_index).expect("runtime node");
             runtime.configure_pipeline(&node);
             let node_transform = *runtime.computed_transform();
@@ -845,6 +848,9 @@ impl<G: Gl + 'static> Model<G> {
             self.joint_values.insert(node_index, joint_values.clone());
             self.morph_values.insert(node_index, morph_values.clone());
             if node.instances.is_some() {
+                runtime.instancing.computed_transform = node_transform;
+                runtime.instancing.components_transform = components_transform;
+                runtime.instancing.axis_correction_matrix = axis_correction_matrix;
                 instancing_pipeline_stage::process(
                     &mut node_resources,
                     &mut node,
@@ -1238,6 +1244,8 @@ impl<G: Gl + 'static> Model<G> {
         model.set_image_host(host);
         Ok(model)
     }
+    // Match the underlying tile loader constructor.
+    #[allow(clippy::too_many_arguments)]
     pub async fn from_b3dm<H: ModelImageHost<G> + 'static>(
         cache: ResourceCache,
         resource: Resource,
@@ -1275,6 +1283,8 @@ impl<G: Gl + 'static> Model<G> {
         model.set_image_host(host);
         Ok(model)
     }
+    // Match the underlying tile loader constructor.
+    #[allow(clippy::too_many_arguments)]
     pub async fn from_i3dm<H: ModelImageHost<G> + 'static>(
         cache: ResourceCache,
         resource: Resource,

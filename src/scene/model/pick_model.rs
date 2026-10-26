@@ -2,11 +2,11 @@
 use super::{model_utility, ModelReader, ModelSceneGraph};
 use crate::{
     core::{
-        intersection_tests, vertical_exaggeration, AttributeCompression, Cartesian3, ComponentDatatype, Matrix4, Ray,
-        RuntimeError, Transforms,
+        intersection_tests, vertical_exaggeration, AttributeCompression, Cartesian3, ComponentDatatype, Matrix4,
+        PrimitiveType, Ray, RuntimeError, Transforms, TypedArray,
     },
     renderer::Gl,
-    scene::{model_components as mc, FrameState, SceneMode, VertexAttributeSemantic},
+    scene::{model_components as mc, FrameState, InstanceAttributeSemantic, SceneMode, VertexAttributeSemantic},
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -62,7 +62,7 @@ pub fn pick_model<G: Gl, D>(
                 None if options.webgl2 => match &runtime.instancing.instancing_transforms_buffer {
                     Some(buffer) => {
                         let bytes = buffer.get_buffer_data(0, buffer.size_in_bytes())?;
-                        Some(bytes.chunks_exact(4).map(|b| f32::from_le_bytes(b.try_into().unwrap()) as f64).collect())
+                        Some(bytes.as_chunks::<4>().0.iter().map(|b| f32::from_le_bytes(*b) as f64).collect())
                     }
                     None => None,
                 },
@@ -79,12 +79,60 @@ pub fn pick_model<G: Gl, D>(
                     transforms.push(if instances.transform_in_world_space {
                         model_matrix.multiply_transformation(&transform.multiply_transformation(&node_transform))
                     } else {
-                        transform.multiply_transformation(&computed)
+                        computed.multiply_transformation(&transform)
+                    });
+                }
+            } else {
+                // Translation/scale-only instancing uses separate attributes,
+                // so no packed matrix buffer is allocated by the render stage.
+                let mut attributes = Vec::new();
+                for semantic in [InstanceAttributeSemantic::Translation, InstanceAttributeSemantic::Scale] {
+                    let attribute = instances
+                        .attributes
+                        .iter()
+                        .find(|a| a.semantic == Some(mc::AttributeSemantic::Instance(semantic)));
+                    let values = if let Some(attribute) = attribute {
+                        if attribute.typed_array.is_none() && (!options.webgl2 || attribute.buffer.is_none()) {
+                            return Ok(None);
+                        }
+                        Some(ModelReader::read_attribute_as_raw_compact_typed_array(attribute)?)
+                    } else {
+                        None
+                    };
+                    attributes.push(values);
+                }
+                // A rotation requires the packed transform path above.
+                if instances
+                    .attributes
+                    .iter()
+                    .any(|a| a.semantic == Some(mc::AttributeSemantic::Instance(InstanceAttributeSemantic::Rotation)))
+                {
+                    return Ok(None);
+                }
+                for i in 0..count {
+                    let vector =
+                        |values: &Option<TypedArray>, default: Cartesian3| -> Result<Cartesian3, RuntimeError> {
+                            match values {
+                                Some(v) => Ok(Cartesian3::new(
+                                    v.get(i * 3).ok_or_else(|| RuntimeError::new("Invalid instance attribute"))?,
+                                    v.get(i * 3 + 1).ok_or_else(|| RuntimeError::new("Invalid instance attribute"))?,
+                                    v.get(i * 3 + 2).ok_or_else(|| RuntimeError::new("Invalid instance attribute"))?,
+                                )),
+                                None => Ok(default),
+                            }
+                        };
+                    let translation = vector(&attributes[0], Cartesian3::ZERO)?;
+                    let scale = vector(&attributes[1], Cartesian3::new(1., 1., 1.))?;
+                    let transform =
+                        Matrix4::from_translation(translation).multiply_transformation(&Matrix4::from_scale(scale));
+                    transforms.push(if instances.transform_in_world_space {
+                        model_matrix.multiply_transformation(&transform.multiply_transformation(&node_transform))
+                    } else {
+                        computed.multiply_transformation(&transform)
                     });
                 }
             }
-        }
-        if transforms.is_empty() {
+        } else {
             transforms.push(computed);
         }
         for runtime_primitive in &runtime.runtime_primitives {
@@ -98,9 +146,9 @@ pub fn pick_model<G: Gl, D>(
             {
                 continue;
             }
-            let Some(indices) = &primitive.indices else {
+            if primitive.primitive_type != Some(PrimitiveType::Triangles) {
                 continue;
-            };
+            }
             let Some(position) = model_utility::get_attribute_by_semantic(
                 &primitive.attributes,
                 mc::AttributeSemantic::Vertex(VertexAttributeSemantic::Position),
@@ -108,15 +156,17 @@ pub fn pick_model<G: Gl, D>(
             ) else {
                 continue;
             };
-            if !options.webgl2 && (indices.typed_array.is_none() || position.typed_array.is_none()) {
+            if position.typed_array.is_none() && (!options.webgl2 || position.buffer.is_none()) {
                 return Ok(None);
             }
-            if indices.typed_array.is_none() && indices.buffer.is_none()
-                || position.typed_array.is_none() && position.buffer.is_none()
-            {
-                return Ok(None);
-            }
-            let indices = ModelReader::read_indices_as_typed_array(indices)?;
+            let indices = if let Some(indices) = &primitive.indices {
+                if indices.typed_array.is_none() && (!options.webgl2 || indices.buffer.is_none()) {
+                    return Ok(None);
+                }
+                ModelReader::read_indices_as_typed_array(indices)?
+            } else {
+                TypedArray::Uint32((0..position.count.unwrap_or(0) as u32).collect())
+            };
             let vertices = ModelReader::read_attribute_as_raw_compact_typed_array(position)?;
             let components = position
                 .quantization

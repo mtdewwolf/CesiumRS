@@ -14,8 +14,8 @@ use crate::{
 use std::rc::Rc;
 
 pub enum ModelDrawCommandKind<G: Gl> {
-    Model(ModelDrawCommand<G>),
-    Classification(ClassificationModelDrawCommand<G>),
+    Model(Box<ModelDrawCommand<G>>),
+    Classification(Box<ClassificationModelDrawCommand<G>>),
 }
 impl<G: Gl> ModelDrawCommandKind<G> {
     pub fn command(&self) -> &ModelCommand<G> {
@@ -43,14 +43,14 @@ impl<G: Gl> ModelDrawCommandKind<G> {
     }
     fn runtime(&self) -> &dyn RuntimeDrawCommand {
         match self {
-            Self::Model(c) => c,
-            Self::Classification(c) => c,
+            Self::Model(c) => c.as_ref(),
+            Self::Classification(c) => c.as_ref(),
         }
     }
     fn runtime_mut(&mut self) -> &mut dyn RuntimeDrawCommand {
         match self {
-            Self::Model(c) => c,
-            Self::Classification(c) => c,
+            Self::Model(c) => c.as_mut(),
+            Self::Classification(c) => c.as_mut(),
         }
     }
 }
@@ -209,7 +209,7 @@ pub fn build_model_draw_command<G: Gl + 'static>(
             resources.pick_id.clone(),
         )?;
         result.debug_wireframe = options.enable_debug_wireframe && options.debug_wireframe;
-        return Ok(ModelDrawCommandKind::Classification(result));
+        return Ok(ModelDrawCommandKind::Classification(Box::new(result)));
     }
     let mut result = ModelDrawCommand::new(command, resources.bounding_sphere, options.derived);
     if let Some(edge) = resources.edge_geometry.take() {
@@ -231,5 +231,5 @@ pub fn build_model_draw_command<G: Gl + 'static>(
             result.edge_command = Some(command);
         }
     }
-    Ok(ModelDrawCommandKind::Model(result))
+    Ok(ModelDrawCommandKind::Model(Box::new(result)))
 }

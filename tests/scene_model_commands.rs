@@ -410,3 +410,100 @@ fn model_style_and_pass_changes_rebuild_commands() {
     assert!(!model.options.show);
     assert!(f.command_list.is_empty());
 }
+
+fn instance_attribute(semantic: InstanceAttributeSemantic, values: Vec<f32>) -> mc::Attribute<Host> {
+    mc::Attribute {
+        semantic: Some(mc::AttributeSemantic::Instance(semantic)),
+        attribute_type: Some(AttributeType::Vec3),
+        component_datatype: Some(ComponentDatatype::Float),
+        count: Some(values.len() / 3),
+        typed_array: Some(TypedArray::Float32(values)),
+        ..Default::default()
+    }
+}
+
+#[test]
+fn picking_translation_scale_instances_reads_cpu_and_gpu_attributes() {
+    for gpu in [false, true] {
+        let context = Context::new_webgl2(Host::default());
+        let mut components = triangle_components();
+        let mut attributes = vec![
+            instance_attribute(InstanceAttributeSemantic::Translation, vec![10., 0., 0., 20., 0., 0.]),
+            instance_attribute(InstanceAttributeSemantic::Scale, vec![2., 2., 2., 3., 3., 3.]),
+        ];
+        if gpu {
+            for a in &mut attributes {
+                let bytes = a.typed_array.take().unwrap().to_le_bytes();
+                a.buffer = Some(
+                    Buffer::new(&context, BufferKind::Vertex, BufferUsage::StaticDraw, BufferData::Bytes(&bytes))
+                        .unwrap(),
+                );
+            }
+        }
+        components.nodes[0].instances = Some(mc::Instances { attributes, ..Default::default() });
+        let graph = ModelSceneGraph::<Host>::new(components, ModelSceneGraphOptions::default()).unwrap();
+        for (x, expected) in
+            [(0., None), (10., Some(Cartesian3::new(10., 0., 0.))), (21.5, Some(Cartesian3::new(21.5, 0., 0.)))]
+        {
+            let ray = Ray::new(Cartesian3::new(x, 0., 5.), Cartesian3::new(0., 0., -1.));
+            assert_eq!(pick_model(&graph, &ray, &frame(), ModelPickOptions::default()).unwrap(), expected);
+        }
+    }
+}
+
+#[test]
+fn picking_local_matrix_instances_preserves_model_translation() {
+    let mut components = triangle_components();
+    components.nodes[0].instances = Some(mc::Instances {
+        attributes: vec![instance_attribute(InstanceAttributeSemantic::Scale, vec![2., 2., 2.])],
+        ..Default::default()
+    });
+    let mut graph = ModelSceneGraph::<Host>::new(
+        components,
+        ModelSceneGraphOptions {
+            model_matrix: Matrix4::from_translation(Cartesian3::new(10., 0., 0.)),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    graph.runtime_node_mut(0).unwrap().instancing.transforms_typed_array =
+        Some(vec![2., 0., 0., 0., 0., 2., 0., 0., 0., 0., 2., 0.]);
+    let ray = Ray::new(Cartesian3::new(10., 0., 5.), Cartesian3::new(0., 0., -1.));
+    assert_eq!(
+        pick_model(&graph, &ray, &frame(), ModelPickOptions::default()).unwrap(),
+        Some(Cartesian3::new(10., 0., 0.))
+    );
+}
+
+#[test]
+fn picking_nonindexed_triangles_matches_indexed_meshes() {
+    let mut components = triangle_components();
+    components.nodes[0].primitives[0].indices = None;
+    let graph = ModelSceneGraph::<Host>::new(components, ModelSceneGraphOptions::default()).unwrap();
+    let ray = Ray::new(Cartesian3::new(0., 0., 5.), Cartesian3::new(0., 0., -1.));
+    assert_eq!(pick_model(&graph, &ray, &frame(), ModelPickOptions::default()).unwrap(), Some(Cartesian3::ZERO));
+}
+
+#[test]
+fn model_populates_world_instance_transform_inputs() {
+    let context = Context::new_webgl2(Host::default());
+    let mut components = drawable_components(&context);
+    components.transform = Matrix4::from_translation(Cartesian3::new(100., 200., 300.));
+    components.up_axis = Some(Axis::Y);
+    components.nodes[0].translation = Some(Cartesian3::new(10., 20., 30.));
+    components.nodes[0].instances = Some(mc::Instances {
+        attributes: vec![instance_attribute(InstanceAttributeSemantic::Translation, vec![1., 2., 3.])],
+        transform_in_world_space: true,
+        ..Default::default()
+    });
+    let expected_components = components.transform;
+    let mut model = Model::from_components(context, components, ModelOptions::default()).unwrap();
+    model.update(&mut frame()).unwrap();
+    let graph = model.scene_graph.as_ref().unwrap();
+    let node = graph.runtime_node(0).unwrap();
+    assert_eq!(node.instancing.components_transform, expected_components);
+    assert_eq!(node.instancing.computed_transform, *node.computed_transform());
+    assert_eq!(node.instancing.computed_transform.get_translation(), Cartesian3::new(10., 20., 30.));
+    assert_eq!(node.instancing.axis_correction_matrix, *graph.axis_correction_matrix());
+    assert_ne!(node.instancing.axis_correction_matrix, Matrix4::IDENTITY);
+}

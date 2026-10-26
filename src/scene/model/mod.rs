@@ -52,6 +52,8 @@ pub use geo_json_loader::GeoJsonLoader;
 pub use i3dm_loader::{I3dmLoader, I3dmLoaderOptions};
 pub use pnts_loader::{PntsLoader, PntsLoaderOptions};
 
+// Keep the upstream Model module name and its public import path.
+#[allow(clippy::module_inception)]
 pub mod model;
 pub mod model_3d_tile_content;
 pub mod model_statistics;
