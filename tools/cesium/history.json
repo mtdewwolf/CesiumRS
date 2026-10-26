@@ -530,9 +530,9 @@
   {
     "milestone": "Model features and metadata shader pipeline",
     "date": "2026-10-26",
-    "percent": 56.53,
-    "ported": 968,
+    "percent": 57.43,
+    "ported": 974,
     "implemented": 2,
-    "validatedPercent": 54.89
+    "validatedPercent": 55.8
   }
 ]

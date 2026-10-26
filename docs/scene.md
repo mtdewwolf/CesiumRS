@@ -419,8 +419,15 @@ oct decoding, index reading, and triangle strip/fan conversions (21 pinned cases
 `EdgeVisibilityPipelineStage` are validated against CesiumJS with 15 pinned reference
 cases in `tests/scene_model_stages_batch2.rs`.
 
-The complete Model runtime/scene graph, imagery pipeline stages, and
-model draw-command construction still need porting. The built-in renderable
+`ImageryCoverage`, `ImageryInput`, `ModelImageryMapping`, `ModelPrimitiveImagery`,
+`ModelImagery`, and `ImageryPipelineStage` provide imagery tile coverage calculation,
+boundary shrink/overlap clipping, native coordinate translation/scale, projection texture
+coordinate allocation, and dynamic shader generation (defines, varyings, attributes, uniforms,
+`sampleAndBlend`, and `blendBaseColorWithImagery`). Forty-one pinned reference cases validate
+them in `tests/scene_model_imagery.rs`.
+
+The complete Model runtime/scene graph, model draw-command construction, Model facade,
+and Model3DTileContent remain in progress. The built-in renderable
 tile factory also remains pending; the default tileset loader requires a factory
 for renderable tile content.
 

@@ -101,3 +101,17 @@ pub mod model_feature_table;
 pub use model_feature::ModelFeature;
 pub use model_feature_table::{ModelFeatureStyle, ModelFeatureTable};
 pub mod metadata_pipeline_stage;
+
+pub mod imagery_coverage;
+pub mod imagery_input;
+pub mod imagery_pipeline_stage;
+pub mod model_imagery;
+pub mod model_imagery_mapping;
+pub mod model_primitive_imagery;
+
+pub use imagery_coverage::ImageryCoverage;
+pub use imagery_input::ImageryInput;
+pub use imagery_pipeline_stage::ImageryPipelineStage;
+pub use model_imagery::ModelImagery;
+pub use model_imagery_mapping::{MappedPositions, ModelImageryMapping};
+pub use model_primitive_imagery::ModelPrimitiveImagery;

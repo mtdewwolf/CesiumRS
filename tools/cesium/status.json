@@ -4404,7 +4404,7 @@
   "Scene/ConeEmitter": {
     "status": "ported",
     "rust": "scene::particle_emitter",
-    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30\u00b0 default. Emitted particles match bit for bit."
+    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30° default. Emitted particles match bit for bit."
   },
   "Scene/SphereEmitter": {
     "status": "ported",
@@ -4524,7 +4524,7 @@
   "Scene/Model/Extensions/Gpm/GltfMeshPrimitiveGpmLoader": {
     "status": "ported",
     "rust": "scene::model::extensions::gpm::gltf_mesh_primitive_gpm_loader",
-    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale \u00d7 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
+    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale × 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
   },
   "DataSources/CompositeEntityCollection": {
     "status": "ported",
@@ -4805,5 +4805,35 @@
     "status": "ported",
     "rust": "scene::model::edge_visibility_pipeline_stage",
     "note": "Derived line list edge geometry and shader bindings for EXT_mesh_primitive_edge_visibility data. Validated against pinned ModelStagesBatch2 fixtures."
+  },
+  "Scene/Model/ImageryCoverage": {
+    "status": "ported",
+    "rust": "scene::model::imagery_coverage",
+    "note": "Tile coverage computation, range, overlap, boundary shrink, and texture coordinate localization. Validated against CesiumJS in tests/scene_model_imagery.rs."
+  },
+  "Scene/Model/ImageryInput": {
+    "status": "ported",
+    "rust": "scene::model::imagery_input",
+    "note": "Texture inputs, translation/scale, coordinate rectangle, attribute set index, and visual adjust uniforms. Validated in tests/scene_model_imagery.rs."
+  },
+  "Scene/Model/ImageryPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::imagery_pipeline_stage",
+    "note": "Shader builder define injection, texture coordinate attributes, dynamic sampleAndBlend and blendBaseColorWithImagery GLSL generation, and uniforms. Validated against CesiumJS in tests/scene_model_imagery.rs."
+  },
+  "Scene/Model/ModelImagery": {
+    "status": "ported",
+    "rust": "scene::model::model_imagery",
+    "note": "Multi-primitive imagery collection and readiness tracking. Validated in tests/scene_model_imagery.rs."
+  },
+  "Scene/Model/ModelImageryMapping": {
+    "status": "ported",
+    "rust": "scene::model::model_imagery_mapping",
+    "note": "Cartographic bounding rectangle, projected texture coordinates, and typed array generation. Validated against CesiumJS in tests/scene_model_imagery.rs."
+  },
+  "Scene/Model/ModelPrimitiveImagery": {
+    "status": "ported",
+    "rust": "scene::model::model_primitive_imagery",
+    "note": "Per-ellipsoid mapped positions, per-layer coverages, texture coordinate attributes and vertex buffer uploads. Validated in tests/scene_model_imagery.rs."
   }
 }
