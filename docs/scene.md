@@ -638,6 +638,39 @@ cargo test --test scene_particles_imagery
 TZ=UTC node tools/cesium/fixtures/generate.mjs Particle ParticleEmitter BoxEmitter CircleEmitter ConeEmitter SphereEmitter PointCloudShading ImageryLayerFeatureInfo KeyframeNode ImageryConfiguration DiscardEmptyTileImagePolicy
 ```
 
+## Imagery providers
+
+`ImageryProvider` defines the shared trait for imagery layers, returning
+asynchronous [`FrameResource`] image or KTX2 texture futures, tile credits, and
+asynchronous feature pick requests. The shared [`ImageryLoader`] coordinates
+host image fetches and KTX2 transcoding.
+
+- `UrlTemplateImageryProvider`: URL template parameter expansion (`{x}`, `{y}`,
+  `{z}`, `{reverseX}`, `{reverseY}`, `{reverseZ}`, `{s}`, bounding degrees and
+  projected coordinates, custom tags, zero-padding, subdomains) and feature
+  picking with fallback across multiple `GetFeatureInfoFormat` parsers.
+- `GetFeatureInfoFormat`: parses server responses into `ImageryLayerFeatureInfo`
+  for GeoJSON/JSON, ESRI/WFS/GML XML, HTML, and plain text.
+- `DiscardMissingTileImagePolicy`: inspects specified pixel positions against a
+  known missing image signature, automatically disabling the policy when pixels
+  are all transparent or the missing image failed to load.
+- `OpenStreetMapImageryProvider`: OpenStreetMap and Slippy tile templates,
+  retina tile suffixing (`@2x`), and minimum-level tile count validation.
+- `MapboxImageryProvider` and `MapboxStyleImageryProvider`: Mapbox v4 and Styles
+  API raster tile request construction with access token query parameters.
+  `scale_factor: None` omits the Styles API scale suffix; `Some(true)` and
+  `Some(false)` both select `@2x`, matching CesiumJS's defined-value check.
+- `SingleTileImageryProvider`: single geographic imagery tile provider with
+  level-0 caching and asynchronous `from_url` dimension discovery.
+
+Tests: `tests/scene_imagery.rs`, 46 pinned reference cases from
+`tools/cesium/fixtures/scene-imagery.mjs`.
+
+```bash
+cargo test --test scene_imagery
+TZ=UTC node tools/cesium/fixtures/generate.mjs UrlTemplateImageryProvider GetFeatureInfoFormat OpenStreetMapImageryProvider MapboxImageryProvider MapboxStyleImageryProvider SingleTileImageryProvider
+```
+
 ## Camera
 
 `scene::Camera` starts the large, frame-driven Scene modules. It is the

@@ -4404,7 +4404,7 @@
   "Scene/ConeEmitter": {
     "status": "ported",
     "rust": "scene::particle_emitter",
-    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30\u00b0 default. Emitted particles match bit for bit."
+    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30° default. Emitted particles match bit for bit."
   },
   "Scene/SphereEmitter": {
     "status": "ported",
@@ -4524,7 +4524,7 @@
   "Scene/Model/Extensions/Gpm/GltfMeshPrimitiveGpmLoader": {
     "status": "ported",
     "rust": "scene::model::extensions::gpm::gltf_mesh_primitive_gpm_loader",
-    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale \u00d7 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
+    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale × 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
   },
   "DataSources/CompositeEntityCollection": {
     "status": "ported",
@@ -4765,6 +4765,46 @@
     "status": "ported",
     "rust": "scene::model::metadata_pipeline_stage",
     "note": "23 pinned shader/uniform cases plus native regressions for primitive references, independent UV transforms, WebGL1 signed types and fractional statistics. Corrects known CesiumJS 23 generator bugs; integer transforms use typed arithmetic. Four real WebGL compile/render checks preserve 1.5 statistics. Usage sets come from custom shader/point-cloud callers; unsigned uniforms retain exact integer precision."
+  },
+  "Scene/ImageryProvider": {
+    "status": "ported",
+    "rust": "scene::imagery_provider",
+    "note": "Shared imagery provider trait, ImageryLoader host integration, KTX2 transcoding and error reporting contracts."
+  },
+  "Scene/GetFeatureInfoFormat": {
+    "status": "ported",
+    "rust": "scene::get_feature_info_format",
+    "note": "Feature info response types and default JSON/GeoJSON, XML, HTML and plain-text parsers matching CesiumJS. 14 pinned cases."
+  },
+  "Scene/DiscardMissingTileImagePolicy": {
+    "status": "ported",
+    "rust": "scene::discard_missing_tile_image_policy",
+    "note": "Discards tiles whose checked pixels match a missing image pixel signature; disables check if missing image fails or all checked pixels are transparent."
+  },
+  "Scene/UrlTemplateImageryProvider": {
+    "status": "ported",
+    "rust": "scene::url_template_imagery_provider",
+    "note": "Template expansion, zero padding, custom tags, subdomains, reverse coords, degrees/projected bounding boxes and pick-feature fallbacks. 15 pinned cases."
+  },
+  "Scene/OpenStreetMapImageryProvider": {
+    "status": "ported",
+    "rust": "scene::open_street_map_imagery_provider",
+    "note": "OpenStreetMap slippy tile URL template, default attribution, Web Mercator tiling scheme and minimum-level tile count validation. 5 pinned cases."
+  },
+  "Scene/MapboxImageryProvider": {
+    "status": "ported",
+    "rust": "scene::mapbox_imagery_provider",
+    "note": "Mapbox v4 raster tile URL construction with access token query parameters, custom format and credit attribution. 4 pinned cases."
+  },
+  "Scene/MapboxStyleImageryProvider": {
+    "status": "ported",
+    "rust": "scene::mapbox_style_imagery_provider",
+    "note": "Mapbox Styles API raster tile URL construction with style ID, username, tilesize, scale factor and access token. 4 pinned cases."
+  },
+  "Scene/SingleTileImageryProvider": {
+    "status": "ported",
+    "rust": "scene::single_tile_imagery_provider",
+    "note": "Single top-level imagery tile provider with Geographic tiling scheme, level-0 caching and asynchronous from_url constructor. 2 pinned cases."
   },
   "Scene/FrustumCommands": {
     "status": "ported",
