@@ -93,7 +93,7 @@ pub fn process<G: Gl>(
         model_resources,
     )?;
 
-    process_feature_id_attributes(resources, instances, &mut instancing_vertex_attributes)?;
+    process_feature_id_attributes(resources, instances, &mut instancing_vertex_attributes, context)?;
 
     if instances.transform_in_world_space {
         resources.shader_builder.add_define("USE_LEGACY_INSTANCING", None, ShaderDestination::VERTEX);
@@ -612,6 +612,15 @@ fn process_transform_vec3_attributes<G: Gl>(
 
     resources.shader_builder.add_define("HAS_INSTANCE_TRANSLATION", None, ShaderDestination::BOTH);
 
+    if instances.attributes[translation_idx].buffer.is_none() {
+        if let Some(ref trans) = instancing_translations {
+            let typed_array = translations_to_typed_array(trans);
+            if let Ok(buf) = create_vertex_buffer(&typed_array, context) {
+                instances.attributes[translation_idx].buffer = Some(buf);
+            }
+        }
+    }
+
     if let Some(trans_buf) = instances.attributes[translation_idx].buffer.clone() {
         process_vec3_attribute(
             resources,
@@ -719,6 +728,7 @@ fn process_feature_id_attributes<G: Gl>(
     resources: &mut NodeRenderResources<G>,
     instances: &mc::Instances<G>,
     instancing_vertex_attributes: &mut Vec<Rc<VertexAttribute<G>>>,
+    context: &Context<G>,
 ) -> Result<(), RuntimeError> {
     for attribute in &instances.attributes {
         if attribute.semantic != Some(mc::AttributeSemantic::Instance(InstanceAttributeSemantic::FeatureId)) {
@@ -733,8 +743,14 @@ fn process_feature_id_attributes<G: Gl>(
         let index = resources.attribute_index;
         resources.attribute_index += 1;
 
-        let buffer =
-            attribute.buffer.clone().ok_or_else(|| RuntimeError::new("Missing instance featureId attribute buffer"))?;
+        let buffer = if let Some(buf) = attribute.buffer.clone() {
+            buf
+        } else if let Some(ref ta) = attribute.typed_array {
+            let bytes = ta.to_le_bytes();
+            Buffer::new(context, BufferKind::Vertex, BufferUsage::StaticDraw, BufferData::Bytes(&bytes))?
+        } else {
+            return Err(RuntimeError::new("Missing instance featureId attribute buffer"));
+        };
         let components_per_attribute = attribute
             .attribute_type
             .ok_or_else(|| RuntimeError::new("Missing instance featureId attribute type"))?
