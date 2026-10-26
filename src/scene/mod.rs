@@ -120,6 +120,7 @@ pub use scene::{
 };
 pub use view::{DebugFrustumStatistics, SceneView};
 pub mod arc_gis_base_map_type;
+pub mod arc_gis_map_service;
 pub mod attribute_type;
 pub mod axis;
 pub mod batch_table_hierarchy;
@@ -272,6 +273,7 @@ pub mod voxel_metadata_order;
 
 pub use alpha_mode::AlphaMode;
 pub use arc_gis_base_map_type::ArcGisBaseMapType;
+pub use arc_gis_map_service::ArcGisMapService;
 pub use attribute_type::AttributeType;
 pub use axis::Axis;
 pub use billboard_load_state::BillboardLoadState;
