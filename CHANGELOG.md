@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Implement Model, ModelDrawCommands and Model3DTileContent, and port ModelDrawCommand, ClassificationModelDrawCommand and pickModel. Connect model loaders, pipeline stages, runtime transforms/animations, feature styling, CPU picking and owned scene draws; add the built-in model tile factory and real-frame deferred readiness. Validate 185 pinned CesiumJS reference cases and native lifecycle, style/pass and tile-processing tests. Full end-to-end GPU model parity remains unchecked; terrain/environment services use host integration hooks.
+
 - Port `Cesium3DTilePassState`, `Cesium3DTilesetStatistics`, `Cesium3DTilesetCache`, `Cesium3DTilesetHeatmap`, `Cesium3DTileStyleEngine`, `Cesium3DTileOptimizations`, `CreditDisplay`, `computeFlyToLocationForRectangle`, `createOsmBuildingsAsync`, `createGooglePhotorealistic3DTileset` and `ITwinData`. Add 3D Tiles traversal pass descriptors, tile/texture memory accounting, sentinel-partitioned LRU tile cache, heatmap colorizer with dynamic and reference min/max tracking, tile style engine, childrenWithinParent culling projection checks, screen/lightbox attribution display, fly-to rectangle terrain height calculation, and factory helpers for OSM Buildings, Google Photorealistic 3D Tiles and Bentley iTwin Platform data.
 
 - Port `Expression`, `ConditionsExpression`, `StyleExpression` and `Cesium3DTileStyle`. Add 3D Tiles Styling language parser, runtime AST evaluator, component-wise vector and color conversions, regular expression matching, feature property accessors, and GLSL shader function generation with translucency tracking. Validate 160 pinned CesiumJS cases across expressions, conditional chains and tile style definitions, including null/undefined array string and number coercion.

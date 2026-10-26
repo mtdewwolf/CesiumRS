@@ -98,21 +98,19 @@ stages have landed. ModelFeature, ModelFeatureTable, BatchTexture and
 MetadataPipelineStage now provide feature identity, styling textures and metadata
 shader initialization.
 
-Thirty-two Model modules remain unported. The dependency sequence is:
-
-1. ModelRuntimeNode/ModelNode, ModelSkin and ModelMatrixUpdateStage.
-2. Articulation and animation stages/collections, then ModelRuntimePrimitive.
-3. ModelSceneGraph and ordinary/classification draw commands.
-4. Custom shaders and texture management; IBL and point-cloud styling;
-   edge visibility and imagery integration.
-5. ModelReader, pickModel, Model and Model3DTileContent to connect the runtime
-   to the built-in renderable tile-content factory.
+The Model runtime, animation/articulation, custom shader, imagery, reader and
+scene-graph modules have landed. Model, ordinary/classification draw commands,
+pickModel and Model3DTileContent now connect these stages to executable scene
+commands and the built-in model tile factory. The new batch has 185 pinned
+reference cases plus native lifecycle, style and tile-processing coverage.
+Model, ModelDrawCommands and Model3DTileContent remain marked implemented until
+complete end-to-end GPU parity is validated. Terrain clamping and environment
+updates use explicit host hooks.
 
 Instancing and 2D projection still await independent parity validation.
-ScreenSpaceCameraController, Scene/View picking integration and built-in
-renderable tile content remain gaps; the current tileset runtime requires a
-caller-supplied content loader. See [Scene](docs/scene.md) for APIs, validation
-and remaining work.
+ScreenSpaceCameraController and Scene/View picking integration remain gaps.
+The tileset resource loader can use ModelTileFactory for model content.
+See [Scene](docs/scene.md) for APIs, validation and remaining work.
 
 
 ### Workers completion

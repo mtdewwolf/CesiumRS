@@ -1208,3 +1208,34 @@ The next batches build on these:
 - the B3dm, I3dm and Pnts loaders on top of the content parsers;
 - completion of Scene/FrameState and tileset traversal, followed by Primitive,
   globe, picking and effect integrations on the Renderer's typed snapshots.
+
+
+## Model rendering and tile content
+
+`scene::model::Model` connects the existing glTF/tile loaders and pipeline stages
+to `ModelSceneGraph` and owned scene commands. Construct it with `from_components`
+or the asynchronous `from_gltf`, `from_b3dm`, `from_i3dm`, `from_pnts` and
+`from_geo_json` factories. Add it as a `ScenePrimitive`, or drive `update` using
+the real mutable `FrameState`. Ready events run after rendering; callers driving
+frames directly must drain `after_render` callbacks.
+
+`ModelOptions` controls rendering and visibility. `set_style` accepts a
+`Cesium3DTileStyle`; call `make_style_dirty` after mutating that style. Runtime
+node/animation changes, feature tables, custom shaders, picking, ordinary and
+classification draws share the existing model pipeline. `ModelUpdateServices`
+provides host terrain clamping and environment updates.
+
+Install `ModelTileFactory` as the `TilesetResourceLoader` factory for glTF/GLB,
+b3dm, i3dm, pnts and GeoJSON. `Model3DTileContent` handles processing, readiness,
+metrics, feature access, animation and destruction. Composite content forwards
+model configuration and mutable-frame processing to children.
+
+The new command and picking fixtures contain 185 pinned CesiumJS cases. Native
+tests also cover deferred readiness, destruction, transforms, shadows, style and
+pass changes, CPU picking and tile submission. Full end-to-end GPU model parity
+is still unchecked, so Model, ModelDrawCommands and Model3DTileContent are tracked
+as implemented rather than validated ports.
+
+```bash
+cargo test --test scene_model_commands --test scene_model_runtime --test scene_runtime
+```

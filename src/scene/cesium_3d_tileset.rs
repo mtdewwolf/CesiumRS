@@ -77,6 +77,12 @@ impl TileContentMetrics {
 /// Concrete content owns GPU resources and/or CPU meshes. A content loader
 /// reports failure through Result; dropping an in-flight request cancels it.
 pub trait TilesetContent {
+    fn configure_model(&mut self, _state: &TileContentModelState) {}
+    /// Mutable processing lets model content defer readiness until after the
+    /// real frame renders, just like a standalone model's ready event.
+    fn process_with_frame(&mut self, frame: &mut FrameState) -> Result<bool> {
+        self.process(frame)
+    }
     fn is_renderable(&self) -> bool {
         true
     }
@@ -96,6 +102,15 @@ pub trait TilesetContent {
     fn take_expansions(&mut self) -> Vec<TileExpansion> {
         Vec::new()
     }
+}
+#[derive(Clone, Debug)]
+pub struct TileContentModelState {
+    pub model_matrix: Matrix4,
+    pub classification_type: Option<ClassificationType>,
+    pub feature_id_label: String,
+    pub instance_feature_id_label: String,
+    pub enable_pick: bool,
+    pub show_credits_on_screen: bool,
 }
 pub type TileContentFuture = Pin<Box<dyn Future<Output = Result<Box<dyn TilesetContent>>>>>;
 #[derive(Clone)]
@@ -1232,11 +1247,21 @@ impl Cesium3DTileset {
                 break;
             }
             let tile = &mut self.tiles[id];
+            if let Some(content) = tile.content.as_mut() {
+                content.configure_model(&TileContentModelState {
+                    model_matrix: tile.computed_transform,
+                    classification_type: self.classification_type,
+                    feature_id_label: self.feature_id_label.clone(),
+                    instance_feature_id_label: self.instance_feature_id_label.clone(),
+                    enable_pick: self.options.enable_pick,
+                    show_credits_on_screen: self.options.show_credits_on_screen,
+                });
+            }
             let result = tile
                 .content
                 .as_mut()
                 .ok_or_else(|| RuntimeError::new("processing tile has no content"))?
-                .process(frame);
+                .process_with_frame(frame);
             match result {
                 Ok(true) => {
                     tile.state = Cesium3DTileContentState::Ready;
@@ -1500,6 +1525,14 @@ impl Cesium3DTileset {
                 let expired = !tile.content_ready() && tile.expired_content.is_some();
                 let content = if expired { tile.expired_content.as_mut() } else { tile.content.as_mut() };
                 if let Some(content) = content {
+                    content.configure_model(&TileContentModelState {
+                        model_matrix: tile.computed_transform,
+                        classification_type: self.classification_type,
+                        feature_id_label: self.feature_id_label.clone(),
+                        instance_feature_id_label: self.instance_feature_id_label.clone(),
+                        enable_pick: self.options.enable_pick,
+                        show_credits_on_screen: self.options.show_credits_on_screen,
+                    });
                     if let Err(error) = content.update(frame) {
                         if !expired {
                             tile.state = Cesium3DTileContentState::Failed;
