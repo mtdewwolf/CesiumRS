@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Port ModelFeature, ModelFeatureTable and MetadataPipelineStage with the BatchTexture prerequisite. Add stable feature identity, semantic metadata inheritance, callback-based CPU styles, frame-driven feature/pick textures, live pipeline adapters and metadata shader generation for attributes/textures/packed tables. Validate 29 pinned CesiumJS cases and native upload, retry, picking, statistics and lifetime regressions. Restrict metadata to primitive references and correct shared texture transforms, WebGL1 integer declarations and fractional statistics, with native regressions and four real WebGL compile/render checks. Model scene graph and draw integration remain pending.
+
 - Port B3dmLoader, I3dmLoader, PntsLoader and GeoJsonLoader, with 22 pinned component/buffer cases and texture streaming, failure and destruction regressions. Add material, feature selection, metadata picking, CPU styling, batch texture, clipping, picking, wireframe, outline and statistics stages; 28 pinned stage cases check shader sources and uniforms. Instancing and 2D projection stages have native smoke coverage; independent parity validation and full Model runtime integration remain pending.
 
 - Port CompositeEntityCollection with ordered priority layers, stable entity identity, clone/merge, batched changes and availability. Validate 45 pinned scenarios and 10 native lifecycle cases; support nested composites, weak owners, deduplicated subscriptions, retired-callback guards and recoverable application component errors.

@@ -42,6 +42,8 @@ macro_rules! string_enum {
     };
 }
 
+pub mod batch_texture;
+pub use batch_texture::BatchTexture;
 pub mod alpha_mode;
 pub mod clipping_plane;
 pub mod clipping_plane_collection;

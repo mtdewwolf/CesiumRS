@@ -370,8 +370,39 @@ runtime state and native smoke tests. Independent CesiumJS comparison of their
 projection/matrix cases remains pending, so the tracker marks them implemented
 rather than validated.
 
-The complete Model runtime/scene graph, metadata/custom shader/IBL/point-cloud
-styling stages, and model draw-command construction still need porting. The built-in renderable
+`ModelFeature` and `ModelFeatureTable` now manage stable feature handles,
+property/class queries, semantic inheritance and callback-based style evaluation.
+A feature retains a weak reference to its table and a table retains a weak model
+owner, avoiding pick-registry ownership cycles. `BatchTexture` lazily allocates
+show/alpha and quantized color arrays, uploads nearest-sampled feature textures
+at frame boundaries, and owns per-feature pick IDs. Failed uploads can be retried.
+Table `batch_pipeline_source()` and `picking_pipeline_source()` adapters follow
+new textures automatically; `batch_statistics()` supplies live memory accounting.
+Tile-content callers can use `update_with_pick_objects()` to supply their own
+feature objects. The style callbacks accept typed feature handles; expression
+parsing and complete tile-content integration remain separate work.
+
+`MetadataPipelineStage` emits metadata, class and statistics structs and
+initialization for property attributes, property textures and GPU-packed tables.
+It handles property/texture transforms, shared samplers, shader-stage restrictions
+and WebGL1 fallback. Only property attribute/texture IDs referenced by the
+primitive are processed. Shared samplers retain distinct per-reader UV transforms.
+`MetadataUsage` records vertex/fragment property use from
+custom-shader and point-cloud callers so unused table reads can be skipped while
+preserving packed row indices. Twenty-three pinned shader/uniform cases cover
+the compatible source behavior. Dedicated regressions intentionally correct
+CesiumJS 23's invalid WebGL1 unsigned declarations, shared-transform collisions,
+and integer casts that truncate fractional statistics. Integer value transforms
+use typed arithmetic because the shared GLSL transform helper only has floating
+point overloads. Native tests preserve unsigned uniforms beyond float32's exact
+integer range. Four generated WebGL1/WebGL2 scalar/vector shaders were compiled
+and rendered with fractional mean, standard deviation and variance; all produced
+RGBA `[128, 128, 128, 255]` for the expected 1.5/3.0 values. Six further reference
+traces cover feature visibility/color/style/property sequences, and native tests
+cover texture uploads/retries, pick identity, inheritance and destruction.
+
+The complete Model runtime/scene graph, custom shader/IBL/point-cloud styling
+stages, and model draw-command construction still need porting. The built-in renderable
 tile factory also remains pending; the default tileset loader requires a factory
 for renderable tile content.
 

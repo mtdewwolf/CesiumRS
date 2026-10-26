@@ -76,3 +76,9 @@ pub mod skinning_pipeline_stage;
 pub mod tileset_pipeline_stage;
 pub mod vertical_exaggeration_pipeline_stage;
 pub mod wireframe_pipeline_stage;
+
+pub mod model_feature;
+pub mod model_feature_table;
+pub use model_feature::ModelFeature;
+pub use model_feature_table::{ModelFeatureTable, ModelFeatureStyle};
+pub mod metadata_pipeline_stage;

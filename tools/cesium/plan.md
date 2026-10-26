@@ -89,13 +89,30 @@ The 3D Tiles binary content parsers (Cesium3DTileFeatureTable, B3dmParser,
 I3dmParser, PntsParser), the NGA_gpm_local data classes with GltfGpmLoader,
 and the rest of 3D Metadata (property textures, StructuralMetadata and its
 three parsers) are validated, with preprocess3DTileContent,
-TileReplacementQueue and Cesium3DContentGroup; the B3dm/I3dm/Pnts loaders that build
-model components from them remain next. The model prerequisites are
+TileReplacementQueue and Cesium3DContentGroup. B3dm/I3dm/Pnts/GeoJson component loaders are now ported. The model prerequisites are
 complete: ResourceCache, GltfSpzLoader (with a bit-exact port of the pinned SPZ
 decoder), Draco, vertex/index, image/texture loading and ModelComponents are
-validated. GltfLoader now builds model components, and ModelUtility, render resources, the alpha, color, splitter, skinning and morph stages, plus geometry, dequantization, lighting, vertical exaggeration, edge detection, atmosphere, silhouette and classification pass reference validation. The next batch adds four tile component loaders and material, feature/picking, styling, clipping, wireframe, outline and statistics stages. Instancing/2D stages await independent parity validation. The complete Model scene graph, metadata/custom shader/IBL stages and draw-command integration remain next. ScreenSpaceCameraController,
-Scene/View picking integrations and built-in renderable tile content remain
-gaps; the runtime currently requires a caller-supplied content loader. See [Scene](docs/scene.md) for APIs, validation and remaining work.
+validated. GltfLoader now builds model components. ModelUtility, render resources,
+and the initial geometry/material/feature/picking/clipping/styling/statistics
+stages have landed. ModelFeature, ModelFeatureTable, BatchTexture and
+MetadataPipelineStage now provide feature identity, styling textures and metadata
+shader initialization.
+
+Thirty-two Model modules remain unported. The dependency sequence is:
+
+1. ModelRuntimeNode/ModelNode, ModelSkin and ModelMatrixUpdateStage.
+2. Articulation and animation stages/collections, then ModelRuntimePrimitive.
+3. ModelSceneGraph and ordinary/classification draw commands.
+4. Custom shaders and texture management; IBL and point-cloud styling;
+   edge visibility and imagery integration.
+5. ModelReader, pickModel, Model and Model3DTileContent to connect the runtime
+   to the built-in renderable tile-content factory.
+
+Instancing and 2D projection still await independent parity validation.
+ScreenSpaceCameraController, Scene/View picking integration and built-in
+renderable tile content remain gaps; the current tileset runtime requires a
+caller-supplied content loader. See [Scene](docs/scene.md) for APIs, validation
+and remaining work.
 
 
 ### Workers completion
