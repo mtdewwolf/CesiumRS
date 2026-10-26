@@ -16,6 +16,8 @@ pub struct ImageryLayerFeatureInfo {
     pub position: Option<Cartographic>,
     /// The raw feature data.
     pub data: Option<Value>,
+    /// The feature's properties, as the provider reported them.
+    pub properties: Option<Value>,
     /// The imagery layer the feature came from.
     pub imagery_layer: Option<FrameResource>,
 }
