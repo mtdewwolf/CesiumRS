@@ -5,3 +5,10 @@ numeric_enum!(CustomShaderTranslucencyMode: i32 {
     Opaque = 1 => "OPAQUE",
     Translucent = 2 => "TRANSLUCENT",
 });
+
+#[allow(clippy::derivable_impls)]
+impl Default for CustomShaderTranslucencyMode {
+    fn default() -> Self {
+        Self::Inherit
+    }
+}

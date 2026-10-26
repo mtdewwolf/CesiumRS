@@ -1,12 +1,12 @@
 //! Model, node and primitive pipeline resources. Children clone mutable shader
 //! and render-state configuration while GPU attributes and uniform providers
 //! retain shared ownership, matching Cesium's shallow/deep copy boundaries.
-use super::{model_utility, ModelAlphaOptions, ModelLightingOptions, ModelType};
+use super::{model_utility, CustomShader, ModelAlphaOptions, ModelLightingOptions, ModelType};
 use crate::{
     core::{webgl_constants as gl, BoundingSphere, Cartesian3, Color, Matrix4, PrimitiveType, RuntimeError},
     renderer::{
         render_state::DepthTest, Buffer, Gl, Pass, PickId, RenderState, ShaderBuilder, Texture, UniformMap,
-        UniformValue, VertexAttribute,
+        UniformValue, VertexArray, VertexAttribute,
     },
     scene::{model_components as mc, ClassificationType, ColorBlendMode},
 };
@@ -143,6 +143,10 @@ pub struct ModelRenderResources<G: Gl> {
     pub pipeline: PipelineResources,
     pub texture_uniform_map: ModelTextureUniformProviders<G>,
     pub node_render_resources: Vec<Option<NodeRenderResources<G>>>,
+    /// `model.customShader`. The model state itself is GPU-independent, so the
+    /// shared custom shader lives on the GPU render resources and is
+    /// shallow-copied into nodes and primitives, as upstream does.
+    pub custom_shader: Option<Rc<CustomShader<G>>>,
 }
 impl<G: Gl> ModelRenderResources<G> {
     pub fn new(model: Rc<RefCell<ModelUniformState>>) -> Self {
@@ -150,12 +154,14 @@ impl<G: Gl> ModelRenderResources<G> {
             pipeline: PipelineResources::new(model),
             texture_uniform_map: BTreeMap::new(),
             node_render_resources: vec![],
+            custom_shader: None,
         }
     }
 }
 pub struct NodeRenderResources<G: Gl> {
     pub pipeline: PipelineResources,
     pub texture_uniform_map: ModelTextureUniformProviders<G>,
+    pub custom_shader: Option<Rc<CustomShader<G>>>,
     /// Index of the node in the model components/runtime scene graph.
     pub runtime_node: usize,
     pub attributes: Vec<Rc<VertexAttribute<G>>>,
@@ -171,6 +177,7 @@ impl<G: Gl> NodeRenderResources<G> {
         Self {
             pipeline: model.pipeline.clone(),
             texture_uniform_map: model.texture_uniform_map.clone(),
+            custom_shader: model.custom_shader.clone(),
             runtime_node,
             attributes: vec![],
             attribute_index: 1,
@@ -184,6 +191,7 @@ impl<G: Gl> NodeRenderResources<G> {
 pub struct PrimitiveRenderResources<G: Gl> {
     pub pipeline: PipelineResources,
     pub texture_uniform_map: ModelTextureUniformProviders<G>,
+    pub custom_shader: Option<Rc<CustomShader<G>>>,
     pub runtime_node: usize,
     pub runtime_primitive: usize,
     pub attributes: Vec<Rc<VertexAttribute<G>>>,
@@ -207,6 +215,7 @@ pub struct PrimitiveRenderResources<G: Gl> {
     pub lighting_options: ModelLightingOptions,
     pub pick_id: Option<String>,
     pub pick_ids: Vec<Rc<PickId>>,
+    pub edge_geometry: Option<EdgeGeometry<G>>,
 }
 impl<G: Gl> PrimitiveRenderResources<G> {
     pub fn new(
@@ -235,6 +244,7 @@ impl<G: Gl> PrimitiveRenderResources<G> {
         Ok(Self {
             pipeline: node.pipeline.clone(),
             texture_uniform_map: node.texture_uniform_map.clone(),
+            custom_shader: node.custom_shader.clone(),
             runtime_node: node.runtime_node,
             runtime_primitive,
             attributes: node.attributes.clone(),
@@ -261,6 +271,7 @@ impl<G: Gl> PrimitiveRenderResources<G> {
             lighting_options: ModelLightingOptions::default(),
             pick_id: None,
             pick_ids: Vec::new(),
+            edge_geometry: None,
         })
     }
 }
@@ -282,3 +293,10 @@ macro_rules! pipeline_access {
 pipeline_access!(ModelRenderResources);
 pipeline_access!(NodeRenderResources);
 pipeline_access!(PrimitiveRenderResources);
+
+pub struct EdgeGeometry<G: Gl> {
+    pub vertex_array: Option<VertexArray<G>>,
+    pub index_count: usize,
+    pub primitive_type: PrimitiveType,
+    pub pass: Pass,
+}

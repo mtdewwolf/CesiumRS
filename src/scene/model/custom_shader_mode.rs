@@ -12,3 +12,10 @@ impl CustomShaderMode {
         format!("CUSTOM_SHADER_{}", self.as_str())
     }
 }
+
+#[allow(clippy::derivable_impls)]
+impl Default for CustomShaderMode {
+    fn default() -> Self {
+        Self::ModifyMaterial
+    }
+}

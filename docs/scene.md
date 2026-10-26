@@ -125,15 +125,14 @@ and classification plumbing does not supply the unported globe primitives.
 Tileset rendering still needs styling, polygon clipping, imagery, environment/lighting
 and debug rendering. Plane clipping and the mixed-LOD stencil/backface pass
 now execute through the native renderer.
-`SceneComponent` lifecycle hooks do not implement those effects. Existing
-runtime options do not establish support for missing rendering features.
+`SceneGlobe` and `SceneEffect` provide typed lifecycle and query boundaries for globe/terrain and scene-wide effects; `Scene.getHeight` aggregates terrain and collision-enabled 3D Tiles heights. Existing runtime options do not establish support for missing rendering features.
 
 `tools/cesium/fixtures/scene-runtime.mjs` supplies **124 scenarios** (54 Scene,
 five fog sequences with 480 updates, six Atmosphere, 59 tileset).
 `scene-completion.mjs` adds **377 scenarios**: two FrameState, 48 View fitting,
 180 traversal (including clipped trees), 18 implicit expansion, 47 derived shader,
 nine camera movement, 24 dynamic-SSE, 21 clipping plane/collection, 24 stencil
-state and four mixed-LOD command sequences. `tests/scene_runtime.rs` also checks cancellation,
+state and four mixed-LOD command sequences. `scene-frustum-commands.mjs` adds **six FrustumCommands cases**, `scene-view.mjs` adds **184 View fitting/camera-equal cases** and **72 ViewBins binning cases**, and `scene-picking.mjs` adds **20 PickingRay** and **four PickHeightRay cases**. `tests/scene_runtime.rs` also checks cancellation,
 expiration, shared textures, partial content failure, resource bases, CPU
 height queries and renderer/resource ownership. The reference frame harness
 uses explicit host operations and does not establish full browser Scene parity.
@@ -401,10 +400,55 @@ RGBA `[128, 128, 128, 255]` for the expected 1.5/3.0 values. Six further referen
 traces cover feature visibility/color/style/property sequences, and native tests
 cover texture uploads/retries, pick identity, inheritance and destruction.
 
-The complete Model runtime/scene graph, custom shader/IBL/point-cloud styling
-stages, and model draw-command construction still need porting. The built-in renderable
+`CustomShader` parses user GLSL callbacks, uniforms, varyings and built-in
+variable references (`vsInput`/`fsInput` attributes, feature IDs, metadata, material),
+validating shader abbreviations and coordinate spaces against CesiumJS.
+`CustomShaderPipelineStage` generates typed `VertexInput`/`FragmentInput` structs,
+initialization functions, uniform and varying bindings, lighting model overrides and
+translucency mode overrides, with graceful fallback on primitives missing metadata
+properties. `TextureManager` and `TextureUniform` handle frame-driven texture
+upload queues, mipmaps, WebGL1 POT resizing and fallback to context default textures.
+Forty-six pinned reference cases and debug precondition checks pass in
+`tests/scene_model_custom_shader.rs`.
+
+`ModelReader` provides typed buffer deinterleaving, normalization, dequantization,
+oct decoding, index reading, and triangle strip/fan conversions (21 pinned cases in
+`tests/scene_model_reader.rs`). `InstancingPipelineStage`, `SceneMode2DPipelineStage`,
+`ImageBasedLightingPipelineStage`, `PointCloudStylingPipelineStage`, and
+`EdgeVisibilityPipelineStage` are validated against CesiumJS with 15 pinned reference
+cases in `tests/scene_model_stages_batch2.rs`.
+
+`ImageryCoverage`, `ImageryInput`, `ModelImageryMapping`, `ModelPrimitiveImagery`,
+`ModelImagery`, and `ImageryPipelineStage` provide imagery tile coverage calculation,
+boundary shrink/overlap clipping, native coordinate translation/scale, projection texture
+coordinate allocation, and dynamic shader generation (defines, varyings, attributes, uniforms,
+`sampleAndBlend`, and `blendBaseColorWithImagery`). Forty-one pinned reference cases validate
+them in `tests/scene_model_imagery.rs`.
+
+Model draw-command construction, the Model facade,
+and Model3DTileContent remain in progress. The built-in renderable
 tile factory also remains pending; the default tileset loader requires a factory
 for renderable tile content.
+
+## Model runtime and scene graph
+
+`scene::model` provides the glTF runtime transform hierarchy, skinning, articulation, animation, and primitive pipeline stage orchestration:
+
+- `ModelSceneGraph`: builds the runtime scene graph from parsed `ModelComponents`. Manages root node hierarchies, axis correction (glTF Y-up to Cesium Z-up conversions), model matrix updates, 2D/Columbus View map projection, skin matrices, and dirty propagation.
+- `ModelRuntimeNode` & `ModelNode`: non-recursive hierarchy nodes maintaining local TRS transforms, ancestor matrices (`transform_to_root`), computed transforms, and joint matrix caching. `ModelNode` provides the public handle with user-specified matrix overrides, visibility toggles, and transform resets.
+- `ModelSkin`: manages joint node hierarchies and inverse bind matrices, computing joint matrices (`jointWorldTransform * inverseBindMatrix`) for skeletal mesh skinning.
+- `ModelMatrixUpdateStage`: traverses dirty node subtrees non-recursively, updates `transform_to_root` matrices down the tree, and computes draw command model matrices and backface/frontface cull winding reversals under negative determinant transformations.
+- `ModelArticulation` & `ModelArticulationStage`: ports `AGI_articulations` glTF extension support with all 10 stage types (`xTranslate`, `yTranslate`, `zTranslate`, `xRotate`, `yRotate`, `zRotate`, `xScale`, `yScale`, `zScale`, `uniformScale`), clamping to stage limits, and matrix composition.
+- `ModelAnimation`, `ModelAnimationChannel`, & `ModelAnimationCollection`: keyframe animation player with spline evaluation (STEP, LINEAR, and CUBICSPLINE hermite splines for translation, rotation, scale, and morph weights), playback speed/direction, start/stop/update events, and looping modes (`CLAMP`, `REPEAT`, `MIRRORED_REPEAT`) driven by `JulianDate`.
+- `ModelRuntimePrimitive`: selects and configures pipeline stages across 2D/3D modes, morph targets, skins, vertical exaggeration, styles, wireframe, and feature IDs. Adapts runtime draw commands to the host renderer.
+- `MappedPositions`: shares cartographic positions, their explicit count, bounds and ellipsoid with model imagery projection.
+
+Tests: `tests/scene_model_runtime.rs`, 28 pinned reference cases generated from CesiumJS 23.0.0 (`tools/cesium/fixtures/scene-model-runtime.mjs`), plus 4 native lifecycle and ownership test suites.
+
+```bash
+cargo test --test scene_model_runtime
+TZ=UTC node tools/cesium/fixtures/generate.mjs scene-model-runtime
+```
 
 `model_components` supplies the 27 glTF data classes, animated-property enum
 and material defaults. Shared node/skin/sampler references are indices; buffers
@@ -637,6 +681,39 @@ Tests: `tests/scene_particles_imagery.rs`, 65 pinned cases from
 ```bash
 cargo test --test scene_particles_imagery
 TZ=UTC node tools/cesium/fixtures/generate.mjs Particle ParticleEmitter BoxEmitter CircleEmitter ConeEmitter SphereEmitter PointCloudShading ImageryLayerFeatureInfo KeyframeNode ImageryConfiguration DiscardEmptyTileImagePolicy
+```
+
+## Imagery providers
+
+`ImageryProvider` defines the shared trait for imagery layers, returning
+asynchronous [`FrameResource`] image or KTX2 texture futures, tile credits, and
+asynchronous feature pick requests. The shared [`ImageryLoader`] coordinates
+host image fetches and KTX2 transcoding.
+
+- `UrlTemplateImageryProvider`: URL template parameter expansion (`{x}`, `{y}`,
+  `{z}`, `{reverseX}`, `{reverseY}`, `{reverseZ}`, `{s}`, bounding degrees and
+  projected coordinates, custom tags, zero-padding, subdomains) and feature
+  picking with fallback across multiple `GetFeatureInfoFormat` parsers.
+- `GetFeatureInfoFormat`: parses server responses into `ImageryLayerFeatureInfo`
+  for GeoJSON/JSON, ESRI/WFS/GML XML, HTML, and plain text.
+- `DiscardMissingTileImagePolicy`: inspects specified pixel positions against a
+  known missing image signature, automatically disabling the policy when pixels
+  are all transparent or the missing image failed to load.
+- `OpenStreetMapImageryProvider`: OpenStreetMap and Slippy tile templates,
+  retina tile suffixing (`@2x`), and minimum-level tile count validation.
+- `MapboxImageryProvider` and `MapboxStyleImageryProvider`: Mapbox v4 and Styles
+  API raster tile request construction with access token query parameters.
+  `scale_factor: None` omits the Styles API scale suffix; `Some(true)` and
+  `Some(false)` both select `@2x`, matching CesiumJS's defined-value check.
+- `SingleTileImageryProvider`: single geographic imagery tile provider with
+  level-0 caching and asynchronous `from_url` dimension discovery.
+
+Tests: `tests/scene_imagery.rs`, 46 pinned reference cases from
+`tools/cesium/fixtures/scene-imagery.mjs`.
+
+```bash
+cargo test --test scene_imagery
+TZ=UTC node tools/cesium/fixtures/generate.mjs UrlTemplateImageryProvider GetFeatureInfoFormat OpenStreetMapImageryProvider MapboxImageryProvider MapboxStyleImageryProvider SingleTileImageryProvider
 ```
 
 ## Camera
@@ -1073,6 +1150,48 @@ Run the reference replays and native unsupported-rendering regressions with:
 
 ```bash
 cargo test --test scene_interaction_effects --test scene_primitive_runtime
+```
+
+## 3D Tiles styling
+
+`Expression`, `ConditionsExpression`, `StyleExpression` and `Cesium3DTileStyle`
+port the 3D Tiles Styling language parser, evaluator, feature property accessors,
+and GLSL shader generator.
+
+- Expressions are tokenized and parsed into a runtime AST with component-wise vector
+  math, color conversions (CSS names, hex, rgb, rgba, hsl, hsla), regex match/test,
+  and variable substitution.
+- GLSL generation supports boolean/float coercion, vector constructors, ternary
+  conditionals, component swizzling, and translucency detection.
+- `Cesium3DTileStyle` manages the styling expression properties (`show`, `color`,
+  `pointSize`, label formatting), invalidating and caching GLSL shader functions
+  identically to upstream.
+- Tested against pinned CesiumJS engine evaluations with 160 test cases,
+  including null/undefined array coercion, in `tests/scene_style.rs`.
+
+```bash
+cargo test --test scene_style
+TZ=UTC node tools/cesium/fixtures/generate.mjs Expression ConditionsExpression Cesium3DTileStyle
+```
+
+
+### 3D Tiles utilities, statistics, heatmap and attributions
+
+- `Cesium3DTilePassState`: Pass descriptor and camera/culling volume overrides for 3D Tiles update and rendering passes.
+- `Cesium3DTilesetStatistics`: Tracks frame command counts, processing/ready tile counts, triangle/point/feature counts, and texture memory with duplicate texture deduplication for `Model3DTileContent`.
+- `Cesium3DTilesetCache`: Sentinel-partitioned LRU cache over `core::DoublyLinkedList` managing per-frame tile touches and memory trimming passes.
+- `Cesium3DTilesetHeatmap`: Dynamic six-color heatmap palette lerping across min/max tile property ranges or explicit reference intervals.
+- `Cesium3DTileStyleEngine`: Manages tile styling dirtiness, timestamps, and selective style application over visible tiles.
+- `Cesium3DTileOptimizations`: Implements the `checkChildrenWithinParent` bounding box projection algorithm for tile culling optimization hints.
+- `CreditDisplay`: Manages screen and lightbox attributions, frequency-based sorting, delimiter formatting, and Ion logo deduplication.
+- `computeFlyToLocationForRectangle`: Camera height positioning over bounding rectangles adjusted for terrain sample points.
+- `createOsmBuildingsAsync`: Construction options and default styling expressions for Cesium OSM Buildings (Ion asset 96188).
+- `createGooglePhotorealistic3DTileset`: Configuration options, Ion asset 2275207, and Google Maps API 3D Tiles endpoint integration.
+- `ITwinData`: Bentley iTwin Platform mesh export URL transformation, reality data type checks, and geospatial features queries.
+
+```bash
+cargo test --test scene_styling_support
+TZ=UTC node tools/cesium/fixtures/generate.mjs Cesium3DTilesetStatistics Cesium3DTilesetHeatmap Cesium3DTileOptimizations
 ```
 
 ## Next

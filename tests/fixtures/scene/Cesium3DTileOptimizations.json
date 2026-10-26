@@ -1,0 +1,1 @@
+{"module":"Cesium3DTileOptimizations","cesium":"23.0.0","cases":[{"f":"check_children_within_parent_cases","a":[],"r":{"resInside":{"result":true,"hint":1},"resOutside":{"result":false,"hint":0},"resMissingChild":{"result":false,"hint":0},"resMissingParent":{"result":false,"hint":-1}}}]}
