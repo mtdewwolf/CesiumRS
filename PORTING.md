@@ -583,7 +583,7 @@ DataSourceClock/data-source collections and document loaders are next. See
 | Appearance | 205 | ✅ ported | `scene::appearance` | Default render states, appearance trait, and shader composition logic validated against CesiumJS reference. |
 | ArcGisBaseMapType | 13 | ✅ ported | `scene::arc_gis_base_map_type` | Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs. |
 | ArcGisMapServerImageryProvider | 876 | ⬜ todo |  |  |
-| ArcGisMapService | 81 | ⬜ todo |  |  |
+| ArcGisMapService | 81 | 🟡 partial | `scene::arc_gis_map_service` | Configurable service defaults and evaluation-token credit; owned configuration replaces the shared mutable JavaScript namespace. |
 | Atmosphere | 150 | ✅ ported | `scene::atmosphere` | Atmosphere defaults, dynamic lighting, epsilon-based HSB correction and renderer uniform snapshot; direct CesiumJS fixtures in scene_runtime. |
 | AttributeType | 201 | ✅ ported | `scene::attribute_type` | Enum and getMathType (a MathType enum stands in for the constructor), getNumberOfComponents, getAttributeLocationCount and getGlslType. Direct CesiumJS cases in tests/scene_foundations.rs. |
 | AutoExposure | 387 | ⬜ todo |  |  |
