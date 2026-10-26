@@ -3,6 +3,7 @@ import {chromium} from 'playwright-core';
 import {build} from 'esbuild';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
 import {resolve,extname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=resolve(fileURLToPath(new URL('../..',import.meta.url)));
@@ -13,7 +14,7 @@ const imageFixtures=new Map();
 const server=createServer(async(req,res)=>{try{const url=new URL(req.url,'http://localhost');if(url.pathname.startsWith('/image-fixtures/')){if(req.method==='POST'){const chunks=[];for await(const chunk of req)chunks.push(chunk);imageFixtures.set(url.pathname,Buffer.concat(chunks));res.end('ok');return;}if(imageFixtures.has(url.pathname)){res.setHeader('Content-Type','image/'+url.pathname.split('.').at(-1));res.end(imageFixtures.get(url.pathname));return;}}if(url.pathname==='/reference.mjs'){res.setHeader('Content-Type','text/javascript');res.end(bundle.outputFiles[0].contents);return;}if(url.pathname==='/'){res.end('<!doctype html><title>Scene checks</title>');return;}const path=resolve(root,'.'+url.pathname);if(!path.startsWith(root+'/'))throw Error('Invalid path');res.setHeader('Content-Type',({'.js':'text/javascript','.mjs':'text/javascript','.wasm':'application/wasm'})[extname(path)]??'application/octet-stream');res.end(await readFile(path));}catch(e){res.writeHead(404);res.end(e.message);}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
 try{
- browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH??'/usr/bin/chromium',headless:true,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});const page=await browser.newPage();await page.goto(`http://127.0.0.1:${server.address().port}/`);
+ browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH??(existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),headless:true,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});const page=await browser.newPage();await page.goto(`http://127.0.0.1:${server.address().port}/`);
  const result=await page.evaluate(async()=>{try{const wasm=await import('/target/renderer-validation/renderer.js');await wasm.default();const ref=await import('/reference.mjs');
   const canvas=()=>{const c=document.createElement('canvas');c.width=c.height=8;return c;};const attributes={antialias:false,alpha:true,stencil:true,preserveDrawingBuffer:true};const passed=await (await import('/tools/cesium/scene-image-texture-cases.mjs')).run(wasm,ref,canvas,attributes);passed.push(...await (await import('/tools/cesium/scene-geometry-buffer-cases.mjs')).run(wasm,ref,canvas,attributes));passed.push(...await(await import('/tools/cesium/scene-depth-cases.mjs')).run(wasm,ref,canvas,attributes));passed.push(...await(await import('/tools/cesium/scene-oit-cases.mjs')).run(wasm,ref,canvas,attributes));passed.push(...await(await import('/tools/cesium/scene-classification-depth-cases.mjs')).run(wasm,ref,canvas,attributes));
   for(const log of [false,true])for(const hdr of [false,true])for(const pass of ['render','pick','depth'])for(const target of [false,true]){

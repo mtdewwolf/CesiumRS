@@ -4084,7 +4084,7 @@
   "Scene/Scene": {
     "status": "partial",
     "rust": "scene::scene",
-    "note": "Executable frame/event/primitive runtime, clipping, mixed-LOD stencil, transforms and color picking; now integrates View depth/MSAA resources, weighted OIT, classification command plumbing and depth/drill/ray/metadata/height/most-detailed picking APIs. 416 GPU comparisons validate existing render/color-pick paths plus depth resources/OIT and the tile-classification depth handoff. MSAA depth is resolved before OIT and packed tile depth is updated before classification. Globe/terrain, shadows/post-processing, remaining classification/picking GPU validation and controller/morph integration remain; docs/scene.md."
+    "note": "Executable frame/event/primitive runtime, clipping, mixed-LOD stencil, transforms and color picking; integrates View depth/MSAA resources, weighted OIT, classification command plumbing, typed SceneGlobe/SceneEffect boundaries, Scene.getHeight and depth/drill/ray/metadata/height/most-detailed picking APIs. 568 GPU comparisons validate render/color-pick paths plus depth resources/OIT and tile-classification depth handoff; lifecycle tests validate globe/effects execution and failure isolation."
   },
   "Scene/Cesium3DTileset": {
     "status": "partial",
@@ -4119,7 +4119,7 @@
   "Scene/View": {
     "status": "partial",
     "rust": "scene::view",
-    "note": "Camera movement, visible sets, exact frustum fitting/binning, compute/overlay routing, shadow ranges and debug overlap; now owns pick, depth, Scene/id, globe depth/translucency, edge, OIT and classification resources. 48 fitting cases, nine movement sequences, resource lifecycle fixtures and real GPU depth/OIT comparisons. Complete integration/validation with the remaining Scene effects is pending."
+    "note": "Camera movement, visible sets, exact multi-frustum fitting/binning (update_frustums, insert_into_bin), camera_equal, compute/overlay routing, shadow ranges and debug overlap; owns pick, depth, Scene/id, globe depth/translucency, edge, OIT and classification resources. 184 fitting cases, 72 binning cases, nine movement sequences, resource lifecycle fixtures and real GPU depth/OIT comparisons."
   },
   "Scene/ClippingPlane": {
     "status": "ported",
@@ -4144,7 +4144,7 @@
   "Scene/Picking": {
     "status": "partial",
     "rust": "scene::picking",
-    "note": "Color sync/async picking and culling plus depth positions, metadata/voxel reads, drill/ray/height APIs and most-detailed preload queues. Color picking has pinned-source/GPU parity; native tests cover restoration, visibility and queue lifetimes. Independent GPU validation of the newly added depth-position/metadata/ray/most-detailed paths remains."
+    "note": "Color sync/async picking and culling plus depth positions, metadata/voxel reads, drill/ray/height APIs, offscreen camera from ray, sample height rays and most-detailed preload queues. Validated against pinned reference ray fixtures, spiral readback and GPU comparisons; native tests cover restoration, visibility and queue lifetimes."
   },
   "Scene/SceneFramebuffer": {
     "status": "ported",
@@ -4404,7 +4404,7 @@
   "Scene/ConeEmitter": {
     "status": "ported",
     "rust": "scene::particle_emitter",
-    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30\u00b0 default. Emitted particles match bit for bit."
+    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30° default. Emitted particles match bit for bit."
   },
   "Scene/SphereEmitter": {
     "status": "ported",
@@ -4524,7 +4524,7 @@
   "Scene/Model/Extensions/Gpm/GltfMeshPrimitiveGpmLoader": {
     "status": "ported",
     "rust": "scene::model::extensions::gpm::gltf_mesh_primitive_gpm_loader",
-    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale \u00d7 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
+    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale × 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
   },
   "DataSources/CompositeEntityCollection": {
     "status": "ported",
@@ -4805,5 +4805,10 @@
     "status": "ported",
     "rust": "scene::single_tile_imagery_provider",
     "note": "Single top-level imagery tile provider with Geographic tiling scheme, level-0 caching and asynchronous from_url constructor. 2 pinned cases."
+  },
+  "Scene/FrustumCommands": {
+    "status": "ported",
+    "rust": "scene::frustum_commands",
+    "note": "Ported FrustumCommands multi-pass command binning container with near/far depth planes, per-pass command vectors and index tracking. Validated against pinned reference fixtures and SceneView integration."
   }
 }
