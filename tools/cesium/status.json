@@ -4404,7 +4404,7 @@
   "Scene/ConeEmitter": {
     "status": "ported",
     "rust": "scene::particle_emitter",
-    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30\u00b0 default. Emitted particles match bit for bit."
+    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30° default. Emitted particles match bit for bit."
   },
   "Scene/SphereEmitter": {
     "status": "ported",
@@ -4524,7 +4524,7 @@
   "Scene/Model/Extensions/Gpm/GltfMeshPrimitiveGpmLoader": {
     "status": "ported",
     "rust": "scene::model::extensions::gpm::gltf_mesh_primitive_gpm_loader",
-    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale \u00d7 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
+    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale × 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
   },
   "DataSources/CompositeEntityCollection": {
     "status": "ported",
@@ -4765,5 +4765,65 @@
     "status": "ported",
     "rust": "scene::model::metadata_pipeline_stage",
     "note": "23 pinned shader/uniform cases plus native regressions for primitive references, independent UV transforms, WebGL1 signed types and fractional statistics. Corrects known CesiumJS 23 generator bugs; integer transforms use typed arithmetic. Four real WebGL compile/render checks preserve 1.5 statistics. Usage sets come from custom shader/point-cloud callers; unsigned uniforms retain exact integer precision."
+  },
+  "Scene/Model/ModelRuntimeNode": {
+    "status": "ported",
+    "rust": "scene::model::model_runtime_node",
+    "note": "Runtime node hierarchy, local/computed transform tracking, TRS updates, joint matrices, and stage pipeline execution."
+  },
+  "Scene/Model/ModelNode": {
+    "status": "ported",
+    "rust": "scene::model::model_node",
+    "note": "Public node wrapper with user matrix overrides, visibility toggles, and original transform restoration."
+  },
+  "Scene/Model/ModelSkin": {
+    "status": "ported",
+    "rust": "scene::model::model_skin",
+    "note": "Joint hierarchy mapping, inverse bind matrices, and joint matrix computation."
+  },
+  "Scene/Model/ModelMatrixUpdateStage": {
+    "status": "ported",
+    "rust": "scene::model::model_matrix_update_stage",
+    "note": "Hierarchical transform propagation, dirty node traversal, and draw command modelMatrix/cullFace updates validated against CesiumJS fixtures."
+  },
+  "Scene/Model/ModelArticulation": {
+    "status": "ported",
+    "rust": "scene::model::model_articulation",
+    "note": "AGI_articulations support with ordered stage execution and dirty flag propagation validated against CesiumJS fixtures."
+  },
+  "Scene/Model/ModelArticulationStage": {
+    "status": "ported",
+    "rust": "scene::model::model_articulation_stage",
+    "note": "All 10 articulation stage types (translation, rotation, uniform/non-uniform scale) with min/max clamping validated against CesiumJS fixtures."
+  },
+  "Scene/Model/ModelAnimation": {
+    "status": "ported",
+    "rust": "scene::model::model_animation",
+    "note": "Gltf animation evaluation, channel execution, playback timing, looping, and lifecycle events."
+  },
+  "Scene/Model/ModelAnimationChannel": {
+    "status": "ported",
+    "rust": "scene::model::model_animation_channel",
+    "note": "TRS spline sampler with STEP, LINEAR, and CUBICSPLINE hermite interpolation validated against CesiumJS fixtures."
+  },
+  "Scene/Model/ModelAnimationCollection": {
+    "status": "ported",
+    "rust": "scene::model::model_animation_collection",
+    "note": "Animation collection management, JulianDate animation time advancing, and event dispatch."
+  },
+  "Scene/Model/ModelRuntimePrimitive": {
+    "status": "ported",
+    "rust": "scene::model::model_runtime_primitive",
+    "note": "Pipeline stage selection and configuration across 2D/3D modes, morphs, skins, vertical exaggeration, styles, and wireframes validated against CesiumJS fixtures."
+  },
+  "Scene/Model/MappedPositions": {
+    "status": "ported",
+    "rust": "scene::model::mapped_positions",
+    "note": "Geographic rectangle cartographic position mapping on ellipsoids validated against CesiumJS fixtures."
+  },
+  "Scene/Model/ModelSceneGraph": {
+    "status": "ported",
+    "rust": "scene::model::model_scene_graph",
+    "note": "Scene graph construction from ModelComponents, hierarchy evaluation, axis correction, 2D projection, and dirty propagation."
   }
 }

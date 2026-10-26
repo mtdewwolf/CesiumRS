@@ -80,5 +80,35 @@ pub mod wireframe_pipeline_stage;
 pub mod model_feature;
 pub mod model_feature_table;
 pub use model_feature::ModelFeature;
-pub use model_feature_table::{ModelFeatureTable, ModelFeatureStyle};
+pub use model_feature_table::{ModelFeatureStyle, ModelFeatureTable};
 pub mod metadata_pipeline_stage;
+
+pub mod mapped_positions;
+pub use mapped_positions::MappedPositions;
+pub mod model_animation;
+pub mod model_animation_channel;
+pub mod model_animation_collection;
+pub use model_animation::{AnimationTimeCallback, ModelAnimation, ModelAnimationEvent, ModelAnimationOptions};
+pub use model_animation_channel::{
+    AnimationChannelSpline, Cartesian3Spline, ModelAnimationChannel, QuaternionAnimationSpline, ScalarSpline,
+};
+pub use model_animation_collection::ModelAnimationCollection;
+pub mod model_articulation;
+pub mod model_articulation_stage;
+pub use model_articulation::ModelArticulation;
+pub use model_articulation_stage::ModelArticulationStage;
+pub mod model_matrix_update_stage;
+pub use model_matrix_update_stage::ModelMatrixUpdateStage;
+pub mod model_node;
+pub use model_node::ModelNode;
+pub mod model_runtime_node;
+pub use model_runtime_node::{ModelRuntimeNode, NodePipelineStage, NodeUpdateStage, TransformParameters};
+pub mod model_runtime_primitive;
+pub use model_runtime_primitive::{FeatureIdFlags, ModelRuntimePrimitive, PrimitivePipelineStage, RuntimeDrawCommand};
+pub mod model_scene_graph;
+pub use model_scene_graph::{
+    CustomShaderPipelineProperties, ModelBoundingVolumes, ModelPipelineProperties, ModelPipelineStage, ModelSceneGraph,
+    ModelSceneGraphOptions, PointCloudShadingProperties,
+};
+pub mod model_skin;
+pub use model_skin::ModelSkin;
