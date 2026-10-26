@@ -125,15 +125,14 @@ and classification plumbing does not supply the unported globe primitives.
 Tileset rendering still needs styling, polygon clipping, imagery, environment/lighting
 and debug rendering. Plane clipping and the mixed-LOD stencil/backface pass
 now execute through the native renderer.
-`SceneComponent` lifecycle hooks do not implement those effects. Existing
-runtime options do not establish support for missing rendering features.
+`SceneGlobe` and `SceneEffect` provide typed lifecycle and query boundaries for globe/terrain and scene-wide effects; `Scene.getHeight` aggregates terrain and collision-enabled 3D Tiles heights. Existing runtime options do not establish support for missing rendering features.
 
 `tools/cesium/fixtures/scene-runtime.mjs` supplies **124 scenarios** (54 Scene,
 five fog sequences with 480 updates, six Atmosphere, 59 tileset).
 `scene-completion.mjs` adds **377 scenarios**: two FrameState, 48 View fitting,
 180 traversal (including clipped trees), 18 implicit expansion, 47 derived shader,
 nine camera movement, 24 dynamic-SSE, 21 clipping plane/collection, 24 stencil
-state and four mixed-LOD command sequences. `tests/scene_runtime.rs` also checks cancellation,
+state and four mixed-LOD command sequences. `scene-frustum-commands.mjs` adds **six FrustumCommands cases**, `scene-view.mjs` adds **184 View fitting/camera-equal cases** and **72 ViewBins binning cases**, and `scene-picking.mjs` adds **20 PickingRay** and **four PickHeightRay cases**. `tests/scene_runtime.rs` also checks cancellation,
 expiration, shared textures, partial content failure, resource bases, CPU
 height queries and renderer/resource ownership. The reference frame harness
 uses explicit host operations and does not establish full browser Scene parity.
@@ -401,8 +400,33 @@ RGBA `[128, 128, 128, 255]` for the expected 1.5/3.0 values. Six further referen
 traces cover feature visibility/color/style/property sequences, and native tests
 cover texture uploads/retries, pick identity, inheritance and destruction.
 
-The complete Model runtime/scene graph, custom shader/IBL/point-cloud styling
-stages, and model draw-command construction still need porting. The built-in renderable
+`CustomShader` parses user GLSL callbacks, uniforms, varyings and built-in
+variable references (`vsInput`/`fsInput` attributes, feature IDs, metadata, material),
+validating shader abbreviations and coordinate spaces against CesiumJS.
+`CustomShaderPipelineStage` generates typed `VertexInput`/`FragmentInput` structs,
+initialization functions, uniform and varying bindings, lighting model overrides and
+translucency mode overrides, with graceful fallback on primitives missing metadata
+properties. `TextureManager` and `TextureUniform` handle frame-driven texture
+upload queues, mipmaps, WebGL1 POT resizing and fallback to context default textures.
+Twenty-two pinned reference cases and debug precondition checks pass in
+`tests/scene_model_custom_shader.rs`.
+
+`ModelReader` provides typed buffer deinterleaving, normalization, dequantization,
+oct decoding, index reading, and triangle strip/fan conversions (21 pinned cases in
+`tests/scene_model_reader.rs`). `InstancingPipelineStage`, `SceneMode2DPipelineStage`,
+`ImageBasedLightingPipelineStage`, `PointCloudStylingPipelineStage`, and
+`EdgeVisibilityPipelineStage` are validated against CesiumJS with 15 pinned reference
+cases in `tests/scene_model_stages_batch2.rs`.
+
+`ImageryCoverage`, `ImageryInput`, `ModelImageryMapping`, `ModelPrimitiveImagery`,
+`ModelImagery`, and `ImageryPipelineStage` provide imagery tile coverage calculation,
+boundary shrink/overlap clipping, native coordinate translation/scale, projection texture
+coordinate allocation, and dynamic shader generation (defines, varyings, attributes, uniforms,
+`sampleAndBlend`, and `blendBaseColorWithImagery`). Forty-one pinned reference cases validate
+them in `tests/scene_model_imagery.rs`.
+
+The complete Model runtime/scene graph, model draw-command construction, Model facade,
+and Model3DTileContent remain in progress. The built-in renderable
 tile factory also remains pending; the default tileset loader requires a factory
 for renderable tile content.
 
@@ -637,6 +661,39 @@ Tests: `tests/scene_particles_imagery.rs`, 65 pinned cases from
 ```bash
 cargo test --test scene_particles_imagery
 TZ=UTC node tools/cesium/fixtures/generate.mjs Particle ParticleEmitter BoxEmitter CircleEmitter ConeEmitter SphereEmitter PointCloudShading ImageryLayerFeatureInfo KeyframeNode ImageryConfiguration DiscardEmptyTileImagePolicy
+```
+
+## Imagery providers
+
+`ImageryProvider` defines the shared trait for imagery layers, returning
+asynchronous [`FrameResource`] image or KTX2 texture futures, tile credits, and
+asynchronous feature pick requests. The shared [`ImageryLoader`] coordinates
+host image fetches and KTX2 transcoding.
+
+- `UrlTemplateImageryProvider`: URL template parameter expansion (`{x}`, `{y}`,
+  `{z}`, `{reverseX}`, `{reverseY}`, `{reverseZ}`, `{s}`, bounding degrees and
+  projected coordinates, custom tags, zero-padding, subdomains) and feature
+  picking with fallback across multiple `GetFeatureInfoFormat` parsers.
+- `GetFeatureInfoFormat`: parses server responses into `ImageryLayerFeatureInfo`
+  for GeoJSON/JSON, ESRI/WFS/GML XML, HTML, and plain text.
+- `DiscardMissingTileImagePolicy`: inspects specified pixel positions against a
+  known missing image signature, automatically disabling the policy when pixels
+  are all transparent or the missing image failed to load.
+- `OpenStreetMapImageryProvider`: OpenStreetMap and Slippy tile templates,
+  retina tile suffixing (`@2x`), and minimum-level tile count validation.
+- `MapboxImageryProvider` and `MapboxStyleImageryProvider`: Mapbox v4 and Styles
+  API raster tile request construction with access token query parameters.
+  `scale_factor: None` omits the Styles API scale suffix; `Some(true)` and
+  `Some(false)` both select `@2x`, matching CesiumJS's defined-value check.
+- `SingleTileImageryProvider`: single geographic imagery tile provider with
+  level-0 caching and asynchronous `from_url` dimension discovery.
+
+Tests: `tests/scene_imagery.rs`, 46 pinned reference cases from
+`tools/cesium/fixtures/scene-imagery.mjs`.
+
+```bash
+cargo test --test scene_imagery
+TZ=UTC node tools/cesium/fixtures/generate.mjs UrlTemplateImageryProvider GetFeatureInfoFormat OpenStreetMapImageryProvider MapboxImageryProvider MapboxStyleImageryProvider SingleTileImageryProvider
 ```
 
 ## Camera

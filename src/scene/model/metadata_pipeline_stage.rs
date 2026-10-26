@@ -17,6 +17,12 @@ use std::{
     rc::Rc,
 };
 type Result<T> = std::result::Result<T, RuntimeError>;
+/// The struct names the metadata stage declares, used by the custom-shader
+/// stage's generated input structs.
+pub const STRUCT_NAME_METADATA: &str = "Metadata";
+pub const STRUCT_NAME_METADATA_CLASS: &str = "MetadataClass";
+pub const STRUCT_NAME_METADATA_STATISTICS: &str = "MetadataStatistics";
+
 const SIGNATURE:&str="void initializeMetadata(FeatureIds featureIds, out Metadata metadata, out MetadataClass metadataClass, out MetadataStatistics metadataStatistics, ProcessedAttributes attributes)";
 const CLASS_FIELDS: [(&str, &str); 4] =
     [("noData", "noData"), ("default", "defaultValue"), ("min", "minValue"), ("max", "maxValue")];
