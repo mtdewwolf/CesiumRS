@@ -95,11 +95,18 @@ fn declare_base(shader: &mut ShaderBuilder) {
 }
 fn float_type(ty: &str) -> &str {
     match ty {
-        "int" => "float",
-        "ivec2" => "vec2",
-        "ivec3" => "vec3",
-        "ivec4" => "vec4",
+        "int" | "uint" => "float",
+        "ivec2" | "uvec2" => "vec2",
+        "ivec3" | "uvec3" => "vec3",
+        "ivec4" | "uvec4" => "vec4",
         _ => ty,
+    }
+}
+fn statistics_field_type<'a>(field: &str, ty: &'a str) -> &'a str {
+    if ["mean", "standardDeviation", "variance"].contains(&field) {
+        float_type(ty)
+    } else {
+        ty
     }
 }
 fn declare_types<G: Gl>(shader: &mut ShaderBuilder, infos: &[Info<'_, G>]) -> Result<()> {
@@ -127,8 +134,7 @@ fn declare_types<G: Gl>(shader: &mut ShaderBuilder, infos: &[Info<'_, G>]) -> Re
         let name = format!("{ty}MetadataStatistics");
         shader.add_struct(&name, &name, D::BOTH);
         for (spec, field) in STAT_FIELDS {
-            let field_type =
-                if ["mean", "standardDeviation", "variance"].contains(&spec) { float_type(ty) } else { ty };
+            let field_type = statistics_field_type(spec, ty);
             shader.add_struct_field(&name, field_type, field)?;
         }
     }
@@ -169,7 +175,13 @@ fn transform<G: Gl>(r: &mut PrimitiveRenderResources<G>, info: &Info<'_, G>, exp
         let v = uniform(value, &info.glsl);
         r.uniform_map.insert(name, Rc::new(move || v.clone()));
     }
-    format!("czm_valueTransform(u_{}_offset, u_{}_scale, {expression})", info.name, info.name)
+    if info.glsl == "int" || info.glsl == "uint" || info.glsl.starts_with("ivec") || info.glsl.starts_with("uvec") {
+        // czm_valueTransform only overloads float/vector/matrix types. Keep
+        // integer transforms in their declared type, including unsigned bits.
+        format!("(u_{}_offset + u_{}_scale * ({expression}))", info.name, info.name)
+    } else {
+        format!("czm_valueTransform(u_{}_offset, u_{}_scale, {expression})", info.name, info.name)
+    }
 }
 fn append(shader: &mut ShaderBuilder, dest: D, lines: &[String]) -> Result<()> {
     if dest.includes_vertex_shader() {
@@ -213,7 +225,7 @@ fn class_and_statistics<G: Gl>(shader: &mut ShaderBuilder, info: &Info<'_, G>) -
                     format!(
                         "metadataStatistics.{}.{field} = {}({});",
                         info.name,
-                        info.glsl,
+                        statistics_field_type(spec, &info.glsl),
                         MetadataValue::from_json(v).js_string()
                     )
                 })
@@ -248,15 +260,18 @@ fn property<G: Gl + 'static>(
             metadata_fields(&mut r.shader_builder, D::FRAGMENT, &info.glsl, &info.name)?;
             let coord = format!("attributes.texCoord_{}", crate::core::math::js_number_to_string(reader.tex_coord));
             let coord = if let Some(matrix) = reader.transform.filter(|m| *m != Matrix3::IDENTITY) {
-                let uniform = format!("{name}Transform");
-                r.shader_builder.add_uniform("mat3", &uniform, D::FRAGMENT);
-                r.uniform_map.insert(
-                    uniform.clone(),
-                    Rc::new(move || UniformValue::Matrix {
-                        dimension: 3,
-                        values: matrix.0.iter().map(|v| *v as f32).collect(),
-                    }),
-                );
+                // Share samplers, but only share transforms when their matrix
+                // values match. Different property readers can have different UVs.
+                let value = UniformValue::Matrix { dimension: 3, values: matrix.0.iter().map(|v| *v as f32).collect() };
+                let base = format!("{name}Transform");
+                let uniform = match r.uniform_map.get(&base) {
+                    Some(provider) if provider() != value => format!("{base}_{}", info.name),
+                    _ => base,
+                };
+                if !r.uniform_map.contains_key(&uniform) {
+                    r.shader_builder.add_uniform("mat3", &uniform, D::FRAGMENT);
+                    r.uniform_map.insert(uniform.clone(), Rc::new(move || value.clone()));
+                }
                 format!("vec2({uniform} * vec3({coord}, 1.0))")
             } else {
                 coord
@@ -319,7 +334,9 @@ pub fn process<G: Gl + 'static>(
     let mut warnings = vec![];
     let mut infos = vec![];
     if let Some(metadata) = metadata {
-        for attribute in metadata.property_attributes() {
+        for &id in &primitive.property_attribute_ids {
+            let attribute =
+                metadata.get_property_attribute(id).ok_or_else(|| error(format!("Missing property attribute {id}")))?;
             for (name, p) in attribute.properties().iter() {
                 let attr_name =
                     p.attribute().and_then(Value::as_str).ok_or_else(|| error("Missing metadata attribute name"))?;
@@ -337,7 +354,9 @@ pub fn process<G: Gl + 'static>(
                 });
             }
         }
-        for texture in metadata.property_textures() {
+        for &id in &primitive.property_texture_ids {
+            let texture =
+                metadata.get_property_texture(id).ok_or_else(|| error(format!("Missing property texture {id}")))?;
             for (name, p) in texture.properties().iter() {
                 let class = p.class_property();
                 let reader = p.texture_reader();
@@ -346,7 +365,13 @@ pub fn process<G: Gl + 'static>(
                 }
                 infos.push(Info {
                     name: model_utility::sanitize_glsl_identifier(name),
-                    glsl: class.get_glsl_type().map_err(error)?.unwrap_or("undefined").into(),
+                    glsl: if options.webgl2 {
+                        class.get_glsl_type().map_err(error)?
+                    } else {
+                        class.get_glsl_type_webgl1()
+                    }
+                    .unwrap_or("undefined")
+                    .into(),
                     class,
                     statistics: stats(options.statistics, &texture.class().id, name),
                     destination: D::FRAGMENT,

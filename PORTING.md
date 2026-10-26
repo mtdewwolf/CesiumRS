@@ -823,7 +823,7 @@ visualizers and document loaders. See [DataSources](docs/data-sources.md).
 | Model/MappedPositions | 85 | ⬜ todo |  |  |
 | Model/MaterialPipelineStage | 887 | ✅ ported | `scene::model::material_pipeline_stage` | Eight pinned material cases: lighting, PBR/extensions, alpha, culling and point diameter; native extension coverage. Texture readers are captured when the stage runs. |
 | Model/MetadataPickingPipelineStage | 97 | ✅ ported | `scene::model::metadata_picking_pipeline_stage` | Pinned default metadata-picking defines and generated function, compatible with DerivedCommand substitutions. |
-| Model/MetadataPipelineStage | 1074 | ✅ ported | `scene::model::metadata_pipeline_stage` | 21 pinned shader/uniform cases for attributes, textures, packed tables, value transforms, class/statistics structs, texture transforms, WebGL1 fallbacks and usage pruning. Usage sets are supplied by custom shader/point-cloud callers; includes exact unsigned uniforms. |
+| Model/MetadataPipelineStage | 1074 | ✅ ported | `scene::model::metadata_pipeline_stage` | 23 pinned shader/uniform cases plus native regressions for primitive references, independent UV transforms, WebGL1 signed types and fractional statistics. Corrects known CesiumJS 23 generator bugs; integer transforms use typed arithmetic. Four real WebGL compile/render checks preserve 1.5 statistics. Usage sets come from custom shader/point-cloud callers; unsigned uniforms retain exact integer precision. |
 | Model/Model | 3341 | ⬜ todo |  |  |
 | Model/Model3DTileContent | 552 | ⬜ todo |  |  |
 | Model/ModelAlphaOptions | 27 | ✅ ported | `scene::model::model_alpha_options` | Pass and alpha cutoff, both unset by default. Direct CesiumJS cases in tests/scene_foundations.rs. |

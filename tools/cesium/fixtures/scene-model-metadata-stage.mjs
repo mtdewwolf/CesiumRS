@@ -23,13 +23,21 @@ export function sceneModelMetadataStage() {
   const used=(a)=>Object.fromEntries(a.map(v=>[v,true]));
   const {model,nodeResources}=resources({structuralMetadata:metadata,content:statistics?{tileset:{metadataExtension:{statistics}}}:undefined,customShader:{usedVariablesVertex:{metadataSet:used(c.usageVertex)},usedVariablesFragment:{metadataSet:used(c.usageFragment)}}});
   const primitive=basePrimitive(c.attrs.map(a=>({...a,count:4,constant:a.type==='VEC3'?new Cartesian3(0,0,0):0})));
+  primitive.propertyAttributeIds=c.kind==='attribute'?[0]:[];primitive.propertyTextureIds=c.kind==='texture'?[0]:[];
   const f=c.textureFeature?new MC.FeatureIdTexture():new MC.FeatureIdAttribute();Object.assign(f,{propertyTableId:0,positionalLabel:'featureId_0'});if(c.textureFeature) f.textureReader={};primitive.featureIds=[f];
   const p=primitiveResources(nodeResources,primitive);Stage.process(p,primitive,{context:{webgl2:c.webgl2}});
   return {...shaderSnapshot(p),uniforms:Object.fromEntries(Object.entries(p.uniformMap).map(([k,f])=>{const v=f();return [k,v?.marker?null:uv(v)];}))};
  }
- for(const kind of ['empty','attribute','texture','table']) for(const webgl2 of [false,true]) for(const stats of [false,true]) {const c=descriptor(kind,{webgl2,stats,transform:true,usageVertex:['temperature'],usageFragment:['code','tint']});s.add('stage',[c],run);}
+ for(const kind of ['empty','attribute','texture','table']) for(const webgl2 of [false,true]) for(const stats of [false,true]) {if(kind==='texture'&&!webgl2)continue;const c=descriptor(kind,{webgl2,stats,transform:true,usageVertex:['temperature'],usageFragment:['code','tint']});s.add('stage',[c],run);}
  for(const opts of [{},{usageVertex:['temperature']},{usageFragment:['temperature'],noTexture:true},{usageVertex:['temperature'],usageFragment:['temperature'],textureFeature:true}]) s.add('stage',[descriptor('table',opts)],run);
- const unsigned=descriptor('texture');unsigned.schema.classes.sensor.properties.code={type:'SCALAR',componentType:'UINT32',offset:16777217,scale:3};unsigned.extension.propertyTextures[0].properties.code.channels=[0,1,2,3];s.add('stage',[unsigned],run);
+ // Cesium 23 emits invalid unsigned GLSL in its WebGL1 property-texture path.
+ // Those cases are tested against the corrected shader contract in Rust rather
+ // than treating the upstream invalid output as a parity oracle.
+ for(const stats of [false,true]) s.add('stage',[descriptor('texture',{stats})],run);
+ for(const usageFragment of [[],['temperature','code','tint']]) s.add('stage',[descriptor('table',{stats:true,usageVertex:['temperature','code','tint'],usageFragment})],run);
+ // Integer value transforms also need typed arithmetic: the pinned helper only
+ // provides float overloads. Exact unsigned transform behavior has native coverage.
+ s.add('stage',[descriptor('table',{usageFragment:['code']})],run);
  [ContextLimits._minimumAliasedLineWidth,ContextLimits._maximumAliasedLineWidth]=old;
  if(s.cases.some(c=>c.r.throws))throw Error(JSON.stringify(s.cases.filter(c=>c.r.throws)));return s;
 }

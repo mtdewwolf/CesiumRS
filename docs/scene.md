@@ -385,10 +385,19 @@ parsing and complete tile-content integration remain separate work.
 `MetadataPipelineStage` emits metadata, class and statistics structs and
 initialization for property attributes, property textures and GPU-packed tables.
 It handles property/texture transforms, shared samplers, shader-stage restrictions
-and WebGL1 fallback. `MetadataUsage` records vertex/fragment property use from
+and WebGL1 fallback. Only property attribute/texture IDs referenced by the
+primitive are processed. Shared samplers retain distinct per-reader UV transforms.
+`MetadataUsage` records vertex/fragment property use from
 custom-shader and point-cloud callers so unused table reads can be skipped while
-preserving packed row indices. Twenty-one pinned shader/uniform cases include
-unsigned transforms beyond float32's exact integer range. Six further reference
+preserving packed row indices. Twenty-three pinned shader/uniform cases cover
+the compatible source behavior. Dedicated regressions intentionally correct
+CesiumJS 23's invalid WebGL1 unsigned declarations, shared-transform collisions,
+and integer casts that truncate fractional statistics. Integer value transforms
+use typed arithmetic because the shared GLSL transform helper only has floating
+point overloads. Native tests preserve unsigned uniforms beyond float32's exact
+integer range. Four generated WebGL1/WebGL2 scalar/vector shaders were compiled
+and rendered with fractional mean, standard deviation and variance; all produced
+RGBA `[128, 128, 128, 255]` for the expected 1.5/3.0 values. Six further reference
 traces cover feature visibility/color/style/property sequences, and native tests
 cover texture uploads/retries, pick identity, inheritance and destruction.
 
