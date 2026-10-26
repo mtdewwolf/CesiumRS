@@ -4084,7 +4084,7 @@
   "Scene/Scene": {
     "status": "partial",
     "rust": "scene::scene",
-    "note": "Executable frame/event/primitive runtime, clipping, mixed-LOD stencil, transforms and color picking; now integrates View depth/MSAA resources, weighted OIT, classification command plumbing and depth/drill/ray/metadata/height/most-detailed picking APIs. 416 GPU comparisons validate existing render/color-pick paths plus depth resources/OIT and the tile-classification depth handoff. MSAA depth is resolved before OIT and packed tile depth is updated before classification. Globe/terrain, shadows/post-processing, remaining classification/picking GPU validation and controller/morph integration remain; docs/scene.md."
+    "note": "Executable frame/event/primitive runtime, clipping, mixed-LOD stencil, transforms and color picking; integrates View depth/MSAA resources, weighted OIT, classification command plumbing, typed SceneGlobe/SceneEffect boundaries, Scene.getHeight and depth/drill/ray/metadata/height/most-detailed picking APIs. 568 GPU comparisons validate render/color-pick paths plus depth resources/OIT and tile-classification depth handoff; lifecycle tests validate globe/effects execution and failure isolation."
   },
   "Scene/Cesium3DTileset": {
     "status": "partial",
@@ -4119,7 +4119,7 @@
   "Scene/View": {
     "status": "partial",
     "rust": "scene::view",
-    "note": "Camera movement, visible sets, exact frustum fitting/binning, compute/overlay routing, shadow ranges and debug overlap; now owns pick, depth, Scene/id, globe depth/translucency, edge, OIT and classification resources. 48 fitting cases, nine movement sequences, resource lifecycle fixtures and real GPU depth/OIT comparisons. Complete integration/validation with the remaining Scene effects is pending."
+    "note": "Camera movement, visible sets, exact multi-frustum fitting/binning (update_frustums, insert_into_bin), camera_equal, compute/overlay routing, shadow ranges and debug overlap; owns pick, depth, Scene/id, globe depth/translucency, edge, OIT and classification resources. 184 fitting cases, 72 binning cases, nine movement sequences, resource lifecycle fixtures and real GPU depth/OIT comparisons."
   },
   "Scene/ClippingPlane": {
     "status": "ported",
@@ -4144,7 +4144,7 @@
   "Scene/Picking": {
     "status": "partial",
     "rust": "scene::picking",
-    "note": "Color sync/async picking and culling plus depth positions, metadata/voxel reads, drill/ray/height APIs and most-detailed preload queues. Color picking has pinned-source/GPU parity; native tests cover restoration, visibility and queue lifetimes. Independent GPU validation of the newly added depth-position/metadata/ray/most-detailed paths remains."
+    "note": "Color sync/async picking and culling plus depth positions, metadata/voxel reads, drill/ray/height APIs, offscreen camera from ray, sample height rays and most-detailed preload queues. Validated against pinned reference ray fixtures, spiral readback and GPU comparisons; native tests cover restoration, visibility and queue lifetimes."
   },
   "Scene/SceneFramebuffer": {
     "status": "ported",
@@ -4737,14 +4737,14 @@
     "note": "Native WebGL1 CPU and WebGL2 buffer-readback triangle wireframe indices, counts and byte accounting."
   },
   "Scene/Model/InstancingPipelineStage": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::model::instancing_pipeline_stage",
-    "note": "GPU instance attributes, matrix packing, legacy world-space uniforms and 2D/CV projection implemented. Native matrix/feature ID smoke test passes; independent reference validation remains."
+    "note": "GPU instance attributes, matrix packing, legacy world-space uniforms and 2D/CV projection. Validated against pinned ModelStagesBatch2 fixtures."
   },
   "Scene/Model/SceneMode2DPipelineStage": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::model::scene_mode_2d_pipeline_stage",
-    "note": "Position/bounding-sphere projection, buffer retention and model-view uniforms implemented. Native projection/lifetime smoke test passes; independent reference validation remains."
+    "note": "Position and bounding-sphere projection to 2D / Columbus View, buffer retention and model-view uniforms. Validated against pinned ModelStagesBatch2 fixtures."
   },
   "Scene/BatchTexture": {
     "status": "ported",
@@ -4765,6 +4765,196 @@
     "status": "ported",
     "rust": "scene::model::metadata_pipeline_stage",
     "note": "23 pinned shader/uniform cases plus native regressions for primitive references, independent UV transforms, WebGL1 signed types and fractional statistics. Corrects known CesiumJS 23 generator bugs; integer transforms use typed arithmetic. Four real WebGL compile/render checks preserve 1.5 statistics. Usage sets come from custom shader/point-cloud callers; unsigned uniforms retain exact integer precision."
+  },
+  "Scene/ImageryProvider": {
+    "status": "ported",
+    "rust": "scene::imagery_provider",
+    "note": "Shared imagery provider trait, ImageryLoader host integration, KTX2 transcoding and error reporting contracts."
+  },
+  "Scene/GetFeatureInfoFormat": {
+    "status": "ported",
+    "rust": "scene::get_feature_info_format",
+    "note": "Feature info response types and default JSON/GeoJSON, XML, HTML and plain-text parsers matching CesiumJS. 14 pinned cases."
+  },
+  "Scene/DiscardMissingTileImagePolicy": {
+    "status": "ported",
+    "rust": "scene::discard_missing_tile_image_policy",
+    "note": "Discards tiles whose checked pixels match a missing image pixel signature; disables check if missing image fails or all checked pixels are transparent."
+  },
+  "Scene/UrlTemplateImageryProvider": {
+    "status": "ported",
+    "rust": "scene::url_template_imagery_provider",
+    "note": "Template expansion, zero padding, custom tags, subdomains, reverse coords, degrees/projected bounding boxes and pick-feature fallbacks. 15 pinned cases."
+  },
+  "Scene/OpenStreetMapImageryProvider": {
+    "status": "ported",
+    "rust": "scene::open_street_map_imagery_provider",
+    "note": "OpenStreetMap slippy tile URL template, default attribution, Web Mercator tiling scheme and minimum-level tile count validation. 5 pinned cases."
+  },
+  "Scene/MapboxImageryProvider": {
+    "status": "ported",
+    "rust": "scene::mapbox_imagery_provider",
+    "note": "Mapbox v4 raster tile URL construction with access token query parameters, custom format and credit attribution. 4 pinned cases."
+  },
+  "Scene/MapboxStyleImageryProvider": {
+    "status": "ported",
+    "rust": "scene::mapbox_style_imagery_provider",
+    "note": "Mapbox Styles API raster tile URL construction with style ID, username, tilesize, scale factor and access token. 4 pinned cases."
+  },
+  "Scene/SingleTileImageryProvider": {
+    "status": "ported",
+    "rust": "scene::single_tile_imagery_provider",
+    "note": "Single top-level imagery tile provider with Geographic tiling scheme, level-0 caching and asynchronous from_url constructor. 2 pinned cases."
+  },
+  "Scene/FrustumCommands": {
+    "status": "ported",
+    "rust": "scene::frustum_commands",
+    "note": "Ported FrustumCommands multi-pass command binning container with near/far depth planes, per-pass command vectors and index tracking. Validated against pinned reference fixtures and SceneView integration."
+  },
+  "Scene/Model/CustomShader": {
+    "status": "ported",
+    "rust": "scene::model::custom_shader",
+    "note": "Custom GLSL callbacks, uniforms, varyings, and builtin variable validation matching CesiumJS. Reference cases and DeveloperError parity in tests/scene_model_custom_shader.rs."
+  },
+  "Scene/Model/CustomShaderPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::custom_shader_pipeline_stage",
+    "note": "Dynamic input structs, uniform/varying injection, alpha/lighting overrides, and graceful metadata fallback. Reference cases in tests/scene_model_custom_shader.rs."
+  },
+  "Scene/Model/TextureManager": {
+    "status": "ported",
+    "rust": "scene::model::texture_manager",
+    "note": "Frame-driven 2D texture uploads, mipmap generation, WebGL1 POT resizing and default texture fallback. Tested in tests/scene_model_custom_shader.rs."
+  },
+  "Scene/Model/TextureUniform": {
+    "status": "ported",
+    "rust": "scene::model::texture_uniform",
+    "note": "Typed-array and URL texture uniform options, samplers, and preconditions matching CesiumJS. Tested in tests/scene_model_custom_shader.rs."
+  },
+  "Scene/Model/ModelReader": {
+    "status": "ported",
+    "rust": "scene::model::model_reader",
+    "note": "Attribute buffer deinterleaving, normalization, dequantization, oct decoding, ZXY swizzle, 3D transform, index buffer reading and triangle strip/fan conversions. Validated against pinned ModelReader fixtures."
+  },
+  "Scene/Model/ImageBasedLightingPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::image_based_lighting_pipeline_stage",
+    "note": "Adds image-based lighting defines, spherical harmonics coefficients uniform, specular environment maps, and reference frame matrix. Validated against pinned ModelStagesBatch2 fixtures."
+  },
+  "Scene/Model/PointCloudStylingPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::point_cloud_styling_pipeline_stage",
+    "note": "Runtime point cloud styling, attenuation parameters, and back-face culling for 3D and 2D/ortho scene modes. Validated against pinned ModelStagesBatch2 fixtures."
+  },
+  "Scene/Model/EdgeVisibilityPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::edge_visibility_pipeline_stage",
+    "note": "Derived line list edge geometry and shader bindings for EXT_mesh_primitive_edge_visibility data. Validated against pinned ModelStagesBatch2 fixtures."
+  },
+  "Scene/Model/ImageryCoverage": {
+    "status": "ported",
+    "rust": "scene::model::imagery_coverage",
+    "note": "Tile coverage computation, range, overlap, boundary shrink, and texture coordinate localization. Validated against CesiumJS in tests/scene_model_imagery.rs."
+  },
+  "Scene/Model/ImageryInput": {
+    "status": "ported",
+    "rust": "scene::model::imagery_input",
+    "note": "Texture inputs, translation/scale, coordinate rectangle, attribute set index, and visual adjust uniforms. Validated in tests/scene_model_imagery.rs."
+  },
+  "Scene/Model/ImageryPipelineStage": {
+    "status": "ported",
+    "rust": "scene::model::imagery_pipeline_stage",
+    "note": "Shader builder define injection, texture coordinate attributes, dynamic sampleAndBlend and blendBaseColorWithImagery GLSL generation, and uniforms. Validated against CesiumJS in tests/scene_model_imagery.rs."
+  },
+  "Scene/Model/ModelImagery": {
+    "status": "ported",
+    "rust": "scene::model::model_imagery",
+    "note": "Multi-primitive imagery collection and readiness tracking. Validated in tests/scene_model_imagery.rs."
+  },
+  "Scene/Model/ModelImageryMapping": {
+    "status": "ported",
+    "rust": "scene::model::model_imagery_mapping",
+    "note": "Cartographic bounding rectangle, projected texture coordinates, and typed array generation. Validated against CesiumJS in tests/scene_model_imagery.rs."
+  },
+  "Scene/Model/ModelPrimitiveImagery": {
+    "status": "ported",
+    "rust": "scene::model::model_primitive_imagery",
+    "note": "Per-ellipsoid mapped positions, per-layer coverages, texture coordinate attributes and vertex buffer uploads. Validated in tests/scene_model_imagery.rs."
+  },
+  "Scene/Expression": {
+    "status": "ported",
+    "rust": "scene::expression",
+    "note": "3D Tiles Styling language parser, evaluator and GLSL generator. Direct CesiumJS cases in tests/scene_style.rs."
+  },
+  "Scene/ConditionsExpression": {
+    "status": "ported",
+    "rust": "scene::conditions_expression",
+    "note": "Conditional style expression chain and shader generation. Direct CesiumJS cases in tests/scene_style.rs."
+  },
+  "Scene/StyleExpression": {
+    "status": "ported",
+    "rust": "scene::style_expression",
+    "note": "StyleExpression trait contract implemented by Expression and ConditionsExpression."
+  },
+  "Scene/Cesium3DTileStyle": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_style",
+    "note": "3D Tiles style definition, property accessors, and shader generation. Direct CesiumJS cases in tests/scene_style.rs."
+  },
+  "Scene/Cesium3DTilePassState": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_pass_state",
+    "note": "Per-pass 3D tiles traversal state, camera, and culling volume overrides. Validated in tests/scene_styling_support.rs."
+  },
+  "Scene/Cesium3DTilesetStatistics": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tileset_statistics",
+    "note": "3D Tiles statistics, memory, features, points, and texture reference counting. Pinned reference validation in tests/scene_styling_support.rs."
+  },
+  "Scene/Cesium3DTilesetCache": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tileset_cache",
+    "note": "Sentinel-partitioned LRU cache for 3D tiles with trimming and unload passes. Validated in tests/scene_styling_support.rs."
+  },
+  "Scene/Cesium3DTilesetHeatmap": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tileset_heatmap",
+    "note": "Heatmap tile colorization, dynamic/reference min/max tracking, and gradient interpolation. Pinned reference validation in tests/scene_styling_support.rs."
+  },
+  "Scene/Cesium3DTileStyleEngine": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_style_engine",
+    "note": "3D Tiles styling engine, dirty state tracking, and per-tile style application. Validated in tests/scene_styling_support.rs."
+  },
+  "Scene/Cesium3DTileOptimizations": {
+    "status": "ported",
+    "rust": "scene::cesium_3d_tile_optimizations",
+    "note": "Tile childrenWithinParent bounding box projection and containment checks. Pinned reference validation in tests/scene_styling_support.rs."
+  },
+  "Scene/CreditDisplay": {
+    "status": "ported",
+    "rust": "scene::credit_display",
+    "note": "Screen and lightbox attribution manager, frequency sorting, delimiter handling, and Ion credit deduplication. Validated in tests/scene_styling_support.rs."
+  },
+  "Scene/computeFlyToLocationForRectangle": {
+    "status": "ported",
+    "rust": "scene::compute_fly_to_location_for_rectangle",
+    "note": "Camera position calculation to view a rectangle adjusted for terrain. Validated in tests/scene_styling_support.rs."
+  },
+  "Scene/createOsmBuildingsAsync": {
+    "status": "ported",
+    "rust": "scene::create_osm_buildings_async",
+    "note": "Cesium OSM Buildings tileset helper, style expression, and Ion asset 96188. Validated in tests/scene_styling_support.rs."
+  },
+  "Scene/createGooglePhotorealistic3DTileset": {
+    "status": "ported",
+    "rust": "scene::create_google_photorealistic_3d_tileset",
+    "note": "Google Photorealistic 3D Tiles configuration, Ion asset 2275207, and Map Tiles endpoint. Validated in tests/scene_styling_support.rs."
+  },
+  "Scene/ITwinData": {
+    "status": "ported",
+    "rust": "scene::itwin_data",
+    "note": "Bentley iTwin platform mesh export, reality data types, and geospatial features URL helpers. Validated in tests/scene_styling_support.rs."
   },
   "Scene/Model/ModelRuntimeNode": {
     "status": "ported",

@@ -454,6 +454,24 @@ fn mapped_positions_matches_cesium() {
         "MappedPositions",
         |_| TIGHT,
         |f, a| match f {
+            "imageryCoordinates" => {
+                use cesium_rs::scene::model::{ModelImageryMapping, ModelPrimitiveImagery};
+                let mapped = MappedPositions::new(
+                    Rc::new(vec![
+                        Cartographic::new(0., 0., 0.),
+                        Cartographic::new(1., 1., 0.),
+                        Cartographic::new(0.5, 0.25, 0.),
+                    ]),
+                    a[0].as_u64().unwrap() as usize,
+                    Rectangle::new(0., 0., 1., 1.),
+                    Ellipsoid::UNIT_SPHERE,
+                );
+                let mut imagery = ModelPrimitiveImagery::<Host>::default();
+                imagery.mapped_positions_per_ellipsoid.push(mapped);
+                let mapped = imagery.mapped_positions_for_ellipsoid(&Ellipsoid::UNIT_SPHERE).unwrap();
+                let projection = GeographicProjection::new(Ellipsoid::UNIT_SPHERE);
+                ok(json!(ModelImageryMapping::create_texture_coordinates_for_mapped_positions(mapped, &projection)))
+            }
             "properties" => {
                 let coords = a[0].as_array().unwrap();
                 let r_vals = nums(&a[1]);

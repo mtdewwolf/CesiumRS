@@ -1,19 +1,10 @@
 //! Cesium View's potentially-visible set and multi-frustum fitting.
-use super::{Camera, CameraFrustum, FrameState, SceneCommand, SceneMode, SceneOptions};
+use super::{Camera, CameraFrustum, FrameState, FrustumCommands, SceneCommand, SceneMode, SceneOptions};
 use crate::{core::*, renderer::Pass};
 use std::collections::BTreeMap;
 
-#[derive(Clone)]
-pub struct FrustumCommands {
-    pub near: f64,
-    pub far: f64,
-    pub commands: [Vec<SceneCommand>; Pass::NUMBER_OF_PASSES as usize],
-}
-impl FrustumCommands {
-    pub fn new(near: f64, far: f64) -> Self {
-        Self { near, far, commands: std::array::from_fn(|_| Vec::new()) }
-    }
-}
+/// Cesium's `CesiumMath.EPSILON2`.
+const EPSILON2: f64 = 0.01;
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct DebugFrustumStatistics {
     pub total_commands: usize,
@@ -52,7 +43,9 @@ impl CameraPose {
         }
     }
     fn equals(&self, other: &Self) -> bool {
-        let epsilon = 1e-15;
+        self.equals_epsilon(other, 1e-15)
+    }
+    fn equals_epsilon(&self, other: &Self, epsilon: f64) -> bool {
         let scale = 1. / self.position.abs().maximum_component().max(other.position.abs().maximum_component()).max(1.);
         let frustum = match (self.frustum, other.frustum) {
             (CameraFrustum::Perspective(a), CameraFrustum::Perspective(b)) => a.equals_epsilon(&b, epsilon, epsilon),
@@ -69,6 +62,11 @@ impl CameraPose {
             && self.transform.equals_epsilon(&other.transform, epsilon)
             && frustum
     }
+}
+/// Cesium's `cameraEqual`: compare two cameras with a relative position
+/// tolerance and the given view/frustum epsilon.
+pub fn camera_equal(camera0: &Camera, camera1: &Camera, epsilon: f64) -> bool {
+    CameraPose::new(camera0).equals_epsilon(&CameraPose::new(camera1), epsilon)
 }
 impl SceneCommand {
     pub(crate) fn plane_distances(&self, position: Cartesian3, direction: Cartesian3) -> Option<Interval> {
@@ -145,6 +143,92 @@ impl SceneView {
         }
         false
     }
+    /// Split the depth range into frustums, matching upstream `updateFrustums`.
+    /// Reuses the existing `FrustumCommands` when the count does not change.
+    #[allow(clippy::too_many_arguments)]
+    pub fn update_frustums(
+        &mut self,
+        frustum_range: [f64; 2],
+        camera_z: f64,
+        use_log_depth: bool,
+        mode: SceneMode,
+        near: f64,
+        far: f64,
+        options: &SceneOptions,
+    ) -> Result<(), RuntimeError> {
+        let ratio = if use_log_depth { options.logarithmic_depth_far_to_near_ratio } else { options.far_to_near_ratio };
+        if !ratio.is_finite() || ratio <= 1. {
+            return Err(RuntimeError::new("farToNearRatio must be finite and greater than one"));
+        }
+        // Extend the far plane slightly so geometry does not clip against it.
+        let mut far = far * (1. + EPSILON2);
+        let (frustum_near, frustum_far) = (frustum_range[0], frustum_range[1]);
+        // Keep the computed range between the user-defined near and far planes.
+        let mut near = near.max(frustum_near).min(frustum_far);
+        far = far.min(frustum_far).max(near);
+        let is_2d = mode == SceneMode::Scene2D;
+        let step = options.near_to_far_distance_2d;
+        let count = if is_2d {
+            if !step.is_finite() || step <= 0. {
+                return Err(RuntimeError::new("nearToFarDistance2D must be positive and finite"));
+            }
+            far = far.min(camera_z + step);
+            near = near.min(far);
+            ((far - near).max(1.) / step).ceil() as usize
+        } else {
+            if !frustum_near.is_finite() || frustum_near <= 0. || !frustum_far.is_finite() || frustum_far < frustum_near
+            {
+                return Err(RuntimeError::new("invalid camera frustum range"));
+            }
+            ((far / near).ln() / ratio.ln()).ceil() as usize
+        };
+        while self.frustum_commands_list.len() > count {
+            self.frustum_commands_list.pop();
+        }
+        for m in 0..count {
+            let (cur_near, cur_far) = if is_2d {
+                let n = (far - step).min(near + m as f64 * step);
+                (n, far.min(n + step))
+            } else {
+                let n = near.max(ratio.powi(m as i32) * near);
+                (n, far.min(ratio * n))
+            };
+            if let Some(frustum) = self.frustum_commands_list.get_mut(m) {
+                frustum.near = cur_near;
+                frustum.far = cur_far;
+                frustum.reset();
+            } else {
+                self.frustum_commands_list.push(FrustumCommands::new(cur_near, cur_far));
+            }
+        }
+        Ok(())
+    }
+    /// Insert one command extent into every overlapping frustum bin.
+    /// Returns the debug overlap mask.
+    pub fn insert_into_bin(&mut self, mut command: SceneCommand, near: f64, far: f64, debug: bool) -> u32 {
+        let mut overlap = 0u32;
+        let mut bins = Vec::new();
+        for (i, frustum) in self.frustum_commands_list.iter().enumerate() {
+            if near > frustum.far {
+                continue;
+            }
+            if far < frustum.near {
+                break;
+            }
+            overlap |= 1u32.wrapping_shl(i as u32);
+            bins.push(i);
+            if command.metadata.execute_in_closest_frustum {
+                break;
+            }
+        }
+        if debug {
+            command.metadata.debug_overlapping_frustums = overlap;
+        }
+        for i in bins {
+            self.frustum_commands_list[i].insert(command.pass as usize, command.clone());
+        }
+        overlap
+    }
     pub fn create_potentially_visible_set(
         &mut self,
         frame: &mut FrameState,
@@ -206,57 +290,18 @@ impl SceneView {
             frame.shadow_state.far_plane = shadow_far;
             frame.shadow_state.closest_object_size = closest;
         }
-        far *= 1.01;
-        near = near.max(range[0]).min(range[1]);
-        far = far.min(range[1]).max(near);
-        let ratio =
-            if frame.use_log_depth { options.logarithmic_depth_far_to_near_ratio } else { options.far_to_near_ratio };
-        if !ratio.is_finite() || ratio <= 1. {
-            return Err(RuntimeError::new("farToNearRatio must be finite and greater than one"));
-        }
-        let is_2d = frame.mode == SceneMode::Scene2D;
-        let step = options.near_to_far_distance_2d;
-        if !is_2d && (!range[0].is_finite() || range[0] <= 0. || !range[1].is_finite() || range[1] < range[0]) {
-            return Err(RuntimeError::new("invalid camera frustum range"));
-        }
-        let count = if is_2d {
-            if !step.is_finite() || step <= 0. {
-                return Err(RuntimeError::new("nearToFarDistance2D must be positive and finite"));
-            }
-            far = far.min(frame.camera_position_local.z + step);
-            near = near.min(far);
-            ((far - near).max(1.) / step).ceil() as usize
-        } else {
-            ((far / near).ln() / ratio.ln()).ceil() as usize
-        };
-        self.frustum_commands_list.clear();
-        for i in 0..count {
-            let n =
-                if is_2d { (far - step).min(near + i as f64 * step) } else { near.max(ratio.powi(i as i32) * near) };
-            let f = if is_2d { far.min(n + step) } else { far.min(ratio * n) };
-            self.frustum_commands_list.push(FrustumCommands::new(n, f));
-        }
+        self.update_frustums(
+            range,
+            frame.camera_position_local.z,
+            frame.use_log_depth,
+            frame.mode,
+            near,
+            far,
+            options,
+        )?;
         let mut statistics = DebugFrustumStatistics::default();
-        for (mut command, near, far) in extents {
-            let mut overlap = 0u32;
-            let mut bins = Vec::new();
-            for (i, frustum) in self.frustum_commands_list.iter().enumerate() {
-                if near > frustum.far {
-                    continue;
-                }
-                if far < frustum.near {
-                    break;
-                }
-                overlap |= 1u32.wrapping_shl(i as u32);
-                bins.push(i);
-                if command.metadata.execute_in_closest_frustum {
-                    break;
-                }
-            }
-            command.metadata.debug_overlapping_frustums = overlap;
-            for i in bins {
-                self.frustum_commands_list[i].commands[command.pass as usize].push(command.clone());
-            }
+        for (command, near, far) in extents {
+            let overlap = self.insert_into_bin(command, near, far, options.debug_show_frustums);
             *statistics.commands_in_frustums.entry(overlap).or_default() += 1;
             statistics.total_commands += 1;
         }

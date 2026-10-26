@@ -2,6 +2,8 @@ import ModelArticulationStage from "@cesium/engine/Source/Scene/Model/ModelArtic
 import ModelArticulation from "@cesium/engine/Source/Scene/Model/ModelArticulation.js";
 import ModelAnimationChannel from "@cesium/engine/Source/Scene/Model/ModelAnimationChannel.js";
 import ModelMatrixUpdateStage from "@cesium/engine/Source/Scene/Model/ModelMatrixUpdateStage.js";
+import ModelImageryMapping from "@cesium/engine/Source/Scene/Model/ModelImageryMapping.js";
+import GeographicProjection from "@cesium/engine/Source/Core/GeographicProjection.js";
 import MappedPositions from "@cesium/engine/Source/Scene/Model/MappedPositions.js";
 import ModelRuntimePrimitive from "@cesium/engine/Source/Scene/Model/ModelRuntimePrimitive.js";
 import ModelRuntimeNode from "@cesium/engine/Source/Scene/Model/ModelRuntimeNode.js";
@@ -385,6 +387,15 @@ export function sceneModelRuntime() {
       };
     },
   );
+  for (const count of [0, 1, 2, 3]) {
+    mappedSuite.add("imageryCoordinates", [count], (count) => {
+      const positions = [new Cartographic(0, 0), new Cartographic(1, 1), new Cartographic(0.5, 0.25)];
+      const mapped = new MappedPositions(positions, count, new Rectangle(0, 0, 1, 1), Ellipsoid.UNIT_SPHERE);
+      return Array.from(ModelImageryMapping.createTextureCoordinatesForMappedPositions(
+        mapped, new GeographicProjection(Ellipsoid.UNIT_SPHERE),
+      ));
+    });
+  }
   suites.push(mappedSuite);
 
   // 6. ModelRuntimePrimitive

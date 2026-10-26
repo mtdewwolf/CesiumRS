@@ -1,10 +1,14 @@
 import {sceneModelRuntime} from './scene-model-runtime.mjs';
+import {sceneModelImagery} from './scene-model-imagery.mjs';
+import {sceneModelStagesBatch2} from './scene-model-stages-batch2.mjs';
+import {sceneModelReader} from './scene-model-reader.mjs';
 import {sceneModelMetadataStage} from './scene-model-metadata-stage.mjs';
 import {sceneModelFeatures} from './scene-model-features.mjs';
 import {sceneModelTileLoaders} from './scene-model-tile-loaders.mjs';
 import {sceneModelNextStages} from './scene-model-next-stages.mjs';
 import {sceneModelPipeline} from './scene-model-pipeline.mjs';
 import {sceneModelStages} from './scene-model-stages.mjs';
+import {sceneModelCustomShader} from './scene-model-custom-shader.mjs';
 import {sceneModelUtility} from './scene-model-utility.mjs';
 import {sceneGltfLoader} from './scene-gltf-loader.mjs';
 import {scenePrimitiveLoad} from './scene-primitive-load.mjs';
@@ -30,16 +34,20 @@ import sceneMetadata from "./scene-metadata.mjs";
 import sceneMetadataTables from "./scene-metadata-tables.mjs";
 import sceneMetadataEntities from "./scene-metadata-entities.mjs";
 import sceneTiling from "./scene-tiling.mjs";
+import sceneStyle from "./scene-style.mjs";
+import sceneTileStylingSupport from "./scene-tile-styling-support.mjs";
 import sceneCompletion from "./scene-completion.mjs";
 import sceneTransforms from "./scene-transforms.mjs";
 import scenePicking from "./scene-picking.mjs";
 import sceneView from "./scene-view.mjs";
+import sceneFrustumCommands from "./scene-frustum-commands.mjs";
 import sceneGeometryLoaders from "./scene-geometry-loaders.mjs";
 import sceneLoaderFoundations from "./scene-loader-foundations.mjs";
 import sceneGpm from "./scene-gpm.mjs";
 import sceneStructuralMetadata from "./scene-structural-metadata.mjs";
 import sceneTileContent from "./scene-tile-content.mjs";
 import sceneParticlesImagery from "./scene-particles-imagery.mjs";
+import sceneImagery from "./scene-imagery.mjs";
 import sceneMetadataLoaders from "./scene-metadata-loaders.mjs";
 import sceneTileFormats from "./scene-tile-formats.mjs";
 import sceneDracoLoaders from "./scene-draco-loaders.mjs";
@@ -122,7 +130,7 @@ for (const name of readdirSync(here).filter((entry) => entry.startsWith("shaders
   for (const suite of await loaded.default()) shaders.push({ ...suite, dir });
 }
 
-const packages = { data_sources: [...dataSourcesProperties(),...dataSourcesPositions(),...dataSourcesEntities(),...dataSourcesComposite()], scene: [...sceneModelRuntime(),sceneModelMetadataStage(),sceneModelFeatures(),await sceneModelTileLoaders(),sceneModelNextStages(),sceneModelPipeline(),sceneModelStages(),sceneModelUtility(),await sceneGltfLoader(),scenePrimitiveLoad(),...await sceneMetadataLoaders(),...await sceneParticlesImagery(),...await sceneStructuralMetadata(),...await sceneTileContent(),...sceneGpm(),...sceneTileFormats(),...await sceneImageTextureLoaders(),...sceneLoaderFoundations(),...await sceneDracoLoaders(),...await sceneSpzLoaders(),...await sceneGeometryLoaders(),...sceneResourceCache(),...await sceneBufferViewLoader(),...await sceneResourceLoaders(),...sceneMetadataPicking(), ...sceneView(), ...scenePicking(), ...sceneTransforms(), ...await sceneCompletion(), ...await sceneRuntime(), ...sceneCamera(), ...sceneCameraFlights(), ...await sceneFoundations(), ...await sceneGltfPipeline(), ...await sceneMetadata(), ...await sceneMetadataTables(), ...await sceneMetadataEntities(), ...await sceneTiling()], workers: [...await workersDecodeDraco(), ...await workersGeometry(), ...await workersTerrain(), ...await workersVector(), ...await workersSplats(), ...await workersI3s(), ...await workersCombine(), ...await workersTask()], renderer: [...rendererCompletion(), ...rendererFoundations(), ...rendererExtended(), ...await rendererExecution()], core: [...await coreGroundPolyline(), ...await coreTilesProvider(), ...await coreTilesTerrain(), ...await coreGee(), ...await coreNetworkTerrain(), ...await corePlatforms(), ...coreContracts(), ...await coreRequests(), ...await coreServices(), ...await coreTextures(), ...coreFoundations(), ...coreMath(), ...coreGeometry(), ...coreBounds(), ...coreTime(), ...corePacking(), ...coreSplines(), ...coreAlgorithms(), ...coreGeometries(), ...coreUtilities(), ...corePolygon(), ...corePipeline(), ...coreSurfaces(), ...coreLines(), ...coreCorridors(), ...coreTerrain(), ...coreTerrainProvider(), ...await coreTerrainMesh(), ...await coreHeightmapData(), ...coreS2(), ...await coreQuantizedTerrain(), ...await coreTerrainBoundsProviders(), ...coreAstronomy()], shaders };
+const packages = { data_sources: [...dataSourcesProperties(),...dataSourcesPositions(),...dataSourcesEntities(),...dataSourcesComposite()], scene: [...sceneTileStylingSupport(),...await sceneStyle(),...sceneFrustumCommands(),...await sceneImagery(),sceneModelImagery(),sceneModelStagesBatch2(),sceneModelReader(),sceneModelCustomShader(),...sceneModelRuntime(),sceneModelMetadataStage(),sceneModelFeatures(),await sceneModelTileLoaders(),sceneModelNextStages(),sceneModelPipeline(),sceneModelStages(),sceneModelUtility(),await sceneGltfLoader(),scenePrimitiveLoad(),...await sceneMetadataLoaders(),...await sceneParticlesImagery(),...await sceneStructuralMetadata(),...await sceneTileContent(),...sceneGpm(),...sceneTileFormats(),...await sceneImageTextureLoaders(),...sceneLoaderFoundations(),...await sceneDracoLoaders(),...await sceneSpzLoaders(),...await sceneGeometryLoaders(),...sceneResourceCache(),...await sceneBufferViewLoader(),...await sceneResourceLoaders(),...sceneMetadataPicking(), ...sceneView(), ...scenePicking(), ...sceneTransforms(), ...await sceneCompletion(), ...await sceneRuntime(), ...sceneCamera(), ...sceneCameraFlights(), ...await sceneFoundations(), ...await sceneGltfPipeline(), ...await sceneMetadata(), ...await sceneMetadataTables(), ...await sceneMetadataEntities(), ...await sceneTiling()], workers: [...await workersDecodeDraco(), ...await workersGeometry(), ...await workersTerrain(), ...await workersVector(), ...await workersSplats(), ...await workersI3s(), ...await workersCombine(), ...await workersTask()], renderer: [...rendererCompletion(), ...rendererFoundations(), ...rendererExtended(), ...await rendererExecution()], core: [...await coreGroundPolyline(), ...await coreTilesProvider(), ...await coreTilesTerrain(), ...await coreGee(), ...await coreNetworkTerrain(), ...await corePlatforms(), ...coreContracts(), ...await coreRequests(), ...await coreServices(), ...await coreTextures(), ...coreFoundations(), ...coreMath(), ...coreGeometry(), ...coreBounds(), ...coreTime(), ...corePacking(), ...coreSplines(), ...coreAlgorithms(), ...coreGeometries(), ...coreUtilities(), ...corePolygon(), ...corePipeline(), ...coreSurfaces(), ...coreLines(), ...coreCorridors(), ...coreTerrain(), ...coreTerrainProvider(), ...await coreTerrainMesh(), ...await coreHeightmapData(), ...coreS2(), ...await coreQuantizedTerrain(), ...await coreTerrainBoundsProviders(), ...coreAstronomy()], shaders };
 // coreAstronomy runs last: loading EOP data adds leap seconds to JulianDate.leapSeconds.
 
 // Labels a suite can be selected by. Shader suites also accept
