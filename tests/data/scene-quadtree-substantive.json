@@ -1,0 +1,31 @@
+{
+  "module": "QuadtreeSubstantive",
+  "cesium": "23.0.0",
+  "fixture_type": "substantive_review_fixes_expectations",
+  "description": "Expectations for QuadtreePrimitive SSE zero-distance, height callback distribution and cache keys against pinned CesiumJS",
+  "screen_space_error": {
+    "sse_denominator": 0.8660254037844387,
+    "drawing_buffer_height": 600,
+    "level_zero_error": 10000,
+    "distance_zero_is_infinite": true,
+    "distance_1000": 6928.203230275509,
+    "distance_50000": 138.56406460551017
+  },
+  "cache_keys": [
+    {
+      "lon": -1,
+      "lat": 0.2,
+      "expected_key": "-1.0062913969,0.1963495408"
+    },
+    {
+      "lon": -2,
+      "lat": 0.5,
+      "expected_key": "-2.0125827937,0.4908738521"
+    },
+    {
+      "lon": 0,
+      "lat": 0,
+      "expected_key": "0.0000000000,0.0000000000"
+    }
+  ]
+}

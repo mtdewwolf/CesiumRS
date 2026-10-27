@@ -1,15 +1,12 @@
 //! Imagery provider batch: fixture replay and lifecycle tests.
 //!
-//! New provider modules are compiled through `tests/scene/mod.rs` until the
-//! parent wires them into `src/scene/mod.rs`.
 #![allow(clippy::type_complexity)]
 
 pub mod core {
     pub use cesium_rs::core::*;
 }
 
-#[path = "scene/mod.rs"]
-pub mod scene;
+pub use cesium_rs::scene;
 
 mod common;
 
@@ -1138,7 +1135,31 @@ fn wmts_time_dynamic_dimensions_change_tile_urls() {
     assert!(first.contains("/a/"), "{first}");
     clock.borrow_mut().set_current_time(JulianDate::default().add_seconds(15.0));
     let _ = ready(p.request_image(1, 2, 3).unwrap()).unwrap();
-    let second = log.borrow().iter().rev().find(|url| url.starts_with("http")).cloned().unwrap();
-    assert!(second.contains("/b/"), "{second}");
-    assert_ne!(first, second);
+    // With a zero multiplier Cesium can also prepare the previous interval,
+    // so the most recent request is not necessarily the current interval.
+    assert!(log.borrow().iter().any(|url| url.contains("/b/")), "{:?}", log.borrow());
+}
+
+#[test]
+fn wms_interval_change_notifies_host_reload() {
+    let (_, _, _, loader) = image_loader();
+    let clock = test_clock();
+    let mut options = wms_options("defaults");
+    options.clock = Some(clock.clone());
+    options.times = Some(two_interval_times());
+    let provider = WebMapServiceImageryProvider::new(loader, options).unwrap();
+    let calls = Rc::new(std::cell::Cell::new(0));
+    let counter = calls.clone();
+    provider.set_reload(Some(Rc::new(move || counter.set(counter.get() + 1))));
+    provider.update_time();
+    assert_eq!(calls.get(), 1);
+    provider.update_time();
+    assert_eq!(calls.get(), 1);
+    clock.borrow_mut().set_current_time(JulianDate::default().add_seconds(15.0));
+    provider.update_time();
+    assert_eq!(calls.get(), 2);
+    provider.set_reload(None);
+    clock.borrow_mut().set_current_time(JulianDate::default().add_seconds(5.0));
+    provider.update_time();
+    assert_eq!(calls.get(), 2);
 }

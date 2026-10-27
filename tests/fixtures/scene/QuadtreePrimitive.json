@@ -1,0 +1,21 @@
+{
+  "module": "QuadtreePrimitive",
+  "cesium": "23.0.0",
+  "fixture_type": "calculated_fixture_expectations",
+  "description": "Calculated fixture expectations for QuadtreePrimitive default parameters and geometric error formulas from pinned CesiumJS 23.0.0",
+  "cases": [
+    {
+      "test": "default_geometric_errors",
+      "geographic": 77067.33977995862,
+      "web_mercator": 154134.67955991725
+    },
+    {
+      "test": "primitive_defaults",
+      "maximumScreenSpaceError": 2,
+      "tileCacheSize": 100,
+      "loadingDescendantLimit": 20,
+      "preloadAncestors": true,
+      "preloadSiblings": false
+    }
+  ]
+}

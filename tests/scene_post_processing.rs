@@ -1,59 +1,12 @@
 //! Dedicated tests for Scene post-processing batch.
-#![allow(dead_code)]
-
-mod core {
-    pub use cesium_rs::core::*;
-}
-mod renderer {
-    pub use cesium_rs::renderer::*;
-}
-mod shaders {
-    pub use cesium_rs::shaders::*;
-}
-
-#[path = "../src/scene/post_process_stage.rs"]
-mod post_process_stage;
-#[path = "../src/scene/post_process_stage_composite.rs"]
-mod post_process_stage_composite;
-#[path = "../src/scene/post_process_stage_texture_cache.rs"]
-mod post_process_stage_texture_cache;
-#[path = "../src/scene/auto_exposure.rs"]
-mod auto_exposure;
-#[path = "../src/scene/post_process_stage_library.rs"]
-mod post_process_stage_library;
-#[path = "../src/scene/post_process_stage_collection.rs"]
-mod post_process_stage_collection;
-
-mod scene {
-    pub use cesium_rs::scene::*;
-    pub mod post_process_stage {
-        pub use crate::post_process_stage::*;
-    }
-    pub mod post_process_stage_composite {
-        pub use crate::post_process_stage_composite::*;
-    }
-    pub mod post_process_stage_texture_cache {
-        pub use crate::post_process_stage_texture_cache::*;
-    }
-    pub mod auto_exposure {
-        pub use crate::auto_exposure::*;
-    }
-    pub mod post_process_stage_library {
-        pub use crate::post_process_stage_library::*;
-    }
-    pub mod post_process_stage_collection {
-        pub use crate::post_process_stage_collection::*;
-    }
-    pub use auto_exposure::*;
-    pub use post_process_stage::*;
-    pub use post_process_stage_collection::*;
-    pub use post_process_stage_library::*;
-    pub use post_process_stage_texture_cache::*;
-}
-
-use core::*;
-use renderer::*;
-use scene::*;
+use cesium_rs::core::*;
+use cesium_rs::renderer::*;
+use cesium_rs::scene::*;
+use cesium_rs::scene::auto_exposure::*;
+use cesium_rs::scene::post_process_stage::*;
+use cesium_rs::scene::post_process_stage_collection::*;
+use cesium_rs::scene::post_process_stage_library::*;
+use cesium_rs::scene::post_process_stage_texture_cache::*;
 use serde_json::Value;
 use std::{
     cell::{Cell, RefCell},

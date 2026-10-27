@@ -66,8 +66,8 @@ applications can implement the existing `Gl` host contract.
 
 ### Scene
 
-Scene has **228 of 482 modules** fully ported, including Camera and
-CameraFlightPath. The validated batches cover the foundations, all 24
+Scene includes validated Camera and CameraFlightPath ports; the table above
+reports current module counts. The validated batches cover the foundations, all 24
 GltfPipeline utilities, 3D Metadata schemas/tables/entities, tile bounding
 volumes and implicit tiling.
 

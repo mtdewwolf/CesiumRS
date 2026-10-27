@@ -32,6 +32,7 @@ pub const DEFAULT_PARAMETERS: [(&str, &str); 5] =
 
 pub type DynamicData = Vec<(String, String)>;
 type TimeDynamicHandle = Rc<RefCell<TimeDynamicImagery<DynamicData>>>;
+type SharedReload = Rc<RefCell<Option<Rc<dyn Fn()>>>>;
 
 pub const GET_FEATURE_INFO_DEFAULT_PARAMETERS: [(&str, &str); 3] =
     [("service", "WMS"), ("version", "1.1.1"), ("request", "GetFeatureInfo")];
@@ -149,6 +150,7 @@ pub struct WebMapServiceImageryProvider<H: ImageHost> {
     clock: Option<Rc<RefCell<Clock>>>,
     get_feature_info_url: Resource,
     error_event: ImageryErrorEvent,
+    reload: SharedReload,
 }
 
 impl<H: ImageHost + 'static> WebMapServiceImageryProvider<H> {
@@ -252,6 +254,7 @@ impl<H: ImageHost + 'static> WebMapServiceImageryProvider<H> {
         });
         let inner = core.provider(None)?;
 
+        let reload: SharedReload = Rc::new(RefCell::new(None));
         let time_dynamic = options.times.take().map(|times| {
             let weak = Rc::downgrade(&core);
             let request: super::time_dynamic_imagery::RequestImageFunction<DynamicData> =
@@ -263,11 +266,17 @@ impl<H: ImageHost + 'static> WebMapServiceImageryProvider<H> {
             Rc::new(RefCell::new(TimeDynamicImagery::new(TimeDynamicImageryOptions {
                 times,
                 request_image_function: request,
-                reload_function: Rc::new(|| {}),
+                reload_function: {
+                    let reload = reload.clone();
+                    Rc::new(move || {
+                        let callback = reload.borrow().clone();
+                        if let Some(callback) = callback { callback(); }
+                    })
+                },
             })))
         });
         let error_event = inner.error_event().clone();
-        Ok(Self { core, inner, time_dynamic, clock: options.clock, get_feature_info_url, error_event })
+        Ok(Self { core, inner, time_dynamic, clock: options.clock, get_feature_info_url, error_event, reload })
     }
 
     pub fn url(&self) -> String {
@@ -278,6 +287,10 @@ impl<H: ImageHost + 'static> WebMapServiceImageryProvider<H> {
     }
     pub fn get_feature_info_url(&self) -> &Resource {
         &self.get_feature_info_url
+    }
+    /// Sets the host callback invoked when a time interval change requires a reload.
+    pub fn set_reload(&self, callback: Option<Rc<dyn Fn()>>) {
+        *self.reload.borrow_mut() = callback;
     }
     pub fn clock(&self) -> Option<Rc<RefCell<Clock>>> {
         self.clock.clone()

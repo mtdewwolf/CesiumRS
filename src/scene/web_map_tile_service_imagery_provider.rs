@@ -8,8 +8,8 @@ use super::{
 };
 use crate::core::query::QueryValue;
 use crate::core::{
-    Clock, Credit, Ellipsoid, ImageHost, Rectangle, Resource, RuntimeError, TilingScheme, TimeIntervalCollection,
-    WebMercatorTilingScheme,
+    Clock, Credit, Ellipsoid, ImageHost, Rectangle, Resource, RuntimeError, TilingScheme, TimeInterval,
+    TimeIntervalCollection, WebMercatorTilingScheme,
 };
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
@@ -74,7 +74,7 @@ impl WebMapTileServiceImageryProviderOptions {
     }
 }
 
-pub struct WebMapTileServiceImageryProvider<H: ImageHost> {
+struct WmtsCore<H: ImageHost> {
     resource: Resource,
     loader: ImageryLoader<H>,
     use_kvp: bool,
@@ -83,16 +83,103 @@ pub struct WebMapTileServiceImageryProvider<H: ImageHost> {
     tile_matrix_set_id: String,
     tile_matrix_labels: Option<Vec<String>>,
     format: String,
+    subdomains: Vec<String>,
+    dimensions: RefCell<Option<Vec<(String, String)>>>,
+    discard_policy: Option<Rc<dyn TileDiscardPolicy<ImageryImage>>>,
+}
+
+impl<H: ImageHost + 'static> WmtsCore<H> {
+    fn tile_matrix(&self, level: u32) -> Option<String> {
+        match &self.tile_matrix_labels {
+            Some(labels) => labels.get(level as usize).cloned(),
+            None => Some(level.to_string()),
+        }
+    }
+
+    fn image_resource(
+        &self,
+        x: i32,
+        y: i32,
+        level: u32,
+        dynamic: Option<&[(String, String)]>,
+    ) -> Result<Resource, RuntimeError> {
+        let subdomain = &self.subdomains[(x + y + level as i32).rem_euclid(self.subdomains.len() as i32) as usize];
+        if !self.use_kvp {
+            let resource = self
+                .resource
+                .get_derived_resource(Default::default())
+                .ok_or_else(|| RuntimeError::new("The WMTS resource could not be derived."))?;
+            resource.set_template_values(
+                &[
+                    ("TileRow".into(), y.to_string()),
+                    ("TileCol".into(), x.to_string()),
+                    ("s".into(), subdomain.clone()),
+                ],
+                false,
+            );
+            if let Some(tile_matrix) = self.tile_matrix(level) {
+                resource.set_template_values(&[("TileMatrix".into(), tile_matrix)], false);
+            }
+            if let Some(dimensions) = &*self.dimensions.borrow() {
+                resource.set_template_values(dimensions, false);
+            }
+            if let Some(dimensions) = dynamic {
+                resource.set_template_values(dimensions, false);
+            }
+            Ok(resource)
+        } else {
+            let mut query: Vec<(String, Option<QueryValue>)> = vec![
+                (
+                    "tilematrix".into(),
+                    Some(QueryValue::Single(self.tile_matrix(level).unwrap_or_else(|| "undefined".into()))),
+                ),
+                ("layer".into(), Some(QueryValue::Single(self.layer.clone()))),
+                ("style".into(), Some(QueryValue::Single(self.style.clone()))),
+                ("tilerow".into(), Some(QueryValue::Single(y.to_string()))),
+                ("tilecol".into(), Some(QueryValue::Single(x.to_string()))),
+                ("tilematrixset".into(), Some(QueryValue::Single(self.tile_matrix_set_id.clone()))),
+                ("format".into(), Some(QueryValue::Single(self.format.clone()))),
+            ];
+            // Cesium's `combine(query, dimensions)` lets dimensions override.
+            let borrowed_dims = self.dimensions.borrow();
+            for (key, value) in borrowed_dims.iter().flatten().chain(dynamic.into_iter().flatten()) {
+                set_query(&mut query, key, value);
+            }
+            let resource = self
+                .resource
+                .get_derived_resource(crate::core::resource::DerivedResourceOptions {
+                    template_values: vec![("s".into(), subdomain.clone())],
+                    ..Default::default()
+                })
+                .ok_or_else(|| RuntimeError::new("The WMTS resource could not be derived."))?;
+            resource.set_query_parameters(&query, false);
+            Ok(resource)
+        }
+    }
+
+    fn request_image(
+        &self,
+        x: i32,
+        y: i32,
+        level: u32,
+        dynamic: Option<&[(String, String)]>,
+    ) -> Option<ImageryFuture> {
+        let resource = self.image_resource(x, y, level, dynamic).ok()?;
+        let has_policy = self.discard_policy.is_some();
+        self.loader.load_image(resource, has_policy)
+    }
+}
+
+pub struct WebMapTileServiceImageryProvider<H: ImageHost> {
+    core: Rc<WmtsCore<H>>,
+    dimensions: Option<Vec<(String, String)>>,
     tiling_scheme: Arc<dyn TilingScheme>,
     tile_width: f64,
     tile_height: f64,
     minimum_level: u32,
     maximum_level: Option<u32>,
     rectangle: Rectangle,
-    dimensions: Option<Vec<(String, String)>>,
-    subdomains: Vec<String>,
     credit: Option<Credit>,
-    discard_policy: Option<Rc<dyn TileDiscardPolicy<ImageryImage>>>,
     error_event: ImageryErrorEvent,
     time_dynamic: Option<TimeDynamicHandle>,
     clock: Option<Rc<RefCell<Clock>>>,
@@ -137,15 +224,27 @@ impl<H: ImageHost + 'static> WebMapTileServiceImageryProvider<H> {
             Some(list) if !list.is_empty() => list,
             _ => vec!["a".into(), "b".into(), "c".into()],
         };
+        let core = Rc::new(WmtsCore {
+            resource,
+            loader,
+            use_kvp,
+            layer: options.layer,
+            style: options.style,
+            tile_matrix_set_id: options.tile_matrix_set_id,
+            tile_matrix_labels: options.tile_matrix_labels,
+            format: options.format.unwrap_or_else(|| "image/jpeg".into()),
+            subdomains,
+            dimensions: RefCell::new(options.dimensions.clone()),
+            discard_policy: options.tile_discard_policy,
+        });
         let reload: SharedReload = Rc::new(RefCell::new(None));
         let time_dynamic = options.times.map(|times| {
-            let request: super::time_dynamic_imagery::RequestImageFunction<DynamicData> = {
-                // Filled after construction through a weak self handle would
-                // create a cycle; the provider's request path supplies the
-                // interval directly, so the preload callback only emits a
-                // throttled-safe None until a host installs its own.
-                Rc::new(|_, _, _, _| None)
-            };
+            let weak = Rc::downgrade(&core);
+            let request: super::time_dynamic_imagery::RequestImageFunction<DynamicData> =
+                Rc::new(move |x, y, level, interval| {
+                    let core = weak.upgrade()?;
+                    core.request_image(x, y, level, interval.and_then(|i| i.data.as_deref()))
+                });
             Rc::new(RefCell::new(TimeDynamicImagery::new(TimeDynamicImageryOptions {
                 times,
                 request_image_function: request,
@@ -160,24 +259,15 @@ impl<H: ImageHost + 'static> WebMapTileServiceImageryProvider<H> {
             })))
         });
         Ok(Self {
-            resource,
-            loader,
-            use_kvp,
-            layer: options.layer,
-            style: options.style,
-            tile_matrix_set_id: options.tile_matrix_set_id,
-            tile_matrix_labels: options.tile_matrix_labels,
-            format: options.format.unwrap_or_else(|| "image/jpeg".into()),
+            core,
+            dimensions: options.dimensions,
             tiling_scheme,
             tile_width: options.tile_width.unwrap_or(256.0),
             tile_height: options.tile_height.unwrap_or(256.0),
             minimum_level: options.minimum_level.unwrap_or(0),
             maximum_level: options.maximum_level,
             rectangle,
-            dimensions: options.dimensions,
-            subdomains,
             credit: options.credit,
-            discard_policy: options.tile_discard_policy,
             error_event: Rc::new(RefCell::new(Default::default())),
             time_dynamic,
             clock: options.clock,
@@ -186,29 +276,30 @@ impl<H: ImageHost + 'static> WebMapTileServiceImageryProvider<H> {
     }
 
     pub fn url(&self) -> String {
-        self.resource.url()
+        self.core.resource.url()
     }
     pub fn layer(&self) -> &str {
-        &self.layer
+        &self.core.layer
     }
     pub fn style(&self) -> &str {
-        &self.style
+        &self.core.style
     }
     pub fn tile_matrix_set_id(&self) -> &str {
-        &self.tile_matrix_set_id
+        &self.core.tile_matrix_set_id
     }
     pub fn format(&self) -> &str {
-        &self.format
+        &self.core.format
     }
     pub fn use_kvp(&self) -> bool {
-        self.use_kvp
+        self.core.use_kvp
     }
     pub fn dimensions(&self) -> Option<&[(String, String)]> {
         self.dimensions.as_deref()
     }
     pub fn set_dimensions(&mut self, dimensions: Option<Vec<(String, String)>>) {
         if self.dimensions != dimensions {
-            self.dimensions = dimensions;
+            self.dimensions = dimensions.clone();
+            *self.core.dimensions.borrow_mut() = dimensions;
             if let Some(reload) = self.reload.borrow().as_ref() {
                 reload();
             }
@@ -226,11 +317,28 @@ impl<H: ImageHost + 'static> WebMapTileServiceImageryProvider<H> {
     pub fn current_interval_data(&self) -> Option<DynamicData> {
         self.time_dynamic.as_ref()?.borrow().current_interval().and_then(|i| i.data.clone())
     }
+    pub fn current_interval(&self) -> Option<TimeInterval<DynamicData>> {
+        self.time_dynamic.as_ref()?.borrow().current_interval().cloned()
+    }
+    pub fn current_interval_index(&self) -> isize {
+        self.time_dynamic.as_ref().map_or(-1, |d| d.borrow().current_interval_index())
+    }
+    pub fn cached_interval_count(&self) -> usize {
+        self.time_dynamic.as_ref().map_or(0, |d| d.borrow().cached_interval_count())
+    }
+    pub fn pending_preload_count(&self) -> usize {
+        self.time_dynamic.as_ref().map_or(0, |d| d.borrow().pending_preload_count())
+    }
+    pub fn set_times(&mut self, times: TimeIntervalCollection<DynamicData>) {
+        if let Some(dynamic) = &self.time_dynamic {
+            dynamic.borrow_mut().set_times(times);
+            self.update_time();
+        }
+    }
 
-    fn update_time(&self) {
-        let (Some(dynamic), Some(clock)) = (self.time_dynamic.as_ref(), self.clock.as_ref()) else {
-            return;
-        };
+    pub fn update_time(&self) -> Option<Vec<(String, String)>> {
+        let dynamic = self.time_dynamic.as_ref()?;
+        let clock = self.clock.as_ref()?;
         let clock = clock.borrow();
         dynamic.borrow_mut().update(
             &clock.current_time(),
@@ -238,80 +346,13 @@ impl<H: ImageHost + 'static> WebMapTileServiceImageryProvider<H> {
             clock.should_animate(),
             clock.multiplier(),
         );
-    }
-
-    /// `undefined` when a label array is configured but has no entry for the
-    /// level, exactly as Cesium's `labels[level]`.
-    fn tile_matrix(&self, level: u32) -> Option<String> {
-        match &self.tile_matrix_labels {
-            Some(labels) => labels.get(level as usize).cloned(),
-            None => Some(level.to_string()),
-        }
-    }
-
-    fn image_resource(
-        &self,
-        x: i32,
-        y: i32,
-        level: u32,
-        dynamic: Option<&[(String, String)]>,
-    ) -> Result<Resource, RuntimeError> {
-        let subdomain = &self.subdomains[(x + y + level as i32).rem_euclid(self.subdomains.len() as i32) as usize];
-        if !self.use_kvp {
-            let resource = self
-                .resource
-                .get_derived_resource(Default::default())
-                .ok_or_else(|| RuntimeError::new("The WMTS resource could not be derived."))?;
-            resource.set_template_values(
-                &[
-                    ("TileRow".into(), y.to_string()),
-                    ("TileCol".into(), x.to_string()),
-                    ("s".into(), subdomain.clone()),
-                ],
-                false,
-            );
-            if let Some(tile_matrix) = self.tile_matrix(level) {
-                resource.set_template_values(&[("TileMatrix".into(), tile_matrix)], false);
-            }
-            if let Some(dimensions) = &self.dimensions {
-                resource.set_template_values(dimensions, false);
-            }
-            if let Some(dimensions) = dynamic {
-                resource.set_template_values(dimensions, false);
-            }
-            Ok(resource)
-        } else {
-            let mut query: Vec<(String, Option<QueryValue>)> = vec![
-                (
-                    "tilematrix".into(),
-                    Some(QueryValue::Single(self.tile_matrix(level).unwrap_or_else(|| "undefined".into()))),
-                ),
-                ("layer".into(), Some(QueryValue::Single(self.layer.clone()))),
-                ("style".into(), Some(QueryValue::Single(self.style.clone()))),
-                ("tilerow".into(), Some(QueryValue::Single(y.to_string()))),
-                ("tilecol".into(), Some(QueryValue::Single(x.to_string()))),
-                ("tilematrixset".into(), Some(QueryValue::Single(self.tile_matrix_set_id.clone()))),
-                ("format".into(), Some(QueryValue::Single(self.format.clone()))),
-            ];
-            // Cesium's `combine(query, dimensions)` lets dimensions override.
-            for (key, value) in self.dimensions.iter().flatten().chain(dynamic.into_iter().flatten()) {
-                set_query(&mut query, key, value);
-            }
-            let resource = self
-                .resource
-                .get_derived_resource(crate::core::resource::DerivedResourceOptions {
-                    template_values: vec![("s".into(), subdomain.clone())],
-                    ..Default::default()
-                })
-                .ok_or_else(|| RuntimeError::new("The WMTS resource could not be derived."))?;
-            resource.set_query_parameters(&query, false);
-            Ok(resource)
-        }
+        self.current_interval_data()
     }
 
     /// The URL a tile request would use. Kept public for deterministic tests.
     pub fn tile_url(&self, x: i32, y: i32, level: u32) -> Result<String, RuntimeError> {
-        Ok(self.image_resource(x, y, level, None)?.get_url_component(true, false))
+        let dynamic = self.current_interval_data();
+        Ok(self.core.image_resource(x, y, level, dynamic.as_deref())?.get_url_component(true, false))
     }
 }
 
@@ -343,7 +384,7 @@ impl<H: ImageHost + 'static> ImageryProvider for WebMapTileServiceImageryProvide
         self.tiling_scheme.as_ref()
     }
     fn tile_discard_policy(&self) -> Option<Rc<dyn TileDiscardPolicy<ImageryImage>>> {
-        self.discard_policy.clone()
+        self.core.discard_policy.clone()
     }
     fn error_event(&self) -> &ImageryErrorEvent {
         &self.error_event
@@ -352,21 +393,22 @@ impl<H: ImageHost + 'static> ImageryProvider for WebMapTileServiceImageryProvide
         self.credit.as_ref()
     }
     fn proxy(&self) -> Option<Arc<dyn crate::core::Proxy>> {
-        self.resource.options().proxy.clone()
+        self.core.resource.options().proxy.clone()
     }
     fn has_alpha_channel(&self) -> bool {
         true
     }
     fn request_image(&self, x: i32, y: i32, level: u32) -> Option<ImageryFuture> {
-        self.update_time();
-        let dynamic = self.current_interval_data();
-        let resource = self.image_resource(x, y, level, dynamic.as_deref()).ok()?;
-        let has_policy = self.discard_policy.is_some();
-        let result = self.loader.load_image(resource, has_policy);
-        if result.is_some() {
-            if let Some(time_dynamic) = &self.time_dynamic {
-                let clock = self.clock.as_ref()?;
-                let state = clock.borrow();
+        if let Some(time_dynamic) = &self.time_dynamic {
+            let dynamic = self.update_time();
+            let clock = self.clock.as_ref()?;
+            let state = clock.borrow();
+            let result = if let Some(cached) = time_dynamic.borrow().get_from_cache(x, y, level) {
+                Some(cached)
+            } else {
+                self.core.request_image(x, y, level, dynamic.as_deref())
+            };
+            if result.is_some() {
                 time_dynamic.borrow_mut().check_approaching_interval(
                     x,
                     y,
@@ -378,8 +420,9 @@ impl<H: ImageHost + 'static> ImageryProvider for WebMapTileServiceImageryProvide
                     None,
                 );
             }
+            return result;
         }
-        result
+        self.core.request_image(x, y, level, None)
     }
     fn pick_features(
         &self,

@@ -1,0 +1,239 @@
+{
+  "meta": {
+    "generator": "tools/cesium/generate-scene-globe-surface-tile.mjs",
+    "cesium_engine_version": "23.0.0",
+    "description": "Pinned CesiumJS runtime output and distinct analytical expectations for GlobeSurfaceTile",
+    "generated_at": "2026-10-27T14:50:16.344Z"
+  },
+  "real_cesiumjs_output": {
+    "default_construction": {
+      "eligible_for_unloading": true,
+      "rendered_mesh_defined": false,
+      "is_clipped": true,
+      "clipped_by_boundaries": false,
+      "terrain_state": 1,
+      "terrain_state_name": "UNLOADED",
+      "water_mask_translation_and_scale": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "imagery_length": 0,
+      "vertex_array_defined": false,
+      "mesh_defined": false,
+      "fill_defined": false,
+      "pick_bounding_sphere": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "radius": 0
+      }
+    },
+    "unloading_eligibility": {
+      "terrain_state_cases": [
+        {
+          "terrain_state": "FAILED",
+          "eligible_for_unloading": true
+        },
+        {
+          "terrain_state": "UNLOADED",
+          "eligible_for_unloading": true
+        },
+        {
+          "terrain_state": "RECEIVING",
+          "eligible_for_unloading": false
+        },
+        {
+          "terrain_state": "RECEIVED",
+          "eligible_for_unloading": true
+        },
+        {
+          "terrain_state": "TRANSFORMING",
+          "eligible_for_unloading": false
+        },
+        {
+          "terrain_state": "TRANSFORMED",
+          "eligible_for_unloading": true
+        },
+        {
+          "terrain_state": "READY",
+          "eligible_for_unloading": true
+        }
+      ],
+      "imagery_state_cases": [
+        {
+          "imagery_state": "UNLOADED",
+          "eligible_for_unloading": true
+        },
+        {
+          "imagery_state": "TRANSITIONING",
+          "eligible_for_unloading": false
+        },
+        {
+          "imagery_state": "RECEIVED",
+          "eligible_for_unloading": true
+        },
+        {
+          "imagery_state": "TEXTURE_LOADED",
+          "eligible_for_unloading": true
+        },
+        {
+          "imagery_state": "READY",
+          "eligible_for_unloading": true
+        },
+        {
+          "imagery_state": "FAILED",
+          "eligible_for_unloading": true
+        },
+        {
+          "imagery_state": "INVALID",
+          "eligible_for_unloading": true
+        },
+        {
+          "imagery_state": "PLACEHOLDER",
+          "eligible_for_unloading": true
+        }
+      ],
+      "receiving_terrain_with_ready_imagery": false
+    },
+    "water_mask_translation_and_scale": [
+      {
+        "name": "quadrant_southwest",
+        "tile": {
+          "west": 0,
+          "south": 0,
+          "east": 1,
+          "north": 1
+        },
+        "source": {
+          "west": 0,
+          "south": 0,
+          "east": 2,
+          "north": 2
+        },
+        "translation_and_scale": [
+          0,
+          0,
+          0.5,
+          0.5
+        ]
+      },
+      {
+        "name": "quadrant_northeast",
+        "tile": {
+          "west": 1,
+          "south": 1,
+          "east": 2,
+          "north": 2
+        },
+        "source": {
+          "west": 0,
+          "south": 0,
+          "east": 2,
+          "north": 2
+        },
+        "translation_and_scale": [
+          0.5,
+          0.5,
+          0.5,
+          0.5
+        ]
+      },
+      {
+        "name": "asymmetric_ancestor",
+        "tile": {
+          "west": -1,
+          "south": -0.5,
+          "east": 0,
+          "north": 0.5
+        },
+        "source": {
+          "west": -2,
+          "south": -1,
+          "east": 2,
+          "north": 1
+        },
+        "translation_and_scale": [
+          0.25,
+          0.25,
+          0.25,
+          0.5
+        ]
+      },
+      {
+        "name": "identical_extent",
+        "tile": {
+          "west": -0.5,
+          "south": -0.5,
+          "east": 0.5,
+          "north": 0.5
+        },
+        "source": {
+          "west": -0.5,
+          "south": -0.5,
+          "east": 0.5,
+          "north": 0.5
+        },
+        "translation_and_scale": [
+          0,
+          0,
+          1,
+          1
+        ]
+      }
+    ],
+    "ancestor_terrain_traversal": {
+      "direct_parent_found": "root",
+      "skip_upsampled_parent_found": "grandparent",
+      "no_ancestor_found": null
+    },
+    "initialization": {
+      "unavailable_tile": {
+        "quadtree_state": 1,
+        "quadtree_state_name": "LOADING",
+        "terrain_state": 0,
+        "terrain_state_name": "FAILED"
+      },
+      "available_tile": {
+        "quadtree_state": 1,
+        "quadtree_state_name": "LOADING",
+        "terrain_state": 1,
+        "terrain_state_name": "UNLOADED"
+      }
+    },
+    "free_resources": {
+      "terrain_state_after_free": 1,
+      "terrain_state_name": "UNLOADED",
+      "mesh_defined_after_free": false,
+      "water_mask_defined_after_free": false,
+      "imagery_length_after_free": 0,
+      "imagery_items_freed": 2
+    }
+  },
+  "computed_expectations": {
+    "water_mask_formulas": {
+      "description": "scaleX = tileWidth / sourceWidth; scaleY = tileHeight / sourceHeight; translationX = scaleX * (tileWest - sourceWest) / tileWidth; translationY = scaleY * (tileSouth - sourceSouth) / tileHeight",
+      "identity_scale_when_extents_match": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "scale_halved_for_subquadrant": [
+        0.25,
+        0.25,
+        0.5,
+        0.5
+      ]
+    },
+    "unloading_rule": {
+      "rule": "Eligible for unloading unless terrain is RECEIVING/TRANSFORMING or any loading imagery is TRANSITIONING"
+    },
+    "picking_contract": {
+      "rule": "Pick returns undefined if renderedMesh is undefined. If renderedMesh is defined, delegates to mesh.pick()"
+    }
+  }
+}

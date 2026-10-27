@@ -1,0 +1,270 @@
+{
+  "module": "QuadtreeTile",
+  "cesium": "23.0.0",
+  "fixture_type": "calculated_fixture_expectations",
+  "description": "Calculated fixture expectations for QuadtreeTile CPU geometry, spatial hash keys, and neighbor relations from pinned CesiumJS 23.0.0",
+  "cases": [
+    {
+      "test": "level_zero_roots",
+      "count": 2,
+      "root0": {
+        "x": 0,
+        "y": 0,
+        "level": 0,
+        "rectangle": [
+          -3.141592653589793,
+          -1.5707963267948966,
+          0,
+          1.5707963267948966
+        ]
+      },
+      "root1": {
+        "x": 1,
+        "y": 0,
+        "level": 0,
+        "rectangle": [
+          0,
+          -1.5707963267948966,
+          3.141592653589793,
+          1.5707963267948966
+        ]
+      }
+    },
+    {
+      "test": "root0_children_coordinates",
+      "northwest": {
+        "x": 0,
+        "y": 0,
+        "level": 1
+      },
+      "northeast": {
+        "x": 1,
+        "y": 0,
+        "level": 1
+      },
+      "southwest": {
+        "x": 0,
+        "y": 1,
+        "level": 1
+      },
+      "southeast": {
+        "x": 1,
+        "y": 1,
+        "level": 1
+      }
+    },
+    {
+      "test": "root1_children_coordinates",
+      "northwest": {
+        "x": 2,
+        "y": 0,
+        "level": 1
+      },
+      "northeast": {
+        "x": 3,
+        "y": 0,
+        "level": 1
+      },
+      "southwest": {
+        "x": 2,
+        "y": 1,
+        "level": 1
+      },
+      "southeast": {
+        "x": 3,
+        "y": 1,
+        "level": 1
+      }
+    },
+    {
+      "test": "spatial_hash_keys",
+      "results": [
+        {
+          "lon": -1.5,
+          "lat": 0.5,
+          "rect": [
+            -3.141592653589793,
+            -1.5707963267948966,
+            0,
+            1.5707963267948966
+          ],
+          "sse": 2,
+          "key": "-1.5217089416,0.4908738521"
+        },
+        {
+          "lon": 0.1,
+          "lat": -0.2,
+          "rect": [
+            0,
+            -1.5707963267948966,
+            3.141592653589793,
+            1.5707963267948966
+          ],
+          "sse": 2,
+          "key": "0.0981747704,-0.2208932335"
+        },
+        {
+          "lon": -1.5,
+          "lat": 0.5,
+          "rect": [
+            -3.141592653589793,
+            0,
+            -1.5707963267948966,
+            1.5707963267948966
+          ],
+          "sse": 1,
+          "key": "-1.5033011721,0.4970097753"
+        },
+        {
+          "lon": 1.2,
+          "lat": 0.8,
+          "rect": [
+            1.5707963267948966,
+            0,
+            3.141592653589793,
+            1.5707963267948966
+          ],
+          "sse": 3.5,
+          "key": "1.1811652067,0.7946020481"
+        }
+      ]
+    },
+    {
+      "test": "neighbor_topology",
+      "cases": [
+        {
+          "desc": "root0_to_east",
+          "from": {
+            "level": 0,
+            "x": 0,
+            "y": 0
+          },
+          "dir": "east",
+          "to": {
+            "level": 0,
+            "x": 1,
+            "y": 0
+          }
+        },
+        {
+          "desc": "root1_to_west",
+          "from": {
+            "level": 0,
+            "x": 1,
+            "y": 0
+          },
+          "dir": "west",
+          "to": {
+            "level": 0,
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "desc": "root0_to_west_wraps_to_root1",
+          "from": {
+            "level": 0,
+            "x": 0,
+            "y": 0
+          },
+          "dir": "west",
+          "to": {
+            "level": 0,
+            "x": 1,
+            "y": 0
+          }
+        },
+        {
+          "desc": "root1_to_east_wraps_to_root0",
+          "from": {
+            "level": 0,
+            "x": 1,
+            "y": 0
+          },
+          "dir": "east",
+          "to": {
+            "level": 0,
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "desc": "root0_to_north_is_none",
+          "from": {
+            "level": 0,
+            "x": 0,
+            "y": 0
+          },
+          "dir": "north",
+          "to": null
+        },
+        {
+          "desc": "root0_to_south_is_none",
+          "from": {
+            "level": 0,
+            "x": 0,
+            "y": 0
+          },
+          "dir": "south",
+          "to": null
+        },
+        {
+          "desc": "root0_nw_to_east_is_ne",
+          "from": {
+            "level": 1,
+            "x": 0,
+            "y": 0
+          },
+          "dir": "east",
+          "to": {
+            "level": 1,
+            "x": 1,
+            "y": 0
+          }
+        },
+        {
+          "desc": "root0_ne_to_east_crosses_to_root1_nw",
+          "from": {
+            "level": 1,
+            "x": 1,
+            "y": 0
+          },
+          "dir": "east",
+          "to": {
+            "level": 1,
+            "x": 2,
+            "y": 0
+          }
+        },
+        {
+          "desc": "root0_nw_to_south_is_sw",
+          "from": {
+            "level": 1,
+            "x": 0,
+            "y": 0
+          },
+          "dir": "south",
+          "to": {
+            "level": 1,
+            "x": 0,
+            "y": 1
+          }
+        },
+        {
+          "desc": "root0_sw_to_north_is_nw",
+          "from": {
+            "level": 1,
+            "x": 0,
+            "y": 1
+          },
+          "dir": "north",
+          "to": {
+            "level": 1,
+            "x": 0,
+            "y": 0
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -131,7 +131,7 @@ impl<H: crate::core::ImageHost + 'static> ImageryLoader<H> {
 
         let host = self.host.clone();
         let options =
-            FetchImageOptions { prefer_blob: has_discard_policy, prefer_image_bitmap: true, ..Default::default() };
+            FetchImageOptions { prefer_blob: has_discard_policy, prefer_image_bitmap: true, flip_y: true, ..Default::default() };
         let fetch = self.client.fetch_image(&resource, host, options)?;
         Some(Box::pin(async move {
             let image = fetch.await.map_err(|error| RuntimeError::new(error.to_string()))?;

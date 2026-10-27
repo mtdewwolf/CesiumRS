@@ -1,0 +1,228 @@
+{
+  "defaults": {
+    "show": true,
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "text": "",
+    "font": "30px sans-serif",
+    "style": 0,
+    "scale": 1,
+    "showBackground": false,
+    "backgroundColor": [
+      0.165,
+      0.165,
+      0.165,
+      0.8
+    ],
+    "backgroundPadding": [
+      7,
+      5
+    ],
+    "pixelOffset": [
+      0,
+      0
+    ],
+    "eyeOffset": [
+      0,
+      0,
+      0
+    ],
+    "horizontalOrigin": 1,
+    "verticalOrigin": 2,
+    "heightReference": 0,
+    "fillColor": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "outlineColor": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "outlineWidth": 1,
+    "scaleByDistance": null,
+    "translucencyByDistance": null,
+    "pixelOffsetScaleByDistance": null,
+    "distanceDisplayCondition": null,
+    "disableDepthTestDistance": null,
+    "id": null
+  },
+  "custom": {
+    "show": true,
+    "position": [
+      131075,
+      -65538,
+      3.5
+    ],
+    "text": "CesiumRS Label Parity",
+    "font": "24px Helvetica",
+    "style": 2,
+    "scale": 1.5,
+    "showBackground": true,
+    "backgroundColor": [
+      0.2,
+      0.3,
+      0.4,
+      0.85
+    ],
+    "backgroundPadding": [
+      10,
+      8
+    ],
+    "pixelOffset": [
+      15,
+      -20
+    ],
+    "eyeOffset": [
+      2,
+      4,
+      -10
+    ],
+    "horizontalOrigin": -1,
+    "verticalOrigin": 1,
+    "heightReference": 0,
+    "fillColor": [
+      0.9,
+      0.8,
+      0.7,
+      1
+    ],
+    "outlineColor": [
+      0.1,
+      0.1,
+      0.1,
+      1
+    ],
+    "outlineWidth": 2.5,
+    "scaleByDistance": [
+      100,
+      1.8,
+      1000,
+      0.4
+    ],
+    "translucencyByDistance": [
+      50,
+      1,
+      500,
+      0.1
+    ],
+    "pixelOffsetScaleByDistance": [
+      20,
+      1.2,
+      200,
+      0.6
+    ],
+    "distanceDisplayCondition": [
+      10,
+      2000
+    ],
+    "disableDepthTestDistance": 150,
+    "id": "custom-label-id"
+  },
+  "filterCases": [
+    {
+      "input": "Clean String 123",
+      "expected": "Clean String 123"
+    },
+    {
+      "input": "With\u0000Null\u0007Bell\bBackspace",
+      "expected": "WithNullBellBackspace"
+    },
+    {
+      "input": "With\u000eShiftOut\u001fUnitSep",
+      "expected": "WithShiftOutUnitSep"
+    },
+    {
+      "input": "Soft­Hyphen​ZeroWidth‍Joiner",
+      "expected": "SoftHyphenZeroWidthJoiner"
+    },
+    {
+      "input": "Preserve\tTab\nNewline\rReturn",
+      "expected": "Preserve\tTab\nNewline\rReturn"
+    }
+  ],
+  "rtlCases": [
+    {
+      "input": "Hello World",
+      "expectedRendered": "Hello World"
+    },
+    {
+      "input": "שלום",
+      "expectedRendered": "םולש"
+    },
+    {
+      "input": "שלום (world)!",
+      "expectedRendered": "!(world) םולש"
+    },
+    {
+      "input": "English and עברית together",
+      "expectedRendered": "English and תירבע together"
+    },
+    {
+      "input": "Line 1\nLine 2 with עברית\nעברית first",
+      "expectedRendered": "Line 1\nLine 2 with תירבע\nfirst תירבע"
+    }
+  ],
+  "equality": {
+    "defEqualsDef": true,
+    "defEqualsCustom": false,
+    "customEqualsClone": true
+  },
+  "collectionOps": {
+    "initialLength": 3,
+    "containsCustom": true,
+    "firstRemoval": true,
+    "secondRemoval": false,
+    "containsAfterRemoval": false,
+    "lengthAfterRemoval": 2
+  },
+  "boundingSphere": {
+    "center": [
+      65542.5,
+      -32759,
+      16.75
+    ],
+    "radius": 73273.26642652489
+  },
+  "transformedBoundingSphere": {
+    "center": [
+      65552.5,
+      -32739,
+      46.75
+    ],
+    "radius": 73273.26642652489
+  },
+  "bboxCases": [
+    {
+      "name": "baseline_left_bg",
+      "horizontalOrigin": 1,
+      "verticalOrigin": 2,
+      "center": [
+        100,
+        200
+      ],
+      "backgroundWidth": 70.4,
+      "backgroundHeight": 64,
+      "backgroundTranslate": [
+        0,
+        -12.5
+      ],
+      "expectedBbox": [
+        100,
+        172.5,
+        44,
+        40
+      ]
+    }
+  ],
+  "notes": {
+    "engineVersion": "23.0.0",
+    "simulationLabel": "Glyph metrics in bboxCases are computed via standard measureText mock (width 24, ascent 36, descent 12). WebGL texture atlas and GPU draw commands are omitted from CPU tests."
+  }
+}

@@ -1,0 +1,282 @@
+{
+  "defaults": {
+    "show": true,
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "pixelOffset": [
+      0,
+      0
+    ],
+    "eyeOffset": [
+      0,
+      0,
+      0
+    ],
+    "horizontalOrigin": 0,
+    "verticalOrigin": 0,
+    "heightReference": 0,
+    "scale": 1,
+    "color": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "rotation": 0,
+    "alignedAxis": [
+      0,
+      0,
+      0
+    ],
+    "width": null,
+    "height": null,
+    "scaleByDistance": null,
+    "translucencyByDistance": null,
+    "pixelOffsetScaleByDistance": null,
+    "sizeInMeters": false,
+    "distanceDisplayCondition": null,
+    "disableDepthTestDistance": null,
+    "id": null,
+    "image": null,
+    "ready": false,
+    "clusterShow": true,
+    "outlineColor": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "outlineWidth": 0,
+    "splitDirection": 0
+  },
+  "custom": {
+    "show": true,
+    "position": [
+      131075,
+      -65538,
+      3.5
+    ],
+    "pixelOffset": [
+      12,
+      -24
+    ],
+    "eyeOffset": [
+      5,
+      10,
+      -50
+    ],
+    "horizontalOrigin": -1,
+    "verticalOrigin": 1,
+    "heightReference": 0,
+    "scale": 2.5,
+    "color": [
+      0.25,
+      0.5,
+      0.75,
+      0.8
+    ],
+    "rotation": 0.7853981633974483,
+    "alignedAxis": [
+      0,
+      1,
+      0
+    ],
+    "width": 64,
+    "height": 32,
+    "scaleByDistance": [
+      100,
+      2,
+      1000,
+      0.5
+    ],
+    "translucencyByDistance": [
+      50,
+      1,
+      500,
+      0.2
+    ],
+    "pixelOffsetScaleByDistance": [
+      20,
+      1.5,
+      200,
+      0.5
+    ],
+    "sizeInMeters": true,
+    "distanceDisplayCondition": [
+      15,
+      2500
+    ],
+    "disableDepthTestDistance": 100,
+    "id": "test-billboard-custom",
+    "image": null,
+    "ready": false,
+    "clusterShow": true,
+    "outlineColor": [
+      1,
+      0,
+      0,
+      1
+    ],
+    "outlineWidth": 2,
+    "splitDirection": -1
+  },
+  "bboxCases": [
+    {
+      "name": "custom_right_bottom",
+      "horizontalOrigin": -1,
+      "verticalOrigin": 1,
+      "width": 64,
+      "height": 32,
+      "scale": 2.5,
+      "center": [
+        200,
+        300
+      ],
+      "expected": [
+        40,
+        220,
+        160,
+        80
+      ]
+    },
+    {
+      "name": "center_center",
+      "horizontalOrigin": 0,
+      "verticalOrigin": 0,
+      "width": 100,
+      "height": 50,
+      "scale": 2,
+      "center": [
+        500,
+        500
+      ],
+      "expected": [
+        400,
+        450,
+        200,
+        100
+      ]
+    },
+    {
+      "name": "left_top",
+      "horizontalOrigin": 1,
+      "verticalOrigin": -1,
+      "width": 100,
+      "height": 50,
+      "scale": 2,
+      "center": [
+        500,
+        500
+      ],
+      "expected": [
+        500,
+        500,
+        200,
+        100
+      ]
+    },
+    {
+      "name": "left_baseline",
+      "horizontalOrigin": 1,
+      "verticalOrigin": 2,
+      "width": 100,
+      "height": 50,
+      "scale": 2,
+      "center": [
+        500,
+        500
+      ],
+      "expected": [
+        500,
+        400,
+        200,
+        100
+      ]
+    }
+  ],
+  "defEqualsDef": true,
+  "defEqualsCustom": false,
+  "initialLength": 2,
+  "containsBefore": true,
+  "firstRemoval": true,
+  "secondRemoval": false,
+  "containsAfter": false,
+  "lengthAfter": 1,
+  "retained": true,
+  "boundingSphere": {
+    "center": [
+      65542.5,
+      -32759,
+      16.75
+    ],
+    "radius": 73273.26642652489
+  },
+  "transformedBoundingSphere": {
+    "center": [
+      65567.5,
+      -32709,
+      91.75
+    ],
+    "radius": 73273.26642652489
+  },
+  "encodedAttributes": {
+    "positionHighAndScale": [
+      131072,
+      -65536,
+      0,
+      2.5
+    ],
+    "positionLowAndRotation": [
+      3,
+      -2,
+      3.5,
+      0.7853981633974483
+    ],
+    "compressedAttribute0": [
+      4195860,
+      8382592,
+      8388608,
+      0
+    ],
+    "compressedAttribute1": [
+      16639,
+      8453939,
+      50,
+      500
+    ],
+    "compressedAttribute2": [
+      4227263,
+      16777215,
+      13434627,
+      128
+    ],
+    "eyeOffset": [
+      5,
+      10,
+      -50,
+      0
+    ],
+    "scaleByDistance": [
+      100,
+      2,
+      1000,
+      0.5
+    ],
+    "pixelOffsetScaleByDistance": [
+      20,
+      1.5,
+      200,
+      0.5
+    ],
+    "compressedAttribute3": [
+      225,
+      6250000,
+      10000,
+      262176
+    ],
+    "splitDirection": -1
+  }
+}

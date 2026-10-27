@@ -46,9 +46,9 @@ impl ImageHost for Images {
         &'a self,
         bytes: &'a [u8],
         _: &'a str,
-        _: ImageDecodeOptions,
+        options: ImageDecodeOptions,
     ) -> Option<ImageFuture<'a, RgbaImage>> {
-        self.log.borrow_mut().push("decode".into());
+        self.log.borrow_mut().push(format!("decode flip_y={}", options.flip_y));
         let width = 2;
         let height = 2;
         let pixels = bytes.iter().copied().cycle().take((width * height * 4) as usize).collect();
@@ -786,4 +786,16 @@ fn url_template_imagery_provider_empty_subdomains_does_not_panic() {
     let provider = UrlTemplateImageryProvider::new(ImageryLoader::new(client_img, host), options).unwrap();
     // Manually clearing or testing image_tag when empty:
     assert!(provider.image_tag("s", 0, 0, 0).is_some());
+}
+
+#[test]
+fn imagery_loader_requests_flipped_decoding_with_and_without_discard_policy() {
+    for discard in [false, true] {
+        let log = Rc::new(RefCell::new(Vec::new()));
+        let host = Rc::new(Images { log: log.clone() });
+        let loader = ImageryLoader::new(client(Rc::default(), true), host);
+        let resource = Resource::new("https://example.com/tile.png").unwrap();
+        ready(loader.load_image(resource, discard).unwrap()).unwrap();
+        assert_eq!(log.borrow().as_slice(), ["decode flip_y=true"]);
+    }
 }
