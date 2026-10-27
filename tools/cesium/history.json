@@ -550,5 +550,13 @@
     "ported": 1042,
     "implemented": 6,
     "validatedPercent": 62.32
+  },
+  {
+    "milestone": "Start",
+    "date": "2026-10-27",
+    "percent": 66.53,
+    "ported": 1046,
+    "implemented": 6,
+    "validatedPercent": 63.01
   }
 ]

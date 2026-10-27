@@ -594,3 +594,14 @@ pub use mapbox_style_imagery_provider::{
 };
 pub mod single_tile_imagery_provider;
 pub use single_tile_imagery_provider::{SingleTileImageryProvider, SingleTileImageryProviderOptions};
+
+pub mod imagery;
+pub use imagery::Imagery;
+pub mod tile_imagery;
+pub use tile_imagery::TileImagery;
+pub mod imagery_layer;
+pub use imagery_layer::{ImageryLayer, ImageryLayerHandle, ImageryLayerOptions};
+pub mod imagery_layer_collection;
+pub use imagery_layer_collection::{
+    ImageryLayerCollection, ImageryLayerEvent, ImageryLayerMovedEvent, ImageryLayerVisibilityEvent,
+};

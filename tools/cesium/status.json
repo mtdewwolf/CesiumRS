@@ -4404,7 +4404,7 @@
   "Scene/ConeEmitter": {
     "status": "ported",
     "rust": "scene::particle_emitter",
-    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30° default. Emitted particles match bit for bit."
+    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30\u00b0 default. Emitted particles match bit for bit."
   },
   "Scene/SphereEmitter": {
     "status": "ported",
@@ -4524,7 +4524,7 @@
   "Scene/Model/Extensions/Gpm/GltfMeshPrimitiveGpmLoader": {
     "status": "ported",
     "rust": "scene::model::extensions::gpm::gltf_mesh_primitive_gpm_loader",
-    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale × 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
+    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale \u00d7 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
   },
   "DataSources/CompositeEntityCollection": {
     "status": "ported",
@@ -5220,5 +5220,25 @@
     "status": "partial",
     "rust": "data_sources::create_material_property_descriptor",
     "note": "Color inputs infer ColorMaterialProperty. String/Resource/canvas/video inputs need ImageMaterialProperty and return an explicit unsupported error."
+  },
+  "Scene/Imagery": {
+    "status": "ported",
+    "rust": "scene::imagery",
+    "note": "Imagery state machine (Unloaded, Transitioning, Received, TextureLoaded, Ready, Failed), reference counting, parent hierarchy, and placeholder creation."
+  },
+  "Scene/TileImagery": {
+    "status": "ported",
+    "rust": "scene::tile_imagery",
+    "note": "TileImagery association between terrain tile and ready/loading imagery, texture coordinate translation/scale, WebMercator flag, and resource release."
+  },
+  "Scene/ImageryLayer": {
+    "status": "ported",
+    "rust": "scene::imagery_layer",
+    "note": "Layer settings, uniform defaults, options, get_imagery_rectangle, calculate_texture_translation_and_scale, get_level_with_maximum_texel_spacing, tile imagery cache, and skeleton creation. 21 pinned fixture cases in tests/scene_imagery_layers.rs."
+  },
+  "Scene/ImageryLayerCollection": {
+    "status": "ported",
+    "rust": "scene::imagery_layer_collection",
+    "note": "Collection management (add, remove, removeAll), layer reordering (raise, lower, raiseToTop, lowerToBottom), base layer auto-resolution, and event notifications. Direct CesiumJS cases in tests/scene_imagery_layers.rs."
   }
 }
