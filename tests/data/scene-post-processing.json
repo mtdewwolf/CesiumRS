@@ -1,0 +1,277 @@
+{
+  "source": "@cesium/engine 23.0.0",
+  "library": {
+    "blur": {
+      "name": "czm_blur",
+      "length": 2,
+      "inputPreviousStageTexture": true,
+      "stages": [
+        {
+          "name": "czm_blur_x_direction",
+          "sampleMode": 1
+        },
+        {
+          "name": "czm_blur_y_direction",
+          "sampleMode": 1
+        }
+      ]
+    },
+    "depthOfField": {
+      "name": "czm_depth_of_field",
+      "length": 2,
+      "inputPreviousStageTexture": false,
+      "focalDistance": 5
+    },
+    "edgeDetection": {
+      "namePrefix": "czm_edge_detection_",
+      "length": 0.25
+    },
+    "silhouette": {
+      "name": "czm_silhouette",
+      "length": 2,
+      "inputPreviousStageTexture": false
+    },
+    "bloom": {
+      "name": "czm_bloom",
+      "length": 2,
+      "inputPreviousStageTexture": false,
+      "contrast": 128,
+      "brightness": -0.3,
+      "glowOnly": false
+    },
+    "ambientOcclusion": {
+      "name": "czm_ambient_occlusion",
+      "length": 2,
+      "inputPreviousStageTexture": false,
+      "intensity": 3,
+      "bias": 0.1,
+      "lengthCap": 0.26,
+      "directionCount": 8,
+      "stepCount": 32,
+      "ambientOcclusionOnly": false
+    },
+    "fxaa": {
+      "name": "czm_FXAA",
+      "sampleMode": 1
+    },
+    "tonemappers": {
+      "aces": {
+        "name": "czm_aces",
+        "exposure": 1
+      },
+      "filmic": {
+        "name": "czm_filmic",
+        "exposure": 1
+      },
+      "pbrNeutral": {
+        "name": "czm_pbr_neutral",
+        "exposure": 1
+      },
+      "reinhard": {
+        "name": "czm_reinhard",
+        "exposure": 1
+      },
+      "modifiedReinhard": {
+        "name": "czm_modified_reinhard",
+        "exposure": 1
+      }
+    },
+    "blackAndWhite": {
+      "name": "czm_black_and_white",
+      "gradations": 5
+    },
+    "brightness": {
+      "name": "czm_brightness",
+      "brightness": 0.5
+    },
+    "nightVision": {
+      "name": "czm_night_vision"
+    },
+    "depthView": {
+      "name": "czm_depth_view"
+    },
+    "lensFlare": {
+      "name": "czm_lens_flare",
+      "intensity": 2,
+      "distortion": 10,
+      "ghostDispersal": 0.4,
+      "haloWidth": 0.4,
+      "dirtAmount": 0.4
+    }
+  },
+  "autoExposure": {
+    "name": "czm_autoexposure",
+    "minimumLuminance": 0.1,
+    "maximumLuminance": 10,
+    "pyramids": [
+      {
+        "input": [
+          800,
+          600
+        ],
+        "length": 7,
+        "levels": [
+          [
+            267,
+            200
+          ],
+          [
+            89,
+            67
+          ],
+          [
+            30,
+            23
+          ],
+          [
+            10,
+            8
+          ],
+          [
+            4,
+            3
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      {
+        "input": [
+          1920,
+          1080
+        ],
+        "length": 7,
+        "levels": [
+          [
+            640,
+            360
+          ],
+          [
+            214,
+            120
+          ],
+          [
+            72,
+            40
+          ],
+          [
+            24,
+            14
+          ],
+          [
+            8,
+            5
+          ],
+          [
+            3,
+            2
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      {
+        "input": [
+          256,
+          256
+        ],
+        "length": 6,
+        "levels": [
+          [
+            86,
+            86
+          ],
+          [
+            29,
+            29
+          ],
+          [
+            10,
+            10
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      {
+        "input": [
+          500,
+          300
+        ],
+        "length": 6,
+        "levels": [
+          [
+            167,
+            100
+          ],
+          [
+            56,
+            34
+          ],
+          [
+            19,
+            12
+          ],
+          [
+            7,
+            4
+          ],
+          [
+            3,
+            2
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      {
+        "input": [
+          3,
+          3
+        ],
+        "length": 1,
+        "levels": [
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      {
+        "input": [
+          1,
+          1
+        ],
+        "length": 0,
+        "levels": []
+      }
+    ]
+  },
+  "dependencies": [],
+  "collection": {
+    "length": 0,
+    "tonemapper": "PBR_NEUTRAL",
+    "exposure": 1,
+    "autoExposureEnabled": false
+  }
+}
