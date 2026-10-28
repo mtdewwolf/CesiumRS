@@ -12,7 +12,19 @@ fn every_fixture_file_has_a_replay_suite() {
             continue;
         }
         let source = std::fs::read_to_string(path).unwrap();
-        // Replay suites call common::run with literal package/module names.
+        // Dedicated replay suites may embed their fixture directly.
+        for call in source.split("include_str!(\"").skip(1) {
+            let Some(relative) = call.split('"').next().and_then(|p| p.strip_prefix("fixtures/")) else {
+                continue;
+            };
+            let path = Path::new(relative);
+            if path.extension().and_then(|s| s.to_str()) == Some("json") {
+                if let (Some(package), Some(module)) = (path.parent(), path.file_stem()) {
+                    registered.insert((package.to_string_lossy().into_owned(), module.to_string_lossy().into_owned()));
+                }
+            }
+        }
+        // Shared replay suites call common::run with literal package/module names.
         for call in source.split("run(").skip(1) {
             let mut args = call.split(',');
             let literal = |s: &str| s.trim().strip_prefix('"').and_then(|s| s.strip_suffix('"')).map(str::to_owned);
@@ -25,7 +37,7 @@ fn every_fixture_file_has_a_replay_suite() {
     let mut found = Vec::new();
     collect_fixture_keys(&fixtures, &fixtures, &mut found);
     let missing: Vec<_> = found.into_iter().filter(|key| !registered.contains(key)).collect();
-    assert!(missing.is_empty(), "fixture files without a common::run replay: {missing:?}");
+    assert!(missing.is_empty(), "fixture files without a replay suite: {missing:?}");
 }
 
 /// `(package, module)` for every fixture JSON file. A nested shader fixture

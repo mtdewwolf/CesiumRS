@@ -5430,5 +5430,105 @@
     "status": "partial",
     "rust": "scene::quadtree_primitive",
     "note": "CPU tile selection, load priority queues, eligible-resource eviction, progress events and provider-backed height callbacks; pinned defaults and native lifecycle tests. Real terrain/Scene integration, load and height time budgets, projected-mode picking and full traversal parity remain."
+  },
+  "Scene/VoxelCell": {
+    "status": "partial",
+    "rust": "scene::voxel_cell",
+    "note": "Typed metadata slices and padded sample box bounds checked in 6 source cases. Caller supplies resolved node/content; no Scene picking or curved-shape integration. See docs/scene-mz-cpu.md."
+  },
+  "Scene/Tileset3DTileContent": {
+    "status": "partial",
+    "rust": "scene::tileset_3d_tile_content",
+    "note": "External-tree load callback, readiness, URL, metadata/group, zero metrics and lifecycle. Pinned callback fixture; existing resource loader integration remains StructuralContent. See docs/scene-mz-cpu.md."
+  },
+  "Scene/PerformanceDisplay": {
+    "status": "partial",
+    "rust": "scene::performance_display",
+    "note": "CPU timing windows/rendered text/throttle flag checked against source; no DOM presentation; decimal ties not exhaustively validated. See docs/scene-mz-cpu.md."
+  },
+  "Scene/VoxelContent": {
+    "status": "partial",
+    "rust": "scene::voxel_content",
+    "note": "Typed metadata-array readiness/request-render/lifecycle checked against source. No glTF loader or attribute reordering. See docs/scene-mz-cpu.md."
+  },
+  "Scene/Vector3DTileBatch": {
+    "status": "ported",
+    "rust": "scene::vector_3d_tile_batch",
+    "note": "Owned offset/count/color/batch IDs record compared with pinned CesiumJS fixture. See docs/scene-mz-cpu.md."
+  },
+  "Scene/VoxelBoxShape": {
+    "status": "partial",
+    "rust": "scene::voxel_box_shape",
+    "note": "CPU bounds, tile/sample OBBs and UV/view transforms; 24 source scenarios. Render-bound plane collection and shader/GPU integration absent. See docs/scene-mz-cpu.md."
+  },
+  "Scene/SpatialNode": {
+    "status": "partial",
+    "rust": "scene::spatial_node",
+    "note": "CPU box octree bounds, screen error and ancestor temporal selection; 8 source cases. No megatexture/keyframe loading lifecycle, visibility adapter or owned parent graph. See docs/scene-mz-cpu.md."
+  },
+  "Scene/VoxelShapeType": {
+    "status": "partial",
+    "rust": "scene::voxel_shape_type",
+    "note": "All identifiers and default bounds checked against source. Cylinder/ellipsoid constructor dispatch absent. See docs/scene-mz-cpu.md."
+  },
+  "Scene/Terrain": {
+    "status": "ported",
+    "rust": "scene::terrain",
+    "note": "Explicitly polled future with once-only ready/error events; pinned success fixture and pending/error regressions. World factories delegate to Core; live Ion network not tested. See docs/scene-mz-cpu.md."
+  },
+  "Scene/OrderedGroundPrimitiveCollection": {
+    "status": "ported",
+    "rust": "scene::ordered_ground_primitive_collection",
+    "note": "Stable z-index updates/removal/destruction compared with pinned source traces. Rust-owned primitives use collection-local handles; finite z-indices only. See docs/scene-mz-cpu.md."
+  },
+  "Scene/GaussianSplatSorter": {
+    "status": "implemented",
+    "rust": "scene::gaussian_splat_sorter",
+    "note": "Coordinates background web worker radix sorting of Gaussian splats by camera distance."
+  },
+  "Scene/DepthPlane": {
+    "status": "partial",
+    "rust": "scene::depth_plane",
+    "note": "CPU geometry and state implemented; rendering is not yet supported."
+  },
+  "Scene/DebugCameraPrimitive": {
+    "status": "partial",
+    "rust": "scene::debug_camera_primitive",
+    "note": "CPU geometry and state implemented; rendering is not yet supported."
+  },
+  "Scene/DebugModelMatrixPrimitive": {
+    "status": "partial",
+    "rust": "scene::debug_model_matrix_primitive",
+    "note": "CPU geometry and state implemented; rendering is not yet supported."
+  },
+  "Scene/GaussianSplatRenderResources": {
+    "status": "implemented",
+    "rust": "scene::gaussian_splat_render_resources",
+    "note": "Shader builder, render state, and alpha options for Gaussian splat drawing stages."
+  },
+  "Scene/JobScheduler": {
+    "status": "implemented",
+    "rust": "scene::job_scheduler",
+    "note": "Frame budget coordinator for scheduling and executing texture, program, and general engine jobs."
+  },
+  "Scene/createTangentSpaceDebugPrimitive": {
+    "status": "implemented",
+    "rust": "scene::create_tangent_space_debug_primitive",
+    "note": "Creates colored debug line primitive for normal, tangent, and bitangent geometry attributes."
+  },
+  "Scene/Empty3DTileContent": {
+    "status": "implemented",
+    "rust": "scene::empty_3d_tile_content",
+    "note": "Tile content for empty/leaf tiles in 3D Tiles hierarchies without geometry or textures."
+  },
+  "Scene/GaussianSplatTextureGenerator": {
+    "status": "implemented",
+    "rust": "scene::gaussian_splat_texture_generator",
+    "note": "Coordinates background web worker generation of attribute textures for Gaussian splats."
+  },
+  "Scene/BrdfLutGenerator": {
+    "status": "implemented",
+    "rust": "scene::brdf_lut_generator",
+    "note": "Generates 256x256 BRDF split-sum look-up texture for image-based lighting and PBR materials."
   }
 }

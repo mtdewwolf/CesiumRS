@@ -545,10 +545,18 @@
   },
   {
     "milestone": "DataSources graphics definitions",
-    "date": "2026-10-27",
-    "percent": 70.24,
+    "date": "2026-10-28",
+    "percent": 70.63,
     "ported": 1043,
-    "implemented": 6,
+    "implemented": 16,
     "validatedPercent": 62.35
+  },
+  {
+    "milestone": "Scene M-Z CPU foundations",
+    "date": "2026-10-28",
+    "percent": 70.92,
+    "ported": 1046,
+    "implemented": 13,
+    "validatedPercent": 62.48
   }
 ]
