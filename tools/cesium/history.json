@@ -554,9 +554,9 @@
   {
     "milestone": "Scene M-Z CPU foundations",
     "date": "2026-10-28",
-    "percent": 70.62,
+    "percent": 71.01,
     "ported": 1046,
-    "implemented": 6,
+    "implemented": 16,
     "validatedPercent": 62.48
   }
 ]
