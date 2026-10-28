@@ -5480,5 +5480,55 @@
     "status": "ported",
     "rust": "scene::ordered_ground_primitive_collection",
     "note": "Stable z-index updates/removal/destruction compared with pinned source traces. Rust-owned primitives use collection-local handles; finite z-indices only. See docs/scene-mz-cpu.md."
+  },
+  "Scene/GaussianSplatSorter": {
+    "status": "implemented",
+    "rust": "scene::gaussian_splat_sorter",
+    "note": "Coordinates background web worker radix sorting of Gaussian splats by camera distance."
+  },
+  "Scene/DepthPlane": {
+    "status": "implemented",
+    "rust": "scene::depth_plane",
+    "note": "Renders depth-only horizon quad for ellipsoid to prevent rendering behind the globe."
+  },
+  "Scene/DebugCameraPrimitive": {
+    "status": "implemented",
+    "rust": "scene::debug_camera_primitive",
+    "note": "Visualizes camera frustum planes, outlines, and frustum splits."
+  },
+  "Scene/DebugModelMatrixPrimitive": {
+    "status": "implemented",
+    "rust": "scene::debug_model_matrix_primitive",
+    "note": "Draws colored coordinate axes (RGB for XYZ) for model matrix reference frames."
+  },
+  "Scene/GaussianSplatRenderResources": {
+    "status": "implemented",
+    "rust": "scene::gaussian_splat_render_resources",
+    "note": "Shader builder, render state, and alpha options for Gaussian splat drawing stages."
+  },
+  "Scene/JobScheduler": {
+    "status": "implemented",
+    "rust": "scene::job_scheduler",
+    "note": "Frame budget coordinator for scheduling and executing texture, program, and general engine jobs."
+  },
+  "Scene/createTangentSpaceDebugPrimitive": {
+    "status": "implemented",
+    "rust": "scene::create_tangent_space_debug_primitive",
+    "note": "Creates colored debug line primitive for normal, tangent, and bitangent geometry attributes."
+  },
+  "Scene/Empty3DTileContent": {
+    "status": "implemented",
+    "rust": "scene::empty_3d_tile_content",
+    "note": "Tile content for empty/leaf tiles in 3D Tiles hierarchies without geometry or textures."
+  },
+  "Scene/GaussianSplatTextureGenerator": {
+    "status": "implemented",
+    "rust": "scene::gaussian_splat_texture_generator",
+    "note": "Coordinates background web worker generation of attribute textures for Gaussian splats."
+  },
+  "Scene/BrdfLutGenerator": {
+    "status": "implemented",
+    "rust": "scene::brdf_lut_generator",
+    "note": "Generates 256x256 BRDF split-sum look-up texture for image-based lighting and PBR materials."
   }
 }

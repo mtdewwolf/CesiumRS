@@ -688,3 +688,24 @@ pub use ordered_ground_primitive_collection::OrderedGroundPrimitiveCollection;
 
 pub mod tileset_3d_tile_content;
 pub use tileset_3d_tile_content::Tileset3DTileContent;
+
+pub mod brdf_lut_generator;
+pub use brdf_lut_generator::BrdfLutGenerator;
+pub mod create_tangent_space_debug_primitive;
+pub use create_tangent_space_debug_primitive::{create_tangent_space_debug_primitive, CreateTangentSpaceDebugPrimitiveOptions};
+pub mod debug_camera_primitive;
+pub use debug_camera_primitive::{DebugCameraPrimitive, DebugCameraPrimitiveOptions};
+pub mod debug_model_matrix_primitive;
+pub use debug_model_matrix_primitive::{DebugModelMatrixPrimitive, DebugModelMatrixPrimitiveOptions};
+pub mod depth_plane;
+pub use depth_plane::{compute_depth_quad, DepthPlane};
+pub mod empty_3d_tile_content;
+pub use empty_3d_tile_content::Empty3DTileContent;
+pub mod gaussian_splat_render_resources;
+pub use gaussian_splat_render_resources::GaussianSplatRenderResources;
+pub mod gaussian_splat_sorter;
+pub use gaussian_splat_sorter::{GaussianSplatSorter, SorterTask};
+pub mod gaussian_splat_texture_generator;
+pub use gaussian_splat_texture_generator::{GaussianSplatTextureGenerator, TextureGeneratorTask};
+pub mod job_scheduler;
+pub use job_scheduler::{JobScheduler, JobTypeBudget};
