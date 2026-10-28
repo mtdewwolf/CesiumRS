@@ -5364,7 +5364,7 @@
   "Scene/Imagery": {
     "status": "partial",
     "rust": "scene::imagery",
-    "note": "Tile metadata, parent references, manually polled provider futures and resource release; native lifecycle cases. Transport cancellation, automatic cache eviction, GPU upload and reprojection remain."
+    "note": "Tile metadata, parent references, manually polled provider futures and resource release; native lifecycle cases. Transport cancellation, GPU upload and reprojection remain."
   },
   "Scene/TileImagery": {
     "status": "partial",
@@ -5374,7 +5374,7 @@
   "Scene/ImageryLayer": {
     "status": "partial",
     "rust": "scene::imagery_layer",
-    "note": "Layer options, imagery bounds, texture transforms, cache, initial skeletons and provider request lifecycle; reference fixture and native lifecycle cases. Complete tile coverage, transport cancellation, automatic cache eviction and GPU reprojection remain; seven texel-spacing expectations are computed separately from Cesium’s private function."
+    "note": "Layer options, imagery bounds, texture transforms, cache, initial skeletons and provider request lifecycle; reference fixture and native lifecycle cases. Complete tile coverage, transport cancellation and GPU reprojection remain; seven texel-spacing expectations are computed separately from Cesium’s private function."
   },
   "Scene/ImageryLayerCollection": {
     "status": "partial",

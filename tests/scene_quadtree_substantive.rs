@@ -394,7 +394,7 @@ fn test_height_callback_invalidation_lifecycle() {
     let callback_count = Rc::new(RefCell::new(0));
     let count_clone = callback_count.clone();
 
-    qp.update_height(Cartographic::new(-1.0, 0.2, 0.0), move |_carto| {
+    let id = qp.update_height(Cartographic::new(-1.0, 0.2, 0.0), move |_carto| {
         *count_clone.borrow_mut() += 1;
     });
 
@@ -426,6 +426,16 @@ fn test_height_callback_invalidation_lifecycle() {
         qp.add_height_callbacks[0].callback.is_some(),
         "Callback must remain intact after tile invalidation"
     );
+    assert_eq!(qp.add_height_callbacks[0].level, -1);
+    assert_eq!(qp.active_height_callbacks[&id].level, -1);
+    let mut frame3 = frame3;
+    qp.render(&mut frame3, &mut camera);
+    qp.end_frame(&mut frame3);
+    let mut frame4 = create_substantive_frame_state(4, &mut camera);
+    qp.begin_frame(&frame4);
+    qp.render(&mut frame4, &mut camera);
+    qp.end_frame(&mut frame4);
+    assert_eq!(*callback_count.borrow(), 2, "replacement root triggers the callback again");
 }
 
 #[test]

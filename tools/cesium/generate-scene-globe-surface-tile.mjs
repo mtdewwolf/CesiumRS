@@ -16,7 +16,7 @@ import Cartesian3 from "./node_modules/@cesium/engine/Source/Core/Cartesian3.js"
 import Cartesian4 from "./node_modules/@cesium/engine/Source/Core/Cartesian4.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const outDir = join(here, "../../tests/fixtures/scene");
+const outDir = join(here, "../../tests/data");
 const packageJson = JSON.parse(readFileSync(join(here, "./node_modules/@cesium/engine/package.json"), "utf8"));
 const engineVersion = packageJson.version;
 

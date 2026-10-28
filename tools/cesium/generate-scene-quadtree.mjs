@@ -21,7 +21,7 @@ import QuadtreeTileLoadState from "./node_modules/@cesium/engine/Source/Scene/Qu
 import QuadtreeTileProvider from "./node_modules/@cesium/engine/Source/Scene/QuadtreeTileProvider.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const outDir = join(here, "../../tests/fixtures/scene");
+const outDir = join(here, "../../tests/data");
 const version = JSON.parse(readFileSync(join(here, "./node_modules/@cesium/engine/package.json"), "utf8")).version;
 
 mkdirSync(outDir, { recursive: true });
@@ -176,7 +176,7 @@ mkdirSync(outDir, { recursive: true });
     join(outDir, "QuadtreeTile.json"),
     JSON.stringify(quadtreeTileFixture, null, 2) + "\n"
   );
-  console.log("Wrote tests/fixtures/scene/QuadtreeTile.json");
+  console.log("Wrote tests/data/QuadtreeTile.json");
 }
 
 // 2. QuadtreePrimitive fixture suite
@@ -215,5 +215,5 @@ mkdirSync(outDir, { recursive: true });
     join(outDir, "QuadtreePrimitive.json"),
     JSON.stringify(quadtreePrimitiveFixture, null, 2) + "\n"
   );
-  console.log("Wrote tests/fixtures/scene/QuadtreePrimitive.json");
+  console.log("Wrote tests/data/QuadtreePrimitive.json");
 }

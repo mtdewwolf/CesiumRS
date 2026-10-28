@@ -271,15 +271,15 @@ impl<P: QuadtreeTileProvider> QuadtreePrimitive<P> {
         if let Some(level_zero_tiles) = self.level_zero_tiles.take() {
             for tile in level_zero_tiles {
                 for data in std::mem::take(&mut tile.borrow_mut().custom_data) {
-                    if let Some(mut active) = self.active_height_callbacks.get(&data.id).cloned() {
-                        active.level = 0;
-                        self.add_height_callbacks.push(active);
+                    if let Some(active) = self.active_height_callbacks.get_mut(&data.id) {
+                        active.level = -1;
+                        self.add_height_callbacks.push(active.clone());
                     } else if data.callback.is_some() {
                         self.add_height_callbacks.push(HeightCallbackRegistration {
                             id: data.id,
                             position_cartographic: data.position_cartographic,
                             position_on_ellipsoid_surface: data.position_on_ellipsoid_surface,
-                            level: 0,
+                            level: -1,
                             callback: data.callback,
                         });
                     }

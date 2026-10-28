@@ -12,7 +12,7 @@
 //! rather than simulated with mock handles.
 
 use super::frame_state::FrameState;
-use super::imagery::Imagery;
+use super::imagery::{Imagery, ImageryCache};
 use super::imagery_provider::{
     image_error, report_image_error, ImageryProvider, ImageryProviderError,
 };
@@ -96,7 +96,7 @@ pub struct ImageryLayer {
     pub error_event: Event<RuntimeError>,
 
     // Cache
-    imagery_cache: HashMap<(i32, i32, u32), Rc<RefCell<Imagery>>>,
+    imagery_cache: Rc<ImageryCache>,
 
     // Request error tracking
     request_image_error: Option<ImageryProviderError>,
@@ -191,7 +191,7 @@ impl ImageryLayer {
             destroyed: false,
             ready_event: Event::new(),
             error_event: Event::new(),
-            imagery_cache: HashMap::new(),
+            imagery_cache: Rc::new(RefCell::new(HashMap::new())),
             request_image_error: None,
         }
     }
@@ -288,7 +288,7 @@ impl ImageryLayer {
 
     pub fn destroy(&mut self) -> Result<(), RuntimeError> {
         self.destroyed = true;
-        self.imagery_cache.clear();
+        self.imagery_cache.borrow_mut().clear();
         self.request_image_error = None;
         Ok(())
     }
@@ -397,13 +397,14 @@ impl ImageryLayer {
         rectangle: Option<Rectangle>,
     ) -> Rc<RefCell<Imagery>> {
         let key = (x, y, level);
-        if let Some(imagery) = self.imagery_cache.get(&key) {
+        let cached = self.imagery_cache.borrow().get(&key).cloned();
+        if let Some(imagery) = cached {
             if imagery.borrow().reference_count > 0 {
                 let img = imagery.clone();
                 img.borrow_mut().add_reference();
                 return img;
             }
-            self.imagery_cache.remove(&key);
+            self.imagery_cache.borrow_mut().remove(&key);
         }
 
         let rect = rectangle.unwrap_or_else(|| {
@@ -426,14 +427,15 @@ impl ImageryLayer {
         };
 
         let mut imagery = Imagery::new(x, y, level, rect, parent);
+        imagery.cache = Rc::downgrade(&self.imagery_cache);
         imagery.add_reference();
         let rc = Rc::new(RefCell::new(imagery));
-        self.imagery_cache.insert(key, rc.clone());
+        self.imagery_cache.borrow_mut().insert(key, rc.clone());
         rc
     }
 
     pub fn remove_imagery_from_cache(&mut self, x: i32, y: i32, level: u32) {
-        self.imagery_cache.remove(&(x, y, level));
+        self.imagery_cache.borrow_mut().remove(&(x, y, level));
     }
 
     pub fn remove_imagery(&mut self, imagery: &Imagery) {
@@ -441,7 +443,7 @@ impl ImageryLayer {
     }
 
     pub fn imagery_cache_len(&self) -> usize {
-        self.imagery_cache.len()
+        self.imagery_cache.borrow().len()
     }
 
     pub fn request_image_error(&self) -> Option<&ImageryProviderError> {

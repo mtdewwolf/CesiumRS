@@ -41,7 +41,7 @@ use cesium_rs::scene::tile_imagery::TileImagery;
 use globe_surface_tile::{GlobeSurfaceTile, SurfaceTerrainData};
 use serde_json::Value;
 
-const FIXTURE_JSON: &str = include_str!("fixtures/scene/GlobeSurfaceTile.json");
+const FIXTURE_JSON: &str = include_str!("data/GlobeSurfaceTile.json");
 
 #[derive(Debug)]
 struct MockSurfaceTerrainData {

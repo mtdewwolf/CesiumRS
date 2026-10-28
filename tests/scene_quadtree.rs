@@ -127,7 +127,7 @@ fn create_test_frame_state(frame_number: u32, camera: &mut Camera) -> FrameState
 
 #[test]
 fn test_quadtree_tile_fixture_parity() {
-    let fixture_str = include_str!("fixtures/scene/QuadtreeTile.json");
+    let fixture_str = include_str!("data/QuadtreeTile.json");
     let fixture: Value = serde_json::from_str(fixture_str).expect("Valid QuadtreeTile fixture");
 
     let scheme: Arc<dyn TilingScheme> = Arc::new(GeographicTilingScheme::default());
@@ -273,7 +273,7 @@ fn test_quadtree_tile_fixture_parity() {
 
 #[test]
 fn test_quadtree_primitive_fixture_parity() {
-    let fixture_str = include_str!("fixtures/scene/QuadtreePrimitive.json");
+    let fixture_str = include_str!("data/QuadtreePrimitive.json");
     let fixture: Value =
         serde_json::from_str(fixture_str).expect("Valid QuadtreePrimitive fixture");
 

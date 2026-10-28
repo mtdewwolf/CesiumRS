@@ -11,7 +11,10 @@
 use super::{FrameResource, ImageryFuture, ImageryImage, ImageryState};
 use crate::core::{Credit, Rectangle};
 use std::cell::RefCell;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
+use std::collections::HashMap;
+
+pub(crate) type ImageryCache = RefCell<HashMap<(i32, i32, u32), Rc<RefCell<Imagery>>>>;
 
 /// Stores details about a single tile of imagery.
 pub struct Imagery {
@@ -28,6 +31,7 @@ pub struct Imagery {
     pub reference_count: usize,
     pub parent: Option<Rc<RefCell<Imagery>>>,
     pub in_flight_request: Option<ImageryFuture>,
+    pub(crate) cache: Weak<ImageryCache>,
 }
 
 impl std::fmt::Debug for Imagery {
@@ -66,6 +70,7 @@ impl Imagery {
             reference_count: 0,
             parent,
             in_flight_request: None,
+            cache: Weak::new(),
         }
     }
 
@@ -84,6 +89,7 @@ impl Imagery {
             reference_count: 1,
             parent: None,
             in_flight_request: None,
+            cache: Weak::new(),
         }
     }
 
@@ -97,6 +103,13 @@ impl Imagery {
         }
         self.reference_count -= 1;
         if self.reference_count == 0 {
+            if let Some(cache) = self.cache.upgrade() {
+                let mut cache = cache.borrow_mut();
+                let key = (self.x, self.y, self.level);
+                if cache.get(&key).is_some_and(|entry| std::ptr::eq(entry.as_ptr(), self)) {
+                    cache.remove(&key);
+                }
+            }
             if let Some(parent) = &self.parent {
                 parent.borrow_mut().release_reference();
             }

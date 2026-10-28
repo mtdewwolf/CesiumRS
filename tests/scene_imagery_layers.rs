@@ -368,16 +368,30 @@ fn tile_imagery_takes_and_releases_one_cache_reference() {
     let parent = child.borrow().parent.clone().unwrap();
     assert_eq!(child.borrow().reference_count, 1);
     assert_eq!(parent.borrow().reference_count, 1);
+    assert_eq!(layer.imagery_cache_len(), 3);
     let mut tile = TileImagery::new(child.clone(), Cartesian4::new(0.0, 0.0, 1.0, 1.0), false);
     assert_eq!(child.borrow().reference_count, 1);
     tile.free_resources();
     assert_eq!(child.borrow().reference_count, 0);
     assert_eq!(parent.borrow().reference_count, 0);
+    assert_eq!(layer.imagery_cache_len(), 0, "child and ancestor entries are evicted on final release");
     child.borrow_mut().release_reference();
     assert_eq!(parent.borrow().reference_count, 0);
     let replacement = layer.get_imagery_from_cache(2, 2, 2, None);
     assert!(!std::rc::Rc::ptr_eq(&child, &replacement));
     assert_eq!(replacement.borrow().parent.as_ref().unwrap().borrow().reference_count, 1);
+}
+
+#[test]
+fn releasing_removed_imagery_does_not_evict_its_replacement() {
+    let mut layer = ImageryLayer::new(None, ImageryLayerOptions::default());
+    let old = layer.get_imagery_from_cache(0, 0, 0, None);
+    layer.remove_imagery_from_cache(0, 0, 0);
+    let replacement = layer.get_imagery_from_cache(0, 0, 0, None);
+    old.borrow_mut().release_reference();
+    assert_eq!(layer.imagery_cache_len(), 1);
+    let cached = layer.get_imagery_from_cache(0, 0, 0, None);
+    assert!(std::rc::Rc::ptr_eq(&replacement, &cached));
 }
 
 struct MinimumLevelProvider {
