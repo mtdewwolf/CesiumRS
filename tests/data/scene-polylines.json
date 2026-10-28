@@ -1,0 +1,364 @@
+{
+  "defaults": {
+    "show": true,
+    "width": 1,
+    "loop": false,
+    "materialType": "Color",
+    "positions": [],
+    "actualPositions": [],
+    "distanceDisplayCondition": null,
+    "id": null,
+    "boundingVolume": {
+      "center": [
+        0,
+        0,
+        0
+      ],
+      "radius": 0
+    },
+    "boundingVolumeWC": {
+      "center": [
+        0,
+        0,
+        0
+      ],
+      "radius": 0
+    },
+    "segmentLengths": [],
+    "segmentPositionsCount": 0
+  },
+  "transformed": {
+    "show": true,
+    "width": 4.5,
+    "loop": true,
+    "materialType": "Color",
+    "positions": [
+      [
+        1000,
+        2000,
+        3000
+      ],
+      [
+        1000,
+        2000,
+        3000
+      ],
+      [
+        4000,
+        5000,
+        6000
+      ],
+      [
+        7000,
+        8000,
+        9000
+      ]
+    ],
+    "actualPositions": [
+      [
+        1000,
+        2000,
+        3000
+      ],
+      [
+        4000,
+        5000,
+        6000
+      ],
+      [
+        7000,
+        8000,
+        9000
+      ],
+      [
+        1000,
+        2000,
+        3000
+      ]
+    ],
+    "distanceDisplayCondition": [
+      12,
+      850
+    ],
+    "id": "custom-polyline-1",
+    "boundingVolume": {
+      "center": [
+        4000,
+        5000,
+        6000
+      ],
+      "radius": 5196.152422706632
+    },
+    "boundingVolumeWC": {
+      "center": [
+        4025,
+        5050,
+        6075
+      ],
+      "radius": 5196.152422706632
+    },
+    "segmentLengths": [
+      4
+    ],
+    "segmentPositionsCount": 4
+  },
+  "loopFalse": {
+    "show": true,
+    "width": 4.5,
+    "loop": false,
+    "materialType": "Color",
+    "positions": [
+      [
+        1000,
+        2000,
+        3000
+      ],
+      [
+        1000,
+        2000,
+        3000
+      ],
+      [
+        4000,
+        5000,
+        6000
+      ],
+      [
+        7000,
+        8000,
+        9000
+      ]
+    ],
+    "actualPositions": [
+      [
+        1000,
+        2000,
+        3000
+      ],
+      [
+        4000,
+        5000,
+        6000
+      ],
+      [
+        7000,
+        8000,
+        9000
+      ]
+    ],
+    "distanceDisplayCondition": [
+      12,
+      850
+    ],
+    "id": "custom-polyline-1",
+    "boundingVolume": {
+      "center": [
+        4000,
+        5000,
+        6000
+      ],
+      "radius": 5196.152422706632
+    },
+    "boundingVolumeWC": {
+      "center": [
+        4025,
+        5050,
+        6075
+      ],
+      "radius": 5196.152422706632
+    },
+    "segmentLengths": [
+      4
+    ],
+    "segmentPositionsCount": 4
+  },
+  "loopTrueAgain": {
+    "show": true,
+    "width": 4.5,
+    "loop": true,
+    "materialType": "Color",
+    "positions": [
+      [
+        1000,
+        2000,
+        3000
+      ],
+      [
+        1000,
+        2000,
+        3000
+      ],
+      [
+        4000,
+        5000,
+        6000
+      ],
+      [
+        7000,
+        8000,
+        9000
+      ]
+    ],
+    "actualPositions": [
+      [
+        1000,
+        2000,
+        3000
+      ],
+      [
+        4000,
+        5000,
+        6000
+      ],
+      [
+        7000,
+        8000,
+        9000
+      ],
+      [
+        1000,
+        2000,
+        3000
+      ]
+    ],
+    "distanceDisplayCondition": [
+      12,
+      850
+    ],
+    "id": "custom-polyline-1",
+    "boundingVolume": {
+      "center": [
+        4000,
+        5000,
+        6000
+      ],
+      "radius": 5196.152422706632
+    },
+    "boundingVolumeWC": {
+      "center": [
+        4025,
+        5050,
+        6075
+      ],
+      "radius": 5196.152422706632
+    },
+    "segmentLengths": [
+      4
+    ],
+    "segmentPositionsCount": 4
+  },
+  "mutatedPositions": {
+    "show": true,
+    "width": 4.5,
+    "loop": true,
+    "materialType": "Color",
+    "positions": [
+      [
+        10,
+        20,
+        30
+      ],
+      [
+        40,
+        50,
+        60
+      ]
+    ],
+    "actualPositions": [
+      [
+        10,
+        20,
+        30
+      ],
+      [
+        40,
+        50,
+        60
+      ]
+    ],
+    "distanceDisplayCondition": [
+      12,
+      850
+    ],
+    "id": "custom-polyline-1",
+    "boundingVolume": {
+      "center": [
+        25,
+        35,
+        45
+      ],
+      "radius": 25.98076211353316
+    },
+    "boundingVolumeWC": {
+      "center": [
+        50,
+        85,
+        120
+      ],
+      "radius": 25.98076211353316
+    },
+    "segmentLengths": [
+      2
+    ],
+    "segmentPositionsCount": 2
+  },
+  "antimeridian": {
+    "show": true,
+    "width": 2,
+    "loop": false,
+    "materialType": "Color",
+    "positions": [
+      [
+        -6377165.5788417,
+        111313.83923667567,
+        0
+      ],
+      [
+        -6377165.5788417,
+        -111313.83923667567,
+        0
+      ]
+    ],
+    "actualPositions": [
+      [
+        -6377165.5788417,
+        111313.83923667567,
+        0
+      ],
+      [
+        -6377165.5788417,
+        -111313.83923667567,
+        0
+      ]
+    ],
+    "distanceDisplayCondition": null,
+    "id": null,
+    "boundingVolume": {
+      "center": [
+        -6377165.5788417,
+        0,
+        0
+      ],
+      "radius": 111313.83923667567
+    },
+    "boundingVolumeWC": {
+      "center": [
+        -6377140.5788417,
+        50,
+        75
+      ],
+      "radius": 111313.83923667567
+    },
+    "segmentLengths": [
+      2,
+      2
+    ],
+    "segmentPositionsCount": 4
+  },
+  "initialLength": 2,
+  "containsBefore": true,
+  "firstRemoval": true,
+  "secondRemoval": false,
+  "containsAfter": false,
+  "lengthAfter": 2
+}

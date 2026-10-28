@@ -250,7 +250,6 @@ pub struct PostProcessStage<G: Gl> {
 
     use_log_depth: bool,
     log_depth_changed: bool,
-    render_state: Option<RenderState>,
     sampler: Option<Sampler>,
     destroyed: bool,
 }
@@ -294,7 +293,6 @@ impl<G: Gl> PostProcessStage<G> {
             output_texture: None,
             use_log_depth: false,
             log_depth_changed: false,
-            render_state: None,
             sampler: None,
             destroyed: false,
         })

@@ -1,0 +1,842 @@
+{
+  "collectionDefaults": {
+    "show": true,
+    "noiseDetail": 16,
+    "noiseOffset": [
+      0,
+      0,
+      0
+    ],
+    "debugBillboards": false,
+    "debugEllipsoids": false,
+    "noiseTextureDimensions": [
+      128,
+      4,
+      0.25
+    ]
+  },
+  "collectionCustom": {
+    "show": false,
+    "noiseDetail": 32,
+    "noiseOffset": [
+      10,
+      20,
+      30
+    ],
+    "debugBillboards": true,
+    "debugEllipsoids": true
+  },
+  "clouds": {
+    "defaultCloud": {
+      "show": true,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        20,
+        12
+      ],
+      "maximumSize": [
+        20,
+        12,
+        8
+      ],
+      "slice": -1,
+      "brightness": 1,
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "customCloud": {
+      "show": true,
+      "position": [
+        131075,
+        -65538,
+        3.5
+      ],
+      "scale": [
+        25,
+        15
+      ],
+      "maximumSize": [
+        28,
+        16,
+        12
+      ],
+      "slice": 0.45,
+      "brightness": 0.8,
+      "color": [
+        0.2,
+        0.4,
+        0.6,
+        0.8
+      ]
+    },
+    "onlyMaxCloud": {
+      "show": true,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        30,
+        18
+      ],
+      "maximumSize": [
+        30,
+        18,
+        10
+      ],
+      "slice": -1,
+      "brightness": 1,
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "onlyScaleCloud": {
+      "show": true,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        16,
+        9
+      ],
+      "maximumSize": [
+        16,
+        9,
+        6
+      ],
+      "slice": -1,
+      "brightness": 1,
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ]
+    }
+  },
+  "attributes": {
+    "defaultCloud": {
+      "instanced": {
+        "positionHighAndScaleX": [
+          0,
+          0,
+          0,
+          20
+        ],
+        "positionLowAndScaleY": [
+          0,
+          0,
+          0,
+          12
+        ],
+        "packedAttribute0": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "packedAttribute1": [
+          20,
+          12,
+          8,
+          -1
+        ],
+        "color": [
+          255,
+          255,
+          255,
+          255
+        ]
+      },
+      "batched": [
+        {
+          "positionHighAndScaleX": [
+            0,
+            0,
+            0,
+            20
+          ],
+          "positionLowAndScaleY": [
+            0,
+            0,
+            0,
+            12
+          ],
+          "packedAttribute0": [
+            1,
+            1,
+            0,
+            0
+          ],
+          "packedAttribute1": [
+            20,
+            12,
+            8,
+            -1
+          ],
+          "color": [
+            255,
+            255,
+            255,
+            255
+          ]
+        },
+        {
+          "positionHighAndScaleX": [
+            0,
+            0,
+            0,
+            20
+          ],
+          "positionLowAndScaleY": [
+            0,
+            0,
+            0,
+            12
+          ],
+          "packedAttribute0": [
+            1,
+            1,
+            1,
+            0
+          ],
+          "packedAttribute1": [
+            20,
+            12,
+            8,
+            -1
+          ],
+          "color": [
+            255,
+            255,
+            255,
+            255
+          ]
+        },
+        {
+          "positionHighAndScaleX": [
+            0,
+            0,
+            0,
+            20
+          ],
+          "positionLowAndScaleY": [
+            0,
+            0,
+            0,
+            12
+          ],
+          "packedAttribute0": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "packedAttribute1": [
+            20,
+            12,
+            8,
+            -1
+          ],
+          "color": [
+            255,
+            255,
+            255,
+            255
+          ]
+        },
+        {
+          "positionHighAndScaleX": [
+            0,
+            0,
+            0,
+            20
+          ],
+          "positionLowAndScaleY": [
+            0,
+            0,
+            0,
+            12
+          ],
+          "packedAttribute0": [
+            1,
+            1,
+            0,
+            1
+          ],
+          "packedAttribute1": [
+            20,
+            12,
+            8,
+            -1
+          ],
+          "color": [
+            255,
+            255,
+            255,
+            255
+          ]
+        }
+      ]
+    },
+    "customCloud": {
+      "instanced": {
+        "positionHighAndScaleX": [
+          131072,
+          -65536,
+          0,
+          25
+        ],
+        "positionLowAndScaleY": [
+          3,
+          -2,
+          3.5,
+          15
+        ],
+        "packedAttribute0": [
+          1,
+          0.8,
+          0,
+          0
+        ],
+        "packedAttribute1": [
+          28,
+          16,
+          12,
+          0.45
+        ],
+        "color": [
+          51,
+          102,
+          153,
+          204
+        ]
+      },
+      "batched": [
+        {
+          "positionHighAndScaleX": [
+            131072,
+            -65536,
+            0,
+            25
+          ],
+          "positionLowAndScaleY": [
+            3,
+            -2,
+            3.5,
+            15
+          ],
+          "packedAttribute0": [
+            1,
+            0.8,
+            0,
+            0
+          ],
+          "packedAttribute1": [
+            28,
+            16,
+            12,
+            0.45
+          ],
+          "color": [
+            51,
+            102,
+            153,
+            204
+          ]
+        },
+        {
+          "positionHighAndScaleX": [
+            131072,
+            -65536,
+            0,
+            25
+          ],
+          "positionLowAndScaleY": [
+            3,
+            -2,
+            3.5,
+            15
+          ],
+          "packedAttribute0": [
+            1,
+            0.8,
+            1,
+            0
+          ],
+          "packedAttribute1": [
+            28,
+            16,
+            12,
+            0.45
+          ],
+          "color": [
+            51,
+            102,
+            153,
+            204
+          ]
+        },
+        {
+          "positionHighAndScaleX": [
+            131072,
+            -65536,
+            0,
+            25
+          ],
+          "positionLowAndScaleY": [
+            3,
+            -2,
+            3.5,
+            15
+          ],
+          "packedAttribute0": [
+            1,
+            0.8,
+            1,
+            1
+          ],
+          "packedAttribute1": [
+            28,
+            16,
+            12,
+            0.45
+          ],
+          "color": [
+            51,
+            102,
+            153,
+            204
+          ]
+        },
+        {
+          "positionHighAndScaleX": [
+            131072,
+            -65536,
+            0,
+            25
+          ],
+          "positionLowAndScaleY": [
+            3,
+            -2,
+            3.5,
+            15
+          ],
+          "packedAttribute0": [
+            1,
+            0.8,
+            0,
+            1
+          ],
+          "packedAttribute1": [
+            28,
+            16,
+            12,
+            0.45
+          ],
+          "color": [
+            51,
+            102,
+            153,
+            204
+          ]
+        }
+      ]
+    },
+    "onlyMaxCloud": {
+      "instanced": {
+        "positionHighAndScaleX": [
+          0,
+          0,
+          0,
+          30
+        ],
+        "positionLowAndScaleY": [
+          0,
+          0,
+          0,
+          18
+        ],
+        "packedAttribute0": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "packedAttribute1": [
+          30,
+          18,
+          10,
+          -1
+        ],
+        "color": [
+          255,
+          255,
+          255,
+          255
+        ]
+      },
+      "batched": [
+        {
+          "positionHighAndScaleX": [
+            0,
+            0,
+            0,
+            30
+          ],
+          "positionLowAndScaleY": [
+            0,
+            0,
+            0,
+            18
+          ],
+          "packedAttribute0": [
+            1,
+            1,
+            0,
+            0
+          ],
+          "packedAttribute1": [
+            30,
+            18,
+            10,
+            -1
+          ],
+          "color": [
+            255,
+            255,
+            255,
+            255
+          ]
+        },
+        {
+          "positionHighAndScaleX": [
+            0,
+            0,
+            0,
+            30
+          ],
+          "positionLowAndScaleY": [
+            0,
+            0,
+            0,
+            18
+          ],
+          "packedAttribute0": [
+            1,
+            1,
+            1,
+            0
+          ],
+          "packedAttribute1": [
+            30,
+            18,
+            10,
+            -1
+          ],
+          "color": [
+            255,
+            255,
+            255,
+            255
+          ]
+        },
+        {
+          "positionHighAndScaleX": [
+            0,
+            0,
+            0,
+            30
+          ],
+          "positionLowAndScaleY": [
+            0,
+            0,
+            0,
+            18
+          ],
+          "packedAttribute0": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "packedAttribute1": [
+            30,
+            18,
+            10,
+            -1
+          ],
+          "color": [
+            255,
+            255,
+            255,
+            255
+          ]
+        },
+        {
+          "positionHighAndScaleX": [
+            0,
+            0,
+            0,
+            30
+          ],
+          "positionLowAndScaleY": [
+            0,
+            0,
+            0,
+            18
+          ],
+          "packedAttribute0": [
+            1,
+            1,
+            0,
+            1
+          ],
+          "packedAttribute1": [
+            30,
+            18,
+            10,
+            -1
+          ],
+          "color": [
+            255,
+            255,
+            255,
+            255
+          ]
+        }
+      ]
+    },
+    "onlyScaleCloud": {
+      "instanced": {
+        "positionHighAndScaleX": [
+          0,
+          0,
+          0,
+          16
+        ],
+        "positionLowAndScaleY": [
+          0,
+          0,
+          0,
+          9
+        ],
+        "packedAttribute0": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "packedAttribute1": [
+          16,
+          9,
+          6,
+          -1
+        ],
+        "color": [
+          255,
+          255,
+          255,
+          255
+        ]
+      },
+      "batched": [
+        {
+          "positionHighAndScaleX": [
+            0,
+            0,
+            0,
+            16
+          ],
+          "positionLowAndScaleY": [
+            0,
+            0,
+            0,
+            9
+          ],
+          "packedAttribute0": [
+            1,
+            1,
+            0,
+            0
+          ],
+          "packedAttribute1": [
+            16,
+            9,
+            6,
+            -1
+          ],
+          "color": [
+            255,
+            255,
+            255,
+            255
+          ]
+        },
+        {
+          "positionHighAndScaleX": [
+            0,
+            0,
+            0,
+            16
+          ],
+          "positionLowAndScaleY": [
+            0,
+            0,
+            0,
+            9
+          ],
+          "packedAttribute0": [
+            1,
+            1,
+            1,
+            0
+          ],
+          "packedAttribute1": [
+            16,
+            9,
+            6,
+            -1
+          ],
+          "color": [
+            255,
+            255,
+            255,
+            255
+          ]
+        },
+        {
+          "positionHighAndScaleX": [
+            0,
+            0,
+            0,
+            16
+          ],
+          "positionLowAndScaleY": [
+            0,
+            0,
+            0,
+            9
+          ],
+          "packedAttribute0": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "packedAttribute1": [
+            16,
+            9,
+            6,
+            -1
+          ],
+          "color": [
+            255,
+            255,
+            255,
+            255
+          ]
+        },
+        {
+          "positionHighAndScaleX": [
+            0,
+            0,
+            0,
+            16
+          ],
+          "positionLowAndScaleY": [
+            0,
+            0,
+            0,
+            9
+          ],
+          "packedAttribute0": [
+            1,
+            1,
+            0,
+            1
+          ],
+          "packedAttribute1": [
+            16,
+            9,
+            6,
+            -1
+          ],
+          "color": [
+            255,
+            255,
+            255,
+            255
+          ]
+        }
+      ]
+    }
+  },
+  "lifecycle": {
+    "initialLength": 4,
+    "containsBefore": true,
+    "firstRemoval": true,
+    "secondRemoval": false,
+    "containsAfter": false,
+    "lengthAfter": 3,
+    "retainedFirst": {
+      "show": true,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        20,
+        12
+      ],
+      "maximumSize": [
+        20,
+        12,
+        8
+      ],
+      "slice": -1,
+      "brightness": 1,
+      "color": [
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "testCollInitialLen": 2,
+    "testCollAfterRemoveAllLen": 0,
+    "isDestroyedBefore": false,
+    "isDestroyedAfter": true
+  },
+  "boundingSphere": {
+    "center": [
+      65542.5,
+      -32759,
+      16.75
+    ],
+    "radius": 73273.26642652489
+  },
+  "transformedBoundingSphere": {
+    "center": [
+      65567.5,
+      -32709,
+      91.75
+    ],
+    "radius": 73273.26642652489
+  }
+}

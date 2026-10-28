@@ -3466,6 +3466,11 @@
     "rust": "scene::sun_light",
     "note": "Options struct with Cesium's defaults; implements the Light trait. Direct CesiumJS cases in tests/scene_foundations.rs."
   },
+  "Scene/DeviceOrientationCameraController": {
+    "status": "ported",
+    "rust": "scene::device_orientation_camera_controller",
+    "note": "Host forwards device orientation samples and owns the platform listener; camera basis rotation, missing readings and destruction checked against pinned CesiumJS sequences in scene_input_tweens_morphing."
+  },
   "Scene/DirectionalLight": {
     "status": "ported",
     "rust": "scene::directional_light",
@@ -4065,6 +4070,21 @@
     "status": "ported",
     "rust": "scene::implicit_subtree_cache",
     "note": "Ancestor-first, then oldest-first eviction past maximumSubtreeCount (never the subtree just added), find by coordinates in queue order and the missing-parent DeveloperError after insertion. Generic over a CachedSubtree trait. Direct CesiumJS cases in tests/scene_tiling.rs."
+  },
+  "Scene/ArcGisMapService": {
+    "status": "partial",
+    "rust": "scene::arc_gis_map_service",
+    "note": "Configurable service defaults and evaluation-token credit; owned configuration replaces the shared mutable JavaScript namespace. Full reference validation remains."
+  },
+  "Scene/PointPrimitive": {
+    "status": "partial",
+    "rust": "scene::point_primitive",
+    "note": "CPU point options, validation, identity and screen-space bounding box; pinned reference cases. Screen position, picking and rendering integration remain."
+  },
+  "Scene/PointPrimitiveCollection": {
+    "status": "partial",
+    "rust": "scene::point_primitive_collection",
+    "note": "CPU collection membership, lifecycle and attribute preparation; pinned reference cases. GPU buffers, draw and pick commands, projection and dirty updates remain."
   },
   "Scene/Atmosphere": {
     "status": "ported",
@@ -5220,5 +5240,195 @@
     "status": "partial",
     "rust": "data_sources::create_material_property_descriptor",
     "note": "Color inputs infer ColorMaterialProperty. String/Resource/canvas/video inputs need ImageMaterialProperty and return an explicit unsupported error."
+  },
+  "Scene/CameraEventAggregator": {
+    "status": "partial",
+    "rust": "scene::camera_event_aggregator",
+    "note": "Host-driven input aggregation, modifier handoff, wheel and pinch state; CesiumJS event sequences pass. Scene input wiring and full parity audit remain."
+  },
+  "Scene/ScreenSpaceCameraController": {
+    "status": "partial",
+    "rust": "scene::screen_space_camera_controller",
+    "note": "Host-driven camera gestures, inertia and environment inputs; pinned controller sequences pass. Scene input and globe integration and complete parity validation remain."
+  },
+  "Scene/SceneTransitioner": {
+    "status": "partial",
+    "rust": "scene::scene_transitioner",
+    "note": "Explicit-time camera and frustum morph phases and events; pinned morph routes pass. Scene frame integration and complete parity validation remain."
+  },
+  "Scene/TweenCollection": {
+    "status": "partial",
+    "rust": "scene::tween_collection",
+    "note": "Numeric, property, material and repeating tweens with callbacks; pinned easing and lifecycle sequences pass. Scene runtime integration and complete parity validation remain."
+  },
+  "Scene/AutoExposure": {
+    "status": "partial",
+    "rust": "scene::auto_exposure",
+    "note": "Luminance reduction stages and texture lifecycle; mock GPU reduction cases pass. Scene post-processing integration and real GPU parity validation remain."
+  },
+  "Scene/PostProcessStage": {
+    "status": "partial",
+    "rust": "scene::post_process_stage",
+    "note": "Effect stage options, uniforms, selection and execution; mock GPU and reference cases pass. Scene integration and real GPU parity validation remain."
+  },
+  "Scene/PostProcessStageCollection": {
+    "status": "partial",
+    "rust": "scene::post_process_stage_collection",
+    "note": "Built-in and user stage management and execution; mock GPU pipeline tests pass. Scene integration and real GPU parity validation remain."
+  },
+  "Scene/PostProcessStageComposite": {
+    "status": "partial",
+    "rust": "scene::post_process_stage_composite",
+    "note": "Composite stage management, dependencies and execution; exercised by mock GPU pipeline tests. Scene integration and real GPU parity validation remain."
+  },
+  "Scene/PostProcessStageLibrary": {
+    "status": "partial",
+    "rust": "scene::post_process_stage_library",
+    "note": "Factories for common post-process stages; pinned factory cases pass. Scene integration and real GPU parity validation remain."
+  },
+  "Scene/PostProcessStageTextureCache": {
+    "status": "partial",
+    "rust": "scene::post_process_stage_texture_cache",
+    "note": "Framebuffer allocation and dependency tracking; mock GPU cache tests pass. Scene integration and real GPU parity validation remain."
+  },
+  "Scene/ArcGisMapServerImageryProvider": {
+    "status": "partial",
+    "rust": "scene::arc_gis_map_server_imagery_provider",
+    "note": "MapServer metadata, tile/export requests, credits and feature parsing; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+  },
+  "Scene/Azure2DImageryProvider": {
+    "status": "partial",
+    "rust": "scene::azure2_d_imagery_provider",
+    "note": "Azure raster URLs and viewport credits; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+  },
+  "Scene/BingMapsImageryProvider": {
+    "status": "partial",
+    "rust": "scene::bing_maps_imagery_provider",
+    "note": "Metadata, quadkeys, tile URLs and credits; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+  },
+  "Scene/createWorldImageryAsync": {
+    "status": "partial",
+    "rust": "scene::create_world_imagery",
+    "note": "World imagery style and async ion provider factory; style asset IDs are tested. Full ion provider and ImageryLayer integration remain."
+  },
+  "Scene/Google2DImageryProvider": {
+    "status": "partial",
+    "rust": "scene::google2_d_imagery_provider",
+    "note": "Session, tile URLs and viewport attribution; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+  },
+  "Scene/GoogleEarthEnterpriseImageryProvider": {
+    "status": "partial",
+    "rust": "scene::google_earth_enterprise_imagery_provider",
+    "note": "GEE imagery packets, metadata and tiles; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+  },
+  "Scene/GoogleEarthEnterpriseMapsProvider": {
+    "status": "partial",
+    "rust": "scene::google_earth_enterprise_maps_provider",
+    "note": "GEE Maps metadata and tile URLs; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+  },
+  "Scene/GridImageryProvider": {
+    "status": "partial",
+    "rust": "scene::grid_imagery_provider",
+    "note": "Host canvas grid drawing and tile responses; pinned provider fixtures pass. ImageryLayer integration and real canvas parity validation remain."
+  },
+  "Scene/IonImageryProvider": {
+    "status": "partial",
+    "rust": "scene::ion_imagery_provider",
+    "note": "Ion endpoint dispatch and provider delegation; native TMS and non-imagery cases are tested. External provider dispatch parity and ImageryLayer integration remain."
+  },
+  "Scene/TileCoordinatesImageryProvider": {
+    "status": "partial",
+    "rust": "scene::tile_coordinates_imagery_provider",
+    "note": "Host canvas tile borders and coordinate labels; pinned provider fixtures pass. ImageryLayer integration and real canvas parity validation remain."
+  },
+  "Scene/TileMapServiceImageryProvider": {
+    "status": "partial",
+    "rust": "scene::tile_map_service_imagery_provider",
+    "note": "TMS metadata parsing, fallback and tile URLs; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+  },
+  "Scene/TimeDynamicImagery": {
+    "status": "partial",
+    "rust": "scene::time_dynamic_imagery",
+    "note": "Explicit clock advancement, interval caching and preloading for WMS/WMTS; native interval and dynamic URL tests pass. Clock event integration and complete parity validation remain."
+  },
+  "Scene/WebMapServiceImageryProvider": {
+    "status": "partial",
+    "rust": "scene::web_map_service_imagery_provider",
+    "note": "WMS tile and feature requests, projections and time-dynamic dimensions; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+  },
+  "Scene/WebMapTileServiceImageryProvider": {
+    "status": "partial",
+    "rust": "scene::web_map_tile_service_imagery_provider",
+    "note": "WMTS KVP and REST URLs, matrix labels, dynamic dimensions and interval future caching; pinned provider fixtures and eight native time-dynamic tests. Cached futures are not driven in the background, and ImageryLayer integration and full service parity remain."
+  },
+  "Scene/Imagery": {
+    "status": "partial",
+    "rust": "scene::imagery",
+    "note": "Tile metadata, parent references, manually polled provider futures and resource release; native lifecycle cases. Transport cancellation, GPU upload and reprojection remain."
+  },
+  "Scene/TileImagery": {
+    "status": "partial",
+    "rust": "scene::tile_imagery",
+    "note": "Associates imagery and texture coordinates, processes provider state and ancestor fallback with reference release; native lifecycle cases. Complete terrain integration and GPU upload/reprojection remain."
+  },
+  "Scene/ImageryLayer": {
+    "status": "partial",
+    "rust": "scene::imagery_layer",
+    "note": "Layer options, imagery bounds, texture transforms, cache, initial skeletons and provider request lifecycle; reference fixture and native lifecycle cases. Complete tile coverage, transport cancellation and GPU reprojection remain; seven texel-spacing expectations are computed separately from Cesium’s private function."
+  },
+  "Scene/ImageryLayerCollection": {
+    "status": "partial",
+    "rust": "scene::imagery_layer_collection",
+    "note": "Layer management, ordering, visibility and events; reference fixtures and a hidden-layer regression. Provider-ready event forwarding, terrain-ray feature picking and reprojection command integration remain."
+  },
+  "Scene/Polyline": {
+    "status": "partial",
+    "rust": "scene::polyline",
+    "note": "CPU properties, duplicate elimination, antimeridian splitting and bounding volumes; pinned fixture cases. Rendering, pick IDs and scene-frame integration remain."
+  },
+  "Scene/PolylineCollection": {
+    "status": "partial",
+    "rust": "scene::polyline_collection",
+    "note": "CPU collection lifecycle, attributes and preliminary vertex geometry; reference and native tests. GPU buffers, draw/pick commands, scene-mode projection and complete geometry validation remain."
+  },
+  "Scene/Billboard": {
+    "status": "partial",
+    "rust": "scene::billboard",
+    "note": "CPU billboard properties, mutation, screen-space bounds and collection state; pinned fixture cases. Image loading, terrain clamping, picking and Scene integration remain."
+  },
+  "Scene/BillboardCollection": {
+    "status": "partial",
+    "rust": "scene::billboard_collection",
+    "note": "CPU collection, bounds and preliminary attribute packing; fixture and native lifecycle cases. Attribute-packing expectations are computed in the generator; GPU resources, atlas, picking and render integration remain."
+  },
+  "Scene/CumulusCloud": {
+    "status": "partial",
+    "rust": "scene::cumulus_cloud",
+    "note": "CPU cloud properties, dimension defaults, mutation and collection lifecycle; pinned snapshots and native tests. Scene rendering and GPU integration remain."
+  },
+  "Scene/CloudCollection": {
+    "status": "partial",
+    "rust": "scene::cloud_collection",
+    "note": "CPU collection and preliminary attributes; pinned snapshots and native lifecycle tests. Attribute expectations are calculated by the generator. Bounds and model matrix are Rust extensions and do not include cloud extents; noise texture generation, GPU buffers and draw commands remain."
+  },
+  "Scene/Label": {
+    "status": "partial",
+    "rust": "scene::label",
+    "note": "CPU label options, limited font and bidirectional text processing, bounds based on simulated glyph metrics; pinned snapshots and native tests. Browser font and text layout parity, glyph atlas, terrain and GPU integration remain."
+  },
+  "Scene/LabelCollection": {
+    "status": "partial",
+    "rust": "scene::label_collection",
+    "note": "CPU label collection and simulated fixed-width glyph layout; pinned snapshots and native tests. Position-only bounds are not suitable for text culling; actual font metrics, glyph atlas, picking and GPU/Scene integration remain."
+  },
+  "Scene/QuadtreeTile": {
+    "status": "partial",
+    "rust": "scene::quadtree_tile",
+    "note": "CPU hierarchy, lazy children, neighbors, position cache and resource cleanup; pinned tile snapshots and native tests. Full resource-provider behavior, custom-data routing and integration with working traversal remain."
+  },
+  "Scene/QuadtreePrimitive": {
+    "status": "partial",
+    "rust": "scene::quadtree_primitive",
+    "note": "CPU tile selection, load priority queues, eligible-resource eviction, progress events and provider-backed height callbacks; pinned defaults and native lifecycle tests. Real terrain/Scene integration, load and height time budgets, projected-mode picking and full traversal parity remain."
   }
 }

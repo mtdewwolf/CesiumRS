@@ -594,3 +594,67 @@ pub use mapbox_style_imagery_provider::{
 };
 pub mod single_tile_imagery_provider;
 pub use single_tile_imagery_provider::{SingleTileImageryProvider, SingleTileImageryProviderOptions};
+
+// Scene input, imagery, and post-processing modules.
+pub mod camera_event_aggregator;
+pub mod device_orientation_camera_controller;
+pub mod scene_transitioner;
+pub mod screen_space_camera_controller;
+pub mod tween_collection;
+pub use camera_event_aggregator::{CameraEventAggregator, CameraEventMovement, CameraMovement};
+pub use tween_collection::{TweenCollection, TweenEasing, TweenOptions};
+pub mod arc_gis_map_server_imagery_provider;
+pub mod azure2_d_imagery_provider;
+pub mod bing_maps_imagery_provider;
+pub mod create_world_imagery;
+pub mod google2_d_imagery_provider;
+pub mod google_earth_enterprise_imagery_provider;
+pub mod google_earth_enterprise_maps_provider;
+pub mod grid_imagery_provider;
+pub mod ion_imagery_provider;
+pub mod tile_coordinates_imagery_provider;
+pub mod tile_map_service_imagery_provider;
+pub mod time_dynamic_imagery;
+pub mod web_map_service_imagery_provider;
+pub mod web_map_tile_service_imagery_provider;
+pub mod auto_exposure;
+pub mod post_process_stage;
+pub mod post_process_stage_collection;
+pub mod post_process_stage_composite;
+pub mod post_process_stage_library;
+pub mod post_process_stage_texture_cache;
+pub mod point_primitive;
+pub mod point_primitive_collection;
+pub mod imagery;
+pub use imagery::Imagery;
+pub mod tile_imagery;
+pub use tile_imagery::TileImagery;
+pub mod imagery_layer;
+pub use imagery_layer::{ImageryLayer, ImageryLayerHandle, ImageryLayerOptions};
+pub mod imagery_layer_collection;
+pub use imagery_layer_collection::{
+    ImageryLayerCollection, ImageryLayerEvent, ImageryLayerMovedEvent, ImageryLayerVisibilityEvent,
+};
+
+pub mod polyline;
+pub mod polyline_collection;
+pub use polyline::{Polyline, PolylineOptions};
+pub use polyline_collection::{PolylineCollection, PolylineHandle};
+
+pub mod billboard;
+pub mod billboard_collection;
+pub use billboard::{Billboard, BillboardOptions};
+pub use billboard_collection::{BillboardCollection, BillboardHandle};
+
+pub mod cumulus_cloud;
+pub mod cloud_collection;
+pub use cumulus_cloud::{CumulusCloud, CumulusCloudOptions};
+pub use cloud_collection::{CloudCollection, CloudCollectionOptions, CumulusCloudHandle};
+
+pub mod label;
+pub mod label_collection;
+pub use label::{Label, LabelOptions};
+pub use label_collection::{LabelCollection, LabelHandle};
+
+pub mod quadtree_tile;
+pub mod quadtree_primitive;

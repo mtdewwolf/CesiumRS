@@ -1,29 +1,9 @@
-//! Dedicated compilation harness: parent can wire modules after this batch.
-//! These aliases let source modules compile without editing shared scene/mod.rs.
-#![allow(dead_code)]
-mod core {
-    pub use cesium_rs::core::*;
-}
-#[path = "../src/scene/camera_event_aggregator.rs"]
-mod camera_event_aggregator;
-#[path = "../src/scene/device_orientation_camera_controller.rs"]
-mod device_orientation_camera_controller;
-#[path = "../src/scene/scene_transitioner.rs"]
-mod scene_transitioner;
-#[path = "../src/scene/screen_space_camera_controller.rs"]
-mod screen_space_camera_controller;
-#[path = "../src/scene/tween_collection.rs"]
-mod tween_collection;
-mod scene {
-    pub use crate::camera_event_aggregator::{CameraEventAggregator, CameraEventMovement, CameraMovement};
-    pub use crate::tween_collection::{TweenCollection, TweenEasing, TweenOptions};
-    pub use cesium_rs::scene::*;
-}
-use core::*;
-use device_orientation_camera_controller::DeviceOrientationCameraController;
-use scene::*;
-use scene_transitioner::SceneTransitioner;
-use screen_space_camera_controller::ScreenSpaceCameraController;
+//! Reference tests for Scene input, tweening, and morphing.
+use cesium_rs::core::*;
+use cesium_rs::scene::*;
+use cesium_rs::scene::device_orientation_camera_controller::DeviceOrientationCameraController;
+use cesium_rs::scene::scene_transitioner::SceneTransitioner;
+use cesium_rs::scene::screen_space_camera_controller::ScreenSpaceCameraController;
 use serde_json::{json, Value};
 use std::{
     cell::{Cell, RefCell},
