@@ -558,5 +558,13 @@
     "ported": 1046,
     "implemented": 13,
     "validatedPercent": 62.48
+  },
+  {
+    "milestone": "Scene N-Z contracts and runtime behavior",
+    "date": "2026-10-28",
+    "percent": 71.4,
+    "ported": 1049,
+    "implemented": 14,
+    "validatedPercent": 62.57
   }
 ]

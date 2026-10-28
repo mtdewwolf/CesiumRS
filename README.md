@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 70.9% implemented; 62.5% validated** (1,046 validated modules, 13 implemented awaiting validation, and 60 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
+**Status: 71.4% implemented; 62.6% validated** (1,049 validated modules, 14 implemented awaiting validation, and 66 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
 
 ## What is ported
 
@@ -147,7 +147,7 @@ The package exports `BrowserCore` for JSON/image loading, credits, RGBA canvases
 
 ## How parity is checked
 
-`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **49,496 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
+`tools/cesium` installs the real `@cesium/engine` 23.0.0. Node scripts call it with seeded random inputs and edge cases and save the inputs and outputs as JSON in `tests/fixtures`. The Rust replay suites load all **49,543 cases**, skipping debug-only `DeveloperError` preconditions, and compare the remaining results with tolerances chosen per suite: typically 1e-12, or 1e-7 relative for geometry suites with Float32 attributes. Hilbert indices use decimal strings to preserve BigInt precision in JSON. A fixture function that has no Rust counterpart fails the test, and `fixture_coverage` checks that every fixture file has a Rust replay suite.
 
 ```bash
 cargo test --all-features                    # all fixtures + native host integration

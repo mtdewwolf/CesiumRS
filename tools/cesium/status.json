@@ -5530,5 +5530,55 @@
     "status": "implemented",
     "rust": "scene::brdf_lut_generator",
     "note": "Generates 256x256 BRDF split-sum look-up texture for image-based lighting and PBR materials."
+  },
+  "Scene/Panorama": {
+    "status": "ported",
+    "rust": "scene::panorama",
+    "note": "Abstract show/transform/credit Rust trait; exercised through native provider and skybox implementations. See docs/scene-nz-contracts.md."
+  },
+  "Scene/PanoramaProvider": {
+    "status": "ported",
+    "rust": "scene::panorama_provider",
+    "note": "Abstract asynchronous factory/load contracts with typed options and panorama result; native futures exercised. See docs/scene-nz-contracts.md."
+  },
+  "Scene/ParticleSystem": {
+    "status": "partial",
+    "rust": "scene::particle_system",
+    "note": "CPU emission/carry/bursts, simulation, transforms, lifetime/completion and billboard snapshots; nine pinned frame traces. GPU billboard submission and reuse pool remain. See docs/scene-nz-contracts.md."
+  },
+  "Scene/QuadtreeTileProvider": {
+    "status": "partial",
+    "rust": "scene::quadtree_tile_provider",
+    "note": "Existing traversal provider extracted into dedicated module, preserving imports; six pinned geometric-error cases and traversal regressions. Quadtree back-reference/error-event contract remains absent. See docs/scene-nz-contracts.md."
+  },
+  "Scene/ShadowMapShader": {
+    "status": "partial",
+    "rust": "scene::shadow_map_shader",
+    "note": "Exact cast vertex/fragment and receive vertex generation across 32 pinned variants; shader keywords. Receive fragment lighting remains. See docs/scene-nz-contracts.md."
+  },
+  "Scene/SkyBox": {
+    "status": "partial",
+    "rust": "scene::sky_box",
+    "note": "3D/morphing render-pass filtering, HDR command delegation, source mutation, Earth URLs and destruction. Requires caller-supplied panorama renderer; built-in loading remains. See docs/scene-nz-contracts.md."
+  },
+  "Scene/ViewportQuad": {
+    "status": "partial",
+    "rust": "scene::viewport_quad",
+    "note": "Executable material GLSL overlay commands, viewport/blending/uniform updates and material replacement/destruction; recording GL draw tests. Texture resolution and Scene submission remain host-owned. See docs/scene-nz-contracts.md."
+  },
+  "Scene/VoxelBoundsCollection": {
+    "status": "implemented",
+    "rust": "scene::voxel_bounds_collection",
+    "note": "Plane events/indexing, value membership, transformed normalized float packing, RGBA float texture grow/shrink/upload and destruction; recording GL tests. Browser GPU validation remains. See docs/scene-nz-contracts.md."
+  },
+  "Scene/VoxelProvider": {
+    "status": "ported",
+    "rust": "scene::voxel_provider",
+    "note": "Full abstract property/request trait with typed metadata, request coordinate/keyframe defaults and deferred/error/success futures; native contract tests. Concrete providers separate. See docs/scene-nz-contracts.md."
+  },
+  "Scene/VoxelShape": {
+    "status": "partial",
+    "rust": "scene::voxel_shape",
+    "note": "CPU dynamic shape contract backed by existing VoxelBoxShape; bounds, transforms, UV and tile/sample OBBs. Shader uniforms/defines/intersections remain. See docs/scene-nz-contracts.md."
   }
 }
