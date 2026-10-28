@@ -248,11 +248,11 @@ mod tests {
     fn default_properties_match_upstream() {
         let prim = DebugCameraPrimitive::default();
         assert_eq!(prim.color, Color::CYAN);
-        assert_eq!(prim.update_on_change, true);
-        assert_eq!(prim.show, true);
+        assert!(prim.update_on_change);
+        assert!(prim.show);
         assert_eq!(prim.id, None);
         assert_eq!(prim.frustum_splits, None);
-        assert_eq!(prim.is_destroyed(), false);
+        assert!(!prim.is_destroyed());
     }
 
     #[test]
@@ -266,8 +266,8 @@ mod tests {
         };
         let prim = DebugCameraPrimitive::new(options);
         assert_eq!(prim.color, Color::YELLOW);
-        assert_eq!(prim.update_on_change, false);
-        assert_eq!(prim.show, false);
+        assert!(!prim.update_on_change);
+        assert!(!prim.show);
         assert_eq!(prim.id, Some("debug_cam".into()));
         assert_eq!(prim.frustum_splits, Some(vec![1.0, 100.0, 1000.0]));
     }

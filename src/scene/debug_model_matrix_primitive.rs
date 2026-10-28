@@ -190,10 +190,10 @@ mod tests {
         let prim = DebugModelMatrixPrimitive::default();
         assert_eq!(prim.length, 10_000_000.0);
         assert_eq!(prim.width, 2.0);
-        assert_eq!(prim.show, true);
+        assert!(prim.show);
         assert_eq!(prim.model_matrix, Matrix4::IDENTITY);
         assert_eq!(prim.id, None);
-        assert_eq!(prim.is_destroyed(), false);
+        assert!(!prim.is_destroyed());
     }
 
     #[test]
@@ -208,7 +208,7 @@ mod tests {
         let prim = DebugModelMatrixPrimitive::new(options);
         assert_eq!(prim.length, 500.0);
         assert_eq!(prim.width, 4.0);
-        assert_eq!(prim.show, false);
+        assert!(!prim.show);
         assert_eq!(prim.id, Some("debug_axes".into()));
     }
 }

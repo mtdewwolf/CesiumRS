@@ -175,11 +175,11 @@ mod tests {
     fn default_depth_plane_properties() {
         let dp = DepthPlane::default();
         assert_eq!(dp.ellipsoid_offset, 0.0);
-        assert_eq!(dp.render_state.cull.enabled, true);
-        assert_eq!(dp.render_state.depth_test.enabled, true);
-        assert_eq!(dp.render_state.color_mask.red, false);
-        assert_eq!(dp.render_state.color_mask.alpha, false);
-        assert_eq!(dp.is_destroyed(), false);
+        assert!(dp.render_state.cull.enabled);
+        assert!(dp.render_state.depth_test.enabled);
+        assert!(!dp.render_state.color_mask.red);
+        assert!(!dp.render_state.color_mask.alpha);
+        assert!(!dp.is_destroyed());
     }
 
     #[test]

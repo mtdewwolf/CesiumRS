@@ -106,15 +106,15 @@ mod tests {
         assert_eq!(content.batch_table_byte_length(), 0);
         assert!(content.ready());
         assert_eq!(content.url(), None);
-        assert_eq!(content.has_property(0, "height"), false);
+        assert!(!content.has_property(0, "height"));
         assert_eq!(content.get_feature(0), None);
-        assert_eq!(content.feature_properties_dirty, false);
-        assert_eq!(content.is_destroyed(), false);
+        assert!(!content.feature_properties_dirty);
+        assert!(!content.is_destroyed());
 
         assert!(content.set_metadata().is_err());
         assert!(content.set_group().is_err());
 
         content.destroy();
-        assert_eq!(content.is_destroyed(), true);
+        assert!(content.is_destroyed());
     }
 }

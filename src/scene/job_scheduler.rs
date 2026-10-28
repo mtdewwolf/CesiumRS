@@ -271,12 +271,12 @@ mod tests {
         assert!(executed);
         assert!(scheduler.execute(|| advance_mock_time(6.0), JobType::Texture));
         assert_eq!(scheduler.budgets()[1].stolen_from_me_this_frame, 6.0);
-        assert_eq!(scheduler.budgets()[0].starved_this_frame, true);
+        assert!(scheduler.budgets()[0].starved_this_frame);
 
         // Reset budgets for next frame
         scheduler.reset_budgets();
-        assert_eq!(scheduler.budgets()[0].starved_last_frame, true);
-        assert_eq!(scheduler.budgets()[0].starved_this_frame, false);
+        assert!(scheduler.budgets()[0].starved_last_frame);
+        assert!(!scheduler.budgets()[0].starved_this_frame);
         assert_eq!(scheduler.budgets()[0].used_this_frame, 0.0);
         assert_eq!(scheduler.budgets()[1].stolen_from_me_this_frame, 0.0);
         assert_eq!(scheduler.total_used_this_frame(), 0.0);

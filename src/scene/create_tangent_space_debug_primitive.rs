@@ -116,7 +116,7 @@ mod tests {
         );
         assert!(prim.is_some());
         let primitive = prim.unwrap();
-        assert_eq!(primitive.asynchronous, false);
+        assert!(!primitive.asynchronous);
     }
 
     #[test]

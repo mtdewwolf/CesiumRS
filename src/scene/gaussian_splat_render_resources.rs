@@ -67,7 +67,7 @@ mod tests {
             res.render_state.depth_test.func,
             DepthFunction::LessOrEqual.value()
         );
-        assert_eq!(res.has_skip_level_of_detail, false);
+        assert!(!res.has_skip_level_of_detail);
     }
 
     #[test]

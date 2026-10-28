@@ -142,11 +142,11 @@ mod tests {
         );
         assert!(gen.color_texture().is_none());
         assert!(gen.draw_command().is_none());
-        assert_eq!(gen.is_destroyed(), false);
+        assert!(!gen.is_destroyed());
 
         assert!(BrdfLutGenerator::<TestGl>::shader_source().contains("integrateBrdf"));
 
         gen.destroy();
-        assert_eq!(gen.is_destroyed(), true);
+        assert!(gen.is_destroyed());
     }
 }
