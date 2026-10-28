@@ -658,3 +658,33 @@ pub use label_collection::{LabelCollection, LabelHandle};
 
 pub mod quadtree_tile;
 pub mod quadtree_primitive;
+
+pub mod vector_3d_tile_batch;
+pub use vector_3d_tile_batch::Vector3DTileBatch;
+
+pub mod performance_display;
+pub use performance_display::PerformanceDisplay;
+
+pub mod terrain;
+pub use terrain::Terrain;
+
+pub mod voxel_shape_type;
+pub use voxel_shape_type::VoxelShapeType;
+
+pub mod voxel_content;
+pub use voxel_content::VoxelContent;
+
+pub mod voxel_box_shape;
+pub use voxel_box_shape::VoxelBoxShape;
+
+pub mod spatial_node;
+pub use spatial_node::SpatialNode;
+
+pub mod voxel_cell;
+pub use voxel_cell::VoxelCell;
+
+pub mod ordered_ground_primitive_collection;
+pub use ordered_ground_primitive_collection::OrderedGroundPrimitiveCollection;
+
+pub mod tileset_3d_tile_content;
+pub use tileset_3d_tile_content::Tileset3DTileContent;
