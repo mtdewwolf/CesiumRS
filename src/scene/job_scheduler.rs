@@ -3,7 +3,7 @@
 //! Supports:
 //! - Separate budgets for different job types ([`JobType::Texture`], [`JobType::Program`], [`JobType::Buffer`]).
 //! - Stealing from other job type budgets if they were not exhausted in the previous frame.
-//! - Guaranteed progress on all job types each frame, even if it exceeds the total budget.
+//! - Tracks execution history as in the pinned CesiumJS implementation.
 
 use super::job_type::JobType;
 use crate::core::clock::get_timestamp;
@@ -122,7 +122,8 @@ impl JobScheduler {
         self.total_used_this_frame = self.total_budget;
     }
 
-    /// Resets frame accounting at the start of a new frame.
+    /// Resets budget accounting at the start of a new frame.
+    /// Execution flags persist, matching the pinned CesiumJS implementation.
     pub fn reset_budgets(&mut self) {
         for budget in &mut self.budgets {
             budget.starved_last_frame = budget.starved_this_frame;
