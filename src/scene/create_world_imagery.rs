@@ -75,4 +75,13 @@ mod tests {
         assert_eq!(world_imagery_asset_id(IonWorldImageryStyle::AerialWithLabels), 3);
         assert_eq!(world_imagery_asset_id(IonWorldImageryStyle::Road), 4);
     }
+
+    #[test]
+    fn default_style_and_request_asset_id() {
+        let options = WorldImageryOptions::default();
+        assert_eq!(world_imagery_style(&options), IonWorldImageryStyle::Aerial);
+        let request = WorldImageryRequest::new(options);
+        assert_eq!(request.style, IonWorldImageryStyle::Aerial);
+        assert_eq!(request.asset_id(), 2);
+    }
 }
