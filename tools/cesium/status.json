@@ -5487,19 +5487,19 @@
     "note": "Coordinates background web worker radix sorting of Gaussian splats by camera distance."
   },
   "Scene/DepthPlane": {
-    "status": "implemented",
+    "status": "partial",
     "rust": "scene::depth_plane",
-    "note": "Renders depth-only horizon quad for ellipsoid to prevent rendering behind the globe."
+    "note": "CPU geometry and state implemented; rendering is not yet supported."
   },
   "Scene/DebugCameraPrimitive": {
-    "status": "implemented",
+    "status": "partial",
     "rust": "scene::debug_camera_primitive",
-    "note": "Visualizes camera frustum planes, outlines, and frustum splits."
+    "note": "CPU geometry and state implemented; rendering is not yet supported."
   },
   "Scene/DebugModelMatrixPrimitive": {
-    "status": "implemented",
+    "status": "partial",
     "rust": "scene::debug_model_matrix_primitive",
-    "note": "Draws colored coordinate axes (RGB for XYZ) for model matrix reference frames."
+    "note": "CPU geometry and state implemented; rendering is not yet supported."
   },
   "Scene/GaussianSplatRenderResources": {
     "status": "implemented",

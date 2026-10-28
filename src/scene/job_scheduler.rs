@@ -261,7 +261,7 @@ mod tests {
         assert_eq!(scheduler.total_used_this_frame(), 5.0);
 
         // Run again with 6ms duration -> exceeds texture budget (5 + 6 = 11 > 10)
-        // It steals from Program (first available budget)
+        // A subsequent job steals from Program (first available budget)
         let executed = scheduler.execute(
             || {
                 advance_mock_time(6.0);
@@ -269,6 +269,7 @@ mod tests {
             JobType::Texture,
         );
         assert!(executed);
+        assert!(scheduler.execute(|| advance_mock_time(6.0), JobType::Texture));
         assert_eq!(scheduler.budgets()[1].stolen_from_me_this_frame, 6.0);
         assert_eq!(scheduler.budgets()[0].starved_this_frame, true);
 

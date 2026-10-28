@@ -77,9 +77,9 @@ impl DebugCameraPrimitive {
         &self.planes_primitives
     }
 
-    pub fn update(&mut self, camera: &mut Camera, frame_state: &mut FrameState) {
+    pub fn update(&mut self, camera: &mut Camera, frame_state: &mut FrameState) -> crate::scene::scene::Result<()> {
         if !self.show {
-            return;
+            return Ok(());
         }
 
         if self.update_on_change {
@@ -215,11 +215,12 @@ impl DebugCameraPrimitive {
         }
 
         for p in &mut self.outline_primitives {
-            let _ = p.update(frame_state);
+            p.update(frame_state)?;
         }
         for p in &mut self.planes_primitives {
-            let _ = p.update(frame_state);
+            p.update(frame_state)?;
         }
+        Ok(())
     }
 
     pub fn is_destroyed(&self) -> bool {

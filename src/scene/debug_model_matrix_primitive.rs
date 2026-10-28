@@ -75,9 +75,9 @@ impl DebugModelMatrixPrimitive {
         self.primitive.as_ref()
     }
 
-    pub fn update(&mut self, frame_state: &mut FrameState) {
+    pub fn update(&mut self, frame_state: &mut FrameState) -> crate::scene::scene::Result<()> {
         if !self.show {
-            return;
+            return Ok(());
         }
 
         let needs_rebuild = self.primitive.is_none()
@@ -137,8 +137,9 @@ impl DebugModelMatrixPrimitive {
         }
 
         if let Some(p) = self.primitive.as_mut() {
-            let _ = p.update(frame_state);
+            p.update(frame_state)?;
         }
+        Ok(())
     }
 
     pub fn is_destroyed(&self) -> bool {
@@ -159,8 +160,7 @@ impl ScenePrimitive for DebugModelMatrixPrimitive {
     }
 
     fn update(&mut self, frame: &mut FrameState) -> crate::scene::scene::Result<()> {
-        self.update(frame);
-        Ok(())
+        self.update(frame)
     }
 
     fn post_passes_update(&mut self, _frame: &mut FrameState) -> crate::scene::scene::Result<()> {

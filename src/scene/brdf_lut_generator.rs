@@ -144,7 +144,7 @@ mod tests {
         assert!(gen.draw_command().is_none());
         assert_eq!(gen.is_destroyed(), false);
 
-        assert!(BrdfLutGenerator::<TestGl>::shader_source().contains("czm_brdfLut"));
+        assert!(BrdfLutGenerator::<TestGl>::shader_source().contains("integrateBrdf"));
 
         gen.destroy();
         assert_eq!(gen.is_destroyed(), true);

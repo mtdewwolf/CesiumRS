@@ -6,12 +6,14 @@ use crate::core::RuntimeError;
 use serde_json::Value;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
 pub type SorterTask = ProcessedTask<Value, Value>;
 
 struct SorterProcessor {
     processor: TaskProcessor<Value, Value>,
-    #[allow(dead_code)]
     initialization: ModuleInitialization,
 }
 
@@ -83,10 +85,26 @@ impl GaussianSplatSorter {
                 processor,
                 initialization: init,
             }));
-            self.ready.set(true);
+
         }
 
         Ok(self.ready.get())
+    }
+
+    /// Drive worker initialization using the caller's task context.
+    pub fn poll_initialization(&self, cx: &mut Context<'_>) -> Poll<Result<bool, RuntimeError>> {
+        match self.init_processor() {
+            Err(err) => return Poll::Ready(Err(err)),
+            Ok(true) => return Poll::Ready(Ok(true)),
+            Ok(false) => {}
+        }
+        let mut processor = self.processor.borrow_mut();
+        let Some(processor) = processor.as_mut() else { return Poll::Ready(Ok(false)); };
+        match Pin::new(&mut processor.initialization).poll(cx) {
+            Poll::Pending => Poll::Pending,
+            Poll::Ready(Ok(_)) => { self.ready.set(true); Poll::Ready(Ok(true)) }
+            Poll::Ready(Err(err)) => { self.error.replace(Some(err.clone())); Poll::Ready(Err(err)) }
+        }
     }
 
     /// Schedules a radix sort task on the worker.

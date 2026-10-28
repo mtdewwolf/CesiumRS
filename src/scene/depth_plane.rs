@@ -149,7 +149,7 @@ impl DepthPlane {
                 BoundingSphere::new(Cartesian3::ZERO, ellipsoid.maximum_radius);
             self.bounding_volume = Some(bounding_volume);
 
-            let execute: super::scene::SceneExecute = Rc::new(|_| Ok(()));
+            let execute: super::scene::SceneExecute = Rc::new(|_| Err(crate::core::RuntimeError::new("DepthPlane rendering is not implemented.")));
             let command = SceneCommand::new("DepthPlane", Pass::Opaque, execute);
             self.command = Some(command);
         }
@@ -187,7 +187,7 @@ mod tests {
         let ellipsoid = Ellipsoid::WGS84;
         let mut camera = Camera::new(CameraOptions::new(1024.0, 768.0));
         // Place camera above the equator looking down at center
-        let pos = ellipsoid.cartographic_to_cartesian(&Cartographic::from_degrees(0.0, 0.0, 10_000_000.0)).unwrap();
+        let pos = ellipsoid.cartographic_to_cartesian(&Cartographic::from_degrees(0.0, 0.0, 10_000_000.0));
         camera.position = pos;
         camera.direction = Cartesian3::new(-1.0, 0.0, 0.0);
         camera.up = Cartesian3::UNIT_Z;

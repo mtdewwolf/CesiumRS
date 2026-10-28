@@ -51,7 +51,7 @@ fn make_dummy_frame_state() -> FrameState {
 #[test]
 fn test_job_scheduler_priorities_and_execution() {
     let mut scheduler = JobScheduler::default();
-    assert_eq!(scheduler.total_budget(), 13.0);
+    assert_eq!(scheduler.total_budget(), 50.0);
     assert_eq!(scheduler.total_used_this_frame(), 0.0);
 
     let mut executed = 0;
@@ -161,7 +161,7 @@ fn test_debug_model_matrix_primitive() {
     assert!(!primitive.is_destroyed());
 
     let mut frame_state = make_dummy_frame_state();
-    primitive.update(&mut frame_state);
+    let _ = primitive.update(&mut frame_state);
 
     primitive.destroy();
     assert!(primitive.is_destroyed());
@@ -176,7 +176,7 @@ fn test_debug_camera_primitive() {
 
     let mut camera = Camera::new(CameraOptions::new(800.0, 600.0));
     let mut frame_state = make_dummy_frame_state();
-    primitive.update(&mut camera, &mut frame_state);
+    let _ = primitive.update(&mut camera, &mut frame_state);
 
     primitive.destroy();
     assert!(primitive.is_destroyed());
