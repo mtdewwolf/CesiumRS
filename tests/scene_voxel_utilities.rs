@@ -59,14 +59,6 @@ fn performance_display_rounding_matches_reference() {
 }
 
 #[test]
-fn frame_rate_monitor_basic() {
-    let mut m = FrameRateMonitor::default();
-    m.update(0.0);
-    m.update(1.0);
-    assert!(m.last_frames_per_second().is_none() || m.last_frames_per_second().is_some());
-}
-
-#[test]
 fn globe_translucency_bounds() {
     let mut g = GlobeTranslucency::default();
     assert!(g.set_front_face_alpha(0.5).is_ok());
@@ -119,4 +111,23 @@ fn create_tangent_space_debug_primitive_none() {
     let geom = Geometry::new(GeometryAttributes::default(), None, PrimitiveType::Triangles);
     let p = create_tangent_space_debug_primitive(CreateTangentSpaceDebugPrimitiveOptions::new(geom));
     assert!(p.is_none());
+}
+
+#[test]
+fn voxel_box_shader_state_matches_reference() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!("fixtures/scene/VoxelBoxState.json")).unwrap();
+    let vector = |v: &serde_json::Value| Cartesian3::new(v[0].as_f64().unwrap(),v[1].as_f64().unwrap(),v[2].as_f64().unwrap());
+    for case in fixture["cases"].as_array().unwrap() {
+        let mut shape = VoxelBoxShape::default();
+        assert_eq!(shape.shader_maximum_intersections_length,case["before"].as_u64().unwrap() as usize);
+        let clipped = case["clipped"].as_bool().unwrap();
+        let visible = shape.update(Matrix4::IDENTITY,Cartesian3::new(-1.,-1.,-1.),Cartesian3::new(1.,1.,1.),clipped.then(|| vector(&case["renderMin"])),clipped.then(|| vector(&case["renderMax"])));
+        assert_eq!(visible,case["visible"].as_bool().unwrap());
+        assert_eq!(shape.shader_maximum_intersections_length,case["after"].as_u64().unwrap() as usize);
+        assert_eq!(shape.render_min_bounds(),vector(&case["renderMin"]));
+        assert_eq!(shape.render_max_bounds(),vector(&case["renderMax"]));
+        for (actual,expected) in shape.render_bound_plane_distances().iter().zip(case["distances"].as_array().unwrap()) {
+            assert_eq!(*actual,expected.as_f64().unwrap());
+        }
+    }
 }

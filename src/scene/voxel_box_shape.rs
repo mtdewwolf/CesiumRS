@@ -30,7 +30,7 @@ impl Default for VoxelBoxShape {
             uv_scale: Cartesian3::ZERO,
             uv_translate: Cartesian3::ZERO,
             eye_to_local: Matrix3::ZERO,
-            shader_maximum_intersections_length: 1,
+            shader_maximum_intersections_length: 0,
         }
     }
 }
@@ -80,6 +80,7 @@ impl VoxelBoxShape {
         }
         self.uv_scale = Cartesian3::new(scale(min.x, max.x), scale(min.y, max.y), scale(min.z, max.z));
         self.uv_translate = self.uv_scale.multiply_components(min).negate();
+        self.shader_maximum_intersections_length = 1;
         true
     }
     fn chunk(&self, min: Cartesian3, max: Cartesian3) -> OrientedBoundingBox {

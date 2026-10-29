@@ -412,15 +412,17 @@
       "module": "Scene/VoxelBoxShape",
       "baselineStatus": "partial",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "CPU bounds, tile/sample OBBs and UV/view transforms; 24 source scenarios. Render-bound plane collection and shader/GPU integration absent. See docs/scene-mz-cpu.md."
+      "status": "in-progress",
+      "remaining": "CPU bounds, tile/sample OBBs and UV/view transforms; 24 source scenarios. Render-bound plane collection and shader/GPU integration absent. See docs/scene-mz-cpu.md.",
+      "evidence": "Voxel utility and CPU suites pass; pinned VoxelBoxState validates initial/update shader count and render plane distances. Remaining renderer and loading gaps remain open."
     },
     {
       "module": "Scene/SpatialNode",
       "baselineStatus": "partial",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "CPU box octree bounds, screen error and ancestor temporal selection; 8 source cases. No megatexture/keyframe loading lifecycle, visibility adapter or owned parent graph. See docs/scene-mz-cpu.md."
+      "status": "in-progress",
+      "remaining": "CPU box octree bounds, screen error and ancestor temporal selection; 8 source cases. No megatexture/keyframe loading lifecycle, visibility adapter or owned parent graph. See docs/scene-mz-cpu.md.",
+      "evidence": "Voxel utility and CPU suites pass; pinned VoxelBoxState validates initial/update shader count and render plane distances. Remaining renderer and loading gaps remain open."
     },
     {
       "module": "Scene/VoxelShapeType",
@@ -545,8 +547,9 @@
       "module": "Scene/VoxelShape",
       "baselineStatus": "partial",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "CPU dynamic shape contract backed by existing VoxelBoxShape; bounds, transforms, UV and tile/sample OBBs. Shader uniforms/defines/intersections remain. See docs/scene-nz-contracts.md."
+      "status": "in-progress",
+      "remaining": "CPU dynamic shape contract backed by existing VoxelBoxShape; bounds, transforms, UV and tile/sample OBBs. Shader uniforms/defines/intersections remain. See docs/scene-nz-contracts.md.",
+      "evidence": "Voxel utility and CPU suites pass; pinned VoxelBoxState validates initial/update shader count and render plane distances. Remaining renderer and loading gaps remain open."
     },
     {
       "module": "Scene/BillboardTexture",
