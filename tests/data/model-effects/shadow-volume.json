@@ -1,0 +1,442 @@
+[
+  {
+    "mask": 0,
+    "color": [
+      "SPHERICAL",
+      "REQUIRES_EC",
+      "NORMAL_EC",
+      "PER_INSTANCE_COLOR"
+    ],
+    "pick": [
+      "PICK",
+      "SPHERICAL"
+    ],
+    "vertex": [
+      "EXTERNAL",
+      "PER_INSTANCE_COLOR"
+    ],
+    "pickVertex": [
+      "EXTERNAL"
+    ]
+  },
+  {
+    "mask": 1,
+    "color": [
+      "SPHERICAL",
+      "REQUIRES_EC",
+      "REQUIRES_WC",
+      "TEXTURE_COORDINATES",
+      "CULL_FRAGMENTS",
+      "NORMAL_EC",
+      "PER_INSTANCE_COLOR"
+    ],
+    "pick": [
+      "PICK",
+      "SPHERICAL",
+      "REQUIRES_EC",
+      "REQUIRES_WC",
+      "TEXTURE_COORDINATES",
+      "CULL_FRAGMENTS"
+    ],
+    "vertex": [
+      "EXTERNAL",
+      "PER_INSTANCE_COLOR",
+      "TEXTURE_COORDINATES",
+      "SPHERICAL"
+    ],
+    "pickVertex": [
+      "EXTERNAL",
+      "TEXTURE_COORDINATES",
+      "SPHERICAL"
+    ]
+  },
+  {
+    "mask": 2,
+    "color": [
+      "REQUIRES_EC",
+      "NORMAL_EC",
+      "PER_INSTANCE_COLOR"
+    ],
+    "pick": [
+      "PICK"
+    ],
+    "vertex": [
+      "EXTERNAL",
+      "PER_INSTANCE_COLOR"
+    ],
+    "pickVertex": [
+      "EXTERNAL"
+    ]
+  },
+  {
+    "mask": 3,
+    "color": [
+      "REQUIRES_EC",
+      "REQUIRES_WC",
+      "TEXTURE_COORDINATES",
+      "CULL_FRAGMENTS",
+      "NORMAL_EC",
+      "PER_INSTANCE_COLOR"
+    ],
+    "pick": [
+      "PICK",
+      "REQUIRES_EC",
+      "REQUIRES_WC",
+      "TEXTURE_COORDINATES",
+      "CULL_FRAGMENTS"
+    ],
+    "vertex": [
+      "EXTERNAL",
+      "PER_INSTANCE_COLOR",
+      "TEXTURE_COORDINATES"
+    ],
+    "pickVertex": [
+      "EXTERNAL",
+      "TEXTURE_COORDINATES"
+    ]
+  },
+  {
+    "mask": 4,
+    "color": [
+      "SPHERICAL",
+      "PER_INSTANCE_COLOR",
+      "FLAT"
+    ],
+    "pick": [
+      "PICK",
+      "SPHERICAL"
+    ],
+    "vertex": [
+      "EXTERNAL",
+      "PER_INSTANCE_COLOR"
+    ],
+    "pickVertex": [
+      "EXTERNAL"
+    ]
+  },
+  {
+    "mask": 5,
+    "color": [
+      "SPHERICAL",
+      "REQUIRES_EC",
+      "REQUIRES_WC",
+      "TEXTURE_COORDINATES",
+      "CULL_FRAGMENTS",
+      "PER_INSTANCE_COLOR",
+      "FLAT"
+    ],
+    "pick": [
+      "PICK",
+      "SPHERICAL",
+      "REQUIRES_EC",
+      "REQUIRES_WC",
+      "TEXTURE_COORDINATES",
+      "CULL_FRAGMENTS"
+    ],
+    "vertex": [
+      "EXTERNAL",
+      "PER_INSTANCE_COLOR",
+      "TEXTURE_COORDINATES",
+      "SPHERICAL"
+    ],
+    "pickVertex": [
+      "EXTERNAL",
+      "TEXTURE_COORDINATES",
+      "SPHERICAL"
+    ]
+  },
+  {
+    "mask": 6,
+    "color": [
+      "PER_INSTANCE_COLOR",
+      "FLAT"
+    ],
+    "pick": [
+      "PICK"
+    ],
+    "vertex": [
+      "EXTERNAL",
+      "PER_INSTANCE_COLOR"
+    ],
+    "pickVertex": [
+      "EXTERNAL"
+    ]
+  },
+  {
+    "mask": 7,
+    "color": [
+      "REQUIRES_EC",
+      "REQUIRES_WC",
+      "TEXTURE_COORDINATES",
+      "CULL_FRAGMENTS",
+      "PER_INSTANCE_COLOR",
+      "FLAT"
+    ],
+    "pick": [
+      "PICK",
+      "REQUIRES_EC",
+      "REQUIRES_WC",
+      "TEXTURE_COORDINATES",
+      "CULL_FRAGMENTS"
+    ],
+    "vertex": [
+      "EXTERNAL",
+      "PER_INSTANCE_COLOR",
+      "TEXTURE_COORDINATES"
+    ],
+    "pickVertex": [
+      "EXTERNAL",
+      "TEXTURE_COORDINATES"
+    ]
+  },
+  {
+    "mask": 8,
+    "color": [
+      "REQUIRES_EC",
+      "NORMAL_EC",
+      "PER_INSTANCE_COLOR"
+    ],
+    "pick": [
+      "PICK"
+    ],
+    "vertex": [
+      "EXTERNAL",
+      "EAST_MOST_X_HIGH 19988480.000000000",
+      "EAST_MOST_X_LOW 49028.342789243906736374",
+      "WEST_MOST_X_HIGH -19988480.0000000000",
+      "WEST_MOST_X_LOW -49028.3427892439067363739",
+      "PER_INSTANCE_COLOR"
+    ],
+    "pickVertex": [
+      "EXTERNAL",
+      "EAST_MOST_X_HIGH 19988480.000000000",
+      "EAST_MOST_X_LOW 49028.342789243906736374",
+      "WEST_MOST_X_HIGH -19988480.0000000000",
+      "WEST_MOST_X_LOW -49028.3427892439067363739"
+    ]
+  },
+  {
+    "mask": 9,
+    "color": [
+      "REQUIRES_EC",
+      "REQUIRES_WC",
+      "TEXTURE_COORDINATES",
+      "CULL_FRAGMENTS",
+      "NORMAL_EC",
+      "PER_INSTANCE_COLOR"
+    ],
+    "pick": [
+      "PICK",
+      "REQUIRES_EC",
+      "REQUIRES_WC",
+      "TEXTURE_COORDINATES",
+      "CULL_FRAGMENTS"
+    ],
+    "vertex": [
+      "EXTERNAL",
+      "EAST_MOST_X_HIGH 19988480.000000000",
+      "EAST_MOST_X_LOW 49028.342789243906736374",
+      "WEST_MOST_X_HIGH -19988480.0000000000",
+      "WEST_MOST_X_LOW -49028.3427892439067363739",
+      "PER_INSTANCE_COLOR",
+      "TEXTURE_COORDINATES",
+      "COLUMBUS_VIEW_2D"
+    ],
+    "pickVertex": [
+      "EXTERNAL",
+      "EAST_MOST_X_HIGH 19988480.000000000",
+      "EAST_MOST_X_LOW 49028.342789243906736374",
+      "WEST_MOST_X_HIGH -19988480.0000000000",
+      "WEST_MOST_X_LOW -49028.3427892439067363739",
+      "TEXTURE_COORDINATES",
+      "COLUMBUS_VIEW_2D"
+    ]
+  },
+  {
+    "mask": 10,
+    "color": [
+      "REQUIRES_EC",
+      "NORMAL_EC",
+      "PER_INSTANCE_COLOR"
+    ],
+    "pick": [
+      "PICK"
+    ],
+    "vertex": [
+      "EXTERNAL",
+      "EAST_MOST_X_HIGH 19988480.000000000",
+      "EAST_MOST_X_LOW 49028.342789243906736374",
+      "WEST_MOST_X_HIGH -19988480.0000000000",
+      "WEST_MOST_X_LOW -49028.3427892439067363739",
+      "PER_INSTANCE_COLOR"
+    ],
+    "pickVertex": [
+      "EXTERNAL",
+      "EAST_MOST_X_HIGH 19988480.000000000",
+      "EAST_MOST_X_LOW 49028.342789243906736374",
+      "WEST_MOST_X_HIGH -19988480.0000000000",
+      "WEST_MOST_X_LOW -49028.3427892439067363739"
+    ]
+  },
+  {
+    "mask": 11,
+    "color": [
+      "REQUIRES_EC",
+      "REQUIRES_WC",
+      "TEXTURE_COORDINATES",
+      "CULL_FRAGMENTS",
+      "NORMAL_EC",
+      "PER_INSTANCE_COLOR"
+    ],
+    "pick": [
+      "PICK",
+      "REQUIRES_EC",
+      "REQUIRES_WC",
+      "TEXTURE_COORDINATES",
+      "CULL_FRAGMENTS"
+    ],
+    "vertex": [
+      "EXTERNAL",
+      "EAST_MOST_X_HIGH 19988480.000000000",
+      "EAST_MOST_X_LOW 49028.342789243906736374",
+      "WEST_MOST_X_HIGH -19988480.0000000000",
+      "WEST_MOST_X_LOW -49028.3427892439067363739",
+      "PER_INSTANCE_COLOR",
+      "TEXTURE_COORDINATES",
+      "COLUMBUS_VIEW_2D"
+    ],
+    "pickVertex": [
+      "EXTERNAL",
+      "EAST_MOST_X_HIGH 19988480.000000000",
+      "EAST_MOST_X_LOW 49028.342789243906736374",
+      "WEST_MOST_X_HIGH -19988480.0000000000",
+      "WEST_MOST_X_LOW -49028.3427892439067363739",
+      "TEXTURE_COORDINATES",
+      "COLUMBUS_VIEW_2D"
+    ]
+  },
+  {
+    "mask": 12,
+    "color": [
+      "PER_INSTANCE_COLOR",
+      "FLAT"
+    ],
+    "pick": [
+      "PICK"
+    ],
+    "vertex": [
+      "EXTERNAL",
+      "EAST_MOST_X_HIGH 19988480.000000000",
+      "EAST_MOST_X_LOW 49028.342789243906736374",
+      "WEST_MOST_X_HIGH -19988480.0000000000",
+      "WEST_MOST_X_LOW -49028.3427892439067363739",
+      "PER_INSTANCE_COLOR"
+    ],
+    "pickVertex": [
+      "EXTERNAL",
+      "EAST_MOST_X_HIGH 19988480.000000000",
+      "EAST_MOST_X_LOW 49028.342789243906736374",
+      "WEST_MOST_X_HIGH -19988480.0000000000",
+      "WEST_MOST_X_LOW -49028.3427892439067363739"
+    ]
+  },
+  {
+    "mask": 13,
+    "color": [
+      "REQUIRES_EC",
+      "REQUIRES_WC",
+      "TEXTURE_COORDINATES",
+      "CULL_FRAGMENTS",
+      "PER_INSTANCE_COLOR",
+      "FLAT"
+    ],
+    "pick": [
+      "PICK",
+      "REQUIRES_EC",
+      "REQUIRES_WC",
+      "TEXTURE_COORDINATES",
+      "CULL_FRAGMENTS"
+    ],
+    "vertex": [
+      "EXTERNAL",
+      "EAST_MOST_X_HIGH 19988480.000000000",
+      "EAST_MOST_X_LOW 49028.342789243906736374",
+      "WEST_MOST_X_HIGH -19988480.0000000000",
+      "WEST_MOST_X_LOW -49028.3427892439067363739",
+      "PER_INSTANCE_COLOR",
+      "TEXTURE_COORDINATES",
+      "COLUMBUS_VIEW_2D"
+    ],
+    "pickVertex": [
+      "EXTERNAL",
+      "EAST_MOST_X_HIGH 19988480.000000000",
+      "EAST_MOST_X_LOW 49028.342789243906736374",
+      "WEST_MOST_X_HIGH -19988480.0000000000",
+      "WEST_MOST_X_LOW -49028.3427892439067363739",
+      "TEXTURE_COORDINATES",
+      "COLUMBUS_VIEW_2D"
+    ]
+  },
+  {
+    "mask": 14,
+    "color": [
+      "PER_INSTANCE_COLOR",
+      "FLAT"
+    ],
+    "pick": [
+      "PICK"
+    ],
+    "vertex": [
+      "EXTERNAL",
+      "EAST_MOST_X_HIGH 19988480.000000000",
+      "EAST_MOST_X_LOW 49028.342789243906736374",
+      "WEST_MOST_X_HIGH -19988480.0000000000",
+      "WEST_MOST_X_LOW -49028.3427892439067363739",
+      "PER_INSTANCE_COLOR"
+    ],
+    "pickVertex": [
+      "EXTERNAL",
+      "EAST_MOST_X_HIGH 19988480.000000000",
+      "EAST_MOST_X_LOW 49028.342789243906736374",
+      "WEST_MOST_X_HIGH -19988480.0000000000",
+      "WEST_MOST_X_LOW -49028.3427892439067363739"
+    ]
+  },
+  {
+    "mask": 15,
+    "color": [
+      "REQUIRES_EC",
+      "REQUIRES_WC",
+      "TEXTURE_COORDINATES",
+      "CULL_FRAGMENTS",
+      "PER_INSTANCE_COLOR",
+      "FLAT"
+    ],
+    "pick": [
+      "PICK",
+      "REQUIRES_EC",
+      "REQUIRES_WC",
+      "TEXTURE_COORDINATES",
+      "CULL_FRAGMENTS"
+    ],
+    "vertex": [
+      "EXTERNAL",
+      "EAST_MOST_X_HIGH 19988480.000000000",
+      "EAST_MOST_X_LOW 49028.342789243906736374",
+      "WEST_MOST_X_HIGH -19988480.0000000000",
+      "WEST_MOST_X_LOW -49028.3427892439067363739",
+      "PER_INSTANCE_COLOR",
+      "TEXTURE_COORDINATES",
+      "COLUMBUS_VIEW_2D"
+    ],
+    "pickVertex": [
+      "EXTERNAL",
+      "EAST_MOST_X_HIGH 19988480.000000000",
+      "EAST_MOST_X_LOW 49028.342789243906736374",
+      "WEST_MOST_X_HIGH -19988480.0000000000",
+      "WEST_MOST_X_LOW -49028.3427892439067363739",
+      "TEXTURE_COORDINATES",
+      "COLUMBUS_VIEW_2D"
+    ]
+  }
+]

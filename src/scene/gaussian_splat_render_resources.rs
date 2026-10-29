@@ -7,10 +7,12 @@ use crate::renderer::render_state::DepthTest;
 use crate::renderer::{RenderState, ShaderBuilder, ShaderDestination};
 
 /// Render resources assembled during Gaussian splat pipeline stages.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct GaussianSplatRenderResources {
     /// Incremental shader builder.
     pub shader_builder: ShaderBuilder,
+    /// Dynamic uniforms evaluated at draw time, shared with model pipeline stages.
+    pub uniform_map: super::model::render_resources::ModelUniformProviders,
     /// Options for configuring the render state (depth test, etc.).
     pub render_state: RenderState,
     /// Options for configuring alpha pass and cutoff.
@@ -31,23 +33,17 @@ impl GaussianSplatRenderResources {
         let mut shader_builder = ShaderBuilder::default();
 
         let render_state = RenderState {
-            depth_test: DepthTest {
-                enabled: true,
-                func: DepthFunction::LessOrEqual.value(),
-            },
+            depth_test: DepthTest { enabled: true, func: DepthFunction::LessOrEqual.value() },
             ..Default::default()
         };
 
         if use_log_depth {
-            shader_builder.add_define(
-                "LOG_DEPTH_READ_ONLY",
-                None,
-                ShaderDestination::FRAGMENT,
-            );
+            shader_builder.add_define("LOG_DEPTH_READ_ONLY", None, ShaderDestination::FRAGMENT);
         }
 
         Self {
             shader_builder,
+            uniform_map: Default::default(),
             render_state,
             alpha_options: ModelAlphaOptions::default(),
             has_skip_level_of_detail: false,
@@ -63,10 +59,7 @@ mod tests {
     fn default_resources_match_upstream() {
         let res = GaussianSplatRenderResources::new(false);
         assert!(res.render_state.depth_test.enabled);
-        assert_eq!(
-            res.render_state.depth_test.func,
-            DepthFunction::LessOrEqual.value()
-        );
+        assert_eq!(res.render_state.depth_test.func, DepthFunction::LessOrEqual.value());
         assert!(!res.has_skip_level_of_detail);
     }
 
@@ -75,5 +68,17 @@ mod tests {
         let res = GaussianSplatRenderResources::new(true);
         let (_, fs) = res.shader_builder.sources();
         assert!(fs.defines.iter().any(|d| d.contains("LOG_DEPTH_READ_ONLY")));
+    }
+}
+
+impl std::fmt::Debug for GaussianSplatRenderResources {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GaussianSplatRenderResources")
+            .field("shader_builder", &self.shader_builder)
+            .field("uniforms", &self.uniform_map.keys().collect::<Vec<_>>())
+            .field("render_state", &self.render_state)
+            .field("alpha_options", &self.alpha_options)
+            .field("has_skip_level_of_detail", &self.has_skip_level_of_detail)
+            .finish()
     }
 }

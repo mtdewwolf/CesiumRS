@@ -99,47 +99,47 @@ impl<G: Gl> PostProcessStageCollection<G> {
     }
 
     pub fn get_stage_by_name(&self, name: &str) -> Option<&PostProcessStageItem<G>> {
-        if self.fxaa.name() == name {
-            return None;
-        }
-        for item in &self.stages {
-            if item.name() == name {
-                return Some(item);
-            }
-            if let PostProcessStageItem::Composite(c) = item {
-                for sub in c.stages() {
-                    if sub.name() == name {
-                        return Some(sub);
+        fn find<'a, G: Gl>(items: &'a [PostProcessStageItem<G>], name: &str) -> Option<&'a PostProcessStageItem<G>> {
+            for item in items {
+                if item.name() == name {
+                    return Some(item);
+                }
+                if let PostProcessStageItem::Composite(c) = item {
+                    if let Some(found) = find(c.stages(), name) {
+                        return Some(found);
                     }
                 }
             }
+            None
         }
-        None
+        find(&self.stages, name)
     }
 
     pub fn get_stage_by_name_mut(&mut self, name: &str) -> Option<&mut PostProcessStageItem<G>> {
-        for item in &mut self.stages {
-            if item.name() == name {
-                return Some(item);
-            }
-            if let PostProcessStageItem::Composite(c) = item {
-                for sub in c.stages_mut() {
-                    if sub.name() == name {
-                        return Some(sub);
+        fn find<'a, G: Gl>(
+            items: &'a mut [PostProcessStageItem<G>],
+            name: &str,
+        ) -> Option<&'a mut PostProcessStageItem<G>> {
+            for item in items {
+                if item.name() == name {
+                    return Some(item);
+                }
+                if let PostProcessStageItem::Composite(c) = item {
+                    if let Some(found) = find(c.stages_mut(), name) {
+                        return Some(found);
                     }
                 }
             }
+            None
         }
-        None
+        find(&mut self.stages, name)
     }
 
     pub fn add(&mut self, stage: impl Into<PostProcessStageItem<G>>) -> Result<&PostProcessStageItem<G>, RuntimeError> {
         let item = stage.into();
         let name = item.name().to_string();
         if self.contains(&name) {
-            return Err(RuntimeError::new(format!(
-                "Stage with name {name} has already been added to collection"
-            )));
+            return Err(RuntimeError::new(format!("Stage with name {name} has already been added to collection")));
         }
 
         self.stages.push(item);
@@ -279,26 +279,13 @@ impl<G: Gl> PostProcessStageCollection<G> {
     }
 
     pub fn has_selected(&self) -> bool {
-        for s in &self.stages {
-            match s {
-                PostProcessStageItem::Stage(stage) => {
-                    if stage.selected().is_some() {
-                        return true;
-                    }
-                }
-                PostProcessStageItem::Composite(comp) => {
-                    if comp.selected().is_some() {
-                        return true;
-                    }
-                    for sub in comp.stages() {
-                        if sub.as_stage().and_then(|st| st.selected()).is_some() {
-                            return true;
-                        }
-                    }
-                }
-            }
+        fn selected<G: Gl>(items: &[PostProcessStageItem<G>]) -> bool {
+            items.iter().any(|item| match item {
+                PostProcessStageItem::Stage(stage) => stage.selected().is_some(),
+                PostProcessStageItem::Composite(comp) => comp.selected().is_some() || selected(comp.stages()),
+            })
         }
-        false
+        selected(&self.stages)
     }
 
     pub fn output_texture(&self) -> Option<Rc<Texture<G>>> {
@@ -324,12 +311,7 @@ impl<G: Gl> PostProcessStageCollection<G> {
         None
     }
 
-    pub fn update(
-        &mut self,
-        context: &Context<G>,
-        use_log_depth: bool,
-        use_hdr: bool,
-    ) -> Result<(), RuntimeError> {
+    pub fn update(&mut self, context: &Context<G>, use_log_depth: bool, use_hdr: bool) -> Result<(), RuntimeError> {
         self.tonemapping.set_enabled(use_hdr);
 
         let ao_enabled = self.ao.enabled() && self.ao.is_supported(context);
@@ -414,48 +396,19 @@ impl<G: Gl> PostProcessStageCollection<G> {
             get_stage_dependencies(&mut dependencies, &self.fxaa, prev_name.as_deref());
         }
 
-        // Flatten all active leaf PostProcessStages to update texture cache
-        let mut all_leaf_stages: Vec<&PostProcessStage<G>> = Vec::new();
+        // Cache allocation must traverse arbitrary nesting, matching composite execution.
+        let mut all_leaf_stages = Vec::new();
         if ao_enabled {
-            for sub in self.ao.stages() {
-                if let Some(s) = sub.as_stage() {
-                    all_leaf_stages.push(s);
-                } else if let Some(comp) = sub.as_composite() {
-                    for leaf in comp.stages() {
-                        if let Some(s) = leaf.as_stage() {
-                            all_leaf_stages.push(s);
-                        }
-                    }
-                }
-            }
+            Self::collect_leaves(self.ao.stages(), &mut all_leaf_stages);
         }
         if bloom_enabled {
-            for sub in self.bloom.stages() {
-                if let Some(s) = sub.as_stage() {
-                    all_leaf_stages.push(s);
-                } else if let Some(comp) = sub.as_composite() {
-                    for leaf in comp.stages() {
-                        if let Some(s) = leaf.as_stage() {
-                            all_leaf_stages.push(s);
-                        }
-                    }
-                }
-            }
+            Self::collect_leaves(self.bloom.stages(), &mut all_leaf_stages);
         }
         if tonemapping_enabled {
             all_leaf_stages.push(&self.tonemapping);
         }
         for &idx in &self.active_stages {
-            match &self.stages[idx] {
-                PostProcessStageItem::Stage(s) => all_leaf_stages.push(s),
-                PostProcessStageItem::Composite(c) => {
-                    for sub in c.stages() {
-                        if let Some(s) = sub.as_stage() {
-                            all_leaf_stages.push(s);
-                        }
-                    }
-                }
-            }
+            Self::collect_leaves(std::slice::from_ref(&self.stages[idx]), &mut all_leaf_stages);
         }
         if fxaa_enabled {
             all_leaf_stages.push(&self.fxaa);
@@ -509,10 +462,16 @@ impl<G: Gl> PostProcessStageCollection<G> {
         Ok(())
     }
 
-    fn wire_stage_framebuffers(
-        composite: &mut PostProcessStageComposite<G>,
-        cache: &PostProcessStageTextureCache<G>,
-    ) {
+    fn collect_leaves<'a>(items: &'a [PostProcessStageItem<G>], output: &mut Vec<&'a PostProcessStage<G>>) {
+        for item in items {
+            match item {
+                PostProcessStageItem::Stage(stage) => output.push(stage),
+                PostProcessStageItem::Composite(composite) => Self::collect_leaves(composite.stages(), output),
+            }
+        }
+    }
+
+    fn wire_stage_framebuffers(composite: &mut PostProcessStageComposite<G>, cache: &PostProcessStageTextureCache<G>) {
         for sub in composite.stages_mut() {
             match sub {
                 PostProcessStageItem::Stage(s) => {
@@ -538,18 +497,11 @@ impl<G: Gl> PostProcessStageCollection<G> {
         let tonemapping_enabled = self.tonemapping.enabled() && self.tonemapping.is_supported(context);
         let fxaa_enabled = self.fxaa.enabled() && self.fxaa.is_supported(context);
 
-        if !fxaa_enabled
-            && !ao_enabled
-            && !bloom_enabled
-            && !tonemapping_enabled
-            && self.active_stages.is_empty()
-        {
+        if !fxaa_enabled && !ao_enabled && !bloom_enabled && !tonemapping_enabled && self.active_stages.is_empty() {
             return Ok(());
         }
 
-        let resolver = |name: &str| -> Option<Rc<Texture<G>>> {
-            self.texture_cache.get_output_texture(name)
-        };
+        let resolver = |name: &str| -> Option<Rc<Texture<G>>> { self.texture_cache.get_output_texture(name) };
 
         let mut current_color = color_texture.clone();
 
@@ -648,5 +600,45 @@ impl<G: Gl> PostProcessStageCollection<G> {
 
     pub fn is_destroyed(&self) -> bool {
         self.destroyed
+    }
+}
+
+/// Resolved Scene attachments consumed after scene rendering. The integration
+/// owner updates these handles when view resources resize or resolve MSAA.
+pub struct PostProcessSceneInputs<G: Gl> {
+    pub color: Rc<Texture<G>>,
+    pub depth: Option<Rc<Texture<G>>>,
+    pub id: Option<Rc<Texture<G>>>,
+    pub target: Option<Rc<Framebuffer<G>>>,
+    pub pass: PassState<G>,
+}
+
+/// Concrete Scene effect adapter. Shared collection and inputs remain available
+/// to callers after the adapter is installed in `Scene.effects`.
+pub struct PostProcessSceneEffect<G: Gl> {
+    pub context: Context<G>,
+    pub collection: Rc<std::cell::RefCell<PostProcessStageCollection<G>>>,
+    pub inputs: Rc<std::cell::RefCell<Option<PostProcessSceneInputs<G>>>>,
+}
+impl<G: Gl> super::scene::SceneEffect for PostProcessSceneEffect<G> {
+    fn update(&mut self, frame: &mut super::FrameState) -> Result<(), RuntimeError> {
+        self.collection.borrow_mut().update(&self.context, frame.use_log_depth, frame.high_dynamic_range)
+    }
+    fn render(&mut self, frame: &mut super::FrameState) -> Result<(), RuntimeError> {
+        if !frame.passes.render {
+            return Ok(());
+        }
+        let inputs = self.inputs.borrow();
+        let inputs = inputs
+            .as_ref()
+            .ok_or_else(|| RuntimeError::new("Post-processing requires resolved Scene color attachments"))?;
+        let mut collection = self.collection.borrow_mut();
+        collection.clear(&self.context)?;
+        collection.execute(&self.context, &inputs.color, inputs.depth.as_ref(), inputs.id.as_ref())?;
+        collection.copy(&self.context, inputs.target.clone(), &inputs.pass)
+    }
+    fn destroy(&mut self) -> Result<(), RuntimeError> {
+        self.inputs.borrow_mut().take();
+        self.collection.borrow_mut().destroy()
     }
 }

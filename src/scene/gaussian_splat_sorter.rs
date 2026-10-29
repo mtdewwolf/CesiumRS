@@ -5,9 +5,9 @@ use crate::core::task_processor::{ModuleInitialization, ProcessedTask, TaskProce
 use crate::core::RuntimeError;
 use serde_json::Value;
 use std::cell::{Cell, RefCell};
-use std::rc::Rc;
 use std::future::Future;
 use std::pin::Pin;
+use std::rc::Rc;
 use std::task::{Context, Poll};
 
 pub type SorterTask = ProcessedTask<Value, Value>;
@@ -33,6 +33,13 @@ impl Default for GaussianSplatSorter {
 }
 
 impl GaussianSplatSorter {
+    /// Uses the built-in Rust algorithms without a browser worker or Wasm module.
+    /// Work is driven by polling the returned task; hosts can supply a dedicated
+    /// worker to `new` when execution must occur on a background thread.
+    pub fn native(hardware_concurrency: usize) -> Self {
+        Self::new(Some(Rc::new(NativeWorker)), hardware_concurrency)
+    }
+
     pub const WORKER_NAME: &'static str = "gaussianSplatSorter";
     pub const WASM_BINARY_FILE: &'static str = "ThirdParty/wasm_splats_bg.wasm";
 
@@ -42,10 +49,7 @@ impl GaussianSplatSorter {
     }
 
     /// Creates a new sorter with optional worker backing.
-    pub fn new(
-        worker: Option<Rc<dyn TaskWorker<Value, Value>>>,
-        hardware_concurrency: usize,
-    ) -> Self {
+    pub fn new(worker: Option<Rc<dyn TaskWorker<Value, Value>>>, hardware_concurrency: usize) -> Self {
         Self {
             worker,
             maximum_sorting_concurrency: Self::max_sorting_concurrency(hardware_concurrency),
@@ -74,18 +78,13 @@ impl GaussianSplatSorter {
                 return Ok(false);
             };
 
-            let mut processor =
-                TaskProcessor::new(worker.clone(), Some(self.maximum_sorting_concurrency));
+            let mut processor = TaskProcessor::new(worker.clone(), Some(self.maximum_sorting_concurrency));
             let init = processor.init_web_assembly_module(WebAssemblyOptions {
                 wasm_binary_file: Some(Self::WASM_BINARY_FILE.into()),
                 ..Default::default()
             });
 
-            self.processor.replace(Some(SorterProcessor {
-                processor,
-                initialization: init,
-            }));
-
+            self.processor.replace(Some(SorterProcessor { processor, initialization: init }));
         }
 
         Ok(self.ready.get())
@@ -99,11 +98,24 @@ impl GaussianSplatSorter {
             Ok(false) => {}
         }
         let mut processor = self.processor.borrow_mut();
-        let Some(processor) = processor.as_mut() else { return Poll::Ready(Ok(false)); };
+        let Some(processor) = processor.as_mut() else {
+            return Poll::Ready(Ok(false));
+        };
         match Pin::new(&mut processor.initialization).poll(cx) {
             Poll::Pending => Poll::Pending,
-            Poll::Ready(Ok(_)) => { self.ready.set(true); Poll::Ready(Ok(true)) }
-            Poll::Ready(Err(err)) => { self.error.replace(Some(err.clone())); Poll::Ready(Err(err)) }
+            Poll::Ready(Ok(value)) if value == Value::Bool(true) => {
+                self.ready.set(true);
+                Poll::Ready(Ok(true))
+            }
+            Poll::Ready(Ok(_)) => {
+                let err = RuntimeError::new("Gaussian splat sorter could not be initialized.");
+                self.error.replace(Some(err.clone()));
+                Poll::Ready(Err(err))
+            }
+            Poll::Ready(Err(err)) => {
+                self.error.replace(Some(err.clone()));
+                Poll::Ready(Err(err))
+            }
         }
     }
 
@@ -145,10 +157,7 @@ mod tests {
     #[test]
     fn constants_match_upstream() {
         assert_eq!(GaussianSplatSorter::WORKER_NAME, "gaussianSplatSorter");
-        assert_eq!(
-            GaussianSplatSorter::WASM_BINARY_FILE,
-            "ThirdParty/wasm_splats_bg.wasm"
-        );
+        assert_eq!(GaussianSplatSorter::WASM_BINARY_FILE, "ThirdParty/wasm_splats_bg.wasm");
     }
 
     #[test]
@@ -157,5 +166,39 @@ mod tests {
         assert!(!sorter.is_ready());
         let res = sorter.radix_sort_indexes(Value::Null).unwrap();
         assert!(res.is_none());
+    }
+}
+
+struct NativeWorker;
+impl TaskWorker<Value, Value> for NativeWorker {
+    fn init_web_assembly_module(&self, _: WebAssemblyOptions) -> crate::core::task_processor::TaskFuture<Value> {
+        Box::pin(async { Ok(Value::Bool(true)) })
+    }
+    fn cancel_task(&self, _: u64) {}
+    fn terminate(&self) {}
+    fn run(&self, _: u64, parameters: Value) -> crate::core::task_processor::TaskFuture<Value> {
+        Box::pin(async move {
+            #[derive(serde::Deserialize)]
+            struct Primitive {
+                positions: Vec<f32>,
+                #[serde(rename = "modelView")]
+                model_view: Vec<f32>,
+                count: usize,
+            }
+            #[derive(serde::Deserialize)]
+            struct Parameters {
+                primitive: Primitive,
+                #[serde(rename = "sortType")]
+                sort_type: String,
+            }
+            let p: Parameters = serde_json::from_value(parameters).map_err(|e| RuntimeError::new(e.to_string()))?;
+            let result = crate::workers::gaussian_splats::gaussian_splat_sorter(
+                &p.primitive.positions,
+                &p.primitive.model_view,
+                p.primitive.count,
+                &p.sort_type,
+            )?;
+            Ok(serde_json::json!(result))
+        })
     }
 }

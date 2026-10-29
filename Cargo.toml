@@ -97,3 +97,9 @@ required-features = ["browser"]
 [[example]]
 name = "parity_bench_wasm"
 crate-type = ["cdylib"]
+
+# Dedicated, isolated Scene model/effects GPU parity harness.
+[[example]]
+name = "model_effects_validation"
+crate-type = ["cdylib"]
+required-features = ["browser"]

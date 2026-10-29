@@ -33,7 +33,7 @@ impl ShadowVolumeAppearance {
             ..Default::default()
         };
 
-        let pick_dependencies =
+        let mut pick_dependencies =
             ShaderDependencies { requires_texture_coordinates: extents_culling, ..Default::default() };
 
         if let Some(mat) = appearance.material() {
@@ -47,7 +47,75 @@ impl ShadowVolumeAppearance {
             color_dependencies.requires_normal_ec = !is_flat;
         }
 
+        // Upstream dependency setters propagate requirements transitively.
+        color_dependencies.requires_normal_ec |=
+            color_dependencies.normal_ec || color_dependencies.tangent_to_eye_matrix;
+        color_dependencies.requires_texture_coordinates |= color_dependencies.st;
+        color_dependencies.requires_wc |=
+            color_dependencies.requires_texture_coordinates || color_dependencies.tangent_to_eye_matrix;
+        color_dependencies.requires_ec |= color_dependencies.requires_wc
+            || color_dependencies.requires_normal_ec
+            || color_dependencies.position_to_eye_ec;
+        pick_dependencies.requires_wc |= pick_dependencies.requires_texture_coordinates;
+        pick_dependencies.requires_ec |= pick_dependencies.requires_wc;
         Self { extents_culling, planar_extents, appearance, color_dependencies, pick_dependencies }
+    }
+
+    /// Derive the classification vertex stage with encoded projection extents.
+    pub fn create_vertex_shader(
+        &self,
+        defines: &[String],
+        source: &str,
+        columbus_view_2d: bool,
+        projection: &dyn crate::core::MapProjection,
+    ) -> crate::renderer::ShaderSource {
+        self.vertex_shader(defines, source, columbus_view_2d, projection, false)
+    }
+
+    pub fn create_pick_vertex_shader(
+        &self,
+        defines: &[String],
+        source: &str,
+        columbus_view_2d: bool,
+        projection: &dyn crate::core::MapProjection,
+    ) -> crate::renderer::ShaderSource {
+        self.vertex_shader(defines, source, columbus_view_2d, projection, true)
+    }
+
+    fn vertex_shader(
+        &self,
+        defines: &[String],
+        source: &str,
+        cv: bool,
+        projection: &dyn crate::core::MapProjection,
+        pick: bool,
+    ) -> crate::renderer::ShaderSource {
+        let mut shader = crate::renderer::ShaderSource::new(source);
+        shader.defines = defines.to_vec();
+        if cv {
+            for (name, longitude) in [("EAST", std::f64::consts::PI), ("WEST", -std::f64::consts::PI)] {
+                let x = projection.project(&crate::core::Cartographic::new(longitude, 0.0, 0.0)).x;
+                let encoded = crate::core::EncodedCartesian3::encode(x);
+                for (part, value) in [("HIGH", encoded.high), ("LOW", encoded.low)] {
+                    let precision = value.to_string().len() + 1;
+                    shader.defines.push(format!("{name}_MOST_X_{part} {value:.precision$}"));
+                }
+            }
+        }
+        if !pick && self.appearance.material().is_none() {
+            shader.defines.push("PER_INSTANCE_COLOR".into());
+        }
+        let dependencies = if pick { self.pick_dependencies } else { self.color_dependencies };
+        if dependencies.requires_texture_coordinates {
+            shader.defines.push("TEXTURE_COORDINATES".into());
+            if !(self.planar_extents || cv) {
+                shader.defines.push("SPHERICAL".into());
+            }
+            if cv {
+                shader.defines.push("COLUMBUS_VIEW_2D".into());
+            }
+        }
+        shader
     }
 
     /// Creates the fragment shader for the classification color pass.

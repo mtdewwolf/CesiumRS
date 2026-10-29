@@ -1,0 +1,22 @@
+[
+  {
+    "name": "BRDF",
+    "bytes": 262144,
+    "maxDifference": 0
+  },
+  {
+    "name": "post-single",
+    "bytes": 256,
+    "maxDifference": 0
+  },
+  {
+    "name": "post-nested",
+    "bytes": 256,
+    "maxDifference": 0
+  },
+  {
+    "name": "auto-exposure-three-frames",
+    "values": 12,
+    "maxDifference": 0
+  }
+]

@@ -1,0 +1,108 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling stable_deref_trait v1.2.1
+   Compiling litemap v0.8.3
+   Compiling writeable v0.6.4
+   Compiling icu_properties_data v2.3.0
+   Compiling icu_normalizer_data v2.3.0
+   Compiling utf8_iter v1.0.4
+   Compiling autocfg v1.5.1
+   Compiling rustversion v1.0.23
+   Compiling memchr v2.8.3
+   Compiling smallvec v1.16.3
+   Compiling serde_core v1.0.229
+   Compiling cfg-if v1.0.5
+   Compiling crc32fast v1.5.2
+   Compiling zmij v1.0.23
+   Compiling futures-core v0.3.34
+   Compiling serde v1.0.229
+   Compiling hashbrown v0.17.1
+   Compiling libm v0.2.16
+   Compiling simd-adler32 v0.3.10
+   Compiling percent-encoding v2.3.2
+   Compiling adler2 v2.0.1
+   Compiling equivalent v1.0.3
+   Compiling serde_json v1.0.154
+   Compiling regex-syntax v0.8.11
+   Compiling ruzstd v0.9.1
+   Compiling pin-project-lite v0.2.17
+   Compiling miniz_oxide v0.9.1
+   Compiling form_urlencoded v1.2.2
+   Compiling core_detect v1.0.0
+   Compiling scopeguard v1.2.0
+   Compiling slab v0.4.12
+   Compiling num-traits v0.2.19
+   Compiling multiversion_no_op v1.0.0
+   Compiling futures-task v0.3.34
+   Compiling lerc-core v0.5.0
+   Compiling foldhash v0.2.0
+   Compiling itoa v1.0.18
+   Compiling aho-corasick v1.1.5
+   Compiling simdutf8 v0.1.5
+   Compiling futures-util v0.3.34
+   Compiling roxmltree v0.21.1
+   Compiling futures-channel v0.3.34
+   Compiling indexmap v2.14.2
+   Compiling encoding_rs v0.8.42
+   Compiling flate2 v1.1.10
+   Compiling lerc-reader v0.5.0
+   Compiling syn v3.0.9
+   Compiling meshopt-rs v0.1.2
+   Compiling base64 v0.22.1
+   Compiling basisu v0.1.0 (https://github.com/mtdewwolf/basisu?rev=683cd4df8238cd065fa3c37225921f3b30523e57#683cd4df)
+   Compiling punycode v0.4.1
+   Compiling num-integer v0.1.47
+   Compiling num-bigint v0.4.8
+   Compiling regex-automata v0.4.18
+   Compiling synstructure v0.14.0
+   Compiling zerovec-derive v0.11.6
+   Compiling displaydoc v0.2.7
+   Compiling bytemuck_derive v1.12.1
+   Compiling serde_derive v1.0.229
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling zerofrom v0.1.8
+   Compiling yoke v0.8.3
+   Compiling regex v1.13.1
+   Compiling zerotrie v0.2.5
+   Compiling zerovec v0.11.8
+   Compiling bytemuck v1.25.2
+   Compiling draco-core v2.3.2 (/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/third_party/draco-core)
+   Compiling tinystr v0.8.4
+   Compiling potential_utf v0.1.6
+   Compiling icu_collections v2.3.0
+   Compiling icu_locale_core v2.3.0
+   Compiling icu_provider v2.3.1
+   Compiling icu_properties v2.3.0
+   Compiling icu_normalizer v2.3.0
+   Compiling idna_adapter v1.2.2
+   Compiling idna v1.1.0
+   Compiling url v2.5.8
+   Compiling cesium-rs v0.1.0 (/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858)
+error: rustc interrupted by SIGSEGV, printing backtrace
+
+/home/ralphbox/.rustup/toolchains/1.97.0-x86_64-unknown-linux-gnu/lib/librustc_driver-a39fc8bf9e61dbb9.so(+0x3c7a77c) [0x7adde247a77c]
+/usr/lib/x86_64-linux-gnu/libc.so.6(+0x45cb0) [0x7addde445cb0]
+/home/ralphbox/.rustup/toolchains/1.97.0-x86_64-unknown-linux-gnu/bin/rustc(+0x12d13) [0x60a6981bed13]
+/home/ralphbox/.rustup/toolchains/1.97.0-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.97.0-stable(+0x8e205d5) [0x7adddca205d5]
+/home/ralphbox/.rustup/toolchains/1.97.0-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.97.0-stable(+0x8e1ff4e) [0x7adddca1ff4e]
+/home/ralphbox/.rustup/toolchains/1.97.0-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.97.0-stable(_ZN4llvm13PMDataManager16removeDeadPassesEPNS_4PassENS_9StringRefENS_19PassDebuggingStringE+0x20b) [0x7adddc76ec0b]
+/home/ralphbox/.rustup/toolchains/1.97.0-x86_64-unknown-linux-gnu/lib/libLLVM.so.22.1-rust-1.97.0-stable(_ZN4llvm6legacy15PassManagerImpl3runERNS_6ModuleE+0x3a1) [0x7adddca1fc77]
+/home/ralphbox/.rustup/toolchains/1.97.0-x86_64-unknown-linux-gnu/lib/librustc_driver-a39fc8bf9e61dbb9.so(+0x668b605) [0x7adde4e8b605]
+/home/ralphbox/.rustup/toolchains/1.97.0-x86_64-unknown-linux-gnu/lib/librustc_driver-a39fc8bf9e61dbb9.so(+0x668b0ad) [0x7adde4e8b0ad]
+/home/ralphbox/.rustup/toolchains/1.97.0-x86_64-unknown-linux-gnu/lib/librustc_driver-a39fc8bf9e61dbb9.so(+0x668251f) [0x7adde4e8251f]
+/home/ralphbox/.rustup/toolchains/1.97.0-x86_64-unknown-linux-gnu/lib/librustc_driver-a39fc8bf9e61dbb9.so(_RINvNtNtCsgczF5crJ4sT_3std3sys9backtrace28___rust_begin_short_backtraceNCINvNtNtCs4s76WqRRlYD_17rustc_codegen_ssa4back5write10spawn_workNtCs8ZlE8QOY7eJ_18rustc_codegen_llvm18LlvmCodegenBackendE0uEB2c_+0x1e6) [0x7adde4f13ee6]
+/home/ralphbox/.rustup/toolchains/1.97.0-x86_64-unknown-linux-gnu/lib/librustc_driver-a39fc8bf9e61dbb9.so(+0x6713a6b) [0x7adde4f13a6b]
+/home/ralphbox/.rustup/toolchains/1.97.0-x86_64-unknown-linux-gnu/lib/librustc_driver-a39fc8bf9e61dbb9.so(+0x67176ec) [0x7adde4f176ec]
+/usr/lib/x86_64-linux-gnu/libc.so.6(+0xa3dfa) [0x7addde4a3dfa]
+/usr/lib/x86_64-linux-gnu/libc.so.6(+0x1375cc) [0x7addde5375cc]
+
+note: we would appreciate a report at https://github.com/rust-lang/rust
+help: you can increase rustc's stack size by setting RUST_MIN_STACK=67108864
+error: could not compile `cesium-rs` (test "scene_nz_contracts")
+
+Caused by:
+  process didn't exit successfully: `/home/ralphbox/.rustup/toolchains/1.97.0-x86_64-unknown-linux-gnu/bin/rustc --crate-name scene_nz_contracts --edition=2021 tests/scene_nz_contracts.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("browser", "bundled-xys", "native-host"))' -C metadata=6ea20ec8270169f0 -C extra-filename=-cb654b671205750c --out-dir /home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps -C linker=/tmp/opencode/bin/cc -C incremental=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/incremental -L dependency=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps --extern base64=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/libbase64-1c6c759fa9cad540.rlib --extern basisu=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/libbasisu-a2f04e026ed7043c.rlib --extern cesium_rs=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/libcesium_rs.rlib --extern draco_core=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/libdraco_core-de17a9f2335e45d9.rlib --extern encoding_rs=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/libencoding_rs-85d686907a4b7fce.rlib --extern flate2=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/libflate2-7dc24ba0273d54f2.rlib --extern futures_channel=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/libfutures_channel-946fa35b0b5abefa.rlib --extern futures_util=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/libfutures_util-040b61b68b177d44.rlib --extern lerc_reader=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/liblerc_reader-36018b29d52f0d5a.rlib --extern libm=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/liblibm-b8e6af75c5115c6a.rlib --extern meshopt_rs=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/libmeshopt_rs-9207c758e23b24f7.rlib --extern num_bigint=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/libnum_bigint-bc1d95e81207756d.rlib --extern num_traits=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/libnum_traits-d636e76be2848db8.rlib --extern punycode=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/libpunycode-f24ea09ec1ab8eed.rlib --extern regex=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/libregex-1fb3cc5439d504ae.rlib --extern roxmltree=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/libroxmltree-410f44d4f1ade83e.rlib --extern serde=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/libserde-1638706f2ccb0484.rlib --extern serde_json=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/libserde_json-1b2e4fd528a3c5e7.rlib --extern url=/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858/target-model-effects-ci/debug/deps/liburl-a277ab1aa2fac6e9.rlib` (signal: 11, SIGSEGV: invalid memory reference)
+warning: build failed, waiting for other jobs to finish...
+free(): invalid pointer

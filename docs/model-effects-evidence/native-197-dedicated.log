@@ -1,0 +1,13 @@
+   Compiling cesium-rs v0.1.0 (/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.42s
+     Running tests/scene_model_effects_completion.rs (target-model-effects-ci/debug/deps/scene_model_effects_completion-71be35ced495289f)
+
+running 5 tests
+test gaussian_initialization_false_is_a_persistent_error ... ok
+test ibl_tracks_frame_environment_and_loaded_resources ... ok
+test classification_shader_dependencies_and_projection_match_pinned_engine ... ok
+test native_gaussian_coordinators_execute_real_algorithms ... ok
+test shadow_receive_matches_all_pinned_variants ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.01s
+

@@ -1,0 +1,118 @@
+   Compiling cesium-rs v0.1.0 (/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.89s
+     Running tests/scene_model_commands.rs (target-model-effects-ci/debug/deps/scene_model_commands-9afdee1bbb261795)
+
+running 12 tests
+test picking_local_matrix_instances_preserves_model_translation ... ok
+test picking_nonindexed_triangles_matches_indexed_meshes ... ok
+test picking_translation_scale_instances_reads_cpu_and_gpu_attributes ... ok
+test cpu_picking_matches_cesium ... ok
+test model_visibility_matches_cesium ... ok
+test ordinary_derived_commands_match_cesium ... ok
+test classification_batches_match_cesium ... ok
+test model_loads_defers_ready_updates_draws_and_releases_resources ... ok
+test destroyed_model_does_not_fire_queued_ready_event ... ok
+test tile_content_processes_on_the_real_frame_and_submits_tile_pass ... ok
+test model_populates_world_instance_transform_inputs ... ok
+test model_style_and_pass_changes_rebuild_commands ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+     Running tests/scene_model_effects_completion.rs (target-model-effects-ci/debug/deps/scene_model_effects_completion-71be35ced495289f)
+
+running 4 tests
+test ibl_tracks_frame_environment_and_loaded_resources ... ok
+test classification_shader_dependencies_and_projection_match_pinned_engine ... ok
+test native_gaussian_coordinators_execute_real_algorithms ... ok
+test shadow_receive_matches_all_pinned_variants ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.06s
+
+     Running tests/scene_model_features.rs (target-model-effects-ci/debug/deps/scene_model_features-00a1d8747a9f749b)
+
+running 11 tests
+test dropping_a_feature_table_breaks_pick_registry_ownership_cycles ... ok
+test empty_tables_and_upload_failures_are_recoverable ... ok
+test feature_pipeline_sources_track_uploads_statistics_and_destruction ... ok
+test feature_inheritance_prioritizes_semantics_and_values_are_copied ... ok
+test feature_texture_uploads_pick_identity_and_lifetimes ... ok
+test metadata_shared_samplers_preserve_distinct_transforms_and_deduplicate_equal_ones ... ok
+test metadata_uses_only_the_primitive_referenced_attributes_and_textures ... ok
+test model_features_match_cesium ... ok
+test metadata_fractional_statistics_use_float_scalar_and_vector_constructors ... ok
+test metadata_stage_matches_cesium ... ok
+test metadata_shader_types_and_integer_transforms_match_the_backend ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/scene_model_reader.rs (target-model-effects-ci/debug/deps/scene_model_reader-367988dc652a0aaf)
+
+running 2 tests
+test model_reader_native_triangle_conversions_and_oct_decoding ... ok
+test model_reader_reference ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/scene_model_runtime.rs (target-model-effects-ci/debug/deps/scene_model_runtime-fbb7c6d8df1f3d39)
+
+running 15 tests
+test model_animation_collection_and_events ... ok
+test model_animation_collection_fires_stop_event_with_remove_on_stop ... ok
+test model_articulation_stage_unconstrained_range ... ok
+test mapped_positions_matches_cesium ... ok
+test model_imagery_mapping_clamps_uvs ... ok
+test model_animation_channel_matches_cesium ... ok
+test model_articulation_matches_cesium ... ok
+test model_matrix_update_stage_updates_dirty_child_node_when_root_is_clean ... ok
+test model_node_user_animation_and_original_transform ... ok
+test model_runtime_primitive_materials_enabled_respects_custom_shader_modes ... ok
+test model_scene_graph_full_lifecycle ... ok
+test model_articulation_stage_matches_cesium ... ok
+test model_matrix_update_stage_matches_cesium ... ok
+test model_runtime_primitive_matches_cesium ... ok
+test model_skin_joint_matrices_and_update ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/scene_mz_cpu.rs (target-model-effects-ci/debug/deps/scene_mz_cpu-b246329ca12b688b)
+
+running 10 tests
+test clipped_degenerate_and_singular_boxes ... ok
+test ground_order_updates_and_destruction_match_reference ... ok
+test padded_voxel_cells_keep_typed_metadata_and_bounds ... ok
+test performance_sampling_matches_reference ... ok
+test voxel_content_requests_one_more_frame_and_rejects_use_after_destroy ... ok
+test structural_tileset_content_loads_before_ready_and_propagates_failure ... ok
+test spatial_selection_and_error_match_reference ... ok
+test vector_batch_matches_reference ... ok
+test terrain_polls_pending_success_and_error_once ... ok
+test voxel_bounds_and_transformed_boxes_match_reference ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/scene_nz_contracts.rs (target-model-effects-ci/debug/deps/scene_nz_contracts-cb654b671205750c)
+
+running 9 tests
+test panorama_factory_and_skybox_mode_filtering ... ok
+test particle_hidden_reverse_time_and_callback ... ok
+test voxel_provider_deferral_success_and_error ... ok
+test voxel_bounds_membership_packing_and_gpu_resize ... ok
+test voxel_shape_dynamic_dispatch_matches_box ... ok
+test particle_cpu_reference_trace ... ok
+test quadtree_geometric_error_reference ... ok
+test viewport_quad_executes_and_rebuilds_on_material_identity ... ok
+test shadow_cast_source_parity ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/scene_post_processing.rs (target-model-effects-ci/debug/deps/scene_post_processing-04aed238387e03a9)
+
+running 5 tests
+test texture_cache_minimal_framebuffer_allocation_and_resizing ... ok
+test post_process_stage_library_parity ... ok
+test post_process_stage_options_and_selection_semantics ... ok
+test post_process_stage_collection_pipeline_execution ... ok
+test auto_exposure_pyramid_reduction_parity ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
