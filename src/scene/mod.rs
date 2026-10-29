@@ -749,3 +749,5 @@ pub mod ion_imagery_provider_factory;
 pub use ion_imagery_provider_factory::{IonImageryExternalType, IonImageryProviderFactory};
 pub mod moon;
 pub use moon::{Moon, MoonOptions, DEFAULT_MOON_TEXTURE_URL};
+
+pub use voxel_shape::{VoxelCylinderShape, VoxelEllipsoidShape};

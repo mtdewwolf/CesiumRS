@@ -1,8 +1,8 @@
 import {writeFileSync} from 'node:fs';
-const Shape = (await import('/home/ralphbox/project/CesiumRS/tools/cesium/node_modules/@cesium/engine/Source/Scene/VoxelEllipsoidShape.js')).default;
-const Matrix4 = (await import('/home/ralphbox/project/CesiumRS/tools/cesium/node_modules/@cesium/engine/Source/Core/Matrix4.js')).default;
-const Cartesian3 = (await import('/home/ralphbox/project/CesiumRS/tools/cesium/node_modules/@cesium/engine/Source/Core/Cartesian3.js')).default;
-const OBB = (await import('/home/ralphbox/project/CesiumRS/tools/cesium/node_modules/@cesium/engine/Source/Core/OrientedBoundingBox.js')).default;
+const Shape = (await import('@cesium/engine/Source/Scene/VoxelEllipsoidShape.js')).default;
+const Matrix4 = (await import('@cesium/engine/Source/Core/Matrix4.js')).default;
+const Cartesian3 = (await import('@cesium/engine/Source/Core/Cartesian3.js')).default;
+const OBB = (await import('@cesium/engine/Source/Core/OrientedBoundingBox.js')).default;
 const vector = v => [v.x,v.y,v.z];
 const packObb = o => { const p=[]; OBB.pack(o,p,0); return p; };
 const cases = [];

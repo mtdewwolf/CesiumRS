@@ -426,9 +426,9 @@ impl VoxelEllipsoidShape {
     ) -> Result<(), RuntimeError> {
         let su = &mut self.shader_uniforms;
         // cartographic of camera
-        if let Some(cart) = self.ellipsoid.cartesian_to_cartographic(camera_position_wc) {
-            su.camera_position_cartographic = Cartesian3::new(cart.longitude, cart.latitude, cart.height);
-        }
+        let cart = self.ellipsoid.cartesian_to_cartographic(camera_position_wc)
+            .ok_or_else(|| RuntimeError::new("Camera position has no ellipsoid cartographic coordinates"))?;
+        su.camera_position_cartographic = Cartesian3::new(cart.longitude, cart.latitude, cart.height);
         let surface_position = Cartesian3::from_radians(
             su.camera_position_cartographic.x,
             su.camera_position_cartographic.y,
@@ -439,12 +439,9 @@ impl VoxelEllipsoidShape {
 
         let enu_to_world = Transforms::east_north_up_to_fixed_frame(surface_position, &self.ellipsoid);
         let rotate_enu_to_world = enu_to_world.get_rotation();
-        // rotateWorldToView approximated by inverse_view_rotation? We only have rotation. Use identity? 
-        let rotate_enu_to_view = rotate_enu_to_world; // placeholder
-        // inverse is transpose
-        su.ellipsoid_ec_to_east_north_up = rotate_enu_to_view.transpose(); // Matrix3 has transpose method? yes via matrix_common
-        self.rotation; // noop
-        let _ = inverse_view_rotation;
+        let rotate_world_to_view = inverse_view_rotation.transpose();
+        let rotate_enu_to_view = rotate_world_to_view.multiply(&rotate_enu_to_world);
+        su.ellipsoid_ec_to_east_north_up = rotate_enu_to_view.transpose();
         Ok(())
     }
 

@@ -430,8 +430,9 @@
       "module": "Scene/VoxelShapeType",
       "baselineStatus": "partial",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "All identifiers and default bounds checked against source. Cylinder/ellipsoid constructor dispatch absent. See docs/scene-mz-cpu.md."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Working constructor dispatch for all three shapes. Pinned bounds and CurvedVoxelCases fixtures replayed; 27 focused tests pass."
     },
     {
       "module": "Scene/GaussianSplatSorter",

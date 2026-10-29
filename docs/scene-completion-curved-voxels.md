@@ -40,3 +40,7 @@ Workstream: curved-voxels (VoxelCylinderShape / VoxelEllipsoidShape).
 
 ## Known local rustc failures
 - Default cargo test can SIGSEGV in rustc codegen/debuginfo on this machine; use separate target dir and CARGO_PROFILE_*_DEBUG=0 with RUST_MIN_STACK=134217728.
+
+## Parent audit and expanded validation
+
+Fixed the ellipsoid camera transform to multiply the view rotation by the ENU-to-world rotation before transposing. Removed hardcoded local source paths from both generators. Added 40 pinned clipping, wrapped-angle, nonuniform transformed bounds, tile/sample OBB, UV and camera-transform cases, replayed through the dynamic shape constructor. Constructors for all three shapes are exercised. Parent observed 16 utility tests, 10 CPU tests and fixture coverage pass (27 tests). Renderer bindings and GPU validation remain open.

@@ -137,7 +137,6 @@ fn voxel_cylinder_shape_matches_reference() {
     use cesium_rs::scene::voxel_shape::VoxelCylinderShape;
     let fixture: serde_json::Value = serde_json::from_str(include_str!("fixtures/scene/VoxelCylinderState.json")).unwrap();
     let case = &fixture["cases"][0];
-    let vector = |v: &serde_json::Value| Cartesian3::new(v[0].as_f64().unwrap(), v[1].as_f64().unwrap(), v[2].as_f64().unwrap());
     let mut shape = VoxelCylinderShape::default();
     assert!(shape.update(Matrix4::IDENTITY, Cartesian3::new(0., -std::f64::consts::PI, -1.), Cartesian3::new(1., std::f64::consts::PI, 1.), None, None));
     assert_eq!(shape.shader_maximum_intersections_length, case["intersections"].as_u64().unwrap() as usize);
@@ -189,5 +188,52 @@ fn voxel_ellipsoid_shape_matches_reference() {
     let uv = shape.convert_local_to_shape_uv_space(Cartesian3::new(0.2, 0.1, -0.1));
     for (a, b) in uv.to_array().iter().zip(case["uv"].as_array().unwrap()) {
         assert!((a - b.as_f64().unwrap()).abs() < 1e-6, "{} vs {}", a, b);
+    }
+}
+
+#[test]
+fn curved_voxel_clipping_transforms_and_camera_match_reference() {
+    let fixture: serde_json::Value=serde_json::from_str(include_str!("fixtures/scene/CurvedVoxelCases.json")).unwrap();
+    let vec = |v:&serde_json::Value| Cartesian3::new(v[0].as_f64().unwrap(),v[1].as_f64().unwrap(),v[2].as_f64().unwrap());
+    let floats=|v:&serde_json::Value| v.as_array().unwrap().iter().map(|v|v.as_f64().unwrap()).collect::<Vec<_>>();
+    for case in fixture["cases"].as_array().unwrap() {
+        let kind = if case["kind"]=="cylinder" { VoxelShapeType::Cylinder } else { VoxelShapeType::Ellipsoid };
+        let mut shape = kind.create_shape();
+        let m=Matrix4(floats(&case["model"]).try_into().unwrap());
+        let clipped=|key:&str| (!case[key].is_null()).then(||vec(&case[key]));
+        let visible=shape.update(m,vec(&case["min"]),vec(&case["max"]),clipped("clipMin"),clipped("clipMax"));
+        assert_eq!(visible,case["visible"].as_bool().unwrap(),"{case}");
+        if !visible {continue;}
+        assert_eq!(shape.shader_maximum_intersections_length(),case["intersections"].as_u64().unwrap() as usize,"{case}");
+        let close=|actual:&[f64],expected:&serde_json::Value,label:&str| {
+            for (i,(a,b)) in actual.iter().zip(floats(expected)).enumerate() {
+                assert!((a-b).abs() <= 1e-7_f64.max(b.abs()*1e-12),"{label}[{i}] actual {a} expected {b}; {case}");
+            }
+        };
+        let mut packed=[0.;12];shape.oriented_bounding_box().pack(&mut packed,0);close(&packed,&case["obb"],"obb");
+        shape.tile_obb(2,[1,2,1]).pack(&mut packed,0);close(&packed,&case["tile"],"tile");
+        shape.sample_obb(1,[0,1,0],Cartesian3::new(4.,4.,4.),Cartesian3::new(0.25,0.5,0.75)).pack(&mut packed,0);close(&packed,&case["sample"],"sample");
+        close(&shape.convert_local_to_shape_uv_space(vec(&case["point"])).to_array(),&case["uv"],"uv");
+        let inverse=Matrix3(floats(&case["viewRotation"]).try_into().unwrap()).transpose();
+        let transform=if case["kind"]=="cylinder" {
+            let mut s=VoxelCylinderShape::default();s.update(m,vec(&case["min"]),vec(&case["max"]),clipped("clipMin"),clipped("clipMax"));
+            s.update_view_transforms_with_camera(vec(&case["camera"]),inverse).unwrap();s.shader_uniforms.cylinder_ec_to_radial_tangent_up
+        } else {
+            let mut s=VoxelEllipsoidShape::default();s.update(m,vec(&case["min"]),vec(&case["max"]),clipped("clipMin"),clipped("clipMax"));
+            s.update_view_transforms_with_camera(vec(&case["camera"]),inverse).unwrap();s.shader_uniforms.ellipsoid_ec_to_east_north_up
+        };
+        close(&transform.0,&case["cameraTransform"],"camera");
+    }
+}
+
+#[test]
+fn all_voxel_shape_constructors_match_their_default_bounds() {
+    for kind in [VoxelShapeType::Box, VoxelShapeType::Cylinder, VoxelShapeType::Ellipsoid] {
+        let mut shape=kind.create_shape();
+        assert_eq!(shape.min_bounds(),kind.min_bounds());
+        assert_eq!(shape.max_bounds(),kind.max_bounds());
+        assert!(shape.update(Matrix4::IDENTITY,kind.min_bounds(),kind.max_bounds(),None,None));
+        let mut packed=[0.;12];shape.tile_obb(1,[0,0,0]).pack(&mut packed,0);
+        assert!(packed.iter().all(|v|v.is_finite()));
     }
 }

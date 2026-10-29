@@ -5467,9 +5467,9 @@
     "note": "CPU box octree bounds, screen error and ancestor temporal selection; 8 source cases. No megatexture/keyframe loading lifecycle, visibility adapter or owned parent graph. See docs/scene-mz-cpu.md."
   },
   "Scene/VoxelShapeType": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::voxel_shape_type",
-    "note": "All identifiers and default bounds checked against source. Cylinder/ellipsoid constructor dispatch absent. See docs/scene-mz-cpu.md."
+    "note": "All identifiers/default bounds and working Box/Cylinder/Ellipsoid constructor dispatch; pinned bounds and 40 curved shape scenarios plus dynamic constructor tests pass."
   },
   "Scene/Terrain": {
     "status": "ported",
@@ -5630,5 +5630,15 @@
     "status": "partial",
     "rust": "scene::moon",
     "note": "CPU ephemeris, orientation and ellipsoid state; rendering remains."
+  },
+  "Scene/VoxelCylinderShape": {
+    "status": "partial",
+    "rust": "scene::voxel_shape::VoxelCylinderShape",
+    "note": "CPU bounds, clipping, tile/sample OBBs, UV and camera transforms, shader intersection metadata; 40 shared pinned scenarios. Shader binding/renderer integration and GPU validation remain."
+  },
+  "Scene/VoxelEllipsoidShape": {
+    "status": "partial",
+    "rust": "scene::voxel_shape::VoxelEllipsoidShape",
+    "note": "CPU bounds, clipping, tile/sample OBBs, UV and camera transforms, shader intersection metadata; 40 shared pinned scenarios. Shader binding/renderer integration and GPU validation remain."
   }
 }
