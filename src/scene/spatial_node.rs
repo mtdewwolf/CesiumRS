@@ -2,7 +2,7 @@
 //! Megatexture allocation and keyframe loading are not implemented. Ancestor
 //! snapshots are supplied nearest-first, avoiding cyclic ownership of nodes.
 use super::voxel_box_shape::VoxelBoxShape;
-use crate::core::{Cartesian3, OrientedBoundingBox};
+use crate::core::{Cartesian3, CullingVolume, OrientedBoundingBox};
 #[derive(Clone, Debug, PartialEq)]
 pub struct RenderableKeyframe {
     pub level: u32,
@@ -66,6 +66,9 @@ impl SpatialNode {
     }
     pub fn is_visited(&self, frame: i64) -> bool {
         self.visited_frame_number == frame
+    }
+    pub fn visibility(&self, culling_volume: &CullingVolume, parent_plane_mask: u32) -> u32 {
+        culling_volume.compute_visibility_with_plane_mask(&self.oriented_bounding_box, parent_plane_mask)
     }
     pub fn is_renderable(&self, frame: i64) -> bool {
         self.previous

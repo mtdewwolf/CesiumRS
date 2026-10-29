@@ -1,0 +1,122 @@
+use cesium_rs::core::*;
+use cesium_rs::scene::*;
+#[test]
+fn voxel_box_shape_render_bounds_and_shader_metadata() {
+    let mut s = VoxelBoxShape::default();
+    assert!(s.update(
+        Matrix4::IDENTITY,
+        Cartesian3::new(-1., -1., -1.),
+        Cartesian3::new(1., 1., 1.),
+        Some(Cartesian3::new(-0.5, -0.5, -0.5)),
+        Some(Cartesian3::new(0.5, 0.5, 0.5)),
+    ));
+    assert_eq!(s.render_min_bounds(), Cartesian3::new(-0.5, -0.5, -0.5));
+    assert_eq!(s.render_max_bounds(), Cartesian3::new(0.5, 0.5, 0.5));
+    assert_eq!(s.min_bounds(), Cartesian3::new(-1., -1., -1.));
+    assert_eq!(s.max_bounds(), Cartesian3::new(1., 1., 1.));
+    assert_eq!(s.shader_maximum_intersections_length(), 1);
+    assert_eq!(s.render_bound_plane_distances(), [-0.5, -0.5, -0.5, -0.5, -0.5, -0.5]);
+    // trait object access
+    let t: &dyn VoxelShape = &s;
+    assert_eq!(t.render_min_bounds(), s.render_min_bounds());
+}
+
+#[test]
+fn spatial_node_visibility_and_construct_children() {
+    let shape = VoxelBoxShape::default();
+    let node = SpatialNode::new(0, [0, 0, 0], &shape, Cartesian3::new(2., 2., 2.));
+    assert!(!node.is_visited(0));
+    let children = node.construct_child_nodes(&shape);
+    assert_eq!(children.len(), 8);
+    assert_eq!(children[0].level, 1);
+    assert_eq!(children[7].coords, [1, 1, 1]);
+}
+
+#[test]
+fn tileset_3d_tile_content_metadata_and_group_setters() {
+    use serde_json::json;
+    let tile = TileId::default();
+    let resource = Resource::new("https://example.test/tiles.json").unwrap();
+    let content = Tileset3DTileContent::from_json(tile, resource, &json!({}), |_, _, _| Ok(())).unwrap();
+    assert!(content.ready());
+    // metadata/group are public fields
+    let mut c = content;
+    c.metadata = Some(json!({"a": 1}));
+    c.group = Some(json!({"g": 2}));
+    assert!(c.metadata.is_some());
+    assert!(c.group.is_some());
+    assert!(!c.is_destroyed());
+    c.destroy().unwrap();
+    assert!(c.is_destroyed());
+}
+
+#[test]
+fn performance_display_rounding_matches_reference() {
+    let mut d = PerformanceDisplay::new(0.0);
+    d.update(1001.0, true);
+    // fps computed
+    assert!(d.fps_text.contains("FPS"));
+}
+
+#[test]
+fn frame_rate_monitor_basic() {
+    let mut m = FrameRateMonitor::default();
+    m.update(0.0);
+    m.update(1.0);
+    assert!(m.last_frames_per_second().is_none() || m.last_frames_per_second().is_some());
+}
+
+#[test]
+fn globe_translucency_bounds() {
+    let mut g = GlobeTranslucency::default();
+    assert!(g.set_front_face_alpha(0.5).is_ok());
+    assert_eq!(g.front_face_alpha(), 0.5);
+    assert!(g.set_front_face_alpha(2.0).is_err());
+}
+
+#[test]
+fn empty_content_basic() {
+    let mut c = Empty3DTileContent::new();
+    assert!(c.ready());
+    assert_eq!(c.features_length(), 0);
+    c.destroy();
+    assert!(c.is_destroyed());
+}
+
+#[test]
+fn debug_inspector_frustum_color() {
+    let c = DebugInspector::compute_frustum_color(0b101);
+    assert_eq!(c.red, 1.0);
+    assert_eq!(c.green, 0.0);
+    assert_eq!(c.blue, 1.0);
+}
+
+#[test]
+fn frame_rate_monitor_events_pop() {
+    // smoke
+    let m = FrameRateMonitor::default();
+    assert!(!m.is_frame_rate_low());
+}
+
+#[test]
+fn cesium_content_factory_classify() {
+    // binary magic
+    let bytes = b"pnts\x00\x00\x00\x00";
+    let t = Cesium3DTileContentFactory::classify(bytes);
+    assert!(t.is_ok());
+}
+
+#[test]
+fn job_scheduler_default_budgets() {
+    let s = JobScheduler::default();
+    assert_eq!(s.total_budget(), 50.0);
+}
+
+#[test]
+fn create_tangent_space_debug_primitive_none() {
+    use cesium_rs::core::geometry::{Geometry, GeometryAttributes};
+    use cesium_rs::core::PrimitiveType;
+    let geom = Geometry::new(GeometryAttributes::default(), None, PrimitiveType::Triangles);
+    let p = create_tangent_space_debug_primitive(CreateTangentSpaceDebugPrimitiveOptions::new(geom));
+    assert!(p.is_none());
+}

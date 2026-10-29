@@ -24,6 +24,11 @@ pub trait VoxelShape {
     fn convert_local_to_shape_uv_space(&self, p: Cartesian3) -> Cartesian3;
     fn tile_obb(&self, level: u32, coords: [u32; 3]) -> OrientedBoundingBox;
     fn sample_obb(&self, level: u32, coords: [u32; 3], dimensions: Cartesian3, uv: Cartesian3) -> OrientedBoundingBox;
+    fn min_bounds(&self) -> Cartesian3;
+    fn max_bounds(&self) -> Cartesian3;
+    fn render_min_bounds(&self) -> Cartesian3;
+    fn render_max_bounds(&self) -> Cartesian3;
+    fn shader_maximum_intersections_length(&self) -> usize;
 }
 impl VoxelShape for super::voxel_box_shape::VoxelBoxShape {
     fn default_min_bounds() -> Cartesian3 {
@@ -65,5 +70,20 @@ impl VoxelShape for super::voxel_box_shape::VoxelBoxShape {
     }
     fn sample_obb(&self, l: u32, c: [u32; 3], d: Cartesian3, uv: Cartesian3) -> OrientedBoundingBox {
         self.sample_obb(l, c, d, uv)
+    }
+    fn min_bounds(&self) -> Cartesian3 {
+        self.min_bounds()
+    }
+    fn max_bounds(&self) -> Cartesian3 {
+        self.max_bounds()
+    }
+    fn render_min_bounds(&self) -> Cartesian3 {
+        self.render_min_bounds()
+    }
+    fn render_max_bounds(&self) -> Cartesian3 {
+        self.render_max_bounds()
+    }
+    fn shader_maximum_intersections_length(&self) -> usize {
+        self.shader_maximum_intersections_length
     }
 }
