@@ -61,7 +61,7 @@ fn test_billboard_texture_lifecycle() {
 
     // Subregion assignment
     let sub = BoundingRectangle::new(16.0, 8.0, 32.0, 16.0);
-    texture.set_image_subregion(2, sub);
+    texture.set_image_subregion(3, sub);
     assert!(texture.has_subregion());
     assert_eq!(texture.width(), Some(32.0));
     assert_eq!(texture.height(), Some(16.0));

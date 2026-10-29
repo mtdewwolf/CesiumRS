@@ -33,6 +33,13 @@ fn atlas_requests_pack_resize_deduplicate_subregions_and_cancel() {
     let region = atlas.compute_texture_coordinates(2).unwrap();
     let parent = atlas.compute_texture_coordinates(0).unwrap();
     assert_eq!(region.x, parent.x + 1. / atlas.texture().unwrap().width() as f64);
+    let mut billboard = cesium_rs::scene::BillboardTexture::new();
+    billboard.set_loaded("b", 1, 5., 3.);
+    let b_coords = billboard.compute_texture_coordinates(&atlas).unwrap();
+    assert_eq!(b_coords, atlas.compute_texture_coordinates(1).unwrap());
+    assert!(b_coords.x != 0. || b_coords.y != 0.);
+    billboard.set_image_subregion(2, cesium_rs::core::BoundingRectangle::new(1., 0., 1., 2.));
+    assert_eq!(billboard.compute_texture_coordinates(&atlas).unwrap(), region);
     let pending = atlas.add_image_future("pending", std::future::pending()).unwrap();
     assert!(!atlas.update(&ctx).unwrap());
     atlas.destroy().unwrap();

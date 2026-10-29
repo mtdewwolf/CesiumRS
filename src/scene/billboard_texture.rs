@@ -125,7 +125,9 @@ impl BillboardTexture {
         self.height = None;
     }
 
-    /// Assigns a subregion of an existing texture index.
+    /// Assigns a subregion using the index returned by `TextureAtlas::add_image_sub_region`.
+    /// The rectangle must be registered with that atlas before calling this method;
+    /// passing the parent image index would select the entire parent image.
     pub fn set_image_subregion(&mut self, index: i32, subregion: BoundingRectangle) {
         if index < 0 {
             self.set_failed();
