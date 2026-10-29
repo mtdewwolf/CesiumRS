@@ -2,7 +2,7 @@
 //! The caller provides primitive identity and resolved node/content; scene picking
 //! and cylinder/ellipsoid samples are not integrated yet.
 use super::{
-    metadata_type::MetadataType, spatial_node::SpatialNode, voxel_box_shape::VoxelBoxShape, voxel_content::VoxelContent,
+    metadata_type::MetadataType, spatial_node::SpatialNode, voxel_content::VoxelContent,
 };
 use crate::core::{Cartesian3, OrientedBoundingBox, RuntimeError, TypedArray};
 #[derive(Debug)]
@@ -26,7 +26,7 @@ impl<P> VoxelCell<P> {
         node: &SpatialNode,
         content: &VoxelContent,
         properties: &[(String, MetadataType)],
-        shape: &VoxelBoxShape,
+        shape: &dyn super::voxel_shape::VoxelShape,
         dimensions: Cartesian3,
         padding_before: Cartesian3,
     ) -> Result<Self, RuntimeError> {

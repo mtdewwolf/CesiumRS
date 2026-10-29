@@ -1,7 +1,7 @@
 //! CesiumJS `SpatialNode` CPU octree bounds, screen error and temporal selection.
 //! Megatexture allocation and keyframe loading are not implemented. Ancestor
 //! snapshots are supplied nearest-first, avoiding cyclic ownership of nodes.
-use super::voxel_box_shape::VoxelBoxShape;
+use super::voxel_shape::VoxelShape;
 use crate::core::{Cartesian3, CullingVolume, OrientedBoundingBox};
 #[derive(Clone, Debug, PartialEq)]
 pub struct RenderableKeyframe {
@@ -25,7 +25,7 @@ pub struct SpatialNode {
     pub lerp: f64,
 }
 impl SpatialNode {
-    pub fn new(level: u32, coords: [u32; 3], shape: &VoxelBoxShape, dimensions: Cartesian3) -> Self {
+    pub fn new(level: u32, coords: [u32; 3], shape: &dyn VoxelShape, dimensions: Cartesian3) -> Self {
         let obb = shape.tile_obb(level, coords);
         let scale = obb.half_axes.get_scale();
         Self {
@@ -44,7 +44,7 @@ impl SpatialNode {
             lerp: 0.0,
         }
     }
-    pub fn construct_child_nodes(&self, shape: &VoxelBoxShape) -> Vec<Self> {
+    pub fn construct_child_nodes(&self, shape: &dyn VoxelShape) -> Vec<Self> {
         (0..8)
             .map(|i| {
                 Self::new(

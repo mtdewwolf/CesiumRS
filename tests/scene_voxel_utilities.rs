@@ -131,3 +131,63 @@ fn voxel_box_shader_state_matches_reference() {
         }
     }
 }
+
+#[test]
+fn voxel_cylinder_shape_matches_reference() {
+    use cesium_rs::scene::voxel_shape::VoxelCylinderShape;
+    let fixture: serde_json::Value = serde_json::from_str(include_str!("fixtures/scene/VoxelCylinderState.json")).unwrap();
+    let case = &fixture["cases"][0];
+    let vector = |v: &serde_json::Value| Cartesian3::new(v[0].as_f64().unwrap(), v[1].as_f64().unwrap(), v[2].as_f64().unwrap());
+    let mut shape = VoxelCylinderShape::default();
+    assert!(shape.update(Matrix4::IDENTITY, Cartesian3::new(0., -std::f64::consts::PI, -1.), Cartesian3::new(1., std::f64::consts::PI, 1.), None, None));
+    assert_eq!(shape.shader_maximum_intersections_length, case["intersections"].as_u64().unwrap() as usize);
+    // OBB
+    let mut packed = [0.; 12];
+    shape.oriented_bounding_box.pack(&mut packed, 0);
+    for (a, b) in packed.iter().zip(case["obb"].as_array().unwrap()) {
+        assert!((a - b.as_f64().unwrap()).abs() < 1e-9, "{} vs {}", a, b);
+    }
+    let mut packed = [0.; 12];
+    shape.tile_obb(1, [0,0,0]).pack(&mut packed, 0);
+    for (a, b) in packed.iter().zip(case["tile"].as_array().unwrap()) {
+        assert!((a - b.as_f64().unwrap()).abs() < 1e-9, "{} vs {}", a, b);
+    }
+    let mut packed = [0.; 12];
+    shape.sample_obb(0, [0,0,0], Cartesian3::new(2.,2.,2.), Cartesian3::new(0.25,0.25,0.25)).pack(&mut packed, 0);
+    for (a, b) in packed.iter().zip(case["sample"].as_array().unwrap()) {
+        assert!((a - b.as_f64().unwrap()).abs() < 1e-9, "{} vs {}", a, b);
+    }
+    let uv = shape.convert_local_to_shape_uv_space(Cartesian3::new(0.2, 0.1, -0.1));
+    for (a, b) in uv.to_array().iter().zip(case["uv"].as_array().unwrap()) {
+        assert!((a - b.as_f64().unwrap()).abs() < 1e-9, "{} vs {}", a, b);
+    }
+}
+
+#[test]
+fn voxel_ellipsoid_shape_matches_reference() {
+    use cesium_rs::scene::voxel_shape::VoxelEllipsoidShape;
+    let fixture: serde_json::Value = serde_json::from_str(include_str!("fixtures/scene/VoxelEllipsoidState.json")).unwrap();
+    let case = &fixture["cases"][0];
+    let mut shape = VoxelEllipsoidShape::default();
+    assert!(shape.update(Matrix4::IDENTITY, Cartesian3::new(-std::f64::consts::PI, -std::f64::consts::FRAC_PI_2, -6356752.314245179), Cartesian3::new(std::f64::consts::PI, std::f64::consts::FRAC_PI_2, 63781370.0), None, None));
+    assert_eq!(shape.shader_maximum_intersections_length, case["intersections"].as_u64().unwrap() as usize);
+    let mut packed = [0.; 12];
+    shape.oriented_bounding_box.pack(&mut packed, 0);
+    for (a, b) in packed.iter().zip(case["obb"].as_array().unwrap()) {
+        assert!((a - b.as_f64().unwrap()).abs() < 1e-6, "{} vs {}", a, b);
+    }
+    let mut packed = [0.; 12];
+    shape.tile_obb(1, [0,0,0]).pack(&mut packed, 0);
+    for (a, b) in packed.iter().zip(case["tile"].as_array().unwrap()) {
+        assert!((a - b.as_f64().unwrap()).abs() < 1e-6, "{} vs {}", a, b);
+    }
+    let mut packed = [0.; 12];
+    shape.sample_obb(0, [0,0,0], Cartesian3::new(2.,2.,2.), Cartesian3::new(0.25,0.25,0.25)).pack(&mut packed, 0);
+    for (a, b) in packed.iter().zip(case["sample"].as_array().unwrap()) {
+        assert!((a - b.as_f64().unwrap()).abs() < 1e-6, "{} vs {}", a, b);
+    }
+    let uv = shape.convert_local_to_shape_uv_space(Cartesian3::new(0.2, 0.1, -0.1));
+    for (a, b) in uv.to_array().iter().zip(case["uv"].as_array().unwrap()) {
+        assert!((a - b.as_f64().unwrap()).abs() < 1e-6, "{} vs {}", a, b);
+    }
+}
