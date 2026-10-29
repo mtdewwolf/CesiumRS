@@ -192,7 +192,7 @@ fn scene_primitive_pipeline_replays_the_pinned_combine_cases() {
             .flatten()
             .collect::<Vec<_>>();
         let mut instances = Vec::new();
-        for (i, data) in packed[1..].chunks_exact(19).enumerate() {
+        for (i, data) in packed[1..].as_chunks::<19>().0.iter().enumerate() {
             instances.push(GeometryInstance {
                 geometry: geometries.get(i).cloned().flatten(),
                 model_matrix: Matrix4(data[..16].try_into().unwrap()),
