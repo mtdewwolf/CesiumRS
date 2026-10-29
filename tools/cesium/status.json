@@ -4072,9 +4072,9 @@
     "note": "Ancestor-first, then oldest-first eviction past maximumSubtreeCount (never the subtree just added), find by coordinates in queue order and the missing-parent DeveloperError after insertion. Generic over a CachedSubtree trait. Direct CesiumJS cases in tests/scene_tiling.rs."
   },
   "Scene/ArcGisMapService": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::arc_gis_map_service",
-    "note": "Configurable service defaults and evaluation-token credit; owned configuration replaces the shared mutable JavaScript namespace. Full reference validation remains."
+    "note": "Owned configuration replaces the JavaScript global namespace. Default token, service URLs, exact credit HTML, visibility, and credit caching are validated against pinned CesiumJS."
   },
   "Scene/PointPrimitive": {
     "status": "partial",
