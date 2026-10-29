@@ -33,7 +33,7 @@ impl<G: Gl> ViewportQuad<G> {
                 shader,
                 ViewportCommandOptions { pass: Some(Pass::Overlay), ..Default::default() },
             )?;
-            super::framebuffer_helpers::destroy_command(&mut self.command)?;
+            self.command = None;
             self.command = Some(new_command);
             self.previous_material = Some(self.material.clone());
         }
@@ -71,7 +71,7 @@ impl<G: Gl> ViewportQuad<G> {
         self.destroyed
     }
     pub fn destroy(&mut self) -> Result<()> {
-        super::framebuffer_helpers::destroy_command(&mut self.command)?;
+        self.command = None;
         self.previous_material = None;
         self.destroyed = true;
         Ok(())

@@ -195,11 +195,18 @@ fn viewport_quad_executes_and_rebuilds_on_material_identity() {
     c.execute(&ctx, &PassState::default()).unwrap();
     q.rectangle.width = 20;
     assert_eq!(q.update(&ctx, true).unwrap().unwrap().options.render_state.viewport.unwrap().width, 20);
+    let mut other = scene::viewport_quad::ViewportQuad::new(
+        Viewport { x: 0, y: 0, width: 8, height: 8 },
+        Rc::new(RefCell::new(scene::material::Material::from_type("Color"))),
+    );
+    other.update(&ctx, true).unwrap().unwrap().execute(&ctx, &PassState::default()).unwrap();
     q.material = Rc::new(RefCell::new(scene::material::Material::from_type("Color")));
-    q.update(&ctx, true).unwrap();
+    q.update(&ctx, true).unwrap().unwrap().execute(&ctx, &PassState::default()).unwrap();
     assert!(host.0.borrow().iter().any(|s| s == "drawElements"));
-    assert!(host.0.borrow().iter().any(|s| s == "deleteProgram"));
+    assert!(!host.0.borrow().iter().any(|s| s == "deleteProgram"));
     q.destroy().unwrap();
+    other.update(&ctx, true).unwrap().unwrap().execute(&ctx, &PassState::default()).unwrap();
+    assert!(!host.0.borrow().iter().any(|s| s == "deleteProgram"));
     assert!(q.update(&ctx, true).is_err());
 }
 struct TestPanorama {
