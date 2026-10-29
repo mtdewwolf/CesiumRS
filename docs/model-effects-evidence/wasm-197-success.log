@@ -1,0 +1,3 @@
+    Blocking waiting for file lock on build directory
+   Compiling cesium-rs v0.1.0 (/home/ralphbox/.t3/worktrees/CesiumRS/t3-6b9ee858)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 17.76s

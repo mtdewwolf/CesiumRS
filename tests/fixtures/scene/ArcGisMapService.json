@@ -1,0 +1,16 @@
+{
+  "version": "23.0.0",
+  "cases": [
+    {
+      "imagery": "https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer",
+      "hillshade": "https://ibasemaps-api.arcgis.com/arcgis/rest/services/Elevation/World_Hillshade/MapServer",
+      "ocean": "https://ibasemaps-api.arcgis.com/arcgis/rest/services/Ocean/World_Ocean_Base/MapServer",
+      "credit": {
+        "html": "<b>             This application is using a default ArcGIS access token. Please assign <i>Cesium.ArcGisMapService.defaultAccessToken</i>             with an API key from your ArcGIS Developer account before using the ArcGIS tile services.             You can sign up for a free ArcGIS Developer account at <a href=\"https://developers.arcgis.com/\">https://developers.arcgis.com/</a>.</b>",
+        "show": true
+      },
+      "otherTokenHasCredit": false,
+      "sameCredit": true
+    }
+  ]
+}

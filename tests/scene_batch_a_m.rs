@@ -334,15 +334,19 @@ fn test_image_based_lighting_lifecycle_and_dirty_flags() {
     ibl.update(&mut frame_state);
     assert!(!ibl.should_regenerate_shaders());
 
-    // Disable factor -> triggers shader regeneration flag
+    // Disable factor -> triggers shader regeneration flag.
+    // `update` records the frame it already processed, so a later change is
+    // observed on the next frame, matching `ibl_tracks_frame_environment_and_loaded_resources`.
     ibl.set_image_based_lighting_factor(Cartesian2::new(0.0, 0.0)).unwrap();
     assert!(!ibl.is_enabled());
+    frame_state.frame_number += 1;
     ibl.update(&mut frame_state);
     assert!(ibl.should_regenerate_shaders());
 
     // Supply spherical harmonics coefficients
     let sh = [Cartesian3::UNIT_X; 9];
     ibl.spherical_harmonic_coefficients = Some(sh);
+    frame_state.frame_number += 1;
     ibl.update(&mut frame_state);
     assert!(ibl.should_regenerate_shaders());
 

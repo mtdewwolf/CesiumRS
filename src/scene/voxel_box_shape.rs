@@ -5,6 +5,8 @@ use crate::core::{BoundingSphere, Cartesian3, Matrix3, Matrix4, OrientedBounding
 pub struct VoxelBoxShape {
     min: Cartesian3,
     max: Cartesian3,
+    render_min: Cartesian3,
+    render_max: Cartesian3,
     pub shape_transform: Matrix4,
     pub bound_transform: Matrix4,
     pub oriented_bounding_box: OrientedBoundingBox,
@@ -12,12 +14,15 @@ pub struct VoxelBoxShape {
     pub uv_scale: Cartesian3,
     pub uv_translate: Cartesian3,
     pub eye_to_local: Matrix3,
+    pub shader_maximum_intersections_length: usize,
 }
 impl Default for VoxelBoxShape {
     fn default() -> Self {
         Self {
             min: Cartesian3::new(-1.0, -1.0, -1.0),
             max: Cartesian3::new(1.0, 1.0, 1.0),
+            render_min: Cartesian3::new(-1.0, -1.0, -1.0),
+            render_max: Cartesian3::new(1.0, 1.0, 1.0),
             shape_transform: Matrix4::IDENTITY,
             bound_transform: Matrix4::IDENTITY,
             oriented_bounding_box: OrientedBoundingBox::default(),
@@ -25,6 +30,7 @@ impl Default for VoxelBoxShape {
             uv_scale: Cartesian3::ZERO,
             uv_translate: Cartesian3::ZERO,
             eye_to_local: Matrix3::ZERO,
+            shader_maximum_intersections_length: 0,
         }
     }
 }
@@ -47,6 +53,8 @@ impl VoxelBoxShape {
         self.max = max;
         let lo = clamp(min, clip_min.unwrap_or(min), clip_max.unwrap_or(max));
         let hi = clamp(max, clip_min.unwrap_or(min), clip_max.unwrap_or(max));
+        self.render_min = lo;
+        self.render_max = hi;
         let s = model.get_scale();
         if lo.x > hi.x
             || lo.y > hi.y
@@ -72,6 +80,7 @@ impl VoxelBoxShape {
         }
         self.uv_scale = Cartesian3::new(scale(min.x, max.x), scale(min.y, max.y), scale(min.z, max.z));
         self.uv_translate = self.uv_scale.multiply_components(min).negate();
+        self.shader_maximum_intersections_length = 1;
         true
     }
     fn chunk(&self, min: Cartesian3, max: Cartesian3) -> OrientedBoundingBox {
@@ -93,6 +102,30 @@ impl VoxelBoxShape {
     }
     pub fn convert_local_to_shape_uv_space(&self, p: Cartesian3) -> Cartesian3 {
         p.multiply_components(self.uv_scale).add(self.uv_translate)
+    }
+    pub fn min_bounds(&self) -> Cartesian3 {
+        self.min
+    }
+    pub fn max_bounds(&self) -> Cartesian3 {
+        self.max
+    }
+    pub fn render_min_bounds(&self) -> Cartesian3 {
+        self.render_min
+    }
+    pub fn render_max_bounds(&self) -> Cartesian3 {
+        self.render_max
+    }
+    /// The six render-bound plane distances (min x/y/z, max x/y/z as negative), matching the
+    /// upstream `_renderBoundPlanes` collection ordering.
+    pub fn render_bound_plane_distances(&self) -> [f64; 6] {
+        [
+            self.render_min.x,
+            self.render_min.y,
+            self.render_min.z,
+            -self.render_max.x,
+            -self.render_max.y,
+            -self.render_max.z,
+        ]
     }
     pub fn tile_obb(&self, level: u32, coords: [u32; 3]) -> OrientedBoundingBox {
         let s = 2.0_f64.powf(-(level as f64));

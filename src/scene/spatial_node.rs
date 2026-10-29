@@ -1,8 +1,8 @@
 //! CesiumJS `SpatialNode` CPU octree bounds, screen error and temporal selection.
 //! Megatexture allocation and keyframe loading are not implemented. Ancestor
 //! snapshots are supplied nearest-first, avoiding cyclic ownership of nodes.
-use super::voxel_box_shape::VoxelBoxShape;
-use crate::core::{Cartesian3, OrientedBoundingBox};
+use super::voxel_shape::VoxelShape;
+use crate::core::{Cartesian3, CullingVolume, OrientedBoundingBox};
 #[derive(Clone, Debug, PartialEq)]
 pub struct RenderableKeyframe {
     pub level: u32,
@@ -25,7 +25,7 @@ pub struct SpatialNode {
     pub lerp: f64,
 }
 impl SpatialNode {
-    pub fn new(level: u32, coords: [u32; 3], shape: &VoxelBoxShape, dimensions: Cartesian3) -> Self {
+    pub fn new(level: u32, coords: [u32; 3], shape: &dyn VoxelShape, dimensions: Cartesian3) -> Self {
         let obb = shape.tile_obb(level, coords);
         let scale = obb.half_axes.get_scale();
         Self {
@@ -44,7 +44,7 @@ impl SpatialNode {
             lerp: 0.0,
         }
     }
-    pub fn construct_child_nodes(&self, shape: &VoxelBoxShape) -> Vec<Self> {
+    pub fn construct_child_nodes(&self, shape: &dyn VoxelShape) -> Vec<Self> {
         (0..8)
             .map(|i| {
                 Self::new(
@@ -66,6 +66,9 @@ impl SpatialNode {
     }
     pub fn is_visited(&self, frame: i64) -> bool {
         self.visited_frame_number == frame
+    }
+    pub fn visibility(&self, culling_volume: &CullingVolume, parent_plane_mask: u32) -> u32 {
+        culling_volume.compute_visibility_with_plane_mask(&self.oriented_bounding_box, parent_plane_mask)
     }
     pub fn is_renderable(&self, frame: i64) -> bool {
         self.previous

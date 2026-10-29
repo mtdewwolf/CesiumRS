@@ -566,5 +566,21 @@
     "ported": 1049,
     "implemented": 14,
     "validatedPercent": 62.57
+  },
+  {
+    "milestone": "Scene partial-module completion: ArcGIS validation",
+    "date": "2026-10-29",
+    "percent": 71.78,
+    "ported": 1050,
+    "implemented": 14,
+    "validatedPercent": 62.59
+  },
+  {
+    "milestone": "Scene voxel constructor and curved-shape validation",
+    "date": "2026-10-29",
+    "percent": 72.06,
+    "ported": 1051,
+    "implemented": 14,
+    "validatedPercent": 62.62
   }
 ]

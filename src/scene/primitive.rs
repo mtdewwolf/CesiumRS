@@ -135,6 +135,7 @@ impl Primitive {
             compress_vertices: self.compress_vertices,
             model_matrix: self.model_matrix,
             create_pick_offsets: self.allow_picking,
+            ..Default::default()
         };
 
         match PrimitivePipeline::combine_geometry(parameters) {

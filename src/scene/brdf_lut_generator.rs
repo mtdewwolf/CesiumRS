@@ -1,12 +1,11 @@
 //! CesiumJS `BrdfLutGenerator`: generates a 256x256 2D BRDF look-up texture
 //! for image-based lighting and physically-based materials.
 
-use crate::core::RuntimeError;
 use crate::core::PixelFormat;
+use crate::core::RuntimeError;
 use crate::renderer::{
-    Attachment, Context, Framebuffer, FramebufferOptions, Gl, PassState,
-    PixelDatatype, RenderState, Sampler, ShaderSource, Texture, TextureOptions,
-    Viewport, ViewportCommand, ViewportCommandOptions,
+    Attachment, Context, Framebuffer, FramebufferOptions, Gl, PassState, PixelDatatype, RenderState, Sampler,
+    ShaderSource, Texture, TextureOptions, Viewport, ViewportCommand, ViewportCommandOptions,
 };
 use crate::shaders::root::BRDF_LUT_GENERATOR_FS;
 use std::rc::Rc;
@@ -31,11 +30,7 @@ impl<G: Gl> BrdfLutGenerator<G> {
     pub const PIXEL_DATATYPE: PixelDatatype = PixelDatatype::UnsignedByte;
 
     pub fn new() -> Self {
-        Self {
-            color_texture: None,
-            draw_command: None,
-            destroyed: false,
-        }
+        Self { color_texture: None, draw_command: None, destroyed: false }
     }
 
     pub fn color_texture(&self) -> Option<&Rc<Texture<G>>> {
@@ -51,6 +46,9 @@ impl<G: Gl> BrdfLutGenerator<G> {
     }
 
     pub fn update(&mut self, context: &Context<G>) -> Result<(), RuntimeError> {
+        if self.destroyed {
+            return Err(RuntimeError::new("BrdfLutGenerator is destroyed"));
+        }
         if self.color_texture.is_none() {
             let mut options = TextureOptions::rgba(Self::WIDTH, Self::HEIGHT);
             options.pixel_format = Self::PIXEL_FORMAT;
@@ -58,12 +56,11 @@ impl<G: Gl> BrdfLutGenerator<G> {
             options.sampler = Sampler::NEAREST;
 
             let texture = Rc::new(Texture::new(context, options, None)?);
-            self.color_texture = Some(texture.clone());
 
             let fb = Rc::new(Framebuffer::new(
                 context,
                 FramebufferOptions {
-                    colors: vec![Attachment::Texture(texture)],
+                    colors: vec![Attachment::Texture(texture.clone())],
                     destroy_attachments: false,
                     ..Default::default()
                 },
@@ -74,12 +71,7 @@ impl<G: Gl> BrdfLutGenerator<G> {
                 ViewportCommandOptions {
                     framebuffer: Some(fb.clone()),
                     render_state: RenderState {
-                        viewport: Some(Viewport {
-                            x: 0,
-                            y: 0,
-                            width: Self::WIDTH,
-                            height: Self::HEIGHT,
-                        }),
+                        viewport: Some(Viewport { x: 0, y: 0, width: Self::WIDTH, height: Self::HEIGHT }),
                         ..Default::default()
                     },
                     ..Default::default()
@@ -87,7 +79,10 @@ impl<G: Gl> BrdfLutGenerator<G> {
             )?;
 
             command.execute(context, &PassState::default())?;
-            let _ = fb.destroy();
+            fb.destroy()?;
+            // The shader belongs to the context cache and can be shared with
+            // another generator. Keep its reference alive with the command.
+            self.color_texture = Some(texture);
             self.draw_command = Some(command);
         }
         Ok(())
@@ -132,14 +127,8 @@ mod tests {
         let mut gen = BrdfLutGenerator::<TestGl>::default();
         assert_eq!(BrdfLutGenerator::<TestGl>::WIDTH, 256);
         assert_eq!(BrdfLutGenerator::<TestGl>::HEIGHT, 256);
-        assert_eq!(
-            BrdfLutGenerator::<TestGl>::PIXEL_FORMAT,
-            PixelFormat::Rgba
-        );
-        assert_eq!(
-            BrdfLutGenerator::<TestGl>::PIXEL_DATATYPE,
-            PixelDatatype::UnsignedByte
-        );
+        assert_eq!(BrdfLutGenerator::<TestGl>::PIXEL_FORMAT, PixelFormat::Rgba);
+        assert_eq!(BrdfLutGenerator::<TestGl>::PIXEL_DATATYPE, PixelDatatype::UnsignedByte);
         assert!(gen.color_texture().is_none());
         assert!(gen.draw_command().is_none());
         assert!(!gen.is_destroyed());
