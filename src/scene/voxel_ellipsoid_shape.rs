@@ -353,9 +353,7 @@ impl VoxelEllipsoidShape {
                 sd.has_render_bounds_latitude_min_equal_half = render_is_latitude_min_half;
                 sd.has_render_bounds_latitude_min_over_half = render_is_latitude_min_over_half;
                 sd.intersection_index_latitude_min = Some(intersection_count);
-                if render_is_latitude_min_under_half {
-                    intersection_count += 1;
-                } else if render_is_latitude_min_half {
+                if render_is_latitude_min_under_half || render_is_latitude_min_half {
                     intersection_count += 1;
                 } else if render_is_latitude_min_over_half {
                     intersection_count += 2;
@@ -368,9 +366,7 @@ impl VoxelEllipsoidShape {
                 sd.intersection_index_latitude_max = Some(intersection_count);
                 if render_is_latitude_max_under_half {
                     intersection_count += 2;
-                } else if render_is_latitude_max_half {
-                    intersection_count += 1;
-                } else if render_is_latitude_max_over_half {
+                } else if render_is_latitude_max_half || render_is_latitude_max_over_half {
                     intersection_count += 1;
                 }
             }

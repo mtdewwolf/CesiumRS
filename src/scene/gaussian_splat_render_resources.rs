@@ -51,6 +51,18 @@ impl GaussianSplatRenderResources {
     }
 }
 
+impl std::fmt::Debug for GaussianSplatRenderResources {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GaussianSplatRenderResources")
+            .field("shader_builder", &self.shader_builder)
+            .field("uniforms", &self.uniform_map.keys().collect::<Vec<_>>())
+            .field("render_state", &self.render_state)
+            .field("alpha_options", &self.alpha_options)
+            .field("has_skip_level_of_detail", &self.has_skip_level_of_detail)
+            .finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -68,17 +80,5 @@ mod tests {
         let res = GaussianSplatRenderResources::new(true);
         let (_, fs) = res.shader_builder.sources();
         assert!(fs.defines.iter().any(|d| d.contains("LOG_DEPTH_READ_ONLY")));
-    }
-}
-
-impl std::fmt::Debug for GaussianSplatRenderResources {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("GaussianSplatRenderResources")
-            .field("shader_builder", &self.shader_builder)
-            .field("uniforms", &self.uniform_map.keys().collect::<Vec<_>>())
-            .field("render_state", &self.render_state)
-            .field("alpha_options", &self.alpha_options)
-            .field("has_skip_level_of_detail", &self.has_skip_level_of_detail)
-            .finish()
     }
 }

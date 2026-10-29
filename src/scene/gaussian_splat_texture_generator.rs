@@ -103,7 +103,7 @@ impl GaussianSplatTextureGenerator {
         };
         match Pin::new(&mut processor.initialization).poll(cx) {
             Poll::Pending => Poll::Pending,
-            Poll::Ready(Ok(value)) if value == Value::Bool(true) => {
+            Poll::Ready(Ok(Value::Bool(true))) => {
                 self.ready.set(true);
                 Poll::Ready(Ok(true))
             }
@@ -142,32 +142,6 @@ impl GaussianSplatTextureGenerator {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn concurrency_bounds_match_upstream() {
-        assert_eq!(GaussianSplatTextureGenerator::max_sorting_concurrency(1), 1);
-        assert_eq!(GaussianSplatTextureGenerator::max_sorting_concurrency(0), 1);
-        assert_eq!(GaussianSplatTextureGenerator::max_sorting_concurrency(8), 7);
-    }
-
-    #[test]
-    fn constants_match_upstream() {
-        assert_eq!(GaussianSplatTextureGenerator::WORKER_NAME, "gaussianSplatTextureGenerator");
-        assert_eq!(GaussianSplatTextureGenerator::WASM_BINARY_FILE, "ThirdParty/wasm_splats_bg.wasm");
-    }
-
-    #[test]
-    fn schedules_when_ready() {
-        let gen = GaussianSplatTextureGenerator::default();
-        assert!(!gen.is_ready());
-        let res = gen.generate_from_attributes(Value::Null).unwrap();
-        assert!(res.is_none());
-    }
-}
-
 struct NativeWorker;
 impl TaskWorker<Value, Value> for NativeWorker {
     fn init_web_assembly_module(&self, _: WebAssemblyOptions) -> crate::core::task_processor::TaskFuture<Value> {
@@ -200,5 +174,31 @@ impl TaskWorker<Value, Value> for NativeWorker {
             )?;
             Ok(serde_json::json!({"data": result.data, "width": result.width, "height":result.height}))
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn concurrency_bounds_match_upstream() {
+        assert_eq!(GaussianSplatTextureGenerator::max_sorting_concurrency(1), 1);
+        assert_eq!(GaussianSplatTextureGenerator::max_sorting_concurrency(0), 1);
+        assert_eq!(GaussianSplatTextureGenerator::max_sorting_concurrency(8), 7);
+    }
+
+    #[test]
+    fn constants_match_upstream() {
+        assert_eq!(GaussianSplatTextureGenerator::WORKER_NAME, "gaussianSplatTextureGenerator");
+        assert_eq!(GaussianSplatTextureGenerator::WASM_BINARY_FILE, "ThirdParty/wasm_splats_bg.wasm");
+    }
+
+    #[test]
+    fn schedules_when_ready() {
+        let gen = GaussianSplatTextureGenerator::default();
+        assert!(!gen.is_ready());
+        let res = gen.generate_from_attributes(Value::Null).unwrap();
+        assert!(res.is_none());
     }
 }

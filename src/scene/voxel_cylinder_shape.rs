@@ -401,8 +401,8 @@ fn get_cylinder_chunk_obb(
     let mut max_x = f64::NEG_INFINITY;
     let mut max_y = f64::NEG_INFINITY;
 
-    for i in 0..count {
-        let angle = test_angles[i] - angle_mid;
+    for angle in test_angles.iter().take(count) {
+        let angle = *angle - angle_mid;
         let cos_a = angle.cos();
         let sin_a = angle.sin();
         let x1 = cos_a * radius_start;
