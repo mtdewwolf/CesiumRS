@@ -397,3 +397,17 @@ fn voxel_provider_deferral_success_and_error() {
     assert!(ready(p.request_data(VoxelRequest { tile_level: 1, ..Default::default() }).unwrap()).is_err());
     assert_eq!(p.shape().min_bounds(), Cartesian3::new(-1., -1., -1.));
 }
+
+#[test]
+fn brdf_generators_share_a_live_cached_shader() {
+    let ctx = Context::new_webgl2(Host::default());
+    let mut first = scene::brdf_lut_generator::BrdfLutGenerator::new();
+    first.update(&ctx).unwrap();
+    let shader = first.draw_command().unwrap().shader_program.clone();
+    assert!(!shader.is_destroyed());
+    let mut second = scene::brdf_lut_generator::BrdfLutGenerator::new();
+    second.update(&ctx).unwrap();
+    assert!(Rc::ptr_eq(&shader,&second.draw_command().unwrap().shader_program));
+    first.destroy();
+    assert!(!shader.is_destroyed());
+}

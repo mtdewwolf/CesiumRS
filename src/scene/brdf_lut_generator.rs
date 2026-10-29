@@ -80,7 +80,8 @@ impl<G: Gl> BrdfLutGenerator<G> {
 
             command.execute(context, &PassState::default())?;
             fb.destroy()?;
-            command.shader_program.destroy()?;
+            // The shader belongs to the context cache and can be shared with
+            // another generator. Keep its reference alive with the command.
             self.color_texture = Some(texture);
             self.draw_command = Some(command);
         }

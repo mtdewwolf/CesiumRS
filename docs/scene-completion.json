@@ -90,8 +90,9 @@
       "module": "Scene/ShadowVolumeAppearance",
       "baselineStatus": "implemented",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Classification fragment shader synthesis for 3D Tiles and terrain clamping implemented; parity fixtures unrun."
+      "status": "in-progress",
+      "remaining": "Classification fragment shader synthesis for 3D Tiles and terrain clamping implemented; parity fixtures unrun.",
+      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
     },
     {
       "module": "Scene/Model/Model",
@@ -160,8 +161,9 @@
       "module": "Scene/PostProcessStageCollection",
       "baselineStatus": "partial",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Built-in and user stage management and execution; mock GPU pipeline tests pass. Scene integration and real GPU parity validation remain."
+      "status": "in-progress",
+      "remaining": "Built-in and user stage management and execution; mock GPU pipeline tests pass. Scene integration and real GPU parity validation remain.",
+      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
     },
     {
       "module": "Scene/PostProcessStageComposite",
@@ -435,8 +437,9 @@
       "module": "Scene/GaussianSplatSorter",
       "baselineStatus": "implemented",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Coordinates background web worker radix sorting of Gaussian splats by camera distance."
+      "status": "in-progress",
+      "remaining": "Coordinates background web worker radix sorting of Gaussian splats by camera distance.",
+      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
     },
     {
       "module": "Scene/DepthPlane",
@@ -463,8 +466,9 @@
       "module": "Scene/GaussianSplatRenderResources",
       "baselineStatus": "implemented",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Shader builder, render state, and alpha options for Gaussian splat drawing stages."
+      "status": "in-progress",
+      "remaining": "Shader builder, render state, and alpha options for Gaussian splat drawing stages.",
+      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
     },
     {
       "module": "Scene/JobScheduler",
@@ -491,15 +495,17 @@
       "module": "Scene/GaussianSplatTextureGenerator",
       "baselineStatus": "implemented",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Coordinates background web worker generation of attribute textures for Gaussian splats."
+      "status": "in-progress",
+      "remaining": "Coordinates background web worker generation of attribute textures for Gaussian splats.",
+      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
     },
     {
       "module": "Scene/BrdfLutGenerator",
       "baselineStatus": "implemented",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Generates 256x256 BRDF split-sum look-up texture for image-based lighting and PBR materials."
+      "status": "in-progress",
+      "remaining": "Generates 256x256 BRDF split-sum look-up texture for image-based lighting and PBR materials.",
+      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
     },
     {
       "module": "Scene/ParticleSystem",
@@ -519,8 +525,9 @@
       "module": "Scene/ShadowMapShader",
       "baselineStatus": "partial",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Exact cast vertex/fragment and receive vertex generation across 32 pinned variants; shader keywords. Receive fragment lighting remains. See docs/scene-nz-contracts.md."
+      "status": "in-progress",
+      "remaining": "Exact cast vertex/fragment and receive vertex generation across 32 pinned variants; shader keywords. Receive fragment lighting remains. See docs/scene-nz-contracts.md.",
+      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
     },
     {
       "module": "Scene/SkyBox",
@@ -604,8 +611,9 @@
       "module": "Scene/ImageBasedLighting",
       "baselineStatus": "partial",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Manages diffuse and specular IBL factors, spherical harmonic coefficients, zenith luminance, and shader dirty tracking. Partial CPU behavior; complete upstream behavior and parity validation remain."
+      "status": "in-progress",
+      "remaining": "Manages diffuse and specular IBL factors, spherical harmonic coefficients, zenith luminance, and shader dirty tracking. Partial CPU behavior; complete upstream behavior and parity validation remain.",
+      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
     },
     {
       "module": "Scene/IonImageryProviderFactory",
