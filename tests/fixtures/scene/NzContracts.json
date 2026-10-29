@@ -1,0 +1,1411 @@
+{
+  "version": "23.0.0",
+  "cases": [
+    {
+      "kind": "shadows",
+      "point": false,
+      "terrain": false,
+      "depth": false,
+      "opaque": false,
+      "source": "void main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow false false false false",
+      "vertex": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "void main() \n{ \n    czm_shadow_cast_main(); \n    if (out_FragColor.a == 0.0) \n    { \n       discard; \n    } \n    out_FragColor = czm_packDepth(gl_FragCoord.z); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": true,
+      "terrain": false,
+      "depth": false,
+      "opaque": false,
+      "source": "void main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow true false false false",
+      "vertex": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "out vec3 v_positionEC; \nvoid main() \n{ \n    czm_shadow_cast_main(); \n    v_positionEC = (czm_inverseProjection * gl_Position).xyz; \n}"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "in vec3 v_positionEC; \nuniform vec4 shadowMap_lightPositionEC; \nvoid main() \n{ \n    czm_shadow_cast_main(); \n    if (out_FragColor.a == 0.0) \n    { \n       discard; \n    } \n    float distance = length(v_positionEC); \n    if (distance >= shadowMap_lightPositionEC.w) \n    { \n        discard; \n    } \n    distance /= shadowMap_lightPositionEC.w; // radius \n    out_FragColor = czm_packDepth(distance); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": false,
+      "terrain": true,
+      "depth": false,
+      "opaque": false,
+      "source": "void main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow false true false false",
+      "vertex": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "void main() \n{ \n    czm_shadow_cast_main(); \n    if (out_FragColor.a == 0.0) \n    { \n       discard; \n    } \n    out_FragColor = czm_packDepth(gl_FragCoord.z); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION_AND_NORMAL"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": true,
+      "terrain": true,
+      "depth": false,
+      "opaque": false,
+      "source": "void main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow true true false false",
+      "vertex": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "out vec3 v_positionEC; \nvoid main() \n{ \n    czm_shadow_cast_main(); \n    v_positionEC = (czm_inverseProjection * gl_Position).xyz; \n}"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "in vec3 v_positionEC; \nuniform vec4 shadowMap_lightPositionEC; \nvoid main() \n{ \n    czm_shadow_cast_main(); \n    if (out_FragColor.a == 0.0) \n    { \n       discard; \n    } \n    float distance = length(v_positionEC); \n    if (distance >= shadowMap_lightPositionEC.w) \n    { \n        discard; \n    } \n    distance /= shadowMap_lightPositionEC.w; // radius \n    out_FragColor = czm_packDepth(distance); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION_AND_NORMAL"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": false,
+      "terrain": false,
+      "depth": true,
+      "opaque": false,
+      "source": "void main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow false false true false",
+      "vertex": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "void main() \n{ \n    czm_shadow_cast_main(); \n    if (out_FragColor.a == 0.0) \n    { \n       discard; \n    } \n    out_FragColor = vec4(1.0); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": true,
+      "terrain": false,
+      "depth": true,
+      "opaque": false,
+      "source": "void main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow true false true false",
+      "vertex": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "out vec3 v_positionEC; \nvoid main() \n{ \n    czm_shadow_cast_main(); \n    v_positionEC = (czm_inverseProjection * gl_Position).xyz; \n}"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "in vec3 v_positionEC; \nuniform vec4 shadowMap_lightPositionEC; \nvoid main() \n{ \n    czm_shadow_cast_main(); \n    if (out_FragColor.a == 0.0) \n    { \n       discard; \n    } \n    float distance = length(v_positionEC); \n    if (distance >= shadowMap_lightPositionEC.w) \n    { \n        discard; \n    } \n    distance /= shadowMap_lightPositionEC.w; // radius \n    out_FragColor = czm_packDepth(distance); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": false,
+      "terrain": true,
+      "depth": true,
+      "opaque": false,
+      "source": "void main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow false true true false",
+      "vertex": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "void main() \n{ \n    czm_shadow_cast_main(); \n    if (out_FragColor.a == 0.0) \n    { \n       discard; \n    } \n    out_FragColor = vec4(1.0); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION_AND_NORMAL"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": true,
+      "terrain": true,
+      "depth": true,
+      "opaque": false,
+      "source": "void main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow true true true false",
+      "vertex": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "out vec3 v_positionEC; \nvoid main() \n{ \n    czm_shadow_cast_main(); \n    v_positionEC = (czm_inverseProjection * gl_Position).xyz; \n}"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "in vec3 v_positionEC; \nuniform vec4 shadowMap_lightPositionEC; \nvoid main() \n{ \n    czm_shadow_cast_main(); \n    if (out_FragColor.a == 0.0) \n    { \n       discard; \n    } \n    float distance = length(v_positionEC); \n    if (distance >= shadowMap_lightPositionEC.w) \n    { \n        discard; \n    } \n    distance /= shadowMap_lightPositionEC.w; // radius \n    out_FragColor = czm_packDepth(distance); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION_AND_NORMAL"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": false,
+      "terrain": false,
+      "depth": false,
+      "opaque": true,
+      "source": "void main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow false false false true",
+      "vertex": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "void main() \n{ \n    out_FragColor = czm_packDepth(gl_FragCoord.z); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": true,
+      "terrain": false,
+      "depth": false,
+      "opaque": true,
+      "source": "void main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow true false false true",
+      "vertex": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "out vec3 v_positionEC; \nvoid main() \n{ \n    czm_shadow_cast_main(); \n    v_positionEC = (czm_inverseProjection * gl_Position).xyz; \n}"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "in vec3 v_positionEC; \nuniform vec4 shadowMap_lightPositionEC; \nvoid main() \n{ \n    float distance = length(v_positionEC); \n    if (distance >= shadowMap_lightPositionEC.w) \n    { \n        discard; \n    } \n    distance /= shadowMap_lightPositionEC.w; // radius \n    out_FragColor = czm_packDepth(distance); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": false,
+      "terrain": true,
+      "depth": false,
+      "opaque": true,
+      "source": "void main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow false true false true",
+      "vertex": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "void main() \n{ \n    out_FragColor = czm_packDepth(gl_FragCoord.z); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION_AND_NORMAL"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": true,
+      "terrain": true,
+      "depth": false,
+      "opaque": true,
+      "source": "void main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow true true false true",
+      "vertex": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "out vec3 v_positionEC; \nvoid main() \n{ \n    czm_shadow_cast_main(); \n    v_positionEC = (czm_inverseProjection * gl_Position).xyz; \n}"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "in vec3 v_positionEC; \nuniform vec4 shadowMap_lightPositionEC; \nvoid main() \n{ \n    float distance = length(v_positionEC); \n    if (distance >= shadowMap_lightPositionEC.w) \n    { \n        discard; \n    } \n    distance /= shadowMap_lightPositionEC.w; // radius \n    out_FragColor = czm_packDepth(distance); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION_AND_NORMAL"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": false,
+      "terrain": false,
+      "depth": true,
+      "opaque": true,
+      "source": "void main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow false false true true",
+      "vertex": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "void main() \n{ \n    out_FragColor = vec4(1.0); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": true,
+      "terrain": false,
+      "depth": true,
+      "opaque": true,
+      "source": "void main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow true false true true",
+      "vertex": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "out vec3 v_positionEC; \nvoid main() \n{ \n    czm_shadow_cast_main(); \n    v_positionEC = (czm_inverseProjection * gl_Position).xyz; \n}"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "in vec3 v_positionEC; \nuniform vec4 shadowMap_lightPositionEC; \nvoid main() \n{ \n    float distance = length(v_positionEC); \n    if (distance >= shadowMap_lightPositionEC.w) \n    { \n        discard; \n    } \n    distance /= shadowMap_lightPositionEC.w; // radius \n    out_FragColor = czm_packDepth(distance); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": false,
+      "terrain": true,
+      "depth": true,
+      "opaque": true,
+      "source": "void main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow false true true true",
+      "vertex": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "void main() \n{ \n    out_FragColor = vec4(1.0); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION_AND_NORMAL"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": true,
+      "terrain": true,
+      "depth": true,
+      "opaque": true,
+      "source": "void main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow true true true true",
+      "vertex": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "out vec3 v_positionEC; \nvoid main() \n{ \n    czm_shadow_cast_main(); \n    v_positionEC = (czm_inverseProjection * gl_Position).xyz; \n}"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "void czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "in vec3 v_positionEC; \nuniform vec4 shadowMap_lightPositionEC; \nvoid main() \n{ \n    float distance = length(v_positionEC); \n    if (distance >= shadowMap_lightPositionEC.w) \n    { \n        discard; \n    } \n    distance /= shadowMap_lightPositionEC.w; // radius \n    out_FragColor = czm_packDepth(distance); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "void main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION_AND_NORMAL"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": false,
+      "terrain": false,
+      "depth": false,
+      "opaque": false,
+      "source": "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow false false false false",
+      "vertex": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "void main() \n{ \n    czm_shadow_cast_main(); \n    if (out_FragColor.a == 0.0) \n    { \n       discard; \n    } \n    out_FragColor = czm_packDepth(gl_FragCoord.z); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": true,
+      "terrain": false,
+      "depth": false,
+      "opaque": false,
+      "source": "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow true false false false",
+      "vertex": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "uniform vec4 shadowMap_lightPositionEC; \nvoid main() \n{ \n    czm_shadow_cast_main(); \n    if (out_FragColor.a == 0.0) \n    { \n       discard; \n    } \n    float distance = length(v_positionEC); \n    if (distance >= shadowMap_lightPositionEC.w) \n    { \n        discard; \n    } \n    distance /= shadowMap_lightPositionEC.w; // radius \n    out_FragColor = czm_packDepth(distance); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": false,
+      "terrain": true,
+      "depth": false,
+      "opaque": false,
+      "source": "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow false true false false",
+      "vertex": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "void main() \n{ \n    czm_shadow_cast_main(); \n    if (out_FragColor.a == 0.0) \n    { \n       discard; \n    } \n    out_FragColor = czm_packDepth(gl_FragCoord.z); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION_AND_NORMAL"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": true,
+      "terrain": true,
+      "depth": false,
+      "opaque": false,
+      "source": "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow true true false false",
+      "vertex": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "uniform vec4 shadowMap_lightPositionEC; \nvoid main() \n{ \n    czm_shadow_cast_main(); \n    if (out_FragColor.a == 0.0) \n    { \n       discard; \n    } \n    float distance = length(v_positionEC); \n    if (distance >= shadowMap_lightPositionEC.w) \n    { \n        discard; \n    } \n    distance /= shadowMap_lightPositionEC.w; // radius \n    out_FragColor = czm_packDepth(distance); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION_AND_NORMAL"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": false,
+      "terrain": false,
+      "depth": true,
+      "opaque": false,
+      "source": "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow false false true false",
+      "vertex": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "void main() \n{ \n    czm_shadow_cast_main(); \n    if (out_FragColor.a == 0.0) \n    { \n       discard; \n    } \n    out_FragColor = vec4(1.0); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": true,
+      "terrain": false,
+      "depth": true,
+      "opaque": false,
+      "source": "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow true false true false",
+      "vertex": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "uniform vec4 shadowMap_lightPositionEC; \nvoid main() \n{ \n    czm_shadow_cast_main(); \n    if (out_FragColor.a == 0.0) \n    { \n       discard; \n    } \n    float distance = length(v_positionEC); \n    if (distance >= shadowMap_lightPositionEC.w) \n    { \n        discard; \n    } \n    distance /= shadowMap_lightPositionEC.w; // radius \n    out_FragColor = czm_packDepth(distance); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": false,
+      "terrain": true,
+      "depth": true,
+      "opaque": false,
+      "source": "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow false true true false",
+      "vertex": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "void main() \n{ \n    czm_shadow_cast_main(); \n    if (out_FragColor.a == 0.0) \n    { \n       discard; \n    } \n    out_FragColor = vec4(1.0); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION_AND_NORMAL"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": true,
+      "terrain": true,
+      "depth": true,
+      "opaque": false,
+      "source": "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow true true true false",
+      "vertex": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "uniform vec4 shadowMap_lightPositionEC; \nvoid main() \n{ \n    czm_shadow_cast_main(); \n    if (out_FragColor.a == 0.0) \n    { \n       discard; \n    } \n    float distance = length(v_positionEC); \n    if (distance >= shadowMap_lightPositionEC.w) \n    { \n        discard; \n    } \n    distance /= shadowMap_lightPositionEC.w; // radius \n    out_FragColor = czm_packDepth(distance); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION_AND_NORMAL"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": false,
+      "terrain": false,
+      "depth": false,
+      "opaque": true,
+      "source": "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow false false false true",
+      "vertex": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "void main() \n{ \n    out_FragColor = czm_packDepth(gl_FragCoord.z); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": true,
+      "terrain": false,
+      "depth": false,
+      "opaque": true,
+      "source": "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow true false false true",
+      "vertex": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "uniform vec4 shadowMap_lightPositionEC; \nvoid main() \n{ \n    float distance = length(v_positionEC); \n    if (distance >= shadowMap_lightPositionEC.w) \n    { \n        discard; \n    } \n    distance /= shadowMap_lightPositionEC.w; // radius \n    out_FragColor = czm_packDepth(distance); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": false,
+      "terrain": true,
+      "depth": false,
+      "opaque": true,
+      "source": "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow false true false true",
+      "vertex": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "void main() \n{ \n    out_FragColor = czm_packDepth(gl_FragCoord.z); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION_AND_NORMAL"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": true,
+      "terrain": true,
+      "depth": false,
+      "opaque": true,
+      "source": "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow true true false true",
+      "vertex": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "uniform vec4 shadowMap_lightPositionEC; \nvoid main() \n{ \n    float distance = length(v_positionEC); \n    if (distance >= shadowMap_lightPositionEC.w) \n    { \n        discard; \n    } \n    distance /= shadowMap_lightPositionEC.w; // radius \n    out_FragColor = czm_packDepth(distance); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION_AND_NORMAL"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": false,
+      "terrain": false,
+      "depth": true,
+      "opaque": true,
+      "source": "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow false false true true",
+      "vertex": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "void main() \n{ \n    out_FragColor = vec4(1.0); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": true,
+      "terrain": false,
+      "depth": true,
+      "opaque": true,
+      "source": "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow true false true true",
+      "vertex": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "uniform vec4 shadowMap_lightPositionEC; \nvoid main() \n{ \n    float distance = length(v_positionEC); \n    if (distance >= shadowMap_lightPositionEC.w) \n    { \n        discard; \n    } \n    distance /= shadowMap_lightPositionEC.w; // radius \n    out_FragColor = czm_packDepth(distance); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": false,
+      "terrain": true,
+      "depth": true,
+      "opaque": true,
+      "source": "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow false true true true",
+      "vertex": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "void main() \n{ \n    out_FragColor = vec4(1.0); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION_AND_NORMAL"
+        ]
+      }
+    },
+    {
+      "kind": "shadows",
+      "point": true,
+      "terrain": true,
+      "depth": true,
+      "opaque": true,
+      "source": "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }",
+      "keyword": "castShadow true true true true",
+      "vertex": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION"
+        ]
+      },
+      "fragment": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid czm_shadow_cast_main() { out_FragColor = vec4(0.5); }",
+          "uniform vec4 shadowMap_lightPositionEC; \nvoid main() \n{ \n    float distance = length(v_positionEC); \n    if (distance >= shadowMap_lightPositionEC.w) \n    { \n        discard; \n    } \n    distance /= shadowMap_lightPositionEC.w; // radius \n    out_FragColor = czm_packDepth(distance); \n} \n"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP"
+        ]
+      },
+      "receive": {
+        "sources": [
+          "out vec3 v_positionEC;\nvoid main() { out_FragColor = vec4(0.5); }"
+        ],
+        "defines": [
+          "EXISTING",
+          "SHADOW_MAP",
+          "GENERATE_POSITION_AND_NORMAL"
+        ]
+      }
+    },
+    {
+      "kind": "errors",
+      "radius": 1,
+      "tiles": 1,
+      "error": 0.0241660973353061
+    },
+    {
+      "kind": "errors",
+      "radius": 1,
+      "tiles": 2,
+      "error": 0.01208304866765305
+    },
+    {
+      "kind": "errors",
+      "radius": 1,
+      "tiles": 8,
+      "error": 0.0030207621669132625
+    },
+    {
+      "kind": "errors",
+      "radius": 6378137,
+      "tiles": 1,
+      "error": 154134.67955991725
+    },
+    {
+      "kind": "errors",
+      "radius": 6378137,
+      "tiles": 2,
+      "error": 77067.33977995862
+    },
+    {
+      "kind": "errors",
+      "radius": 6378137,
+      "tiles": 8,
+      "error": 19266.834944989656
+    },
+    {
+      "kind": "particles",
+      "time": 0,
+      "currentTime": 0,
+      "complete": false,
+      "completed": 0,
+      "particles": []
+    },
+    {
+      "kind": "particles",
+      "time": 0.25,
+      "currentTime": 0.25,
+      "complete": false,
+      "completed": 0,
+      "particles": []
+    },
+    {
+      "kind": "particles",
+      "time": 0.5,
+      "currentTime": 0.5,
+      "complete": false,
+      "completed": 0,
+      "particles": []
+    },
+    {
+      "kind": "particles",
+      "time": 0.75,
+      "currentTime": 0.75,
+      "complete": false,
+      "completed": 0,
+      "particles": [
+        {
+          "age": 0,
+          "z": 0
+        }
+      ]
+    },
+    {
+      "kind": "particles",
+      "time": 1,
+      "currentTime": 1,
+      "complete": false,
+      "completed": 0,
+      "particles": [
+        {
+          "age": 0.25,
+          "z": 0.25
+        },
+        {
+          "age": 0,
+          "z": 0
+        },
+        {
+          "age": 0,
+          "z": 0
+        }
+      ]
+    },
+    {
+      "kind": "particles",
+      "time": 1.5,
+      "currentTime": 1.5,
+      "complete": false,
+      "completed": 0,
+      "particles": [
+        {
+          "age": 0.75,
+          "z": 0.75
+        },
+        {
+          "age": 0.5,
+          "z": 0.5
+        },
+        {
+          "age": 0.5,
+          "z": 0.5
+        },
+        {
+          "age": 0,
+          "z": 0
+        }
+      ]
+    },
+    {
+      "kind": "particles",
+      "time": 2,
+      "currentTime": 2,
+      "complete": false,
+      "completed": 0,
+      "particles": [
+        {
+          "age": 0.5,
+          "z": 0.5
+        },
+        {
+          "age": 1,
+          "z": 1
+        },
+        {
+          "age": 1,
+          "z": 1
+        },
+        {
+          "age": 0,
+          "z": 0
+        }
+      ]
+    },
+    {
+      "kind": "particles",
+      "time": 2.5,
+      "currentTime": 2.5,
+      "complete": true,
+      "completed": 1,
+      "particles": [
+        {
+          "age": 1,
+          "z": 1
+        },
+        {
+          "age": 0.5,
+          "z": 0.5
+        },
+        {
+          "age": 0,
+          "z": 0
+        }
+      ]
+    },
+    {
+      "kind": "particles",
+      "time": 3,
+      "currentTime": 3,
+      "complete": true,
+      "completed": 2,
+      "particles": [
+        {
+          "age": 0.5,
+          "z": 0.5
+        },
+        {
+          "age": 1,
+          "z": 1
+        }
+      ]
+    }
+  ]
+}

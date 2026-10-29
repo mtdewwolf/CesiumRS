@@ -273,6 +273,19 @@ mod tests {
     }
 
     #[test]
+    fn set_times_triggers_reload() {
+        let reloads = Rc::new(RefCell::new(0));
+        let r = reloads.clone();
+        let mut dynamic = TimeDynamicImagery::new(TimeDynamicImageryOptions {
+            times: collection(),
+            request_image_function: Rc::new(|_, _, _, _| None),
+            reload_function: Rc::new(move || *r.borrow_mut() += 1),
+        });
+        dynamic.set_times(collection());
+        assert_eq!(*reloads.borrow(), 1);
+    }
+
+    #[test]
     fn approaching_interval_preloads() {
         let requests = Rc::new(RefCell::new(Vec::new()));
         let q = requests.clone();

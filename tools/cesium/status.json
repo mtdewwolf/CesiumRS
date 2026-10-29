@@ -4424,7 +4424,7 @@
   "Scene/ConeEmitter": {
     "status": "ported",
     "rust": "scene::particle_emitter",
-    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30° default. Emitted particles match bit for bit."
+    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30\u00b0 default. Emitted particles match bit for bit."
   },
   "Scene/SphereEmitter": {
     "status": "ported",
@@ -4544,7 +4544,7 @@
   "Scene/Model/Extensions/Gpm/GltfMeshPrimitiveGpmLoader": {
     "status": "ported",
     "rust": "scene::model::extensions::gpm::gltf_mesh_primitive_gpm_loader",
-    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale × 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
+    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale \u00d7 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
   },
   "DataSources/CompositeEntityCollection": {
     "status": "ported",
@@ -5374,7 +5374,7 @@
   "Scene/ImageryLayer": {
     "status": "partial",
     "rust": "scene::imagery_layer",
-    "note": "Layer options, imagery bounds, texture transforms, cache, initial skeletons and provider request lifecycle; reference fixture and native lifecycle cases. Complete tile coverage, transport cancellation and GPU reprojection remain; seven texel-spacing expectations are computed separately from Cesium’s private function."
+    "note": "Layer options, imagery bounds, texture transforms, cache, initial skeletons and provider request lifecycle; reference fixture and native lifecycle cases. Complete tile coverage, transport cancellation and GPU reprojection remain; seven texel-spacing expectations are computed separately from Cesium\u2019s private function."
   },
   "Scene/ImageryLayerCollection": {
     "status": "partial",
@@ -5530,5 +5530,105 @@
     "status": "implemented",
     "rust": "scene::brdf_lut_generator",
     "note": "Generates 256x256 BRDF split-sum look-up texture for image-based lighting and PBR materials."
+  },
+  "Scene/Panorama": {
+    "status": "ported",
+    "rust": "scene::panorama",
+    "note": "Abstract show/transform/credit Rust trait; exercised through native provider and skybox implementations. See docs/scene-nz-contracts.md."
+  },
+  "Scene/PanoramaProvider": {
+    "status": "ported",
+    "rust": "scene::panorama_provider",
+    "note": "Abstract asynchronous factory/load contracts with typed options and panorama result; native futures exercised. See docs/scene-nz-contracts.md."
+  },
+  "Scene/ParticleSystem": {
+    "status": "partial",
+    "rust": "scene::particle_system",
+    "note": "CPU emission/carry/bursts, simulation, transforms, lifetime/completion and billboard snapshots; nine pinned frame traces. GPU billboard submission and reuse pool remain. See docs/scene-nz-contracts.md."
+  },
+  "Scene/QuadtreeTileProvider": {
+    "status": "partial",
+    "rust": "scene::quadtree_tile_provider",
+    "note": "Existing traversal provider extracted into dedicated module, preserving imports; six pinned geometric-error cases and traversal regressions. Quadtree back-reference/error-event contract remains absent. See docs/scene-nz-contracts.md."
+  },
+  "Scene/ShadowMapShader": {
+    "status": "partial",
+    "rust": "scene::shadow_map_shader",
+    "note": "Exact cast vertex/fragment and receive vertex generation across 32 pinned variants; shader keywords. Receive fragment lighting remains. See docs/scene-nz-contracts.md."
+  },
+  "Scene/SkyBox": {
+    "status": "partial",
+    "rust": "scene::sky_box",
+    "note": "3D/morphing render-pass filtering, HDR command delegation, source mutation, Earth URLs and destruction. Requires caller-supplied panorama renderer; built-in loading remains. See docs/scene-nz-contracts.md."
+  },
+  "Scene/ViewportQuad": {
+    "status": "partial",
+    "rust": "scene::viewport_quad",
+    "note": "Executable material GLSL overlay commands, viewport/blending/uniform updates and material replacement/destruction; recording GL draw tests. Texture resolution and Scene submission remain host-owned. See docs/scene-nz-contracts.md."
+  },
+  "Scene/VoxelBoundsCollection": {
+    "status": "implemented",
+    "rust": "scene::voxel_bounds_collection",
+    "note": "Plane events/indexing, value membership, transformed normalized float packing, RGBA float texture grow/shrink/upload and destruction; recording GL tests. Browser GPU validation remains. See docs/scene-nz-contracts.md."
+  },
+  "Scene/VoxelProvider": {
+    "status": "ported",
+    "rust": "scene::voxel_provider",
+    "note": "Full abstract property/request trait with typed metadata, request coordinate/keyframe defaults and deferred/error/success futures; native contract tests. Concrete providers separate. See docs/scene-nz-contracts.md."
+  },
+  "Scene/VoxelShape": {
+    "status": "partial",
+    "rust": "scene::voxel_shape",
+    "note": "CPU dynamic shape contract backed by existing VoxelBoxShape; bounds, transforms, UV and tile/sample OBBs. Shader uniforms/defines/intersections remain. See docs/scene-nz-contracts.md."
+  },
+  "Scene/BillboardTexture": {
+    "status": "partial",
+    "rust": "scene::billboard_texture",
+    "note": "Tracks image reference, loading state, atlas indices, dimensions, subregions, and coordinate calculations. Partial CPU behavior; complete upstream behavior and parity validation remain."
+  },
+  "Scene/Cesium3DTileContentFactory": {
+    "status": "partial",
+    "rust": "scene::cesium_3d_tile_content_factory",
+    "note": "Maps tile magic headers and format identifiers to content types and classifies raw payloads. Partial CPU behavior; complete upstream behavior and parity validation remain."
+  },
+  "Scene/DebugInspector": {
+    "status": "partial",
+    "rust": "scene::debug_inspector",
+    "note": "Rewrites fragment shaders and computes uniform colors for frustum and command visualization. Partial CPU behavior; complete upstream behavior and parity validation remain."
+  },
+  "Scene/EllipsoidPrimitive": {
+    "status": "partial",
+    "rust": "scene::ellipsoid_primitive",
+    "note": "CPU model matrix, inverse radii and bounding sphere calculations; draw commands and rendering remain."
+  },
+  "Scene/EquirectangularPanorama": {
+    "status": "partial",
+    "rust": "scene::equirectangular_panorama",
+    "note": "CPU material setup, transform and bounds; image loading and rendering remain."
+  },
+  "Scene/FrameRateMonitor": {
+    "status": "partial",
+    "rust": "scene::frame_rate_monitor",
+    "note": "Sliding window frame rate monitor with quiet and warmup periods and threshold performance events. Partial CPU behavior; complete upstream behavior and parity validation remain."
+  },
+  "Scene/GlobeTranslucency": {
+    "status": "partial",
+    "rust": "scene::globe_translucency",
+    "note": "Controls globe front- and back-face translucency, distance-based alpha fading, and cartographic bounding. Partial CPU behavior; complete upstream behavior and parity validation remain."
+  },
+  "Scene/ImageBasedLighting": {
+    "status": "partial",
+    "rust": "scene::image_based_lighting",
+    "note": "Manages diffuse and specular IBL factors, spherical harmonic coefficients, zenith luminance, and shader dirty tracking. Partial CPU behavior; complete upstream behavior and parity validation remain."
+  },
+  "Scene/IonImageryProviderFactory": {
+    "status": "partial",
+    "rust": "scene::ion_imagery_provider_factory",
+    "note": "Factory resolution mapping for supported external Cesium ion imagery asset types and endpoints. Partial CPU behavior; complete upstream behavior and parity validation remain."
+  },
+  "Scene/Moon": {
+    "status": "partial",
+    "rust": "scene::moon",
+    "note": "CPU ephemeris, orientation and ellipsoid state; rendering remains."
   }
 }
