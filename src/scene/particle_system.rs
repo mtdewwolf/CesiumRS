@@ -2,6 +2,7 @@
 //! GPU billboard collection submission and pool memory estimation remain unported.
 use super::{particle::ParticleOptions, particle_emitter::CircleEmitter, Particle, ParticleBurst, ParticleEmitter};
 use crate::core::{math::random_between, Cartesian2, Color, Event, Matrix4, RuntimeError};
+pub type ParticleUpdateCallback<'a> = dyn FnMut(&mut Particle, f64) + 'a;
 #[derive(Clone, Debug)]
 pub struct ParticleBillboard {
     pub particle: Particle,
@@ -89,7 +90,7 @@ impl ParticleSystem {
     pub fn update(
         &mut self,
         time_seconds: f64,
-        mut callback: Option<&mut dyn FnMut(&mut Particle, f64)>,
+        mut callback: Option<&mut ParticleUpdateCallback<'_>>,
     ) -> Result<(), RuntimeError> {
         if self.destroyed {
             return Err(RuntimeError::new("ParticleSystem was destroyed"));
