@@ -5599,12 +5599,12 @@
   "Scene/EllipsoidPrimitive": {
     "status": "partial",
     "rust": "scene::ellipsoid_primitive",
-    "note": "Renderable 3D ray-casted ellipsoid primitive with model-matrix translation and bounding sphere calculations. Partial CPU behavior; complete upstream behavior and parity validation remain."
+    "note": "CPU model matrix, inverse radii and bounding sphere calculations; draw commands and rendering remain."
   },
   "Scene/EquirectangularPanorama": {
     "status": "partial",
     "rust": "scene::equirectangular_panorama",
-    "note": "360-degree panorama primitive mapping equirectangular imagery inside an enclosing sphere. Partial CPU behavior; complete upstream behavior and parity validation remain."
+    "note": "CPU material setup, transform and bounds; image loading and rendering remain."
   },
   "Scene/FrameRateMonitor": {
     "status": "partial",
@@ -5629,6 +5629,6 @@
   "Scene/Moon": {
     "status": "partial",
     "rust": "scene::moon",
-    "note": "Draws the Moon in 3D using Simon 1994 ephemeris and IAU orientation parameters on an EllipsoidPrimitive. Partial CPU behavior; complete upstream behavior and parity validation remain."
+    "note": "CPU ephemeris, orientation and ellipsoid state; rendering remains."
   }
 }

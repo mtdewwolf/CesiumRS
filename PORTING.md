@@ -672,10 +672,10 @@ DataSourceClock/data-source collections and document loaders are next. See
 | DynamicAtmosphereLightingType | 57 | ✅ ported | `scene::dynamic_atmosphere_lighting_type` | Enum and fromGlobeFlags over all eight flag combinations; a flags struct stands in for the Globe. Direct CesiumJS cases in tests/scene_foundations.rs. |
 | DynamicEnvironmentMapManager | 1038 | ⬜ todo |  |  |
 | EdgeFramebuffer | 246 | ✅ ported | `scene::edge_framebuffer` | Three color attachments with depth-stencil, HDR, clear and external exposure semantics; pinned resource and real GPU comparisons. |
-| EllipsoidPrimitive | 497 | 🟡 partial | `scene::ellipsoid_primitive` | Renderable 3D ray-casted ellipsoid primitive with model-matrix translation and bounding sphere calculations. Partial CPU behavior; complete upstream behavior and parity validation remain. |
+| EllipsoidPrimitive | 497 | 🟡 partial | `scene::ellipsoid_primitive` | CPU model matrix, inverse radii and bounding sphere calculations; draw commands and rendering remain. |
 | EllipsoidSurfaceAppearance | 279 | ✅ ported | `scene::ellipsoid_surface_appearance` | Surface geometry appearance with aboveGround and flat options validated against CesiumJS reference. |
 | Empty3DTileContent | 165 | 🟦 implemented (unchecked) | `scene::empty_3d_tile_content` | Tile content for empty/leaf tiles in 3D Tiles hierarchies without geometry or textures. |
-| EquirectangularPanorama | 265 | 🟡 partial | `scene::equirectangular_panorama` | 360-degree panorama primitive mapping equirectangular imagery inside an enclosing sphere. Partial CPU behavior; complete upstream behavior and parity validation remain. |
+| EquirectangularPanorama | 265 | 🟡 partial | `scene::equirectangular_panorama` | CPU material setup, transform and bounds; image loading and rendering remain. |
 | Expression | 2234 | ✅ ported | `scene::expression` | 3D Tiles Styling language parser, evaluator and GLSL generator. Direct CesiumJS cases in tests/scene_style.rs. |
 | ExpressionNodeType | 26 | ✅ ported | `scene::expression_node_type` | Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs. |
 | Fog | 167 | ✅ ported | `scene::fog` | Density/height/direction falloff, mode and height disabling, renderability and frame parameters; five CesiumJS sequences with 480 updates. |
@@ -903,7 +903,7 @@ DataSourceClock/data-source collections and document loaders are next. See
 | ModelAnimationLoop | 34 | ✅ ported | `scene::model_animation_loop` | Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs. |
 | ModelAnimationState | 10 | ✅ ported | `scene::model_animation_state` | Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs. |
 | ModelComponents | 1673 | ✅ ported | `scene::model_components` | All 27 data classes and AnimatedPropertyType with upstream defaults and DEFAULT_* constants. Shared node/skin/sampler references are indices into their owning arrays; GPU buffers and textures are generic over the Gl host, with textures shared through Rc. StructuralMetadata and ModelPrimitiveImagery references use optional FrameResource handles pending those runtime modules. 29 pinned default/constant cases. |
-| Moon | 176 | 🟡 partial | `scene::moon` | Draws the Moon in 3D using Simon 1994 ephemeris and IAU orientation parameters on an EllipsoidPrimitive. Partial CPU behavior; complete upstream behavior and parity validation remain. |
+| Moon | 176 | 🟡 partial | `scene::moon` | CPU ephemeris, orientation and ellipsoid state; rendering remains. |
 | Multiple3DTileContent | 723 | ⬜ todo |  |  |
 | NeverTileDiscardPolicy | 29 | ✅ ported | `scene::never_tile_discard_policy` | Implements the TileDiscardPolicy trait. Direct CesiumJS cases in tests/scene_foundations.rs. |
 | OIT | 947 | ✅ ported | `scene::oit` | Weighted MRT and two-pass fallback, exact derived shader/render states, GPU adjust/composite/clear and ownership; 12 source variants and 16 actual GPU comparisons. Rendering supplies the output declaration missing in the pinned WebGL2 fallback shader. |

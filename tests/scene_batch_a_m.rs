@@ -59,24 +59,12 @@ fn test_billboard_texture_lifecycle() {
     assert_eq!(texture.height(), Some(32.0));
     assert!(texture.dirty);
 
-    let coords = texture.compute_texture_coordinates(256.0, 128.0).unwrap();
-    assert_eq!(coords.x, 0.0);
-    assert_eq!(coords.y, 0.0);
-    assert_eq!(coords.width, 64.0 / 256.0);
-    assert_eq!(coords.height, 32.0 / 128.0);
-
     // Subregion assignment
     let sub = BoundingRectangle::new(16.0, 8.0, 32.0, 16.0);
     texture.set_image_subregion(2, sub);
     assert!(texture.has_subregion());
     assert_eq!(texture.width(), Some(32.0));
     assert_eq!(texture.height(), Some(16.0));
-    let sub_coords = texture.compute_texture_coordinates(256.0, 128.0).unwrap();
-    assert_eq!(sub_coords.x, 16.0 / 256.0);
-    assert_eq!(sub_coords.y, 8.0 / 128.0);
-    assert_eq!(sub_coords.width, 32.0 / 256.0);
-    assert_eq!(sub_coords.height, 16.0 / 128.0);
-
     // Clone behavior
     let mut clone = BillboardTexture::new();
     clone.clone_from_source(&texture);
@@ -436,4 +424,24 @@ fn test_moon_astronomical_position_and_ellipsoid() {
     assert!(moon_mut.destroy().is_ok());
     assert!(moon_mut.is_destroyed());
     assert!(moon_mut.update(&mut frame_state).is_err());
+}
+
+#[test]
+fn regression_json_classification_and_shader_main() {
+    use cesium_rs::scene::{Cesium3DTileContentFactory as Factory, Cesium3DTileContentType as Kind, DebugInspector};
+    for json in [br#"{"type":"Feature"}"#.as_slice(), br#"{"type":"Point"}"#] {
+        assert_eq!(Factory::classify(json).unwrap(), Kind::GeoJson);
+    }
+    assert_eq!(Factory::classify(br#"{"voxelTable":{}}"#).unwrap(), Kind::VoxelJson);
+    let shader = DebugInspector::rewrite_fragment_shader_for_debug("void main(void) { out_FragColor = vec4(1.0); }");
+    assert!(shader.contains("czm_Debug_main"));
+    assert_eq!(shader.matches("void main(").count(), 1);
+}
+#[test]
+fn equirectangular_implements_panorama() {
+    use cesium_rs::scene::{EquirectangularPanorama, EquirectangularPanoramaOptions, panorama::Panorama};
+    let mut panorama = EquirectangularPanorama::new(EquirectangularPanoramaOptions::new("image"));
+    let value: &mut dyn Panorama = &mut panorama;
+    value.set_show(false);
+    assert!(!value.show());
 }

@@ -155,27 +155,11 @@ impl BillboardTexture {
         }
     }
 
-    /// Computes the normalized texture coordinates `[x, y, width, height]` for the
-    /// atlas dimensions given.
-    pub fn compute_texture_coordinates(
-        &self,
-        atlas_width: f64,
-        atlas_height: f64,
-    ) -> Option<BoundingRectangle> {
-        if atlas_width <= 0.0 || atlas_height <= 0.0 {
-            return None;
+    /// Returns the indexed atlas coordinates, including the atlas-managed subregion offset.
+    pub fn compute_texture_coordinates<G: crate::renderer::Gl + 'static>(&self, atlas: &crate::renderer::TextureAtlas<G>) -> std::result::Result<BoundingRectangle, crate::core::RuntimeError> {
+        if self.index < 0 {
+            return Err(crate::core::RuntimeError::new("Texture has no atlas index"));
         }
-        if let Some(sub) = &self.subregion {
-            Some(BoundingRectangle::new(
-                sub.x / atlas_width,
-                sub.y / atlas_height,
-                sub.width / atlas_width,
-                sub.height / atlas_height,
-            ))
-        } else if let (Some(w), Some(h)) = (self.width, self.height) {
-            Some(BoundingRectangle::new(0.0, 0.0, w / atlas_width, h / atlas_height))
-        } else {
-            None
-        }
+        atlas.compute_texture_coordinates(self.index as usize)
     }
 }

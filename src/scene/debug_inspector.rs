@@ -31,10 +31,7 @@ impl DebugInspector {
     /// Rewrites fragment shader source code to wrap `main()` with debug frustum
     /// and command color multipliers.
     pub fn rewrite_fragment_shader_for_debug(source: &str) -> String {
-        let mut rewritten = source.replace("void main()", "void czm_Debug_main()");
-        if rewritten == source {
-            rewritten = source.replace("void main ()", "void czm_Debug_main()");
-        }
+        let mut rewritten = crate::renderer::ShaderSource::replace_main(source, "czm_Debug_main");
 
         let mut targets = Vec::new();
         let needle = "out_FragData_";

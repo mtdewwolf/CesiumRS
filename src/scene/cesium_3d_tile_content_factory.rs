@@ -3,7 +3,6 @@
 
 use crate::core::RuntimeError;
 use crate::scene::Cesium3DTileContentType;
-use serde_json::Value;
 
 /// Maps a tile's magic field in its header or format identifier to content
 /// classification and dispatch.
@@ -47,46 +46,7 @@ impl Cesium3DTileContentFactory {
 
     /// Inspects raw payload bytes to classify the tile content type.
     pub fn classify(bytes: &[u8]) -> Result<Cesium3DTileContentType, RuntimeError> {
-        if bytes.is_empty() {
-            return Err(RuntimeError::new("Tile content buffer is empty."));
-        }
-
-        if bytes.len() >= 4 {
-            let magic = std::str::from_utf8(&bytes[..4]).unwrap_or("");
-            if magic == "glTF" {
-                if bytes.len() < 12 {
-                    return Err(RuntimeError::new("Invalid glb content."));
-                }
-                return Ok(Cesium3DTileContentType::GltfBinary);
-            }
-            if let Some(content_type) = Self::find(magic) {
-                if content_type.is_binary_format() {
-                    return Ok(content_type);
-                }
-            }
-        }
-
-        // Attempt JSON detection
-        if let Ok(json) = serde_json::from_slice::<Value>(bytes) {
-            if json.get("root").is_some() {
-                return Ok(Cesium3DTileContentType::ExternalTileset);
-            }
-            if json.get("asset").is_some() {
-                return Ok(Cesium3DTileContentType::Gltf);
-            }
-            if json.get("tileAvailability").is_some() || json.get("subtrees").is_some() {
-                return Ok(Cesium3DTileContentType::ImplicitSubtreeJson);
-            }
-            if json.get("type").and_then(|v| v.as_str()) == Some("FeatureCollection")
-                || json.get("features").is_some()
-            {
-                return Ok(Cesium3DTileContentType::GeoJson);
-            }
-            if json.get("voxel").is_some() {
-                return Ok(Cesium3DTileContentType::VoxelJson);
-            }
-        }
-
-        Err(RuntimeError::new("Unrecognized 3D tile content format."))
+        super::preprocess_3d_tile_content::preprocess_3d_tile_content(bytes)
+            .map(|content| content.content_type)
     }
 }

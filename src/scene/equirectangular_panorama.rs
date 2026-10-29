@@ -130,3 +130,10 @@ impl ScenePrimitive for EquirectangularPanorama {
         Ok(())
     }
 }
+
+impl super::panorama::Panorama for EquirectangularPanorama {
+    fn show(&self) -> bool { self.show }
+    fn set_show(&mut self, show: bool) { self.show = show; }
+    fn transform(&self) -> &Matrix4 { &self.transform }
+    fn credit(&self) -> Option<&Credit> { self.credit.as_ref() }
+}
