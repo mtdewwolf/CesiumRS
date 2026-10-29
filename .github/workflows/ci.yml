@@ -55,18 +55,7 @@ jobs:
         run: cargo build --locked --release --target wasm32-unknown-unknown --example parity_bench_wasm
 
       # Freshness of web/client/generated against a release wasm build.
-      # Does not need a browser. The staged copy is uploaded so a stale
-      # wasm.ts can be replaced with the bytes this job just built.
-      - name: stage generated web bundle
-        run: bash scripts/build-web.sh web/client/generated-fresh
-
-      - name: upload generated web bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-generated
-          path: web/client/generated-fresh
-          if-no-files-found: error
-
+      # Does not need a browser.
       - name: check generated web bundle
         run: bash scripts/check-generated.sh
 
