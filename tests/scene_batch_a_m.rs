@@ -69,7 +69,7 @@ fn test_billboard_texture_lifecycle() {
     let mut clone = BillboardTexture::new();
     clone.clone_from_source(&texture);
     assert_eq!(clone.id(), Some("icon_pin"));
-    assert_eq!(clone.index(), 2);
+    assert_eq!(clone.index(), 3);
     assert!(clone.ready());
 
     // Error and failure transitions
