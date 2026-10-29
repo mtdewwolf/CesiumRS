@@ -116,7 +116,7 @@ pub fn combine_geometry(packed: PackedCombineGeometry) -> Result<CombineGeometry
     })
 }
 
-fn geometry_pipeline(
+pub(crate) fn geometry_pipeline(
     packed: &PackedCombineGeometry,
     instances: &mut [GeometryInstance],
     model_matrix: &mut Matrix4,
@@ -296,7 +296,7 @@ fn encode_positions(
     Ok(())
 }
 
-fn instance_pick_offsets(
+pub(crate) fn instance_pick_offsets(
     instances: &[GeometryInstance],
     geometries: &[Geometry],
 ) -> Result<Vec<PickOffset>, RuntimeError> {

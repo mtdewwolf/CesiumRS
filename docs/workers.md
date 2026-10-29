@@ -70,8 +70,8 @@ replace JavaScript's transfer list. Packing retains missing geometries, primitiv
 and geometry types, offsets, both bounding spheres, component types,
 normalization, attributes and indices. Unpacking reconstructs typed arrays and
 16/32-bit indices and rejects truncated buffers, invalid lengths and unknown
-enums. Only these result-packing helpers are implemented here; the Scene
-`PrimitivePipeline` module remains unported.
+enums. The Scene `PrimitivePipeline::combine_geometry` entry point reuses this
+module's geometry kernel and pick-offset computation.
 
 ## Reference validation
 

@@ -1135,9 +1135,11 @@ rendering parity for the primitive runtime.
 - `PrimitiveCollection` has a partial native API using owned children and indices.
   Reference cases cover ordering, nested frame dispatch and destruction policy.
   Identity-based membership and collection events remain unported.
-- `PrimitivePipeline` is partial and has no direct Scene reference suite. Its CPU
-  combination path is missing 2D projection and high/low position encoding.
-  The existing, independently validated `Workers/combineGeometry` path is separate.
+- `PrimitivePipeline::combine_geometry` delegates to the shared
+  `Workers/combineGeometry` kernel for projection, high/low position encoding,
+  batching and pick offsets. All 17 pinned `combineGeometry` reference cases are
+  replayed through the Scene entry point with exact comparison. The module stays
+  partial: the combine-parameter and combine-result wire packing are unported.
 - Appearance and material fixtures cover source generation and metadata for the
   listed concrete appearances and 25 built-in materials. `ShadowVolumeAppearance`
   awaits direct fixture validation. Material texture loading and final rendered

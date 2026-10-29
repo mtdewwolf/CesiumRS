@@ -83,8 +83,9 @@
       "module": "Scene/PrimitivePipeline",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "Partial CPU geometry combination, batch IDs and pick offsets. This duplicate Scene implementation has no direct reference suite; 2D projection, high/low position encoding and complete result parity remain unvalidated. The separately validated Workers/combineGeometry port is unchanged."
+      "status": "in-progress",
+      "remaining": "combine_geometry now delegates to the validated Workers/combineGeometry kernel (2D projection, high/low encoding, batch IDs, pick offsets, offset extents, hemisphere bounding spheres). Remaining: packCombineGeometryParameters/Results and unpack counterparts (worker wire format) are unported.",
+      "evidence": "tests/workers_combine.rs::scene_primitive_pipeline_replays_the_pinned_combine_cases replays all 17 pinned combineGeometry cases through the Scene entry point with exact comparison."
     },
     {
       "module": "Scene/ShadowVolumeAppearance",
