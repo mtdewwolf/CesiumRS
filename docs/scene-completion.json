@@ -91,9 +91,9 @@
       "module": "Scene/ShadowVolumeAppearance",
       "baselineStatus": "implemented",
       "workstream": "model-effects",
-      "status": "in-progress",
-      "remaining": "Classification fragment shader synthesis for 3D Tiles and terrain clamping implemented; parity fixtures unrun.",
-      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_shadow_volume_appearance.rs replays tools/cesium/generate-scene-shadow-volume-appearance.mjs: 144 color/pick/vertex ShaderSource cases across per-instance-color and eight material appearances, first-projection extent-define caching, and 24 planar/spherical texture-coordinate attribute cases, all exact. tests/scene_model_effects_completion.rs keeps the original 16 define cases."
     },
     {
       "module": "Scene/Model/Model",

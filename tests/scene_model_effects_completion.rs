@@ -137,12 +137,7 @@ fn classification_shader_dependencies_and_projection_match_pinned_engine() {
         for (key, source) in
             [("color", appearance.create_fragment_shader(cv)), ("pick", appearance.create_pick_fragment_shader(cv))]
         {
-            let defines: Vec<_> = source
-                .lines()
-                .take_while(|l| l.starts_with("#define "))
-                .map(|l| l.trim_start_matches("#define "))
-                .collect();
-            assert_eq!(serde_json::json!(defines), case[key], "{case}");
+            assert_eq!(serde_json::json!(source.defines), case[key], "{case}");
         }
         let projection = GeographicProjection::default();
         let vs = appearance.create_vertex_shader(&["EXTERNAL".into()], "void main() {}", cv, &projection);

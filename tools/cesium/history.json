@@ -587,8 +587,8 @@
     "milestone": "Scene partial-module completion",
     "date": "2026-11-01",
     "percent": 72.17,
-    "ported": 1052,
-    "implemented": 14,
-    "validatedPercent": 62.84
+    "ported": 1053,
+    "implemented": 13,
+    "validatedPercent": 63.08
   }
 ]

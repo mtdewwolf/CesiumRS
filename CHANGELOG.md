@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Complete `ShadowVolumeAppearance`: fragment shaders return `ShaderSource`s (the pick pass with `pickColorQualifier: in`), projection-extent defines are cached from the first vertex-shader call as in Cesium, and the static planar/spherical texture-coordinate attribute helpers, attribute checks and `MAX_WIDTH_FOR_PLANAR_EXTENTS` are ported. 144 pinned shader cases across nine appearances, a caching case and 24 attribute cases compare exactly. Fix `js_to_fixed` so a negative value that rounds to zero keeps its sign, as V8 prints it. The module moves from implemented to validated.
+
 - Complete `PrimitivePipeline` with the worker wire format: `pack/unpackCombineGeometryParameters`, `pack/unpackCombineGeometryResults` and Scene entry points for `pack/unpackCreateGeometryResults`. All 17 pinned `combineGeometry` cases now run through unpack, combine and pack with exact output, and nine direct CesiumJS cases cover instance offsets, missing and surplus geometries and `Float32` bounding-sphere rounding. The module moves from partial to validated.
 
 - Port the seventeen concrete DataSources graphics classes plus `ColorMaterialProperty` and Color material descriptor coercion. Add undefined slots, raw ConstantProperty wrapping, accessor/child definition events, upstream clone/merge field-order quirks, Entity raw-option coercion, nested references, composite cloning/merging, PolygonGraphics hierarchy arrays and explicit ModelGraphics PropertyBag merging. Validate 20 pinned Graphics cases and thirteen native integration tests. ModelGraphics raw nodeTransformations coercion, ImageMaterialProperty and the other material classes remain partial/todo.

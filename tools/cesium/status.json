@@ -5112,9 +5112,9 @@
     "note": "combineGeometry delegates to the validated Workers/combineGeometry kernel: world transforms, antimeridian splits, batch IDs, 2D projection, high/low encoding, compression, pick offsets and hemisphere bounding spheres. pack/unpackCreateGeometryResults, pack/unpackCombineGeometryParameters and pack/unpackCombineGeometryResults implement the worker wire format; owned buffers replace the transfer list. All 17 pinned combineGeometry cases run through unpack, combine and pack with exact output, and nine direct wire-format cases cover offsets, missing geometries, surplus geometries and Float32 sphere rounding."
   },
   "Scene/ShadowVolumeAppearance": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::shadow_volume_appearance",
-    "note": "Classification fragment shader synthesis for 3D Tiles and terrain clamping implemented; parity fixtures unrun."
+    "note": "Color/pick fragment and vertex ShaderSources with propagated EC/WC/normal/texture-coordinate dependencies, material and per-instance-color appearances, Cesium's first-projection caching of the EAST/WEST_MOST_X extent defines with JavaScript toFixed formatting, and the static planar and spherical texture-coordinate attribute helpers, attribute checks and planar/spherical selection. 144 pinned shader cases across nine appearances, a projection-caching case and 24 attribute cases compare exactly. An appearance without a material stands in for instanceof PerInstanceColorAppearance; classification rendering awaits ClassificationPrimitive and GroundPrimitive."
   },
   "Scene/Model/Model": {
     "status": "implemented",

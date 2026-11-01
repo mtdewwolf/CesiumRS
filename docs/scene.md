@@ -1147,9 +1147,16 @@ rendering parity for the primitive runtime.
   instance offsets, missing geometries, surplus geometries (Cesium's
   `TypeError`), and `Float32` bounding-sphere rounding.
 - Appearance and material fixtures cover source generation and metadata for the
-  listed concrete appearances and 25 built-in materials. `ShadowVolumeAppearance`
-  awaits direct fixture validation. Material texture loading and final rendered
-  pixels are outside these fixture suites.
+  listed concrete appearances and 25 built-in materials. Material texture
+  loading and final rendered pixels are outside these fixture suites.
+- `ShadowVolumeAppearance` is validated by `tests/scene_shadow_volume_appearance.rs`
+  (generator `tools/cesium/generate-scene-shadow-volume-appearance.mjs`): 144
+  color/pick/vertex `ShaderSource` cases across per-instance-color and eight
+  material appearances, the first-projection caching of the
+  `EAST/WEST_MOST_X_HIGH/LOW` defines (formatted with JavaScript `toFixed`, so
+  `-0` prints as `0.00`), and 24 cases for the planar and spherical
+  texture-coordinate attributes. Attribute values keep JavaScript's plain
+  doubles as `TypedArray::Float64` under the `FLOAT` datatype.
   Renderer hosts call `Material::uniform_bindings()` at submission time to get
   current values from the whole sub-material tree, with exact generated names.
   Complete supplied render states retain all fields, including explicit `false`
