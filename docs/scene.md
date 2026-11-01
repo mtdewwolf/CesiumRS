@@ -1137,9 +1137,15 @@ rendering parity for the primitive runtime.
   Identity-based membership and collection events remain unported.
 - `PrimitivePipeline::combine_geometry` delegates to the shared
   `Workers/combineGeometry` kernel for projection, high/low position encoding,
-  batching and pick offsets. All 17 pinned `combineGeometry` reference cases are
-  replayed through the Scene entry point with exact comparison. The module stays
-  partial: the combine-parameter and combine-result wire packing are unported.
+  batching and pick offsets. The worker wire format is ported:
+  `pack/unpack_create_geometry_results`, `pack/unpack_combine_geometry_parameters`
+  and `pack/unpack_combine_geometry_results`. Owned buffers replace the
+  JavaScript transfer list. All 17 pinned `combineGeometry` cases run through
+  unpack, combine and pack with exact output; repacking the unpacked parameters
+  reproduces Cesium's instance buffer. `tests/scene_primitive_pipeline.rs` adds
+  nine direct cases from `tools/cesium/generate-scene-primitive-pipeline.mjs`:
+  instance offsets, missing geometries, surplus geometries (Cesium's
+  `TypeError`), and `Float32` bounding-sphere rounding.
 - Appearance and material fixtures cover source generation and metadata for the
   listed concrete appearances and 25 built-in materials. `ShadowVolumeAppearance`
   awaits direct fixture validation. Material texture loading and final rendered

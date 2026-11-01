@@ -179,68 +179,38 @@ fn mixed_primitive_types_keep_the_first() {
 
 #[test]
 fn scene_primitive_pipeline_replays_the_pinned_combine_cases() {
-    use cesium_rs::scene::primitive_pipeline::{CombineGeometryParameters, PrimitivePipeline};
+    use cesium_rs::scene::primitive_pipeline::PrimitivePipeline;
+    // The worker's own path: unpack the posted parameters, combine on the
+    // Scene entry point, then pack the reply.
     let combine_scene = |script: &Value| -> Result<CombineGeometryResult, RuntimeError> {
-        let packed = f64s(&script["packedInstances"]);
-        let geometries = script["createGeometryResults"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|v| packed_results(v).unpack())
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .flatten()
-            .collect::<Vec<_>>();
-        let mut instances = Vec::new();
-        for (i, data) in packed[1..].as_chunks::<19>().0.iter().enumerate() {
-            instances.push(GeometryInstance {
-                geometry: geometries.get(i).cloned().flatten(),
-                model_matrix: Matrix4(data[..16].try_into().unwrap()),
-                id: None,
-                attributes: vec![(
-                    "offset".into(),
-                    OffsetGeometryInstanceAttribute { value: [data[16] as f32, data[17] as f32, data[18] as f32] }
-                        .into(),
-                )],
-                west_hemisphere_geometry: None,
-                east_hemisphere_geometry: None,
-            });
-        }
         let radii = f64s(&script["ellipsoid"]);
-        let result = PrimitivePipeline::combine_geometry(CombineGeometryParameters {
-            instances,
+        let packed = PackedCombineGeometry {
+            create_geometry_results: script["createGeometryResults"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(packed_results)
+                .collect(),
+            packed_instances: f64s(&script["packedInstances"]),
             ellipsoid_radii: Cartesian3::new(radii[0], radii[1], radii[2]),
             is_geographic: flag(script, "isGeographic"),
-            uint_index_support: flag(script, "elementIndexUintSupported"),
+            element_index_uint_supported: flag(script, "elementIndexUintSupported"),
             scene_3d_only: flag(script, "scene3DOnly"),
             vertex_cache_optimize: flag(script, "vertexCacheOptimize"),
             compress_vertices: flag(script, "compressVertices"),
             model_matrix: matrix(&script["modelMatrix"]),
             create_pick_offsets: flag(script, "createPickOffsets"),
-        })?;
-        let pack = |spheres: Vec<Option<BoundingSphere>>| {
-            let mut output = vec![spheres.len() as f32];
-            for s in spheres {
-                match s {
-                    Some(s) => {
-                        output.extend([1., s.center.x as f32, s.center.y as f32, s.center.z as f32, s.radius as f32])
-                    }
-                    None => output.extend([0.; 5]),
-                }
-            }
-            output
         };
-        Ok(CombineGeometryResult {
-            geometries: result.geometries,
-            model_matrix: result.model_matrix,
-            attribute_locations: result.attribute_locations,
-            pick_offsets: result.pick_offsets.map(|v| {
-                v.into_iter().map(|p| PickOffset { index: p.index, offset: p.offset, count: p.count }).collect()
-            }),
-            offset_instance_extend: result.offset_instance_extend,
-            bounding_spheres: pack(result.bounding_spheres),
-            bounding_spheres_cv: pack(result.bounding_spheres_cv),
-        })
+        let parameters = PrimitivePipeline::unpack_combine_geometry_parameters(&packed)?;
+        // Packing the unpacked instances reproduces Cesium's packed buffer.
+        let repacked =
+            PrimitivePipeline::pack_combine_geometry_parameters(&parameters, packed.create_geometry_results.clone());
+        assert_eq!(repacked, packed);
+        let result = PrimitivePipeline::combine_geometry(parameters)?;
+        let wire = PrimitivePipeline::pack_combine_geometry_results(result);
+        let round = PrimitivePipeline::unpack_combine_geometry_results(wire.clone())?;
+        assert_eq!(PrimitivePipeline::pack_combine_geometry_results(round), wire);
+        Ok(wire)
     };
     run(
         "workers",

@@ -71,7 +71,9 @@ and geometry types, offsets, both bounding spheres, component types,
 normalization, attributes and indices. Unpacking reconstructs typed arrays and
 16/32-bit indices and rejects truncated buffers, invalid lengths and unknown
 enums. The Scene `PrimitivePipeline::combine_geometry` entry point reuses this
-module's geometry kernel and pick-offset computation.
+module's geometry kernel and pick-offset computation, and the Scene
+`pack/unpack_combine_geometry_parameters` and `pack/unpack_combine_geometry_results`
+share its instance and bounding-sphere buffer layouts.
 
 ## Reference validation
 

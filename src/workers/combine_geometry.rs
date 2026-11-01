@@ -51,17 +51,7 @@ pub struct CombineGeometryResult {
 pub fn combine_geometry(packed: PackedCombineGeometry) -> Result<CombineGeometryResult, RuntimeError> {
     let ellipsoid = Ellipsoid::from_cartesian3(packed.ellipsoid_radii);
     let mut model_matrix = packed.model_matrix;
-    let mut instances = unpack_instances(&packed.packed_instances)?;
-    let mut geometry_index = 0;
-    for results in &packed.create_geometry_results {
-        for geometry in results.unpack()? {
-            let instance = instances
-                .get_mut(geometry_index)
-                .ok_or_else(|| invalid("combineGeometry is missing an instance for a geometry"))?;
-            instance.geometry = geometry;
-            geometry_index += 1;
-        }
-    }
+    let mut instances = unpack_instances_with_geometries(&packed.packed_instances, &packed.create_geometry_results)?;
 
     let length = instances.len();
     let has_offset =
@@ -364,6 +354,45 @@ fn append_pick_offsets(
     Ok(())
 }
 
+/// `unpackInstancesForCombine` followed by the in-order geometry assignment of
+/// `unpackCombineGeometryParameters`. A geometry without a matching instance
+/// is an error, where Cesium throws a `TypeError`.
+pub(crate) fn unpack_instances_with_geometries(
+    data: &[f64],
+    create_geometry_results: &[PackedGeometryResults],
+) -> Result<Vec<GeometryInstance>, RuntimeError> {
+    let mut instances = unpack_instances(data)?;
+    let mut geometry_index = 0;
+    for results in create_geometry_results {
+        for geometry in results.unpack()? {
+            let instance = instances
+                .get_mut(geometry_index)
+                .ok_or_else(|| invalid("combineGeometry is missing an instance for a geometry"))?;
+            instance.geometry = geometry;
+            geometry_index += 1;
+        }
+    }
+    Ok(instances)
+}
+
+/// `packInstancesForCombine`: per instance, the 16 model-matrix entries and
+/// the three `offset` attribute values, or zeros when there is no offset.
+pub(crate) fn pack_instances(instances: &[GeometryInstance]) -> Vec<f64> {
+    let mut data = Vec::with_capacity(1 + instances.len() * 19);
+    data.push(instances.len() as f64);
+    for instance in instances {
+        data.extend_from_slice(&instance.model_matrix.0);
+        let offset = instance
+            .attributes
+            .iter()
+            .find(|(name, _)| name == "offset")
+            .map(|(_, attribute)| attribute.value.to_f64_vec())
+            .unwrap_or_default();
+        data.extend((0..3).map(|i| offset.get(i).copied().unwrap_or(0.0)));
+    }
+    data
+}
+
 /// `Float64Array` layout: count, then 16 matrix components and 3 offset
 /// components per instance. Missing offsets are stored as zeros, and `defined(0)`
 /// is true, so each instance receives an offset attribute.
@@ -396,7 +425,7 @@ fn unpack_instances(data: &[f64]) -> Result<Vec<GeometryInstance>, RuntimeError>
     Ok(instances)
 }
 
-fn pack_bounding_spheres(spheres: &[Option<BoundingSphere>]) -> Vec<f32> {
+pub(crate) fn pack_bounding_spheres(spheres: &[Option<BoundingSphere>]) -> Vec<f32> {
     let mut buffer = Vec::with_capacity(1 + spheres.len() * 5);
     buffer.push(spheres.len() as f32);
     for sphere in spheres {
@@ -412,6 +441,28 @@ fn pack_bounding_spheres(spheres: &[Option<BoundingSphere>]) -> Vec<f32> {
         }
     }
     buffer
+}
+
+/// `unpackBoundingSpheres`: reads a buffer written by `packBoundingSpheres`.
+/// Only a flag of exactly `1.0` yields a sphere. The leading count must match
+/// the number of five-float slots.
+pub(crate) fn unpack_bounding_spheres(buffer: &[f32]) -> Result<Vec<Option<BoundingSphere>>, RuntimeError> {
+    let (&count, slots) = buffer.split_first().ok_or_else(|| invalid("packed bounding spheres are empty"))?;
+    let (slots, rest) = slots.as_chunks::<5>();
+    if !rest.is_empty() || count != slots.len() as f32 {
+        return Err(invalid("packed bounding spheres do not match their count"));
+    }
+    Ok(slots
+        .iter()
+        .map(|slot| {
+            (slot[0] == 1.0).then(|| {
+                BoundingSphere::new(
+                    Cartesian3::new(f64::from(slot[1]), f64::from(slot[2]), f64::from(slot[3])),
+                    f64::from(slot[4]),
+                )
+            })
+        })
+        .collect())
 }
 
 fn invalid(detail: &str) -> RuntimeError {

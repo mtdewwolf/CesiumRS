@@ -5107,9 +5107,9 @@
     "note": "Partial native index-based collection API. Pinned reference cases cover ordering, nested update dispatch (including hidden collections), and destruction policy; identity-based membership, collection events and the full upstream surface remain unported."
   },
   "Scene/PrimitivePipeline": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::primitive_pipeline",
-    "note": "Partial CPU geometry combination, batch IDs and pick offsets. This duplicate Scene implementation has no direct reference suite; 2D projection, high/low position encoding and complete result parity remain unvalidated. The separately validated Workers/combineGeometry port is unchanged."
+    "note": "combineGeometry delegates to the validated Workers/combineGeometry kernel: world transforms, antimeridian splits, batch IDs, 2D projection, high/low encoding, compression, pick offsets and hemisphere bounding spheres. pack/unpackCreateGeometryResults, pack/unpackCombineGeometryParameters and pack/unpackCombineGeometryResults implement the worker wire format; owned buffers replace the transfer list. All 17 pinned combineGeometry cases run through unpack, combine and pack with exact output, and nine direct wire-format cases cover offsets, missing geometries, surplus geometries and Float32 sphere rounding."
   },
   "Scene/ShadowVolumeAppearance": {
     "status": "implemented",

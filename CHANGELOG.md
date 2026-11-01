@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Complete `PrimitivePipeline` with the worker wire format: `pack/unpackCombineGeometryParameters`, `pack/unpackCombineGeometryResults` and Scene entry points for `pack/unpackCreateGeometryResults`. All 17 pinned `combineGeometry` cases now run through unpack, combine and pack with exact output, and nine direct CesiumJS cases cover instance offsets, missing and surplus geometries and `Float32` bounding-sphere rounding. The module moves from partial to validated.
+
 - Port the seventeen concrete DataSources graphics classes plus `ColorMaterialProperty` and Color material descriptor coercion. Add undefined slots, raw ConstantProperty wrapping, accessor/child definition events, upstream clone/merge field-order quirks, Entity raw-option coercion, nested references, composite cloning/merging, PolygonGraphics hierarchy arrays and explicit ModelGraphics PropertyBag merging. Validate 20 pinned Graphics cases and thirteen native integration tests. ModelGraphics raw nodeTransformations coercion, ImageMaterialProperty and the other material classes remain partial/todo.
 
 - Implement Model, ModelDrawCommands and Model3DTileContent, and port ModelDrawCommand, ClassificationModelDrawCommand and pickModel. Connect model loaders, pipeline stages, runtime transforms/animations, feature styling, CPU picking and owned scene draws; add the built-in model tile factory and real-frame deferred readiness. Validate 185 pinned CesiumJS reference cases and native lifecycle, style/pass and tile-processing tests. Full end-to-end GPU model parity remains unchecked; terrain/environment services use host integration hooks.

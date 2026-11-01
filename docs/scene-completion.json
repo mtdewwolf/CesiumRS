@@ -83,9 +83,9 @@
       "module": "Scene/PrimitivePipeline",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "in-progress",
-      "remaining": "combine_geometry now delegates to the validated Workers/combineGeometry kernel (2D projection, high/low encoding, batch IDs, pick offsets, offset extents, hemisphere bounding spheres). Remaining: packCombineGeometryParameters/Results and unpack counterparts (worker wire format) are unported.",
-      "evidence": "tests/workers_combine.rs::scene_primitive_pipeline_replays_the_pinned_combine_cases replays all 17 pinned combineGeometry cases through the Scene entry point with exact comparison."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "combineGeometry delegates to the validated Workers/combineGeometry kernel, and pack/unpack Create/CombineGeometry Parameters/Results implement the worker wire format. tests/workers_combine.rs::scene_primitive_pipeline_replays_the_pinned_combine_cases runs all 17 pinned cases through unpack, combine and pack with exact output and exact repacking; tests/scene_primitive_pipeline.rs replays nine direct wire-format cases from tools/cesium/generate-scene-primitive-pipeline.mjs."
     },
     {
       "module": "Scene/ShadowVolumeAppearance",
@@ -304,7 +304,7 @@
       "baselineStatus": "partial",
       "workstream": "imagery",
       "status": "pending",
-      "remaining": "Layer options, imagery bounds, texture transforms, cache, initial skeletons and provider request lifecycle; reference fixture and native lifecycle cases. Complete tile coverage, transport cancellation and GPU reprojection remain; seven texel-spacing expectations are computed separately from Cesium\u2019s private function."
+      "remaining": "Layer options, imagery bounds, texture transforms, cache, initial skeletons and provider request lifecycle; reference fixture and native lifecycle cases. Complete tile coverage, transport cancellation and GPU reprojection remain; seven texel-spacing expectations are computed separately from Cesium’s private function."
     },
     {
       "module": "Scene/ImageryLayerCollection",
