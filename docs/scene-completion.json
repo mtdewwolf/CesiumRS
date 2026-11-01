@@ -527,9 +527,9 @@
       "module": "Scene/ShadowMapShader",
       "baselineStatus": "partial",
       "workstream": "model-effects",
-      "status": "in-progress",
-      "remaining": "Exact cast vertex/fragment and receive vertex generation across 32 pinned variants; shader keywords. Receive fragment lighting remains. See docs/scene-nz-contracts.md.",
-      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_shadow_map_shader.rs replays tools/cesium/generate-scene-shadow-map-shader.mjs: 4096 receive fragment cases over every keyword input and four varying layouts with distinct point/terrain/primitive biases, 1024 keywords and the receive vertex cases. The 32 cast and receive-vertex variants and the original 4096 receive variants are retained."
     },
     {
       "module": "Scene/SkyBox",

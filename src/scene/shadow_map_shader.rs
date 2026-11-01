@@ -58,33 +58,76 @@ pub fn cast_fragment(fs: &ShaderSource, point: bool, depth: bool, opaque: bool) 
 
 include!("shadow_receive_glsl.rs");
 
-/// Bias used by the selected point, terrain, or primitive shadow receiver.
-#[derive(Clone, Copy, Debug, Default)]
+/// One of the shadow map's receiver biases (`_pointBias`, `_terrainBias`,
+/// `_primitiveBias`), as far as shader derivation reads it.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct ReceiveBias {
     pub normal_shading: bool,
     pub normal_shading_smooth: f64,
     pub normal_offset: bool,
 }
 
-/// Shadow-map properties needed to derive a receive fragment shader.
-#[derive(Clone, Copy, Debug, Default)]
+/// What `createShadowReceiveFragmentShader` and
+/// `getShadowReceiveShaderKeyword` read from the shadow map, plus their
+/// `castShadows`, `isTerrain` and `hasTerrainNormal` arguments. It stands in
+/// for the `ShadowMap` object.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct ReceiveOptions {
     pub uses_depth_texture: bool,
     pub polygon_offset_supported: bool,
     pub point_light: bool,
     pub spot_light: bool,
-    pub cascades: bool,
+    /// `_numberOfCascades`; more than one enables cascade selection.
+    pub number_of_cascades: u32,
     pub debug_cascade_colors: bool,
     pub soft_shadows: bool,
     pub cast_shadows: bool,
     pub terrain: bool,
     pub terrain_normal: bool,
-    pub bias: ReceiveBias,
+    pub point_bias: ReceiveBias,
+    pub terrain_bias: ReceiveBias,
+    pub primitive_bias: ReceiveBias,
+}
+
+impl ReceiveOptions {
+    pub fn has_cascades(&self) -> bool {
+        self.number_of_cascades > 1
+    }
+
+    /// The bias Cesium applies: the point-light bias, else the terrain bias
+    /// for terrain, else the primitive bias.
+    pub fn bias(&self) -> ReceiveBias {
+        if self.point_light {
+            self.point_bias
+        } else if self.terrain {
+            self.terrain_bias
+        } else {
+            self.primitive_bias
+        }
+    }
+}
+
+/// `getShadowReceiveShaderKeyword` for the same inputs as [`receive_fragment`].
+pub fn receive_shader_keyword(o: &ReceiveOptions) -> String {
+    receive_keyword([
+        o.uses_depth_texture,
+        o.polygon_offset_supported,
+        o.point_light,
+        o.spot_light,
+        o.has_cascades(),
+        o.debug_cascade_colors,
+        o.soft_shadows,
+        o.cast_shadows,
+        o.terrain,
+        o.terrain_normal,
+    ])
 }
 
 /// Derive lighting, bias, cascade selection and shadow visibility from an
 /// existing material shader, preserving its alpha and original main function.
 pub fn receive_fragment(fs: &ShaderSource, o: &ReceiveOptions) -> ShaderSource {
+    let bias = o.bias();
+    let cascades = o.has_cascades();
     let normal = fs.find_normal_varying();
     let has_normal = (!o.terrain && normal.is_some()) || (o.terrain && o.terrain_normal);
     let mut s = fs.clone();
@@ -97,12 +140,12 @@ pub fn receive_fragment(fs: &ShaderSource, o: &ReceiveOptions) -> ShaderSource {
     if o.soft_shadows && !o.point_light {
         s.defines.push("USE_SOFT_SHADOWS".into());
     }
-    if o.cascades && o.cast_shadows && o.terrain {
+    if cascades && o.cast_shadows && o.terrain {
         s.defines.push(if has_normal { "ENABLE_VERTEX_LIGHTING" } else { "ENABLE_DAYNIGHT_SHADING" }.into());
     }
-    if o.cast_shadows && o.bias.normal_shading && has_normal {
+    if o.cast_shadows && bias.normal_shading && has_normal {
         s.defines.push("USE_NORMAL_SHADING".into());
-        if o.bias.normal_shading_smooth > 0.0 {
+        if bias.normal_shading_smooth > 0.0 {
             s.defines.push("USE_NORMAL_SHADING_SMOOTH".into());
         }
     }
@@ -125,7 +168,7 @@ pub fn receive_fragment(fs: &ShaderSource, o: &ReceiveOptions) -> ShaderSource {
         src.push_str("    return vec3(1.0); \n");
     }
     src.push_str("} \nvoid applyNormalOffset(inout vec4 positionEC, vec3 normalEC, float nDotL) \n{ \n");
-    if o.bias.normal_offset && has_normal {
+    if bias.normal_offset && has_normal {
         src.push_str("    float normalOffset = shadowMap_normalOffsetScaleDistanceMaxDistanceAndDarkness.x; \n    float normalOffsetScale = 1.0 - nDotL; \n    vec3 offset = normalOffset * normalOffsetScale * normalEC; \n    positionEC.xyz += offset; \n");
     }
     src.push_str("} \n");
@@ -139,12 +182,12 @@ pub fn receive_fragment(fs: &ShaderSource, o: &ReceiveOptions) -> ShaderSource {
         POINT
     } else if o.spot_light {
         SPOT
-    } else if o.cascades {
+    } else if cascades {
         CASCADE
     } else {
         DIRECTIONAL
     });
-    if !o.point_light && !o.spot_light && o.cascades && o.debug_cascade_colors {
+    if !o.point_light && !o.spot_light && cascades && o.debug_cascade_colors {
         src.push_str("    // Draw cascade colors for debugging \n    out_FragColor *= czm_cascadeColor(weights); \n");
     }
     src.push_str("    out_FragColor.rgb *= visibility; \n} \n");

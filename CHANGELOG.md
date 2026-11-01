@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Complete `ShadowMapShader`: `ReceiveOptions` now carries the shadow map's point, terrain and primitive biases and its cascade count, and receive fragment derivation selects the bias as Cesium does. Add `receive_shader_keyword`. An exhaustive generator pins 4096 receive cases over every keyword input and four varying layouts with distinct biases, plus 1024 keywords and the receive vertex cases. The module moves from partial to validated.
+
 - Complete `ShadowVolumeAppearance`: fragment shaders return `ShaderSource`s (the pick pass with `pickColorQualifier: in`), projection-extent defines are cached from the first vertex-shader call as in Cesium, and the static planar/spherical texture-coordinate attribute helpers, attribute checks and `MAX_WIDTH_FOR_PLANAR_EXTENTS` are ported. 144 pinned shader cases across nine appearances, a caching case and 24 attribute cases compare exactly. Fix `js_to_fixed` so a negative value that rounds to zero keeps its sign, as V8 prints it. The module moves from implemented to validated.
 
 - Complete `PrimitivePipeline` with the worker wire format: `pack/unpackCombineGeometryParameters`, `pack/unpackCombineGeometryResults` and Scene entry points for `pack/unpackCreateGeometryResults`. All 17 pinned `combineGeometry` cases now run through unpack, combine and pack with exact output, and nine direct CesiumJS cases cover instance offsets, missing and surplus geometries and `Float32` bounding-sphere rounding. The module moves from partial to validated.

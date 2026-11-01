@@ -13,22 +13,25 @@ fn shadow_receive_matches_all_pinned_variants() {
             if variant & 1 != 0 { "in vec3 v_positionEC;" } else { "" },
             if variant & 2 != 0 { "in vec3 v_normalEC;" } else { "" }
         );
+        let bias = ReceiveBias {
+            normal_shading: f[7],
+            normal_shading_smooth: if f[8] { 0.1 } else { 0.0 },
+            normal_offset: f[9],
+        };
         let options = ReceiveOptions {
             uses_depth_texture: f[0],
             polygon_offset_supported: f[1],
             point_light: f[2],
             spot_light: f[3],
-            cascades: f[4],
+            number_of_cascades: if f[4] { 4 } else { 1 },
             debug_cascade_colors: f[5],
             soft_shadows: f[6],
             cast_shadows: true,
             terrain: variant == 3,
             terrain_normal: variant & 2 != 0,
-            bias: ReceiveBias {
-                normal_shading: f[7],
-                normal_shading_smooth: if f[8] { 0.1 } else { 0.0 },
-                normal_offset: f[9],
-            },
+            point_bias: bias,
+            terrain_bias: bias,
+            primitive_bias: bias,
         };
         let result = receive_fragment(&ShaderSource::new(source), &options);
         assert_eq!(serde_json::to_value(&result.defines).unwrap(), case["defines"], "{case}");
