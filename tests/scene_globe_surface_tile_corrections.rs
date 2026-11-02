@@ -14,8 +14,7 @@ pub use cesium_rs::core;
 pub use cesium_rs::renderer;
 pub use cesium_rs::scene;
 
-#[path = "../src/scene/globe_surface_tile.rs"]
-mod globe_surface_tile;
+use cesium_rs::scene::globe_surface_tile;
 
 use std::cell::RefCell;
 use std::rc::Rc;

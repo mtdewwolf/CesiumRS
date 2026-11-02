@@ -4,9 +4,9 @@
 //! parent tile reference for quadtree ancestor fallbacks, decoded provider
 //! images, and in-flight asynchronous requests.
 //!
-//! Note on GPU gaps: texture creation and Web Mercator to Geographic reprojection
-//! require WebGL/GPU compute resources, which are executed during GPU frame passes
-//! rather than simulated with mock handles.
+//! GPU textures are owned renderer resources supplied by ImageryTexturePipeline.
+//! Deferred reprojection commands retain one imagery reference until completion,
+//! cancellation or command drop.
 
 use super::{FrameResource, ImageryFuture, ImageryImage, ImageryState};
 use crate::core::{Credit, Rectangle};

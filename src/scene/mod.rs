@@ -757,3 +757,9 @@ pub mod moon;
 pub use moon::{Moon, MoonOptions, DEFAULT_MOON_TEXTURE_URL};
 
 pub use voxel_shape::{VoxelCylinderShape, VoxelEllipsoidShape};
+
+pub mod imagery_texture_pipeline;
+pub use imagery_texture_pipeline::{ImageryPixels, ImageryTextureHost, ImageryTexturePipeline, ImageryTextureSettings};
+
+pub mod globe_surface_tile;
+pub use globe_surface_tile::{GlobeSurfaceTile, SurfaceTerrainData};

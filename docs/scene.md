@@ -1254,3 +1254,45 @@ as implemented rather than validated ports.
 ```bash
 cargo test --test scene_model_commands --test scene_model_runtime --test scene_runtime
 ```
+
+## Imagery texture uploads and reprojection
+
+Attach one `Rc<ImageryTexturePipeline<G>>` to each layer with
+`ImageryLayer::set_texture_host`. Provider requests then feed the existing load
+state machine: decoded image, discard-policy check, renderer upload, and either
+ready imagery or a deferred Web Mercator reprojection. CPU-only callers can
+continue to leave the renderer unattached.
+
+Native hosts can return `ImageryPixels` inside `ImageryImage::Image`. DOM hosts
+use `ImageryTexturePipeline::with_image_upload` with an adapter that calls
+`Texture::from_image`, supplying the image's actual dimensions. Compressed and
+uncompressed KTX2 buffers use the renderer's typed upload constructors.
+
+Each frame, call `ImageryLayerCollection::queue_reprojection_commands` with a
+`Vec<ComputeCommand<G>>`, then execute the commands using `ComputeEngine<G>`.
+Reprojection uses Cesium's 2-by-64 mesh and CPU-computed Float32 Mercator T
+coordinates. Geographic tiles, direct Mercator use and pixel spacing at or below
+1e-5 radians avoid the compute pass. Eligible power-of-two, uncompressed textures
+with linear filters receive mipmaps and device-clamped anisotropy.
+
+Queued commands hold an imagery reference. Completion installs the geographic
+texture and marks the imagery ready. Cancellation or dropping an unexecuted
+command restores `TextureLoaded` and releases that reference exactly once.
+`cancel_reprojections` cancels commands still queued by the layers; the renderer
+owns commands already transferred into a frame. Upload/setup errors mark the tile
+failed and raise the layer error event. Compute execution errors are returned to
+the renderer; discard the failed command to release its lease and permit retry.
+
+These modules remain partial. Provider factories and ready-event forwarding,
+terrain-ray picking, complete tile coverage, transport cancellation and the full
+Globe/GlobeSurfaceTileProvider terrain renderer still need work. The existing
+`GlobeSurfaceTile` CPU module is exported and tracked as partial, with its
+remaining asynchronous terrain and GPU stages documented in the tracker.
+
+Validation: the imagery GPU, layer, layer-lifecycle, provider, surface-tile and
+surface-tile correction suites pass 55 native tests. Run
+`scripts/check-renderer.sh` for the 385 browser renderer checks, including eight
+imagery cases that compare real Cesium layer upload/reprojection pixels, sampler
+settings, queue lengths and reference counts. The native tests cover compressed
+upload bytes, RGBA-to-RGB conversion, row orientation, mipmaps, anisotropy,
+provider-driven state changes, queue draining and cancellation/drop ownership.
