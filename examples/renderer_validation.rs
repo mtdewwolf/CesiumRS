@@ -20,12 +20,21 @@ mod browser {
         let pipeline = ImageryTexturePipeline::new(&context);
         let width = c["width"].as_u64().unwrap() as u32;
         let height = c["height"].as_u64().unwrap() as u32;
-        let bytes = c["bytes"].as_array().unwrap().iter().map(|v|v.as_u64().unwrap() as u8).collect();
+        let bytes: Vec<u8> = c["bytes"].as_array().unwrap().iter().map(|v|v.as_u64().unwrap() as u8).collect();
         let settings = ImageryTextureSettings {
             minification_filter: if c["nearest"] == true {TextureMinificationFilter::Nearest} else {TextureMinificationFilter::Linear},
             magnification_filter: TextureMagnificationFilter::Linear, maximum_anisotropy: Some(1.),
         };
-        let texture = pipeline.upload(&ImageryImage::Image(FrameResource::new(ImageryPixels {width,height,bytes})),true,settings).map_err(error)?;
+        let image = if c["compressed"] == true {
+            ImageryImage::Compressed(CompressedTextureBuffer::new(
+                cesium_rs::core::compressed_texture_buffer::CompressedTextureBufferOptions {
+                    internal_format: PixelFormat::RgbaDxt1 as u32,
+                    pixel_datatype: None, width, height, buffer: bytes.into(),
+                }))
+        } else {
+            ImageryImage::Image(FrameResource::new(ImageryPixels {width,height,bytes}))
+        };
+        let texture = pipeline.upload(&image,true,settings).map_err(error)?;
         let r = c["rectangle"].as_array().unwrap();
         let mut imagery = Imagery::new(0,0,0,Rectangle::new(r[0].as_f64().unwrap(),r[1].as_f64().unwrap(),r[2].as_f64().unwrap(),r[3].as_f64().unwrap()),None);
         imagery.add_reference(); imagery.state = ImageryState::TextureLoaded;

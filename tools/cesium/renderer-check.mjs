@@ -248,6 +248,13 @@ try {
     eq(gl.getError(),gl.NO_ERROR,'imagery Rust GL status');eq(ctx._gl.getError(),ctx._gl.NO_ERROR,'imagery Cesium GL status');
     framebuffer.destroy();imagery.releaseReference();engine.destroy();layer.destroy();ctx.destroy();
   }
+  // Compressed imagery must decode into an uncompressed framebuffer target.
+  // A DXT1 block with RGB565 endpoint 0xf800 and all indices zero is solid red.
+  {
+    const actual=JSON.parse(wasm.imagery_texture_pixels(gl,JSON.stringify({width:4,height:4,mercator:true,compressed:true,rectangle:[-1,0.2,1,1.2],bytes:[0,248,0,0,0,0,0,0]})));
+    eq(actual,{pixels:Array.from({length:16},()=>[255,0,0,255]).flat(),queued:1,references:1,min:9987},'compressed Mercator imagery renders into RGBA8');
+    eq(gl.getError(),gl.NO_ERROR,'compressed imagery Rust GL status');
+  }
   const sync=new ref.Sync({context});context._gl.flush();await sync.waitForSignal(next=>setTimeout(next,0),100);const syncStatus=sync.getStatus();sync.destroy();
   eq(JSON.parse(await wasm.renderer_sync(gl,()=>new Promise(resolve=>setTimeout(resolve,0)))),[syncStatus,sync.isDestroyed()],'GPU fence scheduled wait and destruction');eq(gl.getError(),gl.NO_ERROR,'Rust fence GL status');eq(context._gl.getError(),gl.NO_ERROR,'Cesium fence GL status');
 

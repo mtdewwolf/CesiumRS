@@ -168,7 +168,8 @@ impl<G: Gl + 'static> ImageryTextureHost for ImageryTexturePipeline<G> {
                     if alpha {
                         Texture::new(&self.context, options, Some(&pixels.bytes))?
                     } else {
-                        let rgb: Vec<u8> = pixels.bytes.chunks_exact(4).flat_map(|p| p[..3].iter().copied()).collect();
+                        let rgb: Vec<u8> =
+                            pixels.bytes.as_chunks::<4>().0.iter().flat_map(|p| p[..3].iter().copied()).collect();
                         Texture::new(&self.context, options, Some(&rgb))?
                     }
                 } else if let Some(upload) = &self.image_upload {
@@ -234,8 +235,12 @@ impl<G: Gl + 'static> ImageryTextureHost for ImageryTexturePipeline<G> {
         }
         texture.set_sampler(Sampler::default())?;
         let mut options = TextureOptions::rgba(texture.width(), texture.height());
-        options.pixel_format = texture.pixel_format();
-        options.pixel_datatype = texture.pixel_datatype();
+        // Compressed textures are sampleable inputs, not framebuffer attachments.
+        // Preserve decoded color and alpha in a renderable RGBA8 target.
+        if !texture.pixel_format().is_compressed_format() {
+            options.pixel_format = texture.pixel_format();
+            options.pixel_datatype = texture.pixel_datatype();
+        }
         options.pre_multiply_alpha = texture.pre_multiply_alpha();
         let output = Rc::new(Texture::new(&self.context, options, None)?);
         if texture.width().is_power_of_two() && texture.height().is_power_of_two() {

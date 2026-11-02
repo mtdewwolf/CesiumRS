@@ -226,3 +226,34 @@ fn decoded_rgba_rows_flip_and_opaque_provider_drops_alpha() {
     let (_, args) = calls.iter().find(|(name, _)| name == "texImage2D").unwrap();
     assert!(args.iter().any(|arg| matches!(arg,GlValue::Pixels{bytes,..} if bytes == &[5,6,7,1,2,3])));
 }
+
+#[test]
+fn compressed_mercator_reprojection_uses_rgba8_output() {
+    use cesium_rs::core::compressed_texture_buffer::CompressedTextureBufferOptions;
+    use cesium_rs::core::{CompressedTextureBuffer, PixelDatatype, PixelFormat};
+    let context = Context::new_webgl2(Host::default());
+    let pipeline = ImageryTexturePipeline::new(&context);
+    let image = ImageryImage::Compressed(CompressedTextureBuffer::new(CompressedTextureBufferOptions {
+        internal_format: PixelFormat::RgbaDxt1 as u32,
+        pixel_datatype: None,
+        width: 4,
+        height: 4,
+        buffer: vec![0, 248, 0, 0, 0, 0, 0, 0].into(),
+    }));
+    let source = pipeline.upload(&image, true, settings()).unwrap();
+    let mut imagery = Imagery::new(0, 0, 0, Rectangle::new(-1., 0.2, 1., 1.2), None);
+    imagery.texture_web_mercator = Some(source);
+    imagery.add_reference();
+    let imagery = Rc::new(RefCell::new(imagery));
+    pipeline.reproject(&imagery, true, settings()).unwrap();
+    let mut commands = Vec::new();
+    pipeline.queue_reprojection_commands(&mut commands);
+    assert_eq!(commands.len(), 1);
+    let output = commands[0].output_texture.as_ref().unwrap();
+    assert_eq!(output.pixel_format(), PixelFormat::Rgba);
+    assert_eq!(output.pixel_datatype(), PixelDatatype::UnsignedByte);
+    assert_eq!(imagery.borrow().state, ImageryState::Transitioning);
+    drop(commands);
+    assert_eq!(imagery.borrow().reference_count, 1);
+    assert_eq!(imagery.borrow().state, ImageryState::TextureLoaded);
+}

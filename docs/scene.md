@@ -1290,9 +1290,11 @@ Globe/GlobeSurfaceTileProvider terrain renderer still need work. The existing
 remaining asynchronous terrain and GPU stages documented in the tracker.
 
 Validation: the imagery GPU, layer, layer-lifecycle, provider, surface-tile and
-surface-tile correction suites pass 55 native tests. Run
-`scripts/check-renderer.sh` for the 385 browser renderer checks, including eight
+surface-tile correction suites pass 56 native tests. Run
+`scripts/check-renderer.sh` for the 387 browser renderer checks, including eight
 imagery cases that compare real Cesium layer upload/reprojection pixels, sampler
 settings, queue lengths and reference counts. The native tests cover compressed
 upload bytes, RGBA-to-RGB conversion, row orientation, mipmaps, anisotropy,
 provider-driven state changes, queue draining and cancellation/drop ownership.
+A compressed Mercator regression checks that DXT1 imagery is sampled into a
+renderable RGBA8 output and produces the expected decoded color in SwiftShader.

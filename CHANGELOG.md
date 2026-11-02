@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Add renderer-backed imagery texture upload and deferred Web Mercator reprojection, including mipmaps, sampler/anisotropy handling and collection queue/cancel forwarding. Validate eight layer pixel comparisons against Cesium in SwiftShader and native queue/resource ownership. Export the existing GlobeSurfaceTile CPU module and track its remaining terrain/GPU stages as partial.
+- Add renderer-backed imagery texture upload and deferred Web Mercator reprojection, including mipmaps, sampler/anisotropy handling and collection queue/cancel forwarding. Compressed Mercator imagery reprojects into an uncompressed RGBA8 render target. Validate eight layer pixel comparisons against Cesium in SwiftShader and native queue/resource ownership. Export the existing GlobeSurfaceTile CPU module and track its remaining terrain/GPU stages as partial.
 
 - Restore the SwiftShader Scene GPU harness: `examples/renderer_validation.rs` compiles again (it named the renderer's full-screen `ViewportQuad`, which the Scene `ViewportQuad` had shadowed), and `renderer::Sync::new` flushes after `fenceSync` so asynchronous picking's fence signals. `scripts/check-scene.sh` passes all 568 pixel comparisons on CPU-only WebGL2. Add `docs/scene-gpu-free-validation.md`, a plan for validating the collections, single renderables and Primitive without a GPU.
 
