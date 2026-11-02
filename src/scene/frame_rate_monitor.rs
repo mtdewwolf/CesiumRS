@@ -1,6 +1,15 @@
 //! CesiumJS `FrameRateMonitor`: monitors average frames per second over a
 //! sliding window and triggers events when the frame rate drops below or recovers
 //! to acceptable performance thresholds.
+//!
+//! Cesium subscribes to `scene.preUpdate` and `document` visibility changes and
+//! reads `getTimestamp()`. Here the host calls [`FrameRateMonitor::update`] with
+//! that timestamp in milliseconds each pre-update, and
+//! [`FrameRateMonitor::visibility_changed`] on visibility changes. Events are
+//! queued and popped instead of raised; each carries the frames per second.
+//! Periods are in seconds, as in Cesium.
+
+use crate::core::time_constants::SECONDS_PER_MILLISECOND;
 
 /// Configuration options for [`FrameRateMonitor`].
 #[derive(Clone, Debug, PartialEq)]
@@ -84,13 +93,22 @@ impl FrameRateMonitor {
         }
     }
 
-    /// Resumes frame rate monitoring.
+    /// Resumes frame rate monitoring. Unbalanced calls clamp at zero and,
+    /// as in Cesium, still restart the quiet period.
     pub fn unpause(&mut self) {
-        if self.pause_count > 0 {
-            self.pause_count -= 1;
-            if self.pause_count == 0 {
-                self.needs_quiet_period = true;
-            }
+        self.pause_count = self.pause_count.saturating_sub(1);
+        if self.pause_count == 0 {
+            self.needs_quiet_period = true;
+        }
+    }
+
+    /// Cesium's `visibilitychange` handler: pause while the document is
+    /// hidden, unpause when it is shown.
+    pub fn visibility_changed(&mut self, hidden: bool) {
+        if hidden {
+            self.pause();
+        } else {
+            self.unpause();
         }
     }
 
@@ -109,8 +127,8 @@ impl FrameRateMonitor {
         self.frame_rate_is_low
     }
 
-    /// Records a frame at the specified monotonic timestamp (in seconds).
-    pub fn update(&mut self, timestamp: f64) {
+    /// Cesium's pre-update step at `getTimestamp()` milliseconds.
+    pub fn update(&mut self, timestamp_ms: f64) {
         if self.pause_count > 0 {
             return;
         }
@@ -118,37 +136,34 @@ impl FrameRateMonitor {
         if self.needs_quiet_period {
             self.needs_quiet_period = false;
             self.frame_times.clear();
-            self.quiet_period_end_time = timestamp + self.quiet_period;
+            self.quiet_period_end_time = timestamp_ms + self.quiet_period / SECONDS_PER_MILLISECOND;
             self.warmup_period_end_time =
-                self.quiet_period_end_time + self.warmup_period + self.sampling_window;
-        } else if timestamp >= self.quiet_period_end_time {
-            self.frame_times.push(timestamp);
+                self.quiet_period_end_time + (self.warmup_period + self.sampling_window) / SECONDS_PER_MILLISECOND;
+        } else if timestamp_ms >= self.quiet_period_end_time {
+            self.frame_times.push(timestamp_ms);
 
-            let beginning_of_window = timestamp - self.sampling_window;
+            let beginning_of_window = timestamp_ms - self.sampling_window / SECONDS_PER_MILLISECOND;
 
             if self.frame_times.len() >= 2 && self.frame_times[0] <= beginning_of_window {
-                while self.frame_times.len() >= 2 && self.frame_times[1] < beginning_of_window {
-                    self.frame_times.remove(0);
+                let mut first = 0;
+                while self.frame_times.len() - first >= 2 && self.frame_times[first + 1] < beginning_of_window {
+                    first += 1;
                 }
+                self.frame_times.drain(..first);
 
-                let count = self.frame_times.len();
-                let average_delta = (timestamp - self.frame_times[0]) / ((count - 1) as f64);
-                let fps = if average_delta > 0.0 {
-                    1.0 / average_delta
-                } else {
-                    0.0
-                };
+                let average_time_between_frames =
+                    (timestamp_ms - self.frame_times[0]) / (self.frame_times.len() - 1) as f64;
+                let fps = 1000.0 / average_time_between_frames;
                 self.last_frames_per_second = Some(fps);
 
-                let required_fps = if timestamp > self.warmup_period_end_time {
-                    self.minimum_frame_rate_after_warmup
-                } else {
-                    self.minimum_frame_rate_during_warmup
-                };
+                let maximum_frame_time = 1000.0
+                    / if timestamp_ms > self.warmup_period_end_time {
+                        self.minimum_frame_rate_after_warmup
+                    } else {
+                        self.minimum_frame_rate_during_warmup
+                    };
 
-                let max_frame_delta = 1.0 / required_fps;
-
-                if average_delta > max_frame_delta {
+                if average_time_between_frames > maximum_frame_time {
                     if !self.frame_rate_is_low {
                         self.frame_rate_is_low = true;
                         self.needs_quiet_period = true;

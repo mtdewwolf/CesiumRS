@@ -5442,9 +5442,9 @@
     "note": "External-tree load callback, readiness, URL, metadata/group, zero metrics and lifecycle. Pinned callback fixture; existing resource loader integration remains StructuralContent. See docs/scene-mz-cpu.md."
   },
   "Scene/PerformanceDisplay": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::performance_display",
-    "note": "CPU timing windows/rendered text/throttle flag checked against source; no DOM presentation; decimal ties not exhaustively validated. See docs/scene-mz-cpu.md."
+    "note": "Frame and millisecond sampling with Cesium's 1000/200 ms windows, ToInt32 FPS and JavaScript toFixed(2) milliseconds, N/A text and the throttled indicator. Three pinned traces cover rounding ties, truncation and a non-finite clock. The host supplies getTimestamp() and presents the three text nodes."
   },
   "Scene/VoxelContent": {
     "status": "partial",
@@ -5592,9 +5592,9 @@
     "note": "Maps tile magic headers and format identifiers to content types and classifies raw payloads. Partial CPU behavior; complete upstream behavior and parity validation remain."
   },
   "Scene/DebugInspector": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::debug_inspector",
-    "note": "Rewrites fragment shaders and computes uniform colors for frustum and command visualization. Partial CPU behavior; complete upstream behavior and parity validation remain."
+    "note": "Debug fragment shader rewrite of every source with ordered out_FragData targets, active-attribute locations, programs cached per source program, debugShowCommands random colors kept on the command, frustum overlap colors, existing debug uniforms respected, and execution of the shallow-cloned debug command. Four pinned scene-flag cases run through a recording WebGL context with seeded random colors and compare program sources, locations and uniforms exactly."
   },
   "Scene/EllipsoidPrimitive": {
     "status": "partial",
@@ -5607,19 +5607,19 @@
     "note": "CPU material setup, transform and bounds; image loading and rendering remain."
   },
   "Scene/FrameRateMonitor": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::frame_rate_monitor",
-    "note": "Sliding window frame rate monitor with quiet and warmup periods and threshold performance events. Partial CPU behavior; complete upstream behavior and parity validation remain."
+    "note": "Quiet, warmup and sampling windows on getTimestamp() milliseconds, 1000/average frames per second (Infinity for coincident frames), low/nominal events, pause counting with Cesium's clamped unpause, and the visibility handler. Four pinned traces (about 2,500 steps) compare frames per second and events exactly. The host calls update from scene.preUpdate and visibility_changed from document visibility; events are popped instead of raised; fromScene belongs to Scene."
   },
   "Scene/GlobeTranslucency": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::globe_translucency",
-    "note": "Controls globe front- and back-face translucency, distance-based alpha fading, and cartographic bounding. Partial CPU behavior; complete upstream behavior and parity validation remain."
+    "note": "All properties with Cesium's validation: alpha range checks that accept NaN, far-before-near rejection for distance scalars, and an undefined rectangle restoring MAX_VALUE. A 23-step pinned trace compares values and error messages."
   },
   "Scene/ImageBasedLighting": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::image_based_lighting",
-    "note": "Manages diffuse and specular IBL factors, spherical harmonic coefficients, zenith luminance, and shader dirty tracking. Partial CPU behavior; complete upstream behavior and parity validation remain."
+    "note": "Constructor and setter validation, setter-time previous-value tracking, frame/context deduplication, specular cube map dirty/create/destroy cycle with Cesium's isSupported test, loaded-state lag, and default spherical-harmonic/specular selection. The KTX2 cube map is a host SpecularEnvironmentCubeMap behind a factory. Four pinned traces (52 steps) and 8 constructor cases compare exactly; the scene updates the BRDF generator."
   },
   "Scene/IonImageryProviderFactory": {
     "status": "partial",

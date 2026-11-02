@@ -8,7 +8,7 @@ use cesium_rs::scene::camera::{Camera, CameraOptions};
 use cesium_rs::scene::frame_state::FrameState;
 use cesium_rs::scene::{
     BillboardLoadState, BillboardTexture, Cesium3DTileContentFactory, Cesium3DTileContentType,
-    DebugInspector, EllipsoidPrimitive, EllipsoidPrimitiveOptions, EquirectangularPanorama,
+    EllipsoidPrimitive, EllipsoidPrimitiveOptions, EquirectangularPanorama,
     EquirectangularPanoramaOptions, FrameRateMonitor, FrameRateMonitorOptions, GlobeTranslucency,
     ImageBasedLighting, IonImageryExternalType, IonImageryProviderFactory, Moon, MoonOptions,
     ScenePrimitive,
@@ -166,28 +166,26 @@ fn test_cesium_3d_tile_content_factory() {
 
 #[test]
 fn test_debug_inspector_shader_and_frustum_colors() {
-    assert_eq!(DebugInspector::compute_frustum_color(0), Color::new(0.0, 0.0, 0.0, 1.0));
-    assert_eq!(DebugInspector::compute_frustum_color(1), Color::new(1.0, 0.0, 0.0, 1.0));
-    assert_eq!(DebugInspector::compute_frustum_color(2), Color::new(0.0, 1.0, 0.0, 1.0));
-    assert_eq!(DebugInspector::compute_frustum_color(4), Color::new(0.0, 0.0, 1.0, 1.0));
-    assert_eq!(DebugInspector::compute_frustum_color(7), Color::new(1.0, 1.0, 1.0, 1.0));
+    use cesium_rs::renderer::ShaderSource;
+    use cesium_rs::scene::{create_debug_show_frustums_fragment_shader, debug_show_frustums_color};
+    assert_eq!(debug_show_frustums_color(true, 0), Color::new(0.0, 0.0, 0.0, 1.0));
+    assert_eq!(debug_show_frustums_color(true, 1), Color::new(1.0, 0.0, 0.0, 1.0));
+    assert_eq!(debug_show_frustums_color(true, 2), Color::new(0.0, 1.0, 0.0, 1.0));
+    assert_eq!(debug_show_frustums_color(true, 4), Color::new(0.0, 0.0, 1.0, 1.0));
+    assert_eq!(debug_show_frustums_color(true, 7), Color::new(1.0, 1.0, 1.0, 1.0));
+    assert_eq!(debug_show_frustums_color(false, 1), Color::WHITE);
 
-    let simple_fs = "void main() { out_FragColor = vec4(1.0); }";
-    let rewritten = DebugInspector::rewrite_fragment_shader_for_debug(simple_fs);
-    assert!(rewritten.contains("void czm_Debug_main()"));
-    assert!(rewritten.contains("debugShowCommandsColor"));
-    assert!(rewritten.contains("debugShowFrustumsColor"));
-    assert!(rewritten.contains("out_FragColor.rgb *= debugShowCommandsColor;"));
+    let simple = create_debug_show_frustums_fragment_shader(&ShaderSource::new(
+        "void main() { out_FragColor = vec4(1.0); }",
+    ));
+    assert!(simple.sources[0].contains("void czm_Debug_main()"));
+    assert!(simple.sources[1].contains("out_FragColor.rgb *= debugShowCommandsColor;"));
 
-    let mrt_fs = "void main() { out_FragData_0 = vec4(1.0); out_FragData_1 = vec4(0.5); }";
-    let mrt_rewritten = DebugInspector::rewrite_fragment_shader_for_debug(mrt_fs);
-    assert!(mrt_rewritten.contains("out_FragData_0.rgb *= debugShowCommandsColor;"));
-    assert!(mrt_rewritten.contains("out_FragData_1.rgb *= debugShowCommandsColor;"));
-
-    let mut inspector = DebugInspector::new();
-    let cached = inspector.get_or_create_debug_shader("shader_1", simple_fs);
-    assert!(cached.contains("czm_Debug_main"));
-    inspector.clear();
+    let mrt = create_debug_show_frustums_fragment_shader(&ShaderSource::new(
+        "void main() { out_FragData_0 = vec4(1.0); out_FragData_1 = vec4(0.5); }",
+    ));
+    assert!(mrt.sources[1].contains("out_FragData_0.rgb *= debugShowCommandsColor;"));
+    assert!(mrt.sources[1].contains("out_FragData_1.rgb *= debugShowCommandsColor;"));
 }
 
 #[test]
@@ -257,17 +255,17 @@ fn test_frame_rate_monitor_averaging_and_events() {
     assert!(!monitor.is_paused());
     assert!(monitor.last_frames_per_second().is_none());
 
-    // During quiet period (0.0 to 0.5s), frames are ignored for alerts
+    // During quiet period (0 to 500 ms), frames are ignored for alerts
     monitor.update(0.0);
-    monitor.update(0.2);
-    monitor.update(0.4);
+    monitor.update(200.0);
+    monitor.update(400.0);
     assert!(monitor.pop_low_frame_rate_event().is_none());
 
     // Steady 30 FPS updates past quiet period
-    let mut t = 0.6;
+    let mut t = 600.0;
     for _ in 0..40 {
         monitor.update(t);
-        t += 1.0 / 30.0;
+        t += 1000.0 / 30.0;
     }
 
     assert!(monitor.last_frames_per_second().is_some());
@@ -276,11 +274,11 @@ fn test_frame_rate_monitor_averaging_and_events() {
     assert!(!monitor.is_frame_rate_low());
 
     // Degrade frame rate to 2 FPS (< 10 during warmup)
-    t += 0.5;
+    t += 500.0;
     monitor.update(t);
-    t += 0.5;
+    t += 500.0;
     monitor.update(t);
-    t += 0.5;
+    t += 500.0;
     monitor.update(t);
 
     if monitor.is_frame_rate_low() {
@@ -302,7 +300,7 @@ fn test_globe_translucency_properties_and_validation() {
     assert!(!translucency.enabled);
     assert_eq!(translucency.front_face_alpha(), 1.0);
     assert_eq!(translucency.back_face_alpha(), 1.0);
-    assert_eq!(translucency.rectangle, Rectangle::MAX_VALUE);
+    assert_eq!(translucency.rectangle(), Rectangle::MAX_VALUE);
 
     assert!(translucency.set_front_face_alpha(0.5).is_ok());
     assert_eq!(translucency.front_face_alpha(), 0.5);
@@ -327,7 +325,6 @@ fn test_image_based_lighting_lifecycle_and_dirty_flags() {
     let mut ibl = ImageBasedLighting::new();
     assert!(ibl.is_enabled());
     assert_eq!(ibl.image_based_lighting_factor(), Cartesian2::new(1.0, 1.0));
-    assert_eq!(ibl.luminance_at_zenith, 0.2);
     assert!(!ibl.should_regenerate_shaders());
 
     let mut frame_state = make_dummy_frame_state();
@@ -345,7 +342,7 @@ fn test_image_based_lighting_lifecycle_and_dirty_flags() {
 
     // Supply spherical harmonics coefficients
     let sh = [Cartesian3::UNIT_X; 9];
-    ibl.spherical_harmonic_coefficients = Some(sh);
+    ibl.set_spherical_harmonic_coefficients(Some(sh));
     frame_state.frame_number += 1;
     ibl.update(&mut frame_state);
     assert!(ibl.should_regenerate_shaders());
@@ -432,12 +429,16 @@ fn test_moon_astronomical_position_and_ellipsoid() {
 
 #[test]
 fn regression_json_classification_and_shader_main() {
-    use cesium_rs::scene::{Cesium3DTileContentFactory as Factory, Cesium3DTileContentType as Kind, DebugInspector};
+    use cesium_rs::scene::{Cesium3DTileContentFactory as Factory, Cesium3DTileContentType as Kind};
     for json in [br#"{"type":"Feature"}"#.as_slice(), br#"{"type":"Point"}"#] {
         assert_eq!(Factory::classify(json).unwrap(), Kind::GeoJson);
     }
     assert_eq!(Factory::classify(br#"{"voxelTable":{}}"#).unwrap(), Kind::VoxelJson);
-    let shader = DebugInspector::rewrite_fragment_shader_for_debug("void main(void) { out_FragColor = vec4(1.0); }");
+    let shader = cesium_rs::scene::create_debug_show_frustums_fragment_shader(&cesium_rs::renderer::ShaderSource::new(
+        "void main(void) { out_FragColor = vec4(1.0); }",
+    ))
+    .sources
+    .join("\n");
     assert!(shader.contains("czm_Debug_main"));
     assert_eq!(shader.matches("void main(").count(), 1);
 }

@@ -19,7 +19,7 @@ Baseline: `055bf7cd104f9eb221fe9e3a134c038aaf4455dc`.
 - Unresolved gaps: retained owning tileset reference and automatic tree integration remain with existing TilesetResourceLoader/StructuralContent adapter.
 
 ### Scene/PerformanceDisplay
-- Status: CPU complete (adaptation).
+- Status: validated. Pinned traces in `tests/scene_cpu_utilities.rs` cover `toFixed` ties, ToInt32 truncation and a non-finite clock.
 - Evidence: `src/scene/performance_display.rs`; pinned reference cases in `tests/scene_mz_cpu.rs` (`performance_sampling_matches_reference`).
 - Owned behavior present: strict 1000/200 ms sample windows, frame counts, rendered/N/A text, throttled indicator; host-supplied timestamps/text.
 - Unresolved gaps: no DOM presentation (host-owned by design); JS `toFixed` decimal tie rounding not exhaustively validated beyond pinned cases.
@@ -89,19 +89,19 @@ Baseline: `055bf7cd104f9eb221fe9e3a134c038aaf4455dc`.
 - Unresolved gaps: full factory creating content instances requires tileset/content type integration (integration workstream); current scope is classification only.
 
 ### Scene/DebugInspector
-- Status: CPU partial.
+- Status: validated. Full port including command execution; `tests/scene_debug_inspector.rs` replays pinned cases through a recording WebGL context.
 - Evidence: `src/scene/debug_inspector.rs`; new test `debug_inspector_frustum_color`.
 - Owned behavior present: fragment shader rewrite, frustum color computation, cached debug shaders.
 - Unresolved gaps: shader program creation from cache and debug command execution require renderer/scene integration (DrawCommand, ShaderProgram, pass state).
 
 ### Scene/FrameRateMonitor
-- Status: CPU complete (adaptation).
+- Status: validated. Millisecond timestamps as in Cesium; four pinned traces in `tests/scene_cpu_utilities.rs`.
 - Evidence: `src/scene/frame_rate_monitor.rs`; new smoke tests.
 - Owned behavior present: sliding window with quiet/warmup periods and threshold events (pop-based instead of Event).
 - Unresolved gaps: Event-based API replaced with pop methods (adaptation); scene integration not wired.
 
 ### Scene/GlobeTranslucency
-- Status: CPU complete.
+- Status: validated. Pinned property/validation trace in `tests/scene_cpu_utilities.rs`.
 - Evidence: `src/scene/globe_translucency.rs`; new test `globe_translucency_bounds`.
 - Owned behavior present: front/back face translucency, distance-based alpha fading, cartographic bounding rectangle, validation.
 - Unresolved gaps: shader integration (GLOBE_TRANSLUCENT define) is renderer/scene-owned.
@@ -116,6 +116,6 @@ Baseline: `055bf7cd104f9eb221fe9e3a134c038aaf4455dc`.
 1. Port VoxelCylinderShape and VoxelEllipsoidShape (or provide) to complete VoxelShapeType dispatch and VoxelCell curved shapes.
 2. GltfLoader + VoxelPrimitive provider integration for VoxelContent.from_gltf and attribute reordering.
 3. Megatexture type and VoxelPrimitive integration for SpatialNode keyframe lifecycle.
-4. Scene integration for pickVoxel, VoxelPrimitive rendering, and DebugInspector command execution.
+4. Scene integration for pickVoxel and VoxelPrimitive rendering.
 5. Real GPU validation harness for VoxelBoundsCollection texture upload and VoxelBoxShape shader binding.
 6. Cesium3DTileContentFactory full content instantiation (depends on content types + tileset).

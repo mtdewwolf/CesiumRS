@@ -84,31 +84,52 @@ fn ibl_tracks_frame_environment_and_loaded_resources() {
         cesium_rs::core::JulianDate::new(2451545., 0., cesium_rs::core::TimeStandard::Tai),
     );
     let mut frame = FrameState::new(uniform, culling, [8, 8]);
+    struct Upload {
+        url: String,
+        ready: std::rc::Rc<std::cell::Cell<bool>>,
+    }
+    impl cesium_rs::scene::SpecularEnvironmentCubeMap for Upload {
+        fn url(&self) -> &str {
+            &self.url
+        }
+        fn ready(&self) -> bool {
+            self.ready.get()
+        }
+        fn update(&mut self, _: &mut FrameState) {}
+    }
+    let uploaded = std::rc::Rc::new(std::cell::Cell::new(false));
     let mut ibl = ImageBasedLighting::new();
+    let flag = uploaded.clone();
+    ibl.set_specular_environment_cube_map_factory(Box::new(move |url| {
+        Box::new(Upload { url: url.into(), ready: flag.clone() })
+    }));
+    frame.context_capabilities.color_buffer_float = true;
+    frame.context_capabilities.floating_point_texture = true;
+    frame.context_capabilities.supports_texture_lod = true;
     frame.spherical_harmonic_coefficients = Some(vec![]);
     frame.specular_environment_maps = Some(FrameResource::new("default atlas"));
     ibl.update(&mut frame);
     assert!(ibl.should_regenerate_shaders());
     assert!(ibl.use_default_spherical_harmonics());
     assert!(ibl.use_default_specular_maps());
+    // The same frame and context are skipped.
     ibl.update(&mut frame);
     assert!(ibl.should_regenerate_shaders());
     frame.frame_number += 1;
     ibl.update(&mut frame);
     assert!(!ibl.should_regenerate_shaders());
-    ibl.specular_environment_maps = Some("custom.ktx2".into());
+    ibl.set_specular_environment_maps(Some("custom.ktx2".into()));
     frame.frame_number += 1;
     ibl.update(&mut frame);
     assert!(!ibl.use_specular_environment_maps(), "a URL is not an uploaded texture");
-    ibl.set_specular_environment_map("custom.ktx2".into(), FrameResource::new("uploaded atlas"));
+    assert_eq!(ibl.specular_environment_cube_map().map(|m| m.url()), Some("custom.ktx2"));
+    uploaded.set(true);
     frame.frame_number += 1;
     ibl.update(&mut frame);
     assert!(ibl.use_specular_environment_maps());
-    assert!(ibl.should_regenerate_shaders());
-    ibl.specular_environment_maps = Some("replacement.ktx2".into());
+    // Loading is noticed one frame later, as in Cesium.
     frame.frame_number += 1;
     ibl.update(&mut frame);
-    assert!(ibl.specular_environment_map().is_none());
     assert!(ibl.should_regenerate_shaders());
     ibl.set_image_based_lighting_factor(Cartesian2::new(0., 0.)).unwrap();
     frame.frame_number += 1;

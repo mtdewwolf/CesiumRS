@@ -24,6 +24,9 @@ pub struct DrawMetadata {
     pub receive_shadows: bool,
     pub pick_only: bool,
     pub depth_for_translucent_classification: bool,
+    /// `command._debugColor`: the random color `DebugInspector` assigns the
+    /// first time the command is drawn with `debugShowCommands`.
+    pub debug_color: std::cell::Cell<Option<crate::core::Color>>,
 }
 impl Default for DrawMetadata {
     fn default() -> Self {
@@ -44,6 +47,7 @@ impl Default for DrawMetadata {
             receive_shadows: false,
             pick_only: false,
             depth_for_translucent_classification: false,
+            debug_color: std::cell::Cell::new(None),
         }
     }
 }
