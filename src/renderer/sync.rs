@@ -9,14 +9,14 @@ pub struct Sync<G: Gl> {
 impl<G: Gl> Sync<G> {
     pub fn new(context: &Context<G>) -> Result<Self> {
         ensure(context.webgl2(), "Sync requires WebGL2")?;
-        Ok(Self {
-            resource: Resource::create(
-                context,
-                "fenceSync",
-                &[gl::SYNC_GPU_COMMANDS_COMPLETE.into(), 0.into()],
-                "deleteSync",
-            )?,
-        })
+        let resource =
+            Resource::create(context, "fenceSync", &[gl::SYNC_GPU_COMMANDS_COMPLETE.into(), 0.into()], "deleteSync")?;
+        // WebGL 2 only guarantees a fence signals once its commands are
+        // flushed. Cesium relies on later frames to flush; a reader that
+        // polls without rendering (asynchronous picking) never sees the
+        // fence signal under SwiftShader. Flushing here is harmless.
+        context.call("flush", &[])?;
+        Ok(Self { resource })
     }
     pub fn status(&self) -> Result<u32> {
         match self.resource.context.call("getSyncParameter", &[self.resource.value()?, gl::SYNC_STATUS.into()])? {
