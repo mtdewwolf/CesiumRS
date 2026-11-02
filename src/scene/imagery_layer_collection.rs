@@ -1,5 +1,5 @@
 //! CesiumJS `ImageryLayerCollection`: an ordered collection of imagery layers.
-//! Partial port: terrain-ray picking and reprojection integration remain.
+//! Partial port: terrain-ray picking and provider-ready forwarding remain.
 
 use super::imagery_layer::{ImageryLayer, ImageryLayerHandle, ImageryLayerOptions};
 use super::imagery_provider::ImageryProvider;
@@ -263,6 +263,19 @@ impl ImageryLayerCollection {
                 show,
             });
         }
+    }
+
+    /// Appends each layer's queued work to the renderer compute pass.
+    pub fn queue_reprojection_commands<G: crate::renderer::Gl + 'static>(
+        &self, commands: &mut Vec<crate::renderer::ComputeCommand<G>>,
+    ) -> Result<(), RuntimeError> {
+        for layer in &self.layers { layer.borrow().queue_reprojection_commands(commands)?; }
+        Ok(())
+    }
+
+    /// Cancels reprojections still queued by each layer's renderer pipeline.
+    pub fn cancel_reprojections(&self) {
+        for layer in &self.layers { layer.borrow().cancel_reprojections(); }
     }
 
     pub fn is_destroyed(&self) -> bool {

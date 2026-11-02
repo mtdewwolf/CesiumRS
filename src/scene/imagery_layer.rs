@@ -7,9 +7,8 @@
 //! to call the state machine again while requests are pending. Skeleton texture
 //! rectangles and antimeridian coverage remain incomplete.
 //!
-//! Note on GPU gaps: texture creation and Web Mercator to Geographic reprojection
-//! require WebGL/GPU compute resources, which are executed during GPU frame passes
-//! rather than simulated with mock handles.
+//! Attach an ImageryTexturePipeline for renderer texture uploads and deferred
+//! Web Mercator reprojection. Drain its typed commands into the compute pass.
 
 use super::frame_state::FrameState;
 use super::imagery::{Imagery, ImageryCache};
@@ -94,6 +93,8 @@ pub struct ImageryLayer {
     // Events
     pub ready_event: Event<()>,
     pub error_event: Event<RuntimeError>,
+
+    texture_host: Option<Rc<dyn super::ImageryTextureHost>>,
 
     // Cache
     imagery_cache: Rc<ImageryCache>,
@@ -193,6 +194,7 @@ impl ImageryLayer {
             error_event: Event::new(),
             imagery_cache: Rc::new(RefCell::new(HashMap::new())),
             request_image_error: None,
+            texture_host: None,
         }
     }
 
@@ -287,10 +289,47 @@ impl ImageryLayer {
     }
 
     pub fn destroy(&mut self) -> Result<(), RuntimeError> {
+        self.cancel_reprojections();
         self.destroyed = true;
         self.imagery_cache.borrow_mut().clear();
         self.request_image_error = None;
         Ok(())
+    }
+
+    /// Attaches this layer's renderer pipeline. Keep the typed pipeline handle
+    /// to drain commands into the renderer's compute pass each frame.
+    pub fn set_texture_host(&mut self, host: Rc<dyn super::ImageryTextureHost>) {
+        self.cancel_reprojections();
+        self.texture_host = Some(host);
+    }
+
+    /// Appends this layer's queued work to the typed renderer compute pass.
+    pub fn queue_reprojection_commands<G: crate::renderer::Gl + 'static>(
+        &self, commands: &mut Vec<crate::renderer::ComputeCommand<G>>,
+    ) -> Result<(), RuntimeError> {
+        if let Some(host) = &self.texture_host {
+            let pipeline = host.as_any().downcast_ref::<super::ImageryTexturePipeline<G>>()
+                .ok_or_else(|| RuntimeError::new("Imagery pipeline belongs to another renderer host"))?;
+            pipeline.queue_reprojection_commands(commands);
+        }
+        Ok(())
+    }
+
+    pub fn cancel_reprojections(&self) {
+        if let Some(host) = &self.texture_host { host.cancel_reprojections(); }
+    }
+
+    fn texture_settings(&self) -> super::ImageryTextureSettings {
+        super::ImageryTextureSettings {
+            minification_filter: self.minification_filter,
+            magnification_filter: self.magnification_filter,
+            maximum_anisotropy: self.maximum_anisotropy,
+        }
+    }
+
+    fn report_texture_error(&mut self, imagery: &Rc<RefCell<Imagery>>, error: RuntimeError) {
+        imagery.borrow_mut().state = ImageryState::Failed;
+        self.error_event.raise_event(&error);
     }
 
     /// Computes the intersection of an imagery provider's rectangle and a layer's rectangle.
@@ -624,10 +663,24 @@ impl ImageryLayer {
             if has_texture {
                 let mut img = imagery_cell.borrow_mut();
                 img.state = ImageryState::TextureLoaded;
+            } else if let Some(host) = &self.texture_host {
+                let image = imagery_cell.borrow().image.clone();
+                if let Some(image) = image {
+                    match host.upload(&image, provider.has_alpha_channel(), self.texture_settings()) {
+                        Ok(texture) => {
+                            let mut img = imagery_cell.borrow_mut();
+                            if provider.tiling_scheme().projection().is_geographic() {
+                                img.texture = Some(texture);
+                            } else {
+                                img.texture_web_mercator = Some(texture);
+                            }
+                            img.image = None;
+                            img.state = ImageryState::TextureLoaded;
+                        }
+                        Err(error) => self.report_texture_error(imagery_cell, error),
+                    }
+                }
             }
-            // Note: If no texture is present and no GPU context exists, the imagery tile
-            // legitimately remains in `Received` (image decoded and verified against discard policy,
-            // awaiting GPU texture creation pipeline).
         }
 
         let state = imagery_cell.borrow().state;
@@ -645,9 +698,12 @@ impl ImageryLayer {
 
             let is_geographic = provider.tiling_scheme().projection().is_geographic();
 
-            if need_geographic_projection && !is_geographic {
-                // In CesiumJS, reprojection enqueues a GPU ComputeCommand.
-                // GPU reprojection compute shader is a documented remaining gap.
+            if let Some(host) = &self.texture_host {
+                if let Err(error) = host.reproject(imagery_cell, need_geographic_projection, self.texture_settings()) {
+                    self.report_texture_error(imagery_cell, error);
+                }
+            } else if need_geographic_projection && !is_geographic {
+                // Wait until a renderer pipeline is attached.
             } else {
                 let mut img = imagery_cell.borrow_mut();
                 if need_geographic_projection && img.texture.is_none() {

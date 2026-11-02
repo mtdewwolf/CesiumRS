@@ -5364,22 +5364,22 @@
   "Scene/Imagery": {
     "status": "partial",
     "rust": "scene::imagery",
-    "note": "Tile metadata, parent references, manually polled provider futures and resource release; native lifecycle cases. Transport cancellation, GPU upload and reprojection remain."
+    "note": "Tile metadata, parent references, manually polled provider futures and resource release. Layer-driven GPU upload/reprojection uses renderer texture leases; pending compute cancellation/drop restores TextureLoaded and releases its imagery reference. Full transport cancellation remains."
   },
   "Scene/TileImagery": {
     "status": "partial",
     "rust": "scene::tile_imagery",
-    "note": "Associates imagery and texture coordinates, processes provider state and ancestor fallback with reference release; native lifecycle cases. Complete terrain integration and GPU upload/reprojection remain."
+    "note": "Imagery association, texture coordinates, provider state and ancestor fallback with reference release. Attached layers now drive renderer upload/reprojection; complete Globe/GlobeSurfaceTileProvider terrain consumption remains."
   },
   "Scene/ImageryLayer": {
     "status": "partial",
     "rust": "scene::imagery_layer",
-    "note": "Layer options, imagery bounds, texture transforms, cache, initial skeletons and provider request lifecycle; reference fixture and native lifecycle cases. Complete tile coverage, transport cancellation and GPU reprojection remain; seven texel-spacing expectations are computed separately from Cesium\u2019s private function."
+    "note": "Options, bounds, transforms, cache, preliminary skeletons and provider request lifecycle. Renderer texture upload, filter/mipmap/anisotropy handling and queued 2x64 Web Mercator reprojection are implemented through ImageryTexturePipeline. Complete coverage, provider factories/events and transport cancellation remain; texel-spacing fixture gaps are unchanged."
   },
   "Scene/ImageryLayerCollection": {
     "status": "partial",
     "rust": "scene::imagery_layer_collection",
-    "note": "Layer management, ordering, visibility and events; reference fixtures and a hidden-layer regression. Provider-ready event forwarding, terrain-ray feature picking and reprojection command integration remain."
+    "note": "Layer management, ordering, visibility and events; reference fixtures and hidden-layer regression. Typed renderer compute-queue forwarding and pending reprojection cancellation are implemented. Provider-ready forwarding and terrain-ray layer/feature picking remain."
   },
   "Scene/Polyline": {
     "status": "partial",
@@ -5640,5 +5640,10 @@
     "status": "partial",
     "rust": "scene::voxel_shape::VoxelEllipsoidShape",
     "note": "CPU bounds, clipping, tile/sample OBBs, UV and camera transforms, shader intersection metadata; 40 shared pinned scenarios. Shader binding/renderer integration and GPU validation remain."
+  },
+  "Scene/GlobeSurfaceTile": {
+    "status": "partial",
+    "rust": "scene::globe_surface_tile",
+    "note": "Exported CPU surface tile: terrain/imagery ownership, unloading, height sampling, ray picking, exaggeration, water-mask transforms and layer-driven imagery processing. Dedicated pinned/analytical and correction tests exist. Async terrain processing, GPU terrain vertex arrays, water-mask upload and full surface-provider integration remain."
   }
 }

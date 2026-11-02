@@ -10,6 +10,47 @@ mod browser {
     fn error(e: impl std::fmt::Display) -> JsValue {
         JsValue::from_str(&e.to_string())
     }
+    /// Exercises the real imagery upload and reprojection compute pass.
+    #[wasm_bindgen]
+    pub fn imagery_texture_pixels(gl: JsValue, config: &str) -> Result<String, JsValue> {
+        use cesium_rs::scene::*;
+        use std::{cell::RefCell, rc::Rc};
+        let c: serde_json::Value = serde_json::from_str(config).map_err(error)?;
+        let context = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let pipeline = ImageryTexturePipeline::new(&context);
+        let width = c["width"].as_u64().unwrap() as u32;
+        let height = c["height"].as_u64().unwrap() as u32;
+        let bytes: Vec<u8> = c["bytes"].as_array().unwrap().iter().map(|v|v.as_u64().unwrap() as u8).collect();
+        let settings = ImageryTextureSettings {
+            minification_filter: if c["nearest"] == true {TextureMinificationFilter::Nearest} else {TextureMinificationFilter::Linear},
+            magnification_filter: TextureMagnificationFilter::Linear, maximum_anisotropy: Some(1.),
+        };
+        let image = if c["compressed"] == true {
+            ImageryImage::Compressed(CompressedTextureBuffer::new(
+                cesium_rs::core::compressed_texture_buffer::CompressedTextureBufferOptions {
+                    internal_format: PixelFormat::RgbaDxt1 as u32,
+                    pixel_datatype: None, width, height, buffer: bytes.into(),
+                }))
+        } else {
+            ImageryImage::Image(FrameResource::new(ImageryPixels {width,height,bytes}))
+        };
+        let texture = pipeline.upload(&image,true,settings).map_err(error)?;
+        let r = c["rectangle"].as_array().unwrap();
+        let mut imagery = Imagery::new(0,0,0,Rectangle::new(r[0].as_f64().unwrap(),r[1].as_f64().unwrap(),r[2].as_f64().unwrap(),r[3].as_f64().unwrap()),None);
+        imagery.add_reference(); imagery.state = ImageryState::TextureLoaded;
+        if c["mercator"] == true { imagery.texture_web_mercator = Some(texture); } else { imagery.texture = Some(texture); }
+        let imagery = Rc::new(RefCell::new(imagery));
+        pipeline.reproject(&imagery,true,settings).map_err(error)?;
+        let mut commands = Vec::new(); pipeline.queue_reprojection_commands(&mut commands);
+        let queued = commands.len(); let mut engine = ComputeEngine::new(&context);
+        for command in &mut commands { command.execute(&mut engine).map_err(error)?; }
+        let i = imagery.borrow();
+        let texture = i.texture.as_ref().unwrap().get::<Rc<Texture<BrowserGl>>>().unwrap();
+        let framebuffer = Framebuffer::new(&context,FramebufferOptions { colors: vec![Attachment::Texture(texture.clone())],destroy_attachments:false,..Default::default() }).map_err(error)?;
+        let pixels = context.read_pixels_from(ReadState {region:TextureRegion {x:0,y:0,width,height},framebuffer:Some(&framebuffer)}).map_err(error)?.bytes;
+        Ok(json!({"pixels":pixels,"queued":queued,"references":i.reference_count,"min":texture.sampler().minification_filter as u32}).to_string())
+    }
+
     #[wasm_bindgen]
     pub async fn scene_image_texture(gl: JsValue, config: &str) -> Result<String, JsValue> {
         use cesium_rs::{

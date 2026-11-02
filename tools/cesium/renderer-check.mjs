@@ -8,7 +8,8 @@ import {fileURLToPath} from 'node:url';
 const root=resolve(fileURLToPath(new URL('../..',import.meta.url)));
 const names=['Buffer','BufferUsage','VertexArray','Context','ShaderProgram','ShaderSource','Texture','Sampler','RenderState','DrawCommand','ClearCommand','PassState','Framebuffer','Renderbuffer','RenderbufferFormat','ShaderBuilder','ShaderCache','ContextLimits','FramebufferManager','ComputeCommand','ComputeEngine','Sync'];
 const core=['ComponentDatatype','IndexDatatype','PrimitiveType','Color','WebGLConstants','Geometry','GeometryAttributes','GeometryAttribute','Cartesian2','Cartesian3','Cartesian4','Matrix2','Matrix3','Matrix4'];
-const contents=[...names.map(n=>`export {default as ${n}} from '@cesium/engine/Source/Renderer/${n}.js';`),...core.map(n=>`export {default as ${n}} from '@cesium/engine/Source/Core/${n}.js';`),"export {default as ViewportQuadVS} from '@cesium/engine/Source/Shaders/ViewportQuadVS.js';"].join('\n');
+const imageryExports=['ImageryLayer','Imagery','ImageryState'].map(n=>`export {default as ${n}} from '@cesium/engine/Source/Scene/${n}.js';`).concat(['Rectangle','GeographicTilingScheme','WebMercatorTilingScheme'].map(n=>`export {default as ${n}} from '@cesium/engine/Source/Core/${n}.js';`));
+const contents=[...imageryExports,...names.map(n=>`export {default as ${n}} from '@cesium/engine/Source/Renderer/${n}.js';`),...core.map(n=>`export {default as ${n}} from '@cesium/engine/Source/Core/${n}.js';`),"export {default as ViewportQuadVS} from '@cesium/engine/Source/Shaders/ViewportQuadVS.js';"].join('\n');
 const bundle=await build({stdin:{contents,resolveDir:fileURLToPath(new URL('.',import.meta.url))},bundle:true,write:false,format:'esm',platform:'browser'});
 const server=createServer(async(req,res)=>{try{
  const url=new URL(req.url,'http://localhost');
@@ -222,6 +223,37 @@ try {
     command.canceled();engine.destroy();context.shaderCache.destroyReleasedShaderPrograms();
     const expected={pixels,events,programDestroyed:program?.isDestroyed()??null,vertexArrayDestroyed:va?.isDestroyed()??null,outputsAlive:outputs.every(t=>!t.isDestroyed()),engineDestroyed:engine.isDestroyed(),pass:command.pass};
     eq(JSON.parse(wasm.renderer_compute(gl,JSON.stringify(config))),expected,'compute pixels, clear, callbacks, persistence and ownership '+JSON.stringify(config));eq(gl.getError(),gl.NO_ERROR,'Rust compute GL status');eq(context._gl.getError(),gl.NO_ERROR,'Cesium compute GL status');for(const t of outputs)t.destroy();input.destroy();if(va&&!va.isDestroyed())va.destroy();if(program&&!program.isDestroyed())program.destroy();context.destroy();
+  }
+  // Exercise Cesium's actual private upload, queue and compute path against Rust.
+  for (const [width,height,mercator,nearest,rectangle] of [
+    [8,8,false,false,[-1,0.2,1,1.2]], [7,5,false,false,[-1,-1,1,1]],
+    [8,8,true,false,[-1,0.2,1,1.2]], [8,8,true,true,[-1,-1.2,1,-0.2]],
+    [7,5,true,false,[-1,-1,1,1]], [16,16,true,false,[-1,-1.4,1,1.4]],
+    [256,256,true,false,[-1,0.2,1,1.4]],
+    [8,8,true,false,[0,0.5,0.000001,0.50001]],
+  ]) {
+    const ctx=new ref.Context(canvas(),{webgl:{antialias:false,alpha:true,stencil:true}});
+    const provider={tilingScheme:mercator?new ref.WebMercatorTilingScheme():new ref.GeographicTilingScheme(),hasAlphaChannel:true};
+    const layer=new ref.ImageryLayer(provider,{minificationFilter:nearest?9728:9729,maximumAnisotropy:1});
+    const imagery=new ref.Imagery(layer,0,0,0,new ref.Rectangle(...rectangle));imagery.addReference();
+    const bytes=Array.from({length:width*height*4},(_,i)=>i%4===3?255:(i*31+Math.floor(i/(width*4))*17)%256);
+    imagery.image={width,height,arrayBufferView:new Uint8Array(bytes)};
+    layer._createTexture(ctx,imagery);layer._reprojectTexture({context:ctx},imagery,true);
+    const commands=[];layer.queueReprojectionCommands({commandList:commands});const queued=commands.length;
+    const engine=new ref.ComputeEngine(ctx);for(const command of commands)command.execute(engine);
+    const framebuffer=new ref.Framebuffer({context:ctx,colorTextures:[imagery.texture],destroyAttachments:false});
+    const pixels=Array.from(ctx.readPixels({framebuffer,width,height}));
+    const expected={pixels,queued,references:imagery.referenceCount,min:imagery.texture.sampler.minificationFilter};
+    eq(JSON.parse(wasm.imagery_texture_pixels(gl,JSON.stringify({width,height,mercator,nearest,rectangle,bytes}))),expected,'imagery GPU upload and reprojection '+JSON.stringify({width,height,mercator,nearest,rectangle}));
+    eq(gl.getError(),gl.NO_ERROR,'imagery Rust GL status');eq(ctx._gl.getError(),ctx._gl.NO_ERROR,'imagery Cesium GL status');
+    framebuffer.destroy();imagery.releaseReference();engine.destroy();layer.destroy();ctx.destroy();
+  }
+  // Compressed imagery must decode into an uncompressed framebuffer target.
+  // A DXT1 block with RGB565 endpoint 0xf800 and all indices zero is solid red.
+  {
+    const actual=JSON.parse(wasm.imagery_texture_pixels(gl,JSON.stringify({width:4,height:4,mercator:true,compressed:true,rectangle:[-1,0.2,1,1.2],bytes:[0,248,0,0,0,0,0,0]})));
+    eq(actual,{pixels:Array.from({length:16},()=>[255,0,0,255]).flat(),queued:1,references:1,min:9987},'compressed Mercator imagery renders into RGBA8');
+    eq(gl.getError(),gl.NO_ERROR,'compressed imagery Rust GL status');
   }
   const sync=new ref.Sync({context});context._gl.flush();await sync.waitForSignal(next=>setTimeout(next,0),100);const syncStatus=sync.getStatus();sync.destroy();
   eq(JSON.parse(await wasm.renderer_sync(gl,()=>new Promise(resolve=>setTimeout(resolve,0)))),[syncStatus,sync.isDestroyed()],'GPU fence scheduled wait and destruction');eq(gl.getError(),gl.NO_ERROR,'Rust fence GL status');eq(context._gl.getError(),gl.NO_ERROR,'Cesium fence GL status');

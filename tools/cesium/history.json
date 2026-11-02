@@ -590,5 +590,13 @@
     "ported": 1059,
     "implemented": 13,
     "validatedPercent": 63.54
+  },
+  {
+    "milestone": "Imagery GPU pipeline and surface-tile tracker",
+    "date": "2026-11-02",
+    "percent": 72.53,
+    "ported": 1059,
+    "implemented": 13,
+    "validatedPercent": 63.54
   }
 ]
