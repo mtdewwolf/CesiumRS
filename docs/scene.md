@@ -1137,13 +1137,26 @@ rendering parity for the primitive runtime.
   Identity-based membership and collection events remain unported.
 - `PrimitivePipeline::combine_geometry` delegates to the shared
   `Workers/combineGeometry` kernel for projection, high/low position encoding,
-  batching and pick offsets. All 17 pinned `combineGeometry` reference cases are
-  replayed through the Scene entry point with exact comparison. The module stays
-  partial: the combine-parameter and combine-result wire packing are unported.
+  batching and pick offsets. The worker wire format is ported:
+  `pack/unpack_create_geometry_results`, `pack/unpack_combine_geometry_parameters`
+  and `pack/unpack_combine_geometry_results`. Owned buffers replace the
+  JavaScript transfer list. All 17 pinned `combineGeometry` cases run through
+  unpack, combine and pack with exact output; repacking the unpacked parameters
+  reproduces Cesium's instance buffer. `tests/scene_primitive_pipeline.rs` adds
+  nine direct cases from `tools/cesium/generate-scene-primitive-pipeline.mjs`:
+  instance offsets, missing geometries, surplus geometries (Cesium's
+  `TypeError`), and `Float32` bounding-sphere rounding.
 - Appearance and material fixtures cover source generation and metadata for the
-  listed concrete appearances and 25 built-in materials. `ShadowVolumeAppearance`
-  awaits direct fixture validation. Material texture loading and final rendered
-  pixels are outside these fixture suites.
+  listed concrete appearances and 25 built-in materials. Material texture
+  loading and final rendered pixels are outside these fixture suites.
+- `ShadowVolumeAppearance` is validated by `tests/scene_shadow_volume_appearance.rs`
+  (generator `tools/cesium/generate-scene-shadow-volume-appearance.mjs`): 144
+  color/pick/vertex `ShaderSource` cases across per-instance-color and eight
+  material appearances, the first-projection caching of the
+  `EAST/WEST_MOST_X_HIGH/LOW` defines (formatted with JavaScript `toFixed`, so
+  `-0` prints as `0.00`), and 24 cases for the planar and spherical
+  texture-coordinate attributes. Attribute values keep JavaScript's plain
+  doubles as `TypedArray::Float64` under the `FLOAT` datatype.
   Renderer hosts call `Material::uniform_bindings()` at submission time to get
   current values from the whole sub-material tree, with exact generated names.
   Complete supplied render states retain all fields, including explicit `false`

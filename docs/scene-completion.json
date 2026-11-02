@@ -83,17 +83,17 @@
       "module": "Scene/PrimitivePipeline",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "in-progress",
-      "remaining": "combine_geometry now delegates to the validated Workers/combineGeometry kernel (2D projection, high/low encoding, batch IDs, pick offsets, offset extents, hemisphere bounding spheres). Remaining: packCombineGeometryParameters/Results and unpack counterparts (worker wire format) are unported.",
-      "evidence": "tests/workers_combine.rs::scene_primitive_pipeline_replays_the_pinned_combine_cases replays all 17 pinned combineGeometry cases through the Scene entry point with exact comparison."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "combineGeometry delegates to the validated Workers/combineGeometry kernel, and pack/unpack Create/CombineGeometry Parameters/Results implement the worker wire format. tests/workers_combine.rs::scene_primitive_pipeline_replays_the_pinned_combine_cases runs all 17 pinned cases through unpack, combine and pack with exact output and exact repacking; tests/scene_primitive_pipeline.rs replays nine direct wire-format cases from tools/cesium/generate-scene-primitive-pipeline.mjs."
     },
     {
       "module": "Scene/ShadowVolumeAppearance",
       "baselineStatus": "implemented",
       "workstream": "model-effects",
-      "status": "in-progress",
-      "remaining": "Classification fragment shader synthesis for 3D Tiles and terrain clamping implemented; parity fixtures unrun.",
-      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_shadow_volume_appearance.rs replays tools/cesium/generate-scene-shadow-volume-appearance.mjs: 144 color/pick/vertex ShaderSource cases across per-instance-color and eight material appearances, first-projection extent-define caching, and 24 planar/spherical texture-coordinate attribute cases, all exact. tests/scene_model_effects_completion.rs keeps the original 16 define cases."
     },
     {
       "module": "Scene/Model/Model",
@@ -304,7 +304,7 @@
       "baselineStatus": "partial",
       "workstream": "imagery",
       "status": "pending",
-      "remaining": "Layer options, imagery bounds, texture transforms, cache, initial skeletons and provider request lifecycle; reference fixture and native lifecycle cases. Complete tile coverage, transport cancellation and GPU reprojection remain; seven texel-spacing expectations are computed separately from Cesium\u2019s private function."
+      "remaining": "Layer options, imagery bounds, texture transforms, cache, initial skeletons and provider request lifecycle; reference fixture and native lifecycle cases. Complete tile coverage, transport cancellation and GPU reprojection remain; seven texel-spacing expectations are computed separately from Cesium’s private function."
     },
     {
       "module": "Scene/ImageryLayerCollection",
@@ -527,9 +527,9 @@
       "module": "Scene/ShadowMapShader",
       "baselineStatus": "partial",
       "workstream": "model-effects",
-      "status": "in-progress",
-      "remaining": "Exact cast vertex/fragment and receive vertex generation across 32 pinned variants; shader keywords. Receive fragment lighting remains. See docs/scene-nz-contracts.md.",
-      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_shadow_map_shader.rs replays tools/cesium/generate-scene-shadow-map-shader.mjs: 4096 receive fragment cases over every keyword input and four varying layouts with distinct point/terrain/primitive biases, 1024 keywords and the receive vertex cases. The 32 cast and receive-vertex variants and the original 4096 receive variants are retained."
     },
     {
       "module": "Scene/SkyBox",

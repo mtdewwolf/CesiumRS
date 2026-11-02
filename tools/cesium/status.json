@@ -5107,14 +5107,14 @@
     "note": "Partial native index-based collection API. Pinned reference cases cover ordering, nested update dispatch (including hidden collections), and destruction policy; identity-based membership, collection events and the full upstream surface remain unported."
   },
   "Scene/PrimitivePipeline": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::primitive_pipeline",
-    "note": "Partial CPU geometry combination, batch IDs and pick offsets. This duplicate Scene implementation has no direct reference suite; 2D projection, high/low position encoding and complete result parity remain unvalidated. The separately validated Workers/combineGeometry port is unchanged."
+    "note": "combineGeometry delegates to the validated Workers/combineGeometry kernel: world transforms, antimeridian splits, batch IDs, 2D projection, high/low encoding, compression, pick offsets and hemisphere bounding spheres. pack/unpackCreateGeometryResults, pack/unpackCombineGeometryParameters and pack/unpackCombineGeometryResults implement the worker wire format; owned buffers replace the transfer list. All 17 pinned combineGeometry cases run through unpack, combine and pack with exact output, and nine direct wire-format cases cover offsets, missing geometries, surplus geometries and Float32 sphere rounding."
   },
   "Scene/ShadowVolumeAppearance": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::shadow_volume_appearance",
-    "note": "Classification fragment shader synthesis for 3D Tiles and terrain clamping implemented; parity fixtures unrun."
+    "note": "Color/pick fragment and vertex ShaderSources with propagated EC/WC/normal/texture-coordinate dependencies, material and per-instance-color appearances, Cesium's first-projection caching of the EAST/WEST_MOST_X extent defines with JavaScript toFixed formatting, and the static planar and spherical texture-coordinate attribute helpers, attribute checks and planar/spherical selection. 144 pinned shader cases across nine appearances, a projection-caching case and 24 attribute cases compare exactly. An appearance without a material stands in for instanceof PerInstanceColorAppearance; classification rendering awaits ClassificationPrimitive and GroundPrimitive."
   },
   "Scene/Model/Model": {
     "status": "implemented",
@@ -5552,9 +5552,9 @@
     "note": "Existing traversal provider extracted into dedicated module, preserving imports; six pinned geometric-error cases and traversal regressions. Quadtree back-reference/error-event contract remains absent. See docs/scene-nz-contracts.md."
   },
   "Scene/ShadowMapShader": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::shadow_map_shader",
-    "note": "Exact cast vertex/fragment and receive vertex generation across 32 pinned variants; shader keywords. Receive fragment lighting remains. See docs/scene-nz-contracts.md."
+    "note": "Exact cast vertex/fragment GLSL across 32 pinned variants; receive vertex defines; receive fragment derivation with Cesium's point/terrain/primitive bias selection and cascade count; cast/receive keywords. 4096 exhaustive receive cases (all ten keyword inputs, including castShadows and terrain normals, times four varying layouts, with distinct biases per case) compare defines and a hash of the exact sources; 1024 keyword cases. ReceiveOptions stands in for the unported ShadowMap; shadow-map execution belongs to ShadowMap."
   },
   "Scene/SkyBox": {
     "status": "partial",

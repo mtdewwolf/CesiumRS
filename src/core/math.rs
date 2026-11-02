@@ -475,8 +475,9 @@ pub fn js_to_fixed(value: f64, digits: usize) -> String {
         s.push('.');
         s.extend(digits_vec[int_len..].iter().map(|d| char::from(b'0' + d)));
     }
-    let is_zero = digits_vec.iter().all(|d| *d == 0);
-    if value < 0.0 && !is_zero {
+    // The spec's sign step tests `x < 0` before rounding, so a negative value
+    // that rounds to zero keeps its sign ("-0.00") and -0 does not ("0.00").
+    if value < 0.0 {
         s.insert(0, '-');
     }
     s

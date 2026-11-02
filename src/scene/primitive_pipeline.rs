@@ -1,9 +1,16 @@
 //! CesiumJS `PrimitivePipeline`: geometry combination, batch IDs, attribute
-//! compression and pick offsets across batched instances.
+//! compression and pick offsets across batched instances, plus the worker
+//! wire format around `combineGeometry` and `createGeometry`.
+//!
+//! The JavaScript pack functions also fill a transfer list. Owned buffers
+//! replace that list in this port, so the pack functions here return the
+//! packed values alone.
 
 use crate::core::{
     BoundingSphere, Cartesian3, Ellipsoid, Geometry, GeometryInstance, GeometryOffsetAttribute, Matrix4, RuntimeError,
 };
+use crate::workers::combine_geometry as worker;
+use crate::workers::{CombineGeometryResult, PackedCombineGeometry, PackedGeometryResults};
 
 /// Parameters for [`PrimitivePipeline::combine_geometry`].
 #[derive(Clone, Debug)]
@@ -130,6 +137,104 @@ impl PrimitivePipeline {
             offset_instance_extend,
             bounding_spheres,
             bounding_spheres_cv,
+        })
+    }
+
+    /// `PrimitivePipeline.packCreateGeometryResults`.
+    pub fn pack_create_geometry_results(items: &[Option<Geometry>]) -> PackedGeometryResults {
+        PackedGeometryResults::pack(items)
+    }
+
+    /// `PrimitivePipeline.unpackCreateGeometryResults`, validating lengths
+    /// and enums before allocating.
+    pub fn unpack_create_geometry_results(
+        results: &PackedGeometryResults,
+    ) -> Result<Vec<Option<Geometry>>, RuntimeError> {
+        results.unpack()
+    }
+
+    /// `PrimitivePipeline.packCombineGeometryParameters`. As in Cesium, the
+    /// geometries travel in `create_geometry_results`, which `createGeometry`
+    /// workers have already packed. Only each instance's model matrix and
+    /// `offset` attribute are packed from `parameters.instances`. Their
+    /// geometries are ignored.
+    pub fn pack_combine_geometry_parameters(
+        parameters: &CombineGeometryParameters,
+        create_geometry_results: Vec<PackedGeometryResults>,
+    ) -> PackedCombineGeometry {
+        PackedCombineGeometry {
+            create_geometry_results,
+            packed_instances: worker::pack_instances(&parameters.instances),
+            ellipsoid_radii: parameters.ellipsoid_radii,
+            is_geographic: parameters.is_geographic,
+            element_index_uint_supported: parameters.uint_index_support,
+            scene_3d_only: parameters.scene_3d_only,
+            vertex_cache_optimize: parameters.vertex_cache_optimize,
+            compress_vertices: parameters.compress_vertices,
+            model_matrix: parameters.model_matrix,
+            create_pick_offsets: parameters.create_pick_offsets,
+        }
+    }
+
+    /// `PrimitivePipeline.unpackCombineGeometryParameters`. Every unpacked
+    /// instance carries an `offset` attribute, because the packed slot is
+    /// always present. Geometries are assigned to instances in order. A
+    /// geometry with no instance left is an error, where Cesium throws a
+    /// `TypeError`.
+    pub fn unpack_combine_geometry_parameters(
+        packed: &PackedCombineGeometry,
+    ) -> Result<CombineGeometryParameters, RuntimeError> {
+        Ok(CombineGeometryParameters {
+            instances: worker::unpack_instances_with_geometries(
+                &packed.packed_instances,
+                &packed.create_geometry_results,
+            )?,
+            ellipsoid_radii: packed.ellipsoid_radii,
+            is_geographic: packed.is_geographic,
+            uint_index_support: packed.element_index_uint_supported,
+            scene_3d_only: packed.scene_3d_only,
+            vertex_cache_optimize: packed.vertex_cache_optimize,
+            compress_vertices: packed.compress_vertices,
+            model_matrix: packed.model_matrix,
+            create_pick_offsets: packed.create_pick_offsets,
+        })
+    }
+
+    /// `PrimitivePipeline.packCombineGeometryResults`. Bounding spheres are
+    /// packed into `f32` buffers, so they lose precision as they do in
+    /// Cesium.
+    pub fn pack_combine_geometry_results(results: CombineGeometryResults) -> CombineGeometryResult {
+        CombineGeometryResult {
+            bounding_spheres: worker::pack_bounding_spheres(&results.bounding_spheres),
+            bounding_spheres_cv: worker::pack_bounding_spheres(&results.bounding_spheres_cv),
+            geometries: results.geometries,
+            model_matrix: results.model_matrix,
+            attribute_locations: results.attribute_locations,
+            pick_offsets: results.pick_offsets.map(|offsets| {
+                offsets
+                    .into_iter()
+                    .map(|p| worker::PickOffset { index: p.index, offset: p.offset, count: p.count })
+                    .collect()
+            }),
+            offset_instance_extend: results.offset_instance_extend,
+        }
+    }
+
+    /// `PrimitivePipeline.unpackCombineGeometryResults`. A sphere slot whose
+    /// flag is not exactly `1.0` unpacks to `None`.
+    pub fn unpack_combine_geometry_results(
+        packed: CombineGeometryResult,
+    ) -> Result<CombineGeometryResults, RuntimeError> {
+        Ok(CombineGeometryResults {
+            bounding_spheres: worker::unpack_bounding_spheres(&packed.bounding_spheres)?,
+            bounding_spheres_cv: worker::unpack_bounding_spheres(&packed.bounding_spheres_cv)?,
+            geometries: packed.geometries,
+            model_matrix: packed.model_matrix,
+            attribute_locations: packed.attribute_locations,
+            pick_offsets: packed.pick_offsets.map(|offsets| {
+                offsets.into_iter().map(|p| PickOffset { index: p.index, offset: p.offset, count: p.count }).collect()
+            }),
+            offset_instance_extend: packed.offset_instance_extend,
         })
     }
 }

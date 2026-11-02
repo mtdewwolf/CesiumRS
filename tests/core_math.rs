@@ -414,3 +414,23 @@ fn spherical() {
         },
     );
 }
+
+/// `Number.prototype.toFixed` as V8 prints it: the sign is decided before
+/// rounding, so a negative value that rounds to zero keeps it and -0 does not.
+#[test]
+fn js_to_fixed_matches_v8_signs_and_ties() {
+    for (value, digits, expected) in [
+        (-0.0001, 2, "-0.00"),
+        (-0.0, 2, "0.00"),
+        (0.0, 2, "0.00"),
+        (-0.004, 2, "-0.00"),
+        (-0.005, 2, "-0.01"),
+        (-1e-300, 0, "-0"),
+        (1.005, 2, "1.00"),
+        (2.5, 0, "3"),
+        (-2.5, 0, "-3"),
+        (3143.163449916588, 18, "3143.163449916587978805"),
+    ] {
+        assert_eq!(cm::js_to_fixed(value, digits), expected, "{value}.toFixed({digits})");
+    }
+}
