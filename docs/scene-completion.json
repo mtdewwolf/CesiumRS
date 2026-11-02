@@ -401,8 +401,9 @@
       "module": "Scene/PerformanceDisplay",
       "baselineStatus": "partial",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "CPU timing windows/rendered text/throttle flag checked against source; no DOM presentation; decimal ties not exhaustively validated. See docs/scene-mz-cpu.md."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_cpu_utilities.rs::performance_display_matches_reference replays pinned CesiumJS traces from tools/cesium/generate-scene-cpu-utilities.mjs exactly."
     },
     {
       "module": "Scene/VoxelContent",
@@ -578,8 +579,9 @@
       "module": "Scene/DebugInspector",
       "baselineStatus": "partial",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "Rewrites fragment shaders and computes uniform colors for frustum and command visualization. Partial CPU behavior; complete upstream behavior and parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_debug_inspector.rs (recording WebGL) replays pinned CesiumJS traces from tools/cesium/generate-scene-debug-inspector.mjs exactly."
     },
     {
       "module": "Scene/EllipsoidPrimitive",
@@ -599,23 +601,25 @@
       "module": "Scene/FrameRateMonitor",
       "baselineStatus": "partial",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "Sliding window frame rate monitor with quiet and warmup periods and threshold performance events. Partial CPU behavior; complete upstream behavior and parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_cpu_utilities.rs::frame_rate_monitor_matches_reference replays pinned CesiumJS traces from tools/cesium/generate-scene-cpu-utilities.mjs exactly."
     },
     {
       "module": "Scene/GlobeTranslucency",
       "baselineStatus": "partial",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "Controls globe front- and back-face translucency, distance-based alpha fading, and cartographic bounding. Partial CPU behavior; complete upstream behavior and parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_cpu_utilities.rs::globe_translucency_matches_reference replays pinned CesiumJS traces from tools/cesium/generate-scene-cpu-utilities.mjs exactly."
     },
     {
       "module": "Scene/ImageBasedLighting",
       "baselineStatus": "partial",
       "workstream": "model-effects",
-      "status": "in-progress",
-      "remaining": "Manages diffuse and specular IBL factors, spherical harmonic coefficients, zenith luminance, and shader dirty tracking. Partial CPU behavior; complete upstream behavior and parity validation remain.",
-      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_cpu_utilities.rs::image_based_lighting_{constructor,traces}_match_reference replays pinned CesiumJS traces from tools/cesium/generate-scene-cpu-utilities.mjs exactly."
     },
     {
       "module": "Scene/IonImageryProviderFactory",

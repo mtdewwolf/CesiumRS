@@ -77,7 +77,7 @@ fn empty_content_basic() {
 
 #[test]
 fn debug_inspector_frustum_color() {
-    let c = DebugInspector::compute_frustum_color(0b101);
+    let c = cesium_rs::scene::debug_show_frustums_color(true, 0b101);
     assert_eq!(c.red, 1.0);
     assert_eq!(c.green, 0.0);
     assert_eq!(c.blue, 1.0);

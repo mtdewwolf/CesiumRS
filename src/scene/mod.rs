@@ -734,7 +734,10 @@ pub use billboard_texture::BillboardTexture;
 pub mod cesium_3d_tile_content_factory;
 pub use cesium_3d_tile_content_factory::Cesium3DTileContentFactory;
 pub mod debug_inspector;
-pub use debug_inspector::DebugInspector;
+pub use debug_inspector::{
+    create_debug_show_frustums_fragment_shader, create_debug_show_frustums_uniform_map, debug_show_commands_color,
+    debug_show_frustums_color, DebugInspector, DebugShowOptions,
+};
 pub mod ellipsoid_primitive;
 pub use ellipsoid_primitive::{EllipsoidPrimitive, EllipsoidPrimitiveOptions};
 pub mod equirectangular_panorama;
@@ -744,7 +747,10 @@ pub use frame_rate_monitor::{FrameRateMonitor, FrameRateMonitorOptions};
 pub mod globe_translucency;
 pub use globe_translucency::GlobeTranslucency;
 pub mod image_based_lighting;
-pub use image_based_lighting::ImageBasedLighting;
+pub use image_based_lighting::{
+    specular_environment_cube_map_supported, ImageBasedLighting, ImageBasedLightingConstructorOptions,
+    SpecularEnvironmentCubeMap, SpecularEnvironmentCubeMapFactory,
+};
 pub mod ion_imagery_provider_factory;
 pub use ion_imagery_provider_factory::{IonImageryExternalType, IonImageryProviderFactory};
 pub mod moon;

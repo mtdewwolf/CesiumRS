@@ -74,8 +74,8 @@ mod browser {
         let bytes = texture.size_in_bytes();
         let statistics = cache.statistics().borrow().textures_byte_length;
         let processed = cache.len();
-        let quad = ViewportQuad::new(&context).map_err(error)?;
-        let program=ShaderProgram::from_sources(&context,&ViewportQuad::<BrowserGl>::shader_options(ShaderSource::new("in vec2 v_textureCoordinates;uniform sampler2D image;uniform float scale;void main(){out_FragColor=texture(image,v_textureCoordinates*scale);}"))).map_err(error)?;
+        let quad = cesium_rs::renderer::ViewportQuad::new(&context).map_err(error)?;
+        let program=ShaderProgram::from_sources(&context,&cesium_rs::renderer::ViewportQuad::<BrowserGl>::shader_options(ShaderSource::new("in vec2 v_textureCoordinates;uniform sampler2D image;uniform float scale;void main(){out_FragColor=texture(image,v_textureCoordinates*scale);}"))).map_err(error)?;
         let mut command = DrawCommand::new(quad.vertex_array(), &program);
         command.textures = vec![("image".into(), &*texture)];
         command.uniforms.push(("scale".into(), UniformValue::Float(vec![c["scale"].as_f64().unwrap_or(2.) as f32])));
@@ -219,7 +219,7 @@ mod browser {
         }
         let config: serde_json::Value = serde_json::from_str(config).map_err(error)?;
         let context = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
-        let quad = ViewportQuad::new(&context).map_err(error)?;
+        let quad = cesium_rs::renderer::ViewportQuad::new(&context).map_err(error)?;
         let shader=Rc::new(ShaderProgram::from_sources(&context,&ShaderProgramOptions{vertex_shader_source:ShaderSource::new("in vec4 position;\nuniform float distance;\nuniform float scale;\nvoid main(){gl_Position=czm_projection*vec4(position.xy*scale*distance*0.5,-distance,1.0);}"),fragment_shader_source:ShaderSource::new("uniform vec4 color;\nvoid main(){out_FragColor=color;}"),attribute_locations:std::collections::BTreeMap::from([("position".into(),0)])}).map_err(error)?);
         let mut commands = Vec::new();
         let classification = config["classify"] == true;
@@ -278,7 +278,7 @@ mod browser {
         }
         if classification {
             let shader = Rc::new(ShaderProgram::from_sources(&context,
-                &ViewportQuad::<BrowserGl>::shader_options(ShaderSource {
+                &cesium_rs::renderer::ViewportQuad::<BrowserGl>::shader_options(ShaderSource {
                     defines: vec!["LOG_DEPTH_READ_ONLY".into()],
                     ..ShaderSource::new("in vec2 v_textureCoordinates;\nvoid main(){float d=czm_unpackDepth(texture(czm_globeDepthTexture,v_textureCoordinates));out_FragColor=vec4(d,d,d,1.0);}")
                 })).map_err(error)?);
@@ -458,7 +458,7 @@ mod browser {
         } else {
             Context::new_webgl2(BrowserGl::new(gl).map_err(error)?)
         };
-        let quad = ViewportQuad::new(&context).map_err(error)?;
+        let quad = cesium_rs::renderer::ViewportQuad::new(&context).map_err(error)?;
         let a = Rc::new("a".to_string());
         let b = Rc::new("b".to_string());
         let c = Rc::new("c".to_string());
@@ -468,7 +468,7 @@ mod browser {
             .collect::<Result<Vec<_>, _>>()?;
         let source=ShaderSource::new("uniform vec4 color0;uniform vec4 color1;uniform vec4 color2;uniform vec4 color3;uniform float hole;void main(){out_FragColor=vec4(0.7,0.2,0.1,0.5);if(hole>0.0&&gl_FragCoord.x>3.0&&gl_FragCoord.x<5.0&&gl_FragCoord.y>3.0&&gl_FragCoord.y<5.0){out_FragColor.a=0.0;}}");
         let program = Rc::new(
-            ShaderProgram::from_sources(&context, &ViewportQuad::<BrowserGl>::shader_options(source)).map_err(error)?,
+            ShaderProgram::from_sources(&context, &cesium_rs::renderer::ViewportQuad::<BrowserGl>::shader_options(source)).map_err(error)?,
         );
         let mut options = SceneDrawOptions::new(quad.vertex_array().clone(), program);
         options.state.blending.enabled = true;
@@ -691,11 +691,11 @@ mod browser {
                     ..Default::default()
                 },
             );
-            let quad = ViewportQuad::new(&ctx).map_err(error)?;
+            let quad = cesium_rs::renderer::ViewportQuad::new(&ctx).map_err(error)?;
             let program = Rc::new(
                 ShaderProgram::from_sources(
                     &ctx,
-                    &ViewportQuad::<BrowserGl>::shader_options(ShaderSource {
+                    &cesium_rs::renderer::ViewportQuad::<BrowserGl>::shader_options(ShaderSource {
                         defines: vec!["LOG_DEPTH_READ_ONLY".into()],
                         ..ShaderSource::new("void main(){out_FragColor=vec4(0.0,0.0,1.0,1.0);}")
                     }),
@@ -757,10 +757,10 @@ mod browser {
         } else {
             Context::new_webgl2(BrowserGl::new(gl).map_err(error)?)
         };
-        let quad = ViewportQuad::new(&ctx).map_err(error)?;
+        let quad = cesium_rs::renderer::ViewportQuad::new(&ctx).map_err(error)?;
         let source=ShaderSource::new("uniform sampler2D image;uniform vec4 u_pickColor;void main(){out_FragColor=texture(image,vec2(0.5));\n#ifdef HDR\nout_FragColor.rgb*=0.5;\n#endif\n}");
         let program = Rc::new(
-            ShaderProgram::from_sources(&ctx, &ViewportQuad::<BrowserGl>::shader_options(source)).map_err(error)?,
+            ShaderProgram::from_sources(&ctx, &cesium_rs::renderer::ViewportQuad::<BrowserGl>::shader_options(source)).map_err(error)?,
         );
         let mut texture_options = TextureOptions::rgba(1, 1);
         texture_options.flip_y = false;
@@ -1340,13 +1340,13 @@ mod browser {
         let program = if custom {
             Some(
                 cache
-                    .get_shader_program(&ViewportQuad::<BrowserGl>::shader_options(fragment.clone()))
+                    .get_shader_program(&cesium_rs::renderer::ViewportQuad::<BrowserGl>::shader_options(fragment.clone()))
                     .map_err(error)?,
             )
         } else {
             None
         };
-        let quad = if custom { Some(ViewportQuad::new(&ctx).map_err(error)?) } else { None };
+        let quad = if custom { Some(cesium_rs::renderer::ViewportQuad::new(&ctx).map_err(error)?) } else { None };
         let mut input_options = TextureOptions::rgba(1, 1);
         input_options.sampler = Sampler::NEAREST;
         let input = Rc::new(Texture::new(&ctx, input_options, Some(&[128, 64, 32, 255])).map_err(error)?);

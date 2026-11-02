@@ -1,0 +1,817 @@
+{
+ "fragments": {
+  "single": [
+   "void main() { out_FragColor = vec4(1.0); }"
+  ],
+  "multi": [
+   "uniform float a;\nvoid main()\n{\n    out_FragData_1 = vec4(a);\n    out_FragData_0 = vec4(1.0);\n    out_FragData_1.a = 0.5;\n}",
+   "float helper() { return out_FragData_3.x + out_FragData_0.y; }"
+  ],
+  "noMain": [
+   "vec4 shade() { return vec4(0.0); }",
+   "void main(void) { out_FragColor = shade(); }"
+  ]
+ },
+ "cases": [
+  {
+   "scene": {
+    "debugShowCommands": false,
+    "debugShowFrustums": false
+   },
+   "seed": 0,
+   "commands": [
+    "single:1:",
+    "multi:6:a,debugShowCommandsColor,debugShowFrustumsColor",
+    "single:7:debugShowFrustumsColor",
+    "noMain:0:"
+   ],
+   "requests": [
+    {
+     "vertex": {
+      "defines": [
+       "VS"
+      ],
+      "sources": [
+       "in vec3 position; void main() { gl_Position = vec4(position, 1.0); }"
+      ]
+     },
+     "fragment": {
+      "defines": [
+       "FS"
+      ],
+      "sources": [
+       "void czm_Debug_main() { out_FragColor = vec4(1.0); }",
+       "uniform vec3 debugShowCommandsColor;\nuniform vec3 debugShowFrustumsColor;\nvoid main() \n{ \n    czm_Debug_main(); \n    out_FragColor.rgb *= debugShowCommandsColor;\n    out_FragColor.rgb *= debugShowFrustumsColor;\n}"
+      ]
+     },
+     "attributeLocations": {
+      "position": 0
+     }
+    },
+    {
+     "vertex": {
+      "defines": [
+       "VS"
+      ],
+      "sources": [
+       "in vec3 position; void main() { gl_Position = vec4(position, 1.0); }"
+      ]
+     },
+     "fragment": {
+      "defines": [
+       "FS"
+      ],
+      "sources": [
+       "uniform float a;\nvoid czm_Debug_main()\n{\n    out_FragData_1 = vec4(a);\n    out_FragData_0 = vec4(1.0);\n    out_FragData_1.a = 0.5;\n}",
+       "float helper() { return out_FragData_3.x + out_FragData_0.y; }",
+       "uniform vec3 debugShowCommandsColor;\nuniform vec3 debugShowFrustumsColor;\nvoid main() \n{ \n    czm_Debug_main(); \n    out_FragData_1.rgb *= debugShowCommandsColor;\n    out_FragData_1.rgb *= debugShowFrustumsColor;\n    out_FragData_0.rgb *= debugShowCommandsColor;\n    out_FragData_0.rgb *= debugShowFrustumsColor;\n    out_FragData_3.rgb *= debugShowCommandsColor;\n    out_FragData_3.rgb *= debugShowFrustumsColor;\n}"
+      ]
+     },
+     "attributeLocations": {
+      "position": 0,
+      "normal": 3
+     }
+    },
+    {
+     "vertex": {
+      "defines": [
+       "VS"
+      ],
+      "sources": [
+       "in vec3 position; void main() { gl_Position = vec4(position, 1.0); }"
+      ]
+     },
+     "fragment": {
+      "defines": [
+       "FS"
+      ],
+      "sources": [
+       "vec4 shade() { return vec4(0.0); }",
+       "void czm_Debug_main() { out_FragColor = shade(); }",
+       "uniform vec3 debugShowCommandsColor;\nuniform vec3 debugShowFrustumsColor;\nvoid main() \n{ \n    czm_Debug_main(); \n    out_FragColor.rgb *= debugShowCommandsColor;\n    out_FragColor.rgb *= debugShowFrustumsColor;\n}"
+      ]
+     },
+     "attributeLocations": {}
+    }
+   ],
+   "draws": [
+    {
+     "program": "debug1",
+     "uniforms": {
+      "debugShowCommandsColor": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "debugShowFrustumsColor": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug2",
+     "uniforms": {
+      "a": 0.25,
+      "debugShowCommandsColor": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "debugShowFrustumsColor": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug1",
+     "uniforms": {
+      "debugShowFrustumsColor": "mine"
+     }
+    },
+    {
+     "program": "debug3",
+     "uniforms": {
+      "debugShowCommandsColor": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "debugShowFrustumsColor": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug1",
+     "uniforms": {
+      "debugShowCommandsColor": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "debugShowFrustumsColor": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug2",
+     "uniforms": {
+      "a": 0.25,
+      "debugShowCommandsColor": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "debugShowFrustumsColor": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug1",
+     "uniforms": {
+      "debugShowFrustumsColor": "mine"
+     }
+    },
+    {
+     "program": "debug3",
+     "uniforms": {
+      "debugShowCommandsColor": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "debugShowFrustumsColor": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "scene": {
+    "debugShowCommands": true,
+    "debugShowFrustums": false
+   },
+   "seed": 11,
+   "commands": [
+    "single:1:",
+    "multi:6:a,debugShowCommandsColor,debugShowFrustumsColor",
+    "single:7:debugShowFrustumsColor",
+    "noMain:0:"
+   ],
+   "requests": [
+    {
+     "vertex": {
+      "defines": [
+       "VS"
+      ],
+      "sources": [
+       "in vec3 position; void main() { gl_Position = vec4(position, 1.0); }"
+      ]
+     },
+     "fragment": {
+      "defines": [
+       "FS"
+      ],
+      "sources": [
+       "void czm_Debug_main() { out_FragColor = vec4(1.0); }",
+       "uniform vec3 debugShowCommandsColor;\nuniform vec3 debugShowFrustumsColor;\nvoid main() \n{ \n    czm_Debug_main(); \n    out_FragColor.rgb *= debugShowCommandsColor;\n    out_FragColor.rgb *= debugShowFrustumsColor;\n}"
+      ]
+     },
+     "attributeLocations": {
+      "position": 0
+     }
+    },
+    {
+     "vertex": {
+      "defines": [
+       "VS"
+      ],
+      "sources": [
+       "in vec3 position; void main() { gl_Position = vec4(position, 1.0); }"
+      ]
+     },
+     "fragment": {
+      "defines": [
+       "FS"
+      ],
+      "sources": [
+       "uniform float a;\nvoid czm_Debug_main()\n{\n    out_FragData_1 = vec4(a);\n    out_FragData_0 = vec4(1.0);\n    out_FragData_1.a = 0.5;\n}",
+       "float helper() { return out_FragData_3.x + out_FragData_0.y; }",
+       "uniform vec3 debugShowCommandsColor;\nuniform vec3 debugShowFrustumsColor;\nvoid main() \n{ \n    czm_Debug_main(); \n    out_FragData_1.rgb *= debugShowCommandsColor;\n    out_FragData_1.rgb *= debugShowFrustumsColor;\n    out_FragData_0.rgb *= debugShowCommandsColor;\n    out_FragData_0.rgb *= debugShowFrustumsColor;\n    out_FragData_3.rgb *= debugShowCommandsColor;\n    out_FragData_3.rgb *= debugShowFrustumsColor;\n}"
+      ]
+     },
+     "attributeLocations": {
+      "position": 0,
+      "normal": 3
+     }
+    },
+    {
+     "vertex": {
+      "defines": [
+       "VS"
+      ],
+      "sources": [
+       "in vec3 position; void main() { gl_Position = vec4(position, 1.0); }"
+      ]
+     },
+     "fragment": {
+      "defines": [
+       "FS"
+      ],
+      "sources": [
+       "vec4 shade() { return vec4(0.0); }",
+       "void czm_Debug_main() { out_FragColor = shade(); }",
+       "uniform vec3 debugShowCommandsColor;\nuniform vec3 debugShowFrustumsColor;\nvoid main() \n{ \n    czm_Debug_main(); \n    out_FragColor.rgb *= debugShowCommandsColor;\n    out_FragColor.rgb *= debugShowFrustumsColor;\n}"
+      ]
+     },
+     "attributeLocations": {}
+    }
+   ],
+   "draws": [
+    {
+     "program": "debug1",
+     "uniforms": {
+      "debugShowCommandsColor": [
+       0.18026969418860972,
+       0.06830684817396104,
+       0.019475240260362625,
+       0.6647203180473298
+      ],
+      "debugShowFrustumsColor": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug2",
+     "uniforms": {
+      "a": 0.25,
+      "debugShowCommandsColor": [
+       0.46321852901019156,
+       0.19411562173627317,
+       0.7249339253176004,
+       0.9262829599902034
+      ],
+      "debugShowFrustumsColor": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug1",
+     "uniforms": {
+      "debugShowFrustumsColor": "mine"
+     }
+    },
+    {
+     "program": "debug3",
+     "uniforms": {
+      "debugShowCommandsColor": [
+       0.4202036040369421,
+       0.10517515405081213,
+       0.4854271006770432,
+       0.2257127221673727
+      ],
+      "debugShowFrustumsColor": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug1",
+     "uniforms": {
+      "debugShowCommandsColor": [
+       0.18026969418860972,
+       0.06830684817396104,
+       0.019475240260362625,
+       0.6647203180473298
+      ],
+      "debugShowFrustumsColor": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug2",
+     "uniforms": {
+      "a": 0.25,
+      "debugShowCommandsColor": [
+       0.46321852901019156,
+       0.19411562173627317,
+       0.7249339253176004,
+       0.9262829599902034
+      ],
+      "debugShowFrustumsColor": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug1",
+     "uniforms": {
+      "debugShowFrustumsColor": "mine"
+     }
+    },
+    {
+     "program": "debug3",
+     "uniforms": {
+      "debugShowCommandsColor": [
+       0.4202036040369421,
+       0.10517515405081213,
+       0.4854271006770432,
+       0.2257127221673727
+      ],
+      "debugShowFrustumsColor": [
+       1,
+       1,
+       1,
+       1
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "scene": {
+    "debugShowCommands": false,
+    "debugShowFrustums": true
+   },
+   "seed": 0,
+   "commands": [
+    "single:1:",
+    "multi:6:a,debugShowCommandsColor,debugShowFrustumsColor",
+    "single:7:debugShowFrustumsColor",
+    "noMain:0:"
+   ],
+   "requests": [
+    {
+     "vertex": {
+      "defines": [
+       "VS"
+      ],
+      "sources": [
+       "in vec3 position; void main() { gl_Position = vec4(position, 1.0); }"
+      ]
+     },
+     "fragment": {
+      "defines": [
+       "FS"
+      ],
+      "sources": [
+       "void czm_Debug_main() { out_FragColor = vec4(1.0); }",
+       "uniform vec3 debugShowCommandsColor;\nuniform vec3 debugShowFrustumsColor;\nvoid main() \n{ \n    czm_Debug_main(); \n    out_FragColor.rgb *= debugShowCommandsColor;\n    out_FragColor.rgb *= debugShowFrustumsColor;\n}"
+      ]
+     },
+     "attributeLocations": {
+      "position": 0
+     }
+    },
+    {
+     "vertex": {
+      "defines": [
+       "VS"
+      ],
+      "sources": [
+       "in vec3 position; void main() { gl_Position = vec4(position, 1.0); }"
+      ]
+     },
+     "fragment": {
+      "defines": [
+       "FS"
+      ],
+      "sources": [
+       "uniform float a;\nvoid czm_Debug_main()\n{\n    out_FragData_1 = vec4(a);\n    out_FragData_0 = vec4(1.0);\n    out_FragData_1.a = 0.5;\n}",
+       "float helper() { return out_FragData_3.x + out_FragData_0.y; }",
+       "uniform vec3 debugShowCommandsColor;\nuniform vec3 debugShowFrustumsColor;\nvoid main() \n{ \n    czm_Debug_main(); \n    out_FragData_1.rgb *= debugShowCommandsColor;\n    out_FragData_1.rgb *= debugShowFrustumsColor;\n    out_FragData_0.rgb *= debugShowCommandsColor;\n    out_FragData_0.rgb *= debugShowFrustumsColor;\n    out_FragData_3.rgb *= debugShowCommandsColor;\n    out_FragData_3.rgb *= debugShowFrustumsColor;\n}"
+      ]
+     },
+     "attributeLocations": {
+      "position": 0,
+      "normal": 3
+     }
+    },
+    {
+     "vertex": {
+      "defines": [
+       "VS"
+      ],
+      "sources": [
+       "in vec3 position; void main() { gl_Position = vec4(position, 1.0); }"
+      ]
+     },
+     "fragment": {
+      "defines": [
+       "FS"
+      ],
+      "sources": [
+       "vec4 shade() { return vec4(0.0); }",
+       "void czm_Debug_main() { out_FragColor = shade(); }",
+       "uniform vec3 debugShowCommandsColor;\nuniform vec3 debugShowFrustumsColor;\nvoid main() \n{ \n    czm_Debug_main(); \n    out_FragColor.rgb *= debugShowCommandsColor;\n    out_FragColor.rgb *= debugShowFrustumsColor;\n}"
+      ]
+     },
+     "attributeLocations": {}
+    }
+   ],
+   "draws": [
+    {
+     "program": "debug1",
+     "uniforms": {
+      "debugShowCommandsColor": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "debugShowFrustumsColor": [
+       1,
+       0,
+       0,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug2",
+     "uniforms": {
+      "a": 0.25,
+      "debugShowCommandsColor": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "debugShowFrustumsColor": [
+       0,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug1",
+     "uniforms": {
+      "debugShowFrustumsColor": "mine"
+     }
+    },
+    {
+     "program": "debug3",
+     "uniforms": {
+      "debugShowCommandsColor": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "debugShowFrustumsColor": [
+       0,
+       0,
+       0,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug1",
+     "uniforms": {
+      "debugShowCommandsColor": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "debugShowFrustumsColor": [
+       1,
+       0,
+       0,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug2",
+     "uniforms": {
+      "a": 0.25,
+      "debugShowCommandsColor": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "debugShowFrustumsColor": [
+       0,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug1",
+     "uniforms": {
+      "debugShowFrustumsColor": "mine"
+     }
+    },
+    {
+     "program": "debug3",
+     "uniforms": {
+      "debugShowCommandsColor": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "debugShowFrustumsColor": [
+       0,
+       0,
+       0,
+       1
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "scene": {
+    "debugShowCommands": true,
+    "debugShowFrustums": true
+   },
+   "seed": 42,
+   "commands": [
+    "single:1:",
+    "multi:6:a,debugShowCommandsColor,debugShowFrustumsColor",
+    "single:7:debugShowFrustumsColor",
+    "noMain:0:"
+   ],
+   "requests": [
+    {
+     "vertex": {
+      "defines": [
+       "VS"
+      ],
+      "sources": [
+       "in vec3 position; void main() { gl_Position = vec4(position, 1.0); }"
+      ]
+     },
+     "fragment": {
+      "defines": [
+       "FS"
+      ],
+      "sources": [
+       "void czm_Debug_main() { out_FragColor = vec4(1.0); }",
+       "uniform vec3 debugShowCommandsColor;\nuniform vec3 debugShowFrustumsColor;\nvoid main() \n{ \n    czm_Debug_main(); \n    out_FragColor.rgb *= debugShowCommandsColor;\n    out_FragColor.rgb *= debugShowFrustumsColor;\n}"
+      ]
+     },
+     "attributeLocations": {
+      "position": 0
+     }
+    },
+    {
+     "vertex": {
+      "defines": [
+       "VS"
+      ],
+      "sources": [
+       "in vec3 position; void main() { gl_Position = vec4(position, 1.0); }"
+      ]
+     },
+     "fragment": {
+      "defines": [
+       "FS"
+      ],
+      "sources": [
+       "uniform float a;\nvoid czm_Debug_main()\n{\n    out_FragData_1 = vec4(a);\n    out_FragData_0 = vec4(1.0);\n    out_FragData_1.a = 0.5;\n}",
+       "float helper() { return out_FragData_3.x + out_FragData_0.y; }",
+       "uniform vec3 debugShowCommandsColor;\nuniform vec3 debugShowFrustumsColor;\nvoid main() \n{ \n    czm_Debug_main(); \n    out_FragData_1.rgb *= debugShowCommandsColor;\n    out_FragData_1.rgb *= debugShowFrustumsColor;\n    out_FragData_0.rgb *= debugShowCommandsColor;\n    out_FragData_0.rgb *= debugShowFrustumsColor;\n    out_FragData_3.rgb *= debugShowCommandsColor;\n    out_FragData_3.rgb *= debugShowFrustumsColor;\n}"
+      ]
+     },
+     "attributeLocations": {
+      "position": 0,
+      "normal": 3
+     }
+    },
+    {
+     "vertex": {
+      "defines": [
+       "VS"
+      ],
+      "sources": [
+       "in vec3 position; void main() { gl_Position = vec4(position, 1.0); }"
+      ]
+     },
+     "fragment": {
+      "defines": [
+       "FS"
+      ],
+      "sources": [
+       "vec4 shade() { return vec4(0.0); }",
+       "void czm_Debug_main() { out_FragColor = shade(); }",
+       "uniform vec3 debugShowCommandsColor;\nuniform vec3 debugShowFrustumsColor;\nvoid main() \n{ \n    czm_Debug_main(); \n    out_FragColor.rgb *= debugShowCommandsColor;\n    out_FragColor.rgb *= debugShowFrustumsColor;\n}"
+      ]
+     },
+     "attributeLocations": {}
+    }
+   ],
+   "draws": [
+    {
+     "program": "debug1",
+     "uniforms": {
+      "debugShowCommandsColor": [
+       0.37454011430963874,
+       0.7965429842006415,
+       0.9507143115624785,
+       0.18343478767201304
+      ],
+      "debugShowFrustumsColor": [
+       1,
+       0,
+       0,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug2",
+     "uniforms": {
+      "a": 0.25,
+      "debugShowCommandsColor": [
+       0.7319939383305609,
+       0.7796909974422306,
+       0.5986584862694144,
+       0.5968501614406705
+      ],
+      "debugShowFrustumsColor": [
+       0,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug1",
+     "uniforms": {
+      "debugShowFrustumsColor": "mine"
+     }
+    },
+    {
+     "program": "debug3",
+     "uniforms": {
+      "debugShowCommandsColor": [
+       0.1560186385177076,
+       0.4458327575121075,
+       0.15599452378228307,
+       0.09997492050752044
+      ],
+      "debugShowFrustumsColor": [
+       0,
+       0,
+       0,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug1",
+     "uniforms": {
+      "debugShowCommandsColor": [
+       0.37454011430963874,
+       0.7965429842006415,
+       0.9507143115624785,
+       0.18343478767201304
+      ],
+      "debugShowFrustumsColor": [
+       1,
+       0,
+       0,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug2",
+     "uniforms": {
+      "a": 0.25,
+      "debugShowCommandsColor": [
+       0.7319939383305609,
+       0.7796909974422306,
+       0.5986584862694144,
+       0.5968501614406705
+      ],
+      "debugShowFrustumsColor": [
+       0,
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "program": "debug1",
+     "uniforms": {
+      "debugShowFrustumsColor": "mine"
+     }
+    },
+    {
+     "program": "debug3",
+     "uniforms": {
+      "debugShowCommandsColor": [
+       0.1560186385177076,
+       0.4458327575121075,
+       0.15599452378228307,
+       0.09997492050752044
+      ],
+      "debugShowFrustumsColor": [
+       0,
+       0,
+       0,
+       1
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

@@ -1,26 +1,81 @@
-//! CesiumJS `ImageBasedLighting`: properties and lifecycle management for
-//! image-based lighting on tilesets and models.
+//! CesiumJS `ImageBasedLighting`: diffuse and specular image-based lighting
+//! factors, spherical harmonics and specular environment maps for tilesets
+//! and models, and the per-frame shader-regeneration state machine.
+//!
+//! `SpecularEnvironmentCubeMap` loads KTX2 files and uploads textures, which
+//! is host work in this port: the host installs a
+//! [`SpecularEnvironmentCubeMapFactory`] that creates
+//! [`SpecularEnvironmentCubeMap`] handles. Support is decided from the frame's
+//! context capabilities exactly as `SpecularEnvironmentCubeMap.isSupported`
+//! does. Without a factory a supported context still goes through Cesium's
+//! dirty/regenerate cycle, but no cube map is created. The scene updates the
+//! BRDF look-up table generator that Cesium's `update` also touches.
 
 use super::frame_state::{FrameResource, FrameState};
+use crate::core::math::js_number_to_string;
 use crate::core::{Cartesian2, Cartesian3, RuntimeError};
+use crate::renderer::ContextCapabilities;
 
-/// Properties and runtime state for managing image-based lighting (IBL)
-/// on 3D tilesets and models.
-#[derive(Clone, Debug, PartialEq)]
+/// A loading or loaded specular environment cube map.
+pub trait SpecularEnvironmentCubeMap {
+    fn url(&self) -> &str;
+    fn ready(&self) -> bool;
+    /// Called once per updated frame while the cube map is current.
+    fn update(&mut self, frame: &mut FrameState);
+    /// Releases the cube map's resources.
+    fn destroy(&mut self) {}
+}
+
+/// Creates the cube map for a `specularEnvironmentMaps` URL.
+pub type SpecularEnvironmentCubeMapFactory = Box<dyn FnMut(&str) -> Box<dyn SpecularEnvironmentCubeMap>>;
+
+/// `SpecularEnvironmentCubeMap.isSupported`: float or half-float color
+/// buffers and textures, and texture LOD.
+pub fn specular_environment_cube_map_supported(context: &ContextCapabilities) -> bool {
+    let float_buffers_and_textures = (context.color_buffer_half_float && context.half_floating_point_texture)
+        || (context.floating_point_texture && context.color_buffer_float);
+    float_buffers_and_textures && context.supports_texture_lod
+}
+
+/// Constructor options for [`ImageBasedLighting::with_options`].
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ImageBasedLightingConstructorOptions {
+    /// Defaults to `(1, 1)`.
+    pub image_based_lighting_factor: Option<Cartesian2>,
+    pub spherical_harmonic_coefficients: Option<[Cartesian3; 9]>,
+    pub specular_environment_maps: Option<String>,
+}
+
 pub struct ImageBasedLighting {
     image_based_lighting_factor: Cartesian2,
-    previous_factor: Cartesian2,
-    pub spherical_harmonic_coefficients: Option<[Cartesian3; 9]>,
-    previous_spherical_harmonics: Option<[Cartesian3; 9]>,
-    pub specular_environment_maps: Option<String>,
-    pub luminance_at_zenith: f64,
-    should_regenerate_shaders: bool,
-    use_default_spherical_harmonics: bool,
+    spherical_harmonic_coefficients: Option<[Cartesian3; 9]>,
+    specular_environment_maps: Option<String>,
+    specular_environment_cube_map: Option<Box<dyn SpecularEnvironmentCubeMap>>,
+    specular_environment_cube_map_dirty: bool,
+    specular_environment_map_loaded: bool,
+    previous_specular_environment_map_loaded: bool,
     use_default_specular_maps: bool,
-    loaded_specular_map: Option<(String, FrameResource)>,
-    previous_specular_ready: bool,
-    previous_frame: Option<(u32, Option<FrameResource>)>,
+    use_default_spherical_harmonics: bool,
+    should_regenerate_shaders: bool,
+    previous_frame_number: Option<u32>,
+    /// `_previousFrameContext`; `Some(None)` is a frame without a context.
+    previous_frame_context: Option<Option<FrameResource>>,
+    previous_image_based_lighting_factor: Cartesian2,
+    previous_spherical_harmonic_coefficients: Option<[Cartesian3; 9]>,
+    factory: Option<SpecularEnvironmentCubeMapFactory>,
     destroyed: bool,
+}
+
+impl std::fmt::Debug for ImageBasedLighting {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ImageBasedLighting")
+            .field("image_based_lighting_factor", &self.image_based_lighting_factor)
+            .field("spherical_harmonic_coefficients", &self.spherical_harmonic_coefficients)
+            .field("specular_environment_maps", &self.specular_environment_maps)
+            .field("specular_environment_cube_map", &self.specular_environment_cube_map.as_ref().map(|m| m.url()))
+            .field("should_regenerate_shaders", &self.should_regenerate_shaders)
+            .finish_non_exhaustive()
+    }
 }
 
 impl Default for ImageBasedLighting {
@@ -29,122 +84,203 @@ impl Default for ImageBasedLighting {
     }
 }
 
-impl ImageBasedLighting {
-    /// Creates a new `ImageBasedLighting` manager with default lighting parameters.
-    pub fn new() -> Self {
-        Self {
-            image_based_lighting_factor: Cartesian2::new(1.0, 1.0),
-            previous_factor: Cartesian2::new(1.0, 1.0),
-            spherical_harmonic_coefficients: None,
-            previous_spherical_harmonics: None,
-            specular_environment_maps: None,
-            luminance_at_zenith: 0.2,
-            should_regenerate_shaders: false,
-            use_default_spherical_harmonics: false,
-            use_default_specular_maps: false,
-            loaded_specular_map: None,
-            previous_specular_ready: false,
-            previous_frame: None,
-            destroyed: false,
+/// Cesium's `Check` range tests: NaN passes both.
+fn check_factor(prefix: &str, factor: Cartesian2) -> Result<(), RuntimeError> {
+    for (axis, value) in [("x", factor.x), ("y", factor.y)] {
+        let shown = js_number_to_string(value);
+        if value < 0.0 {
+            return Err(RuntimeError::new(format!(
+                "Expected {prefix}.{axis} to be greater than or equal to 0, actual value was {shown}"
+            )));
+        }
+        if value > 1.0 {
+            return Err(RuntimeError::new(format!(
+                "Expected {prefix}.{axis} to be less than or equal to 1, actual value was {shown}"
+            )));
         }
     }
+    Ok(())
+}
 
-    /// Scaling factors for diffuse and specular image-based lighting.
+impl ImageBasedLighting {
+    pub fn new() -> Self {
+        Self::with_options(ImageBasedLightingConstructorOptions::default())
+            .expect("default image-based lighting options are valid")
+    }
+
+    pub fn with_options(options: ImageBasedLightingConstructorOptions) -> Result<Self, RuntimeError> {
+        let factor = options.image_based_lighting_factor.unwrap_or(Cartesian2::new(1.0, 1.0));
+        check_factor("options.imageBasedLightingFactor", factor)?;
+        Ok(Self {
+            image_based_lighting_factor: factor,
+            spherical_harmonic_coefficients: options.spherical_harmonic_coefficients,
+            specular_environment_maps: options.specular_environment_maps,
+            specular_environment_cube_map: None,
+            specular_environment_cube_map_dirty: true,
+            specular_environment_map_loaded: false,
+            previous_specular_environment_map_loaded: false,
+            use_default_specular_maps: false,
+            use_default_spherical_harmonics: false,
+            should_regenerate_shaders: false,
+            previous_frame_number: None,
+            previous_frame_context: None,
+            previous_image_based_lighting_factor: factor,
+            previous_spherical_harmonic_coefficients: options.spherical_harmonic_coefficients,
+            factory: None,
+            destroyed: false,
+        })
+    }
+
+    /// Installs the host's cube-map loader.
+    pub fn set_specular_environment_cube_map_factory(&mut self, factory: SpecularEnvironmentCubeMapFactory) {
+        self.factory = Some(factory);
+    }
+
     pub fn image_based_lighting_factor(&self) -> Cartesian2 {
         self.image_based_lighting_factor
     }
 
-    /// Sets the image-based lighting factor. Components must be in [0.0, 1.0].
+    /// Components must be in [0, 1]. The replaced value becomes the one the
+    /// next update compares against.
     pub fn set_image_based_lighting_factor(&mut self, factor: Cartesian2) -> Result<(), RuntimeError> {
-        if factor.x < 0.0 || factor.x > 1.0 || factor.y < 0.0 || factor.y > 1.0 {
-            return Err(RuntimeError::new("image_based_lighting_factor components must be between 0.0 and 1.0."));
-        }
+        check_factor("imageBasedLightingFactor", factor)?;
+        self.previous_image_based_lighting_factor = self.image_based_lighting_factor;
         self.image_based_lighting_factor = factor;
         Ok(())
     }
 
-    /// Returns `true` if image-based lighting has a non-zero contribution.
+    pub fn spherical_harmonic_coefficients(&self) -> Option<&[Cartesian3; 9]> {
+        self.spherical_harmonic_coefficients.as_ref()
+    }
+
+    pub fn set_spherical_harmonic_coefficients(&mut self, coefficients: Option<[Cartesian3; 9]>) {
+        self.previous_spherical_harmonic_coefficients = self.spherical_harmonic_coefficients;
+        self.spherical_harmonic_coefficients = coefficients;
+    }
+
+    pub fn specular_environment_maps(&self) -> Option<&str> {
+        self.specular_environment_maps.as_deref()
+    }
+
+    /// A different URL marks the cube map dirty and not loaded.
+    pub fn set_specular_environment_maps(&mut self, url: Option<String>) {
+        if url != self.specular_environment_maps {
+            self.specular_environment_cube_map_dirty = true;
+            self.specular_environment_map_loaded = false;
+        }
+        self.specular_environment_maps = url;
+    }
+
+    /// `enabled`: either factor is positive.
     pub fn is_enabled(&self) -> bool {
         self.image_based_lighting_factor.x > 0.0 || self.image_based_lighting_factor.y > 0.0
     }
 
-    /// Whether models using this lighting should regenerate their shader programs.
     pub fn should_regenerate_shaders(&self) -> bool {
         self.should_regenerate_shaders
     }
 
-    /// Whether to fall back to procedural default spherical harmonics coefficients.
+    pub fn specular_environment_cube_map(&self) -> Option<&dyn SpecularEnvironmentCubeMap> {
+        self.specular_environment_cube_map.as_deref()
+    }
+
     pub fn use_default_spherical_harmonics(&self) -> bool {
         self.use_default_spherical_harmonics
     }
 
-    /// Whether to fall back to procedural default specular environment maps.
     pub fn use_default_specular_maps(&self) -> bool {
         self.use_default_specular_maps
     }
 
-    /// Whether image-based lighting currently uses specular environment maps.
+    /// A ready cube map, or the scene's default maps.
     pub fn use_specular_environment_maps(&self) -> bool {
-        self.specular_environment_map().is_some() || self.use_default_specular_maps
+        self.specular_environment_cube_map.as_ref().is_some_and(|m| m.ready()) || self.use_default_specular_maps
     }
 
-    /// Retain a loaded GPU environment resource. A URL by itself is never ready.
-    /// The loading owner supplies the atlas/cube map after upload has succeeded.
-    pub fn set_specular_environment_map(&mut self, url: String, resource: FrameResource) {
-        self.loaded_specular_map = Some((url, resource));
-    }
-
-    pub fn specular_environment_map(&self) -> Option<&FrameResource> {
-        self.loaded_specular_map
-            .as_ref()
-            .filter(|(url, _)| Some(url) == self.specular_environment_maps.as_ref())
-            .map(|(_, map)| map)
-    }
-
-    /// Updates image-based lighting state and detects dirty shader boundaries for the frame.
-    pub fn update(&mut self, frame: &mut FrameState) {
-        let frame_key = (frame.frame_number, frame.context.clone());
-        if self.previous_frame.as_ref() == Some(&frame_key) {
+    /// `createSpecularEnvironmentCubeMap`.
+    fn create_specular_environment_cube_map(&mut self, context: &ContextCapabilities) {
+        if !specular_environment_cube_map_supported(context) {
             return;
         }
-        self.previous_frame = Some(frame_key);
-        if self
-            .loaded_specular_map
-            .as_ref()
-            .is_some_and(|(url, _)| Some(url) != self.specular_environment_maps.as_ref())
-        {
-            self.loaded_specular_map = None;
+        if let Some(mut old) = self.specular_environment_cube_map.take() {
+            old.destroy();
         }
-        let specular_ready = self.specular_environment_map().is_some();
-        let default_specular = self.specular_environment_maps.is_none() && frame.specular_environment_maps.is_some();
-        let default_sh =
-            self.spherical_harmonic_coefficients.is_none() && frame.spherical_harmonic_coefficients.is_some();
-        let current_factor = self.image_based_lighting_factor;
-        let factor_changed = ((current_factor.x > 0.0) != (self.previous_factor.x > 0.0))
-            || ((current_factor.y > 0.0) != (self.previous_factor.y > 0.0));
-
-        let sh_changed = self.spherical_harmonic_coefficients.is_some() != self.previous_spherical_harmonics.is_some();
-
-        self.should_regenerate_shaders = factor_changed
-            || sh_changed
-            || specular_ready != self.previous_specular_ready
-            || default_specular != self.use_default_specular_maps
-            || default_sh != self.use_default_spherical_harmonics;
-        self.previous_specular_ready = specular_ready;
-        self.use_default_specular_maps = default_specular;
-        self.use_default_spherical_harmonics = default_sh;
-
-        self.previous_factor = current_factor;
-        self.previous_spherical_harmonics = self.spherical_harmonic_coefficients;
+        if let (Some(url), Some(factory)) = (&self.specular_environment_maps, &mut self.factory) {
+            self.specular_environment_cube_map = Some(factory(url));
+        }
+        self.should_regenerate_shaders = true;
     }
 
-    /// Destroys and cleans up image-based lighting resources.
+    /// Cesium's once-per-frame update, skipped when the frame number and
+    /// context both match the previous call.
+    pub fn update(&mut self, frame: &mut FrameState) {
+        if self.previous_frame_number == Some(frame.frame_number)
+            && self.previous_frame_context.as_ref() == Some(&frame.context)
+        {
+            return;
+        }
+        self.previous_frame_number = Some(frame.frame_number);
+        self.previous_frame_context = Some(frame.context.clone());
+
+        self.should_regenerate_shaders = false;
+
+        let factor = self.image_based_lighting_factor;
+        let previous = self.previous_image_based_lighting_factor;
+        if factor != previous {
+            let toggled =
+                |current: f64, before: f64| (current > 0.0 && before == 0.0) || (current == 0.0 && before > 0.0);
+            self.should_regenerate_shaders = toggled(factor.x, previous.x) || toggled(factor.y, previous.y);
+            self.previous_image_based_lighting_factor = factor;
+        }
+
+        if self.previous_spherical_harmonic_coefficients != self.spherical_harmonic_coefficients {
+            self.should_regenerate_shaders |= self.previous_spherical_harmonic_coefficients.is_some()
+                != self.spherical_harmonic_coefficients.is_some();
+            self.previous_spherical_harmonic_coefficients = self.spherical_harmonic_coefficients;
+        }
+
+        self.should_regenerate_shaders |=
+            self.previous_specular_environment_map_loaded != self.specular_environment_map_loaded;
+        self.previous_specular_environment_map_loaded = self.specular_environment_map_loaded;
+
+        if self.specular_environment_cube_map_dirty {
+            let capabilities = frame.context_capabilities.clone();
+            self.create_specular_environment_cube_map(&capabilities);
+            self.specular_environment_cube_map_dirty = false;
+        }
+
+        if let Some(cube_map) = &mut self.specular_environment_cube_map {
+            cube_map.update(frame);
+            if cube_map.ready() {
+                self.specular_environment_map_loaded = true;
+            }
+        }
+
+        let has_cube_map = self.specular_environment_cube_map.is_some();
+        let frame_maps = frame.specular_environment_maps.is_some();
+        let frame_sh = frame.spherical_harmonic_coefficients.is_some();
+        let own_sh = self.spherical_harmonic_coefficients.is_some();
+        let recompile_with_default_cube_map = !has_cube_map && frame_maps && !self.use_default_specular_maps;
+        let recompile_without_default_cube_map = !frame_maps && self.use_default_specular_maps;
+        let recompile_with_default_sh = !own_sh && frame_sh && !self.use_default_spherical_harmonics;
+        let recompile_without_default_sh = !frame_sh && self.use_default_spherical_harmonics;
+        self.should_regenerate_shaders = self.should_regenerate_shaders
+            || recompile_with_default_cube_map
+            || recompile_without_default_cube_map
+            || recompile_with_default_sh
+            || recompile_without_default_sh;
+        self.use_default_specular_maps = !has_cube_map && frame_maps;
+        self.use_default_spherical_harmonics = !own_sh && frame_sh;
+    }
+
+    /// Destroys the cube map.
     pub fn destroy(&mut self) {
-        self.loaded_specular_map = None;
+        if let Some(mut cube_map) = self.specular_environment_cube_map.take() {
+            cube_map.destroy();
+        }
         self.destroyed = true;
     }
 
-    /// Returns whether this instance has been destroyed.
     pub fn is_destroyed(&self) -> bool {
         self.destroyed
     }
