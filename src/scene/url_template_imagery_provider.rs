@@ -352,7 +352,16 @@ impl<H: ImageHost + 'static> ImageryProvider for UrlTemplateImageryProvider<H> {
     }
 
     fn request_image(&self, x: i32, y: i32, level: u32) -> Option<super::ImageryFuture> {
-        let resource = self.tile_resource(x, y, level);
+        self.request_image_with_request(x, y, level, None)
+    }
+    fn request_image_with_request(
+        &self,
+        x: i32,
+        y: i32,
+        level: u32,
+        request: Option<super::imagery_provider::ImageryRequest>,
+    ) -> Option<super::ImageryFuture> {
+        let resource = super::imagery_provider::with_imagery_request(self.tile_resource(x, y, level), request);
         let has_discard_policy = self.tile_discard_policy.is_some();
         self.loader.load_image(resource, has_discard_policy)
     }

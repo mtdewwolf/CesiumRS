@@ -1283,9 +1283,30 @@ owns commands already transferred into a frame. Upload/setup errors mark the til
 failed and raise the layer error event. Compute execution errors are returned to
 the renderer; discard the failed command to release its lease and permit retry.
 
-These modules remain partial. Provider factories and ready-event forwarding,
-terrain-ray picking, complete tile coverage, transport cancellation and the full
-Globe/GlobeSurfaceTileProvider terrain renderer still need work. The existing
+## Imagery requests and provider factories
+
+`ImageryLayer::request_imagery` creates Cesium's per-attempt request
+(`throttle: false`, `throttleByServer: true`, type `IMAGERY`) and passes it
+through `ImageryProvider::request_image_with_request`. Network providers attach
+it to the tile resource with `with_imagery_request`, so the request scheduler
+limits each server to `maximum_requests_per_server` (18) and the remaining tiles
+stay `Unloaded` until a slot frees. A request the scheduler cancels returns its
+tile to `Unloaded` without an error, as in Cesium. Tile credits are read only
+once the provider has returned a request, and again on each retry.
+`tests/scene_imagery_requests.rs` replays the pinned outcomes and a 22-tile
+throttling and cancellation trace through a real `UrlTemplateImageryProvider`.
+
+`ImageryLayer::from_provider_async` and `from_world_imagery` keep the provider
+future on the layer. Drive it with `ImageryLayer::poll_provider` or
+`ImageryLayerCollection::poll_providers`: readiness raises `ready_event` with the
+provider, and failure raises `error_event` (or logs when it has no listeners),
+even after `destroy`, as Cesium does. The collection forwards readiness once per
+`add` as `layer_shown_or_hidden`, including for layers removed before they became
+ready. `tests/scene_imagery_layer_providers.rs` replays nine pinned scenarios.
+
+`Imagery` is validated. `ImageryLayer`, `ImageryLayerCollection` and
+`TileImagery` remain partial: complete skeleton coverage, terrain-ray picking and
+the Globe/GlobeSurfaceTileProvider terrain renderer still need work. The existing
 `GlobeSurfaceTile` CPU module is exported and tracked as partial, with its
 remaining asynchronous terrain and GPU stages documented in the tracker.
 

@@ -182,6 +182,15 @@ impl<H: ImageHost + 'static> ImageryProvider for GoogleEarthEnterpriseImageryPro
         credit.map(|credit| vec![credit])
     }
     fn request_image(&self, x: i32, y: i32, level: u32) -> Option<ImageryFuture> {
+        self.request_image_with_request(x, y, level, None)
+    }
+    fn request_image_with_request(
+        &self,
+        x: i32,
+        y: i32,
+        level: u32,
+        request: Option<super::imagery_provider::ImageryRequest>,
+    ) -> Option<ImageryFuture> {
         let (x_u, y_u) = (x.max(0) as u32, y.max(0) as u32);
         let quad_key = GoogleEarthEnterpriseMetadata::tile_xy_to_quad_key(x_u, y_u, level);
         let info = match self.metadata.get_tile_information(x_u, y_u, level) {
@@ -199,7 +208,7 @@ impl<H: ImageHost + 'static> ImageryProvider for GoogleEarthEnterpriseImageryPro
         if !info.has_imagery() {
             return Some(Box::pin(std::future::ready(Ok(self.invalid_image.clone()))));
         }
-        let resource = self.image_resource(&info, x, y, level);
+        let resource = super::imagery_provider::with_imagery_request(self.image_resource(&info, x, y, level), request);
         let fetch = self.loader.client.fetch_array_buffer(&resource)?;
         let key = self.metadata.key.borrow().clone();
         let proto_imagery = self.metadata.proto_imagery.get();

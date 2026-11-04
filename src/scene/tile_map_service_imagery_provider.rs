@@ -350,7 +350,16 @@ impl<H: ImageHost + 'static> ImageryProvider for TileMapServiceImageryProvider<H
         self.inner.get_tile_credits(x, y, level)
     }
     fn request_image(&self, x: i32, y: i32, level: u32) -> Option<ImageryFuture> {
-        self.inner.request_image(x, y, level)
+        self.request_image_with_request(x, y, level, None)
+    }
+    fn request_image_with_request(
+        &self,
+        x: i32,
+        y: i32,
+        level: u32,
+        request: Option<super::imagery_provider::ImageryRequest>,
+    ) -> Option<ImageryFuture> {
+        self.inner.request_image_with_request(x, y, level, request)
     }
     fn pick_features(
         &self,

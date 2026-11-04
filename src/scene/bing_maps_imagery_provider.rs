@@ -437,8 +437,17 @@ impl<H: ImageHost + 'static> ImageryProvider for BingMapsImageryProvider<H> {
         Some(self.credits_for_tile(x, y, level))
     }
     fn request_image(&self, x: i32, y: i32, level: u32) -> Option<ImageryFuture> {
+        self.request_image_with_request(x, y, level, None)
+    }
+    fn request_image_with_request(
+        &self,
+        x: i32,
+        y: i32,
+        level: u32,
+        request: Option<super::imagery_provider::ImageryRequest>,
+    ) -> Option<ImageryFuture> {
         let has_policy = self.tile_discard_policy.is_some();
-        let fetch = self.loader.load_image(self.image_resource(x, y, level), has_policy)?;
+        let fetch = self.loader.load_image(super::imagery_provider::with_imagery_request(self.image_resource(x, y, level), request), has_policy)?;
         let error_event = self.error_event.clone();
         let url = self.image_resource(x, y, level).url();
         Some(Box::pin(async move {

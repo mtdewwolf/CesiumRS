@@ -9,6 +9,11 @@
 //!
 //! Attach an ImageryTexturePipeline for renderer texture uploads and deferred
 //! Web Mercator reprojection. Drain its typed commands into the compute pass.
+//!
+//! `fromProviderAsync` and `fromWorldImagery` keep the provider future on the
+//! layer. The host drives it with [`ImageryLayer::poll_provider`] (or
+//! `ImageryLayerCollection::poll_providers`), which raises `readyEvent` with
+//! the provider, as Cesium's promise continuation does.
 
 use super::frame_state::FrameState;
 use super::imagery::{Imagery, ImageryCache};
@@ -29,6 +34,10 @@ use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::task::{Context, Poll, Waker};
+
+/// A provider that is still being created, as passed to `fromProviderAsync`.
+pub type ImageryProviderFuture =
+    std::pin::Pin<Box<dyn std::future::Future<Output = Result<Arc<dyn ImageryProvider>, RuntimeError>>>>;
 
 static NEXT_IMAGERY_LAYER_ID: AtomicU64 = AtomicU64::new(1);
 
@@ -91,8 +100,10 @@ pub struct ImageryLayer {
     destroyed: bool,
 
     // Events
-    pub ready_event: Event<()>,
+    /// Raised with the provider once a `fromProviderAsync` provider resolves.
+    pub ready_event: Event<Arc<dyn ImageryProvider>>,
     pub error_event: Event<RuntimeError>,
+    pending_provider: Option<ImageryProviderFuture>,
 
     texture_host: Option<Rc<dyn super::ImageryTextureHost>>,
 
@@ -192,10 +203,77 @@ impl ImageryLayer {
             destroyed: false,
             ready_event: Event::new(),
             error_event: Event::new(),
+            pending_provider: None,
             imagery_cache: Rc::new(RefCell::new(HashMap::new())),
             request_image_error: None,
             texture_host: None,
         }
+    }
+
+    /// `ImageryLayer.fromProviderAsync`: a layer without a provider until
+    /// `provider` resolves. Poll it with [`Self::poll_provider`].
+    pub fn from_provider_async(
+        provider: impl std::future::Future<Output = Result<Arc<dyn ImageryProvider>, RuntimeError>> + 'static,
+        options: ImageryLayerOptions,
+    ) -> Self {
+        let mut layer = Self::new(None, options);
+        layer.pending_provider = Some(Box::pin(provider));
+        layer
+    }
+
+    /// `ImageryLayer.fromWorldImagery`: [`Self::from_provider_async`] with
+    /// `createWorldImageryAsync({ style })`.
+    // Layers hold providers as `Arc<dyn ImageryProvider>`; the Ion provider
+    // shares single-threaded loader state, as every network provider does.
+    #[allow(clippy::arc_with_non_send_sync)]
+    pub fn from_world_imagery<H: crate::core::ImageHost + 'static>(
+        loader: super::ImageryLoader<H>,
+        world: super::create_world_imagery::WorldImageryOptions,
+        options: ImageryLayerOptions,
+    ) -> Self {
+        Self::from_provider_async(
+            async move {
+                let provider = super::create_world_imagery::create_world_imagery_async(loader, world).await?;
+                Ok(Arc::new(provider) as Arc<dyn ImageryProvider>)
+            },
+            options,
+        )
+    }
+
+    /// Whether a `fromProviderAsync` provider is still pending.
+    pub fn has_pending_provider(&self) -> bool {
+        self.pending_provider.is_some()
+    }
+
+    /// Cesium's `handlePromise` continuation. On success, a layer that is not
+    /// destroyed takes the provider and raises `readyEvent`. On failure,
+    /// `errorEvent` is raised when it has listeners, and the error is logged
+    /// otherwise; as in Cesium this happens even after `destroy`.
+    pub fn poll_provider(&mut self, cx: &mut Context<'_>) -> Poll<()> {
+        let Some(future) = &mut self.pending_provider else {
+            return Poll::Ready(());
+        };
+        let result = match future.as_mut().poll(cx) {
+            Poll::Pending => return Poll::Pending,
+            Poll::Ready(result) => result,
+        };
+        self.pending_provider = None;
+        match result {
+            Ok(provider) => {
+                if !self.destroyed {
+                    self.imagery_provider = Some(provider.clone());
+                    self.ready_event.raise_event(&provider);
+                }
+            }
+            Err(error) => {
+                if self.error_event.number_of_listeners() > 0 {
+                    self.error_event.raise_event(&error);
+                } else {
+                    eprintln!("{error}");
+                }
+            }
+        }
+        Poll::Ready(())
     }
 
     /// Wraps a new [`ImageryLayer`] in an [`ImageryLayerHandle`] (`Rc<RefCell<ImageryLayer>>`).
@@ -248,8 +326,8 @@ impl ImageryLayer {
 
     pub fn set_imagery_provider(&mut self, provider: Option<Arc<dyn ImageryProvider>>) {
         self.imagery_provider = provider;
-        if self.imagery_provider.is_some() {
-            self.ready_event.raise_event(&());
+        if let Some(provider) = self.imagery_provider.clone() {
+            self.ready_event.raise_event(&provider);
         }
     }
 
@@ -512,19 +590,25 @@ impl ImageryLayer {
             }
         };
 
-        let credits = provider.get_tile_credits(x, y, level);
-        let future_opt = provider.request_image(x, y, level);
+        // Cesium's doRequest: a fresh request per attempt, then credits only
+        // once the provider has returned a promise.
+        let request = super::imagery_provider::create_imagery_request();
+        let future_opt = provider.request_image_with_request(x, y, level, Some(request.clone()));
 
-        let mut img = imagery_cell.borrow_mut();
         match future_opt {
             None => {
                 // Postpone loading tile: throttled by request scheduler / provider.
+                let mut img = imagery_cell.borrow_mut();
                 img.state = ImageryState::Unloaded;
                 img.in_flight_request = None;
+                img.request = None;
             }
             Some(future) => {
+                let credits = provider.get_tile_credits(x, y, level);
+                let mut img = imagery_cell.borrow_mut();
                 img.state = ImageryState::Transitioning;
                 img.in_flight_request = Some(future);
+                img.request = Some(request);
                 img.credits = credits;
             }
         }
@@ -565,6 +649,7 @@ impl ImageryLayer {
                 img.image = Some(image);
                 img.state = ImageryState::Received;
                 img.in_flight_request = None;
+                img.request = None;
                 if let Some(err) = &mut self.request_image_error {
                     err.report_success();
                 }
@@ -574,6 +659,15 @@ impl ImageryLayer {
                 {
                     let mut img = imagery_cell.borrow_mut();
                     img.in_flight_request = None;
+                    let cancelled = img
+                        .request
+                        .take()
+                        .is_some_and(|r| r.borrow().state == crate::core::RequestState::Cancelled);
+                    if cancelled {
+                        // A cancelled request is not a failure: load it again later.
+                        img.state = ImageryState::Unloaded;
+                        return true;
+                    }
                     img.state = ImageryState::Failed;
                 }
                 let provider = self.imagery_provider.clone();

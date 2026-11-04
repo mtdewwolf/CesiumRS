@@ -427,6 +427,15 @@ impl<H: ImageHost + 'static> ImageryProvider for WebMapServiceImageryProvider<H>
         self.inner.get_tile_credits(x, y, level)
     }
     fn request_image(&self, x: i32, y: i32, level: u32) -> Option<ImageryFuture> {
+        self.request_image_with_request(x, y, level, None)
+    }
+    fn request_image_with_request(
+        &self,
+        x: i32,
+        y: i32,
+        level: u32,
+        request: Option<super::imagery_provider::ImageryRequest>,
+    ) -> Option<ImageryFuture> {
         let data = self.update_time();
         if let Some(dynamic) = &self.time_dynamic {
             let clock = self.clock.as_ref()?;
@@ -434,7 +443,7 @@ impl<H: ImageHost + 'static> ImageryProvider for WebMapServiceImageryProvider<H>
             if let Some(cached) = dynamic.borrow().get_from_cache(x, y, level) {
                 return Some(cached);
             }
-            let result = self.core.provider(data.as_deref()).ok()?.request_image(x, y, level);
+            let result = self.core.provider(data.as_deref()).ok()?.request_image_with_request(x, y, level, request.clone());
             if result.is_some() {
                 dynamic.borrow_mut().check_approaching_interval(
                     x,
@@ -449,7 +458,7 @@ impl<H: ImageHost + 'static> ImageryProvider for WebMapServiceImageryProvider<H>
             }
             return result;
         }
-        self.inner.request_image(x, y, level)
+        self.inner.request_image_with_request(x, y, level, request)
     }
     fn pick_features(&self, x: i32, y: i32, level: u32, longitude: f64, latitude: f64) -> Option<ImageryFeatureFuture> {
         if !self.core.enable_pick_features.get() {

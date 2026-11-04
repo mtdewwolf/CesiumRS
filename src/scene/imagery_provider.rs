@@ -44,6 +44,30 @@ impl PartialEq for ImageryImage {
 /// A pending tile image request.
 pub type ImageryFuture = Pin<Box<dyn Future<Output = Result<ImageryImage, RuntimeError>>>>;
 
+/// The request `ImageryLayer` hands a provider for one tile.
+pub type ImageryRequest = crate::core::RequestHandle<crate::core::HttpResponse>;
+
+/// Cesium's `new Request({ throttle: false, throttleByServer: true, type:
+/// RequestType.IMAGERY })`, created by `ImageryLayer` for every attempt.
+pub fn create_imagery_request() -> ImageryRequest {
+    crate::core::Request::new(crate::core::RequestOptions {
+        throttle: false,
+        throttle_by_server: true,
+        request_type: crate::core::RequestType::Imagery,
+        ..Default::default()
+    })
+    .into_handle()
+}
+
+/// `resource.getDerivedResource({ request })`: the tile resource with the
+/// layer's request, when there is one.
+pub fn with_imagery_request(mut resource: crate::core::Resource, request: Option<ImageryRequest>) -> crate::core::Resource {
+    if let Some(request) = request {
+        resource.request = request;
+    }
+    resource
+}
+
 /// A pending feature pick. `None` means picking is not supported.
 pub type ImageryFeatureFuture =
     Pin<Box<dyn Future<Output = Result<Option<Vec<ImageryLayerFeatureInfo>>, RuntimeError>>>>;
@@ -88,6 +112,23 @@ pub trait ImageryProvider {
     }
     /// Requests one tile image. `None` means the request was throttled.
     fn request_image(&self, x: i32, y: i32, level: u32) -> Option<ImageryFuture>;
+    /// Cesium's `requestImage(x, y, level, request)`. `ImageryLayer` passes
+    /// the request it creates for every tile (`throttle: false`,
+    /// `throttleByServer: true`, type `IMAGERY`). Providers that fetch over
+    /// the network attach it to the tile resource, so the request scheduler
+    /// can throttle it per server and the layer can recognize cancellation.
+    /// The default ignores the request, as Cesium's Grid, TileCoordinates
+    /// and SingleTile providers do.
+    fn request_image_with_request(
+        &self,
+        x: i32,
+        y: i32,
+        level: u32,
+        request: Option<ImageryRequest>,
+    ) -> Option<ImageryFuture> {
+        let _ = request;
+        self.request_image(x, y, level)
+    }
     /// Asynchronous feature picking; providers without support return `None`.
     fn pick_features(
         &self,

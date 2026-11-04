@@ -303,7 +303,16 @@ impl<H: ImageHost + 'static> ImageryProvider for Google2DImageryProvider<H> {
         Some(tile_credits.iter().chain(inner.iter()).cloned().collect())
     }
     fn request_image(&self, x: i32, y: i32, level: u32) -> Option<ImageryFuture> {
-        let image = self.inner.request_image(x, y, level)?;
+        self.request_image_with_request(x, y, level, None)
+    }
+    fn request_image_with_request(
+        &self,
+        x: i32,
+        y: i32,
+        level: u32,
+        request: Option<super::imagery_provider::ImageryRequest>,
+    ) -> Option<ImageryFuture> {
+        let image = self.inner.request_image_with_request(x, y, level, request)?;
         if self.attributions_by_level.borrow().is_some() {
             return Some(image);
         }
