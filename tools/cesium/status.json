@@ -5377,9 +5377,9 @@
     "note": "Options, bounds, transforms, cache, preliminary skeletons and the provider request lifecycle with Cesium's per-tile request, per-server throttling, cancellation, retries and credit order. fromProviderAsync/fromWorldImagery with readyEvent/errorEvent (pinned scenarios), renderer texture upload, filter/mipmap/anisotropy handling and queued Web Mercator reprojection through ImageryTexturePipeline. Complete skeleton coverage (texture rectangles, antimeridian) remains; texel-spacing fixture gaps are unchanged."
   },
   "Scene/ImageryLayerCollection": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::imagery_layer_collection",
-    "note": "Layer management, ordering, visibility and events; once-per-add provider-ready forwarding (pinned scenarios, including removed and twice-added layers); typed renderer compute-queue forwarding and pending reprojection cancellation. Terrain-ray layer/feature picking (pickImageryLayers, pickImageryLayerFeatures) remains and needs Globe."
+    "note": "Ordered layer management, identity, visibility/events, once-per-add provider readiness, typed compute queue/cancellation, pickImageryLayers and concurrent pickImageryLayerFeatures. 33 pinned picking scenarios plus seven native concurrency/ownership/reentrancy checks, existing collection/provider-ready fixtures and renderer queue tests. SceneGlobe supplies the terrain hit and rendered GlobeSurfaceTile list through the typed Scene boundary; the full Globe renderer remains a separate port."
   },
   "Scene/Polyline": {
     "status": "partial",

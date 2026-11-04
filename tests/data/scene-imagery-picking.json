@@ -1,0 +1,3826 @@
+{
+  "cesium": "23.0.0",
+  "scenarios": [
+    {
+      "name": "top-to-bottom and position fallback",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "top",
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "top-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "top"
+          },
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "top",
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "ray misses globe",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "hit": false,
+      "expected": {
+        "layers": null,
+        "hasFuture": false,
+        "features": null,
+        "error": null,
+        "calls": [],
+        "hits": 2
+      }
+    },
+    {
+      "name": "no rendered terrain",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [],
+      "expected": {
+        "layers": null,
+        "hasFuture": false,
+        "features": null,
+        "error": null,
+        "calls": [],
+        "hits": 2
+      }
+    },
+    {
+      "name": "no containing terrain",
+      "location": [
+        2,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": null,
+        "hasFuture": false,
+        "features": null,
+        "error": null,
+        "calls": [],
+        "hits": 2
+      }
+    },
+    {
+      "name": "empty imagery",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": []
+        }
+      ],
+      "expected": {
+        "layers": null,
+        "hasFuture": false,
+        "features": null,
+        "error": null,
+        "calls": [],
+        "hits": 2
+      }
+    },
+    {
+      "name": "loading-only imagery",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ],
+              "ready": false
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ],
+              "ready": false
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": null,
+        "hasFuture": false,
+        "features": null,
+        "error": null,
+        "calls": [],
+        "hits": 2
+      }
+    },
+    {
+      "name": "not-ready layer",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "ready": false
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "no ready layers",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "ready": false
+        },
+        {
+          "name": "top",
+          "ready": false
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": null,
+        "hasFuture": false,
+        "features": null,
+        "error": null,
+        "calls": [],
+        "hits": 2
+      }
+    },
+    {
+      "name": "no pickFeatures methods",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "support": false
+        },
+        {
+          "name": "top",
+          "support": false
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "top",
+          "bottom"
+        ],
+        "hasFuture": false,
+        "features": null,
+        "error": null,
+        "calls": [],
+        "hits": 2
+      }
+    },
+    {
+      "name": "synchronous unsupported pick",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "response": "undefined"
+        },
+        {
+          "name": "top",
+          "response": "undefined"
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "top",
+          "bottom"
+        ],
+        "hasFuture": false,
+        "features": null,
+        "error": null,
+        "calls": [
+          [
+            "top",
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "async undefined and empty",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "response": "none"
+        },
+        {
+          "name": "top",
+          "features": []
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "top",
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [],
+        "error": null,
+        "calls": [
+          [
+            "top",
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "mixed supported providers",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "support": false
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "top",
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "provider rejects",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "response": "error"
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "top",
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": null,
+        "error": "top rejected",
+        "calls": [
+          [
+            "top",
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "lower provider rejects",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "response": "error"
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "top",
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": null,
+        "error": "bottom rejected",
+        "calls": [
+          [
+            "top",
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "completion order differs from attachment order",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ],
+          "delay": 3
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "top",
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "top-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "top"
+          },
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "top",
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "preserve supplied feature position",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "supplied",
+              "position": [
+                -0.2,
+                0.1,
+                -50
+              ],
+              "description": "description",
+              "properties": {
+                "a": 1
+              },
+              "data": {
+                "raw": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "top",
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "top-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "top"
+          },
+          {
+            "name": "supplied",
+            "description": "description",
+            "properties": {
+              "a": 1
+            },
+            "data": {
+              "raw": true
+            },
+            "position": [
+              -0.2,
+              0.1,
+              -50
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "top",
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "duplicate layer attachments",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                2,
+                3,
+                4
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "bottom",
+          "top",
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "top-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "top"
+          },
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "bottom",
+            2,
+            3,
+            4,
+            0,
+            0
+          ],
+          [
+            "top",
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "ancestor coordinates",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -2,
+                -1.5,
+                2,
+                1.5
+              ],
+              "coordinates": [
+                1,
+                2,
+                3
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "bottom",
+            1,
+            2,
+            3,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "imagery misses hit",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                0.2,
+                0.2,
+                0.8,
+                0.8
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "top"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "top-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "top"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "top",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "parent texture area misses hit",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0.7,
+                0.7,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "top"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "top-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "top"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "top",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "first terrain wins",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "first terrain empty still wins",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": []
+        },
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": null,
+        "hasFuture": false,
+        "features": null,
+        "error": null,
+        "calls": [],
+        "hits": 2
+      }
+    },
+    {
+      "name": "later terrain contains hit",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            1,
+            0,
+            2,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "top"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "top-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "top"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "top",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "attached hidden layers remain pickable",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ],
+          "show": false,
+          "alpha": 0
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ],
+          "show": false,
+          "alpha": 0
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "top",
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "top-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "top"
+          },
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "top",
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "attached layers outside this collection",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ],
+          "inCollection": false
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ],
+          "inCollection": false
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "top",
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "top-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "top"
+          },
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "top",
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "parent texture edge inside",
+      "location": [
+        0,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                0.5,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0,
+              123
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "parent texture edge within tolerance",
+      "location": [
+        0.0018,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                0.5,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.0018000000000000002,
+              0,
+              122.99999999882475
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0.0018000000000000002,
+            0
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "parent texture edge outside tolerance",
+      "location": [
+        0.0021,
+        0,
+        123
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                0.5,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": null,
+        "hasFuture": false,
+        "features": null,
+        "error": null,
+        "calls": [],
+        "hits": 2
+      }
+    },
+    {
+      "name": "antimeridian 3.1",
+      "location": [
+        3.1,
+        0.3,
+        20
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            3,
+            -1,
+            -3,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                3,
+                -1,
+                -3,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              3.1,
+              0.29999999999999993,
+              20.00000000072737
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            3.1,
+            0.29999999999999993
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "antimeridian -3.1",
+      "location": [
+        -3.1,
+        0.3,
+        20
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            3,
+            -1,
+            -3,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                3,
+                -1,
+                -3,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              -3.1,
+              0.29999999999999993,
+              20.00000000072737
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            -3.1,
+            0.29999999999999993
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "terrain shared edge uses first",
+      "location": [
+        0,
+        0.2,
+        9
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            0,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "rectangle": [
+            0,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0,
+              0.19999999999999998,
+              8.99999999962411
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0,
+            0.19999999999999998
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "nonzero hit longitude latitude and height",
+      "location": [
+        0.2,
+        0.4,
+        321
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "layers": [
+          "top",
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "top-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.2,
+              0.39999999999999997,
+              320.9999999985914
+            ],
+            "layer": "top"
+          },
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.2,
+              0.39999999999999997,
+              320.9999999985914
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "top",
+            0,
+            0,
+            0,
+            0.2,
+            0.39999999999999997
+          ],
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0.2,
+            0.39999999999999997
+          ]
+        ],
+        "hits": 2
+      }
+    },
+    {
+      "name": "custom scene ellipsoid",
+      "location": [
+        0.2,
+        0.4,
+        2
+      ],
+      "layers": [
+        {
+          "name": "bottom",
+          "features": [
+            {
+              "name": "bottom-a"
+            },
+            {
+              "name": "bottom-b",
+              "position": [
+                0.3,
+                0.4,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "features": [
+            {
+              "name": "top-a"
+            }
+          ]
+        }
+      ],
+      "tiles": [
+        {
+          "rectangle": [
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "imagery": [
+            {
+              "layer": 0,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            },
+            {
+              "layer": 1,
+              "rectangle": [
+                -1,
+                -1,
+                1,
+                1
+              ],
+              "coordinates": [
+                0,
+                0,
+                0
+              ],
+              "texture": [
+                0,
+                0,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "ellipsoid": [
+        2,
+        3,
+        4
+      ],
+      "expected": {
+        "layers": [
+          "top",
+          "bottom"
+        ],
+        "hasFuture": true,
+        "features": [
+          {
+            "name": "top-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.2,
+              0.4,
+              2.0000000000000004
+            ],
+            "layer": "top"
+          },
+          {
+            "name": "bottom-a",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.2,
+              0.4,
+              2.0000000000000004
+            ],
+            "layer": "bottom"
+          },
+          {
+            "name": "bottom-b",
+            "description": null,
+            "properties": null,
+            "data": null,
+            "position": [
+              0.3,
+              0.4,
+              7
+            ],
+            "layer": "bottom"
+          }
+        ],
+        "error": null,
+        "calls": [
+          [
+            "top",
+            0,
+            0,
+            0,
+            0.2,
+            0.4
+          ],
+          [
+            "bottom",
+            0,
+            0,
+            0,
+            0.2,
+            0.4
+          ]
+        ],
+        "hits": 2
+      }
+    }
+  ]
+}

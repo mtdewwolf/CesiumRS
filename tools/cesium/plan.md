@@ -251,3 +251,16 @@ DynamicValue still represents Plane, NearFarScalar, DistanceDisplayCondition and
 PolygonHierarchy as JSON payloads rather than typed variants. Visualizers,
 DataSourceClock/data-source collections and document loaders are next. See
 [DataSources](docs/data-sources.md).
+
+
+### Imagery collection completion
+
+ImageryLayerCollection now includes layer/feature picking, closing its final
+missing public methods. SceneGlobe exposes the terrain hit and rendered surface
+tiles through a typed boundary; no ellipsoid-only substitute is used. Validation
+adds 33 actual Cesium pick scenarios and seven native async/ownership/reentrancy
+checks, alongside the existing ordering, readiness and compute-queue suites.
+
+Next in imagery: complete ImageryLayer skeleton coverage and texel-spacing
+validation, then service-specific provider parity and time-dynamic integration.
+Globe and GlobeSurfaceTileProvider remain separate terrain-renderer projects.

@@ -633,7 +633,7 @@ pub mod imagery_layer;
 pub use imagery_layer::{ImageryLayer, ImageryLayerHandle, ImageryLayerOptions};
 pub mod imagery_layer_collection;
 pub use imagery_layer_collection::{
-    ImageryLayerCollection, ImageryLayerEvent, ImageryLayerMovedEvent, ImageryLayerVisibilityEvent,
+    ImageryLayerCollection, ImageryLayerEvent, ImageryLayerFeaturesFuture, ImageryLayerMovedEvent, ImageryLayerVisibilityEvent, ImageryPickSource,
 };
 
 pub mod polyline;
