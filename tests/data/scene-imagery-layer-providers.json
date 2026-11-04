@@ -1,0 +1,1250 @@
+{
+ "scenarios": [
+  {
+   "name": "resolve-before-add",
+   "steps": [
+    {
+     "op": "make",
+     "args": [
+      "a"
+     ],
+     "events": [],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": []
+    },
+    {
+     "op": "resolve",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "readyEvent",
+       "a",
+       "provider-a"
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": true,
+       "provider": "provider-a",
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": []
+    },
+    {
+     "op": "add",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "layerAdded",
+       "a",
+       0
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": true,
+       "provider": "provider-a",
+       "index": 0,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "add-then-resolve",
+   "steps": [
+    {
+     "op": "make",
+     "args": [
+      "a"
+     ],
+     "events": [],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": []
+    },
+    {
+     "op": "make",
+     "args": [
+      "b",
+      {
+       "show": false
+      }
+     ],
+     "events": [],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": []
+    },
+    {
+     "op": "add",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "layerAdded",
+       "a",
+       0
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a"
+     ]
+    },
+    {
+     "op": "add",
+     "args": [
+      "b"
+     ],
+     "events": [
+      [
+       "layerShownOrHidden",
+       "b",
+       1,
+       false
+      ],
+      [
+       "layerAdded",
+       "b",
+       1
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": 1,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a",
+      "b"
+     ]
+    },
+    {
+     "op": "resolve",
+     "args": [
+      "b"
+     ],
+     "events": [
+      [
+       "readyEvent",
+       "b",
+       "provider-b"
+      ],
+      [
+       "layerShownOrHidden",
+       "b",
+       1,
+       false
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      },
+      "b": {
+       "ready": true,
+       "provider": "provider-b",
+       "index": 1,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a",
+      "b"
+     ]
+    },
+    {
+     "op": "resolve",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "readyEvent",
+       "a",
+       "provider-a"
+      ],
+      [
+       "layerShownOrHidden",
+       "a",
+       0,
+       true
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": true,
+       "provider": "provider-a",
+       "index": 0,
+       "destroyed": false
+      },
+      "b": {
+       "ready": true,
+       "provider": "provider-b",
+       "index": 1,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a",
+      "b"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "moved-before-ready",
+   "steps": [
+    {
+     "op": "make",
+     "args": [
+      "a"
+     ],
+     "events": [],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": []
+    },
+    {
+     "op": "make",
+     "args": [
+      "b"
+     ],
+     "events": [],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": []
+    },
+    {
+     "op": "make",
+     "args": [
+      "c"
+     ],
+     "events": [],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      },
+      "c": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": []
+    },
+    {
+     "op": "add",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "layerAdded",
+       "a",
+       0
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      },
+      "c": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a"
+     ]
+    },
+    {
+     "op": "add",
+     "args": [
+      "b"
+     ],
+     "events": [
+      [
+       "layerAdded",
+       "b",
+       1
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": 1,
+       "destroyed": false
+      },
+      "c": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a",
+      "b"
+     ]
+    },
+    {
+     "op": "add",
+     "args": [
+      "c"
+     ],
+     "events": [
+      [
+       "layerAdded",
+       "c",
+       2
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": 1,
+       "destroyed": false
+      },
+      "c": {
+       "ready": false,
+       "provider": null,
+       "index": 2,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a",
+      "b",
+      "c"
+     ]
+    },
+    {
+     "op": "lowerToBottom",
+     "args": [
+      "c"
+     ],
+     "events": [
+      [
+       "layerMoved",
+       "c",
+       0,
+       2
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 1,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": 2,
+       "destroyed": false
+      },
+      "c": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "c",
+      "a",
+      "b"
+     ]
+    },
+    {
+     "op": "raise",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "layerMoved",
+       "a",
+       2,
+       1
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 2,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": 1,
+       "destroyed": false
+      },
+      "c": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "c",
+      "b",
+      "a"
+     ]
+    },
+    {
+     "op": "resolve",
+     "args": [
+      "c"
+     ],
+     "events": [
+      [
+       "readyEvent",
+       "c",
+       "provider-c"
+      ],
+      [
+       "layerShownOrHidden",
+       "c",
+       0,
+       true
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 2,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": 1,
+       "destroyed": false
+      },
+      "c": {
+       "ready": true,
+       "provider": "provider-c",
+       "index": 0,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "c",
+      "b",
+      "a"
+     ]
+    },
+    {
+     "op": "resolve",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "readyEvent",
+       "a",
+       "provider-a"
+      ],
+      [
+       "layerShownOrHidden",
+       "a",
+       2,
+       true
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": true,
+       "provider": "provider-a",
+       "index": 2,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": 1,
+       "destroyed": false
+      },
+      "c": {
+       "ready": true,
+       "provider": "provider-c",
+       "index": 0,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "c",
+      "b",
+      "a"
+     ]
+    },
+    {
+     "op": "resolve",
+     "args": [
+      "b"
+     ],
+     "events": [
+      [
+       "readyEvent",
+       "b",
+       "provider-b"
+      ],
+      [
+       "layerShownOrHidden",
+       "b",
+       1,
+       true
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": true,
+       "provider": "provider-a",
+       "index": 2,
+       "destroyed": false
+      },
+      "b": {
+       "ready": true,
+       "provider": "provider-b",
+       "index": 1,
+       "destroyed": false
+      },
+      "c": {
+       "ready": true,
+       "provider": "provider-c",
+       "index": 0,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "c",
+      "b",
+      "a"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "removed-before-ready",
+   "steps": [
+    {
+     "op": "make",
+     "args": [
+      "a"
+     ],
+     "events": [],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": []
+    },
+    {
+     "op": "make",
+     "args": [
+      "b"
+     ],
+     "events": [],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": []
+    },
+    {
+     "op": "add",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "layerAdded",
+       "a",
+       0
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a"
+     ]
+    },
+    {
+     "op": "add",
+     "args": [
+      "b"
+     ],
+     "events": [
+      [
+       "layerAdded",
+       "b",
+       1
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": 1,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a",
+      "b"
+     ]
+    },
+    {
+     "op": "remove",
+     "args": [
+      "a",
+      false
+     ],
+     "events": [
+      [
+       "layerRemoved",
+       "a",
+       0
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "b"
+     ]
+    },
+    {
+     "op": "resolve",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "readyEvent",
+       "a",
+       "provider-a"
+      ],
+      [
+       "layerShownOrHidden",
+       "a",
+       0,
+       true
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": true,
+       "provider": "provider-a",
+       "index": 0,
+       "destroyed": false
+      },
+      "b": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "b"
+     ]
+    },
+    {
+     "op": "resolve",
+     "args": [
+      "b"
+     ],
+     "events": [
+      [
+       "readyEvent",
+       "b",
+       "provider-b"
+      ],
+      [
+       "layerShownOrHidden",
+       "b",
+       0,
+       true
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": true,
+       "provider": "provider-a",
+       "index": 0,
+       "destroyed": false
+      },
+      "b": {
+       "ready": true,
+       "provider": "provider-b",
+       "index": 0,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "b"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "added-twice",
+   "steps": [
+    {
+     "op": "make",
+     "args": [
+      "a"
+     ],
+     "events": [],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": []
+    },
+    {
+     "op": "add",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "layerAdded",
+       "a",
+       0
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a"
+     ]
+    },
+    {
+     "op": "add",
+     "args": [
+      "a",
+      0
+     ],
+     "events": [
+      [
+       "layerAdded",
+       "a",
+       0
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 1,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a",
+      "a"
+     ]
+    },
+    {
+     "op": "resolve",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "readyEvent",
+       "a",
+       "provider-a"
+      ],
+      [
+       "layerShownOrHidden",
+       "a",
+       1,
+       true
+      ],
+      [
+       "layerShownOrHidden",
+       "a",
+       1,
+       true
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": true,
+       "provider": "provider-a",
+       "index": 1,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a",
+      "a"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "destroyed-before-ready",
+   "steps": [
+    {
+     "op": "make",
+     "args": [
+      "a"
+     ],
+     "events": [],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": []
+    },
+    {
+     "op": "add",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "layerAdded",
+       "a",
+       0
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a"
+     ]
+    },
+    {
+     "op": "remove",
+     "args": [
+      "a",
+      true
+     ],
+     "events": [
+      [
+       "layerRemoved",
+       "a",
+       0
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": null,
+       "provider": null,
+       "index": 0,
+       "destroyed": true
+      }
+     },
+     "order": []
+    },
+    {
+     "op": "resolve",
+     "args": [
+      "a"
+     ],
+     "events": [],
+     "state": {
+      "a": {
+       "ready": null,
+       "provider": null,
+       "index": 0,
+       "destroyed": true
+      }
+     },
+     "order": []
+    }
+   ]
+  },
+  {
+   "name": "destroyed-then-rejected",
+   "steps": [
+    {
+     "op": "make",
+     "args": [
+      "a"
+     ],
+     "events": [],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": []
+    },
+    {
+     "op": "destroy",
+     "args": [
+      "a"
+     ],
+     "events": [],
+     "state": {
+      "a": {
+       "ready": null,
+       "provider": null,
+       "index": -1,
+       "destroyed": true
+      }
+     },
+     "order": []
+    },
+    {
+     "op": "reject",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "errorEvent",
+       "a",
+       "failed a"
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": null,
+       "provider": null,
+       "index": -1,
+       "destroyed": true
+      }
+     },
+     "order": []
+    }
+   ]
+  },
+  {
+   "name": "rejected-with-listener",
+   "steps": [
+    {
+     "op": "make",
+     "args": [
+      "a"
+     ],
+     "events": [],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": []
+    },
+    {
+     "op": "add",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "layerAdded",
+       "a",
+       0
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a"
+     ]
+    },
+    {
+     "op": "reject",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "errorEvent",
+       "a",
+       "failed a"
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "rejected-without-listener",
+   "steps": [
+    {
+     "op": "make",
+     "args": [
+      "a",
+      {},
+      {
+       "ready": true,
+       "error": false
+      }
+     ],
+     "events": [],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": -1,
+       "destroyed": false
+      }
+     },
+     "order": []
+    },
+    {
+     "op": "add",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "layerAdded",
+       "a",
+       0
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a"
+     ]
+    },
+    {
+     "op": "reject",
+     "args": [
+      "a"
+     ],
+     "events": [
+      [
+       "consoleError",
+       "failed a"
+      ]
+     ],
+     "state": {
+      "a": {
+       "ready": false,
+       "provider": null,
+       "index": 0,
+       "destroyed": false
+      }
+     },
+     "order": [
+      "a"
+     ]
+    }
+   ]
+  }
+ ]
+}

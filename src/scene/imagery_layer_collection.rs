@@ -1,5 +1,11 @@
 //! CesiumJS `ImageryLayerCollection`: an ordered collection of imagery layers.
-//! Partial port: terrain-ray picking and provider-ready forwarding remain.
+//! Partial port: terrain-ray picking remains.
+//!
+//! Cesium's `add` subscribes once to the layer's `readyEvent` and raises
+//! `layerShownOrHidden(layer, layer._layerIndex, layer.show)` when it fires,
+//! even if the layer has been removed by then. Core event listeners must be
+//! `Send`, so the collection keeps these subscriptions itself and delivers
+//! them from [`ImageryLayerCollection::poll_providers`].
 
 use super::imagery_layer::{ImageryLayer, ImageryLayerHandle, ImageryLayerOptions};
 use super::imagery_provider::ImageryProvider;
@@ -34,6 +40,8 @@ pub struct ImageryLayerVisibilityEvent {
 pub struct ImageryLayerCollection {
     layers: Vec<ImageryLayerHandle>,
     destroyed: bool,
+    /// One entry per `add` of a layer that was not ready yet.
+    ready_subscriptions: Vec<ImageryLayerHandle>,
 
     pub layer_added: Event<ImageryLayerEvent>,
     pub layer_removed: Event<ImageryLayerEvent>,
@@ -61,6 +69,7 @@ impl ImageryLayerCollection {
         Self {
             layers: Vec::new(),
             destroyed: false,
+            ready_subscriptions: Vec::new(),
             layer_added: Event::new(),
             layer_removed: Event::new(),
             layer_moved: Event::new(),
@@ -101,10 +110,48 @@ impl ImageryLayerCollection {
 
         self.update();
         self.layer_added.raise_event(&ImageryLayerEvent {
-            layer,
+            layer: layer.clone(),
             index: idx,
         });
+        // A layer that is already ready never raises readyEvent again.
+        if !layer.borrow().ready() {
+            self.ready_subscriptions.push(layer);
+        }
         Ok(())
+    }
+
+    /// Drives the provider futures of the layers in this collection and of
+    /// layers still waiting to forward readiness, then delivers Cesium's
+    /// once-per-`add` `layerShownOrHidden` for every layer that has become
+    /// ready. Returns the number of forwarded events.
+    pub fn poll_providers(&mut self, cx: &mut std::task::Context<'_>) -> usize {
+        let mut polled: Vec<ImageryLayerHandle> = Vec::new();
+        for layer in self.layers.iter().chain(&self.ready_subscriptions) {
+            if !polled.iter().any(|p| Rc::ptr_eq(p, layer)) {
+                polled.push(layer.clone());
+                let _ = layer.borrow_mut().poll_provider(cx);
+            }
+        }
+        let mut forwarded = 0;
+        let mut pending = Vec::new();
+        for layer in std::mem::take(&mut self.ready_subscriptions) {
+            let (ready, destroyed, waiting, index, show) = {
+                let l = layer.borrow();
+                (l.ready(), l.is_destroyed(), l.has_pending_provider(), l.layer_index, l.show)
+            };
+            if ready && !destroyed {
+                self.layer_shown_or_hidden.raise_event(&ImageryLayerVisibilityEvent {
+                    layer,
+                    index: index.max(0) as usize,
+                    show,
+                });
+                forwarded += 1;
+            } else if !destroyed || waiting {
+                pending.push(layer);
+            }
+        }
+        self.ready_subscriptions = pending;
+        forwarded
     }
 
     pub fn add_imagery_provider(
