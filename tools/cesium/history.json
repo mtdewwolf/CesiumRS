@@ -598,5 +598,13 @@
     "ported": 1059,
     "implemented": 13,
     "validatedPercent": 63.54
+  },
+  {
+    "milestone": "Imagery requests and provider factories",
+    "date": "2026-11-04",
+    "percent": 72.54,
+    "ported": 1060,
+    "implemented": 13,
+    "validatedPercent": 63.57
   }
 ]

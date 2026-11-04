@@ -5309,7 +5309,7 @@
   "Scene/createWorldImageryAsync": {
     "status": "partial",
     "rust": "scene::create_world_imagery",
-    "note": "World imagery style and async ion provider factory; style asset IDs are tested. Full ion provider and ImageryLayer integration remain."
+    "note": "World imagery style and async ion provider factory; style asset IDs are tested, and ImageryLayer.fromWorldImagery consumes it. Full ion provider parity remains."
   },
   "Scene/Google2DImageryProvider": {
     "status": "partial",
@@ -5362,9 +5362,9 @@
     "note": "WMTS KVP and REST URLs, matrix labels, dynamic dimensions and interval future caching; pinned provider fixtures and eight native time-dynamic tests. Cached futures are not driven in the background, and ImageryLayer integration and full service parity remain."
   },
   "Scene/Imagery": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::imagery",
-    "note": "Tile metadata, parent references, manually polled provider futures and resource release. Layer-driven GPU upload/reprojection uses renderer texture leases; pending compute cancellation/drop restores TextureLoaded and releases its imagery reference. Full transport cancellation remains."
+    "note": "Tile metadata, parent references, reference counting and resource release; layer-driven GPU upload and Web Mercator reprojection through renderer texture leases (SwiftShader pixel comparisons). Each attempt carries Cesium's IMAGERY request (throttle false, throttleByServer true); a cancelled request returns the tile to UNLOADED without an error. Pinned CesiumJS request traces in tests/scene_imagery_requests.rs, including per-server throttling and cancellation through the request scheduler."
   },
   "Scene/TileImagery": {
     "status": "partial",
@@ -5374,12 +5374,12 @@
   "Scene/ImageryLayer": {
     "status": "partial",
     "rust": "scene::imagery_layer",
-    "note": "Options, bounds, transforms, cache, preliminary skeletons and provider request lifecycle. Renderer texture upload, filter/mipmap/anisotropy handling and queued 2x64 Web Mercator reprojection are implemented through ImageryTexturePipeline. Complete coverage, provider factories/events and transport cancellation remain; texel-spacing fixture gaps are unchanged."
+    "note": "Options, bounds, transforms, cache, preliminary skeletons and the provider request lifecycle with Cesium's per-tile request, per-server throttling, cancellation, retries and credit order. fromProviderAsync/fromWorldImagery with readyEvent/errorEvent (pinned scenarios), renderer texture upload, filter/mipmap/anisotropy handling and queued Web Mercator reprojection through ImageryTexturePipeline. Complete skeleton coverage (texture rectangles, antimeridian) remains; texel-spacing fixture gaps are unchanged."
   },
   "Scene/ImageryLayerCollection": {
     "status": "partial",
     "rust": "scene::imagery_layer_collection",
-    "note": "Layer management, ordering, visibility and events; reference fixtures and hidden-layer regression. Typed renderer compute-queue forwarding and pending reprojection cancellation are implemented. Provider-ready forwarding and terrain-ray layer/feature picking remain."
+    "note": "Layer management, ordering, visibility and events; once-per-add provider-ready forwarding (pinned scenarios, including removed and twice-added layers); typed renderer compute-queue forwarding and pending reprojection cancellation. Terrain-ray layer/feature picking (pickImageryLayers, pickImageryLayerFeatures) remains and needs Globe."
   },
   "Scene/Polyline": {
     "status": "partial",

@@ -1,0 +1,358 @@
+{
+ "outcomes": [
+  {
+   "script": [
+    "undefined"
+   ],
+   "requests": [
+    {
+     "throttle": false,
+     "throttleByServer": true,
+     "type": 1,
+     "state": "UNISSUED"
+    }
+   ],
+   "afterCall": {
+    "state": "UNLOADED",
+    "hasRequest": false,
+    "credits": null
+   },
+   "final": {
+    "state": "UNLOADED",
+    "hasRequest": false,
+    "hasImage": false
+   },
+   "creditsCalls": 0,
+   "errors": []
+  },
+  {
+   "script": [
+    "resolve"
+   ],
+   "requests": [
+    {
+     "throttle": false,
+     "throttleByServer": true,
+     "type": 1,
+     "state": "UNISSUED"
+    }
+   ],
+   "afterCall": {
+    "state": "TRANSITIONING",
+    "hasRequest": true,
+    "credits": 1
+   },
+   "final": {
+    "state": "RECEIVED",
+    "hasRequest": false,
+    "hasImage": true
+   },
+   "creditsCalls": 1,
+   "errors": []
+  },
+  {
+   "script": [
+    "resolveUndefined"
+   ],
+   "requests": [
+    {
+     "throttle": false,
+     "throttleByServer": true,
+     "type": 1,
+     "state": "UNISSUED"
+    }
+   ],
+   "afterCall": {
+    "state": "TRANSITIONING",
+    "hasRequest": true,
+    "credits": 1
+   },
+   "final": {
+    "state": "FAILED",
+    "hasRequest": false,
+    "hasImage": false
+   },
+   "creditsCalls": 1,
+   "errors": [
+    {
+     "message": "Failed to obtain image tile X: 1 Y: 2 Level: 3.",
+     "timesRetried": 0,
+     "x": 1,
+     "y": 2,
+     "level": 3
+    }
+   ]
+  },
+  {
+   "script": [
+    "reject"
+   ],
+   "requests": [
+    {
+     "throttle": false,
+     "throttleByServer": true,
+     "type": 1,
+     "state": "UNISSUED"
+    }
+   ],
+   "afterCall": {
+    "state": "TRANSITIONING",
+    "hasRequest": true,
+    "credits": 1
+   },
+   "final": {
+    "state": "FAILED",
+    "hasRequest": false,
+    "hasImage": false
+   },
+   "creditsCalls": 1,
+   "errors": [
+    {
+     "message": "Failed to obtain image tile X: 1 Y: 2 Level: 3.",
+     "timesRetried": 0,
+     "x": 1,
+     "y": 2,
+     "level": 3
+    }
+   ]
+  },
+  {
+   "script": [
+    "cancelReject"
+   ],
+   "requests": [
+    {
+     "throttle": false,
+     "throttleByServer": true,
+     "type": 1,
+     "state": "UNISSUED"
+    }
+   ],
+   "afterCall": {
+    "state": "TRANSITIONING",
+    "hasRequest": true,
+    "credits": 1
+   },
+   "final": {
+    "state": "UNLOADED",
+    "hasRequest": false,
+    "hasImage": false
+   },
+   "creditsCalls": 1,
+   "errors": []
+  },
+  {
+   "script": [
+    "reject",
+    "reject",
+    "resolve"
+   ],
+   "requests": [
+    {
+     "throttle": false,
+     "throttleByServer": true,
+     "type": 1,
+     "state": "UNISSUED"
+    },
+    {
+     "throttle": false,
+     "throttleByServer": true,
+     "type": 1,
+     "state": "UNISSUED"
+    },
+    {
+     "throttle": false,
+     "throttleByServer": true,
+     "type": 1,
+     "state": "UNISSUED"
+    }
+   ],
+   "afterCall": {
+    "state": "TRANSITIONING",
+    "hasRequest": true,
+    "credits": 1
+   },
+   "final": {
+    "state": "RECEIVED",
+    "hasRequest": false,
+    "hasImage": true
+   },
+   "creditsCalls": 3,
+   "errors": [
+    {
+     "message": "Failed to obtain image tile X: 1 Y: 2 Level: 3.",
+     "timesRetried": 0,
+     "x": 1,
+     "y": 2,
+     "level": 3
+    },
+    {
+     "message": "Failed to obtain image tile X: 1 Y: 2 Level: 3.",
+     "timesRetried": 1,
+     "x": 1,
+     "y": 2,
+     "level": 3
+    }
+   ]
+  }
+ ],
+ "throttling": {
+  "maximumRequestsPerServer": 18,
+  "afterRequests": {
+   "states": [
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "UNLOADED",
+    "UNLOADED",
+    "UNLOADED",
+    "UNLOADED"
+   ],
+   "requestStates": [
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    null,
+    null,
+    null,
+    null
+   ],
+   "active": 18,
+   "serverKey": "tiles.example.com:443"
+  },
+  "afterCancel": {
+   "states": [
+    "UNLOADED",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "UNLOADED",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "UNLOADED",
+    "UNLOADED",
+    "UNLOADED",
+    "UNLOADED"
+   ],
+   "requestStates": [
+    null,
+    "ACTIVE",
+    "ACTIVE",
+    null,
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    null,
+    null,
+    null,
+    null
+   ],
+   "active": 16,
+   "serverKey": null
+  },
+  "afterRetry": {
+   "states": [
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "TRANSITIONING",
+    "UNLOADED",
+    "UNLOADED",
+    "UNLOADED",
+    "UNLOADED"
+   ],
+   "requestStates": [
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    "ACTIVE",
+    null,
+    null,
+    null,
+    null
+   ],
+   "active": 18,
+   "serverKey": "tiles.example.com:443"
+  }
+ }
+}

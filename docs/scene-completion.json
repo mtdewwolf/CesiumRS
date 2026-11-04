@@ -212,8 +212,8 @@
       "module": "Scene/createWorldImageryAsync",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "World imagery style and async ion provider factory; style asset IDs are tested. Full ion provider and ImageryLayer integration remain."
+      "status": "in-progress",
+      "remaining": "World imagery style and async ion provider factory; style asset IDs are tested, and ImageryLayer.fromWorldImagery consumes it. Full ion provider parity remains."
     },
     {
       "module": "Scene/Google2DImageryProvider",
@@ -289,8 +289,9 @@
       "module": "Scene/Imagery",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "Tile metadata, parent references, manually polled provider futures and resource release; native lifecycle cases. Transport cancellation, GPU upload and reprojection remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_imagery_requests.rs (pinned CesiumJS request outcomes, per-server throttling and cancellation), tests/scene_imagery_gpu.rs and the SwiftShader imagery pixel comparisons."
     },
     {
       "module": "Scene/TileImagery",
@@ -303,15 +304,15 @@
       "module": "Scene/ImageryLayer",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "Layer options, imagery bounds, texture transforms, cache, initial skeletons and provider request lifecycle; reference fixture and native lifecycle cases. Complete tile coverage, transport cancellation and GPU reprojection remain; seven texel-spacing expectations are computed separately from Cesium’s private function."
+      "status": "in-progress",
+      "remaining": "Options, bounds, transforms, cache, preliminary skeletons and the provider request lifecycle with Cesium's per-tile request, per-server throttling, cancellation, retries and credit order. fromProviderAsync/fromWorldImagery with readyEvent/errorEvent (pinned scenarios), renderer texture upload, filter/mipmap/anisotropy handling and queued Web Mercator reprojection through ImageryTexturePipeline. Complete skeleton coverage (texture rectangles, antimeridian) remains; texel-spacing fixture gaps are unchanged."
     },
     {
       "module": "Scene/ImageryLayerCollection",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "Layer management, ordering, visibility and events; reference fixtures and a hidden-layer regression. Provider-ready event forwarding, terrain-ray feature picking and reprojection command integration remain."
+      "status": "in-progress",
+      "remaining": "Layer management, ordering, visibility and events; once-per-add provider-ready forwarding (pinned scenarios, including removed and twice-added layers); typed renderer compute-queue forwarding and pending reprojection cancellation. Terrain-ray layer/feature picking (pickImageryLayers, pickImageryLayerFeatures) remains and needs Globe."
     },
     {
       "module": "Scene/Polyline",

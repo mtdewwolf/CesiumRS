@@ -223,6 +223,9 @@ impl ImageryLayer {
 
     /// `ImageryLayer.fromWorldImagery`: [`Self::from_provider_async`] with
     /// `createWorldImageryAsync({ style })`.
+    // Layers hold providers as `Arc<dyn ImageryProvider>`; the Ion provider
+    // shares single-threaded loader state, as every network provider does.
+    #[allow(clippy::arc_with_non_send_sync)]
     pub fn from_world_imagery<H: crate::core::ImageHost + 'static>(
         loader: super::ImageryLoader<H>,
         world: super::create_world_imagery::WorldImageryOptions,
@@ -587,19 +590,25 @@ impl ImageryLayer {
             }
         };
 
-        let credits = provider.get_tile_credits(x, y, level);
-        let future_opt = provider.request_image(x, y, level);
+        // Cesium's doRequest: a fresh request per attempt, then credits only
+        // once the provider has returned a promise.
+        let request = super::imagery_provider::create_imagery_request();
+        let future_opt = provider.request_image_with_request(x, y, level, Some(request.clone()));
 
-        let mut img = imagery_cell.borrow_mut();
         match future_opt {
             None => {
                 // Postpone loading tile: throttled by request scheduler / provider.
+                let mut img = imagery_cell.borrow_mut();
                 img.state = ImageryState::Unloaded;
                 img.in_flight_request = None;
+                img.request = None;
             }
             Some(future) => {
+                let credits = provider.get_tile_credits(x, y, level);
+                let mut img = imagery_cell.borrow_mut();
                 img.state = ImageryState::Transitioning;
                 img.in_flight_request = Some(future);
+                img.request = Some(request);
                 img.credits = credits;
             }
         }
@@ -640,6 +649,7 @@ impl ImageryLayer {
                 img.image = Some(image);
                 img.state = ImageryState::Received;
                 img.in_flight_request = None;
+                img.request = None;
                 if let Some(err) = &mut self.request_image_error {
                     err.report_success();
                 }
@@ -649,6 +659,15 @@ impl ImageryLayer {
                 {
                     let mut img = imagery_cell.borrow_mut();
                     img.in_flight_request = None;
+                    let cancelled = img
+                        .request
+                        .take()
+                        .is_some_and(|r| r.borrow().state == crate::core::RequestState::Cancelled);
+                    if cancelled {
+                        // A cancelled request is not a failure: load it again later.
+                        img.state = ImageryState::Unloaded;
+                        return true;
+                    }
                     img.state = ImageryState::Failed;
                 }
                 let provider = self.imagery_provider.clone();

@@ -31,6 +31,8 @@ pub struct Imagery {
     pub reference_count: usize,
     pub parent: Option<Rc<RefCell<Imagery>>>,
     pub in_flight_request: Option<ImageryFuture>,
+    /// Cesium's `imagery.request`: the request of the attempt in flight.
+    pub request: Option<super::imagery_provider::ImageryRequest>,
     pub(crate) cache: Weak<ImageryCache>,
 }
 
@@ -70,6 +72,7 @@ impl Imagery {
             reference_count: 0,
             parent,
             in_flight_request: None,
+            request: None,
             cache: Weak::new(),
         }
     }
@@ -89,6 +92,7 @@ impl Imagery {
             reference_count: 1,
             parent: None,
             in_flight_request: None,
+            request: None,
             cache: Weak::new(),
         }
     }

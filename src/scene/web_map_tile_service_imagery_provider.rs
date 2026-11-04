@@ -163,8 +163,9 @@ impl<H: ImageHost + 'static> WmtsCore<H> {
         y: i32,
         level: u32,
         dynamic: Option<&[(String, String)]>,
+        request: Option<super::imagery_provider::ImageryRequest>,
     ) -> Option<ImageryFuture> {
-        let resource = self.image_resource(x, y, level, dynamic).ok()?;
+        let resource = super::imagery_provider::with_imagery_request(self.image_resource(x, y, level, dynamic).ok()?, request);
         let has_policy = self.discard_policy.is_some();
         self.loader.load_image(resource, has_policy)
     }
@@ -243,7 +244,7 @@ impl<H: ImageHost + 'static> WebMapTileServiceImageryProvider<H> {
             let request: super::time_dynamic_imagery::RequestImageFunction<DynamicData> =
                 Rc::new(move |x, y, level, interval| {
                     let core = weak.upgrade()?;
-                    core.request_image(x, y, level, interval.and_then(|i| i.data.as_deref()))
+                    core.request_image(x, y, level, interval.and_then(|i| i.data.as_deref()), None)
                 });
             Rc::new(RefCell::new(TimeDynamicImagery::new(TimeDynamicImageryOptions {
                 times,
@@ -399,6 +400,15 @@ impl<H: ImageHost + 'static> ImageryProvider for WebMapTileServiceImageryProvide
         true
     }
     fn request_image(&self, x: i32, y: i32, level: u32) -> Option<ImageryFuture> {
+        self.request_image_with_request(x, y, level, None)
+    }
+    fn request_image_with_request(
+        &self,
+        x: i32,
+        y: i32,
+        level: u32,
+        request: Option<super::imagery_provider::ImageryRequest>,
+    ) -> Option<ImageryFuture> {
         if let Some(time_dynamic) = &self.time_dynamic {
             let dynamic = self.update_time();
             let clock = self.clock.as_ref()?;
@@ -406,7 +416,7 @@ impl<H: ImageHost + 'static> ImageryProvider for WebMapTileServiceImageryProvide
             let result = if let Some(cached) = time_dynamic.borrow().get_from_cache(x, y, level) {
                 Some(cached)
             } else {
-                self.core.request_image(x, y, level, dynamic.as_deref())
+                self.core.request_image(x, y, level, dynamic.as_deref(), request.clone())
             };
             if result.is_some() {
                 time_dynamic.borrow_mut().check_approaching_interval(
@@ -422,7 +432,7 @@ impl<H: ImageHost + 'static> ImageryProvider for WebMapTileServiceImageryProvide
             }
             return result;
         }
-        self.core.request_image(x, y, level, None)
+        self.core.request_image(x, y, level, None, request)
     }
     fn pick_features(
         &self,

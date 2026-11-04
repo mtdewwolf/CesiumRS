@@ -425,6 +425,15 @@ impl<H: ImageHost + 'static> ImageryProvider for ArcGisMapServerImageryProvider<
         self.tile_credits.clone()
     }
     fn request_image(&self, x: i32, y: i32, level: u32) -> Option<ImageryFuture> {
+        self.request_image_with_request(x, y, level, None)
+    }
+    fn request_image_with_request(
+        &self,
+        x: i32,
+        y: i32,
+        level: u32,
+        request: Option<super::imagery_provider::ImageryRequest>,
+    ) -> Option<ImageryFuture> {
         let resource = build_image_resource_with(
             &self.resource,
             self.use_tiles,
@@ -436,6 +445,7 @@ impl<H: ImageHost + 'static> ImageryProvider for ArcGisMapServerImageryProvider<
             y,
             level,
         );
+        let resource = super::imagery_provider::with_imagery_request(resource, request);
         let has_policy = self.tile_discard_policy.is_some();
         let fetch = self.loader.load_image(resource, has_policy)?;
         Some(fetch)

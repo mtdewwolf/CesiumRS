@@ -82,7 +82,7 @@ try{
     const framebuffer=new ref.PickFramebuffer(context),expected=[];
     for(const [x,y,w,h,limit]of queries){const width=w??3,height=h??width,rectangle=new ref.BoundingRectangle(x*2-(width-1)*.5,8-y*2-(height-1)*.5,width,height),state=framebuffer.begin(rectangle,new ref.BoundingRectangle(0,0,8,8));
       new ref.ClearCommand({color:ref.Color.TRANSPARENT,depth:1,stencil:0}).execute(context,state);command.execute(context,state);
-      let objects;if(asynchronous&&!webgl1){const request=framebuffer.endAsync(rectangle,{afterRender:{push:next=>setTimeout(next,5)}},limit);context.endFrame();objects=await request;}else{objects=framebuffer.end(rectangle,limit);context.endFrame();}
+      let objects;if(asynchronous&&!webgl1){const request=framebuffer.endAsync(rectangle,{afterRender:{push:next=>setTimeout(next,5)}},limit);/* Cesium's Sync does not flush its fence; WebGL 2 only guarantees a flushed fence signals, so SwiftShader can otherwise time out. */context._gl.flush();context.endFrame();objects=await request;}else{objects=framebuffer.end(rectangle,limit);context.endFrame();}
       expected.push(objects.map(o=>o.name));
     }
     const actual=JSON.parse(await wasm.scene_pick(gl,JSON.stringify(config),schedule));
