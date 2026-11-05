@@ -129,7 +129,7 @@ fn primitive_collection_reference() {
         |_| EXACT,
         |f, a| {
             let log = Rc::new(RefCell::new(Vec::new()));
-            let child = |id| Box::new(Child { id, log: Rc::clone(&log) }) as Box<dyn ScenePrimitive>;
+            let child = |id| PrimitiveHandle::new(Child { id, log: Rc::clone(&log) });
             let mut frame = frame();
             match f {
                 "order" => {
@@ -138,19 +138,20 @@ fn primitive_collection_reference() {
                         ..Default::default()
                     });
                     for id in ["a", "b", "c"] {
-                        c.add(child(id));
+                        c.add(child(id), None).unwrap();
                     }
                     c.update(&mut frame).unwrap();
                     let mut result = vec![std::mem::take(&mut *log.borrow_mut())];
                     for op in a[0].as_array().unwrap() {
-                        let index = op[1].as_u64().unwrap() as usize;
+                        // Cesium's fixture passes `c.get(index)`.
+                        let primitive = c.get(op[1].as_u64().unwrap() as usize).unwrap();
                         match s(&op[0]) {
-                            "raise" => c.raise(index),
-                            "raiseToTop" => c.raise_to_top(index),
-                            "lower" => c.lower(index),
-                            "lowerToBottom" => c.lower_to_bottom(index),
+                            "raise" => c.raise(&primitive).unwrap(),
+                            "raiseToTop" => c.raise_to_top(&primitive).unwrap(),
+                            "lower" => c.lower(&primitive).unwrap(),
+                            "lowerToBottom" => c.lower_to_bottom(&primitive).unwrap(),
                             "remove" => {
-                                c.remove(index);
+                                c.remove(&primitive).unwrap();
                             }
                             other => panic!("unknown operation {other}"),
                         }
@@ -165,8 +166,8 @@ fn primitive_collection_reference() {
                         ..Default::default()
                     });
                     let mut nested = PrimitiveCollection::default();
-                    nested.add(child("update"));
-                    c.add(Box::new(nested));
+                    nested.add(child("update"), None).unwrap();
+                    c.add(PrimitiveHandle::new(nested), None).unwrap();
                     c.pre_passes_update(&mut frame).unwrap();
                     c.update(&mut frame).unwrap();
                     c.update_for_pass(&mut frame, Cesium3DTilePass::Render).unwrap();
@@ -178,9 +179,10 @@ fn primitive_collection_reference() {
                         destroy_primitives: a[0].as_bool(),
                         ..Default::default()
                     });
-                    c.add(child("a"));
-                    c.add(child("b"));
-                    c.remove(0);
+                    c.add(child("a"), None).unwrap();
+                    c.add(child("b"), None).unwrap();
+                    let first = c.get(0).unwrap();
+                    c.remove(&first).unwrap();
                     c.destroy().unwrap();
                     Some(Out::Ok(json!({ "log": *log.borrow(), "destroyed": c.is_destroyed() })))
                 }

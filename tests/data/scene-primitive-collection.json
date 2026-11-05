@@ -1,0 +1,2233 @@
+{
+ "scenarios": [
+  {
+   "name": "events-and-indices",
+   "collections": [
+    {}
+   ],
+   "steps": [
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": "a",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "a"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "b",
+     "index": null,
+     "result": "b",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "b"
+      ]
+     ],
+     "order": [
+      [
+       "a",
+       "b"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "c",
+     "index": 1,
+     "result": "c",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "c"
+      ]
+     ],
+     "order": [
+      [
+       "a",
+       "c",
+       "b"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "d",
+     "index": 0,
+     "result": "d",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "d"
+      ]
+     ],
+     "order": [
+      [
+       "d",
+       "a",
+       "c",
+       "b"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": true,
+       "d": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "e",
+     "index": 5,
+     "result": null,
+     "error": "index must be less than or equal to the number of primitives.",
+     "events": [],
+     "order": [
+      [
+       "d",
+       "a",
+       "c",
+       "b"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": true,
+       "d": true,
+       "e": false
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null,
+      "e": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "e",
+     "index": 4,
+     "result": "e",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "e"
+      ]
+     ],
+     "order": [
+      [
+       "d",
+       "a",
+       "c",
+       "b",
+       "e"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": true,
+       "d": true,
+       "e": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null,
+      "e": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "get",
+     "collection": 0,
+     "arg": 0,
+     "index": null,
+     "result": "d",
+     "error": null,
+     "events": [],
+     "order": [
+      [
+       "d",
+       "a",
+       "c",
+       "b",
+       "e"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": true,
+       "d": true,
+       "e": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null,
+      "e": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "get",
+     "collection": 0,
+     "arg": 4,
+     "index": null,
+     "result": "e",
+     "error": null,
+     "events": [],
+     "order": [
+      [
+       "d",
+       "a",
+       "c",
+       "b",
+       "e"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": true,
+       "d": true,
+       "e": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null,
+      "e": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "get",
+     "collection": 0,
+     "arg": 9,
+     "index": null,
+     "result": null,
+     "error": null,
+     "events": [],
+     "order": [
+      [
+       "d",
+       "a",
+       "c",
+       "b",
+       "e"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": true,
+       "d": true,
+       "e": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null,
+      "e": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "update",
+     "collection": 0,
+     "arg": null,
+     "index": null,
+     "result": null,
+     "error": null,
+     "events": [
+      [
+       "update",
+       "d"
+      ],
+      [
+       "update",
+       "a"
+      ],
+      [
+       "update",
+       "c"
+      ],
+      [
+       "update",
+       "b"
+      ],
+      [
+       "update",
+       "e"
+      ]
+     ],
+     "order": [
+      [
+       "d",
+       "a",
+       "c",
+       "b",
+       "e"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": true,
+       "d": true,
+       "e": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null,
+      "e": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "raise",
+     "collection": 0,
+     "arg": "e",
+     "index": null,
+     "result": null,
+     "error": null,
+     "events": [],
+     "order": [
+      [
+       "d",
+       "a",
+       "c",
+       "b",
+       "e"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": true,
+       "d": true,
+       "e": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null,
+      "e": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "raiseToTop",
+     "collection": 0,
+     "arg": "d",
+     "index": null,
+     "result": null,
+     "error": null,
+     "events": [],
+     "order": [
+      [
+       "a",
+       "c",
+       "b",
+       "e",
+       "d"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": true,
+       "d": true,
+       "e": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null,
+      "e": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "lower",
+     "collection": 0,
+     "arg": "d",
+     "index": null,
+     "result": null,
+     "error": null,
+     "events": [],
+     "order": [
+      [
+       "a",
+       "c",
+       "b",
+       "d",
+       "e"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": true,
+       "d": true,
+       "e": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null,
+      "e": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "lowerToBottom",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": null,
+     "error": null,
+     "events": [],
+     "order": [
+      [
+       "a",
+       "c",
+       "b",
+       "d",
+       "e"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": true,
+       "d": true,
+       "e": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null,
+      "e": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "lower",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": null,
+     "error": null,
+     "events": [],
+     "order": [
+      [
+       "a",
+       "c",
+       "b",
+       "d",
+       "e"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": true,
+       "d": true,
+       "e": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null,
+      "e": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "raise",
+     "collection": 0,
+     "arg": "zz",
+     "index": null,
+     "result": null,
+     "error": "primitive is not in this collection.",
+     "events": [],
+     "order": [
+      [
+       "a",
+       "c",
+       "b",
+       "d",
+       "e"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": true,
+       "d": true,
+       "e": true,
+       "zz": false
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null,
+      "e": null,
+      "zz": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "remove",
+     "collection": 0,
+     "arg": "zz",
+     "index": null,
+     "result": false,
+     "error": null,
+     "events": [],
+     "order": [
+      [
+       "a",
+       "c",
+       "b",
+       "d",
+       "e"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": true,
+       "d": true,
+       "e": true,
+       "zz": false
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null,
+      "e": null,
+      "zz": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "remove",
+     "collection": 0,
+     "arg": "c",
+     "index": null,
+     "result": true,
+     "error": null,
+     "events": [
+      [
+       "destroy",
+       "c"
+      ],
+      [
+       "removed",
+       0,
+       "c"
+      ]
+     ],
+     "order": [
+      [
+       "a",
+       "b",
+       "d",
+       "e"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": false,
+       "d": true,
+       "e": true,
+       "zz": false
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null,
+      "e": null,
+      "zz": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "remove",
+     "collection": 0,
+     "arg": "c",
+     "index": null,
+     "result": false,
+     "error": null,
+     "events": [],
+     "order": [
+      [
+       "a",
+       "b",
+       "d",
+       "e"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": false,
+       "d": true,
+       "e": true,
+       "zz": false
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null,
+      "e": null,
+      "zz": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "update",
+     "collection": 0,
+     "arg": null,
+     "index": null,
+     "result": null,
+     "error": null,
+     "events": [
+      [
+       "update",
+       "a"
+      ],
+      [
+       "update",
+       "b"
+      ],
+      [
+       "update",
+       "d"
+      ],
+      [
+       "update",
+       "e"
+      ]
+     ],
+     "order": [
+      [
+       "a",
+       "b",
+       "d",
+       "e"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": false,
+       "d": true,
+       "e": true,
+       "zz": false
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null,
+      "d": null,
+      "e": null,
+      "zz": null
+     },
+     "destroyed": [
+      false
+     ]
+    }
+   ]
+  },
+  {
+   "name": "destroy-policy",
+   "collections": [
+    {
+     "destroyPrimitives": false
+    }
+   ],
+   "steps": [
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": "a",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "a"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "b",
+     "index": null,
+     "result": "b",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "b"
+      ]
+     ],
+     "order": [
+      [
+       "a",
+       "b"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "c",
+     "index": null,
+     "result": "c",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "c"
+      ]
+     ],
+     "order": [
+      [
+       "a",
+       "b",
+       "c"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true,
+       "c": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "remove",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": true,
+     "error": null,
+     "events": [
+      [
+       "removed",
+       0,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "b",
+       "c"
+      ]
+     ],
+     "contains": [
+      {
+       "a": false,
+       "b": true,
+       "c": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "removeAndDestroy",
+     "collection": 0,
+     "arg": "b",
+     "index": null,
+     "result": true,
+     "error": null,
+     "events": [
+      [
+       "removed",
+       0,
+       "b"
+      ],
+      [
+       "destroy",
+       "b"
+      ]
+     ],
+     "order": [
+      [
+       "c"
+      ]
+     ],
+     "contains": [
+      {
+       "a": false,
+       "b": false,
+       "c": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "removeAll",
+     "collection": 0,
+     "arg": null,
+     "index": null,
+     "result": null,
+     "error": null,
+     "events": [
+      [
+       "removed",
+       0,
+       "c"
+      ]
+     ],
+     "order": [
+      []
+     ],
+     "contains": [
+      {
+       "a": false,
+       "b": false,
+       "c": false
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "update",
+     "collection": 0,
+     "arg": null,
+     "index": null,
+     "result": null,
+     "error": null,
+     "events": [],
+     "order": [
+      []
+     ],
+     "contains": [
+      {
+       "a": false,
+       "b": false,
+       "c": false
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "destroy",
+     "collection": 0,
+     "arg": null,
+     "index": null,
+     "result": null,
+     "error": null,
+     "events": [],
+     "order": [
+      null
+     ],
+     "contains": [
+      null
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null,
+      "c": null
+     },
+     "destroyed": [
+      true
+     ]
+    }
+   ]
+  },
+  {
+   "name": "shared-without-counting",
+   "collections": [
+    {},
+    {}
+   ],
+   "steps": [
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": "a",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "a"
+      ],
+      []
+     ],
+     "contains": [
+      {
+       "a": true
+      },
+      {
+       "a": false
+      }
+     ],
+     "referenceCounts": {
+      "a": null
+     },
+     "destroyed": [
+      false,
+      false
+     ]
+    },
+    {
+     "op": "add",
+     "collection": 1,
+     "arg": "a",
+     "index": null,
+     "result": "a",
+     "error": null,
+     "events": [
+      [
+       "added",
+       1,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "a"
+      ],
+      [
+       "a"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true
+      },
+      {
+       "a": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null
+     },
+     "destroyed": [
+      false,
+      false
+     ]
+    },
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "b",
+     "index": null,
+     "result": "b",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "b"
+      ]
+     ],
+     "order": [
+      [
+       "a",
+       "b"
+      ],
+      [
+       "a"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true
+      },
+      {
+       "a": true,
+       "b": false
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null
+     },
+     "destroyed": [
+      false,
+      false
+     ]
+    },
+    {
+     "op": "remove",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": true,
+     "error": null,
+     "events": [
+      [
+       "destroy",
+       "a"
+      ],
+      [
+       "removed",
+       0,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "b"
+      ],
+      [
+       "a"
+      ]
+     ],
+     "contains": [
+      {
+       "a": false,
+       "b": true
+      },
+      {
+       "a": true,
+       "b": false
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null
+     },
+     "destroyed": [
+      false,
+      false
+     ]
+    },
+    {
+     "op": "remove",
+     "collection": 1,
+     "arg": "a",
+     "index": null,
+     "result": null,
+     "error": "This object was destroyed, i.e., destroy() was called.",
+     "events": [],
+     "order": [
+      [
+       "b"
+      ],
+      []
+     ],
+     "contains": [
+      {
+       "a": false,
+       "b": true
+      },
+      {
+       "a": false,
+       "b": false
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null
+     },
+     "destroyed": [
+      false,
+      false
+     ]
+    },
+    {
+     "op": "removeAll",
+     "collection": 0,
+     "arg": null,
+     "index": null,
+     "result": null,
+     "error": null,
+     "events": [
+      [
+       "destroy",
+       "b"
+      ],
+      [
+       "removed",
+       0,
+       "b"
+      ]
+     ],
+     "order": [
+      [],
+      []
+     ],
+     "contains": [
+      {
+       "a": false,
+       "b": false
+      },
+      {
+       "a": false,
+       "b": false
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null
+     },
+     "destroyed": [
+      false,
+      false
+     ]
+    }
+   ]
+  },
+  {
+   "name": "shared-with-counting",
+   "collections": [
+    {
+     "countReferences": true
+    },
+    {
+     "countReferences": true
+    }
+   ],
+   "steps": [
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": "a",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "a"
+      ],
+      []
+     ],
+     "contains": [
+      {
+       "a": true
+      },
+      {
+       "a": false
+      }
+     ],
+     "referenceCounts": {
+      "a": 1
+     },
+     "destroyed": [
+      false,
+      false
+     ]
+    },
+    {
+     "op": "add",
+     "collection": 1,
+     "arg": "a",
+     "index": null,
+     "result": "a",
+     "error": null,
+     "events": [
+      [
+       "added",
+       1,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "a"
+      ],
+      [
+       "a"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true
+      },
+      {
+       "a": true
+      }
+     ],
+     "referenceCounts": {
+      "a": 2
+     },
+     "destroyed": [
+      false,
+      false
+     ]
+    },
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "b",
+     "index": null,
+     "result": "b",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "b"
+      ]
+     ],
+     "order": [
+      [
+       "a",
+       "b"
+      ],
+      [
+       "a"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true
+      },
+      {
+       "a": true,
+       "b": false
+      }
+     ],
+     "referenceCounts": {
+      "a": 2,
+      "b": 1
+     },
+     "destroyed": [
+      false,
+      false
+     ]
+    },
+    {
+     "op": "remove",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": true,
+     "error": null,
+     "events": [
+      [
+       "removed",
+       0,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "b"
+      ],
+      [
+       "a"
+      ]
+     ],
+     "contains": [
+      {
+       "a": false,
+       "b": true
+      },
+      {
+       "a": true,
+       "b": false
+      }
+     ],
+     "referenceCounts": {
+      "a": 1,
+      "b": 1
+     },
+     "destroyed": [
+      false,
+      false
+     ]
+    },
+    {
+     "op": "remove",
+     "collection": 1,
+     "arg": "a",
+     "index": null,
+     "result": true,
+     "error": null,
+     "events": [
+      [
+       "destroy",
+       "a"
+      ],
+      [
+       "removed",
+       1,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "b"
+      ],
+      []
+     ],
+     "contains": [
+      {
+       "a": false,
+       "b": true
+      },
+      {
+       "a": false,
+       "b": false
+      }
+     ],
+     "referenceCounts": {
+      "a": 0,
+      "b": 1
+     },
+     "destroyed": [
+      false,
+      false
+     ]
+    },
+    {
+     "op": "removeAndDestroy",
+     "collection": 0,
+     "arg": "b",
+     "index": null,
+     "result": true,
+     "error": null,
+     "events": [
+      [
+       "destroy",
+       "b"
+      ],
+      [
+       "removed",
+       0,
+       "b"
+      ]
+     ],
+     "order": [
+      [],
+      []
+     ],
+     "contains": [
+      {
+       "a": false,
+       "b": false
+      },
+      {
+       "a": false,
+       "b": false
+      }
+     ],
+     "referenceCounts": {
+      "a": 0,
+      "b": 0
+     },
+     "destroyed": [
+      false,
+      false
+     ]
+    }
+   ]
+  },
+  {
+   "name": "counting-mixed",
+   "collections": [
+    {
+     "countReferences": true
+    },
+    {}
+   ],
+   "steps": [
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": "a",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "a"
+      ],
+      []
+     ],
+     "contains": [
+      {
+       "a": true
+      },
+      {
+       "a": false
+      }
+     ],
+     "referenceCounts": {
+      "a": 1
+     },
+     "destroyed": [
+      false,
+      false
+     ]
+    },
+    {
+     "op": "add",
+     "collection": 1,
+     "arg": "a",
+     "index": null,
+     "result": "a",
+     "error": null,
+     "events": [
+      [
+       "added",
+       1,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "a"
+      ],
+      [
+       "a"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true
+      },
+      {
+       "a": true
+      }
+     ],
+     "referenceCounts": {
+      "a": 1
+     },
+     "destroyed": [
+      false,
+      false
+     ]
+    },
+    {
+     "op": "remove",
+     "collection": 1,
+     "arg": "a",
+     "index": null,
+     "result": true,
+     "error": null,
+     "events": [
+      [
+       "destroy",
+       "a"
+      ],
+      [
+       "removed",
+       1,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "a"
+      ],
+      []
+     ],
+     "contains": [
+      {
+       "a": true
+      },
+      {
+       "a": false
+      }
+     ],
+     "referenceCounts": {
+      "a": 1
+     },
+     "destroyed": [
+      false,
+      false
+     ]
+    },
+    {
+     "op": "remove",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": null,
+     "error": "This object was destroyed, i.e., destroy() was called.",
+     "events": [],
+     "order": [
+      [],
+      []
+     ],
+     "contains": [
+      {
+       "a": false
+      },
+      {
+       "a": false
+      }
+     ],
+     "referenceCounts": {
+      "a": 0
+     },
+     "destroyed": [
+      false,
+      false
+     ]
+    }
+   ]
+  },
+  {
+   "name": "added-twice",
+   "collections": [
+    {}
+   ],
+   "steps": [
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": "a",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "a"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": "a",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "a",
+       "a"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "b",
+     "index": null,
+     "result": "b",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "b"
+      ]
+     ],
+     "order": [
+      [
+       "a",
+       "a",
+       "b"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "update",
+     "collection": 0,
+     "arg": null,
+     "index": null,
+     "result": null,
+     "error": null,
+     "events": [
+      [
+       "update",
+       "a"
+      ],
+      [
+       "update",
+       "a"
+      ],
+      [
+       "update",
+       "b"
+      ]
+     ],
+     "order": [
+      [
+       "a",
+       "a",
+       "b"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true,
+       "b": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "remove",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": true,
+     "error": null,
+     "events": [
+      [
+       "destroy",
+       "a"
+      ],
+      [
+       "removed",
+       0,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "a",
+       "b"
+      ]
+     ],
+     "contains": [
+      {
+       "a": false,
+       "b": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "remove",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": false,
+     "error": null,
+     "events": [],
+     "order": [
+      [
+       "a",
+       "b"
+      ]
+     ],
+     "contains": [
+      {
+       "a": false,
+       "b": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "raise",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": null,
+     "error": "primitive is not in this collection.",
+     "events": [],
+     "order": [
+      [
+       "a",
+       "b"
+      ]
+     ],
+     "contains": [
+      {
+       "a": false,
+       "b": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "update",
+     "collection": 0,
+     "arg": null,
+     "index": null,
+     "result": null,
+     "error": "This object was destroyed, i.e., destroy() was called.",
+     "events": [],
+     "order": [
+      [
+       "a",
+       "b"
+      ]
+     ],
+     "contains": [
+      {
+       "a": false,
+       "b": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "destroy",
+     "collection": 0,
+     "arg": null,
+     "index": null,
+     "result": null,
+     "error": "This object was destroyed, i.e., destroy() was called.",
+     "events": [],
+     "order": [
+      [
+       "a",
+       "b"
+      ]
+     ],
+     "contains": [
+      {
+       "a": false,
+       "b": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null,
+      "b": null
+     },
+     "destroyed": [
+      false
+     ]
+    }
+   ]
+  },
+  {
+   "name": "added-twice-counting",
+   "collections": [
+    {
+     "countReferences": true
+    }
+   ],
+   "steps": [
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": "a",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "a"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true
+      }
+     ],
+     "referenceCounts": {
+      "a": 1
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": "a",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "a",
+       "a"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true
+      }
+     ],
+     "referenceCounts": {
+      "a": 2
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "removeAll",
+     "collection": 0,
+     "arg": null,
+     "index": null,
+     "result": null,
+     "error": null,
+     "events": [
+      [
+       "removed",
+       0,
+       "a"
+      ],
+      [
+       "destroy",
+       "a"
+      ],
+      [
+       "removed",
+       0,
+       "a"
+      ]
+     ],
+     "order": [
+      []
+     ],
+     "contains": [
+      {
+       "a": false
+      }
+     ],
+     "referenceCounts": {
+      "a": 0
+     },
+     "destroyed": [
+      false
+     ]
+    }
+   ]
+  },
+  {
+   "name": "hidden",
+   "collections": [
+    {
+     "show": false
+    }
+   ],
+   "steps": [
+    {
+     "op": "add",
+     "collection": 0,
+     "arg": "a",
+     "index": null,
+     "result": "a",
+     "error": null,
+     "events": [
+      [
+       "added",
+       0,
+       "a"
+      ]
+     ],
+     "order": [
+      [
+       "a"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "update",
+     "collection": 0,
+     "arg": null,
+     "index": null,
+     "result": null,
+     "error": null,
+     "events": [],
+     "order": [
+      [
+       "a"
+      ]
+     ],
+     "contains": [
+      {
+       "a": true
+      }
+     ],
+     "referenceCounts": {
+      "a": null
+     },
+     "destroyed": [
+      false
+     ]
+    },
+    {
+     "op": "destroy",
+     "collection": 0,
+     "arg": null,
+     "index": null,
+     "result": null,
+     "error": null,
+     "events": [
+      [
+       "destroy",
+       "a"
+      ],
+      [
+       "removed",
+       0,
+       "a"
+      ]
+     ],
+     "order": [
+      null
+     ],
+     "contains": [
+      null
+     ],
+     "referenceCounts": {
+      "a": null
+     },
+     "destroyed": [
+      true
+     ]
+    }
+   ]
+  }
+ ]
+}

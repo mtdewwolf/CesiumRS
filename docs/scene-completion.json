@@ -76,8 +76,9 @@
       "module": "Scene/PrimitiveCollection",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "Partial native index-based collection API. Pinned reference cases cover ordering, nested update dispatch (including hidden collections), and destruction policy; identity-based membership, collection events and the full upstream surface remain unported."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_primitive_collection.rs replays 59 pinned CesiumJS steps from tools/cesium/generate-scene-primitive-collection.mjs; tests/scene_primitive_runtime.rs keeps the original cases."
     },
     {
       "module": "Scene/PrimitivePipeline",

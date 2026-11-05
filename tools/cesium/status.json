@@ -5102,9 +5102,9 @@
     "note": "Partial options and CPU geometry preparation. Constructor fixtures and native failure regressions only. Nonempty drawable geometry returns an explicit unsupported-rendering error; GPU commands, batch tables, asynchronous creation and rendering parity remain unimplemented."
   },
   "Scene/PrimitiveCollection": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::primitive_collection",
-    "note": "Partial native index-based collection API. Pinned reference cases cover ordering, nested update dispatch (including hidden collections), and destruction policy; identity-based membership, collection events and the full upstream surface remain unported."
+    "note": "Identity-based collection: PrimitiveHandle shares Cesium's _external record (GUID-keyed memberships and the countReferences reference count), so a primitive can sit in several collections. add with index checks, remove, removeAndDestroy, removeAll, contains, raise/raiseToTop/lower/lowerToBottom, get, primitiveAdded/primitiveRemoved events and nested pass dispatch, including Cesium's quirks (one membership for a twice-added primitive, destroy errors leaving removeAll's list intact). 59 pinned steps over eight scenarios plus the existing order/dispatch/destroy cases."
   },
   "Scene/PrimitivePipeline": {
     "status": "ported",
