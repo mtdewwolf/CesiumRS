@@ -142,8 +142,9 @@
       "module": "Scene/TweenCollection",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "Numeric, property, material and repeating tweens with callbacks; pinned easing and lifecycle sequences pass. Scene runtime integration and complete parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_tween_helpers.rs replays tools/cesium/generate-scene-tween-helpers.mjs; tests/scene_input_tweens_morphing.rs keeps the easing/lifecycle sequences; tests/scene_runtime.rs::scene_drives_and_cancels_its_tweens covers Scene integration."
     },
     {
       "module": "Scene/AutoExposure",

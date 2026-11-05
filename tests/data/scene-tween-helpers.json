@@ -1,0 +1,444 @@
+{
+ "property": [
+  {
+   "time": 0,
+   "x": 5,
+   "other": 1,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 0.25,
+   "x": 5,
+   "other": 1,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 0.5,
+   "x": 0,
+   "other": 1,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 0.75,
+   "x": 0.3125,
+   "other": 1,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 1,
+   "x": 1.25,
+   "other": 1,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 1.5,
+   "x": 5,
+   "other": 1,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 2,
+   "x": 8.75,
+   "other": 1,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 2.5,
+   "x": 10,
+   "other": 1,
+   "length": 0,
+   "events": [
+    "complete"
+   ]
+  },
+  {
+   "time": 3,
+   "x": 10,
+   "other": 1,
+   "length": 0,
+   "events": [
+    "complete"
+   ]
+  },
+  {
+   "time": 3.25,
+   "x": 10,
+   "other": 1,
+   "length": 0,
+   "events": [
+    "complete"
+   ]
+  },
+  {
+   "time": 3.6,
+   "x": 10,
+   "other": 1,
+   "length": 0,
+   "events": [
+    "complete"
+   ]
+  },
+  {
+   "time": 5,
+   "x": 10,
+   "other": 1,
+   "length": 0,
+   "events": [
+    "complete"
+   ]
+  }
+ ],
+ "alpha": [
+  {
+   "time": 0,
+   "even": 0.2,
+   "odd": 0.2,
+   "color": 0,
+   "length": 2
+  },
+  {
+   "time": 0.25,
+   "even": 0.546875,
+   "odd": 0.546875,
+   "color": 0.08333333333333333,
+   "length": 2
+  },
+  {
+   "time": 0.5,
+   "even": 0.7250000000000001,
+   "odd": 0.7250000000000001,
+   "color": 0.16666666666666666,
+   "length": 2
+  },
+  {
+   "time": 0.75,
+   "even": 0.7906250000000001,
+   "odd": 0.7906250000000001,
+   "color": 0.25,
+   "length": 2
+  },
+  {
+   "time": 1,
+   "even": 0.8,
+   "odd": 0.8,
+   "color": 0.3333333333333333,
+   "length": 1
+  },
+  {
+   "time": 1.5,
+   "even": 0.8,
+   "odd": 0.8,
+   "color": 0.5,
+   "length": 1
+  },
+  {
+   "time": 2,
+   "even": 0.8,
+   "odd": 0.8,
+   "color": 0.6666666666666666,
+   "length": 1
+  },
+  {
+   "time": 2.5,
+   "even": 0.8,
+   "odd": 0.8,
+   "color": 0.8333333333333334,
+   "length": 1
+  },
+  {
+   "time": 3,
+   "even": 0.8,
+   "odd": 0.8,
+   "color": 1,
+   "length": 0
+  },
+  {
+   "time": 3.25,
+   "even": 0.8,
+   "odd": 0.8,
+   "color": 1,
+   "length": 0
+  },
+  {
+   "time": 3.6,
+   "even": 0.8,
+   "odd": 0.8,
+   "color": 1,
+   "length": 0
+  },
+  {
+   "time": 5,
+   "even": 0.8,
+   "odd": 0.8,
+   "color": 1,
+   "length": 0
+  }
+ ],
+ "offset": [
+  {
+   "time": 0,
+   "offset": 0.25,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 0.25,
+   "offset": 0.25,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 0.5,
+   "offset": 0.5,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 0.75,
+   "offset": 0.75,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 1,
+   "offset": 1,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 1.5,
+   "offset": 0.25,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 2,
+   "offset": 0.75,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 2.5,
+   "offset": 1.25,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 3,
+   "offset": 0.5,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 3.25,
+   "offset": 0.75,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 3.6,
+   "offset": 1.1,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": 5,
+   "offset": 1.25,
+   "length": 1,
+   "events": []
+  },
+  {
+   "time": null,
+   "offset": 1.25,
+   "length": 0,
+   "events": [
+    "cancel"
+   ]
+  }
+ ],
+ "lifecycle": [
+  {
+   "op": "add three",
+   "result": null,
+   "length": 3,
+   "log": []
+  },
+  {
+   "op": "add zero",
+   "result": {
+    "contains": false,
+    "hasCollectionTween": false
+   },
+   "length": 3,
+   "log": [
+    [
+     "zero",
+     "complete"
+    ]
+   ]
+  },
+  {
+   "op": "get",
+   "result": [
+    "a",
+    "b",
+    "c",
+    null
+   ],
+   "length": 3,
+   "log": []
+  },
+  {
+   "op": "update 0",
+   "result": null,
+   "length": 3,
+   "log": [
+    [
+     "a",
+     "update",
+     0
+    ],
+    [
+     "b",
+     "update",
+     0
+    ],
+    [
+     "c",
+     "update",
+     0
+    ]
+   ]
+  },
+  {
+   "op": "update 0.5",
+   "result": null,
+   "length": 3,
+   "log": [
+    [
+     "a",
+     "update",
+     0.5
+    ],
+    [
+     "b",
+     "update",
+     0.25
+    ],
+    [
+     "c",
+     "update",
+     0.16666666666666666
+    ]
+   ]
+  },
+  {
+   "op": "remove b",
+   "result": true,
+   "length": 2,
+   "log": [
+    [
+     "b",
+     "cancel"
+    ]
+   ]
+  },
+  {
+   "op": "remove b again",
+   "result": false,
+   "length": 2,
+   "log": []
+  },
+  {
+   "op": "contains",
+   "result": {
+    "a": true,
+    "b": false,
+    "c": true
+   },
+   "length": 2,
+   "log": []
+  },
+  {
+   "op": "cancelTween c",
+   "length": 1,
+   "log": [
+    [
+     "c",
+     "cancel"
+    ]
+   ]
+  },
+  {
+   "op": "update 1",
+   "result": null,
+   "length": 0,
+   "log": [
+    [
+     "a",
+     "update",
+     1
+    ],
+    [
+     "a",
+     "complete"
+    ]
+   ]
+  },
+  {
+   "op": "add d e",
+   "result": null,
+   "length": 2,
+   "log": []
+  },
+  {
+   "op": "removeAll",
+   "result": {
+    "d": false,
+    "e": false
+   },
+   "length": 0,
+   "log": [
+    [
+     "d",
+     "cancel"
+    ],
+    [
+     "e",
+     "cancel"
+    ]
+   ]
+  },
+  {
+   "op": "update 2",
+   "result": null,
+   "length": 0,
+   "log": []
+  }
+ ],
+ "errors": [
+  {
+   "name": "negative duration",
+   "error": "options.duration is required and must be positive."
+  },
+  {
+   "name": "missing property",
+   "error": "options.object must have the specified property."
+  },
+  {
+   "name": "no alpha uniforms",
+   "error": "material has no properties with alpha components."
+  },
+  {
+   "name": "no offset uniform",
+   "error": "material.uniforms must have an offset property."
+  }
+ ]
+}

@@ -948,6 +948,9 @@ pub struct Scene<B: SceneBackend> {
     hdr_dirty: bool,
     log_depth_dirty: bool,
     shader_frame_count: u32,
+    /// `scene.tweens`: updated at the start of every frame and emptied, with
+    /// cancel callbacks, when the scene is destroyed.
+    pub tweens: super::TweenCollection,
     destroyed: bool,
 }
 impl<B: SceneBackend> Scene<B> {
@@ -1029,6 +1032,7 @@ impl<B: SceneBackend> Scene<B> {
             hdr_dirty: false,
             log_depth_dirty: false,
             shader_frame_count: 0,
+            tweens: super::TweenCollection::new(),
             destroyed: false,
         };
         result.frame_state.render_request = Some(result.request_handle());
@@ -1145,6 +1149,9 @@ impl<B: SceneBackend> Scene<B> {
         } else {
             self.shader_frame_count += 1;
         }
+        // Cesium's `this._tweens.update()` reads getTimestamp(); the host's
+        // monotonic clock stands in for it.
+        self.tweens.update(monotonic_seconds);
         self.camera.update_flights(monotonic_seconds).map_err(|e| RuntimeError::new(e.to_string()))?;
         self.camera.update(self.camera.mode()).map_err(|e| RuntimeError::new(e.to_string()))?;
         self.camera.update_camera_changed(monotonic_seconds * 1000.);
@@ -1581,6 +1588,7 @@ impl<B: SceneBackend> Scene<B> {
         if self.destroyed {
             return Ok(());
         }
+        self.tweens.remove_all();
         for p in &mut self.primitives {
             p.destroy()?;
         }

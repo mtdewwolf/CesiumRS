@@ -992,3 +992,39 @@ fn cpu_height_queries_and_cancelled_height_callbacks() {
     t.destroy().unwrap();
     assert!(!subscription.is_active());
 }
+
+/// Cesium's `initializeFrame` updates `scene.tweens`, and `destroy` removes
+/// them all, calling their cancel callbacks.
+#[test]
+fn scene_drives_and_cancels_its_tweens() {
+    use std::collections::BTreeMap;
+    let mut scene = Scene::new(host(), CameraOptions::new(800., 600.), SceneOptions::default(), epoch()).unwrap();
+    let values = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let cancelled = Rc::new(std::cell::Cell::new(0));
+    let make = |duration: f64| {
+        let (values, cancelled) = (values.clone(), cancelled.clone());
+        scene
+            .tweens
+            .add(TweenOptions {
+                start_object: BTreeMap::from([("v".to_string(), 0.0)]),
+                stop_object: BTreeMap::from([("v".to_string(), 10.0)]),
+                duration,
+                update: Some(Rc::new(move |value| values.borrow_mut().push(value["v"]))),
+                cancel: Some(Rc::new(move || cancelled.set(cancelled.get() + 1))),
+                ..Default::default()
+            })
+            .unwrap()
+    };
+    let short = make(1.0);
+    let long = make(100.0);
+    scene.initialize_frame(5.0).unwrap();
+    scene.initialize_frame(5.5).unwrap();
+    scene.initialize_frame(6.0).unwrap();
+    // The short tween starts at the first frame, reaches its end after one second and leaves.
+    assert_eq!(values.borrow().iter().step_by(2).copied().collect::<Vec<_>>(), vec![0.0, 5.0, 10.0]);
+    assert!(!scene.tweens.contains(&short));
+    assert!(scene.tweens.contains(&long));
+    scene.destroy().unwrap();
+    assert_eq!(cancelled.get(), 1, "only the running tween is cancelled");
+    assert!(scene.tweens.is_empty());
+}

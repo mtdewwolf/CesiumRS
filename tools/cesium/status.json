@@ -5257,9 +5257,9 @@
     "note": "Explicit-time camera and frustum morph phases and events; pinned morph routes pass. Scene frame integration and complete parity validation remain."
   },
   "Scene/TweenCollection": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::tween_collection",
-    "note": "Numeric, property, material and repeating tweens with callbacks; pinned easing and lifecycle sequences pass. Scene runtime integration and complete parity validation remain."
+    "note": "Numeric, property, alpha and offset-increment tweens with Cesium's tween.js timing (delay per repeat cycle, start-and-update in one call, infinite repeats), update/complete/cancel callbacks, remove/removeAll/cancelTween, contains/get and zero-duration completion. Scene updates scene.tweens in initialize_frame (the host's monotonic clock stands in for getTimestamp) and removes them all on destroy. Pinned easing/lifecycle sequences plus helper traces (addProperty, addAlpha, addOffsetIncrement, lifecycle, errors). Material vec4 uniforms stand in for Cesium's Color uniforms in addAlpha."
   },
   "Scene/AutoExposure": {
     "status": "partial",

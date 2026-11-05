@@ -71,6 +71,10 @@ struct TweenState {
     active: bool,
 }
 impl Tween {
+    /// Whether both handles are the same tween.
+    pub fn ptr_eq(&self, other: &Tween) -> bool {
+        Rc::ptr_eq(&self.inner, &other.inner)
+    }
     pub fn start_object(&self) -> TweenObject {
         self.inner.borrow().options.start_object.clone()
     }
