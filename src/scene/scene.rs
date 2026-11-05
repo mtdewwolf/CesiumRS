@@ -954,6 +954,15 @@ pub struct Scene<B: SceneBackend> {
     /// `scene._transitioner`: owns `mode`/`morphTime` while morphing and the
     /// `morphStart`/`morphComplete` events.
     pub transitioner: super::scene_transitioner::SceneTransitioner,
+    /// `scene.screenSpaceCameraController`, fed by [`Scene::process_input`]
+    /// and updated in [`Scene::initialize_frame`].
+    pub screen_space_camera_controller: super::screen_space_camera_controller::ScreenSpaceCameraController,
+    /// The transitioner's morph handler: LEFT_DOWN, MIDDLE_DOWN, RIGHT_DOWN
+    /// and WHEEL without modifiers, as Cesium's `createMorphHandler` registers.
+    morph_input: crate::core::ScreenSpaceEventHandler,
+    /// `scene._globeHeight` and `scene._cameraUnderground`.
+    globe_height: Option<f64>,
+    camera_underground: bool,
     destroyed: bool,
 }
 impl<B: SceneBackend> Scene<B> {
@@ -992,6 +1001,16 @@ impl<B: SceneBackend> Scene<B> {
         let mut fog = Fog::default();
         fog.enabled = earth;
         let transitioner = super::scene_transitioner::SceneTransitioner::new(&camera);
+        let screen_space_camera_controller = super::screen_space_camera_controller::ScreenSpaceCameraController::new(&camera);
+        let mut morph_input = crate::core::ScreenSpaceEventHandler::default();
+        for kind in [
+            crate::core::ScreenSpaceEventType::LeftDown,
+            crate::core::ScreenSpaceEventType::MiddleDown,
+            crate::core::ScreenSpaceEventType::RightDown,
+            crate::core::ScreenSpaceEventType::Wheel,
+        ] {
+            morph_input.set_input_action(std::rc::Rc::new(|_| {}), kind, None)?;
+        }
         let mut result = Self {
             detailed_picks: Vec::new(),
             post_render_serial: 0,
@@ -1038,6 +1057,10 @@ impl<B: SceneBackend> Scene<B> {
             shader_frame_count: 0,
             tweens: super::TweenCollection::new(),
             transitioner,
+            screen_space_camera_controller,
+            morph_input,
+            globe_height: None,
+            camera_underground: false,
             destroyed: false,
         };
         result.frame_state.render_request = Some(result.request_handle());
@@ -1186,6 +1209,41 @@ impl<B: SceneBackend> Scene<B> {
     pub fn complete_morph(&mut self) -> Result<()> {
         self.transitioner.complete_morph(&mut self.camera).map(|_| ())
     }
+    /// Forwards one host input event to the camera controller's aggregator and
+    /// to the transitioner's morph handler, which completes a running morph on
+    /// a button press or wheel when `complete_morph_on_user_input` is set.
+    /// Returns whether the host should prevent the event's default action.
+    pub fn process_input(&mut self, input: &crate::core::ScreenInput) -> Result<bool> {
+        self.alive()?;
+        let prevent_default = self.screen_space_camera_controller.process(input)?;
+        let morph = self.morph_input.process(input)?;
+        for (kind, modifier, _) in morph.actions {
+            self.transitioner.process_input(&mut self.camera, kind, modifier)?;
+        }
+        Ok(prevent_default)
+    }
+    /// `scene._globeHeight`: the height under the camera, refreshed each frame
+    /// except while morphing.
+    pub fn globe_height(&self) -> Option<f64> {
+        self.globe_height
+    }
+    /// `scene.cameraUnderground`.
+    pub fn camera_underground(&self) -> bool {
+        self.camera_underground
+    }
+    /// Cesium's `isCameraUnderground`.
+    fn is_camera_underground(&mut self) -> bool {
+        let Some(cartographic) = self.camera.position_cartographic() else {
+            return false;
+        };
+        if !self.screen_space_camera_controller.on_map(&self.camera) && cartographic.height < 0.0 {
+            return true;
+        }
+        if matches!(self.camera.mode(), SceneMode::Scene2D | SceneMode::Morphing) {
+            return false;
+        }
+        self.globe_height.is_some_and(|height| cartographic.height < height)
+    }
     /// The transitioner reads the scene's logarithmic depth setting when a
     /// morph completes.
     fn prepare_morph(&mut self) {
@@ -1206,6 +1264,22 @@ impl<B: SceneBackend> Scene<B> {
         // Cesium's morph phases are tweens in `scene.tweens`.
         self.transitioner.update(&mut self.camera, monotonic_seconds)?;
         self.camera.update_flights(monotonic_seconds).map_err(|e| RuntimeError::new(e.to_string()))?;
+        // Cesium's getGlobeHeight and isCameraUnderground, then the camera controller.
+        self.globe_height = if self.camera.mode() == SceneMode::Morphing {
+            None
+        } else {
+            let cartographic = self.camera.position_cartographic();
+            self.get_height(cartographic.as_ref(), None)?
+        };
+        self.camera_underground = self.is_camera_underground();
+        let environment = super::screen_space_camera_controller::ControllerEnvironment {
+            has_globe: self.globe.is_some(),
+            globe_height: self.globe_height,
+            camera_underground: self.camera_underground,
+            vertical_exaggeration: self.frame_state.vertical_exaggeration,
+            vertical_exaggeration_relative_height: self.frame_state.vertical_exaggeration_relative_height,
+        };
+        self.screen_space_camera_controller.update_with_environment(&mut self.camera, monotonic_seconds, environment)?;
         self.camera.update(self.camera.mode()).map_err(|e| RuntimeError::new(e.to_string()))?;
         self.camera.update_camera_changed(monotonic_seconds * 1000.);
         Ok(())
@@ -1226,6 +1300,7 @@ impl<B: SceneBackend> Scene<B> {
         frame.atmosphere = Some(self.atmosphere);
         frame.light = Some(frame.uniform.light);
         frame.scene_3d_only = self.options.scene_3d_only;
+        frame.camera_underground = self.camera_underground;
         frame.pixel_ratio = self.camera.pixel_ratio;
         frame.occluder = self.occluder;
         frame.tileset_pass_state = None;
@@ -1643,6 +1718,8 @@ impl<B: SceneBackend> Scene<B> {
         }
         self.tweens.remove_all();
         self.transitioner.destroy();
+        self.screen_space_camera_controller.destroy();
+        self.morph_input.destroy();
         for p in &mut self.primitives {
             p.destroy()?;
         }

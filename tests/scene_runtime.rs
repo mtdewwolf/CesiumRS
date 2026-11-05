@@ -1089,3 +1089,71 @@ fn scene_morphs_through_its_transitioner() {
     );
     only_3d.set_mode(SceneMode::Scene3D).unwrap();
 }
+
+fn input(kind: ScreenInputKind, now: f64, x: f64, y: f64) -> ScreenInput {
+    let mut input = ScreenInput::new(kind, now);
+    input.client_position = Cartesian2::new(x, y);
+    input.button = 0;
+    input
+}
+
+/// Input sent through `Scene::process_input` drives the scene's camera
+/// controller exactly as a standalone controller fed the same events.
+#[test]
+fn scene_input_drives_its_camera_controller() {
+    let mut scene = Scene::new(host(), CameraOptions::new(800., 600.), SceneOptions::default(), epoch()).unwrap();
+    // The scene configures its camera from the backend (drawing buffer, frustum),
+    // so compare against a copy of that camera.
+    let mut camera = scene.camera.clone_camera();
+    let mut controller = cesium_rs::scene::screen_space_camera_controller::ScreenSpaceCameraController::new(&camera);
+    scene.initialize_frame(0.99).unwrap();
+    controller.update(&mut camera, 0.99).unwrap();
+    assert!(scene.camera.position.distance(camera.position) < 1e-9);
+
+    let events = [
+        input(ScreenInputKind::MouseDown, 1000., 400., 300.),
+        input(ScreenInputKind::MouseMove, 1010., 430., 320.),
+    ];
+    for event in &events {
+        scene.process_input(event).unwrap();
+        controller.process(event).unwrap();
+    }
+    for time in [1.01, 1.05, 1.2] {
+        scene.initialize_frame(time).unwrap();
+        controller.update(&mut camera, time).unwrap();
+        camera.update(camera.mode()).unwrap();
+        assert!(scene.camera.position.distance(camera.position) < 1e-6, "position at {time}");
+        assert!(scene.camera.direction.distance(camera.direction) < 1e-12, "direction at {time}");
+    }
+    assert!(scene.camera.position.distance(Camera::new(CameraOptions::new(800., 600.)).position) > 1.0, "the drag moved the camera");
+    assert!(!scene.camera_underground());
+    scene.update_frame_state();
+    assert!(!scene.frame_state.camera_underground);
+}
+
+/// Cesium's morph handler completes a running morph on LEFT_DOWN, MIDDLE_DOWN,
+/// RIGHT_DOWN or WHEEL when `completeMorphOnUserInput` is set.
+#[test]
+fn scene_input_completes_morphs() {
+    let mut scene = Scene::new(host(), CameraOptions::new(800., 600.), SceneOptions::default(), epoch()).unwrap();
+    scene.morph_to_2d(Some(2.0)).unwrap();
+    scene.initialize_frame(1.0).unwrap();
+    scene.initialize_frame(1.1).unwrap();
+    assert_eq!(scene.mode(), SceneMode::Morphing);
+    // A move is not one of the handler's events.
+    scene.process_input(&input(ScreenInputKind::MouseMove, 1150., 10., 10.)).unwrap();
+    assert_eq!(scene.mode(), SceneMode::Morphing);
+    scene.process_input(&input(ScreenInputKind::MouseDown, 1200., 10., 10.)).unwrap();
+    assert_eq!(scene.mode(), SceneMode::Scene2D);
+    scene.process_input(&input(ScreenInputKind::MouseUp, 1250., 10., 10.)).unwrap();
+
+    // With completeMorphOnUserInput off when the morph starts, input does not end it.
+    scene.transitioner.complete_morph_on_user_input = false;
+    scene.morph_to_3d(Some(2.0)).unwrap();
+    scene.initialize_frame(2.0).unwrap();
+    scene.initialize_frame(2.1).unwrap();
+    scene.process_input(&input(ScreenInputKind::MouseDown, 2150., 10., 10.)).unwrap();
+    // 2D to 3D starts with a camera flight, during which Cesium keeps the 2D mode.
+    assert!(scene.transitioner.is_morphing(), "the morph keeps running");
+    assert_ne!(scene.mode(), SceneMode::Scene3D);
+}

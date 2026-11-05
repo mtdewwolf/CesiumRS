@@ -121,22 +121,23 @@
       "module": "Scene/CameraEventAggregator",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "Host-driven input aggregation, modifier handoff, wheel and pinch state; CesiumJS event sequences pass. Scene input wiring and full parity audit remain."
+      "status": "in-progress",
+      "remaining": "Host-driven input aggregation, modifier handoff, wheel and pinch state; CesiumJS event sequences pass. Scene::process_input now feeds the scene controller's aggregator. A full parity audit of the remaining aggregation paths remains."
     },
     {
       "module": "Scene/ScreenSpaceCameraController",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "Host-driven camera gestures, inertia and environment inputs; pinned controller sequences pass. Scene input and globe integration and complete parity validation remain."
+      "status": "in-progress",
+      "remaining": "Host-driven camera gestures, inertia and environment inputs; pinned controller sequences pass. Scene owns the controller: process_input feeds it and initialize_frame updates it before camera.update with Cesium's globe height, camera-underground state and vertical exaggeration (a scene drag matches a standalone controller exactly). Globe picking for surface-anchored gestures and complete parity validation remain."
     },
     {
       "module": "Scene/SceneTransitioner",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "in-progress",
-      "remaining": "Explicit-time camera and frustum morph phases and morphStart/morphComplete events; pinned morph routes pass. Scene owns the transitioner: morph_to_2d/columbus_view/3d (two seconds by default), complete_morph, the mode setter (with the scene3DOnly check), frame morph_time and destroy. Remaining: Scene's input handling does not yet forward user input, so completeMorphOnUserInput needs the host to call process_input."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Pinned morph routes in tests/scene_input_tweens_morphing.rs; Scene integration and input completion in tests/scene_runtime.rs (scene_morphs_through_its_transitioner, scene_input_completes_morphs)."
     },
     {
       "module": "Scene/TweenCollection",

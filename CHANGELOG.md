@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Route input through `Scene`: `Scene::process_input` feeds the scene's `ScreenSpaceCameraController` and Cesium's morph handler, so a button press or wheel completes a running morph when `completeMorphOnUserInput` is set. `initialize_frame` updates the controller before `camera.update` with Cesium's globe height (`Scene::globe_height`), camera-underground state (`Scene::camera_underground`, now also copied into the frame state) and vertical exaggeration. `SceneTransitioner` moves to validated.
+
 - `Scene` owns a `SceneTransitioner`: `morph_to_2d`, `morph_to_columbus_view` and `morph_to_3d` (two seconds by default), `complete_morph`, `mode`/`set_mode` (an immediate morph, refused for non-3D modes with `scene3DOnly`) and `morph_time`. Morphs advance in `initialize_frame` after the scene's tweens, and the frame state reads `morph_time` from the transitioner while morphing.
 
 - Validate `TweenCollection`: pinned CesiumJS traces for `addProperty`, `addAlpha`, `addOffsetIncrement` (whose `update` Cesium ignores), removal and cancellation, zero durations and errors. `Scene` now owns `tweens`, updates it in `initialize_frame` and cancels it on `destroy`, as Cesium does. Add `Tween::ptr_eq`.

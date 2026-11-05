@@ -5244,17 +5244,17 @@
   "Scene/CameraEventAggregator": {
     "status": "partial",
     "rust": "scene::camera_event_aggregator",
-    "note": "Host-driven input aggregation, modifier handoff, wheel and pinch state; CesiumJS event sequences pass. Scene input wiring and full parity audit remain."
+    "note": "Host-driven input aggregation, modifier handoff, wheel and pinch state; CesiumJS event sequences pass. Scene::process_input now feeds the scene controller's aggregator. A full parity audit of the remaining aggregation paths remains."
   },
   "Scene/ScreenSpaceCameraController": {
     "status": "partial",
     "rust": "scene::screen_space_camera_controller",
-    "note": "Host-driven camera gestures, inertia and environment inputs; pinned controller sequences pass. Scene input and globe integration and complete parity validation remain."
+    "note": "Host-driven camera gestures, inertia and environment inputs; pinned controller sequences pass. Scene owns the controller: process_input feeds it and initialize_frame updates it before camera.update with Cesium's globe height, camera-underground state and vertical exaggeration (a scene drag matches a standalone controller exactly). Globe picking for surface-anchored gestures and complete parity validation remain."
   },
   "Scene/SceneTransitioner": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::scene_transitioner",
-    "note": "Explicit-time camera and frustum morph phases and morphStart/morphComplete events; pinned morph routes pass. Scene owns the transitioner: morph_to_2d/columbus_view/3d (two seconds by default), complete_morph, the mode setter (with the scene3DOnly check), frame morph_time and destroy. Remaining: Scene's input handling does not yet forward user input, so completeMorphOnUserInput needs the host to call process_input."
+    "note": "Explicit-time camera and frustum morph phases and morphStart/morphComplete events; pinned morph routes pass. Scene owns the transitioner: morph_to_2d/columbus_view/3d (two seconds by default), complete_morph, the mode setter (with the scene3DOnly check), frame morph_time and destroy. Scene::process_input feeds Cesium's morph handler (LEFT_DOWN, MIDDLE_DOWN, RIGHT_DOWN, WHEEL), which completes a running morph when completeMorphOnUserInput was set at its start. The handler lives for the scene's lifetime rather than one morph."
   },
   "Scene/TweenCollection": {
     "status": "ported",
