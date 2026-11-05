@@ -11,8 +11,8 @@
 //! even though a copy remains in its list.
 
 use std::cell::RefCell;
-use std::collections::HashSet;
-use std::rc::Rc;
+use std::collections::{HashMap, HashSet};
+use std::rc::{Rc, Weak};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::{
@@ -29,24 +29,55 @@ fn next_id() -> u64 {
 
 /// Cesium's `primitive._external`: the collections that hold the primitive
 /// and the reference count kept by `countReferences` collections.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct External {
+    id: u64,
     composites: HashSet<u64>,
     reference_count: Option<i64>,
 }
 
-/// A shared primitive: identity is the primitive allocation, and clones share
-/// its membership record.
+thread_local! {
+    /// The live membership record of each wrapped primitive allocation. In
+    /// Cesium the record lives on the primitive object itself, so every handle
+    /// that wraps the same allocation must share it. A record is kept alive
+    /// only by handles, which also keep the allocation alive, so an address
+    /// cannot be reused while its record is still reachable.
+    static EXTERNALS: RefCell<HashMap<usize, Weak<RefCell<External>>>> = RefCell::new(HashMap::new());
+}
+
+fn allocation(primitive: &Rc<RefCell<dyn ScenePrimitive>>) -> usize {
+    Rc::as_ptr(primitive) as *const () as usize
+}
+
+/// The record for `primitive`, shared with every live handle that wraps it.
+fn external_for(primitive: &Rc<RefCell<dyn ScenePrimitive>>) -> Rc<RefCell<External>> {
+    EXTERNALS.with(|map| {
+        let mut map = map.borrow_mut();
+        let key = allocation(primitive);
+        if let Some(existing) = map.get(&key).and_then(Weak::upgrade) {
+            return existing;
+        }
+        let external =
+            Rc::new(RefCell::new(External { id: next_id(), composites: HashSet::new(), reference_count: None }));
+        if map.len() >= 64 {
+            map.retain(|_, record| record.strong_count() > 0);
+        }
+        map.insert(key, Rc::downgrade(&external));
+        external
+    })
+}
+
+/// A shared primitive. Identity is the primitive allocation: clones, and any
+/// other handle wrapping the same `Rc`, share its membership record.
 #[derive(Clone)]
 pub struct PrimitiveHandle {
-    id: u64,
     primitive: Rc<RefCell<dyn ScenePrimitive>>,
     external: Rc<RefCell<External>>,
 }
 
 impl std::fmt::Debug for PrimitiveHandle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("PrimitiveHandle").field("id", &self.id).finish_non_exhaustive()
+        f.debug_struct("PrimitiveHandle").field("id", &self.id()).finish_non_exhaustive()
     }
 }
 
@@ -63,18 +94,22 @@ impl PrimitiveHandle {
     }
 
     /// Wraps a shared primitive, keeping typed access through `primitive`
-    /// (for example, to a nested [`PrimitiveCollection`]).
+    /// (for example, to a nested [`PrimitiveCollection`]). Wrapping an
+    /// allocation that a live handle already wraps returns a handle with the
+    /// same identity, memberships and reference count.
     pub fn from_rc(primitive: Rc<RefCell<dyn ScenePrimitive>>) -> Self {
-        Self { id: next_id(), primitive, external: Rc::default() }
+        let external = external_for(&primitive);
+        Self { primitive, external }
     }
 
     /// A stable identifier, usable inside `Send` event listeners.
     pub fn id(&self) -> u64 {
-        self.id
+        self.external.borrow().id
     }
 
+    /// Whether both handles wrap the same primitive allocation.
     pub fn ptr_eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.external, &other.external)
+        allocation(&self.primitive) == allocation(&other.primitive)
     }
 
     pub fn primitive(&self) -> &Rc<RefCell<dyn ScenePrimitive>> {

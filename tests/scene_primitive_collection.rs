@@ -173,3 +173,36 @@ fn membership_counting_events_and_destruction_match_reference() {
     }
     assert_eq!(steps_checked, 59);
 }
+
+/// Handles that wrap the same primitive allocation share its identity,
+/// memberships and reference count, as Cesium's `_external` record lives on
+/// the primitive object itself.
+#[test]
+fn handles_wrapping_one_allocation_share_membership() {
+    let log: Log = Arc::default();
+    let shared: std::rc::Rc<std::cell::RefCell<dyn ScenePrimitive>> =
+        std::rc::Rc::new(std::cell::RefCell::new(Fake { name: "a".into(), log: log.clone(), destroyed: false }));
+    let first = PrimitiveHandle::from_rc(shared.clone());
+    let second = PrimitiveHandle::from_rc(shared.clone());
+    assert!(first.ptr_eq(&second));
+    assert_eq!(first.id(), second.id());
+
+    let counting = PrimitiveCollectionOptions { count_references: Some(true), ..Default::default() };
+    let mut c0 = PrimitiveCollection::new(counting);
+    let mut c1 = PrimitiveCollection::new(counting);
+    c0.add(first.clone(), None).unwrap();
+    c1.add(second.clone(), None).unwrap();
+    assert_eq!(first.reference_count(), Some(2));
+    assert!(c0.contains(&second), "a second handle is recognized");
+
+    assert!(c0.remove(&second).unwrap(), "remove accepts either handle");
+    assert!(log.lock().unwrap().is_empty(), "the other collection still holds the primitive");
+    assert_eq!(second.reference_count(), Some(1));
+    assert!(c1.remove(&first).unwrap());
+    assert_eq!(*log.lock().unwrap(), vec![json!(["destroy", "a"])]);
+
+    // A different allocation is a different primitive.
+    let other = PrimitiveHandle::new(Fake { name: "b".into(), log, destroyed: false });
+    assert!(!other.ptr_eq(&first));
+    assert_ne!(other.id(), first.id());
+}

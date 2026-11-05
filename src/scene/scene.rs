@@ -1179,8 +1179,8 @@ impl<B: SceneBackend> Scene<B> {
     /// Cesium's `mode` setter: an immediate morph. A scene created with
     /// `scene3DOnly` accepts only `Scene3D`.
     pub fn set_mode(&mut self, mode: SceneMode) -> Result<()> {
-        if self.options.scene_3d_only && mode != SceneMode::Scene3D {
-            return Err(RuntimeError::new("Only SceneMode.SCENE3D is valid when scene3DOnly is true."));
+        if mode != SceneMode::Scene3D {
+            self.check_3d_only()?;
         }
         match mode {
             SceneMode::Scene2D => self.morph_to_2d(Some(0.0)),
@@ -1189,14 +1189,26 @@ impl<B: SceneBackend> Scene<B> {
             SceneMode::Morphing => Err(RuntimeError::new("value must be a valid SceneMode enumeration.")),
         }
     }
+    /// `scene3DOnly` "disables the ability to use 2D or Columbus View".
+    /// Cesium checks it only in the `mode` setter (in debug builds); the port
+    /// also refuses the non-3D morphs, since the render paths assume 3D.
+    fn check_3d_only(&self) -> Result<()> {
+        if self.options.scene_3d_only {
+            return Err(RuntimeError::new("Only SceneMode.SCENE3D is valid when scene3DOnly is true."));
+        }
+        Ok(())
+    }
     /// `morphTo2D(duration)`, two seconds by default. Advances with
-    /// [`Self::initialize_frame`].
+    /// [`Self::initialize_frame`]. Refused when `scene_3d_only` is set.
     pub fn morph_to_2d(&mut self, duration: Option<f64>) -> Result<()> {
+        self.check_3d_only()?;
         self.prepare_morph();
         self.transitioner.morph_to_2d(&mut self.camera, duration.unwrap_or(2.0)).map(|_| ())
     }
-    /// `morphToColumbusView(duration)`, two seconds by default.
+    /// `morphToColumbusView(duration)`, two seconds by default. Refused when
+    /// `scene_3d_only` is set.
     pub fn morph_to_columbus_view(&mut self, duration: Option<f64>) -> Result<()> {
+        self.check_3d_only()?;
         self.prepare_morph();
         self.transitioner.morph_to_columbus_view(&mut self.camera, duration.unwrap_or(2.0)).map(|_| ())
     }

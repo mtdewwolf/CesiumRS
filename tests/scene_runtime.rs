@@ -1088,6 +1088,12 @@ fn scene_morphs_through_its_transitioner() {
         "Only SceneMode.SCENE3D is valid when scene3DOnly is true."
     );
     only_3d.set_mode(SceneMode::Scene3D).unwrap();
+    // The direct morph entry points refuse non-3D modes too.
+    assert!(only_3d.morph_to_2d(Some(0.0)).is_err());
+    assert!(only_3d.morph_to_columbus_view(None).is_err());
+    only_3d.initialize_frame(1.0).unwrap();
+    assert_eq!(only_3d.mode(), SceneMode::Scene3D);
+    only_3d.morph_to_3d(Some(0.0)).unwrap();
 }
 
 fn input(kind: ScreenInputKind, now: f64, x: f64, y: f64) -> ScreenInput {
