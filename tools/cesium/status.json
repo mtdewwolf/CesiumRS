@@ -5242,9 +5242,9 @@
     "note": "Color inputs infer ColorMaterialProperty. String/Resource/canvas/video inputs need ImageMaterialProperty and return an explicit unsupported error."
   },
   "Scene/CameraEventAggregator": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::camera_event_aggregator",
-    "note": "Host-driven input aggregation, modifier handoff, wheel and pinch state; CesiumJS event sequences pass. Scene::process_input now feeds the scene controller's aggregator. A full parity audit of the remaining aggregation paths remains."
+    "note": "Input aggregation over Cesium's ScreenSpaceEventHandler: per-type and per-modifier movement, last movement, button down/press/release times, start positions, wheel accumulation, pinch distance and angle (with wrap), reset and destroy. Scene::process_input feeds the scene controller's aggregator. Pinned CesiumJS states cover every left/right/middle button with every modifier, overlapping buttons, modifier handoff, unmatched ups, wheels, pinches and an 82-step seeded mix (181 steps) plus the original handoff/wheel/pinch sequence."
   },
   "Scene/ScreenSpaceCameraController": {
     "status": "partial",

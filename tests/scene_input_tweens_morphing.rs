@@ -156,30 +156,52 @@ fn pinned_tweens_all_easings_delays_repeats_and_skipped_frames() {
         near(&json!(t.stop_object()), &case["stop"], "stop snapshot");
     }
 }
+/// Compares every event type and modifier of `a` with a pinned
+/// `aggregateState` snapshot.
+fn assert_aggregate(a: &CameraEventAggregator, expected: &Value, context: &str) {
+    near(&json!([a.current_mouse_position().x, a.current_mouse_position().y]), &expected["mouse"], context);
+    assert_eq!(a.any_button_down(), expected["any"], "{context} any");
+    for s in expected["states"].as_array().unwrap() {
+        let t = CameraEventType::from_value(s["type"].as_i64().unwrap() as i32).unwrap();
+        let m = modifier(&s["modifier"]);
+        let motion = a.get_movement(t, m);
+        let start = a.get_start_mouse_position(t, m);
+        let actual = json!({"moving":a.is_moving(t,m),"down":a.is_button_down(t,m),"start":[start.x,start.y],"press":a.get_button_press_time(t,m),"release":a.get_button_release_time(t,m),"distance":motion.distance.map(movement),"angle":motion.angle_and_height.map(movement),"last":a.get_last_movement(t,m).map(movement)});
+        let mut expected = s.clone();
+        expected.as_object_mut().unwrap().remove("type");
+        expected.as_object_mut().unwrap().remove("modifier");
+        expected.as_object_mut().unwrap().remove("movement");
+        near(&actual, &expected, &format!("{context} {t:?} {m:?}"));
+        if t != CameraEventType::Pinch {
+            near(&movement(motion.movement), &s["movement"], &format!("{context} {t:?} {m:?} movement"));
+        }
+    }
+}
 #[test]
 fn pinned_aggregation_modifier_handoff_wheel_and_pinch_wrap() {
     let mut a = CameraEventAggregator::new(800.);
     for case in fixture()["aggregation"].as_array().unwrap() {
         fire(&mut a, &case["command"]);
-        let expected = &case["state"];
-        near(&json!([a.current_mouse_position().x, a.current_mouse_position().y]), &expected["mouse"], "mouse");
-        assert_eq!(a.any_button_down(), expected["any"]);
-        for s in expected["states"].as_array().unwrap() {
-            let t = CameraEventType::from_value(s["type"].as_i64().unwrap() as i32).unwrap();
-            let m = modifier(&s["modifier"]);
-            let motion = a.get_movement(t, m);
-            let start = a.get_start_mouse_position(t, m);
-            let actual = json!({"moving":a.is_moving(t,m),"down":a.is_button_down(t,m),"start":[start.x,start.y],"press":a.get_button_press_time(t,m),"release":a.get_button_release_time(t,m),"distance":motion.distance.map(movement),"angle":motion.angle_and_height.map(movement),"last":a.get_last_movement(t,m).map(movement)});
-            let mut expected = s.clone();
-            expected.as_object_mut().unwrap().remove("type");
-            expected.as_object_mut().unwrap().remove("modifier");
-            expected.as_object_mut().unwrap().remove("movement");
-            near(&actual, &expected, &format!("aggregate {:?} {:?} cmd {}", t, m, case["command"]));
-            if t != CameraEventType::Pinch {
-                near(&movement(motion.movement), &s["movement"], "movement");
-            }
+        assert_aggregate(&a, &case["state"], &format!("cmd {}", case["command"]));
+    }
+}
+/// Every button with every modifier, overlapping buttons, modifier handoff,
+/// unmatched ups, wheels, pinches and a long seeded mix
+/// (`tools/cesium/generate-scene-camera-event-aggregator.mjs`).
+#[test]
+fn pinned_aggregation_sequences_cover_every_button_and_modifier() {
+    let sequences: Value =
+        serde_json::from_str(include_str!("data/scene-camera-event-aggregator.json")).unwrap();
+    let mut steps = 0;
+    for (name, sequence) in sequences.as_object().unwrap() {
+        let mut a = CameraEventAggregator::new(800.);
+        for (i, case) in sequence.as_array().unwrap().iter().enumerate() {
+            fire(&mut a, &case["command"]);
+            assert_aggregate(&a, &case["state"], &format!("{name} step {i} cmd {}", case["command"]));
+            steps += 1;
         }
     }
+    assert_eq!(steps, 181);
 }
 #[test]
 fn pinned_device_orientation_missing_samples_and_wraparound() {

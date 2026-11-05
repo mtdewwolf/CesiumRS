@@ -121,8 +121,9 @@
       "module": "Scene/CameraEventAggregator",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "in-progress",
-      "remaining": "Host-driven input aggregation, modifier handoff, wheel and pinch state; CesiumJS event sequences pass. Scene::process_input now feeds the scene controller's aggregator. A full parity audit of the remaining aggregation paths remains."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_input_tweens_morphing.rs replays tools/cesium/generate-scene-camera-event-aggregator.mjs (181 steps) and the original aggregation sequence; Scene wiring in tests/scene_runtime.rs."
     },
     {
       "module": "Scene/ScreenSpaceCameraController",
