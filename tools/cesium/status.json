@@ -5254,7 +5254,7 @@
   "Scene/SceneTransitioner": {
     "status": "partial",
     "rust": "scene::scene_transitioner",
-    "note": "Explicit-time camera and frustum morph phases and events; pinned morph routes pass. Scene frame integration and complete parity validation remain."
+    "note": "Explicit-time camera and frustum morph phases and morphStart/morphComplete events; pinned morph routes pass. Scene owns the transitioner: morph_to_2d/columbus_view/3d (two seconds by default), complete_morph, the mode setter (with the scene3DOnly check), frame morph_time and destroy. Remaining: Scene's input handling does not yet forward user input, so completeMorphOnUserInput needs the host to call process_input."
   },
   "Scene/TweenCollection": {
     "status": "ported",

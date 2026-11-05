@@ -951,6 +951,9 @@ pub struct Scene<B: SceneBackend> {
     /// `scene.tweens`: updated at the start of every frame and emptied, with
     /// cancel callbacks, when the scene is destroyed.
     pub tweens: super::TweenCollection,
+    /// `scene._transitioner`: owns `mode`/`morphTime` while morphing and the
+    /// `morphStart`/`morphComplete` events.
+    pub transitioner: super::scene_transitioner::SceneTransitioner,
     destroyed: bool,
 }
 impl<B: SceneBackend> Scene<B> {
@@ -988,6 +991,7 @@ impl<B: SceneBackend> Scene<B> {
         frame_state.stencil_buffer = backend.stencil_buffer()?;
         let mut fog = Fog::default();
         fog.enabled = earth;
+        let transitioner = super::scene_transitioner::SceneTransitioner::new(&camera);
         let mut result = Self {
             detailed_picks: Vec::new(),
             post_render_serial: 0,
@@ -1033,6 +1037,7 @@ impl<B: SceneBackend> Scene<B> {
             log_depth_dirty: false,
             shader_frame_count: 0,
             tweens: super::TweenCollection::new(),
+            transitioner,
             destroyed: false,
         };
         result.frame_state.render_request = Some(result.request_handle());
@@ -1140,6 +1145,52 @@ impl<B: SceneBackend> Scene<B> {
         }
         Ok(())
     }
+    /// `scene.mode`.
+    pub fn mode(&self) -> SceneMode {
+        self.camera.mode()
+    }
+    /// `scene.morphTime`.
+    pub fn morph_time(&self) -> f64 {
+        self.camera.mode().get_morph_time().unwrap_or(self.transitioner.morph_time)
+    }
+    /// Cesium's `mode` setter: an immediate morph. A scene created with
+    /// `scene3DOnly` accepts only `Scene3D`.
+    pub fn set_mode(&mut self, mode: SceneMode) -> Result<()> {
+        if self.options.scene_3d_only && mode != SceneMode::Scene3D {
+            return Err(RuntimeError::new("Only SceneMode.SCENE3D is valid when scene3DOnly is true."));
+        }
+        match mode {
+            SceneMode::Scene2D => self.morph_to_2d(Some(0.0)),
+            SceneMode::Scene3D => self.morph_to_3d(Some(0.0)),
+            SceneMode::ColumbusView => self.morph_to_columbus_view(Some(0.0)),
+            SceneMode::Morphing => Err(RuntimeError::new("value must be a valid SceneMode enumeration.")),
+        }
+    }
+    /// `morphTo2D(duration)`, two seconds by default. Advances with
+    /// [`Self::initialize_frame`].
+    pub fn morph_to_2d(&mut self, duration: Option<f64>) -> Result<()> {
+        self.prepare_morph();
+        self.transitioner.morph_to_2d(&mut self.camera, duration.unwrap_or(2.0)).map(|_| ())
+    }
+    /// `morphToColumbusView(duration)`, two seconds by default.
+    pub fn morph_to_columbus_view(&mut self, duration: Option<f64>) -> Result<()> {
+        self.prepare_morph();
+        self.transitioner.morph_to_columbus_view(&mut self.camera, duration.unwrap_or(2.0)).map(|_| ())
+    }
+    /// `morphTo3D(duration)`, two seconds by default.
+    pub fn morph_to_3d(&mut self, duration: Option<f64>) -> Result<()> {
+        self.prepare_morph();
+        self.transitioner.morph_to_3d(&mut self.camera, duration.unwrap_or(2.0)).map(|_| ())
+    }
+    /// `completeMorph()`: jumps to the end of a running morph.
+    pub fn complete_morph(&mut self) -> Result<()> {
+        self.transitioner.complete_morph(&mut self.camera).map(|_| ())
+    }
+    /// The transitioner reads the scene's logarithmic depth setting when a
+    /// morph completes.
+    fn prepare_morph(&mut self) {
+        self.transitioner.use_log_depth = self.frame_state.use_log_depth;
+    }
     pub fn initialize_frame(&mut self, monotonic_seconds: f64) -> Result<()> {
         self.alive()?;
         self.camera_event_clock_ms = monotonic_seconds * 1000.;
@@ -1152,6 +1203,8 @@ impl<B: SceneBackend> Scene<B> {
         // Cesium's `this._tweens.update()` reads getTimestamp(); the host's
         // monotonic clock stands in for it.
         self.tweens.update(monotonic_seconds);
+        // Cesium's morph phases are tweens in `scene.tweens`.
+        self.transitioner.update(&mut self.camera, monotonic_seconds)?;
         self.camera.update_flights(monotonic_seconds).map_err(|e| RuntimeError::new(e.to_string()))?;
         self.camera.update(self.camera.mode()).map_err(|e| RuntimeError::new(e.to_string()))?;
         self.camera.update_camera_changed(monotonic_seconds * 1000.);
@@ -1177,7 +1230,7 @@ impl<B: SceneBackend> Scene<B> {
         frame.occluder = self.occluder;
         frame.tileset_pass_state = None;
         frame.mode = self.camera.mode();
-        frame.morph_time = frame.mode.get_morph_time().unwrap_or(frame.morph_time);
+        frame.morph_time = frame.mode.get_morph_time().unwrap_or(self.transitioner.morph_time);
         frame.culling_volume =
             self.camera.frustum.compute_culling_volume(snapshot.position, snapshot.direction, snapshot.up);
         frame.uniform.camera = snapshot;
@@ -1589,6 +1642,7 @@ impl<B: SceneBackend> Scene<B> {
             return Ok(());
         }
         self.tweens.remove_all();
+        self.transitioner.destroy();
         for p in &mut self.primitives {
             p.destroy()?;
         }

@@ -1028,3 +1028,64 @@ fn scene_drives_and_cancels_its_tweens() {
     assert_eq!(cancelled.get(), 1, "only the running tween is cancelled");
     assert!(scene.tweens.is_empty());
 }
+
+/// Scene owns the transitioner: morphs start from `morph_to_*`, advance with
+/// `initialize_frame`, report `morph_time` while morphing and raise the
+/// transitioner's start/complete events.
+#[test]
+fn scene_morphs_through_its_transitioner() {
+    let mut scene = Scene::new(host(), CameraOptions::new(800., 600.), SceneOptions::default(), epoch()).unwrap();
+    let events = Arc::new(Mutex::new(Vec::new()));
+    let (start, complete) = (events.clone(), events.clone());
+    scene.transitioner.morph_start.add_event_listener(move |e| start.lock().unwrap().push(("start", *e)));
+    scene.transitioner.morph_complete.add_event_listener(move |e| complete.lock().unwrap().push(("complete", *e)));
+    assert_eq!(scene.mode(), SceneMode::Scene3D);
+    assert_eq!(scene.morph_time(), 1.0);
+
+    scene.morph_to_2d(Some(1.0)).unwrap();
+    assert_eq!(events.lock().unwrap().len(), 1, "morphStart is raised when the morph begins");
+    let mut morph_times = vec![];
+    let mut t = 10.0;
+    while scene.mode() != SceneMode::Scene2D && t < 20.0 {
+        scene.initialize_frame(t).unwrap();
+        scene.update_frame_state();
+        morph_times.push(scene.frame_state.morph_time);
+        t += 0.1;
+    }
+    assert_eq!(scene.mode(), SceneMode::Scene2D);
+    assert_eq!(scene.morph_time(), 0.0);
+    assert!(morph_times.windows(2).all(|w| w[1] <= w[0]), "morph time falls monotonically: {morph_times:?}");
+    assert_eq!(*morph_times.last().unwrap(), 0.0);
+    {
+        let events = events.lock().unwrap();
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[1].0, "complete");
+        assert_eq!((events[1].1.previous_mode, events[1].1.mode), (SceneMode::Scene3D, SceneMode::Scene2D));
+    }
+
+    // completeMorph jumps to the end of a running morph.
+    scene.morph_to_columbus_view(None).unwrap();
+    scene.initialize_frame(30.0).unwrap();
+    scene.initialize_frame(30.1).unwrap();
+    assert_eq!(scene.mode(), SceneMode::Morphing);
+    scene.complete_morph().unwrap();
+    assert_eq!(scene.mode(), SceneMode::ColumbusView);
+    assert_eq!(scene.morph_time(), 0.0);
+
+    // The mode setter morphs immediately.
+    scene.set_mode(SceneMode::Scene3D).unwrap();
+    scene.initialize_frame(40.0).unwrap();
+    assert_eq!(scene.mode(), SceneMode::Scene3D);
+    assert_eq!(scene.morph_time(), 1.0);
+    assert!(scene.set_mode(SceneMode::Morphing).is_err());
+    scene.destroy().unwrap();
+    assert!(scene.transitioner.is_destroyed());
+
+    let options = SceneOptions { scene_3d_only: true, ..Default::default() };
+    let mut only_3d = Scene::new(host(), CameraOptions::new(800., 600.), options, epoch()).unwrap();
+    assert_eq!(
+        only_3d.set_mode(SceneMode::Scene2D).unwrap_err().message,
+        "Only SceneMode.SCENE3D is valid when scene3DOnly is true."
+    );
+    only_3d.set_mode(SceneMode::Scene3D).unwrap();
+}

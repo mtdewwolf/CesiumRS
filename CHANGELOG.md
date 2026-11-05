@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `Scene` owns a `SceneTransitioner`: `morph_to_2d`, `morph_to_columbus_view` and `morph_to_3d` (two seconds by default), `complete_morph`, `mode`/`set_mode` (an immediate morph, refused for non-3D modes with `scene3DOnly`) and `morph_time`. Morphs advance in `initialize_frame` after the scene's tweens, and the frame state reads `morph_time` from the transitioner while morphing.
+
 - Validate `TweenCollection`: pinned CesiumJS traces for `addProperty`, `addAlpha`, `addOffsetIncrement` (whose `update` Cesium ignores), removal and cancellation, zero durations and errors. `Scene` now owns `tweens`, updates it in `initialize_frame` and cancels it on `destroy`, as Cesium does. Add `Tween::ptr_eq`.
 
 - Complete `PrimitiveCollection` with Cesium's identity model: a cloneable `PrimitiveHandle` carries the primitive's collection memberships and `countReferences` count, so one primitive can sit in several collections. Add primitive-based `remove`, `remove_and_destroy`, `contains` and reordering, `add` with an index, and the `primitive_added`/`primitive_removed` events. 59 pinned CesiumJS steps cover reference counting, twice-added primitives and destroy errors. Breaking: the collection's methods now take `PrimitiveHandle`s instead of indices and return `Result`.
