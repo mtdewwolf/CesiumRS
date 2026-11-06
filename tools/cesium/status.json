@@ -5382,14 +5382,14 @@
     "note": "Ordered layer management, identity, visibility/events, once-per-add provider readiness, typed compute queue/cancellation, pickImageryLayers and concurrent pickImageryLayerFeatures. 33 pinned picking scenarios plus seven native concurrency/ownership/reentrancy checks, existing collection/provider-ready fixtures and renderer queue tests. SceneGlobe supplies the terrain hit and rendered GlobeSurfaceTile list through the typed Scene boundary; the full Globe renderer remains a separate port."
   },
   "Scene/Polyline": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::polyline",
-    "note": "CPU properties, duplicate elimination, antimeridian splitting and bounding volumes; pinned fixture cases. Rendering, pick IDs and scene-frame integration remain."
+    "note": "Shared Polyline handle with Cesium's makeDirty (per-polyline and collection property counts), duplicate removal, loop closing/opening, antimeridian splitting via wrapLongitude on update with the collection's current model matrix, bounding volumes (local, WC and the 2D volume written by the collection), materials compared by identity, lazy pick ids, _clean (which never clears the distance-display count) and _destroy. Validated through the PolylineCollection SwiftShader capture (dirty flags, property counts, positions, segments and the three bounding volumes after every update) and the pinned snapshots in tests/scene_polylines.rs."
   },
   "Scene/PolylineCollection": {
     "status": "partial",
     "rust": "scene::polyline_collection",
-    "note": "CPU collection lifecycle, attributes and preliminary vertex geometry; reference and native tests. GPU buffers, draw/pick commands, scene-mode projection and complete geometry validation remain."
+    "note": "Full update: removal compaction (requeueing every polyline, as Cesium does), mode and model-matrix changes, the BatchTable of width/show, pick color, encoded center/radius and distance display condition, the stream-for-100-frames position usage, full rebuilds (material-type buckets with DISTANCE_DISPLAY_CONDITION/POLYLINE_DASH/CLIP_POLYLINE shaders, 2D/Columbus projection with antimeridian clamping, the morph buffer, 64K index splits and per-mode attribute layouts) and incremental writeUpdate/batch writes, depth-test render states and one command per material run with Cesium's scratch bounding-sphere accumulation. 31 updates over six SwiftShader scenarios of the pinned engine compare every buffer and texture upload, attribute pointers and constants, commands, buckets, vertex-array ranges, usage, batch values and every polyline; mutation-checked. Remaining: binding texture-valued material uniforms (image materials), which the commands skip, as ViewportQuad does."
   },
   "Scene/Billboard": {
     "status": "partial",

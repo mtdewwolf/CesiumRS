@@ -641,7 +641,7 @@ pub use imagery_layer_collection::{
 pub mod polyline;
 pub mod polyline_collection;
 pub use polyline::{Polyline, PolylineOptions};
-pub use polyline_collection::{PolylineCollection, PolylineHandle};
+pub use polyline_collection::{PolylineCollection, PolylineCollectionOptions};
 
 pub mod billboard;
 pub mod billboard_collection;

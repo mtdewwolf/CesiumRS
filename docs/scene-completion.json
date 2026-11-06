@@ -323,15 +323,15 @@
       "module": "Scene/Polyline",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU properties, duplicate elimination, antimeridian splitting and bounding volumes; pinned fixture cases. Rendering, pick IDs and scene-frame integration remain."
+      "status": "validated",
+      "remaining": "Validated through the PolylineCollection SwiftShader capture and pinned snapshots."
     },
     {
       "module": "Scene/PolylineCollection",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU collection lifecycle, attributes and preliminary vertex geometry; reference and native tests. GPU buffers, draw/pick commands, scene-mode projection and complete geometry validation remain."
+      "status": "in-progress",
+      "remaining": "Validated against 31 updates of a SwiftShader capture. Remaining: binding texture-valued material uniforms for image materials."
     },
     {
       "module": "Scene/Billboard",

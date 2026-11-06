@@ -253,6 +253,21 @@ impl<G: Gl + 'static> BatchTable<G> {
         if equal {
             return Ok(());
         }
+        self.store(instance, attribute, value)
+    }
+
+    /// Stores `value` without Cesium's equality check, for callers whose
+    /// JavaScript value never compares equal (a boolean component).
+    pub(crate) fn set_batched_attribute_unchecked(
+        &mut self,
+        instance: usize,
+        attribute: usize,
+        value: impl Into<BatchValue>,
+    ) -> Result<()> {
+        self.store(instance, attribute, value.into())
+    }
+
+    fn store(&mut self, instance: usize, attribute: usize, value: BatchValue) -> Result<()> {
         let v = [
             value.component(0).unwrap_or(f64::NAN),
             value.component(1).unwrap_or(0.0),

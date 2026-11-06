@@ -127,7 +127,7 @@ derived commands (picking, OIT, shadows).
 | PointPrimitive, PointPrimitiveCollection | Done: validated by `tools/cesium/generate-scene-point-primitive-collection.mjs`, which records Cesium's facade bytes, every `bufferData`/`bufferSubData`, commands and defines on SwiftShader, replayed in `tests/scene_point_primitive_collection.rs` | Layer 3 pixels for a handful of points remain optional |
 | Billboard, BillboardCollection, BillboardTexture | Done except terrain clamping and the vector-tile batch table: `tools/cesium/generate-scene-billboard-collection.mjs` records bytes, uploads, commands, atlas and image states for instanced and batched contexts with ImageData images; replayed in `tests/scene_billboard_collection.rs` | Clamping needs `Scene.updateHeight` |
 | Label, LabelCollection | Glyph rasterization and layout, SDF | Run both sides in the same Chromium page and have Rust call the page's canvas through a host glyph callback. Both sides then rasterize with the same fonts, which removes the platform font problem. Compare glyph bitmaps, then billboard bytes |
-| Polyline, PolylineCollection | Batched buffers per material, 2D/Columbus splitting, commands | Layer 1 bytes per bucket; layer 3 for width and miter joins |
+| Polyline, PolylineCollection | Done: `tools/cesium/generate-scene-polyline-collection.mjs` records uploads, pointers, commands and polyline state in every mode | Layer 3 pixels for width and miter joins remain optional |
 | CumulusCloud, CloudCollection | Noise texture (a compute pass), writers, commands | Layer 3 for the noise texture via `readPixels`; layer 1 for the per-cloud bytes |
 | ParticleSystem | Done: `tools/cesium/generate-scene-particle-system.mjs` compares pooled billboards and buffers each frame | None |
 
