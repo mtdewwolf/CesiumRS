@@ -1,0 +1,8275 @@
+{
+ "positions": [
+  [
+   6378137,
+   0,
+   0
+  ],
+  [
+   4510023.92,
+   4510023.92,
+   1000.5
+  ],
+  [
+   -1000.25,
+   5000000.75,
+   3500000.5
+  ],
+  [
+   1215107.48,
+   -4736682.9,
+   4081926.1
+  ]
+ ],
+ "scenarios": {
+  "create": [
+   [
+    "add",
+    {}
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510023.92,
+      4510023.92,
+      1000.5
+     ],
+     "color": [
+      0.25,
+      0.5,
+      0.75,
+      1
+     ],
+     "outlineColor": [
+      1,
+      0,
+      0,
+      0.5
+     ],
+     "outlineWidth": 2,
+     "pixelSize": 7,
+     "id": "b"
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      -1000.25,
+      5000000.75,
+      3500000.5
+     ],
+     "color": [
+      0,
+      1,
+      0,
+      0.5
+     ],
+     "pixelSize": 3.5,
+     "show": false
+    }
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ]
+  ],
+  "dirty": [
+   [
+    "add",
+    {
+     "position": [
+      6378137,
+      0,
+      0
+     ],
+     "pixelSize": 4
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510023.92,
+      4510023.92,
+      1000.5
+     ],
+     "pixelSize": 5
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      -1000.25,
+      5000000.75,
+      3500000.5
+     ],
+     "pixelSize": 6
+    }
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "set",
+    1,
+    "color",
+    [
+     1,
+     0,
+     1,
+     1
+    ]
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "set",
+    0,
+    "position",
+    [
+     1215107.48,
+     -4736682.9,
+     4081926.1
+    ]
+   ],
+   [
+    "set",
+    2,
+    "pixelSize",
+    12
+   ],
+   [
+    "set",
+    2,
+    "outlineWidth",
+    1.5
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "set",
+    1,
+    "show",
+    false
+   ],
+   [
+    "set",
+    0,
+    "splitDirection",
+    1
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ]
+  ],
+  "many": [
+   [
+    "add",
+    {
+     "position": [
+      6378137,
+      0,
+      0
+     ],
+     "pixelSize": 1
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510024.92,
+      4510021.92,
+      1003.5
+     ],
+     "pixelSize": 2
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      -998.25,
+      4999996.75,
+      3500006.5
+     ],
+     "pixelSize": 3
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      1215110.48,
+      -4736688.9,
+      4081935.1
+     ],
+     "pixelSize": 4
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      6378141,
+      -8,
+      12
+     ],
+     "pixelSize": 5
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510028.92,
+      4510013.92,
+      1015.5
+     ],
+     "pixelSize": 6
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      -994.25,
+      4999988.75,
+      3500018.5
+     ],
+     "pixelSize": 7
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      1215114.48,
+      -4736696.9,
+      4081947.1
+     ],
+     "pixelSize": 1
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      6378145,
+      -16,
+      24
+     ],
+     "pixelSize": 2
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510032.92,
+      4510005.92,
+      1027.5
+     ],
+     "pixelSize": 3
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      -990.25,
+      4999980.75,
+      3500030.5
+     ],
+     "pixelSize": 4
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      1215118.48,
+      -4736704.9,
+      4081959.1
+     ],
+     "pixelSize": 5
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      6378149,
+      -24,
+      36
+     ],
+     "pixelSize": 6
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510036.92,
+      4509997.92,
+      1039.5
+     ],
+     "pixelSize": 7
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      -986.25,
+      4999972.75,
+      3500042.5
+     ],
+     "pixelSize": 1
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      1215122.48,
+      -4736712.9,
+      4081971.1
+     ],
+     "pixelSize": 2
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      6378153,
+      -32,
+      48
+     ],
+     "pixelSize": 3
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510040.92,
+      4509989.92,
+      1051.5
+     ],
+     "pixelSize": 4
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      -982.25,
+      4999964.75,
+      3500054.5
+     ],
+     "pixelSize": 5
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      1215126.48,
+      -4736720.9,
+      4081983.1
+     ],
+     "pixelSize": 6
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      6378157,
+      -40,
+      60
+     ],
+     "pixelSize": 7
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510044.92,
+      4509981.92,
+      1063.5
+     ],
+     "pixelSize": 1
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      -978.25,
+      4999956.75,
+      3500066.5
+     ],
+     "pixelSize": 2
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      1215130.48,
+      -4736728.9,
+      4081995.1
+     ],
+     "pixelSize": 3
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      6378161,
+      -48,
+      72
+     ],
+     "pixelSize": 4
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510048.92,
+      4509973.92,
+      1075.5
+     ],
+     "pixelSize": 5
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      -974.25,
+      4999948.75,
+      3500078.5
+     ],
+     "pixelSize": 6
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      1215134.48,
+      -4736736.9,
+      4082007.1
+     ],
+     "pixelSize": 7
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      6378165,
+      -56,
+      84
+     ],
+     "pixelSize": 1
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510052.92,
+      4509965.92,
+      1087.5
+     ],
+     "pixelSize": 2
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      -970.25,
+      4999940.75,
+      3500090.5
+     ],
+     "pixelSize": 3
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      1215138.48,
+      -4736744.9,
+      4082019.1
+     ],
+     "pixelSize": 4
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      6378169,
+      -64,
+      96
+     ],
+     "pixelSize": 5
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510056.92,
+      4509957.92,
+      1099.5
+     ],
+     "pixelSize": 6
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      -966.25,
+      4999932.75,
+      3500102.5
+     ],
+     "pixelSize": 7
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      1215142.48,
+      -4736752.9,
+      4082031.1
+     ],
+     "pixelSize": 1
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      6378173,
+      -72,
+      108
+     ],
+     "pixelSize": 2
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510060.92,
+      4509949.92,
+      1111.5
+     ],
+     "pixelSize": 3
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      -962.25,
+      4999924.75,
+      3500114.5
+     ],
+     "pixelSize": 4
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      1215146.48,
+      -4736760.9,
+      4082043.1
+     ],
+     "pixelSize": 5
+    }
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "set",
+    3,
+    "color",
+    [
+     0.5,
+     0.5,
+     0.5,
+     1
+    ]
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "set",
+    7,
+    "color",
+    [
+     0.1,
+     0.2,
+     0.3,
+     1
+    ]
+   ],
+   [
+    "set",
+    30,
+    "pixelSize",
+    20
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ]
+  ],
+  "removal": [
+   [
+    "add",
+    {
+     "position": [
+      6378137,
+      0,
+      0
+     ],
+     "id": "p0"
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510023.92,
+      4510023.92,
+      1000.5
+     ],
+     "id": "p1"
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      -1000.25,
+      5000000.75,
+      3500000.5
+     ],
+     "id": "p2"
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      1215107.48,
+      -4736682.9,
+      4081926.1
+     ],
+     "id": "p3"
+    }
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "remove",
+    1
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510023.92,
+      4510023.92,
+      1000.5
+     ],
+     "color": [
+      1,
+      1,
+      0,
+      1
+     ]
+    }
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "removeAll"
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ]
+  ],
+  "blendOptions": [
+   [
+    "add",
+    {
+     "position": [
+      6378137,
+      0,
+      0
+     ]
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510023.92,
+      4510023.92,
+      1000.5
+     ],
+     "color": [
+      1,
+      1,
+      1,
+      0.5
+     ]
+    }
+   ],
+   [
+    "collection",
+    "blendOption",
+    0
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "collection",
+    "blendOption",
+    2
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "collection",
+    "blendOption",
+    1
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ]
+  ],
+  "shaderDefines": [
+   [
+    "add",
+    {
+     "position": [
+      6378137,
+      0,
+      0
+     ]
+    }
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "set",
+    0,
+    "scaleByDistance",
+    [
+     1000,
+     2,
+     10000000,
+     0.5
+    ]
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "set",
+    0,
+    "translucencyByDistance",
+    [
+     1000,
+     1,
+     20000000,
+     0.25
+    ]
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "set",
+    0,
+    "distanceDisplayCondition",
+    [
+     10,
+     30000000
+    ]
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "set",
+    0,
+    "disableDepthTestDistance",
+    "Infinity"
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510023.92,
+      4510023.92,
+      1000.5
+     ],
+     "translucencyByDistance": [
+      5,
+      1,
+      10,
+      1
+     ],
+     "scaleByDistance": [
+      1,
+      1,
+      2,
+      1
+     ],
+     "disableDepthTestDistance": 50
+    }
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ]
+  ],
+  "minimumDisableDepth": [
+   [
+    "add",
+    {
+     "position": [
+      -1000.25,
+      5000000.75,
+      3500000.5
+     ]
+    }
+   ],
+   [
+    "update",
+    {
+     "mode": 3,
+     "minimumDisableDepthTestDistance": 100
+    }
+   ]
+  ],
+  "projected": [
+   [
+    "add",
+    {
+     "position": [
+      6378137,
+      0,
+      0
+     ],
+     "pixelSize": 5
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510023.92,
+      4510023.92,
+      1000.5
+     ],
+     "pixelSize": 9,
+     "outlineWidth": 3
+    }
+   ],
+   [
+    "collection",
+    "modelMatrix",
+    [
+     1,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     10,
+     20,
+     30,
+     1
+    ]
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "update",
+    {
+     "mode": 1
+    }
+   ],
+   [
+    "set",
+    1,
+    "position",
+    [
+     1215107.48,
+     -4736682.9,
+     4081926.1
+    ]
+   ],
+   [
+    "update",
+    {
+     "mode": 1
+    }
+   ],
+   [
+    "update",
+    {
+     "mode": 2
+    }
+   ],
+   [
+    "update",
+    {
+     "mode": 0,
+     "morphTime": 0.5
+    }
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ]
+  ],
+  "picking": [
+   [
+    "add",
+    {
+     "position": [
+      6378137,
+      0,
+      0
+     ],
+     "id": "a"
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510023.92,
+      4510023.92,
+      1000.5
+     ],
+     "id": "b",
+     "color": [
+      1,
+      1,
+      1,
+      0.25
+     ]
+    }
+   ],
+   [
+    "update",
+    {
+     "mode": 3,
+     "pick": true,
+     "render": false
+    }
+   ],
+   [
+    "set",
+    0,
+    "color",
+    [
+     0,
+     0,
+     1,
+     1
+    ]
+   ],
+   [
+    "update",
+    {
+     "mode": 3,
+     "pick": true,
+     "render": false
+    }
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ]
+  ],
+  "hidden": [
+   [
+    "add",
+    {
+     "position": [
+      6378137,
+      0,
+      0
+     ],
+     "color": [
+      1,
+      1,
+      1,
+      0
+     ],
+     "outlineColor": [
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   ],
+   [
+    "add",
+    {
+     "position": [
+      4510023.92,
+      4510023.92,
+      1000.5
+     ],
+     "outlineColor": [
+      0,
+      0,
+      0,
+      0.5
+     ],
+     "color": [
+      1,
+      1,
+      1,
+      0
+     ]
+    }
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "collection",
+    "show",
+    false
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ],
+   [
+    "collection",
+    "show",
+    true
+   ],
+   [
+    "collection",
+    "debugShowBoundingVolume",
+    true
+   ],
+   [
+    "update",
+    {
+     "mode": 3
+    }
+   ]
+  ]
+ },
+ "capture": {
+  "maximumAliasedPointSize": 1023,
+  "scenarios": {
+   "create": {
+    "camera": {
+     "position": [
+      20000000,
+      1000000,
+      5000000
+     ],
+     "direction": [
+      -0.9690031662230185,
+      -0.04845015831115093,
+      -0.24225079155575463
+     ],
+     "up": [
+      -0.24194854466131915,
+      -0.012097427233065958,
+      0.9702136640918898
+     ],
+     "right": [
+      -0.04993761694389224,
+      0.9987523388778448,
+      0
+     ]
+    },
+    "steps": [
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "4a4b8bcf5216de34",
+        "length": 288,
+        "bytes": "AAAAAAAAAAAAAAAAAAAgQQAAAAAAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAACISgAAiEoAAAAAAADgQOxHUUfsR1FHACB6RAAAAEB+AYFKAAB/SwAAAEgAgH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAAAAgAAAmEoAAFRKAABgQAAQesSAgZZGAMHPRgAAAAAAAH9HAAAAAAAAQEgAAABLAAB/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         2254511.835,
+         2500000.375,
+         1750000.25,
+         24168482.185334582
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         2254511.835,
+         2500000.375,
+         1750000.25,
+         24168482.185334582
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": true,
+      "spTranslucentChanged": true,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 3
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         0,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       },
+       {
+        "index": 2,
+        "dirty": false,
+        "actual": [
+         -1000.25,
+         5000000.75,
+         3500000.5
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "dirty": {
+    "camera": {
+     "position": [
+      20000000,
+      1000000,
+      5000000
+     ],
+     "direction": [
+      -0.9690031662230185,
+      -0.04845015831115093,
+      -0.24225079155575463
+     ],
+     "up": [
+      -0.24194854466131915,
+      -0.012097427233065958,
+      0.9702136640918898
+     ],
+     "right": [
+      -0.04993761694389224,
+      0.9987523388778448,
+      0
+     ]
+    },
+    "steps": [
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "c3026a438c55cb67",
+        "length": 288,
+        "bytes": "AADCSgAAAAAAAAAAAACAQAAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAACISgAAiEoAAAAAAACgQOxHUUfsR1FHACB6RAAAAAD//39LAAAAAAAAAEgAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAAAAgAAAmEoAAFRKAADAQAAQesSAgZZGAMHPRgAAAAD//39LAAAAAAAAQEgAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         3188568.375,
+         2500000.375,
+         1750000.25,
+         15318137.329795457
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         3188568.375,
+         2500000.375,
+         1750000.25,
+         15318137.329795457
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": true,
+      "spTranslucentChanged": true,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 6,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 3
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       },
+       {
+        "index": 2,
+        "dirty": false,
+        "actual": [
+         -1000.25,
+         5000000.75,
+         3500000.5
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35040,
+        "vertexSizeInBytes": 16,
+        "hash": "4eb01390dd58e40b",
+        "length": 48,
+        "bytes": "//9/SwAAAAAAAIBHAAB/S/8Af0sAAAAAAAAASAAAf0v//39LAAAAAAAAQEgAAH9L"
+       },
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 80,
+        "hash": "8e4e5120066b9b58",
+        "length": 240,
+        "bytes": "AADCSgAAAAAAAAAAAACAQAAypUYAAAAAAAAAAAAAAAAAgP9DAAB/QwAAAAAAAIA/AAAAAAAAgD8AAIA/AACAPwAAAAAAAIB/AAAAAAAAAAAAAIhKAACISgAAAAAAAKBA7EdRR+xHUUcAIHpEAAAAAACA/0MAAH9DAAAAAAAAgD8AAAAAAACAPwAAgD8AAIA/AAAAAAAAgH8AAAAAAAAAAAAAAIAAAJhKAABUSgAAwEAAEHrEgIGWRgDBz0YAAAAAAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         3188568.375,
+         2500000.375,
+         1750000.25,
+         15318137.329795457
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         3188568.375,
+         2500000.375,
+         1750000.25,
+         15318137.329795457
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 6,
+       "buffersUsage": [
+        35044,
+        35044,
+        35040,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 3
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       },
+       {
+        "index": 2,
+        "dirty": false,
+        "actual": [
+         -1000.25,
+         5000000.75,
+         3500000.5
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35040,
+        "vertexSizeInBytes": 32,
+        "hash": "eb91f23b96722fd6",
+        "length": 96,
+        "bytes": "AACQSQAAkMoAAHhKAACAQHuDCkfNVY3GMwySRgAAAAAAAIhKAACISgAAAAAAAKBA7EdRR+xHUUcAIHpEAAAAAAAAAIAAAJhKAABUSgAAQEEAEHrEgIGWRgDBz0YAAMA/"
+       },
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 64,
+        "hash": "e35f5156f5027b42",
+        "length": 192,
+        "bytes": "//9/SwAAAAAAAIBHAAB/SwCA/0MAAH9DAAAAAAAAgD8AAAAAAACAPwAAgD8AAIA/AAAAAAAAgH8AAAAAAAAAAP8Af0sAAAAAAAAASAAAf0sAgP9DAAB/QwAAAAAAAIA/AAAAAAAAgD8AAIA/AACAPwAAAAAAAIB/AAAAAAAAAAD//39LAAAAAAAAQEgAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         3188568.375,
+         2500000.375,
+         1750000.25,
+         25684180.46392015
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         3188568.375,
+         2500000.375,
+         1750000.25,
+         25684180.46392015
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 13.5,
+       "buffersUsage": [
+        35044,
+        35040,
+        35044,
+        35044,
+        35040,
+        35040,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 3
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         1215107.48,
+         -4736682.9,
+         4081926.1
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       },
+       {
+        "index": 2,
+        "dirty": false,
+        "actual": [
+         -1000.25,
+         5000000.75,
+         3500000.5
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "32a97aeeb3c9c638",
+        "length": 288,
+        "bytes": "AACQSQAAkMoAAHhKAACAQHuDCkfNVY3GMwySRgAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAIA/AACISgAAiEoAAAAAAACgQOxHUUfsR1FHACB6RAAAAAD/AH9LAAAAAAAAAEgAAH9LAAB/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAAAAgAAAmEoAAFRKAABAQQAQesSAgZZGAMHPRgAAwD///39LAAAAAAAAQEgAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         3188568.375,
+         2500000.375,
+         1750000.25,
+         25684180.46392015
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         3188568.375,
+         2500000.375,
+         1750000.25,
+         25684180.46392015
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 13.5,
+       "buffersUsage": [
+        35040,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35040
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 3
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         1215107.48,
+         -4736682.9,
+         4081926.1
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       },
+       {
+        "index": 2,
+        "dirty": false,
+        "actual": [
+         -1000.25,
+         5000000.75,
+         3500000.5
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "32a97aeeb3c9c638",
+        "length": 288,
+        "bytes": "AACQSQAAkMoAAHhKAACAQHuDCkfNVY3GMwySRgAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAIA/AACISgAAiEoAAAAAAACgQOxHUUfsR1FHACB6RAAAAAD/AH9LAAAAAAAAAEgAAH9LAAB/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAAAAgAAAmEoAAFRKAABAQQAQesSAgZZGAMHPRgAAwD///39LAAAAAAAAQEgAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         3188568.375,
+         2500000.375,
+         1750000.25,
+         25684180.46392015
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         3188568.375,
+         2500000.375,
+         1750000.25,
+         25684180.46392015
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 13.5,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 3
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         1215107.48,
+         -4736682.9,
+         4081926.1
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       },
+       {
+        "index": 2,
+        "dirty": false,
+        "actual": [
+         -1000.25,
+         5000000.75,
+         3500000.5
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "many": {
+    "camera": {
+     "position": [
+      20000000,
+      1000000,
+      5000000
+     ],
+     "direction": [
+      -0.9690031662230185,
+      -0.04845015831115093,
+      -0.24225079155575463
+     ],
+     "up": [
+      -0.24194854466131915,
+      -0.012097427233065958,
+      0.9702136640918898
+     ],
+     "right": [
+      -0.04993761694389224,
+      0.9987523388778448,
+      0
+     ]
+    },
+    "steps": [
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "38e3244318d904cf",
+        "length": 3840,
+        "bytes": null
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         3188587.375,
+         131617.9249999998,
+         2041021.55,
+         17163699.956482083
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         3188587.375,
+         131617.9249999998,
+         2041021.55,
+         17163699.956482083
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": true,
+      "spTranslucentChanged": true,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 7,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 40
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510024.92,
+         4510021.92,
+         1003.5
+        ]
+       },
+       {
+        "index": 2,
+        "dirty": false,
+        "actual": [
+         -998.25,
+         4999996.75,
+         3500006.5
+        ]
+       },
+       {
+        "index": 3,
+        "dirty": false,
+        "actual": [
+         1215110.48,
+         -4736688.9,
+         4081935.1
+        ]
+       },
+       {
+        "index": 4,
+        "dirty": false,
+        "actual": [
+         6378141,
+         -8,
+         12
+        ]
+       },
+       {
+        "index": 5,
+        "dirty": false,
+        "actual": [
+         4510028.92,
+         4510013.92,
+         1015.5
+        ]
+       },
+       {
+        "index": 6,
+        "dirty": false,
+        "actual": [
+         -994.25,
+         4999988.75,
+         3500018.5
+        ]
+       },
+       {
+        "index": 7,
+        "dirty": false,
+        "actual": [
+         1215114.48,
+         -4736696.9,
+         4081947.1
+        ]
+       },
+       {
+        "index": 8,
+        "dirty": false,
+        "actual": [
+         6378145,
+         -16,
+         24
+        ]
+       },
+       {
+        "index": 9,
+        "dirty": false,
+        "actual": [
+         4510032.92,
+         4510005.92,
+         1027.5
+        ]
+       },
+       {
+        "index": 10,
+        "dirty": false,
+        "actual": [
+         -990.25,
+         4999980.75,
+         3500030.5
+        ]
+       },
+       {
+        "index": 11,
+        "dirty": false,
+        "actual": [
+         1215118.48,
+         -4736704.9,
+         4081959.1
+        ]
+       },
+       {
+        "index": 12,
+        "dirty": false,
+        "actual": [
+         6378149,
+         -24,
+         36
+        ]
+       },
+       {
+        "index": 13,
+        "dirty": false,
+        "actual": [
+         4510036.92,
+         4509997.92,
+         1039.5
+        ]
+       },
+       {
+        "index": 14,
+        "dirty": false,
+        "actual": [
+         -986.25,
+         4999972.75,
+         3500042.5
+        ]
+       },
+       {
+        "index": 15,
+        "dirty": false,
+        "actual": [
+         1215122.48,
+         -4736712.9,
+         4081971.1
+        ]
+       },
+       {
+        "index": 16,
+        "dirty": false,
+        "actual": [
+         6378153,
+         -32,
+         48
+        ]
+       },
+       {
+        "index": 17,
+        "dirty": false,
+        "actual": [
+         4510040.92,
+         4509989.92,
+         1051.5
+        ]
+       },
+       {
+        "index": 18,
+        "dirty": false,
+        "actual": [
+         -982.25,
+         4999964.75,
+         3500054.5
+        ]
+       },
+       {
+        "index": 19,
+        "dirty": false,
+        "actual": [
+         1215126.48,
+         -4736720.9,
+         4081983.1
+        ]
+       },
+       {
+        "index": 20,
+        "dirty": false,
+        "actual": [
+         6378157,
+         -40,
+         60
+        ]
+       },
+       {
+        "index": 21,
+        "dirty": false,
+        "actual": [
+         4510044.92,
+         4509981.92,
+         1063.5
+        ]
+       },
+       {
+        "index": 22,
+        "dirty": false,
+        "actual": [
+         -978.25,
+         4999956.75,
+         3500066.5
+        ]
+       },
+       {
+        "index": 23,
+        "dirty": false,
+        "actual": [
+         1215130.48,
+         -4736728.9,
+         4081995.1
+        ]
+       },
+       {
+        "index": 24,
+        "dirty": false,
+        "actual": [
+         6378161,
+         -48,
+         72
+        ]
+       },
+       {
+        "index": 25,
+        "dirty": false,
+        "actual": [
+         4510048.92,
+         4509973.92,
+         1075.5
+        ]
+       },
+       {
+        "index": 26,
+        "dirty": false,
+        "actual": [
+         -974.25,
+         4999948.75,
+         3500078.5
+        ]
+       },
+       {
+        "index": 27,
+        "dirty": false,
+        "actual": [
+         1215134.48,
+         -4736736.9,
+         4082007.1
+        ]
+       },
+       {
+        "index": 28,
+        "dirty": false,
+        "actual": [
+         6378165,
+         -56,
+         84
+        ]
+       },
+       {
+        "index": 29,
+        "dirty": false,
+        "actual": [
+         4510052.92,
+         4509965.92,
+         1087.5
+        ]
+       },
+       {
+        "index": 30,
+        "dirty": false,
+        "actual": [
+         -970.25,
+         4999940.75,
+         3500090.5
+        ]
+       },
+       {
+        "index": 31,
+        "dirty": false,
+        "actual": [
+         1215138.48,
+         -4736744.9,
+         4082019.1
+        ]
+       },
+       {
+        "index": 32,
+        "dirty": false,
+        "actual": [
+         6378169,
+         -64,
+         96
+        ]
+       },
+       {
+        "index": 33,
+        "dirty": false,
+        "actual": [
+         4510056.92,
+         4509957.92,
+         1099.5
+        ]
+       },
+       {
+        "index": 34,
+        "dirty": false,
+        "actual": [
+         -966.25,
+         4999932.75,
+         3500102.5
+        ]
+       },
+       {
+        "index": 35,
+        "dirty": false,
+        "actual": [
+         1215142.48,
+         -4736752.9,
+         4082031.1
+        ]
+       },
+       {
+        "index": 36,
+        "dirty": false,
+        "actual": [
+         6378173,
+         -72,
+         108
+        ]
+       },
+       {
+        "index": 37,
+        "dirty": false,
+        "actual": [
+         4510060.92,
+         4509949.92,
+         1111.5
+        ]
+       },
+       {
+        "index": 38,
+        "dirty": false,
+        "actual": [
+         -962.25,
+         4999924.75,
+         3500114.5
+        ]
+       },
+       {
+        "index": 39,
+        "dirty": false,
+        "actual": [
+         1215146.48,
+         -4736760.9,
+         4082043.1
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35040,
+        "vertexSizeInBytes": 16,
+        "hash": "2ba2abb3fc3e942b",
+        "length": 640,
+        "bytes": "//9/SwAAAAAAAIBHAAB/S///f0sAAAAAAAAASAAAf0v//39LAAAAAAAAQEgAAH9LgIAASwAAAAAAAIBIAAB/S///f0sAAAAAAACgSAAAf0v//39LAAAAAAAAwEgAAH9L//9/SwAAAAAAAOBIAAB/S///f0sAAAAAAAAASQAAf0v//39LAAAAAAAAEEkAAH9L//9/SwAAAAAAACBJAAB/S///f0sAAAAAAAAwSQAAf0v//39LAAAAAAAAQEkAAH9L//9/SwAAAAAAAFBJAAB/S///f0sAAAAAAABgSQAAf0v//39LAAAAAAAAcEkAAH9L//9/SwAAAAAAAIBJAAB/S///f0sAAAAAAACISQAAf0v//39LAAAAAAAAkEkAAH9L//9/SwAAAAAAAJhJAAB/S///f0sAAAAAAACgSQAAf0v//39LAAAAAAAAqEkAAH9L//9/SwAAAAAAALBJAAB/S///f0sAAAAAAAC4SQAAf0v//39LAAAAAAAAwEkAAH9L//9/SwAAAAAAAMhJAAB/S///f0sAAAAAAADQSQAAf0v//39LAAAAAAAA2EkAAH9L//9/SwAAAAAAAOBJAAB/S///f0sAAAAAAADoSQAAf0v//39LAAAAAAAA8EkAAH9L//9/SwAAAAAAAPhJAAB/S///f0sAAAAAAAAASgAAf0v//39LAAAAAAAABEoAAH9L//9/SwAAAAAAAAhKAAB/S///f0sAAAAAAAAMSgAAf0v//39LAAAAAAAAEEoAAH9L//9/SwAAAAAAABRKAAB/S///f0sAAAAAAAAYSgAAf0v//39LAAAAAAAAHEoAAH9L//9/SwAAAAAAACBKAAB/Sw=="
+       },
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 80,
+        "hash": "569dd96fe4cb8938",
+        "length": 3200,
+        "bytes": null
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         3188587.375,
+         131617.9249999998,
+         2041021.55,
+         17163699.956482083
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         3188587.375,
+         131617.9249999998,
+         2041021.55,
+         17163699.956482083
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 7,
+       "buffersUsage": [
+        35044,
+        35044,
+        35040,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 40
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510024.92,
+         4510021.92,
+         1003.5
+        ]
+       },
+       {
+        "index": 2,
+        "dirty": false,
+        "actual": [
+         -998.25,
+         4999996.75,
+         3500006.5
+        ]
+       },
+       {
+        "index": 3,
+        "dirty": false,
+        "actual": [
+         1215110.48,
+         -4736688.9,
+         4081935.1
+        ]
+       },
+       {
+        "index": 4,
+        "dirty": false,
+        "actual": [
+         6378141,
+         -8,
+         12
+        ]
+       },
+       {
+        "index": 5,
+        "dirty": false,
+        "actual": [
+         4510028.92,
+         4510013.92,
+         1015.5
+        ]
+       },
+       {
+        "index": 6,
+        "dirty": false,
+        "actual": [
+         -994.25,
+         4999988.75,
+         3500018.5
+        ]
+       },
+       {
+        "index": 7,
+        "dirty": false,
+        "actual": [
+         1215114.48,
+         -4736696.9,
+         4081947.1
+        ]
+       },
+       {
+        "index": 8,
+        "dirty": false,
+        "actual": [
+         6378145,
+         -16,
+         24
+        ]
+       },
+       {
+        "index": 9,
+        "dirty": false,
+        "actual": [
+         4510032.92,
+         4510005.92,
+         1027.5
+        ]
+       },
+       {
+        "index": 10,
+        "dirty": false,
+        "actual": [
+         -990.25,
+         4999980.75,
+         3500030.5
+        ]
+       },
+       {
+        "index": 11,
+        "dirty": false,
+        "actual": [
+         1215118.48,
+         -4736704.9,
+         4081959.1
+        ]
+       },
+       {
+        "index": 12,
+        "dirty": false,
+        "actual": [
+         6378149,
+         -24,
+         36
+        ]
+       },
+       {
+        "index": 13,
+        "dirty": false,
+        "actual": [
+         4510036.92,
+         4509997.92,
+         1039.5
+        ]
+       },
+       {
+        "index": 14,
+        "dirty": false,
+        "actual": [
+         -986.25,
+         4999972.75,
+         3500042.5
+        ]
+       },
+       {
+        "index": 15,
+        "dirty": false,
+        "actual": [
+         1215122.48,
+         -4736712.9,
+         4081971.1
+        ]
+       },
+       {
+        "index": 16,
+        "dirty": false,
+        "actual": [
+         6378153,
+         -32,
+         48
+        ]
+       },
+       {
+        "index": 17,
+        "dirty": false,
+        "actual": [
+         4510040.92,
+         4509989.92,
+         1051.5
+        ]
+       },
+       {
+        "index": 18,
+        "dirty": false,
+        "actual": [
+         -982.25,
+         4999964.75,
+         3500054.5
+        ]
+       },
+       {
+        "index": 19,
+        "dirty": false,
+        "actual": [
+         1215126.48,
+         -4736720.9,
+         4081983.1
+        ]
+       },
+       {
+        "index": 20,
+        "dirty": false,
+        "actual": [
+         6378157,
+         -40,
+         60
+        ]
+       },
+       {
+        "index": 21,
+        "dirty": false,
+        "actual": [
+         4510044.92,
+         4509981.92,
+         1063.5
+        ]
+       },
+       {
+        "index": 22,
+        "dirty": false,
+        "actual": [
+         -978.25,
+         4999956.75,
+         3500066.5
+        ]
+       },
+       {
+        "index": 23,
+        "dirty": false,
+        "actual": [
+         1215130.48,
+         -4736728.9,
+         4081995.1
+        ]
+       },
+       {
+        "index": 24,
+        "dirty": false,
+        "actual": [
+         6378161,
+         -48,
+         72
+        ]
+       },
+       {
+        "index": 25,
+        "dirty": false,
+        "actual": [
+         4510048.92,
+         4509973.92,
+         1075.5
+        ]
+       },
+       {
+        "index": 26,
+        "dirty": false,
+        "actual": [
+         -974.25,
+         4999948.75,
+         3500078.5
+        ]
+       },
+       {
+        "index": 27,
+        "dirty": false,
+        "actual": [
+         1215134.48,
+         -4736736.9,
+         4082007.1
+        ]
+       },
+       {
+        "index": 28,
+        "dirty": false,
+        "actual": [
+         6378165,
+         -56,
+         84
+        ]
+       },
+       {
+        "index": 29,
+        "dirty": false,
+        "actual": [
+         4510052.92,
+         4509965.92,
+         1087.5
+        ]
+       },
+       {
+        "index": 30,
+        "dirty": false,
+        "actual": [
+         -970.25,
+         4999940.75,
+         3500090.5
+        ]
+       },
+       {
+        "index": 31,
+        "dirty": false,
+        "actual": [
+         1215138.48,
+         -4736744.9,
+         4082019.1
+        ]
+       },
+       {
+        "index": 32,
+        "dirty": false,
+        "actual": [
+         6378169,
+         -64,
+         96
+        ]
+       },
+       {
+        "index": 33,
+        "dirty": false,
+        "actual": [
+         4510056.92,
+         4509957.92,
+         1099.5
+        ]
+       },
+       {
+        "index": 34,
+        "dirty": false,
+        "actual": [
+         -966.25,
+         4999932.75,
+         3500102.5
+        ]
+       },
+       {
+        "index": 35,
+        "dirty": false,
+        "actual": [
+         1215142.48,
+         -4736752.9,
+         4082031.1
+        ]
+       },
+       {
+        "index": 36,
+        "dirty": false,
+        "actual": [
+         6378173,
+         -72,
+         108
+        ]
+       },
+       {
+        "index": 37,
+        "dirty": false,
+        "actual": [
+         4510060.92,
+         4509949.92,
+         1111.5
+        ]
+       },
+       {
+        "index": 38,
+        "dirty": false,
+        "actual": [
+         -962.25,
+         4999924.75,
+         3500114.5
+        ]
+       },
+       {
+        "index": 39,
+        "dirty": false,
+        "actual": [
+         1215146.48,
+         -4736760.9,
+         4082043.1
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35040,
+        "vertexSizeInBytes": 16,
+        "hash": "95a4529556d92a33",
+        "length": 640,
+        "bytes": "//9/SwAAAAAAAIBHAAB/S///f0sAAAAAAAAASAAAf0v//39LAAAAAAAAQEgAAH9LgIAASwAAAAAAAIBIAAB/S///f0sAAAAAAACgSAAAf0v//39LAAAAAAAAwEgAAH9L//9/SwAAAAAAAOBIAAB/S2ia0UkAAAAAAAAASQAAf0v//39LAAAAAAAAEEkAAH9L//9/SwAAAAAAACBJAAB/S///f0sAAAAAAAAwSQAAf0v//39LAAAAAAAAQEkAAH9L//9/SwAAAAAAAFBJAAB/S///f0sAAAAAAABgSQAAf0v//39LAAAAAAAAcEkAAH9L//9/SwAAAAAAAIBJAAB/S///f0sAAAAAAACISQAAf0v//39LAAAAAAAAkEkAAH9L//9/SwAAAAAAAJhJAAB/S///f0sAAAAAAACgSQAAf0v//39LAAAAAAAAqEkAAH9L//9/SwAAAAAAALBJAAB/S///f0sAAAAAAAC4SQAAf0v//39LAAAAAAAAwEkAAH9L//9/SwAAAAAAAMhJAAB/S///f0sAAAAAAADQSQAAf0v//39LAAAAAAAA2EkAAH9L//9/SwAAAAAAAOBJAAB/S///f0sAAAAAAADoSQAAf0v//39LAAAAAAAA8EkAAH9L//9/SwAAAAAAAPhJAAB/S///f0sAAAAAAAAASgAAf0v//39LAAAAAAAABEoAAH9L//9/SwAAAAAAAAhKAAB/S///f0sAAAAAAAAMSgAAf0v//39LAAAAAAAAEEoAAH9L//9/SwAAAAAAABRKAAB/S///f0sAAAAAAAAYSgAAf0v//39LAAAAAAAAHEoAAH9L//9/SwAAAAAAACBKAAB/Sw=="
+       },
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 80,
+        "hash": "d82ec936861f325b",
+        "length": 3200,
+        "bytes": null
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         3188587.375,
+         131617.9249999998,
+         2041021.55,
+         37895789.44558799
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         3188587.375,
+         131617.9249999998,
+         2041021.55,
+         37895789.44558799
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 20,
+       "buffersUsage": [
+        35044,
+        35044,
+        35040,
+        35044,
+        35044,
+        35040,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 40
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510024.92,
+         4510021.92,
+         1003.5
+        ]
+       },
+       {
+        "index": 2,
+        "dirty": false,
+        "actual": [
+         -998.25,
+         4999996.75,
+         3500006.5
+        ]
+       },
+       {
+        "index": 3,
+        "dirty": false,
+        "actual": [
+         1215110.48,
+         -4736688.9,
+         4081935.1
+        ]
+       },
+       {
+        "index": 4,
+        "dirty": false,
+        "actual": [
+         6378141,
+         -8,
+         12
+        ]
+       },
+       {
+        "index": 5,
+        "dirty": false,
+        "actual": [
+         4510028.92,
+         4510013.92,
+         1015.5
+        ]
+       },
+       {
+        "index": 6,
+        "dirty": false,
+        "actual": [
+         -994.25,
+         4999988.75,
+         3500018.5
+        ]
+       },
+       {
+        "index": 7,
+        "dirty": false,
+        "actual": [
+         1215114.48,
+         -4736696.9,
+         4081947.1
+        ]
+       },
+       {
+        "index": 8,
+        "dirty": false,
+        "actual": [
+         6378145,
+         -16,
+         24
+        ]
+       },
+       {
+        "index": 9,
+        "dirty": false,
+        "actual": [
+         4510032.92,
+         4510005.92,
+         1027.5
+        ]
+       },
+       {
+        "index": 10,
+        "dirty": false,
+        "actual": [
+         -990.25,
+         4999980.75,
+         3500030.5
+        ]
+       },
+       {
+        "index": 11,
+        "dirty": false,
+        "actual": [
+         1215118.48,
+         -4736704.9,
+         4081959.1
+        ]
+       },
+       {
+        "index": 12,
+        "dirty": false,
+        "actual": [
+         6378149,
+         -24,
+         36
+        ]
+       },
+       {
+        "index": 13,
+        "dirty": false,
+        "actual": [
+         4510036.92,
+         4509997.92,
+         1039.5
+        ]
+       },
+       {
+        "index": 14,
+        "dirty": false,
+        "actual": [
+         -986.25,
+         4999972.75,
+         3500042.5
+        ]
+       },
+       {
+        "index": 15,
+        "dirty": false,
+        "actual": [
+         1215122.48,
+         -4736712.9,
+         4081971.1
+        ]
+       },
+       {
+        "index": 16,
+        "dirty": false,
+        "actual": [
+         6378153,
+         -32,
+         48
+        ]
+       },
+       {
+        "index": 17,
+        "dirty": false,
+        "actual": [
+         4510040.92,
+         4509989.92,
+         1051.5
+        ]
+       },
+       {
+        "index": 18,
+        "dirty": false,
+        "actual": [
+         -982.25,
+         4999964.75,
+         3500054.5
+        ]
+       },
+       {
+        "index": 19,
+        "dirty": false,
+        "actual": [
+         1215126.48,
+         -4736720.9,
+         4081983.1
+        ]
+       },
+       {
+        "index": 20,
+        "dirty": false,
+        "actual": [
+         6378157,
+         -40,
+         60
+        ]
+       },
+       {
+        "index": 21,
+        "dirty": false,
+        "actual": [
+         4510044.92,
+         4509981.92,
+         1063.5
+        ]
+       },
+       {
+        "index": 22,
+        "dirty": false,
+        "actual": [
+         -978.25,
+         4999956.75,
+         3500066.5
+        ]
+       },
+       {
+        "index": 23,
+        "dirty": false,
+        "actual": [
+         1215130.48,
+         -4736728.9,
+         4081995.1
+        ]
+       },
+       {
+        "index": 24,
+        "dirty": false,
+        "actual": [
+         6378161,
+         -48,
+         72
+        ]
+       },
+       {
+        "index": 25,
+        "dirty": false,
+        "actual": [
+         4510048.92,
+         4509973.92,
+         1075.5
+        ]
+       },
+       {
+        "index": 26,
+        "dirty": false,
+        "actual": [
+         -974.25,
+         4999948.75,
+         3500078.5
+        ]
+       },
+       {
+        "index": 27,
+        "dirty": false,
+        "actual": [
+         1215134.48,
+         -4736736.9,
+         4082007.1
+        ]
+       },
+       {
+        "index": 28,
+        "dirty": false,
+        "actual": [
+         6378165,
+         -56,
+         84
+        ]
+       },
+       {
+        "index": 29,
+        "dirty": false,
+        "actual": [
+         4510052.92,
+         4509965.92,
+         1087.5
+        ]
+       },
+       {
+        "index": 30,
+        "dirty": false,
+        "actual": [
+         -970.25,
+         4999940.75,
+         3500090.5
+        ]
+       },
+       {
+        "index": 31,
+        "dirty": false,
+        "actual": [
+         1215138.48,
+         -4736744.9,
+         4082019.1
+        ]
+       },
+       {
+        "index": 32,
+        "dirty": false,
+        "actual": [
+         6378169,
+         -64,
+         96
+        ]
+       },
+       {
+        "index": 33,
+        "dirty": false,
+        "actual": [
+         4510056.92,
+         4509957.92,
+         1099.5
+        ]
+       },
+       {
+        "index": 34,
+        "dirty": false,
+        "actual": [
+         -966.25,
+         4999932.75,
+         3500102.5
+        ]
+       },
+       {
+        "index": 35,
+        "dirty": false,
+        "actual": [
+         1215142.48,
+         -4736752.9,
+         4082031.1
+        ]
+       },
+       {
+        "index": 36,
+        "dirty": false,
+        "actual": [
+         6378173,
+         -72,
+         108
+        ]
+       },
+       {
+        "index": 37,
+        "dirty": false,
+        "actual": [
+         4510060.92,
+         4509949.92,
+         1111.5
+        ]
+       },
+       {
+        "index": 38,
+        "dirty": false,
+        "actual": [
+         -962.25,
+         4999924.75,
+         3500114.5
+        ]
+       },
+       {
+        "index": 39,
+        "dirty": false,
+        "actual": [
+         1215146.48,
+         -4736760.9,
+         4082043.1
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "removal": {
+    "camera": {
+     "position": [
+      20000000,
+      1000000,
+      5000000
+     ],
+     "direction": [
+      -0.9690031662230185,
+      -0.04845015831115093,
+      -0.24225079155575463
+     ],
+     "up": [
+      -0.24194854466131915,
+      -0.012097427233065958,
+      0.9702136640918898
+     ],
+     "right": [
+      -0.04993761694389224,
+      0.9987523388778448,
+      0
+     ]
+    },
+    "steps": [
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "3102dce1d4c6e318",
+        "length": 384,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAACISgAAiEoAAAAAAAAgQexHUUfsR1FHACB6RAAAAAD//39LAAAAAAAAAEgAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAAAAgAAAmEoAAFRKAAAgQQAQesSAgZZGAMHPRgAAAAD//39LAAAAAAAAQEgAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAACQSQAAkMoAAHhKAAAgQXuDCkfNVY3GMwySRgAAAAD//39LAAAAAAAAgEgAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         3188568.375,
+         131658.9249999998,
+         2040963.05,
+         21948084.11893246
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         3188568.375,
+         131658.9249999998,
+         2040963.05,
+         21948084.11893246
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": true,
+      "spTranslucentChanged": true,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 4
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       },
+       {
+        "index": 2,
+        "dirty": false,
+        "actual": [
+         -1000.25,
+         5000000.75,
+         3500000.5
+        ]
+       },
+       {
+        "index": 3,
+        "dirty": false,
+        "actual": [
+         1215107.48,
+         -4736682.9,
+         4081926.1
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "remove",
+       1
+      ],
+      "removed": true
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "226348f62672bee6",
+        "length": 288,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAAAAgAAAmEoAAFRKAAAgQQAQesSAgZZGAMHPRgAAAAD//39LAAAAAAAAQEgAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAACQSQAAkMoAAHhKAAAgQXuDCkfNVY3GMwySRgAAAAD//39LAAAAAAAAgEgAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         1439072.0317773442,
+         112677.62755109683,
+         3244419.2505542445,
+         24015335.189500958
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         1439072.0317773442,
+         112677.62755109683,
+         3244419.2505542445,
+         24015335.189500958
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 3
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         -1000.25,
+         5000000.75,
+         3500000.5
+        ]
+       },
+       {
+        "index": 2,
+        "dirty": false,
+        "actual": [
+         1215107.48,
+         -4736682.9,
+         4081926.1
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "272862a807ddd5a7",
+        "length": 384,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAAAAgAAAmEoAAFRKAAAgQQAQesSAgZZGAMHPRgAAAAD//39LAAAAAAAAQEgAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAACQSQAAkMoAAHhKAAAgQXuDCkfNVY3GMwySRgAAAAD//39LAAAAAAAAgEgAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAACISgAAiEoAAAAAAAAgQexHUUfsR1FHACB6RAAAAAAA/39LAAAAAAAAoEgAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         3188568.375,
+         131658.9249999998,
+         2040963.05,
+         21948084.11893246
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         3188568.375,
+         131658.9249999998,
+         2040963.05,
+         21948084.11893246
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 4
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         -1000.25,
+         5000000.75,
+         3500000.5
+        ]
+       },
+       {
+        "index": 2,
+        "dirty": false,
+        "actual": [
+         1215107.48,
+         -4736682.9,
+         4081926.1
+        ]
+       },
+       {
+        "index": 3,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [],
+      "vaCount": 0,
+      "commands": [],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 0
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         -1000.25,
+         5000000.75,
+         3500000.5
+        ]
+       },
+       {
+        "index": 2,
+        "dirty": false,
+        "actual": [
+         1215107.48,
+         -4736682.9,
+         4081926.1
+        ]
+       },
+       {
+        "index": 3,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "blendOptions": {
+    "camera": {
+     "position": [
+      20000000,
+      1000000,
+      5000000
+     ],
+     "direction": [
+      -0.9690031662230185,
+      -0.04845015831115093,
+      -0.24225079155575463
+     ],
+     "up": [
+      -0.24194854466131915,
+      -0.012097427233065958,
+      0.9702136640918898
+     ],
+     "right": [
+      -0.04993761694389224,
+      0.9987523388778448,
+      0
+     ]
+    },
+    "steps": [
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "a6139904d02a9228",
+        "length": 192,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAACISgAAiEoAAAAAAAAgQexHUUfsR1FHACB6RAAAAAD//39LAAAAAAAAAEgAAABLAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         5444080.46,
+         2255011.96,
+         500.25,
+         20936586.949784223
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": []
+      },
+      "spChanged": true,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 2
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "a6139904d02a9228",
+        "length": 192,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAACISgAAiEoAAAAAAAAgQexHUUfsR1FHACB6RAAAAAD//39LAAAAAAAAAEgAAABLAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         5444080.46,
+         2255011.96,
+         500.25,
+         20936586.949784223
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         5444080.46,
+         2255011.96,
+         500.25,
+         20936586.949784223
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": true,
+      "spTranslucentChanged": true,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 2
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "a6139904d02a9228",
+        "length": 192,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAACISgAAiEoAAAAAAAAgQexHUUfsR1FHACB6RAAAAAD//39LAAAAAAAAAEgAAABLAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         5444080.46,
+         2255011.96,
+         500.25,
+         20936586.949784223
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": []
+      },
+      "spChanged": false,
+      "spTranslucentChanged": true,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 2
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "shaderDefines": {
+    "camera": {
+     "position": [
+      20000000,
+      1000000,
+      5000000
+     ],
+     "direction": [
+      -0.9690031662230185,
+      -0.04845015831115093,
+      -0.24225079155575463
+     ],
+     "up": [
+      -0.24194854466131915,
+      -0.012097427233065958,
+      0.9702136640918898
+     ],
+     "right": [
+      -0.04993761694389224,
+      0.9987523388778448,
+      0
+     ]
+    },
+    "steps": [
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "3c34cf1d50c05e79",
+        "length": 96,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         6378137,
+         0,
+         0,
+         20870248.767761845
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         6378137,
+         0,
+         0,
+         20870248.767761845
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": true,
+      "spTranslucentChanged": true,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 1
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35040,
+        "vertexSizeInBytes": 16,
+        "hash": "e4addf8fa7f16b81",
+        "length": 16,
+        "bytes": "AAB6RAAAAECAlhhLAAAAPw=="
+       },
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 80,
+        "hash": "3ee319bc2d64e204",
+        "length": 80,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIB/AAAAAAAAAAA="
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         6378137,
+         0,
+         0,
+         20870248.767761845
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         6378137,
+         0,
+         0,
+         20870248.767761845
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [
+        "EYE_DISTANCE_SCALING"
+       ],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [
+        "EYE_DISTANCE_SCALING"
+       ],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": true,
+      "spTranslucentChanged": true,
+      "flags": {
+       "scaleByDistance": true,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35040,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 1
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35040,
+        "vertexSizeInBytes": 16,
+        "hash": "aca2c4d6cda2ecf0",
+        "length": 16,
+        "bytes": "AID/QwAAfEIAAHpEgJaYSw=="
+       },
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 80,
+        "hash": "d8242e89059d648d",
+        "length": 80,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAH9LAAB6RAAAAECAlhhLAAAAPwAAAAAAAIB/AAAAAAAAAAA="
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         6378137,
+         0,
+         0,
+         20870248.767761845
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         6378137,
+         0,
+         0,
+         20870248.767761845
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [
+        "EYE_DISTANCE_SCALING",
+        "EYE_DISTANCE_TRANSLUCENCY"
+       ],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [
+        "EYE_DISTANCE_SCALING",
+        "EYE_DISTANCE_TRANSLUCENCY"
+       ],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": true,
+      "spTranslucentChanged": true,
+      "flags": {
+       "scaleByDistance": true,
+       "translucencyByDistance": true,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35040,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 1
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35040,
+        "vertexSizeInBytes": 16,
+        "hash": "361baecef88759a8",
+        "length": 16,
+        "bytes": "AADIQuWiTFgAAAAAAAAAAA=="
+       },
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 80,
+        "hash": "73c7480b029f5989",
+        "length": 80,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAfEIAAHpEgJaYSwAAekQAAABAgJYYSwAAAD8="
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         6378137,
+         0,
+         0,
+         20870248.767761845
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         6378137,
+         0,
+         0,
+         20870248.767761845
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [
+        "EYE_DISTANCE_SCALING",
+        "EYE_DISTANCE_TRANSLUCENCY",
+        "DISTANCE_DISPLAY_CONDITION"
+       ],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [
+        "EYE_DISTANCE_SCALING",
+        "EYE_DISTANCE_TRANSLUCENCY",
+        "DISTANCE_DISPLAY_CONDITION"
+       ],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": true,
+      "spTranslucentChanged": true,
+      "flags": {
+       "scaleByDistance": true,
+       "translucencyByDistance": true,
+       "distanceDisplayCondition": true,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35040,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 1
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "cdc6db16c1ebd121",
+        "length": 96,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAfEIAAHpEgJaYSwAAekQAAABAgJYYSwAAAD8AAMhC5aJMWAAAgL8AAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         6378137,
+         0,
+         0,
+         20870248.767761845
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         6378137,
+         0,
+         0,
+         20870248.767761845
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [
+        "EYE_DISTANCE_SCALING",
+        "EYE_DISTANCE_TRANSLUCENCY",
+        "DISTANCE_DISPLAY_CONDITION",
+        "DISABLE_DEPTH_DISTANCE"
+       ],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [
+        "EYE_DISTANCE_SCALING",
+        "EYE_DISTANCE_TRANSLUCENCY",
+        "DISTANCE_DISPLAY_CONDITION",
+        "DISABLE_DEPTH_DISTANCE"
+       ],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": true,
+      "spTranslucentChanged": true,
+      "flags": {
+       "scaleByDistance": true,
+       "translucencyByDistance": true,
+       "distanceDisplayCondition": true,
+       "disableDepthDistance": true,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35040,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 1
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "bfaefa29ff4c5f0e",
+        "length": 192,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAfEIAAHpEgJaYSwAAekQAAABAgJYYSwAAAD8AAMhC5aJMWAAAgL8AAAAAAACISgAAiEoAAAAAAAAgQexHUUfsR1FHACB6RAAAAAD//39LAAAAAAAAAEgAAH9LAID/QwAAf0MAAKBAAAAgQQAAgD8AAIA/AAAAQAAAgD8AAAAAAACAfwBAHEUAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         5444080.46,
+         2255011.96,
+         500.25,
+         20936586.949784223
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         5444080.46,
+         2255011.96,
+         500.25,
+         20936586.949784223
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [
+        "EYE_DISTANCE_SCALING",
+        "EYE_DISTANCE_TRANSLUCENCY",
+        "DISTANCE_DISPLAY_CONDITION",
+        "DISABLE_DEPTH_DISTANCE"
+       ],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [
+        "EYE_DISTANCE_SCALING",
+        "EYE_DISTANCE_TRANSLUCENCY",
+        "DISTANCE_DISPLAY_CONDITION",
+        "DISABLE_DEPTH_DISTANCE"
+       ],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": true,
+       "translucencyByDistance": true,
+       "distanceDisplayCondition": true,
+       "disableDepthDistance": true,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35040,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 2
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "minimumDisableDepth": {
+    "camera": {
+     "position": [
+      20000000,
+      1000000,
+      5000000
+     ],
+     "direction": [
+      -0.9690031662230185,
+      -0.04845015831115093,
+      -0.24225079155575463
+     ],
+     "up": [
+      -0.24194854466131915,
+      -0.012097427233065958,
+      0.9702136640918898
+     ],
+     "right": [
+      -0.04993761694389224,
+      0.9987523388778448,
+      0
+     ]
+    },
+    "steps": [
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3,
+        "minimumDisableDepthTestDistance": 100
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "fd8e9229e9d5bc43",
+        "length": 96,
+        "bytes": "AAAAgAAAmEoAAFRKAAAgQQAQesSAgZZGAMHPRgAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         -1000.25,
+         5000000.75,
+         3500000.5,
+         28218871.930703953
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         -1000.25,
+         5000000.75,
+         3500000.5,
+         28218871.930703953
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [
+        "DISABLE_DEPTH_DISTANCE"
+       ],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [
+        "DISABLE_DEPTH_DISTANCE"
+       ],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": true,
+      "spTranslucentChanged": true,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": true,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 1
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         -1000.25,
+         5000000.75,
+         3500000.5
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "projected": {
+    "camera": {
+     "position": [
+      20000000,
+      1000000,
+      5000000
+     ],
+     "direction": [
+      -0.9690031662230185,
+      -0.04845015831115093,
+      -0.24225079155575463
+     ],
+     "up": [
+      -0.24194854466131915,
+      -0.012097427233065958,
+      0.9702136640918898
+     ],
+     "right": [
+      -0.04993761694389224,
+      0.9987523388778448,
+      0
+     ]
+    },
+    "steps": [
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "d9dc059f918c4e04",
+        "length": 192,
+        "bytes": "AADCSgAAAAAAAAAAAACgQAAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAACISgAAiEoAAAAAAAAQQexHUUfsR1FHACB6RAAAQED//39LAAAAAAAAAEgAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         5444090.46,
+         2255031.96,
+         530.25,
+         24635711.808145564
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         10,
+         20,
+         30,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         5444090.46,
+         2255031.96,
+         530.25,
+         24635711.808145564
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         10,
+         20,
+         30,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": true,
+      "spTranslucentChanged": true,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 12,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 2
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 1
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "2b0dec5bf4261ab0",
+        "length": 192,
+        "bytes": "AAAAAAAAAAAAAAAAAACgQGsAIEHw/59B+p3xQQAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAAAAAAAAmEoAAAAAAAAQQZlUqkFQ0N9GIa6BRAAAQED//39LAAAAAAAAAEgAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         15.645704629077684,
+         2504702.0783551275,
+         533.8218533046702,
+         33705131.11311761
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         15.645704629077684,
+         2504702.0783551275,
+         533.8218533046702,
+         33705131.11311761
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 12,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 2
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         10.000102384177197,
+         19.999968642864754,
+         30.202137230157767
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         21.291306873978172,
+         5009384.156741612,
+         1037.4415693791825
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 1
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35040,
+        "vertexSizeInBytes": 32,
+        "hash": "a7aa99a935937d59",
+        "length": 64,
+        "bytes": "AAAAAAAAAAAAAAAAAACgQGsAIEHw/59B+p3xQQAAAAAAAAAAAAAAywAAiEoAABBB+gj/QyZy3satgolEAABAQA=="
+       },
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 64,
+        "hash": "37db8c48de4016f0",
+        "length": 128,
+        "bytes": "//9/SwAAAAAAAIBHAAB/SwCA/0MAAH9DAAAAAAAAgD8AAAAAAACAPwAAgD8AAIA/AAAAAAAAgH8AAAAAAAAAAP//f0sAAAAAAAAASAAAf0sAgP9DAAB/QwAAAAAAAIA/AAAAAAAAgD8AAIA/AACAPwAAAAAAAIB/AAAAAAAAAAA="
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         15.645704629077684,
+         2504702.0783551275,
+         533.8218533046702,
+         26903268.28797088
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         15.645704629077684,
+         2504702.0783551275,
+         533.8218533046702,
+         26903268.28797088
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 12,
+       "buffersUsage": [
+        35044,
+        35040,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 2
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         10.000102384177197,
+         19.999968642864754,
+         30.202137230157767
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         510.0701428474839,
+         -8417081.074726075,
+         4457548.083573648
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 2
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35040,
+        "vertexSizeInBytes": 32,
+        "hash": "b373f428b3cd5ccd",
+        "length": 64,
+        "bytes": "AAAAAAAAAAAAAAAAAACgQAAAAADw/59B+p3xQQAAAAAAAAAAAAAAywAAiEoAABBBAAAAACZy3satgolEAABAQA=="
+       },
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 64,
+        "hash": "37db8c48de4016f0",
+        "length": 128,
+        "bytes": "//9/SwAAAAAAAIBHAAB/SwCA/0MAAH9DAAAAAAAAgD8AAAAAAACAPwAAgD8AAIA/AAAAAAAAgH8AAAAAAAAAAP//f0sAAAAAAAAASAAAf0sAgP9DAAB/QwAAAAAAAIA/AAAAAAAAgD8AAIA/AACAPwAAAAAAAIB/AAAAAAAAAAA="
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         0,
+         -4208530.537378716,
+         2228789.142855439,
+         31680891.424443305
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         0,
+         -4208530.537378716,
+         2228789.142855439,
+         31680891.424443305
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 12,
+       "buffersUsage": [
+        35044,
+        35040,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 2
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         0,
+         19.999968642864754,
+         30.202137230157767
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         0,
+         -8417081.074726075,
+         4457548.083573648
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 0,
+        "morphTime": 0.5
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35040,
+        "vertexSizeInBytes": 32,
+        "hash": "b373f428b3cd5ccd",
+        "length": 64,
+        "bytes": "AAAAAAAAAAAAAAAAAACgQAAAAADw/59B+p3xQQAAAAAAAAAAAAAAywAAiEoAABBBAAAAACZy3satgolEAABAQA=="
+       },
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 64,
+        "hash": "37db8c48de4016f0",
+        "length": 128,
+        "bytes": "//9/SwAAAAAAAIBHAAB/SwCA/0MAAH9DAAAAAAAAgD8AAAAAAACAPwAAgD8AAIA/AAAAAAAAgH8AAAAAAAAAAP//f0sAAAAAAAAASAAAf0sAgP9DAAB/QwAAAAAAAIA/AAAAAAAAgD8AAIA/AACAPwAAAAAAAIB/AAAAAAAAAAA="
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         0,
+         -4208530.537378716,
+         2228789.142855439,
+         31680891.424443305
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         0,
+         -4208530.537378716,
+         2228789.142855439,
+         31680891.424443305
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 12,
+       "buffersUsage": [
+        35044,
+        35040,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 2
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         0,
+         19.999968642864754,
+         30.202137230157767
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         0,
+         -8417081.074726075,
+         4457548.083573648
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35040,
+        "vertexSizeInBytes": 32,
+        "hash": "2c095b738306217f",
+        "length": 64,
+        "bytes": "AADCSgAAAAAAAAAAAACgQAAypUYAAAAAAAAAAAAAAAAAAJBJAACQygAAeEoAABBBe4MKR81VjcYzDJJGAABAQA=="
+       },
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 64,
+        "hash": "37db8c48de4016f0",
+        "length": 128,
+        "bytes": "//9/SwAAAAAAAIBHAAB/SwCA/0MAAH9DAAAAAAAAgD8AAAAAAACAPwAAgD8AAIA/AAAAAAAAgH8AAAAAAAAAAP//f0sAAAAAAAAASAAAf0sAgP9DAAB/QwAAAAAAAIA/AAAAAAAAgD8AAIA/AACAPwAAAAAAAIB/AAAAAAAAAAA="
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         3796632.24,
+         -2368321.45,
+         2040993.05,
+         25751279.610835094
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         10,
+         20,
+         30,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         3796632.24,
+         -2368321.45,
+         2040993.05,
+         25751279.610835094
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         10,
+         20,
+         30,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 12,
+       "buffersUsage": [
+        35044,
+        35040,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 2
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         1215107.48,
+         -4736682.9,
+         4081926.1
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "picking": {
+    "camera": {
+     "position": [
+      20000000,
+      1000000,
+      5000000
+     ],
+     "direction": [
+      -0.9690031662230185,
+      -0.04845015831115093,
+      -0.24225079155575463
+     ],
+     "up": [
+      -0.24194854466131915,
+      -0.012097427233065958,
+      0.9702136640918898
+     ],
+     "right": [
+      -0.04993761694389224,
+      0.9987523388778448,
+      0
+     ]
+    },
+    "steps": [
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3,
+        "pick": true,
+        "render": false
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "2620895e997f16bb",
+        "length": 192,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAACISgAAiEoAAAAAAAAgQexHUUfsR1FHACB6RAAAAAD//39LAAAAAAAAAEgAAIBKAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         5444080.46,
+         2255011.96,
+         500.25,
+         20936586.949784223
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         5444080.46,
+         2255011.96,
+         500.25,
+         20936586.949784223
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": true,
+      "spTranslucentChanged": true,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 2
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3,
+        "pick": true,
+        "render": false
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "4643d53d0124ed89",
+        "length": 192,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAAAAH9DAAAAAAAAgEcAAH9LAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAACISgAAiEoAAAAAAAAgQexHUUfsR1FHACB6RAAAAAD//39LAAAAAAAAAEgAAIBKAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         5444080.46,
+         2255011.96,
+         500.25,
+         20936586.949784223
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         5444080.46,
+         2255011.96,
+         500.25,
+         20936586.949784223
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 2
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35040,
+        "vertexSizeInBytes": 16,
+        "hash": "a79b1358ac744956",
+        "length": 32,
+        "bytes": "AAB/QwAAAAAAAIBHAAB/S///f0sAAAAAAAAASAAAgEo="
+       },
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 80,
+        "hash": "83b6ea9eae70e626",
+        "length": 160,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAAAgP9DAAB/QwAAAAAAAIA/AAAAAAAAgD8AAIA/AACAPwAAAAAAAIB/AAAAAAAAAAAAAIhKAACISgAAAAAAACBB7EdRR+xHUUcAIHpEAAAAAACA/0MAAH9DAAAAAAAAgD8AAAAAAACAPwAAgD8AAIA/AAAAAAAAgH8AAAAAAAAAAA=="
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         5444080.46,
+         2255011.96,
+         500.25,
+         20936586.949784223
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         5444080.46,
+         2255011.96,
+         500.25,
+         20936586.949784223
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35040,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 2
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "hidden": {
+    "camera": {
+     "position": [
+      20000000,
+      1000000,
+      5000000
+     ],
+     "direction": [
+      -0.9690031662230185,
+      -0.04845015831115093,
+      -0.24225079155575463
+     ],
+     "up": [
+      -0.24194854466131915,
+      -0.012097427233065958,
+      0.9702136640918898
+     ],
+     "right": [
+      -0.04993761694389224,
+      0.9987523388778448,
+      0
+     ]
+    },
+    "steps": [
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "35de6b8865c4c342",
+        "length": 192,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAAAAAAB/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAACISgAAiEoAAAAAAAAgQexHUUfsR1FHACB6RAAAAAD//39LAAAAAAAAAEgAAABHAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         5444080.46,
+         2255011.96,
+         500.25,
+         20936586.949784223
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         5444080.46,
+         2255011.96,
+         500.25,
+         20936586.949784223
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": false,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": true,
+      "spTranslucentChanged": true,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 2
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "35de6b8865c4c342",
+        "length": 192,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAAAAAAB/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAACISgAAiEoAAAAAAAAgQexHUUfsR1FHACB6RAAAAAD//39LAAAAAAAAAEgAAABHAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 2
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       }
+      ]
+     },
+     {
+      "op": [
+       "update",
+       {
+        "mode": 3
+       }
+      ],
+      "buffers": [
+       {
+        "usage": 35044,
+        "vertexSizeInBytes": 96,
+        "hash": "35de6b8865c4c342",
+        "length": 192,
+        "bytes": "AADCSgAAAAAAAAAAAAAgQQAypUYAAAAAAAAAAAAAAAD//39LAAAAAAAAgEcAAAAAAAB/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAAAACISgAAiEoAAAAAAAAgQexHUUfsR1FHACB6RAAAAAD//39LAAAAAAAAAEgAAABHAID/QwAAf0MAAAAAAACAPwAAAAAAAIA/AACAPwAAgD8AAAAAAACAfwAAAAAAAAAA"
+       }
+      ],
+      "vaCount": 1,
+      "commands": [
+       {
+        "pass": 8,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": true,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": true,
+         "blending": false
+        },
+        "boundingVolume": [
+         5444080.46,
+         2255011.96,
+         500.25,
+         20936586.949784223
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": true,
+        "maxTotalPointSize": 1023
+       },
+       {
+        "pass": 9,
+        "primitiveType": 0,
+        "vaIndex": 0,
+        "opaqueProgram": false,
+        "renderState": {
+         "depthTest": true,
+         "depthFunc": 515,
+         "depthMask": false,
+         "blending": true
+        },
+        "boundingVolume": [
+         5444080.46,
+         2255011.96,
+         500.25,
+         20936586.949784223
+        ],
+        "modelMatrix": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "pickId": "v_pickColor",
+        "debugShowBoundingVolume": true,
+        "maxTotalPointSize": 1023
+       }
+      ],
+      "sp": {
+       "vs": [],
+       "fs": [
+        "OPAQUE"
+       ]
+      },
+      "spTranslucent": {
+       "vs": [],
+       "fs": [
+        "TRANSLUCENT"
+       ]
+      },
+      "spChanged": false,
+      "spTranslucentChanged": false,
+      "flags": {
+       "scaleByDistance": false,
+       "translucencyByDistance": false,
+       "distanceDisplayCondition": false,
+       "disableDepthDistance": false,
+       "maxPixelSize": 10,
+       "buffersUsage": [
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044,
+        35044
+       ],
+       "propertiesChanged": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "toUpdateIndex": 0,
+       "length": 2
+      },
+      "points": [
+       {
+        "index": 0,
+        "dirty": false,
+        "actual": [
+         6378137,
+         0,
+         0
+        ]
+       },
+       {
+        "index": 1,
+        "dirty": false,
+        "actual": [
+         4510023.92,
+         4510023.92,
+         1000.5
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ }
+}
