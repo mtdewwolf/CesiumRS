@@ -5645,5 +5645,10 @@
     "status": "partial",
     "rust": "scene::globe_surface_tile",
     "note": "Exported CPU surface tile: terrain/imagery ownership, unloading, height sampling, ray picking, exaggeration, water-mask transforms and layer-driven imagery processing. Dedicated pinned/analytical and correction tests exist. Async terrain processing, GPU terrain vertex arrays, water-mask upload and full surface-provider integration remain."
+  },
+  "Scene/BatchTable": {
+    "status": "ported",
+    "rust": "scene::batch_table",
+    "note": "Per-instance attributes in an RGBA texture: datatype selection, float packing when float textures are missing, offsets, stride, rows limited by the maximum texture size, typed-array storage (float32 rounding, ToUint8 wrapping), get/set with Cesium's attribute-type equality, lazy texture creation and dirty uploads, uniform names and values, and the generated GLSL (computeSt for one or several rows, per-attribute accessors with unpacking and 255 scaling). 55 steps over seven SwiftShader scenarios of the pinned engine compare layouts, every get, the CPU bytes, dirty flags, texture uploads, shaders and uniforms; mutation-checked."
   }
 }

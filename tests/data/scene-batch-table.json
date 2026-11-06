@@ -1,0 +1,2181 @@
+{
+ "vertexShader": "in vec3 position;\nin float batchId;\nvoid main()\n{\n    gl_Position = vec4(position, 1.0);\n}\n",
+ "scenarios": {
+  "bytes": {
+   "attributes": [
+    [
+     "czm_batchTable_show",
+     5121,
+     1,
+     false
+    ],
+    [
+     "czm_batchTable_color",
+     5121,
+     4,
+     true
+    ],
+    [
+     "czm_batchTable_pickColor",
+     5121,
+     4,
+     true
+    ]
+   ],
+   "instances": 3,
+   "ops": [
+    [
+     "set",
+     0,
+     0,
+     1
+    ],
+    [
+     "set",
+     1,
+     0,
+     1
+    ],
+    [
+     "set",
+     0,
+     1,
+     [
+      255,
+      0,
+      128,
+      255
+     ]
+    ],
+    [
+     "set",
+     2,
+     2,
+     [
+      1,
+      2,
+      3,
+      4
+     ]
+    ],
+    [
+     "get",
+     0,
+     1
+    ],
+    [
+     "get",
+     2,
+     2
+    ],
+    [
+     "get",
+     1,
+     0
+    ],
+    [
+     "update"
+    ],
+    [
+     "update"
+    ],
+    [
+     "set",
+     1,
+     0,
+     1
+    ],
+    [
+     "update"
+    ],
+    [
+     "set",
+     1,
+     1,
+     [
+      300,
+      -1,
+      7.9,
+      0.5
+     ]
+    ],
+    [
+     "get",
+     1,
+     1
+    ],
+    [
+     "set",
+     0,
+     0,
+     256
+    ],
+    [
+     "get",
+     0,
+     0
+    ],
+    [
+     "update"
+    ]
+   ]
+  },
+  "floats": {
+   "attributes": [
+    [
+     "czm_batchTable_offset",
+     5126,
+     3,
+     false
+    ],
+    [
+     "czm_batchTable_distanceDisplayCondition",
+     5126,
+     2,
+     false
+    ],
+    [
+     "czm_batchTable_show",
+     5121,
+     1,
+     false
+    ],
+    [
+     "czm_batchTable_width",
+     5126,
+     1,
+     false
+    ],
+    [
+     "czm_batchTable_color",
+     5121,
+     4,
+     true
+    ]
+   ],
+   "instances": 4,
+   "ops": [
+    [
+     "set",
+     0,
+     0,
+     [
+      1.5,
+      -2.25,
+      10000000
+     ]
+    ],
+    [
+     "set",
+     3,
+     1,
+     [
+      10,
+      1e+30
+     ]
+    ],
+    [
+     "set",
+     2,
+     3,
+     0.1
+    ],
+    [
+     "set",
+     1,
+     4,
+     [
+      255,
+      128,
+      0,
+      64
+     ]
+    ],
+    [
+     "set",
+     1,
+     2,
+     1
+    ],
+    [
+     "get",
+     0,
+     0
+    ],
+    [
+     "get",
+     3,
+     1
+    ],
+    [
+     "get",
+     2,
+     3
+    ],
+    [
+     "get",
+     1,
+     4
+    ],
+    [
+     "update"
+    ],
+    [
+     "set",
+     0,
+     0,
+     [
+      1.5,
+      -2.25,
+      10000000
+     ]
+    ],
+    [
+     "update"
+    ],
+    [
+     "set",
+     3,
+     3,
+     -7.125
+    ],
+    [
+     "update"
+    ]
+   ]
+  },
+  "packFloats": {
+   "packFloats": true,
+   "attributes": [
+    [
+     "czm_batchTable_offset",
+     5126,
+     3,
+     false
+    ],
+    [
+     "czm_batchTable_show",
+     5121,
+     1,
+     false
+    ],
+    [
+     "czm_batchTable_width",
+     5126,
+     1,
+     false
+    ],
+    [
+     "czm_batchTable_color",
+     5121,
+     4,
+     true
+    ],
+    [
+     "czm_batchTable_halfShorts",
+     5123,
+     2,
+     true
+    ]
+   ],
+   "instances": 3,
+   "ops": [
+    [
+     "set",
+     0,
+     0,
+     [
+      1.5,
+      -2.25,
+      10000000
+     ]
+    ],
+    [
+     "set",
+     2,
+     2,
+     0.1
+    ],
+    [
+     "set",
+     1,
+     3,
+     [
+      255,
+      128,
+      0,
+      64
+     ]
+    ],
+    [
+     "set",
+     1,
+     1,
+     1
+    ],
+    [
+     "set",
+     0,
+     4,
+     [
+      3,
+      4
+     ]
+    ],
+    [
+     "get",
+     0,
+     0
+    ],
+    [
+     "get",
+     2,
+     2
+    ],
+    [
+     "get",
+     1,
+     3
+    ],
+    [
+     "get",
+     0,
+     4
+    ],
+    [
+     "get",
+     1,
+     1
+    ],
+    [
+     "update"
+    ],
+    [
+     "set",
+     2,
+     2,
+     12345.678
+    ],
+    [
+     "get",
+     2,
+     2
+    ],
+    [
+     "update"
+    ]
+   ]
+  },
+  "tall": {
+   "attributes": [
+    [
+     "czm_batchTable_a",
+     5126,
+     4,
+     false
+    ],
+    [
+     "czm_batchTable_b",
+     5121,
+     1,
+     false
+    ],
+    [
+     "czm_batchTable_c",
+     5121,
+     2,
+     false
+    ]
+   ],
+   "instances": 3000,
+   "ops": [
+    [
+     "set",
+     2999,
+     0,
+     [
+      1,
+      2,
+      3,
+      4
+     ]
+    ],
+    [
+     "set",
+     1500,
+     2,
+     [
+      9,
+      8
+     ]
+    ],
+    [
+     "get",
+     2999,
+     0
+    ],
+    [
+     "get",
+     1500,
+     2
+    ],
+    [
+     "update"
+    ]
+   ]
+  },
+  "tallPacked": {
+   "packFloats": true,
+   "attributes": [
+    [
+     "czm_batchTable_a",
+     5126,
+     4,
+     false
+    ],
+    [
+     "czm_batchTable_b",
+     5121,
+     1,
+     false
+    ]
+   ],
+   "instances": 2000,
+   "ops": [
+    [
+     "set",
+     1999,
+     0,
+     [
+      1,
+      2,
+      3,
+      4
+     ]
+    ],
+    [
+     "get",
+     1999,
+     0
+    ],
+    [
+     "update"
+    ]
+   ]
+  },
+  "empty": {
+   "attributes": [],
+   "instances": 5,
+   "ops": [
+    [
+     "update"
+    ]
+   ]
+  },
+  "single": {
+   "attributes": [
+    [
+     "czm_batchTable_x",
+     5121,
+     1,
+     false
+    ]
+   ],
+   "instances": 1,
+   "ops": [
+    [
+     "set",
+     0,
+     0,
+     7
+    ],
+    [
+     "update"
+    ]
+   ]
+  }
+ },
+ "capture": {
+  "maximumTextureSize": 8192,
+  "scenarios": {
+   "bytes": {
+    "layout": {
+     "offsets": [
+      0,
+      1,
+      2
+     ],
+     "stride": 3,
+     "packFloats": false,
+     "pixelDatatype": 5121,
+     "dimensions": [
+      9,
+      1
+     ],
+     "step": [
+      0.1111111111111111,
+      0.05555555555555555,
+      1,
+      0.5
+     ],
+     "batchValuesType": "Uint8Array"
+    },
+    "steps": [
+     {
+      "op": [
+       "set",
+       0,
+       0,
+       1
+      ],
+      "dirty": true,
+      "batchValues": "3d1d178a6bb50964",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "set",
+       1,
+       0,
+       1
+      ],
+      "dirty": true,
+      "batchValues": "63c4c0c6291ef3c5",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "set",
+       0,
+       1,
+       [
+        255,
+        0,
+        128,
+        255
+       ]
+      ],
+      "dirty": true,
+      "batchValues": "7bc90ff4e35a4543",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "set",
+       2,
+       2,
+       [
+        1,
+        2,
+        3,
+        4
+       ]
+      ],
+      "dirty": true,
+      "batchValues": "ca859bec835d2e0b",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       0,
+       1
+      ],
+      "value": [
+       255,
+       0,
+       128,
+       255
+      ],
+      "dirty": true,
+      "batchValues": "ca859bec835d2e0b",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       2,
+       2
+      ],
+      "value": [
+       1,
+       2,
+       3,
+       4
+      ],
+      "dirty": true,
+      "batchValues": "ca859bec835d2e0b",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       1,
+       0
+      ],
+      "value": 1,
+      "dirty": true,
+      "batchValues": "ca859bec835d2e0b",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "update"
+      ],
+      "dirty": false,
+      "batchValues": "ca859bec835d2e0b",
+      "texture": [
+       9,
+       1,
+       5121
+      ],
+      "calls": [
+       [
+        "texParameteri",
+        3553,
+        10241,
+        9728
+       ],
+       [
+        "texParameteri",
+        3553,
+        10240,
+        9728
+       ],
+       [
+        "texParameteri",
+        3553,
+        10242,
+        33071
+       ],
+       [
+        "texParameteri",
+        3553,
+        10243,
+        33071
+       ],
+       [
+        "texParameteri",
+        3553,
+        34046,
+        1
+       ],
+       [
+        "texImage2D",
+        3553,
+        0,
+        32856,
+        9,
+        1,
+        0,
+        6408,
+        5121,
+        null
+       ],
+       [
+        "pixelStorei",
+        37443,
+        37444
+       ],
+       [
+        "pixelStorei",
+        3317,
+        4
+       ],
+       [
+        "pixelStorei",
+        37441,
+        false
+       ],
+       [
+        "pixelStorei",
+        37440,
+        false
+       ],
+       [
+        "texImage2D",
+        3553,
+        0,
+        32856,
+        9,
+        1,
+        0,
+        6408,
+        5121,
+        [
+         36,
+         "ca859bec835d2e0b"
+        ]
+       ]
+      ]
+     },
+     {
+      "op": [
+       "update"
+      ],
+      "dirty": false,
+      "batchValues": "ca859bec835d2e0b",
+      "texture": [
+       9,
+       1,
+       5121
+      ],
+      "calls": []
+     },
+     {
+      "op": [
+       "set",
+       1,
+       0,
+       1
+      ],
+      "dirty": false,
+      "batchValues": "ca859bec835d2e0b",
+      "texture": [
+       9,
+       1,
+       5121
+      ],
+      "calls": []
+     },
+     {
+      "op": [
+       "update"
+      ],
+      "dirty": false,
+      "batchValues": "ca859bec835d2e0b",
+      "texture": [
+       9,
+       1,
+       5121
+      ],
+      "calls": []
+     },
+     {
+      "op": [
+       "set",
+       1,
+       1,
+       [
+        300,
+        -1,
+        7.9,
+        0.5
+       ]
+      ],
+      "dirty": true,
+      "batchValues": "e08a5232100fc429",
+      "texture": [
+       9,
+       1,
+       5121
+      ],
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       1,
+       1
+      ],
+      "value": [
+       44,
+       255,
+       7,
+       0
+      ],
+      "dirty": true,
+      "batchValues": "e08a5232100fc429",
+      "texture": [
+       9,
+       1,
+       5121
+      ],
+      "calls": []
+     },
+     {
+      "op": [
+       "set",
+       0,
+       0,
+       256
+      ],
+      "dirty": true,
+      "batchValues": "159bed71069704",
+      "texture": [
+       9,
+       1,
+       5121
+      ],
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       0,
+       0
+      ],
+      "value": 0,
+      "dirty": true,
+      "batchValues": "159bed71069704",
+      "texture": [
+       9,
+       1,
+       5121
+      ],
+      "calls": []
+     },
+     {
+      "op": [
+       "update"
+      ],
+      "dirty": false,
+      "batchValues": "159bed71069704",
+      "texture": [
+       9,
+       1,
+       5121
+      ],
+      "calls": [
+       [
+        "pixelStorei",
+        37443,
+        37444
+       ],
+       [
+        "pixelStorei",
+        3317,
+        4
+       ],
+       [
+        "pixelStorei",
+        37441,
+        false
+       ],
+       [
+        "pixelStorei",
+        37440,
+        false
+       ],
+       [
+        "texSubImage2D",
+        3553,
+        0,
+        0,
+        0,
+        9,
+        1,
+        6408,
+        5121,
+        [
+         36,
+         "159bed71069704"
+        ]
+       ]
+      ]
+     }
+    ],
+    "shader": "in vec3 position;\nin float batchId;\n\nuniform highp sampler2D batchTexture; \nuniform vec4 batchTextureStep; \nvec2 computeSt(float batchId) \n{ \n    float stepX = batchTextureStep.x; \n    float centerX = batchTextureStep.y; \n    float numberOfAttributes = float(3); \n    return vec2(centerX + (batchId * numberOfAttributes * stepX), 0.5); \n} \n\nfloat czm_batchTable_show(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(0); \n    vec4 textureValue = texture(batchTexture, st); \n    float value = textureValue.x; \nvalue *= 255.0; \n    return value; \n} \nvec4 czm_batchTable_color(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(1); \n    vec4 textureValue = texture(batchTexture, st); \n    vec4 value = textureValue; \n    return value; \n} \nvec4 czm_batchTable_pickColor(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(2); \n    vec4 textureValue = texture(batchTexture, st); \n    vec4 value = textureValue; \n    return value; \n} \n\nvoid main()\n{\n    gl_Position = vec4(position, 1.0);\n}\n",
+    "uniforms": [
+     "existing",
+     "batchTexture",
+     "batchTextureDimensions",
+     "batchTextureStep"
+    ],
+    "uniformValues": {
+     "dimensions": [
+      9,
+      1
+     ],
+     "step": [
+      0.1111111111111111,
+      0.05555555555555555,
+      1,
+      0.5
+     ],
+     "texture": true
+    }
+   },
+   "floats": {
+    "layout": {
+     "offsets": [
+      0,
+      1,
+      2,
+      3,
+      4
+     ],
+     "stride": 5,
+     "packFloats": false,
+     "pixelDatatype": 5126,
+     "dimensions": [
+      20,
+      1
+     ],
+     "step": [
+      0.05,
+      0.025,
+      1,
+      0.5
+     ],
+     "batchValuesType": "Float32Array"
+    },
+    "steps": [
+     {
+      "op": [
+       "set",
+       0,
+       0,
+       [
+        1.5,
+        -2.25,
+        10000000
+       ]
+      ],
+      "dirty": true,
+      "batchValues": "45a49fa85294dcf7",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "set",
+       3,
+       1,
+       [
+        10,
+        1e+30
+       ]
+      ],
+      "dirty": true,
+      "batchValues": "33147d5116c1e556",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "set",
+       2,
+       3,
+       0.1
+      ],
+      "dirty": true,
+      "batchValues": "980c1b092f71f00",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "set",
+       1,
+       4,
+       [
+        255,
+        128,
+        0,
+        64
+       ]
+      ],
+      "dirty": true,
+      "batchValues": "b3c308113ce61d59",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "set",
+       1,
+       2,
+       1
+      ],
+      "dirty": true,
+      "batchValues": "2abf0385c5f2c8e4",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       0,
+       0
+      ],
+      "value": [
+       1.5,
+       -2.25,
+       10000000
+      ],
+      "dirty": true,
+      "batchValues": "2abf0385c5f2c8e4",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       3,
+       1
+      ],
+      "value": [
+       10,
+       1.0000000150474662e+30
+      ],
+      "dirty": true,
+      "batchValues": "2abf0385c5f2c8e4",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       2,
+       3
+      ],
+      "value": 0.10000000149011612,
+      "dirty": true,
+      "batchValues": "2abf0385c5f2c8e4",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       1,
+       4
+      ],
+      "value": [
+       255,
+       128,
+       0,
+       64
+      ],
+      "dirty": true,
+      "batchValues": "2abf0385c5f2c8e4",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "update"
+      ],
+      "dirty": false,
+      "batchValues": "2abf0385c5f2c8e4",
+      "texture": [
+       20,
+       1,
+       5126
+      ],
+      "calls": [
+       [
+        "texParameteri",
+        3553,
+        10241,
+        9728
+       ],
+       [
+        "texParameteri",
+        3553,
+        10240,
+        9728
+       ],
+       [
+        "texParameteri",
+        3553,
+        10242,
+        33071
+       ],
+       [
+        "texParameteri",
+        3553,
+        10243,
+        33071
+       ],
+       [
+        "texParameteri",
+        3553,
+        34046,
+        1
+       ],
+       [
+        "texImage2D",
+        3553,
+        0,
+        34836,
+        20,
+        1,
+        0,
+        6408,
+        5126,
+        null
+       ],
+       [
+        "pixelStorei",
+        37443,
+        37444
+       ],
+       [
+        "pixelStorei",
+        3317,
+        4
+       ],
+       [
+        "pixelStorei",
+        37441,
+        false
+       ],
+       [
+        "pixelStorei",
+        37440,
+        false
+       ],
+       [
+        "texImage2D",
+        3553,
+        0,
+        34836,
+        20,
+        1,
+        0,
+        6408,
+        5126,
+        [
+         320,
+         "2abf0385c5f2c8e4"
+        ]
+       ]
+      ]
+     },
+     {
+      "op": [
+       "set",
+       0,
+       0,
+       [
+        1.5,
+        -2.25,
+        10000000
+       ]
+      ],
+      "dirty": false,
+      "batchValues": "2abf0385c5f2c8e4",
+      "texture": [
+       20,
+       1,
+       5126
+      ],
+      "calls": []
+     },
+     {
+      "op": [
+       "update"
+      ],
+      "dirty": false,
+      "batchValues": "2abf0385c5f2c8e4",
+      "texture": [
+       20,
+       1,
+       5126
+      ],
+      "calls": []
+     },
+     {
+      "op": [
+       "set",
+       3,
+       3,
+       -7.125
+      ],
+      "dirty": true,
+      "batchValues": "6c6a31cb4c3161a0",
+      "texture": [
+       20,
+       1,
+       5126
+      ],
+      "calls": []
+     },
+     {
+      "op": [
+       "update"
+      ],
+      "dirty": false,
+      "batchValues": "6c6a31cb4c3161a0",
+      "texture": [
+       20,
+       1,
+       5126
+      ],
+      "calls": [
+       [
+        "pixelStorei",
+        37443,
+        37444
+       ],
+       [
+        "pixelStorei",
+        3317,
+        4
+       ],
+       [
+        "pixelStorei",
+        37441,
+        false
+       ],
+       [
+        "pixelStorei",
+        37440,
+        false
+       ],
+       [
+        "texSubImage2D",
+        3553,
+        0,
+        0,
+        0,
+        20,
+        1,
+        6408,
+        5126,
+        [
+         320,
+         "6c6a31cb4c3161a0"
+        ]
+       ]
+      ]
+     }
+    ],
+    "shader": "in vec3 position;\nin float batchId;\n\nuniform highp sampler2D batchTexture; \nuniform vec4 batchTextureStep; \nvec2 computeSt(float batchId) \n{ \n    float stepX = batchTextureStep.x; \n    float centerX = batchTextureStep.y; \n    float numberOfAttributes = float(5); \n    return vec2(centerX + (batchId * numberOfAttributes * stepX), 0.5); \n} \n\nvec3 czm_batchTable_offset(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(0); \n    vec4 textureValue = texture(batchTexture, st); \n    vec3 value = textureValue.xyz; \n    return value; \n} \nvec2 czm_batchTable_distanceDisplayCondition(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(1); \n    vec4 textureValue = texture(batchTexture, st); \n    vec2 value = textureValue.xy; \n    return value; \n} \nfloat czm_batchTable_show(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(2); \n    vec4 textureValue = texture(batchTexture, st); \n    float value = textureValue.x; \n    return value; \n} \nfloat czm_batchTable_width(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(3); \n    vec4 textureValue = texture(batchTexture, st); \n    float value = textureValue.x; \n    return value; \n} \nvec4 czm_batchTable_color(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(4); \n    vec4 textureValue = texture(batchTexture, st); \n    vec4 value = textureValue; \nvalue /= 255.0; \n    return value; \n} \n\nvoid main()\n{\n    gl_Position = vec4(position, 1.0);\n}\n",
+    "uniforms": [
+     "existing",
+     "batchTexture",
+     "batchTextureDimensions",
+     "batchTextureStep"
+    ],
+    "uniformValues": {
+     "dimensions": [
+      20,
+      1
+     ],
+     "step": [
+      0.05,
+      0.025,
+      1,
+      0.5
+     ],
+     "texture": true
+    }
+   },
+   "packFloats": {
+    "layout": {
+     "offsets": [
+      0,
+      4,
+      5,
+      9,
+      10
+     ],
+     "stride": 14,
+     "packFloats": true,
+     "pixelDatatype": 5121,
+     "dimensions": [
+      42,
+      1
+     ],
+     "step": [
+      0.023809523809523808,
+      0.011904761904761904,
+      1,
+      0.5
+     ],
+     "batchValuesType": "Uint8Array"
+    },
+    "steps": [
+     {
+      "op": [
+       "set",
+       0,
+       0,
+       [
+        1.5,
+        -2.25,
+        10000000
+       ]
+      ],
+      "dirty": true,
+      "batchValues": "3ec80a98eeabc857",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "set",
+       2,
+       2,
+       0.1
+      ],
+      "dirty": true,
+      "batchValues": "de44bdcb94e2289",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "set",
+       1,
+       3,
+       [
+        255,
+        128,
+        0,
+        64
+       ]
+      ],
+      "dirty": true,
+      "batchValues": "48e89689c80abbd6",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "set",
+       1,
+       1,
+       1
+      ],
+      "dirty": true,
+      "batchValues": "9b92118892d23f1b",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "set",
+       0,
+       4,
+       [
+        3,
+        4
+       ]
+      ],
+      "dirty": true,
+      "batchValues": "ecb970483188f15b",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       0,
+       0
+      ],
+      "value": [
+       1.5,
+       -2.25,
+       10000000
+      ],
+      "dirty": true,
+      "batchValues": "ecb970483188f15b",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       2,
+       2
+      ],
+      "value": 0.10000000149011612,
+      "dirty": true,
+      "batchValues": "ecb970483188f15b",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       1,
+       3
+      ],
+      "value": [
+       255,
+       128,
+       0,
+       64
+      ],
+      "dirty": true,
+      "batchValues": "ecb970483188f15b",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       0,
+       4
+      ],
+      "value": [
+       3,
+       4
+      ],
+      "dirty": true,
+      "batchValues": "ecb970483188f15b",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       1,
+       1
+      ],
+      "value": 1,
+      "dirty": true,
+      "batchValues": "ecb970483188f15b",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "update"
+      ],
+      "dirty": false,
+      "batchValues": "ecb970483188f15b",
+      "texture": [
+       42,
+       1,
+       5121
+      ],
+      "calls": [
+       [
+        "texParameteri",
+        3553,
+        10241,
+        9728
+       ],
+       [
+        "texParameteri",
+        3553,
+        10240,
+        9728
+       ],
+       [
+        "texParameteri",
+        3553,
+        10242,
+        33071
+       ],
+       [
+        "texParameteri",
+        3553,
+        10243,
+        33071
+       ],
+       [
+        "texParameteri",
+        3553,
+        34046,
+        1
+       ],
+       [
+        "texImage2D",
+        3553,
+        0,
+        32856,
+        42,
+        1,
+        0,
+        6408,
+        5121,
+        null
+       ],
+       [
+        "pixelStorei",
+        37443,
+        37444
+       ],
+       [
+        "pixelStorei",
+        3317,
+        4
+       ],
+       [
+        "pixelStorei",
+        37441,
+        false
+       ],
+       [
+        "pixelStorei",
+        37440,
+        false
+       ],
+       [
+        "texImage2D",
+        3553,
+        0,
+        32856,
+        42,
+        1,
+        0,
+        6408,
+        5121,
+        [
+         168,
+         "ecb970483188f15b"
+        ]
+       ]
+      ]
+     },
+     {
+      "op": [
+       "set",
+       2,
+       2,
+       12345.678
+      ],
+      "dirty": true,
+      "batchValues": "ac830de197457c3f",
+      "texture": [
+       42,
+       1,
+       5121
+      ],
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       2,
+       2
+      ],
+      "value": 12345.677734375,
+      "dirty": true,
+      "batchValues": "ac830de197457c3f",
+      "texture": [
+       42,
+       1,
+       5121
+      ],
+      "calls": []
+     },
+     {
+      "op": [
+       "update"
+      ],
+      "dirty": false,
+      "batchValues": "ac830de197457c3f",
+      "texture": [
+       42,
+       1,
+       5121
+      ],
+      "calls": [
+       [
+        "pixelStorei",
+        37443,
+        37444
+       ],
+       [
+        "pixelStorei",
+        3317,
+        4
+       ],
+       [
+        "pixelStorei",
+        37441,
+        false
+       ],
+       [
+        "pixelStorei",
+        37440,
+        false
+       ],
+       [
+        "texSubImage2D",
+        3553,
+        0,
+        0,
+        0,
+        42,
+        1,
+        6408,
+        5121,
+        [
+         168,
+         "ac830de197457c3f"
+        ]
+       ]
+      ]
+     }
+    ],
+    "shader": "in vec3 position;\nin float batchId;\n\nuniform highp sampler2D batchTexture; \nuniform vec4 batchTextureStep; \nvec2 computeSt(float batchId) \n{ \n    float stepX = batchTextureStep.x; \n    float centerX = batchTextureStep.y; \n    float numberOfAttributes = float(14); \n    return vec2(centerX + (batchId * numberOfAttributes * stepX), 0.5); \n} \n\nvec3 czm_batchTable_offset(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(0); \nvec4 textureValue; \ntextureValue.x = czm_unpackFloat(texture(batchTexture, st)); \ntextureValue.y = czm_unpackFloat(texture(batchTexture, st + vec2(batchTextureStep.x, 0.0))); \ntextureValue.z = czm_unpackFloat(texture(batchTexture, st + vec2(batchTextureStep.x * 2.0, 0.0))); \ntextureValue.w = czm_unpackFloat(texture(batchTexture, st + vec2(batchTextureStep.x * 3.0, 0.0))); \n    vec3 value = textureValue.xyz; \n    return value; \n} \nfloat czm_batchTable_show(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(4); \n    vec4 textureValue = texture(batchTexture, st); \n    float value = textureValue.x; \nvalue *= 255.0; \n    return value; \n} \nfloat czm_batchTable_width(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(5); \nvec4 textureValue; \ntextureValue.x = czm_unpackFloat(texture(batchTexture, st)); \ntextureValue.y = czm_unpackFloat(texture(batchTexture, st + vec2(batchTextureStep.x, 0.0))); \ntextureValue.z = czm_unpackFloat(texture(batchTexture, st + vec2(batchTextureStep.x * 2.0, 0.0))); \ntextureValue.w = czm_unpackFloat(texture(batchTexture, st + vec2(batchTextureStep.x * 3.0, 0.0))); \n    float value = textureValue.x; \n    return value; \n} \nvec4 czm_batchTable_color(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(9); \n    vec4 textureValue = texture(batchTexture, st); \n    vec4 value = textureValue; \n    return value; \n} \nvec2 czm_batchTable_halfShorts(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(10); \nvec4 textureValue; \ntextureValue.x = czm_unpackFloat(texture(batchTexture, st)); \ntextureValue.y = czm_unpackFloat(texture(batchTexture, st + vec2(batchTextureStep.x, 0.0))); \ntextureValue.z = czm_unpackFloat(texture(batchTexture, st + vec2(batchTextureStep.x * 2.0, 0.0))); \ntextureValue.w = czm_unpackFloat(texture(batchTexture, st + vec2(batchTextureStep.x * 3.0, 0.0))); \n    vec2 value = textureValue.xy; \n    return value; \n} \n\nvoid main()\n{\n    gl_Position = vec4(position, 1.0);\n}\n",
+    "uniforms": [
+     "existing",
+     "batchTexture",
+     "batchTextureDimensions",
+     "batchTextureStep"
+    ],
+    "uniformValues": {
+     "dimensions": [
+      42,
+      1
+     ],
+     "step": [
+      0.023809523809523808,
+      0.011904761904761904,
+      1,
+      0.5
+     ],
+     "texture": true
+    }
+   },
+   "tall": {
+    "layout": {
+     "offsets": [
+      0,
+      1,
+      2
+     ],
+     "stride": 3,
+     "packFloats": false,
+     "pixelDatatype": 5126,
+     "dimensions": [
+      8190,
+      2
+     ],
+     "step": [
+      0.0001221001221001221,
+      0.00006105006105006105,
+      0.5,
+      0.25
+     ],
+     "batchValuesType": "Float32Array"
+    },
+    "steps": [
+     {
+      "op": [
+       "set",
+       2999,
+       0,
+       [
+        1,
+        2,
+        3,
+        4
+       ]
+      ],
+      "dirty": true,
+      "batchValues": "7c5a7fed326c2fd8",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "set",
+       1500,
+       2,
+       [
+        9,
+        8
+       ]
+      ],
+      "dirty": true,
+      "batchValues": "50b1863adaeecdf8",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       2999,
+       0
+      ],
+      "value": [
+       1,
+       2,
+       3,
+       4
+      ],
+      "dirty": true,
+      "batchValues": "50b1863adaeecdf8",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       1500,
+       2
+      ],
+      "value": [
+       9,
+       8
+      ],
+      "dirty": true,
+      "batchValues": "50b1863adaeecdf8",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "update"
+      ],
+      "dirty": false,
+      "batchValues": "50b1863adaeecdf8",
+      "texture": [
+       8190,
+       2,
+       5126
+      ],
+      "calls": [
+       [
+        "texParameteri",
+        3553,
+        10241,
+        9728
+       ],
+       [
+        "texParameteri",
+        3553,
+        10240,
+        9728
+       ],
+       [
+        "texParameteri",
+        3553,
+        10242,
+        33071
+       ],
+       [
+        "texParameteri",
+        3553,
+        10243,
+        33071
+       ],
+       [
+        "texParameteri",
+        3553,
+        34046,
+        1
+       ],
+       [
+        "texImage2D",
+        3553,
+        0,
+        34836,
+        8190,
+        2,
+        0,
+        6408,
+        5126,
+        null
+       ],
+       [
+        "pixelStorei",
+        37443,
+        37444
+       ],
+       [
+        "pixelStorei",
+        3317,
+        4
+       ],
+       [
+        "pixelStorei",
+        37441,
+        false
+       ],
+       [
+        "pixelStorei",
+        37440,
+        false
+       ],
+       [
+        "texImage2D",
+        3553,
+        0,
+        34836,
+        8190,
+        2,
+        0,
+        6408,
+        5126,
+        [
+         262080,
+         "50b1863adaeecdf8"
+        ]
+       ]
+      ]
+     }
+    ],
+    "shader": "in vec3 position;\nin float batchId;\n\nuniform highp sampler2D batchTexture; \nuniform vec4 batchTextureStep; \nuniform vec2 batchTextureDimensions; \nvec2 computeSt(float batchId) \n{ \n    float stepX = batchTextureStep.x; \n    float centerX = batchTextureStep.y; \n    float stepY = batchTextureStep.z; \n    float centerY = batchTextureStep.w; \n    float numberOfAttributes = float(3); \n    float xId = mod(batchId * numberOfAttributes, batchTextureDimensions.x); \n    float yId = floor(batchId * numberOfAttributes / batchTextureDimensions.x); \n    return vec2(centerX + (xId * stepX), centerY + (yId * stepY)); \n} \n\nvec4 czm_batchTable_a(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(0); \n    vec4 textureValue = texture(batchTexture, st); \n    vec4 value = textureValue; \n    return value; \n} \nfloat czm_batchTable_b(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(1); \n    vec4 textureValue = texture(batchTexture, st); \n    float value = textureValue.x; \n    return value; \n} \nvec2 czm_batchTable_c(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(2); \n    vec4 textureValue = texture(batchTexture, st); \n    vec2 value = textureValue.xy; \n    return value; \n} \n\nvoid main()\n{\n    gl_Position = vec4(position, 1.0);\n}\n",
+    "uniforms": [
+     "existing",
+     "batchTexture",
+     "batchTextureDimensions",
+     "batchTextureStep"
+    ],
+    "uniformValues": {
+     "dimensions": [
+      8190,
+      2
+     ],
+     "step": [
+      0.0001221001221001221,
+      0.00006105006105006105,
+      0.5,
+      0.25
+     ],
+     "texture": true
+    }
+   },
+   "tallPacked": {
+    "layout": {
+     "offsets": [
+      0,
+      4
+     ],
+     "stride": 5,
+     "packFloats": true,
+     "pixelDatatype": 5121,
+     "dimensions": [
+      8190,
+      2
+     ],
+     "step": [
+      0.0001221001221001221,
+      0.00006105006105006105,
+      0.5,
+      0.25
+     ],
+     "batchValuesType": "Uint8Array"
+    },
+    "steps": [
+     {
+      "op": [
+       "set",
+       1999,
+       0,
+       [
+        1,
+        2,
+        3,
+        4
+       ]
+      ],
+      "dirty": true,
+      "batchValues": "7e32d5419f013928",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "get",
+       1999,
+       0
+      ],
+      "value": [
+       1,
+       2,
+       3,
+       4
+      ],
+      "dirty": true,
+      "batchValues": "7e32d5419f013928",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "update"
+      ],
+      "dirty": false,
+      "batchValues": "7e32d5419f013928",
+      "texture": [
+       8190,
+       2,
+       5121
+      ],
+      "calls": [
+       [
+        "texParameteri",
+        3553,
+        10241,
+        9728
+       ],
+       [
+        "texParameteri",
+        3553,
+        10240,
+        9728
+       ],
+       [
+        "texParameteri",
+        3553,
+        10242,
+        33071
+       ],
+       [
+        "texParameteri",
+        3553,
+        10243,
+        33071
+       ],
+       [
+        "texParameteri",
+        3553,
+        34046,
+        1
+       ],
+       [
+        "texImage2D",
+        3553,
+        0,
+        32856,
+        8190,
+        2,
+        0,
+        6408,
+        5121,
+        null
+       ],
+       [
+        "pixelStorei",
+        37443,
+        37444
+       ],
+       [
+        "pixelStorei",
+        3317,
+        4
+       ],
+       [
+        "pixelStorei",
+        37441,
+        false
+       ],
+       [
+        "pixelStorei",
+        37440,
+        false
+       ],
+       [
+        "texImage2D",
+        3553,
+        0,
+        32856,
+        8190,
+        2,
+        0,
+        6408,
+        5121,
+        [
+         65520,
+         "7e32d5419f013928"
+        ]
+       ]
+      ]
+     }
+    ],
+    "shader": "in vec3 position;\nin float batchId;\n\nuniform highp sampler2D batchTexture; \nuniform vec4 batchTextureStep; \nuniform vec2 batchTextureDimensions; \nvec2 computeSt(float batchId) \n{ \n    float stepX = batchTextureStep.x; \n    float centerX = batchTextureStep.y; \n    float stepY = batchTextureStep.z; \n    float centerY = batchTextureStep.w; \n    float numberOfAttributes = float(5); \n    float xId = mod(batchId * numberOfAttributes, batchTextureDimensions.x); \n    float yId = floor(batchId * numberOfAttributes / batchTextureDimensions.x); \n    return vec2(centerX + (xId * stepX), centerY + (yId * stepY)); \n} \n\nvec4 czm_batchTable_a(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(0); \nvec4 textureValue; \ntextureValue.x = czm_unpackFloat(texture(batchTexture, st)); \ntextureValue.y = czm_unpackFloat(texture(batchTexture, st + vec2(batchTextureStep.x, 0.0))); \ntextureValue.z = czm_unpackFloat(texture(batchTexture, st + vec2(batchTextureStep.x * 2.0, 0.0))); \ntextureValue.w = czm_unpackFloat(texture(batchTexture, st + vec2(batchTextureStep.x * 3.0, 0.0))); \n    vec4 value = textureValue; \n    return value; \n} \nfloat czm_batchTable_b(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(4); \n    vec4 textureValue = texture(batchTexture, st); \n    float value = textureValue.x; \nvalue *= 255.0; \n    return value; \n} \n\nvoid main()\n{\n    gl_Position = vec4(position, 1.0);\n}\n",
+    "uniforms": [
+     "existing",
+     "batchTexture",
+     "batchTextureDimensions",
+     "batchTextureStep"
+    ],
+    "uniformValues": {
+     "dimensions": [
+      8190,
+      2
+     ],
+     "step": [
+      0.0001221001221001221,
+      0.00006105006105006105,
+      0.5,
+      0.25
+     ],
+     "texture": true
+    }
+   },
+   "empty": {
+    "layout": {
+     "offsets": null,
+     "stride": null,
+     "packFloats": null,
+     "pixelDatatype": null,
+     "dimensions": null,
+     "step": null,
+     "batchValuesType": null
+    },
+    "steps": [
+     {
+      "op": [
+       "update"
+      ],
+      "dirty": null,
+      "batchValues": null,
+      "texture": null,
+      "calls": []
+     }
+    ],
+    "shader": "in vec3 position;\nin float batchId;\nvoid main()\n{\n    gl_Position = vec4(position, 1.0);\n}\n",
+    "uniforms": [
+     "existing"
+    ],
+    "uniformValues": null
+   },
+   "single": {
+    "layout": {
+     "offsets": [
+      0
+     ],
+     "stride": 1,
+     "packFloats": false,
+     "pixelDatatype": 5121,
+     "dimensions": [
+      1,
+      1
+     ],
+     "step": [
+      1,
+      0.5,
+      1,
+      0.5
+     ],
+     "batchValuesType": "Uint8Array"
+    },
+    "steps": [
+     {
+      "op": [
+       "set",
+       0,
+       0,
+       7
+      ],
+      "dirty": true,
+      "batchValues": "6d3572669b2cde42",
+      "texture": null,
+      "calls": []
+     },
+     {
+      "op": [
+       "update"
+      ],
+      "dirty": false,
+      "batchValues": "6d3572669b2cde42",
+      "texture": [
+       1,
+       1,
+       5121
+      ],
+      "calls": [
+       [
+        "texParameteri",
+        3553,
+        10241,
+        9728
+       ],
+       [
+        "texParameteri",
+        3553,
+        10240,
+        9728
+       ],
+       [
+        "texParameteri",
+        3553,
+        10242,
+        33071
+       ],
+       [
+        "texParameteri",
+        3553,
+        10243,
+        33071
+       ],
+       [
+        "texParameteri",
+        3553,
+        34046,
+        1
+       ],
+       [
+        "texImage2D",
+        3553,
+        0,
+        32856,
+        1,
+        1,
+        0,
+        6408,
+        5121,
+        null
+       ],
+       [
+        "pixelStorei",
+        37443,
+        37444
+       ],
+       [
+        "pixelStorei",
+        3317,
+        4
+       ],
+       [
+        "pixelStorei",
+        37441,
+        false
+       ],
+       [
+        "pixelStorei",
+        37440,
+        false
+       ],
+       [
+        "texImage2D",
+        3553,
+        0,
+        32856,
+        1,
+        1,
+        0,
+        6408,
+        5121,
+        [
+         4,
+         "6d3572669b2cde42"
+        ]
+       ]
+      ]
+     }
+    ],
+    "shader": "in vec3 position;\nin float batchId;\n\nuniform highp sampler2D batchTexture; \nuniform vec4 batchTextureStep; \nvec2 computeSt(float batchId) \n{ \n    float stepX = batchTextureStep.x; \n    float centerX = batchTextureStep.y; \n    float numberOfAttributes = float(1); \n    return vec2(centerX + (batchId * numberOfAttributes * stepX), 0.5); \n} \n\nfloat czm_batchTable_x(float batchId) \n{ \n    vec2 st = computeSt(batchId); \n    st.x += batchTextureStep.x * float(0); \n    vec4 textureValue = texture(batchTexture, st); \n    float value = textureValue.x; \nvalue *= 255.0; \n    return value; \n} \n\nvoid main()\n{\n    gl_Position = vec4(position, 1.0);\n}\n",
+    "uniforms": [
+     "existing",
+     "batchTexture",
+     "batchTextureDimensions",
+     "batchTextureStep"
+    ],
+    "uniformValues": {
+     "dimensions": [
+      1,
+      1
+     ],
+     "step": [
+      1,
+      0.5,
+      1,
+      0.5
+     ],
+     "texture": true
+    }
+   }
+  }
+ }
+}

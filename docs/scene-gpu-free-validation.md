@@ -170,7 +170,7 @@ CPU-only and can be validated with ordinary pinned traces.
 
 ## Suggested order
 
-1. **BatchTable**, then **Primitive** (group 6). This unblocks
+1. **BatchTable** (done), then **Primitive** (group 6). This unblocks
    DebugCameraPrimitive, DebugModelMatrixPrimitive and much of the rest of
    Scene.
 2. **PointPrimitiveCollection** (done), the simplest VertexArrayFacade

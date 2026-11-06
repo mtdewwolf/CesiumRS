@@ -42,6 +42,8 @@ macro_rules! string_enum {
     };
 }
 
+pub mod batch_table;
+pub use batch_table::{BatchTable, BatchTableAttribute, BatchValue};
 pub mod batch_texture;
 pub use batch_texture::BatchTexture;
 pub mod alpha_mode;
