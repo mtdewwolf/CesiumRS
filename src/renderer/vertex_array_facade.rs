@@ -266,6 +266,11 @@ impl<G: Gl> VertexArrayFacade<G> {
             b.dirty = false;
         }
     }
+    /// Each managed buffer's usage, vertex size in bytes and CPU bytes, in
+    /// Cesium's `_allBuffers` order (ascending usage value).
+    pub fn buffer_layouts(&self) -> Vec<(BufferUsage, usize, &[u8])> {
+        self.buffers.iter().map(|b| (b.usage, b.stride, b.bytes.as_slice())).collect()
+    }
     pub fn cpu_buffers(&self) -> Vec<&[u8]> {
         self.buffers.iter().map(|b| b.bytes.as_slice()).collect()
     }

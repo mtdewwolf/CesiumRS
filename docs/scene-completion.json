@@ -13,15 +13,15 @@
       "module": "Scene/PointPrimitive",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU point options, validation, identity and screen-space bounding box; pinned reference cases. Screen position, picking and rendering integration remain."
+      "status": "validated",
+      "remaining": "Validated against a pinned CesiumJS capture on SwiftShader WebGL2: dirty marking, indices, actual positions and screen-space positions after every update."
     },
     {
       "module": "Scene/PointPrimitiveCollection",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU collection membership, lifecycle and attribute preparation; pinned reference cases. GPU buffers, draw and pick commands, projection and dirty updates remain."
+      "status": "validated",
+      "remaining": "Validated against a pinned CesiumJS capture on SwiftShader WebGL2: exact vertex bytes and uploads, commands, defines and bookkeeping over 36 update steps in ten scenarios. A pixel comparison in the Scene GPU harness would add rasterization coverage."
     },
     {
       "module": "Scene/Scene",

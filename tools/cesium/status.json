@@ -4077,14 +4077,14 @@
     "note": "Owned configuration replaces the JavaScript global namespace. Default token, service URLs, exact credit HTML, visibility, and credit caching are validated against pinned CesiumJS."
   },
   "Scene/PointPrimitive": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::point_primitive",
-    "note": "CPU point options, validation, identity and screen-space bounding box; pinned reference cases. Screen position, picking and rendering integration remain."
+    "note": "Shared PointPrimitive handle with Cesium's compare-then-makeDirty setters (one queue entry per dirty point, per-property change counts), setter and constructor range checks, actual positions, lazy pick ids registered as ScenePickObject, _destroy, _computeActualPosition, equals and getScreenSpaceBoundingBox. Dirty state, indices and actual positions are checked after every update of the pinned SwiftShader capture, and computeScreenSpacePosition (on the collection, which owns the model matrix) against Cesium's in 3D."
   },
   "Scene/PointPrimitiveCollection": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::point_primitive_collection",
-    "note": "CPU collection membership, lifecycle and attribute preparation; pinned reference cases. GPU buffers, draw and pick commands, projection and dirty updates remain."
+    "note": "Full update pipeline over VertexArrayFacade: removal compaction, updateMode for every scene mode (including morphing and 2D/Columbus model-matrix changes), computeNewBuffersUsage (with Cesium's nine-entry start), full rebuilds, incremental writers with the 10% commit/subCommit split, bounding volumes grown by the camera's pixel size, blend-option render states, define-driven shader recompilation and Opaque/Translucent draw commands. 36 update steps from a pinned CesiumJS capture on SwiftShader WebGL2 compare exact vertex bytes, every bufferData/bufferSubData upload, commands, defines, program replacement and bookkeeping; mutation-checked. Pixel comparison is not yet in the Scene GPU harness."
   },
   "Scene/Atmosphere": {
     "status": "ported",
@@ -4424,7 +4424,7 @@
   "Scene/ConeEmitter": {
     "status": "ported",
     "rust": "scene::particle_emitter",
-    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30\u00b0 default. Emitted particles match bit for bit."
+    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30° default. Emitted particles match bit for bit."
   },
   "Scene/SphereEmitter": {
     "status": "ported",
@@ -4544,7 +4544,7 @@
   "Scene/Model/Extensions/Gpm/GltfMeshPrimitiveGpmLoader": {
     "status": "ported",
     "rust": "scene::model::extensions::gpm::gltf_mesh_primitive_gpm_loader",
-    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale \u00d7 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
+    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale × 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
   },
   "DataSources/CompositeEntityCollection": {
     "status": "ported",

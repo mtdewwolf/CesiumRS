@@ -1,10 +1,27 @@
 //! CPU reference checks against the pinned CesiumJS point implementation.
 use cesium_rs::core::*;
-use cesium_rs::scene::{point_primitive::*, point_primitive_collection::*, SplitDirection};
+use cesium_rs::renderer::{Gl, GlValue};
+use cesium_rs::scene::{point_primitive::*, point_primitive_collection::*, ScenePrimitive, SplitDirection};
 use serde_json::{json, Value};
 
+/// No update runs here, so the host is never called.
+struct NoGl;
+impl Gl for NoGl {
+    type Object = ();
+    fn drawing_buffer_size(&self) -> Result<[u32; 2], RuntimeError> {
+        unreachable!()
+    }
+    fn invoke(&self, _: &str, _: &[GlValue<()>]) -> Result<GlValue<()>, RuntimeError> {
+        unreachable!()
+    }
+}
+
+fn collection() -> PointPrimitiveCollection<NoGl> {
+    PointPrimitiveCollection::default()
+}
+
 fn snapshot(p: &PointPrimitive) -> Value {
-    let o = p.options();
+    let o = &p.options();
     let scalar = |s: Option<NearFarScalar>| s.map(|v| [v.near, v.near_value, v.far, v.far_value]);
     json!({"show":o.show,"position":[o.position.x,o.position.y,o.position.z],
         "color":[o.color.red,o.color.green,o.color.blue,o.color.alpha],
@@ -37,7 +54,7 @@ fn compare(a: &Value, b: &Value) {
 #[test]
 fn reference_defaults_custom_and_membership() {
     let expected: Value = serde_json::from_str(include_str!("data/scene-point-primitives.json")).unwrap();
-    let mut c = PointPrimitiveCollection::new();
+    let mut c = collection();
     let a = c.add(PointPrimitiveOptions::default()).unwrap();
     let b = c
         .add(PointPrimitiveOptions {
@@ -55,50 +72,68 @@ fn reference_defaults_custom_and_membership() {
             ..Default::default()
         })
         .unwrap();
-    compare(&snapshot(&a.borrow()), &expected["defaults"]);
-    compare(&snapshot(&b.borrow()), &expected["custom"]);
-    let bb = b.borrow().screen_space_bounding_box(Cartesian2::new(123., 456.));
+    compare(&snapshot(&a), &expected["defaults"]);
+    compare(&snapshot(&b), &expected["custom"]);
+    let bb = b.screen_space_bounding_box(Cartesian2::new(123., 456.));
     compare(&json!([bb.x, bb.y, bb.width, bb.height]), &expected["bbox"]);
-    assert_eq!(json!(c.len()), expected["initialLength"]);
+    assert_eq!(json!(c.length()), expected["initialLength"]);
     assert_eq!(json!(c.contains(&b)), expected["containsBefore"]);
-    assert_eq!(json!(c.remove(&b)), expected["firstRemoval"]);
-    assert_eq!(json!(c.remove(&b)), expected["secondRemoval"]);
+    assert_eq!(json!(c.remove(&b).unwrap()), expected["firstRemoval"]);
+    assert_eq!(json!(c.remove(&b).unwrap()), expected["secondRemoval"]);
     assert_eq!(json!(c.contains(&b)), expected["containsAfter"]);
-    assert_eq!(json!(c.len()), expected["lengthAfter"]);
-    assert_eq!(json!(*a.borrow() == *c.get(0).unwrap().borrow()), expected["retained"]);
-    assert!(!b.borrow().is_attached());
+    assert_eq!(json!(c.length()), expected["lengthAfter"]);
+    assert_eq!(json!(a.equals(&c.get(0).unwrap())), expected["retained"]);
+    assert!(!b.is_attached());
 }
 
 #[test]
-fn validation_attributes_and_owner_lifetime() {
-    let mut c = PointPrimitiveCollection::new();
+fn validation_dirty_marking_and_owner_lifetime() {
+    let mut c = collection();
     let bad =
         PointPrimitiveOptions { scale_by_distance: Some(NearFarScalar::new(5., 1., 5., 2.)), ..Default::default() };
-    assert!(c.add(bad).is_err());
-    assert!(c.is_empty());
-    let p = c
-        .add(PointPrimitiveOptions {
-            position: Cartesian3::new(131075., -65538., 3.5),
-            translucency_by_distance: Some(NearFarScalar::new(2., 0.25, 20., 0.75)),
-            distance_display_condition: Some(DistanceDisplayCondition::new(3., 40.)),
-            disable_depth_test_distance: f64::INFINITY,
-            ..Default::default()
-        })
-        .unwrap();
-    let a = c.attributes()[0];
-    assert_eq!(a.position_high_and_size, [131072., -65536., 0., 10.]);
-    assert_eq!(a.position_low_and_outline, [3., -2., 3.5, 0.]);
-    assert_eq!(a.show_and_translucency, [319., 191., 2., 20.]);
-    assert_eq!(a.distance_depth_split, [9., 1600., -1., 0.]);
-    p.borrow_mut().set_cluster_show(false);
-    assert_eq!(c.attributes()[0].show_and_translucency[0], 63.);
-    let before = p.borrow().options().clone();
-    let mut invalid = before.clone();
-    invalid.disable_depth_test_distance = -1.;
-    assert!(p.borrow_mut().set_options(invalid).is_err());
-    assert_eq!(p.borrow().options(), &before);
-    c.destroy();
+    assert_eq!(c.add(bad).unwrap_err().message, "scaleByDistance.far must be greater than scaleByDistance.near.");
+    assert_eq!(c.length(), 0);
+    let p = c.add(PointPrimitiveOptions::default()).unwrap();
+    let q = c.add(PointPrimitiveOptions::default()).unwrap();
+    assert!(p.equals(&q) && !p.ptr_eq(&q), "equals compares properties");
+
+    // Setters mark a point dirty once and count every changed property;
+    // setting an equal value changes nothing.
+    p.set_color(Color::WHITE);
+    assert_eq!(c.points_to_update(), 0);
+    p.set_cluster_show(false);
+    p.set_pixel_size(4.);
+    q.set_split_direction(SplitDirection::Right);
+    assert!(p.is_dirty() && q.is_dirty());
+    assert_eq!(c.points_to_update(), 2);
+    let mut changed = [0; NUMBER_OF_PROPERTIES];
+    (changed[SHOW_INDEX], changed[PIXEL_SIZE_INDEX], changed[SPLIT_DIRECTION_INDEX]) = (1, 1, 1);
+    assert_eq!(c.properties_changed(), changed);
+
+    // Range checks leave the point unchanged.
+    assert_eq!(
+        p.set_disable_depth_test_distance(-1.).unwrap_err().message,
+        "disableDepthTestDistance must be greater than or equal to 0.0."
+    );
+    assert_eq!(
+        p.set_translucency_by_distance(Some(NearFarScalar::new(2., 1., 1., 0.))).unwrap_err().message,
+        "far distance must be greater than near distance."
+    );
+    assert_eq!(
+        p.set_distance_display_condition(Some(DistanceDisplayCondition::new(5., 5.))).unwrap_err().message,
+        "far must be greater than near"
+    );
+    assert_eq!(p.options().disable_depth_test_distance, 0.);
+
+    // Setting the position also sets the actual position.
+    p.set_position(Cartesian3::new(1., 2., 3.));
+    assert_eq!(p.actual_position(), Cartesian3::new(1., 2., 3.));
+
+    c.destroy().unwrap();
     assert!(c.is_destroyed());
-    assert!(!p.borrow().is_attached());
+    assert!(!p.is_attached() && !q.is_attached());
     assert!(c.add(PointPrimitiveOptions::default()).is_err());
+    // A detached point no longer queues updates.
+    q.set_show(false);
+    assert!(!q.show());
 }

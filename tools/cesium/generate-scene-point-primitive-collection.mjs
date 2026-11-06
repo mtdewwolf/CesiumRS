@@ -181,6 +181,20 @@ try {
       canvas.width = 8; canvas.height = 8;
       const context = new ref.Context(canvas, { webgl: { antialias: false } });
       out.maximumAliasedPointSize = ref.ContextLimits.maximumAliasedPointSize;
+      // Every vertex upload: [call, usage or byte offset, byte length, hash].
+      let uploads = [];
+      const gl = context._gl;
+      const view = (data) => new Uint8Array(data.buffer ?? data, data.byteOffset ?? 0, data.byteLength);
+      const bufferData = gl.bufferData.bind(gl);
+      gl.bufferData = (target, data, usage) => {
+        if (target === gl.ARRAY_BUFFER && typeof data === 'object') uploads.push(['bufferData', usage, data.byteLength, fnv(view(data))]);
+        return bufferData(target, data, usage);
+      };
+      const bufferSubData = gl.bufferSubData.bind(gl);
+      gl.bufferSubData = (target, offset, data) => {
+        if (target === gl.ARRAY_BUFFER) uploads.push(['bufferSubData', offset, data.byteLength, fnv(view(data))]);
+        return bufferSubData(target, offset, data);
+      };
       const collection = new ref.PointPrimitiveCollection();
       const points = [];
       const cam = camera();
@@ -199,6 +213,7 @@ try {
           context, camera: cam, commandList: [], passes: { render: a.render ?? true, pick: a.pick ?? false },
           minimumDisableDepthTestDistance: a.minimumDisableDepthTestDistance ?? 0,
         };
+        uploads = [];
         collection.update(frameState);
         const vaf = collection._vaf;
         const va = vaf?.va ?? [];
@@ -219,10 +234,17 @@ try {
             maxTotalPointSize: command.uniformMap.u_maxTotalPointSize(),
           };
         });
+        // computeScreenSpacePosition through a scene stub sharing the camera (3D only).
+        const sceneStub = { frameState: { mode: 3, morphTime: 1, mapProjection: frameState.mapProjection }, canvas: { clientWidth: 800, clientHeight: 600 }, camera: cam, mapProjection: frameState.mapProjection };
+        const screen = a.mode !== 3 ? null : points.map((p) => {
+          if (!p._pointPrimitiveCollection) return null;
+          const w = p.computeScreenSpacePosition(sceneStub);
+          return w ? [w.x, w.y] : null;
+        });
         const program = (sp) => sp && { vs: sp._vertexShaderSource.defines, fs: sp._fragmentShaderSource.defines };
         steps.push({
           op,
-          buffers, vaCount: va.length, commands,
+          buffers, uploads, vaCount: va.length, commands,
           sp: program(collection._sp), spTranslucent: program(collection._spTranslucent),
           spChanged: collection._sp !== lastSp, spTranslucentChanged: collection._spTranslucent !== lastSpTranslucent,
           flags: {
@@ -231,6 +253,7 @@ try {
             maxPixelSize: collection._maxPixelSize, buffersUsage: [...collection._buffersUsage], propertiesChanged: [...collection._propertiesChanged],
             toUpdateIndex: collection._pointPrimitivesToUpdateIndex, length: collection.length,
           },
+          screen,
           points: points.map((p) => ({ index: p._index, dirty: p._dirty, actual: [p._actualPosition.x, p._actualPosition.y, p._actualPosition.z] })),
         });
         lastSp = collection._sp; lastSpTranslucent = collection._spTranslucent;
