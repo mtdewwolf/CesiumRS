@@ -643,8 +643,8 @@ pub use polyline_collection::{PolylineCollection, PolylineHandle};
 
 pub mod billboard;
 pub mod billboard_collection;
-pub use billboard::{Billboard, BillboardOptions};
-pub use billboard_collection::{BillboardCollection, BillboardHandle};
+pub use billboard::{Billboard, BillboardImage, BillboardOptions};
+pub use billboard_collection::{BillboardCollection, BillboardCollectionOptions};
 
 pub mod cumulus_cloud;
 pub mod cloud_collection;

@@ -16,6 +16,9 @@ pub(crate) struct ContextCache<G: Gl> {
     pub(crate) automatic_textures: RefCell<HashMap<String, TextureBinding<G>>>,
     /// `context.cache.modelOutliningCache.outlineTexture`.
     pub(crate) model_outline_texture: RefCell<Option<Rc<Texture<G>>>>,
+    /// Buffers shared through `context.cache`, such as
+    /// `billboardCollection_indexBufferBatched`.
+    buffers: RefCell<HashMap<&'static str, Buffer<G>>>,
 }
 impl<G: Gl> Default for ContextCache<G> {
     fn default() -> Self {
@@ -27,6 +30,7 @@ impl<G: Gl> Default for ContextCache<G> {
             textures: RefCell::new(TextureCache::default()),
             automatic_textures: RefCell::new(HashMap::new()),
             model_outline_texture: RefCell::new(None),
+            buffers: RefCell::new(HashMap::new()),
         }
     }
 }
@@ -150,6 +154,17 @@ impl<G: Gl> Context<G> {
         let texture = Rc::new(Texture::new(self, options, Some(&bytes))?);
         cache.defaults.borrow_mut().insert(kind, texture.clone());
         Ok(texture)
+    }
+    /// A buffer cached on the context under `key` (Cesium's `context.cache`),
+    /// created on first use. Vertex arrays never destroy it.
+    pub fn cached_buffer(&self, key: &'static str, create: impl FnOnce() -> Result<Buffer<G>>) -> Result<Buffer<G>> {
+        let cache = self.cache()?;
+        if let Some(buffer) = cache.buffers.borrow().get(key) {
+            return Ok(buffer.clone());
+        }
+        let buffer = create()?;
+        cache.buffers.borrow_mut().insert(key, buffer.clone());
+        Ok(buffer)
     }
     pub fn default_texture(&self) -> Result<Rc<Texture<G>>> {
         self.default_color(0)

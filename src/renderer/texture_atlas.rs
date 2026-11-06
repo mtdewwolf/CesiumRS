@@ -124,6 +124,10 @@ impl<G: Gl + 'static> TextureAtlas<G> {
     pub fn rectangles(&self) -> std::cell::Ref<'_, Vec<Option<BoundingRectangle>>> {
         self.life.rectangles.borrow()
     }
+    /// `_indexPromiseById.get(id)`: the request that adds image `id`, if any.
+    pub fn image_request(&self, id: &str) -> Option<AtlasImageRequest> {
+        self.requests.get(id).cloned()
+    }
     pub fn get_image_index(&self, id: &str) -> Option<usize> {
         self.index_by_id.get(id).copied()
     }

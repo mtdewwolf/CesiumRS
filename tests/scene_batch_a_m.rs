@@ -1,13 +1,13 @@
 #![recursion_limit = "256"]
 use cesium_rs::core::{
-    BoundingRectangle, Cartesian2, Cartesian3, Color, Ellipsoid, JulianDate, Matrix4, NearFarScalar,
+    Cartesian2, Cartesian3, Color, Ellipsoid, JulianDate, Matrix4, NearFarScalar,
     Rectangle, TimeStandard,
 };
 use cesium_rs::renderer::UniformFrame;
 use cesium_rs::scene::camera::{Camera, CameraOptions};
 use cesium_rs::scene::frame_state::FrameState;
 use cesium_rs::scene::{
-    BillboardLoadState, BillboardTexture, Cesium3DTileContentFactory, Cesium3DTileContentType,
+    Cesium3DTileContentFactory, Cesium3DTileContentType,
     EllipsoidPrimitive, EllipsoidPrimitiveOptions, EquirectangularPanorama,
     EquirectangularPanoramaOptions, FrameRateMonitor, FrameRateMonitorOptions, GlobeTranslucency,
     ImageBasedLighting, IonImageryExternalType, IonImageryProviderFactory, Moon, MoonOptions,
@@ -31,55 +31,6 @@ fn make_dummy_frame_state() -> FrameState {
         culling,
         [800, 600],
     )
-}
-
-#[test]
-fn test_billboard_texture_lifecycle() {
-    let mut texture = BillboardTexture::new();
-    assert_eq!(texture.load_state(), BillboardLoadState::None);
-    assert!(!texture.ready());
-    assert!(!texture.has_image());
-    assert_eq!(texture.index(), -1);
-    assert!(texture.id().is_none());
-    assert!(texture.width().is_none());
-    assert!(texture.height().is_none());
-    assert!(!texture.has_subregion());
-
-    texture.set_loading("icon_pin");
-    assert_eq!(texture.load_state(), BillboardLoadState::Loading);
-    assert!(texture.has_image());
-    assert!(!texture.ready());
-    assert_eq!(texture.id(), Some("icon_pin"));
-
-    texture.set_loaded("icon_pin", 2, 64.0, 32.0);
-    assert_eq!(texture.load_state(), BillboardLoadState::Loaded);
-    assert!(texture.ready());
-    assert_eq!(texture.index(), 2);
-    assert_eq!(texture.width(), Some(64.0));
-    assert_eq!(texture.height(), Some(32.0));
-    assert!(texture.dirty);
-
-    // Subregion assignment
-    let sub = BoundingRectangle::new(16.0, 8.0, 32.0, 16.0);
-    texture.set_image_subregion(3, sub);
-    assert!(texture.has_subregion());
-    assert_eq!(texture.width(), Some(32.0));
-    assert_eq!(texture.height(), Some(16.0));
-    // Clone behavior
-    let mut clone = BillboardTexture::new();
-    clone.clone_from_source(&texture);
-    assert_eq!(clone.id(), Some("icon_pin"));
-    assert_eq!(clone.index(), 3);
-    assert!(clone.ready());
-
-    // Error and failure transitions
-    texture.set_error("Network timeout");
-    assert_eq!(texture.load_state(), BillboardLoadState::Error);
-    assert_eq!(texture.load_error(), Some("Network timeout"));
-
-    texture.set_failed();
-    assert_eq!(texture.load_state(), BillboardLoadState::Failed);
-    assert_eq!(texture.index(), -1);
 }
 
 #[test]

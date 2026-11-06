@@ -5394,12 +5394,12 @@
   "Scene/Billboard": {
     "status": "partial",
     "rust": "scene::billboard",
-    "note": "CPU billboard properties, mutation, screen-space bounds and collection state; pinned fixture cases. Image loading, terrain clamping, picking and Scene integration remain."
+    "note": "Shared Billboard handle with every property and Cesium's compare-then-makeDirty setters, range checks, images (BillboardImage sources or futures, image ids from id/URI/GUID, SVG sizing), setImage/setImageSubRegion/setImageTexture, label hooks (_translate, label dimensions/origin/translate), lazy pick ids, _destroy, equals, getScreenSpaceBoundingBox and computeScreenSpacePosition with eye and pixel offsets. Validated by the BillboardCollection SwiftShader capture. Remaining: terrain clamping (heightReference other than NONE needs Scene.updateHeight; it is refused as Cesium does without a scene)."
   },
   "Scene/BillboardCollection": {
     "status": "partial",
     "rust": "scene::billboard_collection",
-    "note": "CPU collection, bounds and preliminary attribute packing; fixture and native lifecycle cases. Attribute-packing expectations are computed in the generator; GPU resources, atlas, picking and render integration remain."
+    "note": "Full update pipeline: compaction, load-error unloading and texture-dirty queuing, the afterRender atlas update, updateMode for every scene mode, the buffer-usage heuristic, instanced (WebGL2/ANGLE) and batched writers for all eleven attributes plus SDF, context-cached index and corner buffers, the 10% commit/subCommit split, bounding volumes grown by size, scale and offsets, blend-option render states, define-driven shader compilation, Opaque/Translucent commands with atlas and depth-test uniforms, and the debugShowTextureAtlas overlay. 85 updates over 15 SwiftShader scenarios of the pinned engine (instanced and batched) compare exact vertex bytes, every buffer upload, commands, defines, program replacement, bookkeeping, atlas and image states and screen positions; mutation-checked. Remaining: the scene option (terrain clamping and the clamp-to-ground shader path) and the vector-tile batch table."
   },
   "Scene/CumulusCloud": {
     "status": "partial",
@@ -5582,9 +5582,9 @@
     "note": "CPU dynamic shape contract backed by existing VoxelBoxShape; bounds, transforms, UV and tile/sample OBBs. Shader uniforms/defines/intersections remain. See docs/scene-nz-contracts.md."
   },
   "Scene/BillboardTexture": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::billboard_texture",
-    "note": "Tracks image reference, loading state, atlas indices, dimensions, subregions, and coordinate calculations. Partial CPU behavior; complete upstream behavior and parity validation remain."
+    "note": "Exact port of the image state machine over the collection's TextureAtlas: the shared billboardTextureCache, loadImage with stale-id guards, unload, addImageSubRegion with Cesium's sync (cached, resolved) versus async (new) split, setImageSubRegion, clone/completeLoad and computeTextureCoordinates. Cesium's promise continuations are polled at the start of each update and after the afterRender atlas update. Validated by the BillboardCollection SwiftShader capture: load states, indices, sizes, dirty flags and atlas rectangles after every frame, including shared ids, sub-regions on image-less billboards (the cached one stays NONE, as in Cesium), rejected loads and superseded loads."
   },
   "Scene/Cesium3DTileContentFactory": {
     "status": "partial",
