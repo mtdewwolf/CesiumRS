@@ -722,7 +722,7 @@ pub mod voxel_provider;
 pub mod voxel_shape;
 pub use panorama::Panorama;
 pub use panorama_provider::PanoramaProvider;
-pub use particle_system::{ParticleBillboard, ParticleSystem};
+pub use particle_system::{ParticleImage, ParticleSystem, ParticleSystemCallback, ParticleSystemOptions};
 pub use sky_box::SkyBox;
 pub use viewport_quad::ViewportQuad;
 pub use voxel_bounds_collection::VoxelBoundsCollection;

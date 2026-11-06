@@ -129,7 +129,7 @@ derived commands (picking, OIT, shadows).
 | Label, LabelCollection | Glyph rasterization and layout, SDF | Run both sides in the same Chromium page and have Rust call the page's canvas through a host glyph callback. Both sides then rasterize with the same fonts, which removes the platform font problem. Compare glyph bitmaps, then billboard bytes |
 | Polyline, PolylineCollection | Batched buffers per material, 2D/Columbus splitting, commands | Layer 1 bytes per bucket; layer 3 for width and miter joins |
 | CumulusCloud, CloudCollection | Noise texture (a compute pass), writers, commands | Layer 3 for the noise texture via `readPixels`; layer 1 for the per-cloud bytes |
-| ParticleSystem | Billboard submission and the reuse pool | Depends on BillboardCollection; compare the pooled billboards each frame |
+| ParticleSystem | Done: `tools/cesium/generate-scene-particle-system.mjs` compares pooled billboards and buffers each frame | None |
 
 Prerequisite: `createBillboardPointCallback` (71 lines, todo) for point
 images in billboards.

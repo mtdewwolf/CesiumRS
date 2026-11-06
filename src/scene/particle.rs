@@ -60,6 +60,13 @@ impl Particle {
         }
     }
 
+    /// Restarts the particle's age, as `ParticleSystem` does when it
+    /// (re)emits a particle.
+    pub(crate) fn reset_age(&mut self) {
+        self.age = 0.0;
+        self.normalized_age = 0.0;
+    }
+
     /// Seconds since the particle was created.
     pub fn age(&self) -> f64 {
         self.age

@@ -520,8 +520,8 @@
       "module": "Scene/ParticleSystem",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU emission/carry/bursts, simulation, transforms, lifetime/completion and billboard snapshots; nine pinned frame traces. GPU billboard submission and reuse pool remain. See docs/scene-nz-contracts.md."
+      "status": "validated",
+      "remaining": "Validated against 31 frames of a seeded SwiftShader capture: particles, pool, billboards and vertex buffers."
     },
     {
       "module": "Scene/QuadtreeTileProvider",
