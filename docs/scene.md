@@ -1304,9 +1304,9 @@ even after `destroy`, as Cesium does. The collection forwards readiness once per
 `add` as `layer_shown_or_hidden`, including for layers removed before they became
 ready. `tests/scene_imagery_layer_providers.rs` replays nine pinned scenarios.
 
-`Imagery` is validated. `ImageryLayer`, `ImageryLayerCollection` and
-`TileImagery` remain partial: complete skeleton coverage, terrain-ray picking and
-the Globe/GlobeSurfaceTileProvider terrain renderer still need work. The existing
+`Imagery` and `ImageryLayerCollection` are validated. `ImageryLayer` and
+`TileImagery` remain partial: complete skeleton coverage and the
+Globe/GlobeSurfaceTileProvider terrain renderer still need work. The existing
 `GlobeSurfaceTile` CPU module is exported and tracked as partial, with its
 remaining asynchronous terrain and GPU stages documented in the tracker.
 
@@ -1319,3 +1319,40 @@ upload bytes, RGBA-to-RGB conversion, row orientation, mipmaps, anisotropy,
 provider-driven state changes, queue draining and cancellation/drop ownership.
 A compressed Mercator regression checks that DXT1 imagery is sampled into a
 renderable RGBA8 output and produces the expected decoded color in SwiftShader.
+
+
+## Imagery layer and feature picking
+
+`ImageryLayerCollection::pick_imagery_layers(ray, scene)` and
+`pick_imagery_layer_features(ray, scene)` now follow the pinned Cesium collection
+methods. `Scene` implements `ImageryPickSource` by asking its `SceneGlobe` for a
+ray intersection and the rendered surface tiles. Globe implementations provide
+`pick` in ellipsoid-fixed coordinates and `rendered_surface_tiles` in traversal
+order. The default methods return no hit and no tiles; the collection never
+invents an ellipsoid hit when terrain is unavailable. Other hosts can implement
+`ImageryPickSource` directly. Rendered tile data uses `GlobeSurfaceTile` and its
+existing `TileImagery` attachments.
+
+The first terrain tile containing the hit wins, including on shared edges.
+Ready imagery attachments are visited in reverse order. Both the ready image's
+rectangle and its parent-relative texture rectangle (expanded by 1/1024) must
+contain the hit. Duplicate layer hits are retained, and attached layers can be
+picked even after removal from the collection. As in Cesium, visibility and
+alpha are not separately filtered here; the rendered attachments are authoritative.
+
+Feature providers are called immediately, before the returned future is polled.
+Their futures are driven concurrently; results retain attachment order and each
+provider's feature order. Missing feature positions use the terrain hit, supplied
+positions are preserved, and the feature's `imagery_layer` resource contains the
+original `ImageryLayerHandle`. `None` means no supported requests were started;
+a returned future may resolve to an empty list. One provider error rejects the
+combined result. Native RAII releases outstanding provider futures when the pick
+is dropped or rejected. The returned future owns the layer handles and retains
+no scene or tile borrows; providers may reenter tile code safely.
+
+`tools/cesium/generate-scene-imagery-picking.mjs` captures 33 scenarios from the
+actual CesiumJS methods into `tests/data/scene-imagery-picking.json`.
+`tests/scene_imagery_picking.rs` replays them through the public Scene boundary
+and adds seven native concurrency, ownership and reentrancy checks. The custom
+ellipsoid case deliberately uses an independent map projection, so picking uses
+the scene's configured ellipsoid rather than the projection's ellipsoid.

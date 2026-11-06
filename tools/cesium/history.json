@@ -606,5 +606,13 @@
     "ported": 1060,
     "implemented": 13,
     "validatedPercent": 63.57
+  },
+  {
+    "milestone": "Imagery collection picking",
+    "date": "2026-11-04",
+    "percent": 72.63,
+    "ported": 1061,
+    "implemented": 13,
+    "validatedPercent": 63.74
   }
 ]
