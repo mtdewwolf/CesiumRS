@@ -4077,14 +4077,14 @@
     "note": "Owned configuration replaces the JavaScript global namespace. Default token, service URLs, exact credit HTML, visibility, and credit caching are validated against pinned CesiumJS."
   },
   "Scene/PointPrimitive": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::point_primitive",
-    "note": "CPU point options, validation, identity and screen-space bounding box; pinned reference cases. Screen position, picking and rendering integration remain."
+    "note": "Shared PointPrimitive handle with Cesium's compare-then-makeDirty setters (one queue entry per dirty point, per-property change counts), setter and constructor range checks, actual positions, lazy pick ids registered as ScenePickObject, _destroy, _computeActualPosition, equals and getScreenSpaceBoundingBox. Dirty state, indices and actual positions are checked after every update of the pinned SwiftShader capture, and computeScreenSpacePosition (on the collection, which owns the model matrix) against Cesium's in 3D."
   },
   "Scene/PointPrimitiveCollection": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::point_primitive_collection",
-    "note": "CPU collection membership, lifecycle and attribute preparation; pinned reference cases. GPU buffers, draw and pick commands, projection and dirty updates remain."
+    "note": "Full update pipeline over VertexArrayFacade: removal compaction, updateMode for every scene mode (including morphing and 2D/Columbus model-matrix changes), computeNewBuffersUsage (with Cesium's nine-entry start), full rebuilds, incremental writers with the 10% commit/subCommit split, bounding volumes grown by the camera's pixel size, blend-option render states, define-driven shader recompilation and Opaque/Translucent draw commands. 36 update steps from a pinned CesiumJS capture on SwiftShader WebGL2 compare exact vertex bytes, every bufferData/bufferSubData upload, commands, defines, program replacement and bookkeeping; mutation-checked. Pixel comparison is not yet in the Scene GPU harness."
   },
   "Scene/Atmosphere": {
     "status": "ported",
@@ -4424,7 +4424,7 @@
   "Scene/ConeEmitter": {
     "status": "ported",
     "rust": "scene::particle_emitter",
-    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30\u00b0 default. Emitted particles match bit for bit."
+    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30° default. Emitted particles match bit for bit."
   },
   "Scene/SphereEmitter": {
     "status": "ported",
@@ -4544,7 +4544,7 @@
   "Scene/Model/Extensions/Gpm/GltfMeshPrimitiveGpmLoader": {
     "status": "ported",
     "rust": "scene::model::extensions::gpm::gltf_mesh_primitive_gpm_loader",
-    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale \u00d7 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
+    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale × 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
   },
   "DataSources/CompositeEntityCollection": {
     "status": "ported",
@@ -5102,9 +5102,9 @@
     "note": "Partial options and CPU geometry preparation. Constructor fixtures and native failure regressions only. Nonempty drawable geometry returns an explicit unsupported-rendering error; GPU commands, batch tables, asynchronous creation and rendering parity remain unimplemented."
   },
   "Scene/PrimitiveCollection": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::primitive_collection",
-    "note": "Partial native index-based collection API. Pinned reference cases cover ordering, nested update dispatch (including hidden collections), and destruction policy; identity-based membership, collection events and the full upstream surface remain unported."
+    "note": "Identity-based collection: PrimitiveHandle shares Cesium's _external record (GUID-keyed memberships and the countReferences reference count), so a primitive can sit in several collections. add with index checks, remove, removeAndDestroy, removeAll, contains, raise/raiseToTop/lower/lowerToBottom, get, primitiveAdded/primitiveRemoved events and nested pass dispatch, including Cesium's quirks (one membership for a twice-added primitive, destroy errors leaving removeAll's list intact). 59 pinned steps over eight scenarios plus the existing order/dispatch/destroy cases."
   },
   "Scene/PrimitivePipeline": {
     "status": "ported",
@@ -5242,24 +5242,24 @@
     "note": "Color inputs infer ColorMaterialProperty. String/Resource/canvas/video inputs need ImageMaterialProperty and return an explicit unsupported error."
   },
   "Scene/CameraEventAggregator": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::camera_event_aggregator",
-    "note": "Host-driven input aggregation, modifier handoff, wheel and pinch state; CesiumJS event sequences pass. Scene input wiring and full parity audit remain."
+    "note": "Input aggregation over Cesium's ScreenSpaceEventHandler: per-type and per-modifier movement, last movement, button down/press/release times, start positions, wheel accumulation, pinch distance and angle (with wrap), reset and destroy. Scene::process_input feeds the scene controller's aggregator. Pinned CesiumJS states cover every left/right/middle button with every modifier, overlapping buttons, modifier handoff, unmatched ups, wheels, pinches and an 82-step seeded mix (181 steps) plus the original handoff/wheel/pinch sequence."
   },
   "Scene/ScreenSpaceCameraController": {
     "status": "partial",
     "rust": "scene::screen_space_camera_controller",
-    "note": "Host-driven camera gestures, inertia and environment inputs; pinned controller sequences pass. Scene input and globe integration and complete parity validation remain."
+    "note": "Host-driven camera gestures, inertia and environment inputs; pinned controller sequences pass. Scene owns the controller: process_input feeds it and initialize_frame updates it before camera.update with Cesium's globe height, camera-underground state and vertical exaggeration (a scene drag matches a standalone controller exactly). Globe picking for surface-anchored gestures and complete parity validation remain."
   },
   "Scene/SceneTransitioner": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::scene_transitioner",
-    "note": "Explicit-time camera and frustum morph phases and events; pinned morph routes pass. Scene frame integration and complete parity validation remain."
+    "note": "Explicit-time camera and frustum morph phases and morphStart/morphComplete events; pinned morph routes pass. Scene owns the transitioner: morph_to_2d/columbus_view/3d (two seconds by default), complete_morph, the mode setter (with the scene3DOnly check), frame morph_time and destroy. Scene::process_input feeds Cesium's morph handler (LEFT_DOWN, MIDDLE_DOWN, RIGHT_DOWN, WHEEL), which completes a running morph when completeMorphOnUserInput was set at its start. The handler lives for the scene's lifetime rather than one morph."
   },
   "Scene/TweenCollection": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::tween_collection",
-    "note": "Numeric, property, material and repeating tweens with callbacks; pinned easing and lifecycle sequences pass. Scene runtime integration and complete parity validation remain."
+    "note": "Numeric, property, alpha and offset-increment tweens with Cesium's tween.js timing (delay per repeat cycle, start-and-update in one call, infinite repeats), update/complete/cancel callbacks, remove/removeAll/cancelTween, contains/get and zero-duration completion. Scene updates scene.tweens in initialize_frame (the host's monotonic clock stands in for getTimestamp) and removes them all on destroy. Pinned easing/lifecycle sequences plus helper traces (addProperty, addAlpha, addOffsetIncrement, lifecycle, errors). Material vec4 uniforms stand in for Cesium's Color uniforms in addAlpha."
   },
   "Scene/AutoExposure": {
     "status": "partial",

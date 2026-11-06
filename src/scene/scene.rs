@@ -957,6 +957,21 @@ pub struct Scene<B: SceneBackend> {
     hdr_dirty: bool,
     log_depth_dirty: bool,
     shader_frame_count: u32,
+    /// `scene.tweens`: updated at the start of every frame and emptied, with
+    /// cancel callbacks, when the scene is destroyed.
+    pub tweens: super::TweenCollection,
+    /// `scene._transitioner`: owns `mode`/`morphTime` while morphing and the
+    /// `morphStart`/`morphComplete` events.
+    pub transitioner: super::scene_transitioner::SceneTransitioner,
+    /// `scene.screenSpaceCameraController`, fed by [`Scene::process_input`]
+    /// and updated in [`Scene::initialize_frame`].
+    pub screen_space_camera_controller: super::screen_space_camera_controller::ScreenSpaceCameraController,
+    /// The transitioner's morph handler: LEFT_DOWN, MIDDLE_DOWN, RIGHT_DOWN
+    /// and WHEEL without modifiers, as Cesium's `createMorphHandler` registers.
+    morph_input: crate::core::ScreenSpaceEventHandler,
+    /// `scene._globeHeight` and `scene._cameraUnderground`.
+    globe_height: Option<f64>,
+    camera_underground: bool,
     destroyed: bool,
 }
 impl<B: SceneBackend> Scene<B> {
@@ -994,6 +1009,17 @@ impl<B: SceneBackend> Scene<B> {
         frame_state.stencil_buffer = backend.stencil_buffer()?;
         let mut fog = Fog::default();
         fog.enabled = earth;
+        let transitioner = super::scene_transitioner::SceneTransitioner::new(&camera);
+        let screen_space_camera_controller = super::screen_space_camera_controller::ScreenSpaceCameraController::new(&camera);
+        let mut morph_input = crate::core::ScreenSpaceEventHandler::default();
+        for kind in [
+            crate::core::ScreenSpaceEventType::LeftDown,
+            crate::core::ScreenSpaceEventType::MiddleDown,
+            crate::core::ScreenSpaceEventType::RightDown,
+            crate::core::ScreenSpaceEventType::Wheel,
+        ] {
+            morph_input.set_input_action(std::rc::Rc::new(|_| {}), kind, None)?;
+        }
         let mut result = Self {
             detailed_picks: Vec::new(),
             post_render_serial: 0,
@@ -1038,6 +1064,12 @@ impl<B: SceneBackend> Scene<B> {
             hdr_dirty: false,
             log_depth_dirty: false,
             shader_frame_count: 0,
+            tweens: super::TweenCollection::new(),
+            transitioner,
+            screen_space_camera_controller,
+            morph_input,
+            globe_height: None,
+            camera_underground: false,
             destroyed: false,
         };
         result.frame_state.render_request = Some(result.request_handle());
@@ -1145,6 +1177,99 @@ impl<B: SceneBackend> Scene<B> {
         }
         Ok(())
     }
+    /// `scene.mode`.
+    pub fn mode(&self) -> SceneMode {
+        self.camera.mode()
+    }
+    /// `scene.morphTime`.
+    pub fn morph_time(&self) -> f64 {
+        self.camera.mode().get_morph_time().unwrap_or(self.transitioner.morph_time)
+    }
+    /// Cesium's `mode` setter: an immediate morph. A scene created with
+    /// `scene3DOnly` accepts only `Scene3D`.
+    pub fn set_mode(&mut self, mode: SceneMode) -> Result<()> {
+        if mode != SceneMode::Scene3D {
+            self.check_3d_only()?;
+        }
+        match mode {
+            SceneMode::Scene2D => self.morph_to_2d(Some(0.0)),
+            SceneMode::Scene3D => self.morph_to_3d(Some(0.0)),
+            SceneMode::ColumbusView => self.morph_to_columbus_view(Some(0.0)),
+            SceneMode::Morphing => Err(RuntimeError::new("value must be a valid SceneMode enumeration.")),
+        }
+    }
+    /// `scene3DOnly` "disables the ability to use 2D or Columbus View".
+    /// Cesium checks it only in the `mode` setter (in debug builds); the port
+    /// also refuses the non-3D morphs, since the render paths assume 3D.
+    fn check_3d_only(&self) -> Result<()> {
+        if self.options.scene_3d_only {
+            return Err(RuntimeError::new("Only SceneMode.SCENE3D is valid when scene3DOnly is true."));
+        }
+        Ok(())
+    }
+    /// `morphTo2D(duration)`, two seconds by default. Advances with
+    /// [`Self::initialize_frame`]. Refused when `scene_3d_only` is set.
+    pub fn morph_to_2d(&mut self, duration: Option<f64>) -> Result<()> {
+        self.check_3d_only()?;
+        self.prepare_morph();
+        self.transitioner.morph_to_2d(&mut self.camera, duration.unwrap_or(2.0)).map(|_| ())
+    }
+    /// `morphToColumbusView(duration)`, two seconds by default. Refused when
+    /// `scene_3d_only` is set.
+    pub fn morph_to_columbus_view(&mut self, duration: Option<f64>) -> Result<()> {
+        self.check_3d_only()?;
+        self.prepare_morph();
+        self.transitioner.morph_to_columbus_view(&mut self.camera, duration.unwrap_or(2.0)).map(|_| ())
+    }
+    /// `morphTo3D(duration)`, two seconds by default.
+    pub fn morph_to_3d(&mut self, duration: Option<f64>) -> Result<()> {
+        self.prepare_morph();
+        self.transitioner.morph_to_3d(&mut self.camera, duration.unwrap_or(2.0)).map(|_| ())
+    }
+    /// `completeMorph()`: jumps to the end of a running morph.
+    pub fn complete_morph(&mut self) -> Result<()> {
+        self.transitioner.complete_morph(&mut self.camera).map(|_| ())
+    }
+    /// Forwards one host input event to the camera controller's aggregator and
+    /// to the transitioner's morph handler, which completes a running morph on
+    /// a button press or wheel when `complete_morph_on_user_input` is set.
+    /// Returns whether the host should prevent the event's default action.
+    pub fn process_input(&mut self, input: &crate::core::ScreenInput) -> Result<bool> {
+        self.alive()?;
+        let prevent_default = self.screen_space_camera_controller.process(input)?;
+        let morph = self.morph_input.process(input)?;
+        for (kind, modifier, _) in morph.actions {
+            self.transitioner.process_input(&mut self.camera, kind, modifier)?;
+        }
+        Ok(prevent_default)
+    }
+    /// `scene._globeHeight`: the height under the camera, refreshed each frame
+    /// except while morphing.
+    pub fn globe_height(&self) -> Option<f64> {
+        self.globe_height
+    }
+    /// `scene.cameraUnderground`.
+    pub fn camera_underground(&self) -> bool {
+        self.camera_underground
+    }
+    /// Cesium's `isCameraUnderground`.
+    fn is_camera_underground(&mut self) -> bool {
+        let Some(cartographic) = self.camera.position_cartographic() else {
+            return false;
+        };
+        if !self.screen_space_camera_controller.on_map(&self.camera) && cartographic.height < 0.0 {
+            return true;
+        }
+        if matches!(self.camera.mode(), SceneMode::Scene2D | SceneMode::Morphing) {
+            return false;
+        }
+        self.globe_height.is_some_and(|height| cartographic.height < height)
+    }
+    /// The transitioner reads the scene's logarithmic depth setting when a
+    /// morph completes.
+    fn prepare_morph(&mut self) {
+        self.transitioner.use_log_depth = self.frame_state.use_log_depth;
+    }
     pub fn initialize_frame(&mut self, monotonic_seconds: f64) -> Result<()> {
         self.alive()?;
         self.camera_event_clock_ms = monotonic_seconds * 1000.;
@@ -1154,7 +1279,28 @@ impl<B: SceneBackend> Scene<B> {
         } else {
             self.shader_frame_count += 1;
         }
+        // Cesium's `this._tweens.update()` reads getTimestamp(); the host's
+        // monotonic clock stands in for it.
+        self.tweens.update(monotonic_seconds);
+        // Cesium's morph phases are tweens in `scene.tweens`.
+        self.transitioner.update(&mut self.camera, monotonic_seconds)?;
         self.camera.update_flights(monotonic_seconds).map_err(|e| RuntimeError::new(e.to_string()))?;
+        // Cesium's getGlobeHeight and isCameraUnderground, then the camera controller.
+        self.globe_height = if self.camera.mode() == SceneMode::Morphing {
+            None
+        } else {
+            let cartographic = self.camera.position_cartographic();
+            self.get_height(cartographic.as_ref(), None)?
+        };
+        self.camera_underground = self.is_camera_underground();
+        let environment = super::screen_space_camera_controller::ControllerEnvironment {
+            has_globe: self.globe.is_some(),
+            globe_height: self.globe_height,
+            camera_underground: self.camera_underground,
+            vertical_exaggeration: self.frame_state.vertical_exaggeration,
+            vertical_exaggeration_relative_height: self.frame_state.vertical_exaggeration_relative_height,
+        };
+        self.screen_space_camera_controller.update_with_environment(&mut self.camera, monotonic_seconds, environment)?;
         self.camera.update(self.camera.mode()).map_err(|e| RuntimeError::new(e.to_string()))?;
         self.camera.update_camera_changed(monotonic_seconds * 1000.);
         Ok(())
@@ -1175,11 +1321,12 @@ impl<B: SceneBackend> Scene<B> {
         frame.atmosphere = Some(self.atmosphere);
         frame.light = Some(frame.uniform.light);
         frame.scene_3d_only = self.options.scene_3d_only;
+        frame.camera_underground = self.camera_underground;
         frame.pixel_ratio = self.camera.pixel_ratio;
         frame.occluder = self.occluder;
         frame.tileset_pass_state = None;
         frame.mode = self.camera.mode();
-        frame.morph_time = frame.mode.get_morph_time().unwrap_or(frame.morph_time);
+        frame.morph_time = frame.mode.get_morph_time().unwrap_or(self.transitioner.morph_time);
         frame.culling_volume =
             self.camera.frustum.compute_culling_volume(snapshot.position, snapshot.direction, snapshot.up);
         frame.uniform.camera = snapshot;
@@ -1590,6 +1737,10 @@ impl<B: SceneBackend> Scene<B> {
         if self.destroyed {
             return Ok(());
         }
+        self.tweens.remove_all();
+        self.transitioner.destroy();
+        self.screen_space_camera_controller.destroy();
+        self.morph_input.destroy();
         for p in &mut self.primitives {
             p.destroy()?;
         }

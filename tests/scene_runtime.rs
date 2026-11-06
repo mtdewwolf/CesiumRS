@@ -992,3 +992,174 @@ fn cpu_height_queries_and_cancelled_height_callbacks() {
     t.destroy().unwrap();
     assert!(!subscription.is_active());
 }
+
+/// Cesium's `initializeFrame` updates `scene.tweens`, and `destroy` removes
+/// them all, calling their cancel callbacks.
+#[test]
+fn scene_drives_and_cancels_its_tweens() {
+    use std::collections::BTreeMap;
+    let mut scene = Scene::new(host(), CameraOptions::new(800., 600.), SceneOptions::default(), epoch()).unwrap();
+    let values = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let cancelled = Rc::new(std::cell::Cell::new(0));
+    let make = |duration: f64| {
+        let (values, cancelled) = (values.clone(), cancelled.clone());
+        scene
+            .tweens
+            .add(TweenOptions {
+                start_object: BTreeMap::from([("v".to_string(), 0.0)]),
+                stop_object: BTreeMap::from([("v".to_string(), 10.0)]),
+                duration,
+                update: Some(Rc::new(move |value| values.borrow_mut().push(value["v"]))),
+                cancel: Some(Rc::new(move || cancelled.set(cancelled.get() + 1))),
+                ..Default::default()
+            })
+            .unwrap()
+    };
+    let short = make(1.0);
+    let long = make(100.0);
+    scene.initialize_frame(5.0).unwrap();
+    scene.initialize_frame(5.5).unwrap();
+    scene.initialize_frame(6.0).unwrap();
+    // The short tween starts at the first frame, reaches its end after one second and leaves.
+    assert_eq!(values.borrow().iter().step_by(2).copied().collect::<Vec<_>>(), vec![0.0, 5.0, 10.0]);
+    assert!(!scene.tweens.contains(&short));
+    assert!(scene.tweens.contains(&long));
+    scene.destroy().unwrap();
+    assert_eq!(cancelled.get(), 1, "only the running tween is cancelled");
+    assert!(scene.tweens.is_empty());
+}
+
+/// Scene owns the transitioner: morphs start from `morph_to_*`, advance with
+/// `initialize_frame`, report `morph_time` while morphing and raise the
+/// transitioner's start/complete events.
+#[test]
+fn scene_morphs_through_its_transitioner() {
+    let mut scene = Scene::new(host(), CameraOptions::new(800., 600.), SceneOptions::default(), epoch()).unwrap();
+    let events = Arc::new(Mutex::new(Vec::new()));
+    let (start, complete) = (events.clone(), events.clone());
+    scene.transitioner.morph_start.add_event_listener(move |e| start.lock().unwrap().push(("start", *e)));
+    scene.transitioner.morph_complete.add_event_listener(move |e| complete.lock().unwrap().push(("complete", *e)));
+    assert_eq!(scene.mode(), SceneMode::Scene3D);
+    assert_eq!(scene.morph_time(), 1.0);
+
+    scene.morph_to_2d(Some(1.0)).unwrap();
+    assert_eq!(events.lock().unwrap().len(), 1, "morphStart is raised when the morph begins");
+    let mut morph_times = vec![];
+    let mut t = 10.0;
+    while scene.mode() != SceneMode::Scene2D && t < 20.0 {
+        scene.initialize_frame(t).unwrap();
+        scene.update_frame_state();
+        morph_times.push(scene.frame_state.morph_time);
+        t += 0.1;
+    }
+    assert_eq!(scene.mode(), SceneMode::Scene2D);
+    assert_eq!(scene.morph_time(), 0.0);
+    assert!(morph_times.windows(2).all(|w| w[1] <= w[0]), "morph time falls monotonically: {morph_times:?}");
+    assert_eq!(*morph_times.last().unwrap(), 0.0);
+    {
+        let events = events.lock().unwrap();
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[1].0, "complete");
+        assert_eq!((events[1].1.previous_mode, events[1].1.mode), (SceneMode::Scene3D, SceneMode::Scene2D));
+    }
+
+    // completeMorph jumps to the end of a running morph.
+    scene.morph_to_columbus_view(None).unwrap();
+    scene.initialize_frame(30.0).unwrap();
+    scene.initialize_frame(30.1).unwrap();
+    assert_eq!(scene.mode(), SceneMode::Morphing);
+    scene.complete_morph().unwrap();
+    assert_eq!(scene.mode(), SceneMode::ColumbusView);
+    assert_eq!(scene.morph_time(), 0.0);
+
+    // The mode setter morphs immediately.
+    scene.set_mode(SceneMode::Scene3D).unwrap();
+    scene.initialize_frame(40.0).unwrap();
+    assert_eq!(scene.mode(), SceneMode::Scene3D);
+    assert_eq!(scene.morph_time(), 1.0);
+    assert!(scene.set_mode(SceneMode::Morphing).is_err());
+    scene.destroy().unwrap();
+    assert!(scene.transitioner.is_destroyed());
+
+    let options = SceneOptions { scene_3d_only: true, ..Default::default() };
+    let mut only_3d = Scene::new(host(), CameraOptions::new(800., 600.), options, epoch()).unwrap();
+    assert_eq!(
+        only_3d.set_mode(SceneMode::Scene2D).unwrap_err().message,
+        "Only SceneMode.SCENE3D is valid when scene3DOnly is true."
+    );
+    only_3d.set_mode(SceneMode::Scene3D).unwrap();
+    // The direct morph entry points refuse non-3D modes too.
+    assert!(only_3d.morph_to_2d(Some(0.0)).is_err());
+    assert!(only_3d.morph_to_columbus_view(None).is_err());
+    only_3d.initialize_frame(1.0).unwrap();
+    assert_eq!(only_3d.mode(), SceneMode::Scene3D);
+    only_3d.morph_to_3d(Some(0.0)).unwrap();
+}
+
+fn input(kind: ScreenInputKind, now: f64, x: f64, y: f64) -> ScreenInput {
+    let mut input = ScreenInput::new(kind, now);
+    input.client_position = Cartesian2::new(x, y);
+    input.button = 0;
+    input
+}
+
+/// Input sent through `Scene::process_input` drives the scene's camera
+/// controller exactly as a standalone controller fed the same events.
+#[test]
+fn scene_input_drives_its_camera_controller() {
+    let mut scene = Scene::new(host(), CameraOptions::new(800., 600.), SceneOptions::default(), epoch()).unwrap();
+    // The scene configures its camera from the backend (drawing buffer, frustum),
+    // so compare against a copy of that camera.
+    let mut camera = scene.camera.clone_camera();
+    let mut controller = cesium_rs::scene::screen_space_camera_controller::ScreenSpaceCameraController::new(&camera);
+    scene.initialize_frame(0.99).unwrap();
+    controller.update(&mut camera, 0.99).unwrap();
+    assert!(scene.camera.position.distance(camera.position) < 1e-9);
+
+    let events = [
+        input(ScreenInputKind::MouseDown, 1000., 400., 300.),
+        input(ScreenInputKind::MouseMove, 1010., 430., 320.),
+    ];
+    for event in &events {
+        scene.process_input(event).unwrap();
+        controller.process(event).unwrap();
+    }
+    for time in [1.01, 1.05, 1.2] {
+        scene.initialize_frame(time).unwrap();
+        controller.update(&mut camera, time).unwrap();
+        camera.update(camera.mode()).unwrap();
+        assert!(scene.camera.position.distance(camera.position) < 1e-6, "position at {time}");
+        assert!(scene.camera.direction.distance(camera.direction) < 1e-12, "direction at {time}");
+    }
+    assert!(scene.camera.position.distance(Camera::new(CameraOptions::new(800., 600.)).position) > 1.0, "the drag moved the camera");
+    assert!(!scene.camera_underground());
+    scene.update_frame_state();
+    assert!(!scene.frame_state.camera_underground);
+}
+
+/// Cesium's morph handler completes a running morph on LEFT_DOWN, MIDDLE_DOWN,
+/// RIGHT_DOWN or WHEEL when `completeMorphOnUserInput` is set.
+#[test]
+fn scene_input_completes_morphs() {
+    let mut scene = Scene::new(host(), CameraOptions::new(800., 600.), SceneOptions::default(), epoch()).unwrap();
+    scene.morph_to_2d(Some(2.0)).unwrap();
+    scene.initialize_frame(1.0).unwrap();
+    scene.initialize_frame(1.1).unwrap();
+    assert_eq!(scene.mode(), SceneMode::Morphing);
+    // A move is not one of the handler's events.
+    scene.process_input(&input(ScreenInputKind::MouseMove, 1150., 10., 10.)).unwrap();
+    assert_eq!(scene.mode(), SceneMode::Morphing);
+    scene.process_input(&input(ScreenInputKind::MouseDown, 1200., 10., 10.)).unwrap();
+    assert_eq!(scene.mode(), SceneMode::Scene2D);
+    scene.process_input(&input(ScreenInputKind::MouseUp, 1250., 10., 10.)).unwrap();
+
+    // With completeMorphOnUserInput off when the morph starts, input does not end it.
+    scene.transitioner.complete_morph_on_user_input = false;
+    scene.morph_to_3d(Some(2.0)).unwrap();
+    scene.initialize_frame(2.0).unwrap();
+    scene.initialize_frame(2.1).unwrap();
+    scene.process_input(&input(ScreenInputKind::MouseDown, 2150., 10., 10.)).unwrap();
+    // 2D to 3D starts with a camera flight, during which Cesium keeps the 2D mode.
+    assert!(scene.transitioner.is_morphing(), "the morph keeps running");
+    assert_ne!(scene.mode(), SceneMode::Scene3D);
+}

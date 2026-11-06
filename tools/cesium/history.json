@@ -614,5 +614,13 @@
     "ported": 1061,
     "implemented": 13,
     "validatedPercent": 63.74
+  },
+  {
+    "milestone": "Scene collections, tweens and morph integration",
+    "date": "2026-11-06",
+    "percent": 73.25,
+    "ported": 1067,
+    "implemented": 13,
+    "validatedPercent": 64.98
   }
 ]

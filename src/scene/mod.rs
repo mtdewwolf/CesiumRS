@@ -562,7 +562,7 @@ pub use primitive_pipeline::{CombineGeometryParameters, CombineGeometryResults, 
 pub mod primitive;
 pub use primitive::{Primitive, PrimitiveOptions};
 pub mod primitive_collection;
-pub use primitive_collection::{PrimitiveCollection, PrimitiveCollectionOptions};
+pub use primitive_collection::{PrimitiveCollection, PrimitiveCollectionOptions, PrimitiveHandle};
 pub mod shadow_volume_appearance;
 pub use shadow_volume_appearance::{ShaderDependencies, ShadowVolumeAppearance};
 

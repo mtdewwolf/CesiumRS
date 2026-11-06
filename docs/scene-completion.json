@@ -13,15 +13,15 @@
       "module": "Scene/PointPrimitive",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU point options, validation, identity and screen-space bounding box; pinned reference cases. Screen position, picking and rendering integration remain."
+      "status": "validated",
+      "remaining": "Validated against a pinned CesiumJS capture on SwiftShader WebGL2: dirty marking, indices, actual positions and screen-space positions after every update."
     },
     {
       "module": "Scene/PointPrimitiveCollection",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU collection membership, lifecycle and attribute preparation; pinned reference cases. GPU buffers, draw and pick commands, projection and dirty updates remain."
+      "status": "validated",
+      "remaining": "Validated against a pinned CesiumJS capture on SwiftShader WebGL2: exact vertex bytes and uploads, commands, defines and bookkeeping over 36 update steps in ten scenarios. A pixel comparison in the Scene GPU harness would add rasterization coverage."
     },
     {
       "module": "Scene/Scene",
@@ -76,8 +76,9 @@
       "module": "Scene/PrimitiveCollection",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "Partial native index-based collection API. Pinned reference cases cover ordering, nested update dispatch (including hidden collections), and destruction policy; identity-based membership, collection events and the full upstream surface remain unported."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_primitive_collection.rs replays 59 pinned CesiumJS steps from tools/cesium/generate-scene-primitive-collection.mjs; tests/scene_primitive_runtime.rs keeps the original cases."
     },
     {
       "module": "Scene/PrimitivePipeline",
@@ -120,29 +121,32 @@
       "module": "Scene/CameraEventAggregator",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "Host-driven input aggregation, modifier handoff, wheel and pinch state; CesiumJS event sequences pass. Scene input wiring and full parity audit remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_input_tweens_morphing.rs replays tools/cesium/generate-scene-camera-event-aggregator.mjs (181 steps) and the original aggregation sequence; Scene wiring in tests/scene_runtime.rs."
     },
     {
       "module": "Scene/ScreenSpaceCameraController",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "Host-driven camera gestures, inertia and environment inputs; pinned controller sequences pass. Scene input and globe integration and complete parity validation remain."
+      "status": "in-progress",
+      "remaining": "Host-driven camera gestures, inertia and environment inputs; pinned controller sequences pass. Scene owns the controller: process_input feeds it and initialize_frame updates it before camera.update with Cesium's globe height, camera-underground state and vertical exaggeration (a scene drag matches a standalone controller exactly). Globe picking for surface-anchored gestures and complete parity validation remain."
     },
     {
       "module": "Scene/SceneTransitioner",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "Explicit-time camera and frustum morph phases and events; pinned morph routes pass. Scene frame integration and complete parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Pinned morph routes in tests/scene_input_tweens_morphing.rs; Scene integration and input completion in tests/scene_runtime.rs (scene_morphs_through_its_transitioner, scene_input_completes_morphs)."
     },
     {
       "module": "Scene/TweenCollection",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "Numeric, property, material and repeating tweens with callbacks; pinned easing and lifecycle sequences pass. Scene runtime integration and complete parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_tween_helpers.rs replays tools/cesium/generate-scene-tween-helpers.mjs; tests/scene_input_tweens_morphing.rs keeps the easing/lifecycle sequences; tests/scene_runtime.rs::scene_drives_and_cancels_its_tweens covers Scene integration."
     },
     {
       "module": "Scene/AutoExposure",
