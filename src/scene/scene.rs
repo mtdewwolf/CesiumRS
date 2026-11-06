@@ -827,6 +827,15 @@ pub trait SceneGlobe {
     fn update(&mut self, frame: &mut FrameState) -> Result<()>;
     /// Enqueue globe commands for the current frame.
     fn render(&mut self, frame: &mut FrameState) -> Result<()>;
+    /// Globe ray intersection in ellipsoid-fixed coordinates. Imagery picking
+    /// uses this result rather than substituting an ellipsoid intersection.
+    fn pick(&self, _ray: &Ray, _frame: &FrameState) -> Option<Cartesian3> {
+        None
+    }
+    /// Rendered terrain tiles, in the globe surface's traversal order.
+    fn rendered_surface_tiles(&self) -> &[super::quadtree_tile::QuadtreeTileHandle] {
+        &[]
+    }
     /// Loaded terrain height at the position, or `None` when no tile covers it.
     fn get_height(&self, cartographic: &Cartographic) -> Option<f64>;
     fn destroy(&mut self) -> Result<()>;

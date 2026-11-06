@@ -315,8 +315,9 @@
       "module": "Scene/ImageryLayerCollection",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "in-progress",
-      "remaining": "Layer management, ordering, visibility and events; once-per-add provider-ready forwarding (pinned scenarios, including removed and twice-added layers); typed renderer compute-queue forwarding and pending reprojection cancellation. Terrain-ray layer/feature picking (pickImageryLayers, pickImageryLayerFeatures) remains and needs Globe."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "All public methods implemented. tests/scene_imagery_picking.rs replays 33 pinned pickImageryLayers/pickImageryLayerFeatures scenarios from the real engine, including terrain traversal order, parent texture tolerance, antimeridian coverage, async result/error behavior and scene ellipsoid selection. Seven native tests cover concurrent/pending/error/cancelled picks, original layer ownership, provider callback reentrancy and stable layer IDs. Existing ordering/visibility/provider-ready and renderer queue tests remain green. Scene uses the typed SceneGlobe ray intersection and rendered surface tiles; this does not port the full Globe renderer."
     },
     {
       "module": "Scene/Polyline",

@@ -608,11 +608,19 @@
     "validatedPercent": 63.57
   },
   {
-    "milestone": "Scene collections, tweens and morph integration",
-    "date": "2026-11-05",
-    "percent": 72.91,
-    "ported": 1064,
+    "milestone": "Imagery collection picking",
+    "date": "2026-11-04",
+    "percent": 72.63,
+    "ported": 1061,
     "implemented": 13,
-    "validatedPercent": 64.31
+    "validatedPercent": 63.74
+  },
+  {
+    "milestone": "Scene collections, tweens and morph integration",
+    "date": "2026-11-06",
+    "percent": 73,
+    "ported": 1065,
+    "implemented": 13,
+    "validatedPercent": 64.48
   }
 ]
