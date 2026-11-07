@@ -109,7 +109,22 @@ fn create_tangent_space_debug_primitive_none() {
     use cesium_rs::core::geometry::{Geometry, GeometryAttributes};
     use cesium_rs::core::PrimitiveType;
     let geom = Geometry::new(GeometryAttributes::default(), None, PrimitiveType::Triangles);
-    let p = create_tangent_space_debug_primitive(CreateTangentSpaceDebugPrimitiveOptions::new(geom));
+    /// Never called: no primitive is created.
+    struct NoGl;
+    impl cesium_rs::renderer::Gl for NoGl {
+        type Object = ();
+        fn drawing_buffer_size(&self) -> Result<[u32; 2], RuntimeError> {
+            unreachable!()
+        }
+        fn invoke(
+            &self,
+            _: &str,
+            _: &[cesium_rs::renderer::GlValue<()>],
+        ) -> Result<cesium_rs::renderer::GlValue<()>, RuntimeError> {
+            unreachable!()
+        }
+    }
+    let p = create_tangent_space_debug_primitive::<NoGl>(CreateTangentSpaceDebugPrimitiveOptions::new(geom));
     assert!(p.is_none());
 }
 

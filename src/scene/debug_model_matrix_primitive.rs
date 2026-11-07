@@ -33,7 +33,7 @@ impl Default for DebugModelMatrixPrimitiveOptions {
 }
 
 /// Draws red, green, and blue axes representing a 4x4 reference frame.
-pub struct DebugModelMatrixPrimitive {
+pub struct DebugModelMatrixPrimitive<G: crate::renderer::Gl + 'static> {
     pub length: f64,
     pub width: f64,
     pub show: bool,
@@ -44,17 +44,17 @@ pub struct DebugModelMatrixPrimitive {
     applied_width: Option<f64>,
     applied_model_matrix: Option<Matrix4>,
     applied_id: Option<String>,
-    primitive: Option<Primitive>,
+    primitive: Option<Primitive<G>>,
     destroyed: bool,
 }
 
-impl Default for DebugModelMatrixPrimitive {
+impl<G: crate::renderer::Gl + 'static> Default for DebugModelMatrixPrimitive<G> {
     fn default() -> Self {
         Self::new(DebugModelMatrixPrimitiveOptions::default())
     }
 }
 
-impl DebugModelMatrixPrimitive {
+impl<G: crate::renderer::Gl + 'static> DebugModelMatrixPrimitive<G> {
     pub fn new(options: DebugModelMatrixPrimitiveOptions) -> Self {
         Self {
             length: options.length.unwrap_or(10_000_000.0),
@@ -71,7 +71,7 @@ impl DebugModelMatrixPrimitive {
         }
     }
 
-    pub fn primitive(&self) -> Option<&Primitive> {
+    pub fn primitive(&self) -> Option<&Primitive<G>> {
         self.primitive.as_ref()
     }
 
@@ -128,9 +128,7 @@ impl DebugModelMatrixPrimitive {
 
             self.primitive = Some(Primitive::new(PrimitiveOptions {
                 geometry_instances: instances,
-                appearance: Some(Box::new(PolylineColorAppearance::new(
-                    PolylineColorAppearanceOptions::default(),
-                ))),
+                appearance: Some(Box::new(PolylineColorAppearance::new(PolylineColorAppearanceOptions::default()))),
                 asynchronous: Some(false),
                 ..Default::default()
             }));
@@ -154,7 +152,7 @@ impl DebugModelMatrixPrimitive {
     }
 }
 
-impl ScenePrimitive for DebugModelMatrixPrimitive {
+impl<G: crate::renderer::Gl + 'static> ScenePrimitive for DebugModelMatrixPrimitive<G> {
     fn pre_passes_update(&mut self, _frame: &mut FrameState) -> crate::scene::scene::Result<()> {
         Ok(())
     }
@@ -183,11 +181,27 @@ impl ScenePrimitive for DebugModelMatrixPrimitive {
 
 #[cfg(test)]
 mod tests {
+
+    /// No update runs in these tests, so the host is never called.
+    struct NoGl;
+    impl crate::renderer::Gl for NoGl {
+        type Object = ();
+        fn drawing_buffer_size(&self) -> Result<[u32; 2], crate::core::RuntimeError> {
+            unreachable!()
+        }
+        fn invoke(
+            &self,
+            _: &str,
+            _: &[crate::renderer::GlValue<()>],
+        ) -> Result<crate::renderer::GlValue<()>, crate::core::RuntimeError> {
+            unreachable!()
+        }
+    }
     use super::*;
 
     #[test]
     fn default_properties_match_upstream() {
-        let prim = DebugModelMatrixPrimitive::default();
+        let prim = DebugModelMatrixPrimitive::<NoGl>::default();
         assert_eq!(prim.length, 10_000_000.0);
         assert_eq!(prim.width, 2.0);
         assert!(prim.show);
@@ -205,7 +219,7 @@ mod tests {
             show: Some(false),
             id: Some("debug_axes".into()),
         };
-        let prim = DebugModelMatrixPrimitive::new(options);
+        let prim = DebugModelMatrixPrimitive::<NoGl>::new(options);
         assert_eq!(prim.length, 500.0);
         assert_eq!(prim.width, 4.0);
         assert!(!prim.show);

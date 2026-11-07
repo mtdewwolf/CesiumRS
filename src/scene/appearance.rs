@@ -33,6 +33,17 @@ pub trait Appearance {
     fn render_state(&self) -> &RenderState;
     fn vertex_format(&self) -> VertexFormat;
 
+    /// `Appearance#uniforms`: uniforms the appearance adds besides its
+    /// material's.
+    fn uniforms(&self) -> Vec<(String, crate::renderer::UniformValue)> {
+        Vec::new()
+    }
+    /// `Appearance#pixelSize`: grows the primitive's bounding volume by this
+    /// many pixels.
+    fn pixel_size(&self) -> Option<f64> {
+        None
+    }
+
     /// `Appearance#getFragmentShaderSource`.
     fn get_fragment_shader_source(&self) -> String {
         let mut parts = Vec::new();

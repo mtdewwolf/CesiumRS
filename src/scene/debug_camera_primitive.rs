@@ -37,25 +37,25 @@ impl Default for DebugCameraPrimitiveOptions {
 }
 
 /// Visualizes the view frustum (planes and outline) of a camera.
-pub struct DebugCameraPrimitive {
+pub struct DebugCameraPrimitive<G: crate::renderer::Gl + 'static> {
     pub frustum_splits: Option<Vec<f64>>,
     pub color: Color,
     pub update_on_change: bool,
     pub show: bool,
     pub id: Option<String>,
 
-    outline_primitives: Vec<Primitive>,
-    planes_primitives: Vec<Primitive>,
+    outline_primitives: Vec<Primitive<G>>,
+    planes_primitives: Vec<Primitive<G>>,
     destroyed: bool,
 }
 
-impl Default for DebugCameraPrimitive {
+impl<G: crate::renderer::Gl + 'static> Default for DebugCameraPrimitive<G> {
     fn default() -> Self {
         Self::new(DebugCameraPrimitiveOptions::default())
     }
 }
 
-impl DebugCameraPrimitive {
+impl<G: crate::renderer::Gl + 'static> DebugCameraPrimitive<G> {
     pub fn new(options: DebugCameraPrimitiveOptions) -> Self {
         Self {
             frustum_splits: options.frustum_splits,
@@ -69,11 +69,11 @@ impl DebugCameraPrimitive {
         }
     }
 
-    pub fn outline_primitives(&self) -> &[Primitive] {
+    pub fn outline_primitives(&self) -> &[Primitive<G>] {
         &self.outline_primitives
     }
 
-    pub fn planes_primitives(&self) -> &[Primitive] {
+    pub fn planes_primitives(&self) -> &[Primitive<G>] {
         &self.planes_primitives
     }
 
@@ -112,11 +112,8 @@ impl DebugCameraPrimitive {
             let up = camera.up_wc();
             let right = camera.right_wc().negate();
 
-            let rotation = Matrix3([
-                right.x, right.y, right.z,
-                up.x, up.y, up.z,
-                direction.x, direction.y, direction.z,
-            ]);
+            let rotation =
+                Matrix3([right.x, right.y, right.z, up.x, up.y, up.z, direction.x, direction.y, direction.z]);
 
             let orientation = Quaternion::from_rotation_matrix(&rotation);
 
@@ -160,10 +157,9 @@ impl DebugCameraPrimitive {
                 if let Some(geom) = planes_geom {
                     let mut instance = GeometryInstance::new(geom, None);
                     let color = Color::new(self.color.red, self.color.green, self.color.blue, 0.1);
-                    instance.attributes.push((
-                        "color".into(),
-                        ColorGeometryInstanceAttribute::from_color(&color).into(),
-                    ));
+                    instance
+                        .attributes
+                        .push(("color".into(), ColorGeometryInstanceAttribute::from_color(&color).into()));
                     instance.id = self.id.clone();
 
                     let planes_prim = Primitive::new(PrimitiveOptions {
@@ -181,20 +177,14 @@ impl DebugCameraPrimitive {
                     self.planes_primitives.push(planes_prim);
                 }
 
-                let outline_geom = FrustumOutlineGeometry {
-                    frustum,
-                    origin: position,
-                    orientation,
-                    draw_near_plane,
-                }
-                .create_geometry();
+                let outline_geom = FrustumOutlineGeometry { frustum, origin: position, orientation, draw_near_plane }
+                    .create_geometry();
 
                 if let Some(geom) = outline_geom {
                     let mut instance = GeometryInstance::new(geom, None);
-                    instance.attributes.push((
-                        "color".into(),
-                        ColorGeometryInstanceAttribute::from_color(&self.color).into(),
-                    ));
+                    instance
+                        .attributes
+                        .push(("color".into(), ColorGeometryInstanceAttribute::from_color(&self.color).into()));
                     instance.id = self.id.clone();
 
                     let outline_prim = Primitive::new(PrimitiveOptions {
@@ -242,11 +232,27 @@ impl DebugCameraPrimitive {
 
 #[cfg(test)]
 mod tests {
+
+    /// No update runs in these tests, so the host is never called.
+    struct NoGl;
+    impl crate::renderer::Gl for NoGl {
+        type Object = ();
+        fn drawing_buffer_size(&self) -> Result<[u32; 2], crate::core::RuntimeError> {
+            unreachable!()
+        }
+        fn invoke(
+            &self,
+            _: &str,
+            _: &[crate::renderer::GlValue<()>],
+        ) -> Result<crate::renderer::GlValue<()>, crate::core::RuntimeError> {
+            unreachable!()
+        }
+    }
     use super::*;
 
     #[test]
     fn default_properties_match_upstream() {
-        let prim = DebugCameraPrimitive::default();
+        let prim = DebugCameraPrimitive::<NoGl>::default();
         assert_eq!(prim.color, Color::CYAN);
         assert!(prim.update_on_change);
         assert!(prim.show);
@@ -264,7 +270,7 @@ mod tests {
             show: Some(false),
             id: Some("debug_cam".into()),
         };
-        let prim = DebugCameraPrimitive::new(options);
+        let prim = DebugCameraPrimitive::<NoGl>::new(options);
         assert_eq!(prim.color, Color::YELLOW);
         assert!(!prim.update_on_change);
         assert!(!prim.show);

@@ -69,8 +69,8 @@
       "module": "Scene/Primitive",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "Partial options and CPU geometry preparation. Constructor fixtures and native failure regressions only. Nonempty drawable geometry returns an explicit unsupported-rendering error; GPU commands, batch tables, asynchronous creation and rendering parity remain unimplemented."
+      "status": "in-progress",
+      "remaining": "Asynchronous worker creation (emulated over frames), rtcCenter rendering and texture-valued material uniforms. The synchronous pipeline is validated against a SwiftShader capture."
     },
     {
       "module": "Scene/PrimitiveCollection",

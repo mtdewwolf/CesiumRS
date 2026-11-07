@@ -155,7 +155,7 @@ fn test_depth_plane_computations() {
 #[test]
 fn test_debug_model_matrix_primitive() {
     let options = DebugModelMatrixPrimitiveOptions::default();
-    let mut primitive = DebugModelMatrixPrimitive::new(options);
+    let mut primitive = DebugModelMatrixPrimitive::<TestGl>::new(options);
     assert_eq!(primitive.length, 10_000_000.0);
     assert!(primitive.show);
     assert!(!primitive.is_destroyed());
@@ -170,7 +170,7 @@ fn test_debug_model_matrix_primitive() {
 #[test]
 fn test_debug_camera_primitive() {
     let options = DebugCameraPrimitiveOptions::default();
-    let mut primitive = DebugCameraPrimitive::new(options);
+    let mut primitive = DebugCameraPrimitive::<TestGl>::new(options);
     assert!(primitive.show);
     assert!(!primitive.is_destroyed());
 
@@ -189,6 +189,6 @@ fn test_create_tangent_space_debug_primitive() {
         None,
         PrimitiveType::Triangles,
     ));
-    let primitive = create_tangent_space_debug_primitive(options);
+    let primitive = create_tangent_space_debug_primitive::<TestGl>(options);
     assert!(primitive.is_none());
 }

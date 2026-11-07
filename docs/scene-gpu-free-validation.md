@@ -146,31 +146,26 @@ images in billboards.
 
 ### Group 6: Primitive and PrimitiveCollection
 
-Prerequisite: **`Scene/BatchTable` (637 lines, todo).** Primitive stores
-per-instance show, color, pick and distance-display values in a batch-table
-texture and rewrites shaders to read it.
+Done for the synchronous path: `tools/cesium/generate-scene-primitive.mjs`
+records Cesium's state, uploads, attribute pointers, exact shader text, render
+states, commands, bounding volumes and batch-table values on SwiftShader across
+every scene mode, picking, depth-fail and instance-attribute writes, replayed
+in `tests/scene_primitive.rs`. It builds on the validated `BatchTable`.
 
-Then, in order:
+Remaining:
 
-1. Shader modification: `_modifyShaderPosition`, batch-table and
-   per-instance-attribute rewrites, `modifyForEncodedNormals`,
-   appearance-specific defines. Validate as exact text (layer 1).
-2. Geometry: workers and `combineGeometry` are validated, so
-   `VertexArray.fromGeometry` bytes and attribute locations can be compared
-   directly (layer 1). `scene_geometry_buffers` in
-   `examples/renderer_validation.rs` already covers part of this.
-3. Batch-table texture bytes after instance attribute updates (layer 1).
-4. Commands per pass, including pick commands and 2D/Columbus duplicates
-   (layer 1 field comparison, then layer 3 pixels).
-5. Asynchronous creation: drive the state machine with the native worker
-   adapter and compare readiness across frames.
+1. Asynchronous creation: drive the state machine with the native worker
+   adapter and compare readiness across frames (today it is emulated over
+   updates).
+2. `rtcCenter` rendering and texture-valued material uniforms.
+3. Layer 3 pixels for a translucent and a depth-fail primitive (optional).
 
 PrimitiveCollection's remaining work (identity membership and events) is
 CPU-only and can be validated with ordinary pinned traces.
 
 ## Suggested order
 
-1. **BatchTable** (done), then **Primitive** (group 6). This unblocks
+1. **BatchTable** (done), then **Primitive** (group 6, synchronous path done). This unblocks
    DebugCameraPrimitive, DebugModelMatrixPrimitive and much of the rest of
    Scene.
 2. **PointPrimitiveCollection** (done), the simplest VertexArrayFacade

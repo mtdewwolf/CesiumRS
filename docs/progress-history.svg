@@ -10,9 +10,9 @@
   @media (prefers-color-scheme:dark){.history-line{stroke:#58a6ff}.history-point,.history-area{fill:#58a6ff}}
 </style>
 <title id="history-title">CesiumRS implementation progress: 73.6%</title>
-<desc id="history-description">84 chronological milestones, Oct 16, 2026 – Nov 6, 2026. Progress increased from 0.0% to 73.6%. Latest milestone: Scene collections, tweens and morph integration. The horizontal axis counts milestones; every milestone is retained in the line.</desc>
+<desc id="history-description">84 chronological milestones, Oct 16, 2026 – Nov 7, 2026. Progress increased from 0.0% to 73.6%. Latest milestone: Scene collections, tweens and morph integration. The horizontal axis counts milestones; every milestone is retained in the line.</desc>
 <text class="history-heading" x="16" y="28">Implementation progress</text>
-<text class="dim" x="16" y="51">84 milestones · Oct 16, 2026 – Nov 6, 2026</text>
+<text class="dim" x="16" y="51">84 milestones · Oct 16, 2026 – Nov 7, 2026</text>
 <text class="history-value" x="616" y="35" text-anchor="end">73.6%</text>
 <text class="dim" x="616" y="60" text-anchor="end">implemented</text>
 <rect class="bg" x="60" y="240.0" width="556" height="1"/>
@@ -110,7 +110,7 @@
 <circle fill="transparent" cx="595.9" cy="102.2" r="3"><title>81. Imagery GPU pipeline and surface-tile tracker · 2026-11-02 · 72.5%</title></circle>
 <circle fill="transparent" cx="602.6" cy="102.2" r="3"><title>82. Imagery requests and provider factories · 2026-11-04 · 72.5%</title></circle>
 <circle fill="transparent" cx="609.3" cy="102.0" r="3"><title>83. Imagery collection picking · 2026-11-04 · 72.6%</title></circle>
-<circle class="history-point" cx="616.0" cy="100.1" r="4"><title>84. Scene collections, tweens and morph integration · 2026-11-06 · 73.6%</title></circle>
+<circle class="history-point" cx="616.0" cy="100.1" r="4"><title>84. Scene collections, tweens and morph integration · 2026-11-07 · 73.6%</title></circle>
 <text class="dim history-axis" x="60.0" y="263" text-anchor="middle">1</text>
 <text class="dim history-axis" x="247.6" y="263" text-anchor="middle">29</text>
 <text class="dim history-axis" x="428.4" y="263" text-anchor="middle">56</text>

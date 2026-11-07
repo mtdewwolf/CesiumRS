@@ -5099,7 +5099,7 @@
   "Scene/Primitive": {
     "status": "partial",
     "rust": "scene::primitive",
-    "note": "Partial options and CPU geometry preparation. Constructor fixtures and native failure regressions only. Nonempty drawable geometry returns an explicit unsupported-rendering error; GPU commands, batch tables, asynchronous creation and rendering parity remain unimplemented."
+    "note": "Synchronous update pipeline as Cesium's: createBatchTable (color, show, distance display condition with its bounding-sphere slots, offset and offset2D, depth-fail color, pick color), combineGeometry, vertex arrays with the Columbus-view swizzle and geometry-instance release, the exact shader rewrites (_modifyShaderPosition, show, color, offset, distance display condition, encoded normals, pick, depth clamp) and validateShaderMatching, render states including two-pass translucency and depth-fail, uniforms, commands per vertex array, bounding volumes for every scene mode with pixel-size padding, batch-table bounding spheres and 2D offsets, getGeometryInstanceAttributes reads and writes, and destroy. A SwiftShader capture of the pinned engine (nine scenarios, 24 updates, every scene mode, picking, material swaps, depth-fail, offsets, scene3DOnly) is matched on state, uploads, attribute pointers, exact shader text, render states, commands, bounding volumes and batch-table values; mutation-checked. Remaining: asynchronous creation is emulated over frames rather than run on workers, rtcCenter rendering is not captured, and texture-valued material uniforms are not bound."
   },
   "Scene/PrimitiveCollection": {
     "status": "ported",

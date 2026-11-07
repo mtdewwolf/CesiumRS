@@ -19,19 +19,15 @@ pub struct CreateTangentSpaceDebugPrimitiveOptions {
 
 impl CreateTangentSpaceDebugPrimitiveOptions {
     pub fn new(geometry: Geometry) -> Self {
-        Self {
-            geometry,
-            length: None,
-            model_matrix: None,
-        }
+        Self { geometry, length: None, model_matrix: None }
     }
 }
 
 /// Creates a [`Primitive`] with lines visualizing normal, tangent, and bitangent
 /// attributes of a geometry.
-pub fn create_tangent_space_debug_primitive(
+pub fn create_tangent_space_debug_primitive<G: crate::renderer::Gl + 'static>(
     options: CreateTangentSpaceDebugPrimitiveOptions,
-) -> Option<Primitive> {
+) -> Option<Primitive<G>> {
     let geometry = options.geometry;
     let length = options.length.unwrap_or(10000.0);
     let model_matrix = options.model_matrix.unwrap_or(Matrix4::IDENTITY);
@@ -76,13 +72,11 @@ pub fn create_tangent_space_debug_primitive(
 
     let primitive = Primitive::new(PrimitiveOptions {
         geometry_instances: instances,
-        appearance: Some(Box::new(PerInstanceColorAppearance::new(
-            PerInstanceColorAppearanceOptions {
-                flat: Some(true),
-                translucent: Some(false),
-                ..Default::default()
-            },
-        ))),
+        appearance: Some(Box::new(PerInstanceColorAppearance::new(PerInstanceColorAppearanceOptions {
+            flat: Some(true),
+            translucent: Some(false),
+            ..Default::default()
+        }))),
         asynchronous: Some(false),
         ..Default::default()
     });
@@ -92,6 +86,22 @@ pub fn create_tangent_space_debug_primitive(
 
 #[cfg(test)]
 mod tests {
+
+    /// No update runs in these tests, so the host is never called.
+    struct NoGl;
+    impl crate::renderer::Gl for NoGl {
+        type Object = ();
+        fn drawing_buffer_size(&self) -> Result<[u32; 2], crate::core::RuntimeError> {
+            unreachable!()
+        }
+        fn invoke(
+            &self,
+            _: &str,
+            _: &[crate::renderer::GlValue<()>],
+        ) -> Result<crate::renderer::GlValue<()>, crate::core::RuntimeError> {
+            unreachable!()
+        }
+    }
     use super::*;
     use crate::core::geometry::{GeometryAttribute, GeometryAttributes};
     use crate::core::PrimitiveType;
@@ -111,29 +121,22 @@ mod tests {
             PrimitiveType::Triangles,
         );
 
-        let prim = create_tangent_space_debug_primitive(
-            CreateTangentSpaceDebugPrimitiveOptions::new(geom),
-        );
+        let prim = create_tangent_space_debug_primitive::<NoGl>(CreateTangentSpaceDebugPrimitiveOptions::new(geom));
         assert!(prim.is_some());
         let primitive = prim.unwrap();
-        assert!(!primitive.asynchronous);
+        assert!(!primitive.asynchronous());
     }
 
     #[test]
     fn returns_none_when_no_tangent_space_attributes() {
         let positions = vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0];
         let geom = Geometry::new(
-            GeometryAttributes {
-                position: Some(GeometryAttribute::doubles(3, positions)),
-                ..Default::default()
-            },
+            GeometryAttributes { position: Some(GeometryAttribute::doubles(3, positions)), ..Default::default() },
             None,
             PrimitiveType::Triangles,
         );
 
-        let prim = create_tangent_space_debug_primitive(
-            CreateTangentSpaceDebugPrimitiveOptions::new(geom),
-        );
+        let prim = create_tangent_space_debug_primitive::<NoGl>(CreateTangentSpaceDebugPrimitiveOptions::new(geom));
         assert!(prim.is_none());
     }
 }
