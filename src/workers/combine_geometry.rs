@@ -420,6 +420,7 @@ fn unpack_instances(data: &[f64]) -> Result<Vec<GeometryInstance>, RuntimeError>
             attributes: vec![("offset".to_string(), attribute.into())],
             west_hemisphere_geometry: None,
             east_hemisphere_geometry: None,
+            pick_primitive: None,
         });
     }
     Ok(instances)

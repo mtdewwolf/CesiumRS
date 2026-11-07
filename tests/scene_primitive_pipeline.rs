@@ -88,6 +88,7 @@ fn input_parameters(input: &Value) -> CombineGeometryParameters {
             },
             west_hemisphere_geometry: None,
             east_hemisphere_geometry: None,
+            pick_primitive: None,
         })
         .collect();
     CombineGeometryParameters {

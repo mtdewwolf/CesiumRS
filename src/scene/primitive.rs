@@ -146,6 +146,12 @@ struct BoundingSphereIndices {
 
 static NEXT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
+/// A fresh object id from the sequence primitives draw theirs from, for
+/// objects that pick as a primitive (`GeometryInstance::pick_primitive`).
+pub fn next_object_id() -> u64 {
+    NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+}
+
 pub struct Primitive<G: Gl + 'static> {
     pub show: bool,
     pub model_matrix: Matrix4,
@@ -239,7 +245,7 @@ impl<G: Gl + 'static> Primitive<G> {
             release_geometry_instances: options.release_geometry_instances.unwrap_or(true),
             allow_picking: options.allow_picking.unwrap_or(true),
             asynchronous: options.asynchronous.unwrap_or(true),
-            id: NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+            id: next_object_id(),
             geometry_instances: Some(options.geometry_instances),
             created_instances: None,
             combined: None,
@@ -433,8 +439,10 @@ impl<G: Gl + 'static> Primitive<G> {
                 let a = &instance.attributes.iter().find(|(n, _)| n == name).unwrap().1;
                 table.set_batched_attribute(i, j, Self::attribute_value(&a.value))?;
             }
-            let primitive: Rc<dyn std::any::Any> =
-                Rc::new(PrimitivePick { primitive: self.id, id: instance.id.clone() });
+            let primitive: Rc<dyn std::any::Any> = Rc::new(PrimitivePick {
+                primitive: instance.pick_primitive.unwrap_or(self.id),
+                id: instance.id.clone(),
+            });
             let mut object = ScenePickObject::new(primitive, Rc::new(std::cell::Cell::new(true)));
             object.id = instance.id.clone().map(MetadataValue::String);
             let pick_id = context.create_pick_id(Rc::new(object))?;
@@ -1231,6 +1239,11 @@ impl<G: Gl + 'static> Primitive<G> {
     }
 
     /// The commands queued by the last update.
+    /// The id naming this primitive in its commands' owner
+    /// (`Primitive#{id}`) and its pick ids.
+    pub fn object_id(&self) -> u64 {
+        self.id
+    }
     pub fn commands(&self) -> &[PrimitiveCommand] {
         &self.commands
     }

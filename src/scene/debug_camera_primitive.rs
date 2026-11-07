@@ -11,7 +11,6 @@ use super::primitive::{Primitive, PrimitiveOptions};
 use super::scene::ScenePrimitive;
 use crate::core::color_geometry_instance_attribute::ColorGeometryInstanceAttribute;
 use crate::core::frustum_geometry::{Frustum, FrustumGeometry, FrustumOutlineGeometry};
-use crate::core::orthographic_frustum::OrthographicFrustum;
 use crate::core::{Color, GeometryInstance, Matrix3, Quaternion, VertexFormat};
 
 /// Options for configuring a [`DebugCameraPrimitive`].
@@ -46,6 +45,7 @@ pub struct DebugCameraPrimitive<G: crate::renderer::Gl + 'static> {
 
     outline_primitives: Vec<Primitive<G>>,
     planes_primitives: Vec<Primitive<G>>,
+    object_id: u64,
     destroyed: bool,
 }
 
@@ -65,8 +65,15 @@ impl<G: crate::renderer::Gl + 'static> DebugCameraPrimitive<G> {
             id: options.id,
             outline_primitives: Vec::new(),
             planes_primitives: Vec::new(),
+            object_id: super::primitive::next_object_id(),
             destroyed: false,
         }
+    }
+
+    /// The id the frustum's pick objects report as their primitive
+    /// (Cesium's `pickPrimitive: this`).
+    pub fn object_id(&self) -> u64 {
+        self.object_id
     }
 
     pub fn outline_primitives(&self) -> &[Primitive<G>] {
@@ -83,11 +90,10 @@ impl<G: crate::renderer::Gl + 'static> DebugCameraPrimitive<G> {
         }
 
         if self.update_on_change {
-            for p in &mut self.outline_primitives {
-                let _ = p.destroy();
-            }
-            for p in &mut self.planes_primitives {
-                let _ = p.destroy();
+            // Recreate the primitives every frame.
+            for (outline, planes) in self.outline_primitives.iter_mut().zip(&mut self.planes_primitives) {
+                outline.destroy()?;
+                planes.destroy()?;
             }
             self.outline_primitives.clear();
             self.planes_primitives.clear();
@@ -135,13 +141,10 @@ impl<G: crate::renderer::Gl + 'static> DebugCameraPrimitive<G> {
                         (Frustum::Orthographic(o_copy), i == 0)
                     }
                     CameraFrustum::OrthographicOffCenter(o) => {
-                        let width = (o.right - o.left).abs();
-                        let height = (o.top - o.bottom).abs();
-                        let aspect = if height > 0.0 { width / height } else { 1.0 };
-                        let mut ortho = OrthographicFrustum::new(width, aspect);
-                        ortho.near = near;
-                        ortho.far = far;
-                        (Frustum::Orthographic(ortho), i == 0)
+                        let mut o_copy = *o;
+                        o_copy.near = near;
+                        o_copy.far = far;
+                        (Frustum::OrthographicOffCenter(o_copy), i == 0)
                     }
                 };
 
@@ -161,6 +164,7 @@ impl<G: crate::renderer::Gl + 'static> DebugCameraPrimitive<G> {
                         .attributes
                         .push(("color".into(), ColorGeometryInstanceAttribute::from_color(&color).into()));
                     instance.id = self.id.clone();
+                    instance.pick_primitive = Some(self.object_id);
 
                     let planes_prim = Primitive::new(PrimitiveOptions {
                         geometry_instances: vec![instance],
@@ -186,6 +190,7 @@ impl<G: crate::renderer::Gl + 'static> DebugCameraPrimitive<G> {
                         .attributes
                         .push(("color".into(), ColorGeometryInstanceAttribute::from_color(&self.color).into()));
                     instance.id = self.id.clone();
+                    instance.pick_primitive = Some(self.object_id);
 
                     let outline_prim = Primitive::new(PrimitiveOptions {
                         geometry_instances: vec![instance],
@@ -204,11 +209,10 @@ impl<G: crate::renderer::Gl + 'static> DebugCameraPrimitive<G> {
             }
         }
 
-        for p in &mut self.outline_primitives {
-            p.update(frame_state)?;
-        }
-        for p in &mut self.planes_primitives {
-            p.update(frame_state)?;
+        // Cesium updates each split's outline, then its planes.
+        for (outline, planes) in self.outline_primitives.iter_mut().zip(&mut self.planes_primitives) {
+            outline.update(frame_state)?;
+            planes.update(frame_state)?;
         }
         Ok(())
     }

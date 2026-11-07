@@ -5492,14 +5492,14 @@
     "note": "CPU geometry and state implemented; rendering is not yet supported."
   },
   "Scene/DebugCameraPrimitive": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::debug_camera_primitive",
-    "note": "CPU geometry and state implemented; rendering is not yet supported."
+    "note": "Cesium's update: per frustum split a translucent FrustumGeometry planes primitive and an opaque FrustumOutlineGeometry primitive, recreated every frame with updateOnChange, updated outline-then-planes per split, with the camera's negated right axis, perspective, orthographic and off-center orthographic frusta (the last through FrustumGeometry's synchronous plane path), and pickPrimitive. The camera is passed to update instead of held. Validated with the Primitive SwiftShader capture: four scenarios, seven updates, matched on uploads, released buffers, command order and every inner Primitive; mutation-checked."
   },
   "Scene/DebugModelMatrixPrimitive": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::debug_model_matrix_primitive",
-    "note": "CPU geometry and state implemented; rendering is not yet supported."
+    "note": "Cesium's update: rebuilds the three PolylineColorAppearance axes on any change of matrix, length, width or id (destroying the old primitive), including the (0,0,0)-translation workaround written into the public modelMatrix, which makes the next update rebuild once more; instances pick as the debug primitive (pickPrimitive). Validated with the Primitive SwiftShader capture: two scenarios, nine updates, matched on uploads, released buffers, command order and every inner Primitive (shaders, render states, commands, volumes, batch values); mutation-checked."
   },
   "Scene/GaussianSplatRenderResources": {
     "status": "implemented",

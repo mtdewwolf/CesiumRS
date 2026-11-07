@@ -8,6 +8,7 @@ use super::geometry::{Geometry, GeometryAttribute, GeometryAttributes};
 use super::matrix3::Matrix3;
 use super::matrix4::Matrix4;
 use super::orthographic_frustum::OrthographicFrustum;
+use super::orthographic_off_center_frustum::OrthographicOffCenterFrustum;
 use super::perspective_frustum::PerspectiveFrustum;
 use super::primitive_type::PrimitiveType;
 use super::quaternion::Quaternion;
@@ -18,7 +19,13 @@ use super::vertex_format::VertexFormat;
 pub enum Frustum {
     Perspective(PerspectiveFrustum),
     Orthographic(OrthographicFrustum),
+    /// Cesium builds this one only synchronously (its corners come from the
+    /// frustum's own planes); its worker packing has no type for it, so the
+    /// port packs it as type 2 with its six planes.
+    OrthographicOffCenter(OrthographicOffCenterFrustum),
 }
+
+const OFF_CENTER_PACKED_LENGTH: usize = 6;
 
 impl Frustum {
     /// What Cesium's geometries store: `PerspectiveFrustum.clone` does not
@@ -38,10 +45,12 @@ impl Frustum {
         match self {
             Self::Perspective(_) => PerspectiveFrustum::PACKED_LENGTH,
             Self::Orthographic(_) => OrthographicFrustum::PACKED_LENGTH,
+            Self::OrthographicOffCenter(_) => OFF_CENTER_PACKED_LENGTH,
         }
     }
 
-    /// Writes the type (0 perspective, 1 orthographic) and the frustum;
+    /// Writes the type (0 perspective, 1 orthographic, 2 off-center
+    /// orthographic) and the frustum;
     /// returns the next index.
     fn pack(&self, array: &mut [f64], i: usize) -> usize {
         match self {
@@ -53,6 +62,10 @@ impl Frustum {
                 array[i] = 1.0;
                 f.pack(array, i + 1);
             }
+            Self::OrthographicOffCenter(f) => {
+                array[i] = 2.0;
+                array[i + 1..i + 7].copy_from_slice(&[f.left, f.right, f.top, f.bottom, f.near, f.far]);
+            }
         }
         i + 1 + self.packed_length()
     }
@@ -60,6 +73,9 @@ impl Frustum {
     fn unpack(array: &[f64], i: usize) -> (Self, usize) {
         let frustum = if array[i] == 0.0 {
             Self::Perspective(PerspectiveFrustum::unpack(array, i + 1))
+        } else if array[i] == 2.0 {
+            let a = &array[i + 1..i + 7];
+            Self::OrthographicOffCenter(OrthographicOffCenterFrustum::new(a[0], a[1], a[2], a[3], a[4], a[5]))
         } else {
             Self::Orthographic(OrthographicFrustum::unpack(array, i + 1))
         };
@@ -106,10 +122,14 @@ pub fn compute_near_far_planes(origin: Cartesian3, orientation: &Quaternion, fru
                 }
             }
         }
-        Frustum::Orthographic(f) => {
+        Frustum::Orthographic(_) | Frustum::OrthographicOffCenter(_) => {
             let inverse_view = view.inverse_transformation();
-            let off_center = f.off_center_frustum();
-            let splits = [0.0, f.near, f.far];
+            let (off_center, near, far) = match frustum {
+                Frustum::Orthographic(f) => (f.off_center_frustum(), f.near, f.far),
+                Frustum::OrthographicOffCenter(f) => (*f, f.near, f.far),
+                Frustum::Perspective(_) => unreachable!(),
+            };
+            let splits = [0.0, near, far];
             for i in 0..2 {
                 let (near, far) = (splits[i], splits[i + 1]);
                 for (j, ndc) in FRUSTUM_CORNERS_NDC.iter().enumerate() {
@@ -301,5 +321,36 @@ impl FrustumOutlineGeometry {
         let mut geometry = Geometry::new(attributes, Some(TypedArray::Uint16(indices)), PrimitiveType::Lines);
         geometry.bounding_sphere = Some(bounding_sphere);
         Some(geometry)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn off_center_frustum_packs_with_its_planes() {
+        let geometry = FrustumGeometry {
+            frustum: Frustum::OrthographicOffCenter(OrthographicOffCenterFrustum::new(
+                -5.0, 15.0, 6.0, -2.0, 1.0, 100.0,
+            )),
+            origin: Cartesian3::new(1.0, 2.0, 3.0),
+            orientation: Quaternion::IDENTITY,
+            vertex_format: VertexFormat::POSITION_ONLY,
+            draw_near_plane: false,
+        };
+        let mut array = vec![0.0; geometry.packed_length() + 2];
+        geometry.pack(&mut array, 2);
+        assert_eq!(array[2], 2.0);
+        assert_eq!(FrustumGeometry::unpack(&array, 2), geometry);
+        let outline = FrustumOutlineGeometry {
+            frustum: geometry.frustum,
+            origin: geometry.origin,
+            orientation: geometry.orientation,
+            draw_near_plane: true,
+        };
+        let mut array = vec![0.0; outline.packed_length()];
+        outline.pack(&mut array, 0);
+        assert_eq!(FrustumOutlineGeometry::unpack(&array, 0), outline);
     }
 }

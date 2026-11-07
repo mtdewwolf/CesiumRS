@@ -461,15 +461,15 @@
       "module": "Scene/DebugCameraPrimitive",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU geometry and state implemented; rendering is not yet supported."
+      "status": "validated",
+      "remaining": ""
     },
     {
       "module": "Scene/DebugModelMatrixPrimitive",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU geometry and state implemented; rendering is not yet supported."
+      "status": "validated",
+      "remaining": ""
     },
     {
       "module": "Scene/GaussianSplatRenderResources",

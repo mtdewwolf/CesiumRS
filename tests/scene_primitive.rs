@@ -21,6 +21,7 @@ use std::{
 struct Host {
     next: Rc<Cell<u32>>,
     calls: Rc<RefCell<Vec<Value>>>,
+    deleted_buffers: Rc<Cell<u32>>,
 }
 
 fn fnv(bytes: &[u8]) -> String {
@@ -54,6 +55,9 @@ impl Gl for Host {
             "vertexAttribPointer" => Some(json!(["pointer", n(0), n(1), n(2), n(3), n(4), n(5)])),
             _ => None,
         };
+        if name == "deleteBuffer" {
+            self.deleted_buffers.set(self.deleted_buffers.get() + 1);
+        }
         if let Some(r) = record {
             self.calls.borrow_mut().push(r);
         }
@@ -361,11 +365,22 @@ fn updates_match_cesium_shaders_uploads_commands_and_volumes() {
     assert_eq!(checked, 24);
 }
 
-fn check(p: &Primitive<Host>, host: &Host, frame: &FrameState, e: &Value, ctx: &str) {
-    assert_eq!(json!(p.state().value()), e["state"], "{ctx}: state");
-    assert_eq!(json!(p.ready()), e["ready"], "{ctx}: ready");
+fn check_uploads(host: &Host, e: &Value, ctx: &str) {
     let calls = Value::Array(host.calls.borrow().clone());
     assert!(same(&calls, &e["uploads"]), "{ctx}: uploads\n actual   {calls}\n expected {}", e["uploads"]);
+}
+
+fn check(p: &Primitive<Host>, host: &Host, frame: &FrameState, e: &Value, ctx: &str) {
+    check_uploads(host, e, ctx);
+    assert_eq!(frame.command_list.len(), p.commands().len(), "{ctx}: queued");
+    check_primitive(p, e, ctx, true);
+}
+
+/// `queued`: whether the primitive queued its commands this frame (Cesium's
+/// capture lists only the queued ones).
+fn check_primitive(p: &Primitive<Host>, e: &Value, ctx: &str, queued: bool) {
+    assert_eq!(json!(p.state().value()), e["state"], "{ctx}: state");
+    assert_eq!(json!(p.ready()), e["ready"], "{ctx}: ready");
 
     // Shader text.
     let (sp, df) = p.shaders();
@@ -405,9 +420,8 @@ fn check(p: &Primitive<Host>, host: &Host, frame: &FrameState, e: &Value, ctx: &
     }
 
     // Commands.
-    let commands = p.commands();
+    let commands = if queued { p.commands() } else { &[] };
     let wanted = e["commands"].as_array().unwrap();
-    assert_eq!(frame.command_list.len(), commands.len(), "{ctx}: queued");
     assert_eq!(commands.len(), wanted.len(), "{ctx}: command count");
     for (i, (c, w)) in commands.iter().zip(wanted).enumerate() {
         let cc = format!("{ctx}: command {i}");
@@ -464,4 +478,156 @@ fn check(p: &Primitive<Host>, host: &Host, frame: &FrameState, e: &Value, ctx: &
     assert_eq!(json!(offsets), e["offsetsUpdated"], "{ctx}: offsets updated");
     assert_eq!(json!(spheres_updated), e["boundingSpheresUpdated"], "{ctx}: bounding spheres updated");
     assert_eq!(json!(recompute), e["recompute"], "{ctx}: recompute");
+}
+
+fn camera(c: &Value) -> Camera {
+    let mut camera = Camera::new(CameraOptions::new(800.0, 600.0));
+    let v = |k: &str| {
+        let a = nums(&c[k]);
+        Cartesian3::new(a[0], a[1], a[2])
+    };
+    camera.position = v("position");
+    camera.direction = v("direction").normalize();
+    camera.right = camera.direction.cross(v("up")).normalize();
+    camera.up = camera.right.cross(camera.direction);
+    let f = c["frustum"].as_array().unwrap();
+    let (near, far) = (num(&f[3]), num(&f[4]));
+    if f[0] == "offCenter" {
+        let p = nums(&f[1]);
+        camera.frustum =
+            CameraFrustum::OrthographicOffCenter(OrthographicOffCenterFrustum::new(p[0], p[1], p[2], p[3], near, far));
+        return camera;
+    }
+    let (a, b) = (num(&f[1]), num(&f[2]));
+    camera.frustum = if f[0] == "perspective" {
+        let mut p = PerspectiveFrustum::new(a, b);
+        (p.near, p.far) = (near, far);
+        CameraFrustum::Perspective(p)
+    } else {
+        let mut o = OrthographicFrustum::new(a, b);
+        (o.near, o.far) = (near, far);
+        CameraFrustum::Orthographic(o)
+    };
+    camera
+}
+
+enum Debug {
+    Axes(Box<DebugModelMatrixPrimitive<Host>>),
+    Camera(DebugCameraPrimitive<Host>, Box<Camera>),
+}
+
+/// `DebugModelMatrixPrimitive` and `DebugCameraPrimitive` against
+/// `tests/data/scene-debug-primitives.json`: after every update, the frame's
+/// uploads, the order commands are queued in, and every inner `Primitive`
+/// as above.
+#[test]
+fn debug_primitives_match_cesium() {
+    let fixture: Value = serde_json::from_str(include_str!("data/scene-debug-primitives.json")).unwrap();
+    let mut checked = 0;
+    for (name, s) in fixture["scenarios"].as_object().unwrap() {
+        let host = Host::default();
+        let context = Context::new_webgl2(host.clone());
+        let mut frame = frame(&context);
+        (frame.mode, frame.morph_time, frame.passes.render) = (SceneMode::Scene3D, 1., true);
+        let o = &s["options"];
+        let mut debug = if s["kind"] == "camera" {
+            Debug::Camera(
+                DebugCameraPrimitive::new(DebugCameraPrimitiveOptions {
+                    frustum_splits: o.get("frustumSplits").map(nums),
+                    color: o.get("color").map(color),
+                    update_on_change: o["updateOnChange"].as_bool(),
+                    id: o["id"].as_str().map(String::from),
+                    ..Default::default()
+                }),
+                Box::new(camera(&s["camera"])),
+            )
+        } else {
+            Debug::Axes(Box::new(DebugModelMatrixPrimitive::new(DebugModelMatrixPrimitiveOptions {
+                length: o["length"].as_f64(),
+                width: o["width"].as_f64(),
+                model_matrix: o.get("modelMatrix").map(matrix),
+                id: o["id"].as_str().map(String::from),
+                ..Default::default()
+            })))
+        };
+        let mut steps = fixture["capture"][name].as_array().unwrap().iter();
+        for (op_index, op) in s["ops"].as_array().unwrap().iter().enumerate() {
+            let ctx = format!("{name} op {op_index} {op}");
+            if op[0] == "set" {
+                match (&mut debug, op[1].as_str().unwrap()) {
+                    (Debug::Axes(d), "length") => d.length = num(&op[2]),
+                    (Debug::Axes(d), "width") => d.width = num(&op[2]),
+                    (Debug::Axes(d), "id") => d.id = op[2].as_str().map(String::from),
+                    (Debug::Axes(d), "modelMatrix") => d.model_matrix = matrix(&op[2]),
+                    (Debug::Axes(d), _) => d.show = op[2].as_bool().unwrap(),
+                    (Debug::Camera(d, _), _) => d.show = op[2].as_bool().unwrap(),
+                }
+                continue;
+            }
+            frame.command_list.clear();
+            host.calls.borrow_mut().clear();
+            host.deleted_buffers.set(0);
+            match &mut debug {
+                Debug::Axes(d) => d.update(&mut frame).unwrap(),
+                Debug::Camera(d, camera) => d.update(camera, &mut frame).unwrap(),
+            }
+            let primitives: Vec<&Primitive<Host>> = match &debug {
+                Debug::Axes(d) => d.primitive().into_iter().collect(),
+                Debug::Camera(d, _) => {
+                    d.outline_primitives().iter().zip(d.planes_primitives()).flat_map(|(o, p)| [o, p]).collect()
+                }
+            };
+            for callback in std::mem::take(&mut frame.after_render) {
+                callback().unwrap();
+            }
+            let e = steps.next().unwrap();
+            check_uploads(&host, e, &ctx);
+            assert_eq!(json!(host.deleted_buffers.get()), e["deletedBuffers"], "{ctx}: deleted buffers");
+            let owners: Vec<i64> = frame
+                .command_list
+                .iter()
+                .map(|c| {
+                    let owner = c.metadata.owner.as_deref();
+                    primitives
+                        .iter()
+                        .position(|p| owner == Some(format!("Primitive#{}", p.object_id()).as_str()))
+                        .map_or(-1, |i| i as i64)
+                })
+                .collect();
+            assert_eq!(json!(owners), e["owners"], "{ctx}: command order");
+            let wanted = e["primitives"].as_array().unwrap();
+            assert_eq!(primitives.len(), wanted.len(), "{ctx}: primitives");
+            for (i, (p, w)) in primitives.iter().zip(wanted).enumerate() {
+                check_primitive(p, w, &format!("{ctx} primitive {i}"), owners.contains(&(i as i64)));
+            }
+            if let Debug::Axes(d) = &debug {
+                assert!(same(&json!(d.model_matrix.0.to_vec()), &e["modelMatrix"]), "{ctx}: public model matrix");
+            }
+            // Every instance picks as the debug primitive (`pickPrimitive: this`).
+            let owner = match &debug {
+                Debug::Axes(d) => d.object_id(),
+                Debug::Camera(d, _) => d.object_id(),
+            };
+            for p in &primitives {
+                for index in 0..p.batch_table().map_or(0, |t| t.number_of_instances()) {
+                    let color = p.instance_pick_color(index).unwrap().to_rgba();
+                    let object = context.pick_object::<ScenePickObject>(color).expect("a pick object");
+                    let pick = object
+                        .primitive
+                        .clone()
+                        .downcast::<PrimitivePick>()
+                        .unwrap_or_else(|_| panic!("a primitive pick"));
+                    assert_eq!(pick.primitive, owner, "{ctx}: pick primitive");
+                    assert_ne!(pick.primitive, p.object_id(), "{ctx}: pick primitive");
+                }
+            }
+            checked += 1;
+        }
+        assert!(steps.next().is_none(), "{name}: unreplayed steps");
+        match &mut debug {
+            Debug::Axes(d) => d.destroy(),
+            Debug::Camera(d, _) => d.destroy(),
+        }
+    }
+    assert_eq!(checked, 16);
 }

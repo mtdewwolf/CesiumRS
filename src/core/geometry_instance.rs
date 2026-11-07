@@ -19,6 +19,9 @@ pub struct GeometryInstance {
     /// the antimeridian.
     pub west_hemisphere_geometry: Option<Geometry>,
     pub east_hemisphere_geometry: Option<Geometry>,
+    /// Cesium's `pickPrimitive`: the object id a `Primitive` reports as the
+    /// picked primitive instead of its own (`Primitive::object_id`).
+    pub pick_primitive: Option<u64>,
 }
 
 impl GeometryInstance {
@@ -31,6 +34,7 @@ impl GeometryInstance {
             attributes: Vec::new(),
             west_hemisphere_geometry: None,
             east_hemisphere_geometry: None,
+            pick_primitive: None,
         }
     }
 }

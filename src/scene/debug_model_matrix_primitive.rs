@@ -45,6 +45,7 @@ pub struct DebugModelMatrixPrimitive<G: crate::renderer::Gl + 'static> {
     applied_model_matrix: Option<Matrix4>,
     applied_id: Option<String>,
     primitive: Option<Primitive<G>>,
+    object_id: u64,
     destroyed: bool,
 }
 
@@ -67,8 +68,15 @@ impl<G: crate::renderer::Gl + 'static> DebugModelMatrixPrimitive<G> {
             applied_model_matrix: None,
             applied_id: None,
             primitive: None,
+            object_id: super::primitive::next_object_id(),
             destroyed: false,
         }
+    }
+
+    /// The id the axes' pick objects report as their primitive (Cesium's
+    /// `pickPrimitive: this`).
+    pub fn object_id(&self) -> u64 {
+        self.object_id
     }
 
     pub fn primitive(&self) -> Option<&Primitive<G>> {
@@ -92,13 +100,18 @@ impl<G: crate::renderer::Gl + 'static> DebugModelMatrixPrimitive<G> {
             self.applied_width = Some(self.width);
             self.applied_id = self.id.clone();
 
-            let mut matrix = self.model_matrix;
-            // Workaround projecting (0, 0, 0)
-            if matrix[12] == 0.0 && matrix[13] == 0.0 && matrix[14] == 0.0 {
-                matrix[14] = 0.01;
+            if let Some(mut old) = self.primitive.take() {
+                old.destroy()?;
             }
 
-            let scaled_matrix = matrix.multiply_by_uniform_scale(self.length);
+            // Workaround projecting (0, 0, 0). Cesium writes it into the
+            // public matrix after recording the applied one, so the next
+            // update sees a change and rebuilds once more.
+            if self.model_matrix[12] == 0.0 && self.model_matrix[13] == 0.0 && self.model_matrix[14] == 0.0 {
+                self.model_matrix[14] = 0.01;
+            }
+
+            let scaled_matrix = self.model_matrix.multiply_by_uniform_scale(self.length);
 
             let make_instance = |axis: Cartesian3, color: Color| -> Option<GeometryInstance> {
                 let options = PolylineGeometryOptions {
@@ -112,6 +125,7 @@ impl<G: crate::renderer::Gl + 'static> DebugModelMatrixPrimitive<G> {
                 let geom = PolylineGeometry::new(options).create_geometry()?;
                 let mut inst = GeometryInstance::new(geom, Some(scaled_matrix));
                 inst.id = self.id.clone();
+                inst.pick_primitive = Some(self.object_id);
                 Some(inst)
             };
 

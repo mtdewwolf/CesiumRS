@@ -140,7 +140,7 @@ images in billboards.
 | --- | --- |
 | EllipsoidPrimitive, Moon | Own box geometry, shader and command. Layer 1 for geometry and shader text, layer 3 for the ray-cast ellipsoid. Moon follows EllipsoidPrimitive. |
 | DepthPlane | Own vertex array and command; layer 1 and a depth readback in layer 3. |
-| DebugCameraPrimitive, DebugModelMatrixPrimitive | Built from `Primitive` with Frustum and Polyline geometry. They wait for group 6. |
+| DebugCameraPrimitive, DebugModelMatrixPrimitive | Done: the Primitive capture records every inner primitive, the frame's uploads, released buffers and command order (`tests/data/scene-debug-primitives.json`). |
 | EquirectangularPanorama, SkyBox | Texture and cube-map uploads (CubeMap is ported); use ImageData sources and compare pixels. |
 | ViewportQuad | Already executes against the recording host; add layer 3 pixels and Scene submission. |
 

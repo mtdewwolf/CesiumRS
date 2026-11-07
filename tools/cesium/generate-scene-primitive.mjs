@@ -4,7 +4,8 @@
 // buffer and texture upload, the attribute pointers, the shader text
 // Primitive builds, the render states, the draw commands, the bounding
 // volumes, the batch table and the per-instance attribute values; ops read
-// and write per-instance attributes between frames.
+// and write per-instance attributes between frames. A second fixture records
+// every inner Primitive of DebugModelMatrixPrimitive and DebugCameraPrimitive.
 // Usage: CHROMIUM_PATH=/path/to/chrome node generate-scene-primitive.mjs
 import { chromium } from 'playwright-core';
 import { build } from 'esbuild';
@@ -13,9 +14,9 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const modules = {
-  Scene: ['Primitive', 'PerInstanceColorAppearance', 'MaterialAppearance', 'Material', 'Camera'],
+  Scene: ['Primitive', 'PerInstanceColorAppearance', 'MaterialAppearance', 'Material', 'Camera', 'DebugModelMatrixPrimitive', 'DebugCameraPrimitive'],
   Renderer: ['Context', 'ContextLimits'],
-  Core: ['Cartesian3', 'Color', 'Matrix4', 'GeographicProjection', 'Ellipsoid', 'PerspectiveFrustum', 'GeometryInstance', 'BoxGeometry', 'RectangleGeometry', 'EllipsoidGeometry', 'Rectangle', 'VertexFormat', 'ColorGeometryInstanceAttribute', 'ShowGeometryInstanceAttribute', 'DistanceDisplayConditionGeometryInstanceAttribute', 'OffsetGeometryInstanceAttribute', 'GeometryOffsetAttribute', 'Transforms', 'BoundingSphere'],
+  Core: ['Cartesian3', 'Color', 'Matrix4', 'GeographicProjection', 'Ellipsoid', 'PerspectiveFrustum', 'OrthographicFrustum', 'OrthographicOffCenterFrustum', 'GeometryInstance', 'BoxGeometry', 'RectangleGeometry', 'EllipsoidGeometry', 'Rectangle', 'VertexFormat', 'ColorGeometryInstanceAttribute', 'ShowGeometryInstanceAttribute', 'DistanceDisplayConditionGeometryInstanceAttribute', 'OffsetGeometryInstanceAttribute', 'GeometryOffsetAttribute', 'Transforms', 'BoundingSphere'],
 };
 const contents = Object.entries(modules)
   .flatMap(([dir, names]) => names.map((n) => `export {default as ${n}} from '@cesium/engine/Source/${dir}/${n}.js';`))
@@ -125,13 +126,39 @@ const scenarios = {
   empty: { options: { appearance: ['perInstance', {}] }, instances: [], ops: [['update', { mode: 3 }]] },
 };
 
+// DebugModelMatrixPrimitive and DebugCameraPrimitive, which draw through
+// Primitive: every inner primitive is recorded as above after each update.
+const camera3D = { position: [2e6, -3e6, 4e6], direction: [-0.3, 0.6, -0.742], up: [0, 0, 1] };
+const debugScenarios = {
+  axesDefault: { kind: 'modelMatrix', options: {}, ops: [['update'], ['update'], ['update'], ['set', 'length', 5e6], ['update'], ['set', 'show', false], ['update']] },
+  axesPlaced: {
+    kind: 'modelMatrix',
+    options: { modelMatrix: enu(-75, 40, 100), length: 1000, width: 4, id: 'axes' },
+    ops: [['update'], ['update'], ['set', 'width', 6], ['set', 'id', 'moved'], ['update'], ['set', 'modelMatrix', enu(20, 50, 0)], ['update']],
+  },
+  cameraPerspective: { kind: 'camera', camera: { ...camera3D, frustum: ['perspective', Math.PI / 3, 4 / 3, 1, 5e4] }, options: { id: 'cam' }, ops: [['update'], ['update']] },
+  cameraSplits: {
+    kind: 'camera',
+    camera: { ...camera3D, frustum: ['perspective', Math.PI / 4, 1.5, 1, 1e6] },
+    options: { frustumSplits: [1, 100, 1e4, 1e6], color: [1, 0.5, 0, 1], updateOnChange: false },
+    ops: [['update'], ['update'], ['set', 'show', false], ['update']],
+  },
+  cameraOrthographic: { kind: 'camera', camera: { ...camera3D, frustum: ['orthographic', 2000, 4 / 3, 1, 1e4] }, options: {}, ops: [['update']] },
+  cameraOffCenter: {
+    kind: 'camera',
+    camera: { ...camera3D, frustum: ['offCenter', [-500, 1500, 600, -200], 0, 1, 1e4] },
+    options: { frustumSplits: [1, 50, 1e4] },
+    ops: [['update']],
+  },
+};
+
 let browser;
 try {
   browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH, headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   const page = await browser.newPage();
   page.on('pageerror', (e) => console.error(e));
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
-  const result = await page.evaluate(async (scenarios) => {
+  const result = await page.evaluate(async ({ scenarios, debugScenarios }) => {
     const ref = await import('/reference.mjs');
     const fnv = (bytes) => {
       let h = 0xcbf29ce484222325n;
@@ -178,8 +205,35 @@ try {
       c.frustum = new ref.PerspectiveFrustum({ fov: Math.PI / 3, aspectRatio: 4 / 3, near: 1, far: 1e9 });
       return c;
     }
+    const programs = [];
+    const programIndex = (sp) => { if (!sp) return null; let i = programs.indexOf(sp); if (i < 0) { programs.push(sp); i = programs.length - 1; } return i; };
+    function record(primitive, commandList) {
+      const vas = primitive._va ?? [];
+      const rsName = (rs) => (rs === primitive._frontFaceRS ? 'front' : rs === primitive._backFaceRS ? 'back' : rs === primitive._frontFaceDepthFailRS ? 'frontDepthFail' : rs === primitive._backFaceDepthFailRS ? 'backDepthFail' : 'other');
+      const commands = commandList.filter((c) => primitive._colorCommands.includes(c)).map((command) => ({
+        pass: command.pass, primitiveType: command.primitiveType, vaIndex: vas.indexOf(command.vertexArray),
+        renderState: rsName(command.renderState), program: command.shaderProgram === primitive._sp ? 'color' : command.shaderProgram === primitive._spDepthFail ? 'depthFail' : 'other',
+        boundingVolume: sphere(command.boundingVolume), modelMatrix: ref.Matrix4.toArray(command.modelMatrix),
+        cull: command.cull, debugShowBoundingVolume: command.debugShowBoundingVolume, castShadows: command.castShadows, receiveShadows: command.receiveShadows,
+        pickId: command.pickId ?? null, uniforms: Object.keys(command.uniformMap).sort(),
+      }));
+      const shader = (sp) => sp && { vs: sp._vertexShaderSource.sources, fs: sp._fragmentShaderSource.sources, defines: [sp._vertexShaderSource.defines, sp._fragmentShaderSource.defines] };
+      const bt = primitive._batchTable;
+      return {
+        state: primitive._state, ready: primitive.ready, commands,
+        vaCount: vas.length, primitiveType: primitive._primitiveType ?? null, attributeLocations: primitive._attributeLocations ?? null,
+        sp: shader(primitive._sp), spDepthFail: shader(primitive._spDepthFail), programs: [programIndex(primitive._sp), programIndex(primitive._spDepthFail)],
+        renderStates: { front: rsSummary(primitive._frontFaceRS), back: rsSummary(primitive._backFaceRS), frontDepthFail: rsSummary(primitive._frontFaceDepthFailRS), backDepthFail: rsSummary(primitive._backFaceDepthFailRS), backIsFront: primitive._backFaceRS === primitive._frontFaceRS },
+        boundingSpheres: { local: primitive._boundingSpheres.map(sphere), wc: primitive._boundingSphereWC.map(sphere), cv: primitive._boundingSphereCV.map(sphere), twoD: primitive._boundingSphere2D.map(sphere), morph: primitive._boundingSphereMorph.map(sphere) },
+        instanceBoundingSpheres: (primitive._instanceBoundingSpheres ?? []).map(sphere), instanceBoundingSpheresCV: (primitive._instanceBoundingSpheresCV ?? []).map(sphere),
+        batch: bt ? { attributes: bt.attributes.map((x) => x.functionName), values: bt._batchValues ? fnv(new Uint8Array(bt._batchValues.buffer)) : null, indices: primitive._batchTableAttributeIndices, boundingSphereIndices: primitive._batchTableBoundingSphereAttributeIndices, offset2D: primitive._batchTableOffsetAttribute2DIndex ?? null } : null,
+        modelMatrix: ref.Matrix4.toArray(primitive.modelMatrix), geometryInstancesReleased: primitive.geometryInstances === undefined,
+        offsetsUpdated: primitive._batchTableOffsetsUpdated, boundingSpheresUpdated: primitive._batchTableBoundingSpheresUpdated, recompute: primitive._recomputeBoundingSpheres,
+      };
+    }
     const out = { limits: { maximumTextureSize: ref.ContextLimits.maximumTextureSize }, scenarios: {} };
     for (const [name, s] of Object.entries(scenarios)) {
+      programs.length = 0;
       const canvas = document.createElement('canvas');
       canvas.width = 8; canvas.height = 8;
       const context = new ref.Context(canvas, { webgl: { antialias: false } });
@@ -197,8 +251,6 @@ try {
       const primitive = new ref.Primitive({ ...options, geometryInstances: instances, asynchronous: false });
       const cam = camera();
       const steps = [];
-      const programs = [];
-      const programIndex = (sp) => { if (!sp) return null; let i = programs.indexOf(sp); if (i < 0) { programs.push(sp); i = programs.length - 1; } return i; };
       const typed = (v) => (v ? Array.from(v) : null);
       for (const op of s.ops) {
         const [kind, a, b, c] = op;
@@ -223,36 +275,81 @@ try {
         };
         primitive.update(frameState);
         for (const callback of frameState.afterRender) callback();
-        const vas = primitive._va ?? [];
-        const rsName = (rs) => (rs === primitive._frontFaceRS ? 'front' : rs === primitive._backFaceRS ? 'back' : rs === primitive._frontFaceDepthFailRS ? 'frontDepthFail' : rs === primitive._backFaceDepthFailRS ? 'backDepthFail' : 'other');
-        const commands = frameState.commandList.map((command) => ({
-          pass: command.pass, primitiveType: command.primitiveType, vaIndex: vas.indexOf(command.vertexArray),
-          renderState: rsName(command.renderState), program: command.shaderProgram === primitive._sp ? 'color' : command.shaderProgram === primitive._spDepthFail ? 'depthFail' : 'other',
-          boundingVolume: sphere(command.boundingVolume), modelMatrix: ref.Matrix4.toArray(command.modelMatrix),
-          cull: command.cull, debugShowBoundingVolume: command.debugShowBoundingVolume, castShadows: command.castShadows, receiveShadows: command.receiveShadows,
-          pickId: command.pickId ?? null, uniforms: Object.keys(command.uniformMap).sort(),
-        }));
-        const shader = (sp) => sp && { vs: sp._vertexShaderSource.sources, fs: sp._fragmentShaderSource.sources, defines: [sp._vertexShaderSource.defines, sp._fragmentShaderSource.defines] };
-        const bt = primitive._batchTable;
-        steps.push({
-          op, state: primitive._state, ready: primitive.ready, uploads, commands,
-          vaCount: vas.length, primitiveType: primitive._primitiveType ?? null, attributeLocations: primitive._attributeLocations ?? null,
-          sp: shader(primitive._sp), spDepthFail: shader(primitive._spDepthFail), programs: [programIndex(primitive._sp), programIndex(primitive._spDepthFail)],
-          renderStates: { front: rsSummary(primitive._frontFaceRS), back: rsSummary(primitive._backFaceRS), frontDepthFail: rsSummary(primitive._frontFaceDepthFailRS), backDepthFail: rsSummary(primitive._backFaceDepthFailRS), backIsFront: primitive._backFaceRS === primitive._frontFaceRS },
-          boundingSpheres: { local: primitive._boundingSpheres.map(sphere), wc: primitive._boundingSphereWC.map(sphere), cv: primitive._boundingSphereCV.map(sphere), twoD: primitive._boundingSphere2D.map(sphere), morph: primitive._boundingSphereMorph.map(sphere) },
-          instanceBoundingSpheres: (primitive._instanceBoundingSpheres ?? []).map(sphere), instanceBoundingSpheresCV: (primitive._instanceBoundingSpheresCV ?? []).map(sphere),
-          batch: bt ? { attributes: bt.attributes.map((x) => x.functionName), values: bt._batchValues ? fnv(new Uint8Array(bt._batchValues.buffer)) : null, indices: primitive._batchTableAttributeIndices, boundingSphereIndices: primitive._batchTableBoundingSphereAttributeIndices, offset2D: primitive._batchTableOffsetAttribute2DIndex ?? null } : null,
-          modelMatrix: ref.Matrix4.toArray(primitive.modelMatrix), geometryInstancesReleased: primitive.geometryInstances === undefined,
-          offsetsUpdated: primitive._batchTableOffsetsUpdated, boundingSpheresUpdated: primitive._batchTableBoundingSpheresUpdated, recompute: primitive._recomputeBoundingSpheres,
-        });
+        steps.push({ op, uploads, ...record(primitive, frameState.commandList) });
       }
       out.scenarios[name] = steps;
       primitive.destroy();
       context.destroy();
     }
+    out.debug = {};
+    for (const [name, s] of Object.entries(debugScenarios)) {
+      programs.length = 0;
+      const canvas = document.createElement('canvas');
+      canvas.width = 8; canvas.height = 8;
+      const context = new ref.Context(canvas, { webgl: { antialias: false } });
+      let uploads = [];
+      const gl = context._gl;
+      const view = (d) => new Uint8Array(d.buffer ?? d, d.byteOffset ?? 0, d.byteLength);
+      const wrap = (fn, record) => { const original = gl[fn].bind(gl); gl[fn] = (...args) => { record(...args); return original(...args); }; };
+      wrap('bufferData', (target, data, usage) => { if (typeof data === 'object') uploads.push(['bufferData', target, usage, data.byteLength, fnv(view(data))]); });
+      wrap('bufferSubData', (target, offset, data) => uploads.push(['bufferSubData', target, offset, data.byteLength, fnv(view(data))]));
+      wrap('texImage2D', (...a) => { const d = a[8]; if (ArrayBuffer.isView(d)) uploads.push(['texture', a[3], a[4], a[7], d.byteLength, fnv(view(d))]); });
+      wrap('texSubImage2D', (...a) => { const d = a[8]; if (ArrayBuffer.isView(d)) uploads.push(['texture', a[4], a[5], a[7], d.byteLength, fnv(view(d))]); });
+      wrap('vertexAttribPointer', (index, size, type, normalized, stride, offset) => uploads.push(['pointer', index, size, type, normalized, stride, offset]));
+      let deleted = 0;
+      wrap('deleteBuffer', () => { deleted += 1; });
+      const cam = camera();
+      let debug;
+      if (s.kind === 'camera') {
+        const C = ref.Cartesian3;
+        const c = s.camera;
+        cam.position = new C(...c.position);
+        cam.direction = C.normalize(new C(...c.direction), new C());
+        cam.right = C.normalize(C.cross(cam.direction, new C(...c.up), new C()), new C());
+        cam.up = C.cross(cam.right, cam.direction, new C());
+        const [kind, a, b, near, far] = c.frustum;
+        cam.frustum = kind === 'perspective'
+          ? new ref.PerspectiveFrustum({ fov: a, aspectRatio: b, near, far })
+          : kind === 'orthographic'
+            ? new ref.OrthographicFrustum({ width: a, aspectRatio: b, near, far })
+            : new ref.OrthographicOffCenterFrustum({ left: a[0], right: a[1], top: a[2], bottom: a[3], near, far });
+        const o = s.options;
+        debug = new ref.DebugCameraPrimitive({ ...o, camera: cam, color: o.color ? new ref.Color(...o.color) : undefined });
+      } else {
+        const o = s.options;
+        debug = new ref.DebugModelMatrixPrimitive({ ...o, modelMatrix: o.modelMatrix ? matrix(o.modelMatrix) : undefined });
+      }
+      const inner = () => (s.kind === 'camera'
+        ? debug._planesPrimitives.flatMap((p, i) => [debug._outlinePrimitives[i], p])
+        : debug._primitive ? [debug._primitive] : []);
+      const steps = [];
+      for (const op of s.ops) {
+        const [kind, a, b] = op;
+        if (kind === 'set') { debug[a] = a === 'modelMatrix' ? matrix(b) : b; continue; }
+        uploads = [];
+        deleted = 0;
+        const frameState = {
+          mode: 3, morphTime: 1, mapProjection: new ref.GeographicProjection(), context, camera: cam,
+          commandList: [], afterRender: [], passes: { render: true, pick: false }, scene3DOnly: false,
+        };
+        debug.update(frameState);
+        for (const callback of frameState.afterRender) callback();
+        const primitives = inner();
+        steps.push({
+          op, uploads, deletedBuffers: deleted, primitives: primitives.map((p) => record(p, frameState.commandList)),
+          owners: frameState.commandList.map((c) => primitives.findIndex((p) => p._colorCommands.includes(c))),
+          modelMatrix: s.kind === 'camera' ? null : ref.Matrix4.toArray(debug.modelMatrix),
+        });
+      }
+      out.debug[name] = steps;
+      debug.destroy();
+      context.destroy();
+    }
     return out;
-  }, scenarios);
-  writeFileSync(new URL('../../tests/data/scene-primitive.json', import.meta.url), JSON.stringify({ scenarios, capture: result }) + '\n');
+  }, { scenarios, debugScenarios });
+  const { debug, ...capture } = result;
+  writeFileSync(new URL('../../tests/data/scene-primitive.json', import.meta.url), JSON.stringify({ scenarios, capture }) + '\n');
+  writeFileSync(new URL('../../tests/data/scene-debug-primitives.json', import.meta.url), JSON.stringify({ scenarios: debugScenarios, capture: debug }) + '\n');
   console.log('captured', Object.keys(result.scenarios).length, 'scenarios');
 } finally {
   await browser?.close();

@@ -42,6 +42,7 @@ impl DebugVolume {
                 attributes: vec![("color".into(), color.into())],
                 west_hemisphere_geometry: None,
                 east_hemisphere_geometry: None,
+                pick_primitive: None,
             })
             .collect();
         Self { geometry_instances }
