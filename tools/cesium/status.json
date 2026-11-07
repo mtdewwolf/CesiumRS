@@ -5382,24 +5382,24 @@
     "note": "Ordered layer management, identity, visibility/events, once-per-add provider readiness, typed compute queue/cancellation, pickImageryLayers and concurrent pickImageryLayerFeatures. 33 pinned picking scenarios plus seven native concurrency/ownership/reentrancy checks, existing collection/provider-ready fixtures and renderer queue tests. SceneGlobe supplies the terrain hit and rendered GlobeSurfaceTile list through the typed Scene boundary; the full Globe renderer remains a separate port."
   },
   "Scene/Polyline": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::polyline",
-    "note": "CPU properties, duplicate elimination, antimeridian splitting and bounding volumes; pinned fixture cases. Rendering, pick IDs and scene-frame integration remain."
+    "note": "Shared Polyline handle with Cesium's makeDirty (per-polyline and collection property counts), duplicate removal, loop closing/opening, antimeridian splitting via wrapLongitude on update with the collection's current model matrix, bounding volumes (local, WC and the 2D volume written by the collection), materials compared by identity, lazy pick ids, _clean (which never clears the distance-display count) and _destroy. Validated through the PolylineCollection SwiftShader capture (dirty flags, property counts, positions, segments and the three bounding volumes after every update) and the pinned snapshots in tests/scene_polylines.rs."
   },
   "Scene/PolylineCollection": {
     "status": "partial",
     "rust": "scene::polyline_collection",
-    "note": "CPU collection lifecycle, attributes and preliminary vertex geometry; reference and native tests. GPU buffers, draw/pick commands, scene-mode projection and complete geometry validation remain."
+    "note": "Full update: removal compaction (requeueing every polyline, as Cesium does), mode and model-matrix changes, the BatchTable of width/show, pick color, encoded center/radius and distance display condition, the stream-for-100-frames position usage, full rebuilds (material-type buckets with DISTANCE_DISPLAY_CONDITION/POLYLINE_DASH/CLIP_POLYLINE shaders, 2D/Columbus projection with antimeridian clamping, the morph buffer, 64K index splits and per-mode attribute layouts) and incremental writeUpdate/batch writes, depth-test render states and one command per material run with Cesium's scratch bounding-sphere accumulation. 31 updates over six SwiftShader scenarios of the pinned engine compare every buffer and texture upload, attribute pointers and constants, commands, buckets, vertex-array ranges, usage, batch values and every polyline; mutation-checked. Remaining: binding texture-valued material uniforms (image materials), which the commands skip, as ViewportQuad does."
   },
   "Scene/Billboard": {
     "status": "partial",
     "rust": "scene::billboard",
-    "note": "CPU billboard properties, mutation, screen-space bounds and collection state; pinned fixture cases. Image loading, terrain clamping, picking and Scene integration remain."
+    "note": "Shared Billboard handle with every property and Cesium's compare-then-makeDirty setters, range checks, images (BillboardImage sources or futures, image ids from id/URI/GUID, SVG sizing), setImage/setImageSubRegion/setImageTexture, label hooks (_translate, label dimensions/origin/translate), lazy pick ids, _destroy, equals, getScreenSpaceBoundingBox and computeScreenSpacePosition with eye and pixel offsets. Validated by the BillboardCollection SwiftShader capture. Remaining: terrain clamping (heightReference other than NONE needs Scene.updateHeight; it is refused as Cesium does without a scene)."
   },
   "Scene/BillboardCollection": {
     "status": "partial",
     "rust": "scene::billboard_collection",
-    "note": "CPU collection, bounds and preliminary attribute packing; fixture and native lifecycle cases. Attribute-packing expectations are computed in the generator; GPU resources, atlas, picking and render integration remain."
+    "note": "Full update pipeline: compaction, load-error unloading and texture-dirty queuing, the afterRender atlas update, updateMode for every scene mode, the buffer-usage heuristic, instanced (WebGL2/ANGLE) and batched writers for all eleven attributes plus SDF, context-cached index and corner buffers, the 10% commit/subCommit split, bounding volumes grown by size, scale and offsets, blend-option render states, define-driven shader compilation, Opaque/Translucent commands with atlas and depth-test uniforms, and the debugShowTextureAtlas overlay. 85 updates over 15 SwiftShader scenarios of the pinned engine (instanced and batched) compare exact vertex bytes, every buffer upload, commands, defines, program replacement, bookkeeping, atlas and image states and screen positions; mutation-checked. Remaining: the scene option (terrain clamping and the clamp-to-ground shader path) and the vector-tile batch table."
   },
   "Scene/CumulusCloud": {
     "status": "partial",
@@ -5542,9 +5542,9 @@
     "note": "Abstract asynchronous factory/load contracts with typed options and panorama result; native futures exercised. See docs/scene-nz-contracts.md."
   },
   "Scene/ParticleSystem": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::particle_system",
-    "note": "CPU emission/carry/bursts, simulation, transforms, lifetime/completion and billboard snapshots; nine pinned frame traces. GPU billboard submission and reuse pool remain. See docs/scene-nz-contracts.md."
+    "note": "ScenePrimitive drawing particles with its own BillboardCollection: Cesium's particle pool with pre-created hidden billboards, per-particle billboard writes (size, position, sizeInMeters, show, lerped color and scale), dead particles hidden and pooled, rate/carry-over/burst emission through the emitter and the combined model matrix, frame-time stepping (negative dt clamped), looping or repeated completion events, the 120-frame pool trim, option aliases and non-negative setters. 31 frames over three seeded SwiftShader scenarios of the pinned engine (four emitters, bursts, an update callback, mid-run changes, hidden frames, reverse time, images) compare particles, the pool, particle-billboard assignment, every billboard and the vertex buffers; mutation-checked. Frames run as one JavaScript task (renderer::run_as_task), so images added during a frame reach the atlas a frame later, as in Cesium."
   },
   "Scene/QuadtreeTileProvider": {
     "status": "partial",
@@ -5582,9 +5582,9 @@
     "note": "CPU dynamic shape contract backed by existing VoxelBoxShape; bounds, transforms, UV and tile/sample OBBs. Shader uniforms/defines/intersections remain. See docs/scene-nz-contracts.md."
   },
   "Scene/BillboardTexture": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::billboard_texture",
-    "note": "Tracks image reference, loading state, atlas indices, dimensions, subregions, and coordinate calculations. Partial CPU behavior; complete upstream behavior and parity validation remain."
+    "note": "Exact port of the image state machine over the collection's TextureAtlas: the shared billboardTextureCache, loadImage with stale-id guards, unload, addImageSubRegion with Cesium's sync (cached, resolved) versus async (new) split, setImageSubRegion, clone/completeLoad and computeTextureCoordinates. Cesium's promise continuations are polled at the start of each update and after the afterRender atlas update. Validated by the BillboardCollection SwiftShader capture: load states, indices, sizes, dirty flags and atlas rectangles after every frame, including shared ids, sub-regions on image-less billboards (the cached one stays NONE, as in Cesium), rejected loads and superseded loads."
   },
   "Scene/Cesium3DTileContentFactory": {
     "status": "partial",
@@ -5645,5 +5645,10 @@
     "status": "partial",
     "rust": "scene::globe_surface_tile",
     "note": "Exported CPU surface tile: terrain/imagery ownership, unloading, height sampling, ray picking, exaggeration, water-mask transforms and layer-driven imagery processing. Dedicated pinned/analytical and correction tests exist. Async terrain processing, GPU terrain vertex arrays, water-mask upload and full surface-provider integration remain."
+  },
+  "Scene/BatchTable": {
+    "status": "ported",
+    "rust": "scene::batch_table",
+    "note": "Per-instance attributes in an RGBA texture: datatype selection, float packing when float textures are missing, offsets, stride, rows limited by the maximum texture size, typed-array storage (float32 rounding, ToUint8 wrapping), get/set with Cesium's attribute-type equality, lazy texture creation and dirty uploads, uniform names and values, and the generated GLSL (computeSt for one or several rows, per-attribute accessors with unpacking and 255 scaling). 55 steps over seven SwiftShader scenarios of the pinned engine compare layouts, every get, the CPU bytes, dirty flags, texture uploads, shaders and uniforms; mutation-checked."
   }
 }

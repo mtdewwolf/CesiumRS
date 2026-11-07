@@ -85,7 +85,7 @@ pub use freeze_render_state::{freeze_render_state, FrozenRenderState};
 pub mod vertex_array_facade;
 pub use vertex_array_facade::{FacadeAttribute, FacadeVertexArray, FacadeWriter, VertexArrayFacade};
 pub mod texture_atlas;
-pub use texture_atlas::{AtlasImageRequest, TextureAtlas, TextureAtlasOptions};
+pub use texture_atlas::{run_as_task, AtlasImageRequest, TextureAtlas, TextureAtlasOptions};
 pub mod context_helpers;
 pub use context_helpers::{PickId, ViewportCommand, ViewportCommandOptions};
 pub mod shared_context;

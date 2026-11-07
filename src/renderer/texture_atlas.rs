@@ -14,6 +14,52 @@ use std::{
     rc::Rc,
 };
 pub type AtlasImageRequest = Shared<LocalBoxFuture<'static, Result<i64>>>;
+
+thread_local! {
+    static TASK_DEPTH: Cell<u32> = const { Cell::new(0) };
+    static TASK_END: RefCell<Vec<Box<dyn FnOnce()>>> = RefCell::new(Vec::new());
+}
+
+/// Runs `f` as one JavaScript task. Cesium's `TextureAtlas.addImage` awaits
+/// the image before queueing it, so an image added while a task runs (for
+/// example by a primitive during a frame) reaches the atlas queue only when
+/// the task ends, and an `update` inside the same task does not pack it.
+/// Images resolved outside any task are queued at once. `Scene::render` runs
+/// each frame as a task.
+pub fn run_as_task<R>(f: impl FnOnce() -> R) -> R {
+    TASK_DEPTH.with(|d| d.set(d.get() + 1));
+    struct End;
+    impl Drop for End {
+        fn drop(&mut self) {
+            let depth = TASK_DEPTH.with(|d| {
+                d.set(d.get() - 1);
+                d.get()
+            });
+            if depth == 0 {
+                loop {
+                    let queued = TASK_END.with(|q| std::mem::take(&mut *q.borrow_mut()));
+                    if queued.is_empty() {
+                        break;
+                    }
+                    for job in queued {
+                        job();
+                    }
+                }
+            }
+        }
+    }
+    let _end = End;
+    f()
+}
+
+/// Runs `job` now, or when the current task ends.
+fn at_task_end(job: impl FnOnce() + 'static) {
+    if TASK_DEPTH.with(Cell::get) == 0 {
+        job();
+    } else {
+        TASK_END.with(|q| q.borrow_mut().push(Box::new(job)));
+    }
+}
 #[derive(Clone, Copy, Debug)]
 pub struct TextureAtlasOptions {
     pub border_width_in_pixels: f64,
@@ -124,6 +170,10 @@ impl<G: Gl + 'static> TextureAtlas<G> {
     pub fn rectangles(&self) -> std::cell::Ref<'_, Vec<Option<BoundingRectangle>>> {
         self.life.rectangles.borrow()
     }
+    /// `_indexPromiseById.get(id)`: the request that adds image `id`, if any.
+    pub fn image_request(&self, id: &str) -> Option<AtlasImageRequest> {
+        self.requests.get(id).cloned()
+    }
     pub fn get_image_index(&self, id: &str) -> Option<usize> {
         self.index_by_id.get(id).copied()
     }
@@ -156,9 +206,12 @@ impl<G: Gl + 'static> TextureAtlas<G> {
                 if life.upgrade().is_none_or(|l| l.destroyed.get()) {
                     return Ok(-1);
                 }
-                let Some(inbox) = inbox.upgrade() else { return Ok(-1) };
                 let (complete, result) = oneshot::channel();
-                inbox.borrow_mut().push(PendingImage { index, image, complete });
+                at_task_end(move || {
+                    if let Some(inbox) = inbox.upgrade() {
+                        inbox.borrow_mut().push(PendingImage { index, image, complete });
+                    }
+                });
                 match select(result, canceled).await {
                     Either::Left((result, _)) => result.unwrap_or(Ok(-1)),
                     Either::Right(_) => Ok(-1),

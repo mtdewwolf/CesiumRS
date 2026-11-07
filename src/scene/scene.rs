@@ -1412,7 +1412,14 @@ impl<B: SceneBackend> Scene<B> {
         }
         Ok(())
     }
+    /// Renders one frame. The frame runs as one JavaScript task
+    /// ([`renderer::run_as_task`]): images that primitives add to texture
+    /// atlases while it runs are queued when it ends, as in Cesium.
     pub fn render(&mut self, time: JulianDate) -> Result<bool> {
+        renderer::run_as_task(|| self.render_frame(time))
+    }
+
+    fn render_frame(&mut self, time: JulianDate) -> Result<bool> {
         self.alive()?;
         self.notify(SceneEventKind::PreUpdate, time, None);
         self.frame_state.new_frame = false;

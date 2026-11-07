@@ -359,8 +359,17 @@ impl Material {
         if !exists {
             return Err(RuntimeError::new(format!("material with type '{type_name}' does not exist.")));
         }
-        let fabric = Fabric { type_name: Some(type_name.to_string()), uniforms, ..Fabric::default() };
-        Self::try_new(MaterialOptions { fabric, ..MaterialOptions::default() })
+        // Cesium creates the material from the type alone and then assigns
+        // each value, so uniforms keep the type's order (and its generated
+        // names), and a name the type does not declare changes nothing.
+        let fabric = Fabric { type_name: Some(type_name.to_string()), ..Fabric::default() };
+        let mut material = Self::try_new(MaterialOptions { fabric, ..MaterialOptions::default() })?;
+        for (name, value) in uniforms {
+            if let Some(slot) = material.uniforms.iter_mut().find(|(n, _)| *n == name) {
+                slot.1 = value;
+            }
+        }
+        Ok(material)
     }
 
     /// The fabric used to create this material (with cached type defaults).

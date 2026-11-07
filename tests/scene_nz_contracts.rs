@@ -81,6 +81,14 @@ fn shadow_cast_source_parity() {
         "receiveShadow falsefalsefalsefalsefalsefalsefalsefalsefalsefalse"
     );
 }
+/// A frame at `seconds` after the J2000 epoch on a recording context.
+fn particle_frame(context: &Context<Host>, seconds: f64) -> FrameState {
+    let mut f = frame();
+    f.context = Some(FrameResource::new(context.clone()));
+    f.time = JulianDate::new(2451545., 0., TimeStandard::Tai).add_seconds(seconds);
+    f.frame_number = 1;
+    f
+}
 #[test]
 fn particle_cpu_reference_trace() {
     struct Emitter;
@@ -90,56 +98,65 @@ fn particle_cpu_reference_trace() {
             p.velocity = Cartesian3::UNIT_Z;
         }
     }
+    let context = Context::new_webgl2(Host::default());
     let completed = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
-    let mut s = ParticleSystem::default();
-    s.emission_rate = 2.;
-    s.particle_life = [1., 1.];
-    s.lifetime = 2.;
-    s.loop_animation = false;
-    s.emitter = Some(Box::new(Emitter));
-    s.bursts.push(ParticleBurst::new(scene::particle_burst::ParticleBurstOptions {
-        time: Some(0.5),
-        minimum: Some(2.),
-        maximum: Some(2.),
-    }));
+    let mut s = ParticleSystem::<Host>::new(ParticleSystemOptions {
+        emission_rate: Some(2.),
+        particle_life: Some(1.),
+        lifetime: Some(2.),
+        loop_animation: Some(false),
+        emitter: Some(Box::new(Emitter)),
+        bursts: Some(vec![ParticleBurst::new(scene::particle_burst::ParticleBurstOptions {
+            time: Some(0.5),
+            minimum: Some(2.),
+            maximum: Some(2.),
+        })]),
+        ..Default::default()
+    });
     let count = completed.clone();
     s.complete.add_event_listener(move |_| {
         count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     });
     for c in fixture()["particles"].as_array().unwrap() {
-        s.update(c["time"].as_f64().unwrap(), None).unwrap();
+        let mut f = particle_frame(&context, c["time"].as_f64().unwrap());
+        s.update(&mut f).unwrap();
         assert_eq!(s.current_time(), c["currentTime"]);
         assert_eq!(s.is_complete(), c["complete"]);
         assert_eq!(completed.load(std::sync::atomic::Ordering::Relaxed), c["completed"].as_u64().unwrap() as usize);
-        assert_eq!(s.particles().len(), c["particles"].as_array().unwrap().len());
-        for (p, e) in s.particles().iter().zip(c["particles"].as_array().unwrap()) {
+        let particles: Vec<&Particle> = s.particles().collect();
+        assert_eq!(particles.len(), c["particles"].as_array().unwrap().len());
+        for (p, e) in particles.iter().zip(c["particles"].as_array().unwrap()) {
             assert_eq!(p.age(), e["age"]);
             assert_eq!(p.position.z, e["z"]);
         }
     }
-    s.destroy();
-    assert!(s.update(4., None).is_err());
+    s.destroy().unwrap();
+    assert!(s.update(&mut particle_frame(&context, 4.)).is_err());
 }
 #[test]
 fn particle_hidden_reverse_time_and_callback() {
-    let mut s = ParticleSystem::default();
-    s.update(0., None).unwrap();
-    s.update(1., None).unwrap();
-    assert_eq!(s.particles().len(), 5);
+    let context = Context::new_webgl2(Host::default());
+    let mut s = ParticleSystem::<Host>::default();
+    s.update(&mut particle_frame(&context, 0.)).unwrap();
+    s.update(&mut particle_frame(&context, 1.)).unwrap();
+    assert_eq!(s.particles().count(), 5);
     s.show = false;
-    s.update(2., None).unwrap();
+    s.update(&mut particle_frame(&context, 2.)).unwrap();
     assert_eq!(s.current_time(), 1.);
     s.show = true;
-    let mut count = 0;
-    let mut f = |p: &mut Particle, dt: f64| {
-        count += 1;
+    let count = Rc::new(Cell::new(0));
+    let c = count.clone();
+    s.update_callback = Some(Box::new(move |p: &mut Particle, dt: f64| {
+        c.set(c.get() + 1);
         p.mass += dt;
-    };
-    s.update(0.5, Some(&mut f)).unwrap();
-    assert_eq!(count, 5);
+    }));
+    s.update(&mut particle_frame(&context, 0.5)).unwrap();
+    assert_eq!(count.get(), 5, "time going back runs the callback with dt 0");
     assert_eq!(s.current_time(), 1.);
-    s.update(1.5, None).unwrap();
-    assert_eq!(s.billboards()[0].scale, 1.);
+    s.update(&mut particle_frame(&context, 1.5)).unwrap();
+    let collection = s.billboard_collection_mut().unwrap();
+    assert_eq!(collection.get(0).unwrap().scale(), 1.);
+    assert!(s.set_emission_rate(-1.).unwrap_err().message.contains("greater than or equal to 0"));
 }
 #[test]
 fn voxel_shape_dynamic_dispatch_matches_box() {

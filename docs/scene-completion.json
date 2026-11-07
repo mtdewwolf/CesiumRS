@@ -323,29 +323,29 @@
       "module": "Scene/Polyline",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU properties, duplicate elimination, antimeridian splitting and bounding volumes; pinned fixture cases. Rendering, pick IDs and scene-frame integration remain."
+      "status": "validated",
+      "remaining": "Validated through the PolylineCollection SwiftShader capture and pinned snapshots."
     },
     {
       "module": "Scene/PolylineCollection",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU collection lifecycle, attributes and preliminary vertex geometry; reference and native tests. GPU buffers, draw/pick commands, scene-mode projection and complete geometry validation remain."
+      "status": "in-progress",
+      "remaining": "Validated against 31 updates of a SwiftShader capture. Remaining: binding texture-valued material uniforms for image materials."
     },
     {
       "module": "Scene/Billboard",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU billboard properties, mutation, screen-space bounds and collection state; pinned fixture cases. Image loading, terrain clamping, picking and Scene integration remain."
+      "status": "in-progress",
+      "remaining": "Everything but terrain clamping is validated against the SwiftShader capture. Clamping needs Scene.updateHeight."
     },
     {
       "module": "Scene/BillboardCollection",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU collection, bounds and preliminary attribute packing; fixture and native lifecycle cases. Attribute-packing expectations are computed in the generator; GPU resources, atlas, picking and render integration remain."
+      "status": "in-progress",
+      "remaining": "The update pipeline is validated against 85 captured updates (instanced and batched). The scene option (terrain clamping, clamp-to-ground shaders) and the vector-tile batch table remain."
     },
     {
       "module": "Scene/CumulusCloud",
@@ -520,8 +520,8 @@
       "module": "Scene/ParticleSystem",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU emission/carry/bursts, simulation, transforms, lifetime/completion and billboard snapshots; nine pinned frame traces. GPU billboard submission and reuse pool remain. See docs/scene-nz-contracts.md."
+      "status": "validated",
+      "remaining": "Validated against 31 frames of a seeded SwiftShader capture: particles, pool, billboards and vertex buffers."
     },
     {
       "module": "Scene/QuadtreeTileProvider",
@@ -571,8 +571,8 @@
       "module": "Scene/BillboardTexture",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "Tracks image reference, loading state, atlas indices, dimensions, subregions, and coordinate calculations. Partial CPU behavior; complete upstream behavior and parity validation remain."
+      "status": "validated",
+      "remaining": "Validated by the BillboardCollection SwiftShader capture: load states, indices, sizes and dirty flags after every frame."
     },
     {
       "module": "Scene/Cesium3DTileContentFactory",

@@ -42,6 +42,8 @@ macro_rules! string_enum {
     };
 }
 
+pub mod batch_table;
+pub use batch_table::{BatchTable, BatchTableAttribute, BatchValue};
 pub mod batch_texture;
 pub use batch_texture::BatchTexture;
 pub mod alpha_mode;
@@ -639,12 +641,12 @@ pub use imagery_layer_collection::{
 pub mod polyline;
 pub mod polyline_collection;
 pub use polyline::{Polyline, PolylineOptions};
-pub use polyline_collection::{PolylineCollection, PolylineHandle};
+pub use polyline_collection::{PolylineCollection, PolylineCollectionOptions};
 
 pub mod billboard;
 pub mod billboard_collection;
-pub use billboard::{Billboard, BillboardOptions};
-pub use billboard_collection::{BillboardCollection, BillboardHandle};
+pub use billboard::{Billboard, BillboardImage, BillboardOptions};
+pub use billboard_collection::{BillboardCollection, BillboardCollectionOptions};
 
 pub mod cumulus_cloud;
 pub mod cloud_collection;
@@ -722,7 +724,7 @@ pub mod voxel_provider;
 pub mod voxel_shape;
 pub use panorama::Panorama;
 pub use panorama_provider::PanoramaProvider;
-pub use particle_system::{ParticleBillboard, ParticleSystem};
+pub use particle_system::{ParticleImage, ParticleSystem, ParticleSystemCallback, ParticleSystemOptions};
 pub use sky_box::SkyBox;
 pub use viewport_quad::ViewportQuad;
 pub use voxel_bounds_collection::VoxelBoundsCollection;

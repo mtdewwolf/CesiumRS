@@ -8,7 +8,7 @@ abstract interfaces; it does not claim ten complete renderers.
 | --- | --- | --- |
 | Panorama | Required show getter/setter, transform and optional credit trait | Abstract upstream; concrete image renderers are separate modules |
 | PanoramaProvider | Async factory/load contracts with associated options, output and errors | Abstract upstream; Rust futures replace promises |
-| ParticleSystem | Emission carry, bursts, lifetime/loop/completion events, velocity transforms, randomized particle attributes, aging/callbacks/removal, color/scale billboard snapshots | GPU billboard submission, sizeInMeters, reuse pool/memory estimation and JS option aliases remain |
+| ParticleSystem | Everything: emission, the billboard pool and billboard writes, timing and completion, option aliases; see `tests/scene_particle_system.rs` | None |
 | QuadtreeTileProvider | Extracted the existing working traversal provider trait and geometric-error helper into its own module, preserving old imports; six new pinned geometric-error cases | Existing optional hook defaults preserved; explicit quadtree back-reference and provider error-event API remain absent. This is partly tracker reconciliation, not a new traversal implementation |
 | ShadowMapShader | Exact cast vertex/fragment GLSL, receive vertex defines, receive fragment derivation with Cesium's bias selection, cast/receive keyword generation; exhaustive receive cases in `tests/scene_shadow_map_shader.rs` | Shadow-map execution belongs to the unported ShadowMap |
 | SkyBox | Mode/render-pass filtering, HDR command delegation, sources, destruction, Earth face URL construction | Requires a caller-supplied panorama renderer; no built-in CubeMapPanorama loader. Pinned update ignores public show; retained and documented |

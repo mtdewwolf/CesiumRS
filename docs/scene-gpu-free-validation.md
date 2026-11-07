@@ -125,11 +125,11 @@ derived commands (picking, OIT, shadows).
 | Module(s) | Missing pieces | Validation route |
 | --- | --- | --- |
 | PointPrimitive, PointPrimitiveCollection | Done: validated by `tools/cesium/generate-scene-point-primitive-collection.mjs`, which records Cesium's facade bytes, every `bufferData`/`bufferSubData`, commands and defines on SwiftShader, replayed in `tests/scene_point_primitive_collection.rs` | Layer 3 pixels for a handful of points remain optional |
-| Billboard, BillboardCollection, BillboardTexture | Writers, TextureAtlas images (already ported), clamp-to-ground callbacks, commands | Layer 1 bytes plus atlas texture coordinates; layer 3 with ImageData images to avoid network |
+| Billboard, BillboardCollection, BillboardTexture | Done except terrain clamping and the vector-tile batch table: `tools/cesium/generate-scene-billboard-collection.mjs` records bytes, uploads, commands, atlas and image states for instanced and batched contexts with ImageData images; replayed in `tests/scene_billboard_collection.rs` | Clamping needs `Scene.updateHeight` |
 | Label, LabelCollection | Glyph rasterization and layout, SDF | Run both sides in the same Chromium page and have Rust call the page's canvas through a host glyph callback. Both sides then rasterize with the same fonts, which removes the platform font problem. Compare glyph bitmaps, then billboard bytes |
-| Polyline, PolylineCollection | Batched buffers per material, 2D/Columbus splitting, commands | Layer 1 bytes per bucket; layer 3 for width and miter joins |
+| Polyline, PolylineCollection | Done: `tools/cesium/generate-scene-polyline-collection.mjs` records uploads, pointers, commands and polyline state in every mode | Layer 3 pixels for width and miter joins remain optional |
 | CumulusCloud, CloudCollection | Noise texture (a compute pass), writers, commands | Layer 3 for the noise texture via `readPixels`; layer 1 for the per-cloud bytes |
-| ParticleSystem | Billboard submission and the reuse pool | Depends on BillboardCollection; compare the pooled billboards each frame |
+| ParticleSystem | Done: `tools/cesium/generate-scene-particle-system.mjs` compares pooled billboards and buffers each frame | None |
 
 Prerequisite: `createBillboardPointCallback` (71 lines, todo) for point
 images in billboards.
@@ -170,14 +170,14 @@ CPU-only and can be validated with ordinary pinned traces.
 
 ## Suggested order
 
-1. **BatchTable**, then **Primitive** (group 6). This unblocks
+1. **BatchTable** (done), then **Primitive** (group 6). This unblocks
    DebugCameraPrimitive, DebugModelMatrixPrimitive and much of the rest of
    Scene.
 2. **PointPrimitiveCollection** (done), the simplest VertexArrayFacade
    collection. Its capture generator is the template for the others: wrap
    `gl.bufferData`/`gl.bufferSubData`, hash the facade's CPU buffers and
    record each command after every update.
-3. **BillboardCollection**, then **LabelCollection** (shared-page glyphs),
+3. **BillboardCollection** (done but clamping), then **LabelCollection** (shared-page glyphs),
    **PolylineCollection**, **CloudCollection** and **ParticleSystem**, all
    reusing that generator.
 4. **EllipsoidPrimitive** and **Moon**, **DepthPlane**, the panoramas and
