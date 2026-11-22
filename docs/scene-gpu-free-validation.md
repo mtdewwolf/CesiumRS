@@ -138,9 +138,9 @@ images in billboards.
 
 | Module | Notes |
 | --- | --- |
-| EllipsoidPrimitive, Moon | Own box geometry, shader and command. Layer 1 for geometry and shader text, layer 3 for the ray-cast ellipsoid. Moon follows EllipsoidPrimitive. |
-| DepthPlane | Own vertex array and command; layer 1 and a depth readback in layer 3. |
-| DebugCameraPrimitive, DebugModelMatrixPrimitive | Built from `Primitive` with Frustum and Polyline geometry. They wait for group 6. |
+| EllipsoidPrimitive, Moon | Done: validated by `tools/cesium/generate-scene-single-renderables.mjs` and replayed in `tests/scene_single_renderables.rs`. |
+| DepthPlane | Done: validated by `tools/cesium/generate-scene-single-renderables.mjs` and replayed in `tests/scene_single_renderables.rs`. |
+| DebugCameraPrimitive, DebugModelMatrixPrimitive | Done: built on `Primitive<G>`, validated by `tools/cesium/generate-scene-primitive.mjs` and replayed in `tests/scene_primitive.rs`. |
 | EquirectangularPanorama, SkyBox | Texture and cube-map uploads (CubeMap is ported); use ImageData sources and compare pixels. |
 | ViewportQuad | Already executes against the recording host; add layer 3 pixels and Scene submission. |
 

@@ -5097,9 +5097,9 @@
     "note": "GLSL shader generation for float and uint8 textures with union and intersection clipping modes validated against CesiumJS reference."
   },
   "Scene/Primitive": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::primitive",
-    "note": "Partial options and CPU geometry preparation. Constructor fixtures and native failure regressions only. Nonempty drawable geometry returns an explicit unsupported-rendering error; GPU commands, batch tables, asynchronous creation and rendering parity remain unimplemented."
+    "note": "Full BatchTable integration, shader rewrites (RTE/RTC, show, color/depthFailColor, offset, distanceDisplayCondition, compressed normals/st, pick, depth clamp), sync/async geometry pipeline, two-pass closed translucent & depth-fail render states/commands, getGeometryInstanceAttributes and lifecycle. 27 CesiumJS 23.0.0 SwiftShader frames replayed in tests/scene_primitive.rs."
   },
   "Scene/PrimitiveCollection": {
     "status": "ported",
@@ -5227,9 +5227,9 @@
     "note": "All WallGraphics property slots, events, clone/merge and raw options. The shared pinned Graphics suite covers slot behavior, events and clone/merge, with one case for this class; 13 native lifecycle tests cover Entity coercion, nested references, composites and material event forwarding."
   },
   "DataSources/ModelGraphics": {
-    "status": "partial",
+    "status": "ported",
     "rust": "data_sources::model_graphics",
-    "note": "All scalar ModelGraphics slots, events, clone/merge quirks (including clone(result) leaving shadows untouched), raw articulations/environmentMapOptions PropertyBag coercion and explicit nested bag merging. The shared pinned Graphics suite covers slot behavior, events and clone/merge, with one case for this class; 13 native lifecycle tests cover Entity coercion, nested references, composites and material event forwarding. Raw nodeTransformations object coercion needs NodeTransformationProperty and is not claimed."
+    "note": "Complete ModelGraphics including raw nodeTransformations PropertyBag/NodeTransformationProperty coercion, articulations, environmentMapOptions, clone/merge quirks and events; replayed in tests/data_sources_graphics.rs and tests/data_sources_materials.rs."
   },
   "DataSources/ColorMaterialProperty": {
     "status": "ported",
@@ -5237,9 +5237,9 @@
     "note": "Color property, default white uniform, getType, constant detection, equality and pinned event traces. Built on the shared graphics slot/event storage."
   },
   "DataSources/createMaterialPropertyDescriptor": {
-    "status": "partial",
+    "status": "ported",
     "rust": "data_sources::create_material_property_descriptor",
-    "note": "Color inputs infer ColorMaterialProperty. String/Resource/canvas/video inputs need ImageMaterialProperty and return an explicit unsupported error."
+    "note": "Infers ColorMaterialProperty for Color and ImageMaterialProperty for String/Resource inputs; replayed in tests/data_sources_materials.rs."
   },
   "Scene/CameraEventAggregator": {
     "status": "ported",
@@ -5487,19 +5487,19 @@
     "note": "Coordinates background web worker radix sorting of Gaussian splats by camera distance."
   },
   "Scene/DepthPlane": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::depth_plane",
-    "note": "CPU geometry and state implemented; rendering is not yet supported."
+    "note": "Horizon depth quad computation, dynamic bufferSubData updates, LOG_DEPTH shader cache, depth-only opaque SceneCommand and lifecycle; SwiftShader capture replayed in tests/scene_single_renderables.rs."
   },
   "Scene/DebugCameraPrimitive": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::debug_camera_primitive",
-    "note": "CPU geometry and state implemented; rendering is not yet supported."
+    "note": "Frustum planes and outline primitives built on Primitive<G> for Perspective, PerspectiveOffCenter, Orthographic and OrthographicOffCenter cameras; SwiftShader capture replayed in tests/scene_primitive.rs."
   },
   "Scene/DebugModelMatrixPrimitive": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::debug_model_matrix_primitive",
-    "note": "CPU geometry and state implemented; rendering is not yet supported."
+    "note": "RGB axis polylines on Primitive<G> with origin projection workaround and rebuild tracking; SwiftShader capture replayed in tests/scene_primitive.rs."
   },
   "Scene/GaussianSplatRenderResources": {
     "status": "implemented",
@@ -5512,9 +5512,9 @@
     "note": "Frame budget coordinator for scheduling and executing texture, program, and general engine jobs."
   },
   "Scene/createTangentSpaceDebugPrimitive": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::create_tangent_space_debug_primitive",
-    "note": "Creates colored debug line primitive for normal, tangent, and bitangent geometry attributes."
+    "note": "Normal/tangent/bitangent debug line segments on Primitive<G>; SwiftShader capture replayed in tests/scene_primitive.rs."
   },
   "Scene/Empty3DTileContent": {
     "status": "implemented",
@@ -5597,9 +5597,9 @@
     "note": "Debug fragment shader rewrite of every source with ordered out_FragData targets, active-attribute locations, programs cached per source program, debugShowCommands random colors kept on the command, frustum overlap colors, existing debug uniforms respected, and execution of the shallow-cloned debug command. Four pinned scene-flag cases run through a recording WebGL context with seeded random colors and compare program sources, locations and uniforms exactly."
   },
   "Scene/EllipsoidPrimitive": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::ellipsoid_primitive",
-    "note": "CPU model matrix, inverse radii and bounding sphere calculations; draw commands and rendering remain."
+    "note": "Ray-cast box VA, translucent/opaque render states, ONLY_SUN_LIGHTING/WRITE_DEPTH/LOG_DEPTH shaders, pick id and render/pick commands; SwiftShader capture replayed in tests/scene_single_renderables.rs."
   },
   "Scene/EquirectangularPanorama": {
     "status": "partial",
@@ -5627,9 +5627,9 @@
     "note": "Factory resolution mapping for supported external Cesium ion imagery asset types and endpoints. Partial CPU behavior; complete upstream behavior and parity validation remain."
   },
   "Scene/Moon": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::moon",
-    "note": "CPU ephemeris, orientation and ellipsoid state; rendering remains."
+    "note": "Simon1994 position, IAU orientation axes, ICRF-to-fixed (with TEME fallback) on EllipsoidPrimitive<G>; SwiftShader capture replayed in tests/scene_single_renderables.rs."
   },
   "Scene/VoxelCylinderShape": {
     "status": "partial",
@@ -5650,5 +5650,145 @@
     "status": "ported",
     "rust": "scene::batch_table",
     "note": "Per-instance attributes in an RGBA texture: datatype selection, float packing when float textures are missing, offsets, stride, rows limited by the maximum texture size, typed-array storage (float32 rounding, ToUint8 wrapping), get/set with Cesium's attribute-type equality, lazy texture creation and dirty uploads, uniform names and values, and the generated GLSL (computeSt for one or several rows, per-attribute accessors with unpacking and 255 scaling). 55 steps over seven SwiftShader scenarios of the pinned engine compare layouts, every get, the CPU bytes, dirty flags, texture uploads, shaders and uniforms; mutation-checked."
+  },
+  "DataSources/MaterialProperty": {
+    "status": "ported",
+    "rust": "data_sources::material_property",
+    "note": "MaterialProperty.getValue and shared record-evaluation helpers; replayed in tests/data_sources_materials.rs."
+  },
+  "DataSources/StripeOrientation": {
+    "status": "ported",
+    "rust": "data_sources::stripe_orientation",
+    "note": "Horizontal/Vertical enum; replayed in tests/data_sources_materials.rs."
+  },
+  "DataSources/ImageMaterialProperty": {
+    "status": "ported",
+    "rust": "data_sources::image_material_property",
+    "note": "Image/repeat/color/transparent material property preserving Resource options; replayed in tests/data_sources_materials.rs."
+  },
+  "DataSources/GridMaterialProperty": {
+    "status": "ported",
+    "rust": "data_sources::grid_material_property",
+    "note": "Grid material property; replayed in tests/data_sources_materials.rs."
+  },
+  "DataSources/StripeMaterialProperty": {
+    "status": "ported",
+    "rust": "data_sources::stripe_material_property",
+    "note": "Stripe material property; replayed in tests/data_sources_materials.rs."
+  },
+  "DataSources/CheckerboardMaterialProperty": {
+    "status": "ported",
+    "rust": "data_sources::checkerboard_material_property",
+    "note": "Checkerboard material property; replayed in tests/data_sources_materials.rs."
+  },
+  "DataSources/CompositeMaterialProperty": {
+    "status": "ported",
+    "rust": "data_sources::composite_material_property",
+    "note": "Time-interval composite material property with getType/getValue/events; replayed in tests/data_sources_materials.rs."
+  },
+  "DataSources/PolylineArrowMaterialProperty": {
+    "status": "ported",
+    "rust": "data_sources::polyline_arrow_material_property",
+    "note": "PolylineArrow material property; replayed in tests/data_sources_materials.rs."
+  },
+  "DataSources/PolylineDashMaterialProperty": {
+    "status": "ported",
+    "rust": "data_sources::polyline_dash_material_property",
+    "note": "PolylineDash material property; replayed in tests/data_sources_materials.rs."
+  },
+  "DataSources/PolylineGlowMaterialProperty": {
+    "status": "ported",
+    "rust": "data_sources::polyline_glow_material_property",
+    "note": "PolylineGlow material property; replayed in tests/data_sources_materials.rs."
+  },
+  "DataSources/PolylineOutlineMaterialProperty": {
+    "status": "ported",
+    "rust": "data_sources::polyline_outline_material_property",
+    "note": "PolylineOutline material property; replayed in tests/data_sources_materials.rs."
+  },
+  "DataSources/NodeTransformationProperty": {
+    "status": "ported",
+    "rust": "data_sources::node_transformation_property",
+    "note": "Translation/rotation/scale node transformation property; replayed in tests/data_sources_materials.rs."
+  },
+  "DataSources/Rotation": {
+    "status": "ported",
+    "rust": "data_sources::rotation",
+    "note": "Shortest-path angle interpolation codec for SampledProperty<Rotation>; replayed in tests/data_sources_materials.rs."
+  },
+  "DataSources/DataSourceClock": {
+    "status": "ported",
+    "rust": "data_sources::data_source_clock",
+    "note": "Observable clock settings with clone/merge/equals/getValue; replayed in tests/data_sources_materials.rs."
+  },
+  "DataSources/BoundingSphereState": {
+    "status": "ported",
+    "rust": "data_sources::bounding_sphere_state",
+    "note": "Done/Pending/Failed enum; replayed in tests/data_sources_collections.rs."
+  },
+  "DataSources/Visualizer": {
+    "status": "ported",
+    "rust": "data_sources::visualizer",
+    "note": "Visualizer trait (update, get_bounding_sphere, is_destroyed, destroy); tested in tests/data_sources_collections.rs."
+  },
+  "DataSources/DataSource": {
+    "status": "ported",
+    "rust": "data_sources::data_source",
+    "note": "Shared DataSource trait, DataSourceState and set_loading event suspension; replayed in tests/data_sources_collections.rs."
+  },
+  "DataSources/CustomDataSource": {
+    "status": "ported",
+    "rust": "data_sources::custom_data_source",
+    "note": "In-memory DataSource with entities, clock, show and events; replayed in tests/data_sources_collections.rs."
+  },
+  "DataSources/DataSourceCollection": {
+    "status": "ported",
+    "rust": "data_sources::data_source_collection",
+    "note": "Ordered data-source collection with async add, raise/lower, remove/destroy and events; replayed in tests/data_sources_collections.rs."
+  },
+  "DataSources/DataSourceDisplay": {
+    "status": "ported",
+    "rust": "data_sources::data_source_display",
+    "note": "Coordinates DataSourceCollection, defaultDataSource and visualizers with update and bounding-sphere queries; replayed in tests/data_sources_collections.rs."
+  },
+  "DataSources/GeoJsonDataSource": {
+    "status": "ported",
+    "rust": "data_sources::geo_json_data_source",
+    "note": "GeoJSON + TopoJSON loader with CRS registries, simplestyle properties, clampToGround and host pin descriptors; replayed in tests/data_sources_collections.rs."
+  },
+  "DataSources/GpxDataSource": {
+    "status": "ported",
+    "rust": "data_sources::gpx_data_source",
+    "note": "GPX 1.1 XML loader (metadata, waypoints, routes, tracks, sampled positions, availability, clock, descriptions and events); replayed in tests/data_sources_gpx_kml_tour.rs."
+  },
+  "DataSources/KmlCamera": {
+    "status": "ported",
+    "rust": "data_sources::kml_camera",
+    "note": "KML camera pose; replayed in tests/data_sources_gpx_kml_tour.rs."
+  },
+  "DataSources/KmlLookAt": {
+    "status": "ported",
+    "rust": "data_sources::kml_look_at",
+    "note": "KML look-at pose; replayed in tests/data_sources_gpx_kml_tour.rs."
+  },
+  "DataSources/KmlTour": {
+    "status": "ported",
+    "rust": "data_sources::kml_tour",
+    "note": "KML tour playlist runner with start/end/entry events and stop cancellation; replayed in tests/data_sources_gpx_kml_tour.rs."
+  },
+  "DataSources/KmlTourFlyTo": {
+    "status": "ported",
+    "rust": "data_sources::kml_tour_fly_to",
+    "note": "KML tour camera flight entry and option merging; replayed in tests/data_sources_gpx_kml_tour.rs."
+  },
+  "DataSources/KmlTourWait": {
+    "status": "ported",
+    "rust": "data_sources::kml_tour_wait",
+    "note": "KML tour wait entry with timer/stop lifecycle; replayed in tests/data_sources_gpx_kml_tour.rs."
+  },
+  "DataSources/heightReferenceOnEntityPropertyChanged": {
+    "status": "ported",
+    "rust": "data_sources::height_reference_on_entity_property_changed",
+    "note": "Shared height-reference property-change hook recreating terrain offsets; replayed in tests/data_sources_gpx_kml_tour.rs."
   }
 }

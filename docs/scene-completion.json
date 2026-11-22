@@ -69,8 +69,9 @@
       "module": "Scene/Primitive",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "Partial options and CPU geometry preparation. Constructor fixtures and native failure regressions only. Nonempty drawable geometry returns an explicit unsupported-rendering error; GPU commands, batch tables, asynchronous creation and rendering parity remain unimplemented."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_primitive.rs replays 27 CesiumJS 23.0.0 SwiftShader frames from tools/cesium/generate-scene-primitive.mjs (BatchTable, shader rewrites, RTE/RTC, depthFail, two-pass closed translucent, compressed/interleaved/projected/antimeridian, getGeometryInstanceAttributes and async worker lifecycle)."
     },
     {
       "module": "Scene/PrimitiveCollection",
@@ -454,22 +455,25 @@
       "module": "Scene/DepthPlane",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU geometry and state implemented; rendering is not yet supported."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_single_renderables.rs replays SwiftShader capture from tools/cesium/generate-scene-single-renderables.mjs (depth quad bytes, LOG_DEPTH shader cache, render state, commands)."
     },
     {
       "module": "Scene/DebugCameraPrimitive",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU geometry and state implemented; rendering is not yet supported."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_primitive.rs replays SwiftShader captures of DebugCameraPrimitive (dynamic/static, off-center frustum) built on Primitive<G>."
     },
     {
       "module": "Scene/DebugModelMatrixPrimitive",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU geometry and state implemented; rendering is not yet supported."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_primitive.rs replays SwiftShader capture of DebugModelMatrixPrimitive built on Primitive<G>."
     },
     {
       "module": "Scene/GaussianSplatRenderResources",
@@ -490,8 +494,9 @@
       "module": "Scene/createTangentSpaceDebugPrimitive",
       "baselineStatus": "implemented",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "Creates colored debug line primitive for normal, tangent, and bitangent geometry attributes."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_primitive.rs replays SwiftShader capture of createTangentSpaceDebugPrimitive built on Primitive<G>."
     },
     {
       "module": "Scene/Empty3DTileContent",
@@ -593,8 +598,9 @@
       "module": "Scene/EllipsoidPrimitive",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU model matrix, inverse radii and bounding sphere calculations; draw commands and rendering remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_single_renderables.rs replays SwiftShader capture from tools/cesium/generate-scene-single-renderables.mjs (box VA, shaders/defines, render states, pick id, uniforms, commands)."
     },
     {
       "module": "Scene/EquirectangularPanorama",
@@ -638,8 +644,9 @@
       "module": "Scene/Moon",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU ephemeris, orientation and ellipsoid state; rendering remains."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "tests/scene_single_renderables.rs replays SwiftShader capture from tools/cesium/generate-scene-single-renderables.mjs (ephemeris transform, IAU axes, EllipsoidPrimitive commands)."
     }
   ]
 }
