@@ -5724,37 +5724,37 @@
   "DataSources/BoundingSphereState": {
     "status": "ported",
     "rust": "data_sources::bounding_sphere_state",
-    "note": "Done/Pending/Failed enum; replayed in tests/data_sources_collections.rs."
+    "note": "Visualizer bounding sphere states: Done, Pending and Failed; the fixture lifecycle case pins the numeric values."
   },
   "DataSources/Visualizer": {
     "status": "ported",
     "rust": "data_sources::visualizer",
-    "note": "Visualizer trait (update, get_bounding_sphere, is_destroyed, destroy); tested in tests/data_sources_collections.rs."
+    "note": "Visualizer interface: update, getBoundingSphere with BoundingSphereState, isDestroyed and destroy. Fixture lifecycle case."
   },
   "DataSources/DataSource": {
     "status": "ported",
     "rust": "data_sources::data_source",
-    "note": "Shared DataSource trait, DataSourceState and set_loading event suspension; replayed in tests/data_sources_collections.rs."
+    "note": "Entity data source interface: name, clock, entities, loading, definition/change/error/loading events, show and update; the shared DataSourceState with weak sources and the loading suspension helpers. Fixture lifecycle case."
   },
   "DataSources/CustomDataSource": {
     "status": "ported",
     "rust": "data_sources::custom_data_source",
-    "note": "In-memory DataSource with entities, clock, show and events; replayed in tests/data_sources_collections.rs."
+    "note": "Manual entity collection: name/clock/loading events, change-on-name and change-on-clock, show and update. Clustering is omitted until EntityCluster is ported. Fixture lifecycle case."
   },
   "DataSources/DataSourceCollection": {
     "status": "ported",
     "rust": "data_sources::data_source_collection",
-    "note": "Ordered data-source collection with async add, raise/lower, remove/destroy and events; replayed in tests/data_sources_collections.rs."
+    "note": "Ordered membership: length, get, getByName, indexOf, contains, add, addAsync, remove, removeAll, raise, lower, raiseToTop, lowerToBottom with data source added/removed/moved events; synchronous add, generation-guarded async add. Fixture lifecycle case."
   },
   "DataSources/DataSourceDisplay": {
     "status": "ported",
     "rust": "data_sources::data_source_display",
-    "note": "Coordinates DataSourceCollection, defaultDataSource and visualizers with update and bounding-sphere queries; replayed in tests/data_sources_collections.rs."
+    "note": "Drives factory-supplied visualizers per data source in collection order followed by the default source; per-frame update, ready and bounding spheres via visuals. Fixture lifecycle case."
   },
   "DataSources/GeoJsonDataSource": {
     "status": "ported",
     "rust": "data_sources::geo_json_data_source",
-    "note": "GeoJSON + TopoJSON loader with CRS registries, simplestyle properties, clampToGround and host pin descriptors; replayed in tests/data_sources_collections.rs."
+    "note": "GeoJSON/TopoJSON loader: Feature/FeatureCollection/GeometryCollection and Point/MultiPoint/LineString/MultiLineString/Polygon/MultiPolygon/Topology, simplestyle name/description, TopoJSON arc expansion, Resource/text inputs, host pins and the CRS registry, load/process with active-load loading transitions. Fixture lifecycle case."
   },
   "DataSources/GpxDataSource": {
     "status": "ported",
