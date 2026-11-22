@@ -1,4 +1,4 @@
-//! Constructor/collection reference cases and explicit unsupported-rendering errors.
+//! Constructor and collection reference cases.
 mod common;
 
 use cesium_rs::{core::*, renderer::UniformFrame, scene::*};
@@ -13,7 +13,7 @@ fn frame() -> FrameState {
     FrameState::new(UniformFrame::new(uniform, JulianDate::new(2451545., 0., TimeStandard::Tai)), volume, [16, 16])
 }
 
-fn drawable() -> Primitive {
+fn drawable() -> Primitive<NoGl> {
     let mut attributes = GeometryAttributes::default();
     attributes.set(
         "position",
@@ -34,26 +34,26 @@ fn drawable() -> Primitive {
 }
 
 #[test]
-fn drawable_primitive_reports_missing_renderer_without_noop_commands() {
+fn drawable_primitive_requires_a_renderer_when_rendering() {
     let mut p = drawable();
     let mut frame = frame();
     frame.scene_3d_only = true;
+    frame.passes.render = true;
     let error = p.update(&mut frame).unwrap_err();
-    assert!(error.to_string().contains("executable GPU command creation is required"));
-    assert_eq!(p.state(), PrimitiveState::Failed);
+    assert!(error.to_string().contains("frameState.context is required"));
+    assert_eq!(p.state(), PrimitiveState::Ready);
     assert!(!p.is_ready());
     assert!(frame.command_list.is_empty());
     assert!(p.update(&mut frame).is_err());
 }
 
 #[test]
-fn hidden_primitive_defers_work_and_destroyed_primitive_cannot_update() {
+fn inactive_pass_defers_work_and_destroyed_primitive_cannot_update() {
     let mut p = drawable();
     let mut frame = frame();
-    p.show = false;
     p.update(&mut frame).unwrap();
     assert_eq!(p.state(), PrimitiveState::Ready);
-    p.show = true;
+    frame.passes.render = true;
     assert!(p.update(&mut frame).is_err());
     p.destroy().unwrap();
     assert!(p.is_destroyed());
@@ -70,7 +70,7 @@ fn primitive_constructor_reference() {
         |f, a| match f {
             "options" => {
                 let options = &a[0];
-                let p = Primitive::new(PrimitiveOptions {
+                let p = Primitive::<NoGl>::new(PrimitiveOptions {
                     show: options["show"].as_bool(),
                     asynchronous: options["asynchronous"].as_bool(),
                     allow_picking: options["allowPicking"].as_bool(),

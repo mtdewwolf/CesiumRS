@@ -388,7 +388,7 @@ fn create_tangent_space_debug_primitive_matches_cesium_reference() {
             length: case["length"].as_f64(),
             model_matrix: (!case["matrix"].is_null()).then(|| matrix4_from(&case["matrix"])),
         };
-        let actual = create_tangent_space_debug_primitive(options);
+        let actual = create_tangent_space_debug_primitive::<RecordingGl>(options);
         if case["result"].is_null() {
             assert!(actual.is_none(), "{name}: expected None");
             continue;
@@ -471,7 +471,9 @@ fn create_tangent_space_debug_primitive_matches_cesium_reference() {
     let box_geom =
         BoxGeometry::from_dimensions(Cartesian3::new(dims[0], dims[1], dims[2]), VertexFormat::POSITION_AND_NORMAL, None)
             .unwrap();
-    let prim = create_tangent_space_debug_primitive_from_factory(&box_geom, fc["length"].as_f64(), None).unwrap();
+    let prim =
+        create_tangent_space_debug_primitive_from_factory::<RecordingGl, _>(&box_geom, fc["length"].as_f64(), None)
+            .unwrap();
     assert_eq!(prim.asynchronous, fc["asynchronous"].as_bool().unwrap());
     let instances = prim.geometry_instances().unwrap();
     assert_eq!(instances.len(), fc["instanceCount"].as_u64().unwrap() as usize);

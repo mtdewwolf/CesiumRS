@@ -39,9 +39,6 @@ impl GraphicsProperties {
         let fields = names
             .iter()
             .map(|name| {
-                // Cesium's createMaterialPropertyDescriptor coerces a raw Color
-                // into ColorMaterialProperty. Other material inputs stay
-                // unsupported until ImageMaterialProperty is ported.
                 let factory: Option<super::ComponentFactory> = match *name {
                     "material" | "depthFailMaterial" => {
                         Some(super::create_material_property_descriptor::material_factory())
@@ -52,6 +49,7 @@ impl GraphicsProperties {
                     // ModelGraphics articulations and environment map options
                     // are PropertyBags; nested bag merging is handled below.
                     "articulations" | "environmentMapOptions" => Some(Rc::new(create_property_bag_component)),
+                    "nodeTransformations" => Some(Rc::new(create_node_bag)),
                     _ => None,
                 };
                 create_property_descriptor(*name, false, factory, &changed)
@@ -133,29 +131,26 @@ impl GraphicsProperties {
     }
     /// `PropertyBag`-valued fields (ModelGraphics node transformations and
     /// articulations) merge hierarchically when both sides expose a bag.
-    /// Articulations and environment map options also coerce raw objects in
-    /// `GraphicsProperties::new`; raw node transformations still need the
-    /// unported NodeTransformationProperty factory and are documented.
     fn merge_nested(&self, name: &str, source: Option<&PropertyInput>) -> Result<bool, RuntimeError> {
-        let source_component = match source {
-            Some(PropertyInput::Component(component)) => component.clone(),
-            Some(PropertyInput::Value(DynamicValue::Null)) => return Ok(true),
-            Some(PropertyInput::Value(value)) if name == "articulations" => {
-                create_property_bag_component(value.clone())?
+        let entries = match source {
+            Some(PropertyInput::Component(component)) => {
+                let Some(bag) = component.as_any().downcast_ref::<PropertyBag>() else { return Ok(false) };
+                bag.snapshot()
             }
-            _ => return Ok(false),
+            Some(PropertyInput::Value(DynamicValue::Null)) | None => return Ok(true),
+            Some(PropertyInput::Value(value)) => bag_entries(value.clone()),
         };
-        let Some(source_bag) = source_component.as_any().downcast_ref::<PropertyBag>() else { return Ok(false) };
         match self.get(name) {
             None => {
                 let bag = Rc::new(PropertyBag::new());
-                bag.merge(source_bag)?;
+                let factory = (name == "nodeTransformations").then(node_factory);
+                bag.merge_entries(&entries, factory)?;
                 self.set(name, Some(PropertyInput::Component(bag)))?;
                 Ok(true)
             }
             Some(PropertyInput::Component(target)) => {
                 let Some(target_bag) = target.as_any().downcast_ref::<PropertyBag>() else { return Ok(false) };
-                target_bag.merge(source_bag)?;
+                target_bag.merge_entries(&entries, None)?;
                 Ok(true)
             }
             Some(_) => Ok(false),
@@ -196,32 +191,35 @@ fn create_polygon_hierarchy_component(value: DynamicValue) -> Result<ComponentRe
 
 /// Cesium's model PropertyBag factories for raw objects and records.
 fn create_property_bag_component(value: DynamicValue) -> Result<ComponentRef, RuntimeError> {
-    let bag = match value {
-        DynamicValue::Json(json) => {
-            let value = json.value().clone();
-            if value.is_object() {
-                PropertyBag::from_json(value)?
-            } else if let serde_json::Value::Array(values) = value {
-                let entries = values
-                    .into_iter()
-                    .enumerate()
-                    .map(|(index, value)| (index.to_string(), PropertyInput::Value(DynamicValue::from_json(value))))
-                    .collect();
-                PropertyBag::from_values(entries, None)?
-            } else {
-                Rc::new(PropertyBag::new())
+    let bag = Rc::new(PropertyBag::new());
+    bag.merge_entries(&bag_entries(value), None)?;
+    Ok(bag)
+}
+fn node_factory() -> super::ComponentFactory {
+    Rc::new(super::node_transformation_property::node_factory)
+}
+fn create_node_bag(value: DynamicValue) -> Result<ComponentRef, RuntimeError> {
+    let bag = Rc::new(PropertyBag::new());
+    bag.merge_entries(&bag_entries(value), Some(node_factory()))?;
+    Ok(bag)
+}
+fn bag_entries(value: DynamicValue) -> Vec<(String, Option<PropertyInput>)> {
+    let entries = match value {
+        DynamicValue::Record(entries) => entries,
+        DynamicValue::Json(json) => match &*json.value() {
+            serde_json::Value::Object(map) => {
+                map.iter().map(|(k, v)| (k.clone(), Some(DynamicValue::from_json(v.clone())))).collect()
             }
-        }
-        DynamicValue::Record(values) => {
-            let entries = values
-                .into_iter()
-                .filter_map(|(name, value)| value.map(|value| (name, PropertyInput::Value(value))))
-                .collect();
-            PropertyBag::from_values(entries, None)?
-        }
-        _ => Rc::new(PropertyBag::new()),
+            serde_json::Value::Array(values) => values
+                .iter()
+                .enumerate()
+                .map(|(i, v)| (i.to_string(), Some(DynamicValue::from_json(v.clone()))))
+                .collect(),
+            _ => vec![],
+        },
+        _ => vec![],
     };
-    Ok(bag as ComponentRef)
+    crate::core::query::js_object_order(entries.into_iter().map(|(k, v)| (k, v.map(PropertyInput::Value))).collect())
 }
 /// Builds the native graphics component for a Cesium graphics class.
 ///

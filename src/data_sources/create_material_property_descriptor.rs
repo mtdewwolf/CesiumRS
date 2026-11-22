@@ -1,10 +1,7 @@
 //! CesiumJS `createMaterialPropertyDescriptor`: infer material components.
-//!
-//! This batch supports the Color material. Image/Resource/HTML video and
-//! canvas inputs need `ImageMaterialProperty`, which is still unported.
 use super::{
     color_material_property::color_material_component, create_property_descriptor, ChangeEvent, ComponentFactory,
-    ComponentRef, DynamicValue, PropertyChange, PropertyDescriptor,
+    ComponentRef, DynamicValue, PropertyChange, PropertyDescriptor, PropertyValue,
 };
 use crate::core::RuntimeError;
 use std::rc::Rc;
@@ -12,10 +9,12 @@ use std::rc::Rc;
 pub(crate) fn create_material_component(value: DynamicValue) -> Result<ComponentRef, RuntimeError> {
     match value {
         DynamicValue::Color(color) => color_material_component(color),
-        DynamicValue::String(_) => Err(RuntimeError::new(
-            "ImageMaterialProperty is not ported; pass a ColorMaterialProperty component instead",
-        )),
-        _ => Err(RuntimeError::new("Unable to infer material type")),
+        DynamicValue::String(_) | DynamicValue::Resource(_) => {
+            let material = super::ImageMaterialProperty::new();
+            material.set_image(Some(super::PropertyInput::Value(value)))?;
+            Ok(Rc::new(material))
+        }
+        _ => Err(RuntimeError::new(format!("Unable to infer material type: {}", value.property_string()))),
     }
 }
 /// Native equivalent of `createMaterialPropertyDescriptor`.

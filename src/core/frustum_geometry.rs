@@ -8,7 +8,9 @@ use super::geometry::{Geometry, GeometryAttribute, GeometryAttributes};
 use super::matrix3::Matrix3;
 use super::matrix4::Matrix4;
 use super::orthographic_frustum::OrthographicFrustum;
+use super::orthographic_off_center_frustum::OrthographicOffCenterFrustum;
 use super::perspective_frustum::PerspectiveFrustum;
+use super::perspective_off_center_frustum::PerspectiveOffCenterFrustum;
 use super::primitive_type::PrimitiveType;
 use super::quaternion::Quaternion;
 use super::typed_array::TypedArray;
@@ -18,6 +20,8 @@ use super::vertex_format::VertexFormat;
 pub enum Frustum {
     Perspective(PerspectiveFrustum),
     Orthographic(OrthographicFrustum),
+    PerspectiveOffCenter(PerspectiveOffCenterFrustum),
+    OrthographicOffCenter(OrthographicOffCenterFrustum),
 }
 
 impl Frustum {
@@ -38,6 +42,7 @@ impl Frustum {
         match self {
             Self::Perspective(_) => PerspectiveFrustum::PACKED_LENGTH,
             Self::Orthographic(_) => OrthographicFrustum::PACKED_LENGTH,
+            Self::PerspectiveOffCenter(_) | Self::OrthographicOffCenter(_) => 6,
         }
     }
 
@@ -53,15 +58,30 @@ impl Frustum {
                 array[i] = 1.0;
                 f.pack(array, i + 1);
             }
+            Self::PerspectiveOffCenter(f) => {
+                array[i] = 2.0;
+                array[i + 1..i + 7].copy_from_slice(&[f.left, f.right, f.top, f.bottom, f.near, f.far]);
+            }
+            Self::OrthographicOffCenter(f) => {
+                array[i] = 3.0;
+                array[i + 1..i + 7].copy_from_slice(&[f.left, f.right, f.top, f.bottom, f.near, f.far]);
+            }
         }
         i + 1 + self.packed_length()
     }
 
     fn unpack(array: &[f64], i: usize) -> (Self, usize) {
-        let frustum = if array[i] == 0.0 {
-            Self::Perspective(PerspectiveFrustum::unpack(array, i + 1))
-        } else {
-            Self::Orthographic(OrthographicFrustum::unpack(array, i + 1))
+        let frustum = match array[i] {
+            0.0 => Self::Perspective(PerspectiveFrustum::unpack(array, i + 1)),
+            2.0 | 3.0 => {
+                let [left, right, top, bottom, near, far] = array[i + 1..i + 7].try_into().unwrap();
+                if array[i] == 2.0 {
+                    Self::PerspectiveOffCenter(PerspectiveOffCenterFrustum::new(left, right, top, bottom, near, far))
+                } else {
+                    Self::OrthographicOffCenter(OrthographicOffCenterFrustum::new(left, right, top, bottom, near, far))
+                }
+            }
+            _ => Self::Orthographic(OrthographicFrustum::unpack(array, i + 1)),
         };
         (frustum, i + 1 + frustum.packed_length())
     }
@@ -90,38 +110,44 @@ pub fn compute_near_far_planes(origin: Cartesian3, orientation: &Quaternion, fru
     let (x, y, z) = axes(orientation);
     let view = Matrix4::compute_view(origin, z, y, x);
     let mut positions = [0.0; 24];
-    match frustum {
-        Frustum::Perspective(f) => {
-            let inverse_view_projection = f.projection_matrix().multiply(&view).inverse().ok()?;
-            let splits = [f.near, f.far];
-            for i in 0..2 {
-                for (j, ndc) in FRUSTUM_CORNERS_NDC.iter().enumerate() {
-                    let corner = inverse_view_projection.multiply_by_vector(*ndc);
-                    let w = 1.0 / corner.w;
-                    let c = Cartesian3::new(corner.x, corner.y, corner.z).multiply_by_scalar(w);
-                    let c = c.subtract(origin).normalize();
-                    let fac = z.dot(c);
-                    let c = c.multiply_by_scalar(splits[i] / fac).add(origin);
-                    positions[12 * i + j * 3..12 * i + j * 3 + 3].copy_from_slice(&[c.x, c.y, c.z]);
-                }
+    let perspective = match frustum {
+        Frustum::Perspective(f) => Some(f.off_center_frustum()),
+        Frustum::PerspectiveOffCenter(f) => Some(*f),
+        _ => None,
+    };
+    if let Some(f) = perspective {
+        let inverse_view_projection = f.projection_matrix().multiply(&view).inverse().ok()?;
+        let splits = [f.near, f.far];
+        for i in 0..2 {
+            for (j, ndc) in FRUSTUM_CORNERS_NDC.iter().enumerate() {
+                let corner = inverse_view_projection.multiply_by_vector(*ndc);
+                let w = 1.0 / corner.w;
+                let c = Cartesian3::new(corner.x, corner.y, corner.z).multiply_by_scalar(w);
+                let c = c.subtract(origin).normalize();
+                let fac = z.dot(c);
+                let c = c.multiply_by_scalar(splits[i] / fac).add(origin);
+                positions[12 * i + j * 3..12 * i + j * 3 + 3].copy_from_slice(&[c.x, c.y, c.z]);
             }
         }
-        Frustum::Orthographic(f) => {
-            let inverse_view = view.inverse_transformation();
-            let off_center = f.off_center_frustum();
-            let splits = [0.0, f.near, f.far];
-            for i in 0..2 {
-                let (near, far) = (splits[i], splits[i + 1]);
-                for (j, ndc) in FRUSTUM_CORNERS_NDC.iter().enumerate() {
-                    let corner = Cartesian4::new(
-                        (ndc.x * (off_center.right - off_center.left) + off_center.left + off_center.right) * 0.5,
-                        (ndc.y * (off_center.top - off_center.bottom) + off_center.bottom + off_center.top) * 0.5,
-                        (ndc.z * (near - far) - near - far) * 0.5,
-                        1.0,
-                    );
-                    let c = inverse_view.multiply_by_vector(corner);
-                    positions[12 * i + j * 3..12 * i + j * 3 + 3].copy_from_slice(&[c.x, c.y, c.z]);
-                }
+    } else {
+        let inverse_view = view.inverse_transformation();
+        let off_center = match frustum {
+            Frustum::Orthographic(f) => f.off_center_frustum(),
+            Frustum::OrthographicOffCenter(f) => *f,
+            _ => unreachable!(),
+        };
+        let splits = [0.0, off_center.near, off_center.far];
+        for i in 0..2 {
+            let (near, far) = (splits[i], splits[i + 1]);
+            for (j, ndc) in FRUSTUM_CORNERS_NDC.iter().enumerate() {
+                let corner = Cartesian4::new(
+                    (ndc.x * (off_center.right - off_center.left) + off_center.left + off_center.right) * 0.5,
+                    (ndc.y * (off_center.top - off_center.bottom) + off_center.bottom + off_center.top) * 0.5,
+                    (ndc.z * (near - far) - near - far) * 0.5,
+                    1.0,
+                );
+                let c = inverse_view.multiply_by_vector(corner);
+                positions[12 * i + j * 3..12 * i + j * 3 + 3].copy_from_slice(&[c.x, c.y, c.z]);
             }
         }
     }

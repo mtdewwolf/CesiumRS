@@ -110,3 +110,69 @@ pub mod rectangle_graphics;
 pub use rectangle_graphics::RectangleGraphics;
 pub mod wall_graphics;
 pub use wall_graphics::WallGraphics;
+
+pub mod image_material_property;
+mod record_property;
+pub use image_material_property::ImageMaterialProperty;
+pub mod grid_material_property;
+pub use grid_material_property::GridMaterialProperty;
+pub mod stripe_material_property;
+pub use stripe_material_property::StripeMaterialProperty;
+pub mod checkerboard_material_property;
+pub use checkerboard_material_property::CheckerboardMaterialProperty;
+pub mod polyline_arrow_material_property;
+pub use polyline_arrow_material_property::PolylineArrowMaterialProperty;
+pub mod polyline_dash_material_property;
+pub use polyline_dash_material_property::PolylineDashMaterialProperty;
+pub mod polyline_glow_material_property;
+pub use polyline_glow_material_property::PolylineGlowMaterialProperty;
+pub mod polyline_outline_material_property;
+pub use polyline_outline_material_property::PolylineOutlineMaterialProperty;
+pub mod node_transformation_property;
+pub use node_transformation_property::NodeTransformationProperty;
+pub mod stripe_orientation;
+pub use stripe_orientation::StripeOrientation;
+pub mod material_property;
+pub use material_property::MaterialProperty;
+pub mod composite_material_property;
+pub use composite_material_property::CompositeMaterialProperty;
+pub mod rotation;
+pub use rotation::Rotation;
+pub mod data_source_clock;
+pub use data_source_clock::DataSourceClock;
+
+pub mod bounding_sphere_state;
+pub use bounding_sphere_state::BoundingSphereState;
+pub mod visualizer;
+pub use visualizer::Visualizer;
+pub mod data_source;
+pub use data_source::{DataSource, DataSourceRef, DataSourceState};
+pub mod custom_data_source;
+pub use custom_data_source::CustomDataSource;
+pub mod data_source_collection;
+pub use data_source_collection::{DataSourceCollection, DataSourceMembership, DataSourceMove};
+pub mod data_source_display;
+pub use data_source_display::{DataSourceDisplay, VisualizerFactory};
+pub mod geo_json_data_source;
+pub use geo_json_data_source::{
+    CrsFunction, CrsLinkResolver, CrsRegistry, DescribeProperty, GeoJsonDataSource, GeoJsonInput, GeoJsonOptions,
+    GeoJsonPin, PinSymbol,
+};
+pub mod gpx_data_source;
+pub use gpx_data_source::{
+    GpxBounds, GpxCopyright, GpxDataSource, GpxInput, GpxLink, GpxMetadata, GpxOptions, GpxPerson,
+};
+pub mod kml_camera;
+pub use kml_camera::KmlCamera;
+pub mod kml_look_at;
+pub use kml_look_at::KmlLookAt;
+pub mod kml_tour;
+pub use kml_tour::{KmlTour, KmlTourEntryRef, KmlTourPlaylistEntry};
+pub mod kml_tour_fly_to;
+pub use kml_tour_fly_to::{KmlTourCamera, KmlTourCameraOptions, KmlTourDoneCallback, KmlTourFlyTo, KmlTourView};
+pub mod kml_tour_wait;
+pub use kml_tour_wait::{KmlTourTimer, KmlTourWait};
+pub mod height_reference_on_entity_property_changed;
+pub use height_reference_on_entity_property_changed::{
+    height_reference_on_entity_property_changed, HeightReferenceUpdaterHost,
+};

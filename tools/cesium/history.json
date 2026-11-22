@@ -622,5 +622,13 @@
     "ported": 1084,
     "implemented": 0,
     "validatedPercent": 67.15
+  },
+  {
+    "milestone": "Primitive, renderables & DataSources",
+    "date": "2026-11-22",
+    "percent": 75.72,
+    "ported": 1120,
+    "implemented": 0,
+    "validatedPercent": 69.8
   }
 ]

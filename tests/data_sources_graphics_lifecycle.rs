@@ -102,15 +102,14 @@ fn model_nested_property_bags_merge_when_explicitly_supplied() {
     let merged = merged.as_any().downcast_ref::<PropertyBag>().unwrap();
     assert_eq!(merged.property_names(), vec!["node"]);
 
-    // A nested raw value is intentionally still a plain ConstantProperty; the
-    // special PropertyBag coercion and NodeTransformationProperty remain open.
     let raw = ModelGraphics::with_options([(
         "nodeTransformations".into(),
         PropertyInput::value(DynamicValue::from_json(json!({"node": {"translation": [1, 2, 3]}}))),
     )])
     .unwrap();
     let raw = raw.node_transformations().unwrap().component().unwrap();
-    assert!(raw.as_any().is::<PropertyComponent<DynamicValue>>());
+    let bag = raw.as_any().downcast_ref::<PropertyBag>().unwrap();
+    assert!(bag.get("node").unwrap().component().unwrap().as_any().is::<NodeTransformationProperty>());
 }
 
 #[test]
@@ -198,11 +197,9 @@ fn graphics_events_and_material_nested_reference() {
 }
 
 #[test]
-fn material_descriptor_rejects_unported_inputs() {
-    let Err(error) = BoxGraphics::with_options([("material".into(), PropertyInput::value("image.png"))]) else {
-        panic!("image materials must be rejected");
-    };
-    assert!(error.to_string().contains("ImageMaterialProperty"));
+fn material_descriptor_accepts_images_and_rejects_unknown_types() {
+    let image = BoxGraphics::with_options([("material".into(), PropertyInput::value("image.png"))]).unwrap();
+    assert!(image.material().unwrap().component().unwrap().as_any().is::<ImageMaterialProperty>());
     let Err(error) = BoxGraphics::with_options([("material".into(), PropertyInput::value(3.))]) else {
         panic!("unknown materials must be rejected");
     };

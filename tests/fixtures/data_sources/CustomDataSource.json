@@ -1,0 +1,1 @@
+{"module":"CustomDataSource","cesium":"23.0.0","cases":[{"f":"lifecycle","a":[],"r":[[null,false,true,false,true],[["change","one",false],["change","one",true],["change","one",false],["loading",true,true],["entities",["A","B"],true],["loading",false,false],["entities",[],false]],false,true]}]}

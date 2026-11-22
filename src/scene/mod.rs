@@ -562,7 +562,8 @@ pub use primitive_state::PrimitiveState;
 pub mod primitive_pipeline;
 pub use primitive_pipeline::{CombineGeometryParameters, CombineGeometryResults, PickOffset, PrimitivePipeline};
 pub mod primitive;
-pub use primitive::{Primitive, PrimitiveOptions};
+mod primitive_shader;
+pub use primitive::{GeometryInstanceAttributes, Primitive, PrimitiveCommand, PrimitiveOptions, PrimitivePickObject};
 pub mod primitive_collection;
 pub use primitive_collection::{PrimitiveCollection, PrimitiveCollectionOptions, PrimitiveHandle};
 pub mod shadow_volume_appearance;
@@ -744,7 +745,7 @@ pub use debug_inspector::{
     debug_show_frustums_color, DebugInspector, DebugShowOptions,
 };
 pub mod ellipsoid_primitive;
-pub use ellipsoid_primitive::{EllipsoidPrimitive, EllipsoidPrimitiveOptions};
+pub use ellipsoid_primitive::{EllipsoidCommand, EllipsoidPrimitive, EllipsoidPrimitiveOptions};
 pub mod equirectangular_panorama;
 pub use equirectangular_panorama::{EquirectangularPanorama, EquirectangularPanoramaOptions};
 pub mod frame_rate_monitor;

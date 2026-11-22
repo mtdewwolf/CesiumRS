@@ -10,6 +10,10 @@ use std::{
 /// Value operations used by property equality, filtering and string conversion.
 /// Use `Rc` or `JsonReference` for JavaScript reference identity.
 pub trait PropertyValue: Clone + 'static {
+    /// Snapshot taken by ConstantProperty for values with Cesium's clone method.
+    fn into_constant(self) -> Self {
+        self
+    }
     fn property_equals(&self, other: &Self) -> bool;
     fn strict_equals(&self, other: &Self) -> bool {
         self.property_equals(other)

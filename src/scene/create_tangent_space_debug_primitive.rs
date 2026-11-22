@@ -9,6 +9,7 @@ use super::primitive::{Primitive, PrimitiveOptions};
 use crate::core::color_geometry_instance_attribute::ColorGeometryInstanceAttribute;
 use crate::core::geometry_pipeline::create_line_segments_for_vectors;
 use crate::core::{Color, Geometry, GeometryFactory, GeometryInstance, Matrix4};
+use crate::renderer::Gl;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CreateTangentSpaceDebugPrimitiveOptions {
@@ -19,53 +20,23 @@ pub struct CreateTangentSpaceDebugPrimitiveOptions {
 
 impl CreateTangentSpaceDebugPrimitiveOptions {
     pub fn new(geometry: Geometry) -> Self {
-        Self {
-            geometry,
-            length: None,
-            model_matrix: None,
-        }
+        Self { geometry, length: None, model_matrix: None }
     }
 }
 
 /// Creates a [`Primitive`] with lines visualizing normal, tangent, and bitangent
 /// attributes of a geometry.
-pub fn create_tangent_space_debug_primitive(
+pub fn create_tangent_space_debug_primitive<G: Gl + 'static>(
     options: CreateTangentSpaceDebugPrimitiveOptions,
-) -> Option<Primitive> {
+) -> Option<Primitive<G>> {
     let geometry = options.geometry;
     let length = options.length.unwrap_or(10000.0);
     let model_matrix = options.model_matrix.unwrap_or(Matrix4::IDENTITY);
     let mut instances = Vec::new();
-
-    if geometry.attributes.normal.is_some() {
-        if let Some(lines) = create_line_segments_for_vectors(&geometry, Some("normal"), Some(length)) {
+    for (name, color) in [("normal", Color::RED), ("tangent", Color::LIME), ("bitangent", Color::BLUE)] {
+        if let Some(lines) = create_line_segments_for_vectors(&geometry, Some(name), Some(length)) {
             let mut instance = GeometryInstance::new(lines, Some(model_matrix));
-            instance.attributes.push((
-                "color".into(),
-                ColorGeometryInstanceAttribute::from_color(&Color::new(1.0, 0.0, 0.0, 1.0)).into(),
-            ));
-            instances.push(instance);
-        }
-    }
-
-    if geometry.attributes.tangent.is_some() {
-        if let Some(lines) = create_line_segments_for_vectors(&geometry, Some("tangent"), Some(length)) {
-            let mut instance = GeometryInstance::new(lines, Some(model_matrix));
-            instance.attributes.push((
-                "color".into(),
-                ColorGeometryInstanceAttribute::from_color(&Color::new(0.0, 1.0, 0.0, 1.0)).into(),
-            ));
-            instances.push(instance);
-        }
-    }
-
-    if geometry.attributes.bitangent.is_some() {
-        if let Some(lines) = create_line_segments_for_vectors(&geometry, Some("bitangent"), Some(length)) {
-            let mut instance = GeometryInstance::new(lines, Some(model_matrix));
-            instance.attributes.push((
-                "color".into(),
-                ColorGeometryInstanceAttribute::from_color(&Color::new(0.0, 0.0, 1.0, 1.0)).into(),
-            ));
+            instance.attributes.push(("color".into(), ColorGeometryInstanceAttribute::from_color(&color).into()));
             instances.push(instance);
         }
     }
@@ -76,13 +47,11 @@ pub fn create_tangent_space_debug_primitive(
 
     let primitive = Primitive::new(PrimitiveOptions {
         geometry_instances: instances,
-        appearance: Some(Box::new(PerInstanceColorAppearance::new(
-            PerInstanceColorAppearanceOptions {
-                flat: Some(true),
-                translucent: Some(false),
-                ..Default::default()
-            },
-        ))),
+        appearance: Some(Box::new(PerInstanceColorAppearance::new(PerInstanceColorAppearanceOptions {
+            flat: Some(true),
+            translucent: Some(false),
+            ..Default::default()
+        }))),
         asynchronous: Some(false),
         ..Default::default()
     });
@@ -92,11 +61,11 @@ pub fn create_tangent_space_debug_primitive(
 
 /// Computes `geometry` from a [`GeometryFactory`] and creates a tangent-space
 /// debug [`Primitive`], matching CesiumJS's uncomputed-geometry path.
-pub fn create_tangent_space_debug_primitive_from_factory<F: GeometryFactory>(
+pub fn create_tangent_space_debug_primitive_from_factory<G: Gl + 'static, F: GeometryFactory>(
     factory: &F,
     length: Option<f64>,
     model_matrix: Option<Matrix4>,
-) -> Option<Primitive> {
+) -> Option<Primitive<G>> {
     let geometry = factory.create_geometry()?;
     create_tangent_space_debug_primitive(CreateTangentSpaceDebugPrimitiveOptions {
         geometry,
@@ -110,6 +79,7 @@ mod tests {
     use super::*;
     use crate::core::geometry::{GeometryAttribute, GeometryAttributes};
     use crate::core::PrimitiveType;
+    use crate::scene::primitive::tests::TestGl;
 
     #[test]
     fn creates_lines_for_normal_attribute() {
@@ -126,9 +96,7 @@ mod tests {
             PrimitiveType::Triangles,
         );
 
-        let prim = create_tangent_space_debug_primitive(
-            CreateTangentSpaceDebugPrimitiveOptions::new(geom),
-        );
+        let prim = create_tangent_space_debug_primitive::<TestGl>(CreateTangentSpaceDebugPrimitiveOptions::new(geom));
         assert!(prim.is_some());
         let primitive = prim.unwrap();
         assert!(!primitive.asynchronous);
@@ -138,17 +106,12 @@ mod tests {
     fn returns_none_when_no_tangent_space_attributes() {
         let positions = vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0];
         let geom = Geometry::new(
-            GeometryAttributes {
-                position: Some(GeometryAttribute::doubles(3, positions)),
-                ..Default::default()
-            },
+            GeometryAttributes { position: Some(GeometryAttribute::doubles(3, positions)), ..Default::default() },
             None,
             PrimitiveType::Triangles,
         );
 
-        let prim = create_tangent_space_debug_primitive(
-            CreateTangentSpaceDebugPrimitiveOptions::new(geom),
-        );
+        let prim = create_tangent_space_debug_primitive::<TestGl>(CreateTangentSpaceDebugPrimitiveOptions::new(geom));
         assert!(prim.is_none());
     }
 }

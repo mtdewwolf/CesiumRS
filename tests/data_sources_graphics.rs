@@ -26,8 +26,7 @@ fn names<T: Graphics>() -> &'static [&'static str] {
     T::empty().property_names()
 }
 
-/// ModelGraphics nested PropertyBag coercion is not part of this batch; the
-/// fixture and native operations skip those two slots and document them.
+/// Nested bags use dedicated cases with object-valued inputs.
 fn supported_names<T: Graphics>() -> Vec<&'static str> {
     names::<T>().iter().copied().filter(|name| !matches!(*name, "nodeTransformations" | "articulations")).collect()
 }

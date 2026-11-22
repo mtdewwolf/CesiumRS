@@ -1,3 +1,5 @@
+mod common;
+
 use cesium_rs::core::*;
 use cesium_rs::scene::*;
 #[test]
@@ -109,7 +111,7 @@ fn create_tangent_space_debug_primitive_none() {
     use cesium_rs::core::geometry::{Geometry, GeometryAttributes};
     use cesium_rs::core::PrimitiveType;
     let geom = Geometry::new(GeometryAttributes::default(), None, PrimitiveType::Triangles);
-    let p = create_tangent_space_debug_primitive(CreateTangentSpaceDebugPrimitiveOptions::new(geom));
+    let p = create_tangent_space_debug_primitive::<common::NoGl>(CreateTangentSpaceDebugPrimitiveOptions::new(geom));
     assert!(p.is_none());
 }
 
