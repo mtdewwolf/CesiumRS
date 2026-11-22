@@ -42,8 +42,8 @@ pub struct ModelLoadRequest {
 }
 
 /// Async factory creating a [`Model`] primitive for a given [`ModelLoadRequest`].
-pub type ModelFactory<G> =
-    Rc<dyn Fn(ModelLoadRequest) -> LocalBoxFuture<'static, Result<Rc<RefCell<Model<G>>>, RuntimeError>>>;
+type ModelFuture<G> = LocalBoxFuture<'static, Result<Rc<RefCell<Model<G>>>, RuntimeError>>;
+pub type ModelFactory<G> = Rc<dyn Fn(ModelLoadRequest) -> ModelFuture<G>>;
 
 /// Optional scene height query callback used by `ModelVisualizer::get_bounding_sphere`
 /// when `heightReference != HeightReference::None`.
@@ -51,7 +51,7 @@ pub type ModelHeightQuery = Rc<dyn Fn(&Cartographic, HeightReference) -> Option<
 
 struct ModelData<G: Gl + 'static> {
     url: String,
-    pending: Option<LocalBoxFuture<'static, Result<Rc<RefCell<Model<G>>>, RuntimeError>>>,
+    pending: Option<ModelFuture<G>>,
     model_primitive: Option<Rc<RefCell<Model<G>>>>,
     animations_running: bool,
     load_failed: bool,
@@ -322,13 +322,15 @@ impl<G: Gl + 'static> Visualizer for ModelVisualizer<G> {
 
             if is_ready {
                 let run_animations = eval_bool(graphics.run_animations().as_ref(), time, true)?;
-                let prev_running = self.registry.borrow().models.get(&id).map_or(false, |d| d.animations_running);
+                let prev_running = self.registry.borrow().models.get(&id).is_some_and(|d| d.animations_running);
                 if prev_running != run_animations {
                     let m = model.borrow();
                     if run_animations {
                         if let Some(sg) = m.scene_graph.as_ref() {
-                            let mut opts = ModelAnimationOptions::default();
-                            opts.loop_mode = Some(ModelAnimationLoop::Repeat);
+                            let opts = ModelAnimationOptions {
+                                loop_mode: Some(ModelAnimationLoop::Repeat),
+                                ..Default::default()
+                            };
                             let _ = m.active_animations.borrow_mut().add_all(
                                 &sg.components().animations,
                                 sg.runtime_nodes(),
@@ -456,10 +458,10 @@ fn on_collection_changed<G: Gl + 'static>(
         if entity.get_property("model").is_some() && entity.get_property("position").is_some() {
             reg.insert_entity(Rc::clone(entity));
         } else {
-            reg.remove_entity(&entity.id());
+            reg.remove_entity(entity.id());
         }
     }
     for entity in removed.iter().rev() {
-        reg.remove_entity(&entity.id());
+        reg.remove_entity(entity.id());
     }
 }

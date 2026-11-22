@@ -287,10 +287,10 @@ impl<G: Gl + 'static> Visualizer for PathVisualizer<G> {
                 }
             }
 
-            if !updaters.contains_key(&frame_to_visualize) {
+            if let std::collections::hash_map::Entry::Vacant(e) = updaters.entry(frame_to_visualize) {
                 let mut created = PolylineUpdater::new(frame_to_visualize);
                 created.update(time, &self.context)?;
-                updaters.insert(frame_to_visualize, created);
+                e.insert(created);
             }
 
             item.frame = Some(frame_to_visualize);
@@ -351,7 +351,7 @@ fn on_collection_changed<G: Gl + 'static>(
         }
     }
     for entity in removed.iter().rev() {
-        if let Some(mut item) = items.remove(&entity.id()) {
+        if let Some(mut item) = items.remove(entity.id()) {
             if let Some(frame) = item.frame {
                 if let Some(updater) = updaters.borrow_mut().get_mut(&frame) {
                     updater.remove_object(&mut item);
@@ -440,7 +440,7 @@ fn sub_sample_sampled_property(
 
     let mut stepped_on_now = match update_time {
         None => true,
-        Some(u) => JulianDate::less_than_or_equals(&*u, &*start) || JulianDate::greater_than_or_equals(&*u, &*stop),
+        Some(u) => JulianDate::less_than_or_equals(u, start) || JulianDate::greater_than_or_equals(u, stop),
     };
 
     let times = property.times();
@@ -456,7 +456,7 @@ fn sub_sample_sampled_property(
         while t < len {
             if !stepped_on_now {
                 if let Some(u) = update_time {
-                    if JulianDate::greater_than_or_equals(&current, &*u) {
+                    if JulianDate::greater_than_or_equals(&current, u) {
                         if let Some(v) = property.get_value_in_reference_frame(u, reference_frame, None)? {
                             result.push(v);
                         }
@@ -466,7 +466,7 @@ fn sub_sample_sampled_property(
             }
 
             let eq_update = update_time.is_some_and(|u| current == *u);
-            if JulianDate::greater_than(&current, &*start) && JulianDate::less_than(&current, &*stop) && !eq_update {
+            if JulianDate::greater_than(&current, start) && JulianDate::less_than(&current, stop) && !eq_update {
                 if let Some(v) = property.get_value_in_reference_frame(&current, reference_frame, None)? {
                     result.push(v);
                 }
@@ -517,12 +517,12 @@ fn sub_sample_callback_property(
     let mut time = *start;
     let mut stepped_on_now = match update_time {
         None => true,
-        Some(u) => JulianDate::less_than_or_equals(&*u, &*start) || JulianDate::greater_than_or_equals(&*u, &*stop),
+        Some(u) => JulianDate::less_than_or_equals(u, start) || JulianDate::greater_than_or_equals(u, stop),
     };
-    while JulianDate::less_than(&time, &*stop) {
+    while JulianDate::less_than(&time, stop) {
         if !stepped_on_now {
             if let Some(u) = update_time {
-                if JulianDate::greater_than_or_equals(&time, &*u) {
+                if JulianDate::greater_than_or_equals(&time, u) {
                     stepped_on_now = true;
                     if let Some(v) = property.get_value_in_reference_frame(u, reference_frame, None)? {
                         result.push(v);
@@ -551,17 +551,17 @@ fn sub_sample_generic_property(
     maximum_step: f64,
     result: &mut Vec<Cartesian3>,
 ) -> Result<(), RuntimeError> {
-    let step_size = maximum_step.max(60.0);
+    let step_size = if maximum_step.is_finite() && maximum_step > 0.0 { maximum_step } else { DEFAULT_RESOLUTION };
     let mut i = 0usize;
     let mut time = *start;
     let mut stepped_on_now = match update_time {
         None => true,
-        Some(u) => JulianDate::less_than_or_equals(&*u, &*start) || JulianDate::greater_than_or_equals(&*u, &*stop),
+        Some(u) => JulianDate::less_than_or_equals(u, start) || JulianDate::greater_than_or_equals(u, stop),
     };
-    while JulianDate::less_than(&time, &*stop) {
+    while JulianDate::less_than(&time, stop) {
         if !stepped_on_now {
             if let Some(u) = update_time {
-                if JulianDate::greater_than_or_equals(&time, &*u) {
+                if JulianDate::greater_than_or_equals(&time, u) {
                     stepped_on_now = true;
                     if let Some(v) = property.get_value_in_reference_frame(u, reference_frame, None)? {
                         result.push(v);
@@ -646,8 +646,8 @@ fn sub_sample_composite_property(
         out
     };
     for (istart, istop, child) in entries {
-        let sample_start = if JulianDate::greater_than(&istart, &*start) { istart } else { *start };
-        let sample_stop = if JulianDate::less_than(&istop, &*stop) { istop } else { *stop };
+        let sample_start = if JulianDate::greater_than(&istart, start) { istart } else { *start };
+        let sample_stop = if JulianDate::less_than(&istop, stop) { istop } else { *stop };
         really_sub_sample(&child, &sample_start, &sample_stop, update_time, reference_frame, maximum_step, result)?;
     }
     Ok(())

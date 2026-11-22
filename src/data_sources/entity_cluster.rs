@@ -469,10 +469,36 @@ impl<G: Gl + 'static> EntityCluster<G> {
 
         let pending_events: Vec<ClusterEventPayload<G>> = {
             let mut s = self.state.borrow_mut();
-            if (s.label_collection.is_none() && s.billboard_collection.is_none() && s.point_collection.is_none())
-                || (!cluster_billboards && !cluster_labels && !cluster_points)
-            {
+            if s.label_collection.is_none() && s.billboard_collection.is_none() && s.point_collection.is_none() {
                 return Ok(());
+            }
+
+            if !cluster_labels {
+                if let Some(collection) = s.label_collection.as_ref() {
+                    for i in 0..collection.len() {
+                        if let Some(label) = collection.get(i) {
+                            label.borrow_mut().set_cluster_show(true);
+                        }
+                    }
+                }
+            }
+            if !cluster_billboards {
+                if let Some(collection) = s.billboard_collection.as_mut() {
+                    for i in 0..collection.length() {
+                        if let Some(billboard) = collection.get(i) {
+                            billboard.set_cluster_show(true);
+                        }
+                    }
+                }
+            }
+            if !cluster_points {
+                if let Some(collection) = s.point_collection.as_mut() {
+                    for i in 0..collection.length() {
+                        if let Some(point) = collection.get(i) {
+                            point.set_cluster_show(true);
+                        }
+                    }
+                }
             }
 
             if let Some(c) = s.cluster_label_collection.as_mut() {
@@ -490,6 +516,12 @@ impl<G: Gl + 'static> EntityCluster<G> {
             } else {
                 s.cluster_point_collection =
                     Some(PointPrimitiveCollection::new(PointPrimitiveCollectionOptions::default()));
+            }
+
+            if !cluster_billboards && !cluster_labels && !cluster_points {
+                s.previous_clusters.clear();
+                s.previous_height = None;
+                return Ok(());
             }
 
             let previous_clusters = std::mem::take(&mut s.previous_clusters);
@@ -606,7 +638,7 @@ impl<G: Gl + 'static> EntityCluster<G> {
                                 cluster_labels,
                                 cluster_points,
                             );
-                            cluster_pos = cluster_pos + get_point_position(&mut s, &points[ni]);
+                            cluster_pos += get_point_position(&mut s, &points[ni]);
                             total_bbox = total_bbox.union(&n_bbox);
                             num_points += 1;
                             if let Some(e) = points[ni].entity.as_ref() {
@@ -1090,7 +1122,7 @@ fn format_cluster_count(n: usize) -> String {
     let s = n.to_string();
     let mut out = String::with_capacity(s.len() + s.len() / 3);
     for (idx, ch) in s.chars().enumerate() {
-        if idx > 0 && (s.len() - idx) % 3 == 0 {
+        if idx > 0 && (s.len() - idx).is_multiple_of(3) {
             out.push(',');
         }
         out.push(ch);
@@ -1210,15 +1242,11 @@ impl KdBush {
             if x >= min_x && x <= max_x && y >= min_y && y <= max_y {
                 result.push(self.ids[m]);
             }
-            if (axis == 0 && min_x <= x) || (axis == 1 && min_y <= y) {
-                if m > left {
-                    stack.push((left, m - 1, 1 - axis));
-                }
+            if ((axis == 0 && min_x <= x) || (axis == 1 && min_y <= y)) && m > left {
+                stack.push((left, m - 1, 1 - axis));
             }
-            if (axis == 0 && max_x >= x) || (axis == 1 && max_y >= y) {
-                if m < right {
-                    stack.push((m + 1, right, 1 - axis));
-                }
+            if ((axis == 0 && max_x >= x) || (axis == 1 && max_y >= y)) && m < right {
+                stack.push((m + 1, right, 1 - axis));
             }
         }
         result

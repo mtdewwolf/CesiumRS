@@ -89,6 +89,7 @@ impl EntityView {
 
         let entity = Rc::clone(&self.entity);
         let tracking_reference_frame = entity.tracking_reference_frame();
+        self.bounding_sphere = bounding_sphere;
         let Some(position_property) = entity.position() else {
             return Ok(());
         };
@@ -112,7 +113,6 @@ impl EntityView {
                     }
                     let offset = HeadingPitchRange::new(0.0, pitch, 0.0);
                     camera.view_bounding_sphere(&sphere, Some(offset)).map_err(|e| RuntimeError::new(e.0))?;
-                    self.bounding_sphere = Some(sphere);
                     update_look_at = false;
                     save_camera = false;
                 } else {

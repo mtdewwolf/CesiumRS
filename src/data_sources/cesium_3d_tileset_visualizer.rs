@@ -153,6 +153,9 @@ impl Visualizer for Cesium3DTilesetVisualizer {
             }
 
             let Some(resource) = resource else {
+                if let Some(tileset) = existing {
+                    tileset.borrow_mut().options.show = false;
+                }
                 continue;
             };
             let url = resource.url();
@@ -247,10 +250,10 @@ fn on_collection_changed(
         if entity.get_property("tileset").is_some() {
             reg.insert_entity(Rc::clone(entity));
         } else {
-            reg.remove_entity(&entity.id());
+            reg.remove_entity(entity.id());
         }
     }
     for entity in removed.iter().rev() {
-        reg.remove_entity(&entity.id());
+        reg.remove_entity(entity.id());
     }
 }

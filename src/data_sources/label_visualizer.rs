@@ -249,7 +249,7 @@ fn on_collection_changed<G: Gl + 'static>(
         }
     }
     for entity in removed.iter().rev() {
-        if let Some(mut data) = items.remove(&entity.id()) {
+        if let Some(mut data) = items.remove(entity.id()) {
             return_primitive(&mut data, entity, cluster);
         }
     }
