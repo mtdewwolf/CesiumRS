@@ -7,7 +7,9 @@ use super::frame_state::FrameState;
 use super::material::{Material, MaterialImage, MaterialValue, IMAGE_TYPE};
 use super::scene::{Result, ScenePrimitive};
 use crate::core::simon1994_planetary_positions;
-use crate::core::{Ellipsoid, IauOrientationAxes, Matrix3, Matrix4, RuntimeError, Transforms};
+use crate::core::{
+    EarthOrientationParameters, Ellipsoid, IauOrientationAxes, Iau2006XysData, Matrix3, Matrix4, RuntimeError, Transforms,
+};
 use crate::renderer::Gl;
 
 /// Default texture URL path for the Moon in CesiumJS.
@@ -81,7 +83,14 @@ impl<G: Gl + 'static> Moon<G> {
 
     /// Evaluates the transformation matrix for the Moon at the given Julian date.
     pub fn compute_moon_transform(&self, time: &crate::core::JulianDate) -> Matrix4 {
-        let icrf_to_fixed = Transforms::compute_teme_to_pseudo_fixed_matrix(time);
+        // `Transforms.computeIcrfToFixedMatrix` with a TEME fallback, exactly
+        // as Moon.js. Without loaded EOP/XYS data the ICRF step returns none and
+        // the pseudo-fixed rotation is used.
+        let icrf_to_fixed = Transforms::compute_icrf_to_central_body_fixed_matrix(
+            time,
+            &EarthOrientationParameters::none(),
+            &Iau2006XysData::default(),
+        );
         let rotation_axes = self.axes.evaluate(time);
         let rotation = Matrix3::multiply(&icrf_to_fixed, &rotation_axes.transpose());
 
