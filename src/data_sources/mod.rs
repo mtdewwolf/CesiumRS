@@ -158,3 +158,21 @@ pub use geo_json_data_source::{
     CrsFunction, CrsLinkResolver, CrsRegistry, DescribeProperty, GeoJsonDataSource, GeoJsonInput, GeoJsonOptions,
     GeoJsonPin, PinSymbol,
 };
+pub mod gpx_data_source;
+pub use gpx_data_source::{
+    GpxBounds, GpxCopyright, GpxDataSource, GpxInput, GpxLink, GpxMetadata, GpxOptions, GpxPerson,
+};
+pub mod kml_camera;
+pub use kml_camera::KmlCamera;
+pub mod kml_look_at;
+pub use kml_look_at::KmlLookAt;
+pub mod kml_tour;
+pub use kml_tour::{KmlTour, KmlTourEntryRef, KmlTourPlaylistEntry};
+pub mod kml_tour_fly_to;
+pub use kml_tour_fly_to::{KmlTourCamera, KmlTourCameraOptions, KmlTourDoneCallback, KmlTourFlyTo, KmlTourView};
+pub mod kml_tour_wait;
+pub use kml_tour_wait::{KmlTourTimer, KmlTourWait};
+pub mod height_reference_on_entity_property_changed;
+pub use height_reference_on_entity_property_changed::{
+    height_reference_on_entity_property_changed, HeightReferenceUpdaterHost,
+};

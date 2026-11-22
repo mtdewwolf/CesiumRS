@@ -1,0 +1,1 @@
+{"module":"KmlTourWait","cesium":"23.0.0","cases":[{"f":"capture","a":[2.5],"r":[{"type":"KmlTourWait","blocking":true,"duration":2.5,"hasCallback":false,"hasTimeout":false},{"type":"KmlTourWait","blocking":true,"duration":2.5,"hasCallback":true,"hasTimeout":true},[true],{"type":"KmlTourWait","blocking":true,"duration":2.5,"hasCallback":true,"hasTimeout":true}]}]}

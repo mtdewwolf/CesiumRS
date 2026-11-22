@@ -38,6 +38,9 @@ impl DataSourceState {
             self.notify_changed();
         }
     }
+    pub(crate) fn set_name_silent(&self, name: Option<String>) {
+        self.name.replace(name);
+    }
     pub fn notify_changed(&self) {
         if let Some(source) = self.owner.upgrade() {
             self.changed_event.raise(source);
