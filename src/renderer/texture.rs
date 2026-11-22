@@ -257,6 +257,15 @@ impl<G: Gl> Texture<G> {
         Ok(())
     }
     pub fn copy_from(&self, pixels: &[u8], region: TextureRegion) -> Result<()> {
+        self.upload(pixels, region, false)
+    }
+
+    pub(crate) fn initialize(&self, pixels: &[u8]) -> Result<()> {
+        let region = TextureRegion { x: 0, y: 0, width: self.width(), height: self.height() };
+        self.upload(pixels, region, true)
+    }
+
+    fn upload(&self, pixels: &[u8], region: TextureRegion, initialize: bool) -> Result<()> {
         ensure(
             !self.options.pixel_format.is_depth_format() && !self.options.pixel_format.is_compressed_format(),
             "Cannot upload subimages to depth/compressed textures",
@@ -273,17 +282,25 @@ impl<G: Gl> Texture<G> {
         self.bind(0)?;
         let result = (|| {
             self.pixel_store(region.width)?;
+            let format = self.options.pixel_format;
+            let datatype = self.options.pixel_datatype;
+            let (method, image_layout) = if initialize {
+                ("texImage2D", [format.to_internal_format(datatype, c.webgl2()), region.width, region.height, 0])
+            } else {
+                ("texSubImage2D", [region.x, region.y, region.width, region.height])
+            };
+            let [third, fourth, fifth, sixth] = image_layout.map(GlValue::from);
             c.call(
-                "texSubImage2D",
+                method,
                 &[
                     gl::TEXTURE_2D.into(),
                     0.into(),
-                    region.x.into(),
-                    region.y.into(),
-                    region.width.into(),
-                    region.height.into(),
-                    (self.options.pixel_format as u32).into(),
-                    self.options.pixel_datatype.to_webgl_constant(self.resource.context.webgl2()).into(),
+                    third,
+                    fourth,
+                    fifth,
+                    sixth,
+                    (format as u32).into(),
+                    datatype.to_webgl_constant(c.webgl2()).into(),
                     self.pixels(pixels, region.width, region.height),
                 ],
             )

@@ -496,3 +496,21 @@ pub fn shader_module(function: &str, args: &[Value]) -> Option<Out> {
     let module = cesium_rs::shaders::shader(args.first()?.as_str()?)?;
     Some(Out::Ok(json!({ "name": module.name, "source": module.source })))
 }
+
+/// Renderer type for tests that never allocate GPU resources.
+pub struct NoGl;
+impl cesium_rs::renderer::Gl for NoGl {
+    type Object = u32;
+
+    fn drawing_buffer_size(&self) -> Result<[u32; 2], RuntimeError> {
+        unreachable!("this test does not use a renderer")
+    }
+
+    fn invoke(
+        &self,
+        method: &str,
+        _: &[cesium_rs::renderer::GlValue<u32>],
+    ) -> Result<cesium_rs::renderer::GlValue<u32>, RuntimeError> {
+        unreachable!("this test does not call {method}")
+    }
+}

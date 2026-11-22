@@ -965,3 +965,27 @@ fn builtin_cache() -> MaterialCache {
     );
     cache
 }
+
+/// Numeric renderer uniforms by their generated shader names.
+pub(crate) fn material_uniform_values(material: &Material) -> Vec<(String, crate::renderer::UniformValue)> {
+    use crate::renderer::UniformValue;
+    material
+        .uniform_bindings()
+        .into_iter()
+        .filter_map(|(name, value)| {
+            let numbers = || value.numbers().unwrap_or_default().into_iter().map(|v| v as f32).collect();
+            let uniform = match &value {
+                MaterialValue::Bool(v) => UniformValue::Int(vec![i32::from(*v)]),
+                MaterialValue::IntVec3(v) => UniformValue::Int(vec![v.x as i32, v.y as i32, v.z as i32]),
+                MaterialValue::Mat2(_) => UniformValue::Matrix { dimension: 2, values: numbers() },
+                MaterialValue::Mat3(_) => UniformValue::Matrix { dimension: 3, values: numbers() },
+                MaterialValue::Mat4(_) => UniformValue::Matrix { dimension: 4, values: numbers() },
+                MaterialValue::Channels(_) | MaterialValue::Sampler2D(_) | MaterialValue::SamplerCube(_) => {
+                    return None
+                }
+                _ => UniformValue::Float(numbers()),
+            };
+            Some((name, uniform))
+        })
+        .collect()
+}

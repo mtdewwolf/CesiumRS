@@ -10,7 +10,7 @@
 use super::blending_state::alpha_blend;
 use super::material::Material;
 use crate::core::VertexFormat;
-use crate::renderer::render_state::RenderState;
+use crate::renderer::{render_state::RenderState, UniformValue};
 use crate::scene::CullFace;
 
 /// The common `Appearance` interface.
@@ -25,6 +25,14 @@ pub trait Appearance {
     }
     /// `Appearance#faceForward` where the concrete appearance defines it.
     fn face_forward(&self) -> Option<bool> {
+        None
+    }
+    /// Additional uniforms supplied by the appearance.
+    fn uniforms(&self) -> Vec<(String, UniformValue)> {
+        Vec::new()
+    }
+    /// Screen-space size used to expand the world-space bounding sphere.
+    fn pixel_size(&self) -> Option<f64> {
         None
     }
     fn vertex_shader_source(&self) -> String;

@@ -4,15 +4,22 @@
 //! Visualizes frustum near/far planes and boundaries, including multiple frustum
 //! splits, with configurable color, updates on camera change, and pick ID support.
 
-use super::camera::{Camera, CameraFrustum};
+use super::camera::Camera;
 use super::frame_state::FrameState;
 use super::per_instance_color_appearance::{PerInstanceColorAppearance, PerInstanceColorAppearanceOptions};
 use super::primitive::{Primitive, PrimitiveOptions};
 use super::scene::ScenePrimitive;
 use crate::core::color_geometry_instance_attribute::ColorGeometryInstanceAttribute;
 use crate::core::frustum_geometry::{Frustum, FrustumGeometry, FrustumOutlineGeometry};
-use crate::core::orthographic_frustum::OrthographicFrustum;
-use crate::core::{Color, GeometryInstance, Matrix3, Quaternion, VertexFormat};
+use crate::core::{Color, GeometryInstance, Matrix3, Quaternion, RuntimeError, VertexFormat};
+use crate::renderer::{Gl, UniformCamera, UniformFrustum};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::atomic::{AtomicU64, Ordering},
+};
+
+static NEXT_ID: AtomicU64 = AtomicU64::new(1);
 
 /// Options for configuring a [`DebugCameraPrimitive`].
 #[derive(Clone, Debug, PartialEq)]
@@ -37,25 +44,27 @@ impl Default for DebugCameraPrimitiveOptions {
 }
 
 /// Visualizes the view frustum (planes and outline) of a camera.
-pub struct DebugCameraPrimitive {
+pub struct DebugCameraPrimitive<G: Gl + 'static> {
     pub frustum_splits: Option<Vec<f64>>,
     pub color: Color,
     pub update_on_change: bool,
     pub show: bool,
     pub id: Option<String>,
 
-    outline_primitives: Vec<Primitive>,
-    planes_primitives: Vec<Primitive>,
+    camera: Option<Rc<RefCell<Camera>>>,
+    outline_primitives: Vec<Primitive<G>>,
+    planes_primitives: Vec<Primitive<G>>,
+    owner: String,
     destroyed: bool,
 }
 
-impl Default for DebugCameraPrimitive {
+impl<G: Gl + 'static> Default for DebugCameraPrimitive<G> {
     fn default() -> Self {
         Self::new(DebugCameraPrimitiveOptions::default())
     }
 }
 
-impl DebugCameraPrimitive {
+impl<G: Gl + 'static> DebugCameraPrimitive<G> {
     pub fn new(options: DebugCameraPrimitiveOptions) -> Self {
         Self {
             frustum_splits: options.frustum_splits,
@@ -63,21 +72,39 @@ impl DebugCameraPrimitive {
             update_on_change: options.update_on_change.unwrap_or(true),
             show: options.show.unwrap_or(true),
             id: options.id,
+            camera: None,
             outline_primitives: Vec::new(),
             planes_primitives: Vec::new(),
+            owner: format!("DebugCameraPrimitive#{}", NEXT_ID.fetch_add(1, Ordering::Relaxed)),
             destroyed: false,
         }
     }
 
-    pub fn outline_primitives(&self) -> &[Primitive] {
+    /// Track a camera when submitting this primitive through Scene.
+    pub fn with_camera(options: DebugCameraPrimitiveOptions, camera: Rc<RefCell<Camera>>) -> Self {
+        Self { camera: Some(camera), ..Self::new(options) }
+    }
+
+    pub fn outline_primitives(&self) -> &[Primitive<G>] {
         &self.outline_primitives
     }
 
-    pub fn planes_primitives(&self) -> &[Primitive] {
+    pub fn planes_primitives(&self) -> &[Primitive<G>] {
         &self.planes_primitives
     }
 
     pub fn update(&mut self, camera: &mut Camera, frame_state: &mut FrameState) -> crate::scene::scene::Result<()> {
+        self.update_camera(&camera.uniform_camera(), frame_state)
+    }
+
+    fn update_camera(
+        &mut self,
+        camera: &UniformCamera,
+        frame_state: &mut FrameState,
+    ) -> crate::scene::scene::Result<()> {
+        if self.destroyed {
+            return Err(RuntimeError::new("DebugCameraPrimitive has been destroyed"));
+        }
         if !self.show {
             return Ok(());
         }
@@ -95,9 +122,10 @@ impl DebugCameraPrimitive {
 
         if self.planes_primitives.is_empty() {
             let (near_default, far_default) = match &camera.frustum {
-                CameraFrustum::Perspective(p) => (p.near, p.far),
-                CameraFrustum::Orthographic(o) => (o.near, o.far),
-                CameraFrustum::OrthographicOffCenter(o) => (o.near, o.far),
+                UniformFrustum::Perspective(p) => (p.near, p.far),
+                UniformFrustum::PerspectiveOffCenter(p) => (p.near, p.far),
+                UniformFrustum::Orthographic(o) => (o.near, o.far),
+                UniformFrustum::OrthographicOffCenter(o) => (o.near, o.far),
             };
 
             let splits = match &self.frustum_splits {
@@ -107,16 +135,13 @@ impl DebugCameraPrimitive {
 
             let num_frustums = splits.len().saturating_sub(1);
 
-            let position = camera.position_wc();
-            let direction = camera.direction_wc();
-            let up = camera.up_wc();
-            let right = camera.right_wc().negate();
+            let position = camera.position;
+            let direction = camera.direction;
+            let up = camera.up;
+            let right = camera.right.negate();
 
-            let rotation = Matrix3([
-                right.x, right.y, right.z,
-                up.x, up.y, up.z,
-                direction.x, direction.y, direction.z,
-            ]);
+            let rotation =
+                Matrix3([right.x, right.y, right.z, up.x, up.y, up.z, direction.x, direction.y, direction.z]);
 
             let orientation = Quaternion::from_rotation_matrix(&rotation);
 
@@ -125,26 +150,29 @@ impl DebugCameraPrimitive {
                 let far = splits[i + 1];
 
                 let (frustum, draw_near_plane) = match &camera.frustum {
-                    CameraFrustum::Perspective(p) => {
+                    UniformFrustum::Perspective(p) => {
                         let mut p_copy = *p;
                         p_copy.near = near;
                         p_copy.far = far;
                         (Frustum::Perspective(p_copy), i == 0)
                     }
-                    CameraFrustum::Orthographic(o) => {
+                    UniformFrustum::PerspectiveOffCenter(p) => {
+                        let mut off_center = *p;
+                        off_center.near = near;
+                        off_center.far = far;
+                        (Frustum::PerspectiveOffCenter(off_center), i == 0)
+                    }
+                    UniformFrustum::Orthographic(o) => {
                         let mut o_copy = *o;
                         o_copy.near = near;
                         o_copy.far = far;
                         (Frustum::Orthographic(o_copy), i == 0)
                     }
-                    CameraFrustum::OrthographicOffCenter(o) => {
-                        let width = (o.right - o.left).abs();
-                        let height = (o.top - o.bottom).abs();
-                        let aspect = if height > 0.0 { width / height } else { 1.0 };
-                        let mut ortho = OrthographicFrustum::new(width, aspect);
-                        ortho.near = near;
-                        ortho.far = far;
-                        (Frustum::Orthographic(ortho), i == 0)
+                    UniformFrustum::OrthographicOffCenter(o) => {
+                        let mut off_center = *o;
+                        off_center.near = near;
+                        off_center.far = far;
+                        (Frustum::OrthographicOffCenter(off_center), i == 0)
                     }
                 };
 
@@ -160,10 +188,9 @@ impl DebugCameraPrimitive {
                 if let Some(geom) = planes_geom {
                     let mut instance = GeometryInstance::new(geom, None);
                     let color = Color::new(self.color.red, self.color.green, self.color.blue, 0.1);
-                    instance.attributes.push((
-                        "color".into(),
-                        ColorGeometryInstanceAttribute::from_color(&color).into(),
-                    ));
+                    instance
+                        .attributes
+                        .push(("color".into(), ColorGeometryInstanceAttribute::from_color(&color).into()));
                     instance.id = self.id.clone();
 
                     let planes_prim = Primitive::new(PrimitiveOptions {
@@ -176,25 +203,20 @@ impl DebugCameraPrimitive {
                             },
                         ))),
                         asynchronous: Some(false),
+                        pick_primitive: Some(self.owner.clone()),
                         ..Default::default()
                     });
                     self.planes_primitives.push(planes_prim);
                 }
 
-                let outline_geom = FrustumOutlineGeometry {
-                    frustum,
-                    origin: position,
-                    orientation,
-                    draw_near_plane,
-                }
-                .create_geometry();
+                let outline_geom = FrustumOutlineGeometry { frustum, origin: position, orientation, draw_near_plane }
+                    .create_geometry();
 
                 if let Some(geom) = outline_geom {
                     let mut instance = GeometryInstance::new(geom, None);
-                    instance.attributes.push((
-                        "color".into(),
-                        ColorGeometryInstanceAttribute::from_color(&self.color).into(),
-                    ));
+                    instance
+                        .attributes
+                        .push(("color".into(), ColorGeometryInstanceAttribute::from_color(&self.color).into()));
                     instance.id = self.id.clone();
 
                     let outline_prim = Primitive::new(PrimitiveOptions {
@@ -207,6 +229,7 @@ impl DebugCameraPrimitive {
                             },
                         ))),
                         asynchronous: Some(false),
+                        pick_primitive: Some(self.owner.clone()),
                         ..Default::default()
                     });
                     self.outline_primitives.push(outline_prim);
@@ -214,11 +237,9 @@ impl DebugCameraPrimitive {
             }
         }
 
-        for p in &mut self.outline_primitives {
-            p.update(frame_state)?;
-        }
-        for p in &mut self.planes_primitives {
-            p.update(frame_state)?;
+        for (outline, planes) in self.outline_primitives.iter_mut().zip(&mut self.planes_primitives) {
+            outline.update(frame_state)?;
+            planes.update(frame_state)?;
         }
         Ok(())
     }
@@ -236,17 +257,49 @@ impl DebugCameraPrimitive {
         }
         self.outline_primitives.clear();
         self.planes_primitives.clear();
+        self.camera = None;
         self.destroyed = true;
+    }
+}
+
+impl<G: Gl + 'static> ScenePrimitive for DebugCameraPrimitive<G> {
+    fn pre_passes_update(&mut self, _: &mut FrameState) -> crate::scene::scene::Result<()> {
+        Ok(())
+    }
+
+    fn update(&mut self, frame: &mut FrameState) -> crate::scene::scene::Result<()> {
+        let camera = match &self.camera {
+            Some(camera) => camera
+                .try_borrow_mut()
+                .map_err(|_| RuntimeError::new("DebugCameraPrimitive camera is already borrowed"))?
+                .uniform_camera(),
+            None => frame.uniform.camera.clone(),
+        };
+        self.update_camera(&camera, frame)
+    }
+
+    fn post_passes_update(&mut self, _: &mut FrameState) -> crate::scene::scene::Result<()> {
+        Ok(())
+    }
+
+    fn update_for_pass(&mut self, _: &mut FrameState, _: super::Cesium3DTilePass) -> crate::scene::scene::Result<()> {
+        Ok(())
+    }
+
+    fn destroy(&mut self) -> crate::scene::scene::Result<()> {
+        self.destroy();
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::scene::primitive::tests::TestGl;
 
     #[test]
     fn default_properties_match_upstream() {
-        let prim = DebugCameraPrimitive::default();
+        let prim = DebugCameraPrimitive::<TestGl>::default();
         assert_eq!(prim.color, Color::CYAN);
         assert!(prim.update_on_change);
         assert!(prim.show);
@@ -264,7 +317,7 @@ mod tests {
             show: Some(false),
             id: Some("debug_cam".into()),
         };
-        let prim = DebugCameraPrimitive::new(options);
+        let prim = DebugCameraPrimitive::<TestGl>::new(options);
         assert_eq!(prim.color, Color::YELLOW);
         assert!(!prim.update_on_change);
         assert!(!prim.show);

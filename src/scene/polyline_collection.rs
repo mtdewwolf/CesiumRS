@@ -21,6 +21,7 @@ use std::{
 use super::{
     batch_table::{BatchTable, BatchTableAttribute},
     blending_state,
+    material::material_uniform_values,
     polyline::*,
     scene::{Result, SceneDrawOptions, ScenePrimitive},
     Cesium3DTilePass, FrameState, SceneCommand, SceneMode,
@@ -35,7 +36,6 @@ use crate::{
         Gl, Pass, RenderState, SampledTexture, ShaderProgram, ShaderProgramOptions, ShaderSource, UniformValue,
         VertexArray, VertexAttribute,
     },
-    scene::material::MaterialValue,
     shaders::root::{POLYLINE_COMMON, POLYLINE_FS, POLYLINE_VS},
 };
 
@@ -1212,29 +1212,6 @@ fn has_polyline_angle(source: &str) -> bool {
 /// same id share a command.
 fn material_id(material: &crate::scene::material::Material) -> String {
     format!("{}:{:?}", material.type_name, material.uniform_bindings())
-}
-
-/// The material's numeric uniforms by generated name.
-fn material_uniform_values(material: &crate::scene::material::Material) -> Vec<(String, UniformValue)> {
-    material
-        .uniform_bindings()
-        .into_iter()
-        .filter_map(|(name, value)| {
-            let numbers = || value.numbers().unwrap_or_default().into_iter().map(|v| v as f32).collect();
-            let uniform = match &value {
-                MaterialValue::Bool(v) => UniformValue::Int(vec![i32::from(*v)]),
-                MaterialValue::IntVec3(v) => UniformValue::Int(vec![v.x as i32, v.y as i32, v.z as i32]),
-                MaterialValue::Mat2(_) => UniformValue::Matrix { dimension: 2, values: numbers() },
-                MaterialValue::Mat3(_) => UniformValue::Matrix { dimension: 3, values: numbers() },
-                MaterialValue::Mat4(_) => UniformValue::Matrix { dimension: 4, values: numbers() },
-                MaterialValue::Channels(_) | MaterialValue::Sampler2D(_) | MaterialValue::SamplerCube(_) => {
-                    return None
-                }
-                _ => UniformValue::Float(numbers()),
-            };
-            Some((name, uniform))
-        })
-        .collect()
 }
 
 impl<G: Gl + 'static> ScenePrimitive for PolylineCollection<G> {

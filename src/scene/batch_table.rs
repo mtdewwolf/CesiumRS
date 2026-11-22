@@ -299,18 +299,22 @@ impl<G: Gl + 'static> BatchTable<G> {
         if self.texture.is_some() && !self.dirty {
             return Ok(());
         }
-        self.dirty = false;
         let (width, height) = (layout.dimensions.x as u32, layout.dimensions.y as u32);
-        if self.texture.is_none() {
+        let bytes = self.values.as_ref().expect("a table with attributes has values").bytes();
+        if let Some(texture) = &self.texture {
+            texture.copy_from(&bytes, TextureRegion { x: 0, y: 0, width, height })?;
+        } else {
             let mut options = TextureOptions::rgba(width, height);
             options.pixel_format = PixelFormat::Rgba;
             options.pixel_datatype = layout.pixel_datatype;
             options.sampler = Sampler::NEAREST;
             options.flip_y = false;
-            self.texture = Some(Rc::new(Texture::new(context, options, None)?));
+            let texture = Rc::new(Texture::new(context, options, None)?);
+            texture.initialize(&bytes)?;
+            self.texture = Some(texture);
         }
-        let bytes = self.values.as_ref().expect("a table with attributes has values").bytes();
-        self.texture.as_ref().unwrap().copy_from(&bytes, TextureRegion { x: 0, y: 0, width, height })
+        self.dirty = false;
+        Ok(())
     }
 
     /// The uniform names `getUniformMapCallback` adds: none without
