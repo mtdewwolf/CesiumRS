@@ -12,6 +12,7 @@ pub enum DynamicValue {
     Boolean(bool),
     Number(f64),
     String(String),
+    Resource(Rc<Resource>),
     Cartesian2(Cartesian2),
     Cartesian3(Cartesian3),
     Cartesian4(Cartesian4),
@@ -55,6 +56,7 @@ impl DynamicValue {
             Self::Boolean(v) => json!(v),
             Self::Number(v) => json!(v),
             Self::String(v) => json!(v),
+            Self::Resource(v) => json!(v.url()),
             Self::Cartesian2(v) => json!(v.to_array()),
             Self::Cartesian3(v) => json!(v.to_array()),
             Self::Cartesian4(v) => json!(v.to_array()),
@@ -86,6 +88,12 @@ impl DynamicValue {
     }
 }
 impl PropertyValue for DynamicValue {
+    fn into_constant(self) -> Self {
+        match self {
+            Self::Resource(resource) => Self::Resource(Rc::new((*resource).clone())),
+            value => value,
+        }
+    }
     fn property_equals(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Entity(a), Self::Entity(b)) => std::rc::Weak::ptr_eq(a, b),
@@ -102,6 +110,7 @@ impl PropertyValue for DynamicValue {
             (Self::Matrix3(a), Self::Matrix3(b)) => a == b,
             (Self::Matrix4(a), Self::Matrix4(b)) => a == b,
             (Self::Date(a), Self::Date(b)) => a == b,
+            (Self::Resource(a), Self::Resource(b)) => Rc::ptr_eq(a, b),
             (Self::Json(a), Self::Json(b)) => a.property_equals(b),
             (Self::Record(a), Self::Record(b)) => {
                 a.len() == b.len()
@@ -123,6 +132,7 @@ impl PropertyValue for DynamicValue {
             | (Self::Boolean(_), Self::Boolean(_))
             | (Self::Number(_), Self::Number(_))
             | (Self::String(_), Self::String(_)) => self.property_equals(other),
+            (Self::Resource(a), Self::Resource(b)) => Rc::ptr_eq(a, b),
             (Self::Json(a), Self::Json(b)) => a.property_equals(b),
             (Self::Date(a), Self::Date(b)) => Rc::ptr_eq(a, b),
             (Self::Entity(a), Self::Entity(b)) => std::rc::Weak::ptr_eq(a, b),
@@ -154,6 +164,7 @@ impl PropertyValue for DynamicValue {
             Self::Boolean(v) => v.property_string(),
             Self::Number(v) => v.property_string(),
             Self::String(v) => v.clone(),
+            Self::Resource(v) => v.url(),
             Self::Cartesian2(v) => v.property_string(),
             Self::Cartesian3(v) => v.property_string(),
             Self::Cartesian4(v) => v.property_string(),
@@ -205,6 +216,21 @@ value!(Matrix3, Matrix3);
 value!(Matrix4, Matrix4);
 value!(Rc<JulianDate>, Date);
 value!(JsonReference, Json);
+impl From<Resource> for DynamicValue {
+    fn from(value: Resource) -> Self {
+        Self::Resource(Rc::new(value))
+    }
+}
+impl From<Rc<Resource>> for DynamicValue {
+    fn from(value: Rc<Resource>) -> Self {
+        Self::Resource(value)
+    }
+}
+impl From<url::Url> for DynamicValue {
+    fn from(value: url::Url) -> Self {
+        Self::String(value.into())
+    }
+}
 impl From<&str> for DynamicValue {
     fn from(value: &str) -> Self {
         Self::String(value.into())

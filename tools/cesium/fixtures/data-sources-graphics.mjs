@@ -59,9 +59,7 @@ function makeValue(g, name, index, pool) {
 }
 
 function unsupportedNames(Type) {
-  // Model graphics node/articulation raw-object coercion needs
-  // NodeTransformationProperty and PropertyBag factories, which are not part
-  // of this batch. Their direct property assignment is covered natively.
+  // Nested bags use dedicated cases with object-valued inputs.
   return Type === C.ModelGraphics ? ["nodeTransformations", "articulations"] : [];
 }
 

@@ -7,7 +7,7 @@ pub struct ConstantProperty<T: PropertyValue> {
 }
 impl<T: PropertyValue> ConstantProperty<T> {
     pub fn new(value: Option<T>) -> Self {
-        Self { value: RefCell::new(value), changed: DefinitionChanged::new() }
+        Self { value: RefCell::new(value.map(PropertyValue::into_constant)), changed: DefinitionChanged::new() }
     }
     pub fn value_of(&self) -> Option<T> {
         self.value.borrow().clone()
@@ -19,7 +19,7 @@ impl<T: PropertyValue> ConstantProperty<T> {
             _ => true,
         };
         if changed {
-            *self.value.borrow_mut() = value;
+            *self.value.borrow_mut() = value.map(PropertyValue::into_constant);
             self.changed.raise();
         }
     }
@@ -37,7 +37,7 @@ impl<T: PropertyValue> Property<T> for ConstantProperty<T> {
         &self.changed
     }
     fn get_value(&self, _: Option<&JulianDate>, result: Option<&mut T>) -> Result<Option<T>, RuntimeError> {
-        Ok(write_result(self.value_of(), result))
+        Ok(write_result(self.value_of().map(PropertyValue::into_constant), result))
     }
     fn equals(&self, other: &dyn Property<T>) -> Result<bool, RuntimeError> {
         Ok(other.as_any().downcast_ref::<Self>().is_some_and(|o| {
