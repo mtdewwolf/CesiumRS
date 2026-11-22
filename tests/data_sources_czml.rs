@@ -303,6 +303,62 @@ fn replay_czml_data_source_fixtures() {
 }
 
 #[test]
+fn process_extends_the_inferred_clock() {
+    let source = CzmlDataSource::new(None);
+    let options = CzmlLoadOptions::default();
+    source
+        .load(
+            json!([
+                {"id": "document", "version": "1.0"},
+                {"id": "satellite", "availability": "2020-01-01T00:00:00Z/2020-01-01T00:02:00Z"}
+            ]),
+            &options,
+        )
+        .now_or_never()
+        .unwrap()
+        .unwrap();
+    let clock = source.clock().unwrap();
+    assert_eq!(clock.multiplier(), Some(1.0));
+
+    source
+        .process(json!({"id": "satellite", "availability": "2020-01-01T00:00:00Z/2020-01-01T00:04:00Z"}), &options)
+        .now_or_never()
+        .unwrap()
+        .unwrap();
+    assert_eq!(*clock.stop_time().unwrap(), JulianDate::from_iso8601("2020-01-01T00:04:00Z").unwrap());
+    assert_eq!(clock.multiplier(), Some(2.0));
+}
+
+#[test]
+fn replacement_clears_the_previous_document_clock() {
+    let source = CzmlDataSource::new(None);
+    let options = CzmlLoadOptions::default();
+    source
+        .load(
+            json!({
+                "id": "document", "version": "1.0",
+                "clock": {"interval": "2020-01-01T00:00:00Z/2020-01-01T00:02:00Z", "multiplier": 7}
+            }),
+            &options,
+        )
+        .now_or_never()
+        .unwrap()
+        .unwrap();
+    assert!(source.clock().is_some());
+
+    let changed = Rc::new(Cell::new(0));
+    let updates = changed.clone();
+    let _subscription = source.changed_event().add_listener(move |_| updates.set(updates.get() + 1));
+    source
+        .load(json!([{"id": "document", "version": "1.0"}, {"id": "timeless"}]), &options)
+        .now_or_never()
+        .unwrap()
+        .unwrap();
+    assert!(source.clock().is_none());
+    assert_eq!(changed.get(), 1);
+}
+
+#[test]
 fn custom_updater_and_static_helpers() {
     let ds = CzmlDataSource::new(Some("Custom".into()));
     let updater = CzmlUpdater::new(|entity, packet, entities, source_uri| {

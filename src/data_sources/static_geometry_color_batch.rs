@@ -103,6 +103,7 @@ impl ColorBatch {
         let id = u.id().to_owned();
         let has_dynamic_attrs = !u.has_constant_fill()
             || !u.fill_material_property().is_none_or(|m| m.is_constant())
+            || u.depth_fail_material_property().is_some_and(|m| is_color_material_component(&m) && !m.is_constant())
             || !is_slot_constant(u.distance_display_condition_property().as_ref())
             || u.terrain_offset_property().is_some_and(|p| !p.is_constant());
         let entity = u.entity();

@@ -587,6 +587,7 @@ const SCENARIOS = [
     ],
     [T0],
   ],
+  // Keep the clock bounds fixed so this case isolates entity lifecycle.
   [
     "entity_lifecycle_parent_delete",
     "InitialName",
@@ -611,12 +612,12 @@ const SCENARIOS = [
         method: "process",
         czml: [
           { id: "child", delete: true },
-          { id: "extra", name: "AddedInProcess" },
+          { id: "extra", name: "AddedInProcess", availability: `${T0}/${T3}` },
         ],
       },
       {
         method: "load",
-        czml: [DOC, { id: "fresh", name: "AfterClear" }],
+        czml: [DOC, { id: "fresh", name: "AfterClear", availability: `${T0}/${T3}` }],
       },
     ],
     [T0],

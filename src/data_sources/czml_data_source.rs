@@ -382,7 +382,7 @@ impl CzmlDataSource {
             return Err(RuntimeError::new("CZML input must be a JSON object or array of packets."));
         }
 
-        let mut raise_changed = self.update_clock()?;
+        let mut raise_changed = self.update_clock(clear)?;
 
         let doc_name = self.document_packet.borrow().name.clone();
         if let Some(doc_name) = doc_name {
@@ -496,73 +496,62 @@ impl CzmlDataSource {
         Ok(())
     }
 
-    fn update_clock(&self) -> Result<bool, RuntimeError> {
+    fn update_clock(&self, replace: bool) -> Result<bool, RuntimeError> {
         let clock_packet = self.document_packet.borrow().clock.clone();
-        let Some(clock_packet) = clock_packet else {
-            if self.clock.borrow().is_none() {
-                let availability = self.entities().compute_availability();
-                if availability.start != iso8601::minimum_value() {
-                    let start = availability.start;
-                    let stop = availability.stop;
-                    let total_seconds = JulianDate::seconds_difference(&stop, &start);
-                    let multiplier = js_round(total_seconds / 120.0);
-
-                    let clock = DataSourceClock::new();
-                    clock.set_start_time(Some(Rc::new(start)));
-                    clock.set_stop_time(Some(Rc::new(stop)));
-                    clock.set_clock_range(Some(ClockRange::LoopStop));
-                    clock.set_multiplier(Some(multiplier));
-                    clock.set_current_time(Some(Rc::new(start)));
-                    clock.set_clock_step(Some(ClockStep::SystemClockMultiplier));
-                    *self.clock.borrow_mut() = Some(Rc::new(clock));
-                    return Ok(true);
-                }
-            }
-            return Ok(false);
-        };
-
-        let clock = if let Some(existing) = self.clock.borrow().as_ref() {
-            (**existing).clone()
-        } else {
-            let c = DataSourceClock::new();
-            c.set_start_time(Some(Rc::new(iso8601::minimum_value())));
-            c.set_stop_time(Some(Rc::new(iso8601::maximum_value())));
-            c.set_current_time(Some(Rc::new(iso8601::minimum_value())));
-            c.set_clock_range(Some(ClockRange::LoopStop));
-            c.set_clock_step(Some(ClockStep::SystemClockMultiplier));
-            c.set_multiplier(Some(1.0));
-            c
-        };
-
-        if let Some(iv) = interval_from_string(clock_packet.interval.as_deref())? {
-            clock.set_start_time(Some(Rc::new(iv.start)));
-            clock.set_stop_time(Some(Rc::new(iv.stop)));
-        }
-        if let Some(ct) = clock_packet.current_time.as_deref() {
-            let jd = JulianDate::from_iso8601(ct).map_err(|e| RuntimeError::new(e.to_string()))?;
-            clock.set_current_time(Some(Rc::new(jd)));
-        }
-        if let Some(range) = clock_packet.range.as_deref() {
-            clock.set_clock_range(Some(parse_clock_range(range).unwrap_or(ClockRange::LoopStop)));
-        }
-        if let Some(step) = clock_packet.step.as_deref() {
-            clock.set_clock_step(Some(parse_clock_step(step).unwrap_or(ClockStep::SystemClockMultiplier)));
-        }
-        if let Some(mult) = clock_packet.multiplier {
-            clock.set_multiplier(Some(mult));
-        }
-
         let existing = self.clock.borrow().clone();
-        let changed = existing.as_ref().is_none_or(|existing| !clock.equals(existing));
-        if changed {
-            if let Some(existing) = existing {
-                clock.clone_into(&existing);
-            } else {
-                *self.clock.borrow_mut() = Some(Rc::new(clock));
+        let previous = existing.as_deref().filter(|_| !replace);
+
+        let clock = if let Some(clock_packet) = clock_packet {
+            let clock = previous.cloned().unwrap_or_else(|| {
+                let start = iso8601::minimum_value();
+                let stop = iso8601::maximum_value();
+                new_clock(start, stop, 1.0)
+            });
+            if let Some(iv) = interval_from_string(clock_packet.interval.as_deref())? {
+                clock.set_start_time(Some(Rc::new(iv.start)));
+                clock.set_stop_time(Some(Rc::new(iv.stop)));
             }
-            return Ok(true);
+            if let Some(ct) = clock_packet.current_time.as_deref() {
+                let jd = JulianDate::from_iso8601(ct).map_err(|e| RuntimeError::new(e.to_string()))?;
+                clock.set_current_time(Some(Rc::new(jd)));
+            }
+            if let Some(range) = clock_packet.range.as_deref() {
+                clock.set_clock_range(Some(parse_clock_range(range).unwrap_or(ClockRange::LoopStop)));
+            }
+            if let Some(step) = clock_packet.step.as_deref() {
+                clock.set_clock_step(Some(parse_clock_step(step).unwrap_or(ClockStep::SystemClockMultiplier)));
+            }
+            if let Some(mult) = clock_packet.multiplier {
+                clock.set_multiplier(Some(mult));
+            }
+            clock
+        } else {
+            let availability = self.entities().compute_availability();
+            if availability.start == iso8601::minimum_value() {
+                return Ok(self.clock.take().is_some());
+            }
+            let start = availability.start;
+            let stop = availability.stop;
+            let multiplier = js_round(JulianDate::seconds_difference(&stop, &start) / 120.0);
+            let clock = new_clock(start, stop, multiplier);
+            if let Some(current) = previous
+                .and_then(DataSourceClock::current_time)
+                .filter(|t| JulianDate::less_than_or_equals(&start, t) && JulianDate::less_than_or_equals(t, &stop))
+            {
+                clock.set_current_time(Some(current));
+            }
+            clock
+        };
+
+        if let Some(existing) = existing {
+            if clock.equals(&existing) {
+                return Ok(false);
+            }
+            clock.clone_into(&existing);
+        } else {
+            *self.clock.borrow_mut() = Some(Rc::new(clock));
         }
-        Ok(false)
+        Ok(true)
     }
 }
 
@@ -573,6 +562,17 @@ impl DataSource for CzmlDataSource {
     fn clock(&self) -> Option<Rc<DataSourceClock>> {
         self.clock.borrow().clone()
     }
+}
+
+fn new_clock(start: JulianDate, stop: JulianDate, multiplier: f64) -> DataSourceClock {
+    let clock = DataSourceClock::new();
+    clock.set_start_time(Some(Rc::new(start)));
+    clock.set_stop_time(Some(Rc::new(stop)));
+    clock.set_current_time(Some(Rc::new(start)));
+    clock.set_clock_range(Some(ClockRange::LoopStop));
+    clock.set_clock_step(Some(ClockStep::SystemClockMultiplier));
+    clock.set_multiplier(Some(multiplier));
+    clock
 }
 
 fn js_round(x: f64) -> f64 {
