@@ -1,10 +1,13 @@
-//! CesiumJS `VoxelCell`: typed sample metadata and padding-aware box bounds.
-//! The caller provides primitive identity and resolved node/content; scene picking
-//! and cylinder/ellipsoid samples are not integrated yet.
+//! CesiumJS `VoxelCell`: typed sample metadata and padding-aware bounds across
+//! all [`VoxelShape`](super::voxel_shape::VoxelShape) implementations (box, cylinder, ellipsoid).
 use super::{
-    metadata_type::MetadataType, spatial_node::SpatialNode, voxel_content::VoxelContent,
+    metadata_type::MetadataType,
+    spatial_node::{KeyframeNode, SpatialNode},
+    voxel_content::VoxelContent,
+    voxel_shape::VoxelShape,
 };
 use crate::core::{Cartesian3, OrientedBoundingBox, RuntimeError, TypedArray};
+
 #[derive(Debug)]
 pub struct VoxelCell<P> {
     pub primitive: P,
@@ -13,11 +16,20 @@ pub struct VoxelCell<P> {
     metadata: Vec<(String, TypedArray)>,
     obb: OrientedBoundingBox,
 }
+
 fn slice(a: &TypedArray, start: usize, end: usize) -> TypedArray {
-    macro_rules! slice { ($($v:ident),*) => {match a {$(TypedArray::$v(v)=>TypedArray::$v(v[start.min(v.len())..end.min(v.len())].to_vec())),*}}; }
+    macro_rules! slice {
+        ($($v:ident),*) => {
+            match a {
+                $(TypedArray::$v(v) => TypedArray::$v(v[start.min(v.len())..end.min(v.len())].to_vec())),*
+            }
+        };
+    }
     slice!(Int8, Uint8, Int16, Uint16, Int32, Uint32, Float32, Float64)
 }
+
 impl<P> VoxelCell<P> {
+    /// Constructs a `VoxelCell` from a resolved [`SpatialNode`] and [`VoxelContent`].
     #[allow(clippy::too_many_arguments)]
     pub fn from_node(
         primitive: P,
@@ -26,7 +38,7 @@ impl<P> VoxelCell<P> {
         node: &SpatialNode,
         content: &VoxelContent,
         properties: &[(String, MetadataType)],
-        shape: &dyn super::voxel_shape::VoxelShape,
+        shape: &dyn VoxelShape,
         dimensions: Cartesian3,
         padding_before: Cartesian3,
     ) -> Result<Self, RuntimeError> {
@@ -61,15 +73,44 @@ impl<P> VoxelCell<P> {
         let obb = shape.sample_obb(node.level, node.coords, dimensions, uv);
         Ok(Self { primitive, tile_index, sample_index, metadata, obb })
     }
+
+    /// Constructs a `VoxelCell` from a [`SpatialNode`] and its [`KeyframeNode`],
+    /// matching `VoxelCell.fromKeyframeNode` in CesiumJS.
+    #[allow(clippy::too_many_arguments)]
+    pub fn from_keyframe_node(
+        primitive: P,
+        tile_index: usize,
+        sample_index: usize,
+        node: &SpatialNode,
+        keyframe_node: &KeyframeNode,
+        properties: &[(String, MetadataType)],
+        shape: &dyn VoxelShape,
+        dimensions: Cartesian3,
+        padding_before: Cartesian3,
+    ) -> Result<Self, RuntimeError> {
+        let content = keyframe_node
+            .content
+            .as_ref()
+            .ok_or_else(|| RuntimeError::new("KeyframeNode has no loaded VoxelContent"))?;
+        Self::from_node(primitive, tile_index, sample_index, node, content, properties, shape, dimensions, padding_before)
+    }
+
+    pub fn metadata(&self) -> &[(String, TypedArray)] {
+        &self.metadata
+    }
+
     pub fn has_property(&self, name: &str) -> bool {
         self.get_property(name).is_some()
     }
+
     pub fn get_names(&self) -> Vec<&str> {
         self.metadata.iter().map(|(n, _)| n.as_str()).collect()
     }
+
     pub fn get_property(&self, name: &str) -> Option<&TypedArray> {
         self.metadata.iter().find(|(n, _)| n == name).map(|(_, v)| v)
     }
+
     pub fn oriented_bounding_box(&self) -> OrientedBoundingBox {
         self.obb
     }

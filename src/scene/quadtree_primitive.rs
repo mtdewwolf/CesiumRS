@@ -13,15 +13,17 @@
 //! not enforced, and provider height sampling is an adaptation in projected modes.
 
 use crate::core::{
-    math::fog, Cartesian3, Cartographic, Event, Ray, Rectangle, Visibility,
+    clock::get_timestamp, math::fog, Cartesian3, Cartographic, Event, Ray, Rectangle, RuntimeError, Visibility,
 };
-use crate::scene::camera::{Camera, CameraFrustum};
+use crate::scene::camera::{Camera, CameraFrustum, CameraOptions};
 use crate::scene::frame_state::FrameState;
 use crate::scene::quadtree_occluders::QuadtreeOccluders;
 use crate::scene::quadtree_tile_load_state::QuadtreeTileLoadState;
+use crate::scene::scene::{SceneGlobe, ScenePrimitive};
 use crate::scene::scene_mode::SceneMode;
 use crate::scene::tile_replacement_queue::TileReplacementQueue;
 use crate::scene::tile_selection_result::TileSelectionResult;
+use crate::scene::Cesium3DTilePass;
 use super::quadtree_tile::{
     HeightCallback, QuadtreeCustomData, QuadtreeTile, QuadtreeTileHandle,
 };
@@ -153,12 +155,15 @@ pub struct QuadtreePrimitive<P: QuadtreeTileProvider> {
     pub last_selection_frame_number: Option<u32>,
     pub next_height_callback_id: usize,
     pub destroyed: bool,
+    clock: Rc<dyn Fn() -> f64>,
 }
 
 impl<P: QuadtreeTileProvider> QuadtreePrimitive<P> {
     /// Creates a new quadtree primitive.
-    pub fn new(options: QuadtreePrimitiveOptions<P>) -> Self {
-        let occluders = QuadtreeOccluders::new(options.tile_provider.tiling_scheme().ellipsoid());
+    pub fn new(mut options: QuadtreePrimitiveOptions<P>) -> Self {
+        let ellipsoid = *options.tile_provider.tiling_scheme().ellipsoid();
+        options.tile_provider.on_quadtree_attached(ellipsoid);
+        let occluders = QuadtreeOccluders::new(&ellipsoid);
 
         Self {
             tile_provider: options.tile_provider,
@@ -196,7 +201,14 @@ impl<P: QuadtreeTileProvider> QuadtreePrimitive<P> {
             last_selection_frame_number: None,
             next_height_callback_id: 1,
             destroyed: false,
+            clock: Rc::new(get_timestamp),
         }
+    }
+
+    /// Overrides the monotonic millisecond clock used for load-queue and
+    /// height-update time slicing (defaults to `get_timestamp`).
+    pub fn set_clock(&mut self, clock: Rc<dyn Fn() -> f64>) {
+        self.clock = clock;
     }
 
     pub fn tile_provider(&self) -> &P {
@@ -1108,13 +1120,20 @@ impl<P: QuadtreeTileProvider> QuadtreePrimitive<P> {
                 }
             });
 
+        let end_time = (self.clock)() + self.load_queue_time_slice.max(0.0);
+
         self.tile_load_queue_high.sort_by(|a, b| {
             a.borrow()
                 .load_priority
                 .partial_cmp(&b.borrow().load_priority)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
-        for tile in &self.tile_load_queue_high {
+        let mut budget_exhausted = false;
+        for (idx, tile) in self.tile_load_queue_high.iter().enumerate() {
+            if idx > 0 && (self.clock)() >= end_time {
+                budget_exhausted = true;
+                break;
+            }
             let coord = {
                 let b = tile.borrow();
                 (b.level, b.x, b.y)
@@ -1123,19 +1142,28 @@ impl<P: QuadtreeTileProvider> QuadtreePrimitive<P> {
             self.tile_provider.load_tile(frame_state, tile);
         }
 
+        if !budget_exhausted {
+            budget_exhausted = (self.clock)() >= end_time;
+        }
         self.tile_load_queue_medium.sort_by(|a, b| {
             a.borrow()
                 .load_priority
                 .partial_cmp(&b.borrow().load_priority)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
-        for tile in &self.tile_load_queue_medium {
-            let coord = {
-                let b = tile.borrow();
-                (b.level, b.x, b.y)
-            };
-            self.tile_replacement_queue.mark_tile_rendered(coord);
-            self.tile_provider.load_tile(frame_state, tile);
+        if !budget_exhausted {
+            for tile in &self.tile_load_queue_medium {
+                if (self.clock)() >= end_time {
+                    budget_exhausted = true;
+                    break;
+                }
+                let coord = {
+                    let b = tile.borrow();
+                    (b.level, b.x, b.y)
+                };
+                self.tile_replacement_queue.mark_tile_rendered(coord);
+                self.tile_provider.load_tile(frame_state, tile);
+            }
         }
 
         self.tile_load_queue_low.sort_by(|a, b| {
@@ -1144,13 +1172,18 @@ impl<P: QuadtreeTileProvider> QuadtreePrimitive<P> {
                 .partial_cmp(&b.borrow().load_priority)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
-        for tile in &self.tile_load_queue_low {
-            let coord = {
-                let b = tile.borrow();
-                (b.level, b.x, b.y)
-            };
-            self.tile_replacement_queue.mark_tile_rendered(coord);
-            self.tile_provider.load_tile(frame_state, tile);
+        if !budget_exhausted {
+            for tile in &self.tile_load_queue_low {
+                if (self.clock)() >= end_time {
+                    break;
+                }
+                let coord = {
+                    let b = tile.borrow();
+                    (b.level, b.x, b.y)
+                };
+                self.tile_replacement_queue.mark_tile_rendered(coord);
+                self.tile_provider.load_tile(frame_state, tile);
+            }
         }
     }
 
@@ -1162,9 +1195,15 @@ impl<P: QuadtreeTileProvider> QuadtreePrimitive<P> {
 
         let scheme = self.tile_provider.tiling_scheme();
         let ellipsoid = scheme.ellipsoid();
+        let end_time = (self.clock)() + self.update_heights_time_slice.max(0.0);
         let mut try_next_frame = Vec::new();
+        let mut processed_any = false;
 
         while !self.tile_to_update_heights.is_empty() {
+            if processed_any && (self.clock)() >= end_time {
+                break;
+            }
+            processed_any = true;
             let tile = self.tile_to_update_heights.remove(0);
             let has_mesh = tile.borrow().data.as_ref().is_some_and(|d| d.has_mesh());
             if !has_mesh {
@@ -1317,6 +1356,117 @@ impl<P: QuadtreeTileProvider> QuadtreePrimitive<P> {
         }
     }
 
+    /// Picks the closest ray intersection across currently rendered tiles in
+    /// both 3D and projected 2D/ColumbusView modes.
+    pub fn pick(&self, ray: &Ray, frame_state: &FrameState) -> Option<Cartesian3> {
+        let mut closest: Option<(f64, Cartesian3)> = None;
+        for tile_handle in &self.tiles_rendered_this_frame {
+            let tile = tile_handle.borrow();
+            let Some(data) = tile.data.as_ref() else {
+                continue;
+            };
+            if let Some(hit) = data.pick_with_projection(
+                ray,
+                frame_state.mode,
+                frame_state.uniform.map_projection.as_ref(),
+                true,
+            ) {
+                let dist_sq = ray.origin.distance_squared(hit);
+                if closest.is_none_or(|(best, _)| dist_sq < best) {
+                    closest = Some((dist_sq, hit));
+                }
+            }
+        }
+        closest.map(|(_, p)| p)
+    }
+
+    /// Samples loaded terrain height at `cartographic` from the deepest loaded
+    /// rendered or cached tile covering that coordinate.
+    pub fn get_height(&self, cartographic: &Cartographic) -> Option<f64> {
+        let mut best: Option<(u32, f64)> = None;
+        for tile_handle in &self.tiles_rendered_this_frame {
+            let tile = tile_handle.borrow();
+            if !tile.rectangle.contains(cartographic) {
+                continue;
+            }
+            if let Some(height) = tile.data.as_ref().and_then(|d| d.sample_height(cartographic)) {
+                if best.is_none_or(|(lvl, _)| tile.level >= lvl) {
+                    best = Some((tile.level, height));
+                }
+            }
+        }
+        if let Some((_, h)) = best {
+            return Some(h);
+        }
+        // Fallback: descend from level-zero tiles if no rendered tile matched.
+        let roots = self.level_zero_tiles.as_ref()?;
+        let mut current = roots
+            .iter()
+            .find(|t| t.borrow().rectangle.contains(cartographic))?
+            .clone();
+        let mut deepest_height = current
+            .borrow()
+            .data
+            .as_ref()
+            .and_then(|d| d.sample_height(cartographic));
+        loop {
+            let next = {
+                let b = current.borrow();
+                let found = [
+                    b.northwest_child.as_ref(),
+                    b.northeast_child.as_ref(),
+                    b.southwest_child.as_ref(),
+                    b.southeast_child.as_ref(),
+                ]
+                .into_iter()
+                .flatten()
+                .find(|c| c.borrow().rectangle.contains(cartographic))
+                .cloned();
+                found
+            };
+            let Some(child) = next else {
+                break;
+            };
+            if let Some(h) = child.borrow().data.as_ref().and_then(|d| d.sample_height(cartographic)) {
+                deepest_height = Some(h);
+            }
+            current = child;
+        }
+        deepest_height
+    }
+
+    fn camera_from_frame_state(frame_state: &FrameState) -> Camera {
+        let mut opts = CameraOptions::new(
+            frame_state.drawing_buffer_width.max(1) as f64,
+            frame_state.drawing_buffer_height.max(1) as f64,
+        );
+        opts.pixel_ratio = frame_state.pixel_ratio.max(1.0);
+        opts.map_projection = Rc::clone(&frame_state.uniform.map_projection);
+        opts.ellipsoid = *frame_state.uniform.map_projection.ellipsoid();
+        let mut camera = Camera::new(opts);
+        let ucam = &frame_state.uniform.camera;
+        camera.position = ucam.position;
+        camera.direction = ucam.direction;
+        camera.up = ucam.up;
+        camera.right = ucam.right;
+        camera.frustum = match ucam.frustum {
+            crate::renderer::UniformFrustum::Perspective(f) => CameraFrustum::Perspective(f),
+            crate::renderer::UniformFrustum::PerspectiveOffCenter(f) => {
+                let aspect = (frame_state.drawing_buffer_width.max(1) as f64)
+                    / (frame_state.drawing_buffer_height.max(1) as f64);
+                let mut pf = crate::core::PerspectiveFrustum::new(std::f64::consts::FRAC_PI_3, aspect);
+                pf.near = f.near;
+                pf.far = f.far;
+                CameraFrustum::Perspective(pf)
+            }
+            crate::renderer::UniformFrustum::Orthographic(f) => CameraFrustum::Orthographic(f),
+            crate::renderer::UniformFrustum::OrthographicOffCenter(f) => {
+                CameraFrustum::OrthographicOffCenter(f)
+            }
+        };
+        camera
+    }
+
     /// Destroys the quadtree primitive and associated tile provider resources.
     pub fn destroy(&mut self) {
         self.tile_provider.destroy();
@@ -1326,5 +1476,88 @@ impl<P: QuadtreeTileProvider> QuadtreePrimitive<P> {
     /// Returns true if this object was destroyed.
     pub fn is_destroyed(&self) -> bool {
         self.destroyed
+    }
+}
+
+impl<P: QuadtreeTileProvider> SceneGlobe for QuadtreePrimitive<P> {
+    fn show(&self) -> bool {
+        !self.destroyed && self.tile_provider.ready()
+    }
+
+    fn update(&mut self, frame: &mut FrameState) -> Result<(), RuntimeError> {
+        if self.destroyed {
+            return Err(RuntimeError::new("QuadtreePrimitive was destroyed"));
+        }
+        self.begin_frame(frame);
+        self.tile_provider.update(frame);
+        Ok(())
+    }
+
+    fn render(&mut self, frame: &mut FrameState) -> Result<(), RuntimeError> {
+        if self.destroyed {
+            return Err(RuntimeError::new("QuadtreePrimitive was destroyed"));
+        }
+        let mut camera = Self::camera_from_frame_state(frame);
+        QuadtreePrimitive::render(self, frame, &mut camera);
+        self.end_frame(frame);
+        Ok(())
+    }
+
+    fn pick(&self, ray: &Ray, frame: &FrameState) -> Option<Cartesian3> {
+        QuadtreePrimitive::pick(self, ray, frame)
+    }
+
+    fn rendered_surface_tiles(&self) -> &[QuadtreeTileHandle] {
+        &self.tiles_rendered_this_frame
+    }
+
+    fn get_height(&self, cartographic: &Cartographic) -> Option<f64> {
+        QuadtreePrimitive::get_height(self, cartographic)
+    }
+
+    fn destroy(&mut self) -> Result<(), RuntimeError> {
+        QuadtreePrimitive::destroy(self);
+        Ok(())
+    }
+}
+
+impl<P: QuadtreeTileProvider> ScenePrimitive for QuadtreePrimitive<P> {
+    fn pre_passes_update(&mut self, frame: &mut FrameState) -> Result<(), RuntimeError> {
+        if self.destroyed {
+            return Err(RuntimeError::new("QuadtreePrimitive was destroyed"));
+        }
+        self.begin_frame(frame);
+        self.tile_provider.update(frame);
+        Ok(())
+    }
+
+    fn update(&mut self, frame: &mut FrameState) -> Result<(), RuntimeError> {
+        if self.destroyed {
+            return Err(RuntimeError::new("QuadtreePrimitive was destroyed"));
+        }
+        let mut camera = Self::camera_from_frame_state(frame);
+        QuadtreePrimitive::render(self, frame, &mut camera);
+        Ok(())
+    }
+
+    fn post_passes_update(&mut self, frame: &mut FrameState) -> Result<(), RuntimeError> {
+        if self.destroyed {
+            return Ok(());
+        }
+        self.end_frame(frame);
+        Ok(())
+    }
+
+    fn update_for_pass(&mut self, _frame: &mut FrameState, _pass: Cesium3DTilePass) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn height_at(&self, cartographic: &Cartographic, _frame: &FrameState) -> Result<Option<f64>, RuntimeError> {
+        Ok(QuadtreePrimitive::get_height(self, cartographic))
+    }
+
+    fn destroy(&mut self) -> Result<(), RuntimeError> {
+        QuadtreePrimitive::destroy(self);
+        Ok(())
     }
 }

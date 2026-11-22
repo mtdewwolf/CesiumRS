@@ -29,6 +29,7 @@ pub struct CachedFramebuffer<G: Gl> {
 pub struct PostProcessStageTextureCache<G: Gl> {
     framebuffers: Vec<CachedFramebuffer<G>>,
     stage_to_framebuffer: HashMap<String, usize>,
+    composite_aliases: HashMap<String, String>,
     width: Option<u32>,
     height: Option<u32>,
     update_dependencies: bool,
@@ -46,6 +47,7 @@ impl<G: Gl> PostProcessStageTextureCache<G> {
         Self {
             framebuffers: Vec::new(),
             stage_to_framebuffer: HashMap::new(),
+            composite_aliases: HashMap::new(),
             width: None,
             height: None,
             update_dependencies: false,
@@ -57,17 +59,29 @@ impl<G: Gl> PostProcessStageTextureCache<G> {
         self.update_dependencies = true;
     }
 
+    /// Registers composite-name aliases so resolving a composite's name maps to
+    /// its final leaf stage's framebuffer and output texture.
+    pub fn set_composite_aliases(&mut self, aliases: HashMap<String, String>) {
+        self.composite_aliases = aliases;
+    }
+
+    fn resolve_stage_name<'a>(&'a self, name: &'a str) -> &'a str {
+        resolve_alias(&self.composite_aliases, name)
+    }
+
     pub fn framebuffer_count(&self) -> usize {
         self.framebuffers.len()
     }
 
     pub fn get_framebuffer(&self, name: &str) -> Option<Rc<Framebuffer<G>>> {
-        let idx = *self.stage_to_framebuffer.get(name)?;
+        let resolved = self.resolve_stage_name(name);
+        let idx = *self.stage_to_framebuffer.get(resolved)?;
         self.framebuffers.get(idx)?.buffer.framebuffer().cloned()
     }
 
     pub fn get_output_texture(&self, name: &str) -> Option<Rc<Texture<G>>> {
-        let idx = *self.stage_to_framebuffer.get(name)?;
+        let resolved = self.resolve_stage_name(name);
+        let idx = *self.stage_to_framebuffer.get(resolved)?;
         self.framebuffers.get(idx)?.buffer.color_texture(0).ok().flatten().cloned()
     }
 
@@ -153,8 +167,11 @@ impl<G: Gl> PostProcessStageTextureCache<G> {
                     continue;
                 }
 
+                let aliases = &self.composite_aliases;
                 let conflict = match stage_deps {
-                    Some(deps) => fb.stages.iter().any(|s| deps.contains(s)),
+                    Some(deps) => fb.stages.iter().any(|s| {
+                        deps.contains(s) || deps.iter().any(|d| resolve_alias(aliases, d) == s)
+                    }),
                     None => false,
                 };
 
@@ -235,6 +252,17 @@ impl<G: Gl> PostProcessStageTextureCache<G> {
     }
 }
 
+fn resolve_alias<'a>(aliases: &'a HashMap<String, String>, name: &'a str) -> &'a str {
+    let mut current = name;
+    for _ in 0..16 {
+        match aliases.get(current) {
+            Some(next) if next != current => current = next.as_str(),
+            _ => break,
+        }
+    }
+    current
+}
+
 /// Helper function to get the name of the last stage in a stage item or composite.
 pub fn get_last_stage_name<G: Gl>(item: &PostProcessStageItem<G>) -> String {
     match item {
@@ -245,6 +273,21 @@ pub fn get_last_stage_name<G: Gl>(item: &PostProcessStageItem<G>) -> String {
             } else {
                 c.name().to_string()
             }
+        }
+    }
+}
+
+/// Collects recursive composite-to-final-leaf aliases for texture cache lookup
+/// and dependency conflict resolution.
+pub fn collect_composite_aliases<G: Gl>(
+    items: &[PostProcessStageItem<G>],
+    aliases: &mut HashMap<String, String>,
+) {
+    for item in items {
+        if let PostProcessStageItem::Composite(c) = item {
+            let last_leaf = get_last_stage_name(item);
+            aliases.insert(c.name().to_string(), last_leaf);
+            collect_composite_aliases(c.stages(), aliases);
         }
     }
 }

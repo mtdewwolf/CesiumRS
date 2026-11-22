@@ -191,3 +191,145 @@ fn primitive_collection_reference() {
         },
     );
 }
+
+#[test]
+fn billboard_clamping_batch_table_and_labels_sdf_gpu_pipeline() {
+    use cesium_rs::renderer::{Context, Gl, GlValue};
+    use std::cell::Cell;
+
+    #[derive(Clone, Default)]
+    struct MockGl {
+        next: Rc<Cell<u32>>,
+        draws: Rc<Cell<usize>>,
+        buffer_uploads: Rc<Cell<usize>>,
+    }
+    impl Gl for MockGl {
+        type Object = u32;
+        fn drawing_buffer_size(&self) -> Result<[u32; 2], RuntimeError> {
+            Ok([256, 256])
+        }
+        fn invoke(&self, name: &str, args: &[GlValue<u32>]) -> Result<GlValue<u32>, RuntimeError> {
+            if name.starts_with("create") || name == "fenceSync" {
+                let id = self.next.get() + 1;
+                self.next.set(id);
+                return Ok(GlValue::Object(id));
+            }
+            if name == "bufferData" || name == "bufferSubData" {
+                self.buffer_uploads.set(self.buffer_uploads.get() + 1);
+            }
+            if name == "drawElements"
+                || name == "drawElementsInstanced"
+                || name == "drawArrays"
+                || name == "drawArraysInstanced"
+            {
+                self.draws.set(self.draws.get() + 1);
+            }
+            Ok(match name {
+                "getParameter" => match args.first() {
+                    Some(GlValue::Number(n))
+                        if *n == webgl_constants::ALIASED_LINE_WIDTH_RANGE as f64
+                            || *n == webgl_constants::ALIASED_POINT_SIZE_RANGE as f64
+                            || *n == webgl_constants::MAX_VIEWPORT_DIMS as f64 =>
+                    {
+                        GlValue::Numbers(vec![1.0, 16384.0])
+                    }
+                    _ => GlValue::Number(16384.0),
+                },
+                "getExtension" => GlValue::Object(0),
+                "checkFramebufferStatus" => GlValue::Number(webgl_constants::FRAMEBUFFER_COMPLETE as f64),
+                "getShaderParameter" | "getProgramParameter" => GlValue::Bool(true),
+                _ => GlValue::Null,
+            })
+        }
+    }
+
+    let gl = MockGl::default();
+    let ctx = Context::new_webgl2(gl.clone());
+    let time = JulianDate::new(2451545.0, 0.0, TimeStandard::Tai);
+    let mut scene = Scene::new(
+        RendererSceneBackend::new(ctx.clone()),
+        CameraOptions::new(256.0, 256.0),
+        SceneOptions::default(),
+        time,
+    )
+    .unwrap();
+    scene.rethrow_render_errors = true;
+
+    let mut bb_coll = BillboardCollection::<MockGl>::new(BillboardCollectionOptions::default());
+    bb_coll.set_height_sampler(Some(Rc::new(|_carto, _hr| Some(500.0))));
+    let bt = Rc::new(RefCell::new(
+        BatchTable::new(
+            &ctx,
+            vec![BatchTableAttribute {
+                function_name: "czm_batchTable_color".into(),
+                component_datatype: ComponentDatatype::UnsignedByte,
+                components_per_attribute: 4,
+                normalize: true,
+            }],
+            1,
+        )
+        .unwrap(),
+    ));
+    bb_coll.set_batch_table(Some(bt));
+    let pos = Ellipsoid::WGS84.cartographic_to_cartesian(&Cartographic::from_degrees(0.0, 0.0, 100.0));
+    let bb = bb_coll
+        .add(
+            BillboardOptions {
+                position: pos,
+                height_reference: HeightReference::ClampToGround,
+                ..Default::default()
+            },
+            Some(BillboardImage::pixels(2, 2, vec![255u8; 16])),
+        )
+        .unwrap();
+    scene.primitives.push(Box::new(bb_coll));
+
+    let mut labels = LabelCollection::new_with_context(ctx.clone());
+    labels.set_height_sampler(Some(Rc::new(|_, _| Some(250.0))));
+    let label = labels
+        .add(LabelOptions {
+            position: pos,
+            text: "Hi!".into(),
+            show_background: true,
+            height_reference: HeightReference::ClampToGround,
+            ..Default::default()
+        })
+        .unwrap();
+    assert!(labels.expanded_bounding_sphere().radius >= 0.0);
+    scene.primitives.push(Box::new(labels));
+
+    assert!(scene.render(time).unwrap());
+    assert!(scene.force_render(time).unwrap());
+    assert!(bb.clamped_position().is_some());
+    let clamped_carto = Ellipsoid::WGS84.cartesian_to_cartographic(bb.clamped_position().unwrap()).unwrap();
+    assert!((clamped_carto.height - 500.0).abs() < 1e-3);
+    assert!(gl.draws.get() >= 2, "expected GPU draws for billboards and SDF labels");
+
+    // Stabilize initial atlas/buffer uploads, then verify an unchanged frame performs fewer
+    // buffer uploads than a frame where ordinary label properties (not text/font) are mutated.
+    assert!(scene.force_render(time).unwrap());
+    let uploads_before_clean = gl.buffer_uploads.get();
+    assert!(scene.force_render(time).unwrap());
+    let uploads_on_clean_frame = gl.buffer_uploads.get() - uploads_before_clean;
+
+    {
+        let mut l = label.borrow_mut();
+        l.set_position(Ellipsoid::WGS84.cartographic_to_cartesian(&Cartographic::from_degrees(1.0, 1.0, 100.0)));
+        l.set_pixel_offset(Cartesian2::new(10.0, 20.0));
+        l.set_background_color(Color::RED);
+        l.set_show(false);
+        assert!(l.is_dirty());
+        assert!(!l.rebind_all_glyphs());
+        assert!(!l.reposition_all_glyphs());
+    }
+    let uploads_before_dirty = gl.buffer_uploads.get();
+    assert!(scene.force_render(time).unwrap());
+    let uploads_on_dirty_frame = gl.buffer_uploads.get() - uploads_before_dirty;
+    assert!(!label.borrow().is_dirty());
+    assert!(
+        uploads_on_dirty_frame > uploads_on_clean_frame,
+        "mutating ordinary label properties (show/position/pixel_offset/background_color) must re-sync GPU billboards (clean={uploads_on_clean_frame}, dirty={uploads_on_dirty_frame})"
+    );
+
+    scene.destroy().unwrap();
+}

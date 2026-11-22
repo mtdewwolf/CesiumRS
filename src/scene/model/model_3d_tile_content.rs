@@ -9,7 +9,8 @@ use crate::{
         TileContentFuture, TileContentMetrics, TileContentRequest, TileId, TilesetContent,
     },
 };
-use std::{rc::Rc, sync::Arc};
+use crate::scene::Cesium3DTileStyle;
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 type Result<T> = std::result::Result<T, RuntimeError>;
 
 pub struct Model3DTileContent<G: Gl + 'static> {
@@ -87,6 +88,13 @@ impl<G: Gl + 'static> TilesetContent for Model3DTileContent<G> {
         self.model.options.instance_feature_id_label = state.instance_feature_id_label.clone();
         self.model.options.enable_pick = state.enable_pick;
         self.model.options.show_credits_on_screen = state.show_credits_on_screen;
+    }
+    fn apply_style(&mut self, style: Option<&Cesium3DTileStyle>) -> Result<()> {
+        self.model.set_style(style.cloned().map(|s| Rc::new(RefCell::new(s))));
+        Ok(())
+    }
+    fn apply_debug_settings(&mut self, enabled: bool, color: Color) -> Result<()> {
+        Model3DTileContent::apply_debug_settings(self, enabled, color)
     }
     fn metrics(&self) -> TileContentMetrics {
         let s = &self.model.statistics;

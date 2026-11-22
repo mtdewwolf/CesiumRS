@@ -411,6 +411,35 @@ fn model_style_and_pass_changes_rebuild_commands() {
     assert!(f.command_list.is_empty());
 }
 
+#[test]
+fn tileset_style_forwards_to_model_3d_tile_content() {
+    let context = Context::new_webgl2(Host::default());
+    let model =
+        Model::from_components(context.clone(), drawable_components(&context), ModelOptions::default()).unwrap();
+    let mut content = Model3DTileContent::new(model, 0, Resource::new("https://test/styled.glb").unwrap());
+    let mut f = frame();
+    let _ = content.process_with_frame(&mut f).unwrap();
+    finish_frame(&mut f);
+    assert!(content.process_with_frame(&mut f).unwrap());
+    finish_frame(&mut f);
+
+    // Invoke via the TilesetContent trait method (as Cesium3DTileset does)
+    let style = Cesium3DTileStyle::new(Some(&json!({"color":"color('red', 0.5)"}))).unwrap();
+    <Model3DTileContent<Host> as TilesetContent>::apply_style(&mut content, Some(&style)).unwrap();
+    content.update(&mut f).unwrap();
+    assert_eq!(content.model.options.color, Some(Color::new(1., 0., 0., 0.5)));
+    assert_eq!(f.command_list[0].pass, Pass::Translucent);
+
+    // Hide via style
+    f.command_list.clear();
+    finish_frame(&mut f);
+    let hide = Cesium3DTileStyle::new(Some(&json!({"show":"false"}))).unwrap();
+    <Model3DTileContent<Host> as TilesetContent>::apply_style(&mut content, Some(&hide)).unwrap();
+    content.update(&mut f).unwrap();
+    assert!(!content.model.options.show);
+    assert!(f.command_list.is_empty());
+}
+
 fn instance_attribute(semantic: InstanceAttributeSemantic, values: Vec<f32>) -> mc::Attribute<Host> {
     mc::Attribute {
         semantic: Some(mc::AttributeSemantic::Instance(semantic)),

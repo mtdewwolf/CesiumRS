@@ -501,3 +501,114 @@ fn cloud_removal_detaches_and_compaction_reindexes() {
     assert_eq!(collection.len(), 1);
     assert_eq!(second.borrow().collection_index(), 0);
 }
+
+#[test]
+fn gpu_renderables_clouds_panorama_skybox_viewport_quad_and_polylines() {
+    use cesium_rs::renderer::{Context, Gl, GlValue, Texture, TextureOptions, Viewport};
+    use cesium_rs::scene::{
+        CameraOptions, EquirectangularPanorama, EquirectangularPanoramaOptions, Material,
+        PolylineCollection, PolylineCollectionOptions, PolylineOptions, RendererSceneBackend,
+        Scene, SceneOptions, SkyBox, ViewportQuad, material::IMAGE_TYPE,
+    };
+    use std::{cell::{Cell, RefCell}, rc::Rc};
+
+    #[derive(Clone, Default)]
+    struct MockGl {
+        next: Rc<Cell<u32>>,
+        draws: Rc<Cell<usize>>,
+    }
+    impl Gl for MockGl {
+        type Object = u32;
+        fn drawing_buffer_size(&self) -> Result<[u32; 2], RuntimeError> {
+            Ok([512, 512])
+        }
+        fn invoke(&self, name: &str, args: &[GlValue<u32>]) -> Result<GlValue<u32>, RuntimeError> {
+            if name.starts_with("create") || name == "fenceSync" {
+                let id = self.next.get() + 1;
+                self.next.set(id);
+                return Ok(GlValue::Object(id));
+            }
+            if name == "drawElements"
+                || name == "drawElementsInstanced"
+                || name == "drawArrays"
+                || name == "drawArraysInstanced"
+            {
+                self.draws.set(self.draws.get() + 1);
+            }
+            Ok(match name {
+                "getParameter" => match args.first() {
+                    Some(GlValue::Number(n))
+                        if *n == webgl_constants::ALIASED_LINE_WIDTH_RANGE as f64
+                            || *n == webgl_constants::ALIASED_POINT_SIZE_RANGE as f64
+                            || *n == webgl_constants::MAX_VIEWPORT_DIMS as f64 =>
+                    {
+                        GlValue::Numbers(vec![1.0, 16384.0])
+                    }
+                    _ => GlValue::Number(16384.0),
+                },
+                "getExtension" => GlValue::Object(0),
+                "checkFramebufferStatus" => GlValue::Number(webgl_constants::FRAMEBUFFER_COMPLETE as f64),
+                "getShaderParameter" | "getProgramParameter" => GlValue::Bool(true),
+                _ => GlValue::Null,
+            })
+        }
+    }
+
+    let gl = MockGl::default();
+    let context = Context::new_webgl2(gl.clone());
+    let time = JulianDate::new(2451545.0, 0.0, TimeStandard::Tai);
+    let mut scene = Scene::new(
+        RendererSceneBackend::new(context.clone()),
+        CameraOptions::new(512.0, 512.0),
+        SceneOptions::default(),
+        time,
+    )
+    .unwrap();
+    scene.rethrow_render_errors = true;
+
+    let mut clouds = CloudCollection::new_with_context(CloudCollectionOptions::default(), context.clone()).unwrap();
+    clouds
+        .add(CumulusCloudOptions {
+            position: Cartesian3::new(0.0, 0.0, 6_378_137.0 + 1000.0),
+            scale: Some(Cartesian2::new(50.0, 30.0)),
+            ..Default::default()
+        })
+        .unwrap();
+    assert!(clouds.extent_bounding_sphere().radius >= 25.0);
+
+    let tex = Rc::new(Texture::new(&context, TextureOptions::rgba(4, 4), Some(&[255u8; 64])).unwrap());
+    let mut pano = EquirectangularPanorama::new_with_context(
+        EquirectangularPanoramaOptions::new("pano.jpg"),
+        context.clone(),
+    );
+    pano.material.set_gpu_texture("image", tex.clone());
+
+    let sky = SkyBox::with_context(
+        context.clone(),
+        SkyBox::<cesium_rs::scene::CubeMapSkyBoxPanorama<MockGl>>::earth_sources("/"),
+        None,
+    );
+
+    let quad_mat = Rc::new(RefCell::new(Material::from_type(IMAGE_TYPE)));
+    quad_mat.borrow_mut().set_gpu_texture("image", tex.clone());
+    let vquad = ViewportQuad::<MockGl>::new(Viewport { x: 0, y: 0, width: 64, height: 64 }, quad_mat);
+
+    let mut polylines = PolylineCollection::<MockGl>::new(PolylineCollectionOptions::default());
+    let mut poly_mat = Material::from_type(IMAGE_TYPE);
+    poly_mat.set_gpu_texture("image", tex);
+    let _ = polylines.add(PolylineOptions {
+        positions: vec![Cartesian3::new(1.0, 0.0, 0.0), Cartesian3::new(2.0, 0.0, 0.0)],
+        material: Some(Rc::new(RefCell::new(poly_mat))),
+        ..Default::default()
+    });
+
+    scene.primitives.push(Box::new(clouds));
+    scene.primitives.push(Box::new(pano));
+    scene.primitives.push(Box::new(sky));
+    scene.primitives.push(Box::new(vquad));
+    scene.primitives.push(Box::new(polylines));
+
+    assert!(scene.render(time).unwrap());
+    assert!(gl.draws.get() >= 4, "expected real GPU draws across renderables, got {}", gl.draws.get());
+    scene.destroy().unwrap();
+}

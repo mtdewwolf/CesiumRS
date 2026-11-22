@@ -78,6 +78,14 @@ impl TileContentMetrics {
 /// reports failure through Result; dropping an in-flight request cancels it.
 pub trait TilesetContent {
     fn configure_model(&mut self, _state: &TileContentModelState) {}
+    /// Applies a tileset style to this tile's features, if supported by the content.
+    fn apply_style(&mut self, _style: Option<&Cesium3DTileStyle>) -> Result<()> {
+        Ok(())
+    }
+    /// Applies tileset debug colorization settings to this tile's content.
+    fn apply_debug_settings(&mut self, _enabled: bool, _color: Color) -> Result<()> {
+        Ok(())
+    }
     /// Mutable processing lets model content defer readiness until after the
     /// real frame renders, just like a standalone model's ready event.
     fn process_with_frame(&mut self, frame: &mut FrameState) -> Result<bool> {
@@ -314,6 +322,7 @@ pub struct TilesetTile {
     pub expired_content: Option<Box<dyn TilesetContent>>,
     pub content_counted: bool,
     pub metadata: Option<TileMetadata>,
+    pub last_style_time: u64,
     pub(super) source_bounds: Value,
     volume_exaggeration: [f64; 2],
 }
@@ -449,6 +458,15 @@ pub struct Cesium3DTileset {
     pub empty_tiles: Vec<TileId>,
     pub has_mixed_content: bool,
     pub(super) clipping_planes: Option<Rc<RefCell<ClippingPlaneCollection>>>,
+    pub(super) clipping_polygons: Option<Rc<RefCell<ClippingPolygonCollection>>>,
+    style_engine: Cesium3DTileStyleEngine,
+    pub imagery_layers: ImageryLayerCollection,
+    pub image_based_lighting: ImageBasedLighting,
+    pub debug_colorize_tiles: bool,
+    pub debug_wireframe: bool,
+    pub debug_show_bounding_volume: bool,
+    pub debug_show_content_bounding_volume: bool,
+    last_debug_colorize_tiles: bool,
     pub(super) height_requests: Vec<super::tileset_content::TileHeightRequest>,
     exaggeration: [f64; 2],
 }
@@ -626,6 +644,15 @@ impl Cesium3DTileset {
             empty_tiles: Vec::new(),
             has_mixed_content: false,
             clipping_planes: None,
+            clipping_polygons: None,
+            style_engine: Cesium3DTileStyleEngine::new(),
+            imagery_layers: ImageryLayerCollection::new(),
+            image_based_lighting: ImageBasedLighting::default(),
+            debug_colorize_tiles: false,
+            debug_wireframe: false,
+            debug_show_bounding_volume: false,
+            debug_show_content_bounding_volume: false,
+            last_debug_colorize_tiles: false,
             height_requests: Vec::new(),
             exaggeration: [1., 0.],
         };
@@ -969,6 +996,7 @@ impl Cesium3DTileset {
             expired_content: None,
             content_counted: false,
             metadata,
+            last_style_time: 0,
             volume_exaggeration: [1., 0.],
         });
         if let Some(parent) = parent {
@@ -1114,16 +1142,77 @@ impl Cesium3DTileset {
         }
         Ok(())
     }
-    pub(super) fn clip_volume(&self, volume: &TilesetVolume) -> Result<Intersect> {
-        let Some(planes) = &self.clipping_planes else { return Ok(Intersect::Inside) };
-        let planes = planes.borrow();
-        if !planes.enabled {
-            return Ok(Intersect::Inside);
+    pub fn style(&self) -> Option<&Cesium3DTileStyle> {
+        self.style_engine.style()
+    }
+    pub fn set_style(&mut self, style: Option<Cesium3DTileStyle>) {
+        self.style_engine.set_style(style);
+    }
+    pub fn make_style_dirty(&mut self) {
+        self.style_engine.make_dirty();
+    }
+    pub fn clipping_polygons(&self) -> Option<&Rc<RefCell<ClippingPolygonCollection>>> {
+        self.clipping_polygons.as_ref()
+    }
+    pub fn set_clipping_polygons(&mut self, polygons: Option<Rc<RefCell<ClippingPolygonCollection>>>) -> Result<()> {
+        if self.clipping_polygons.as_ref().zip(polygons.as_ref()).is_some_and(|(a, b)| Rc::ptr_eq(a, b)) {
+            return Ok(());
         }
-        let transform = self.root.map_or(Matrix4::IDENTITY, |root| {
-            self.tiles[root].computed_transform.multiply(&self.initial_clipping_planes_origin_matrix)
-        });
-        planes.compute_intersection(volume, Some(&transform))
+        if let Some(previous) = self.clipping_polygons.take() {
+            previous.borrow_mut().destroy();
+        }
+        if let Some(polygons) = polygons {
+            polygons.borrow_mut().assign_owner(Rc::as_ptr(&self.alive) as usize)?;
+            self.clipping_polygons = Some(polygons);
+        }
+        Ok(())
+    }
+    pub fn imagery_layers(&self) -> &ImageryLayerCollection {
+        &self.imagery_layers
+    }
+    pub fn imagery_layers_mut(&mut self) -> &mut ImageryLayerCollection {
+        &mut self.imagery_layers
+    }
+    pub fn image_based_lighting(&self) -> &ImageBasedLighting {
+        &self.image_based_lighting
+    }
+    pub fn image_based_lighting_mut(&mut self) -> &mut ImageBasedLighting {
+        &mut self.image_based_lighting
+    }
+    pub(super) fn clip_volume(&self, volume: &TilesetVolume) -> Result<Intersect> {
+        let mut result = Intersect::Inside;
+        if let Some(planes) = &self.clipping_planes {
+            let planes = planes.borrow();
+            if planes.enabled {
+                let transform = self.root.map_or(Matrix4::IDENTITY, |root| {
+                    self.tiles[root].computed_transform.multiply(&self.initial_clipping_planes_origin_matrix)
+                });
+                let plane_hit = planes.compute_intersection(volume, Some(&transform))?;
+                if plane_hit == Intersect::Outside {
+                    return Ok(Intersect::Outside);
+                }
+                if plane_hit == Intersect::Intersecting {
+                    result = Intersect::Intersecting;
+                }
+            }
+        }
+        if let Some(polygons) = &self.clipping_polygons {
+            let polygons = polygons.borrow();
+            if polygons.enabled && !polygons.is_empty() {
+                let rect = match volume {
+                    TilesetVolume::Region(r) => Some(r.rectangle),
+                    _ => None,
+                };
+                let poly_hit = polygons.compute_intersection_with_bounding_volume(rect);
+                if poly_hit == Intersect::Inside && polygons.inverse {
+                    return Ok(Intersect::Outside);
+                }
+                if poly_hit == Intersect::Intersecting {
+                    result = Intersect::Intersecting;
+                }
+            }
+        }
+        Ok(result)
     }
     fn emit(&self, event: TilesetEvent) {
         if self.alive.get() {
@@ -1309,6 +1398,7 @@ impl Cesium3DTileset {
         if let Some(planes) = self.clipping_planes.as_ref().filter(|p| p.borrow().enabled) {
             frame.schedule_clipping_planes_update(Rc::clone(planes));
         }
+        self.imagery_layers.update();
         self.time_since_load = (JulianDate::seconds_difference(&frame.time, &start) * 1000.).max(0.);
         if frame.new_frame {
             self.cache.reset();
@@ -1496,6 +1586,24 @@ impl Cesium3DTileset {
                 clear.stencil_clear = Some(stencil_constants::SKIP_LOD_MASK as u32);
                 frame.command_list.push(clear);
             }
+            if self.style_engine.is_dirty() {
+                // Advance style timestamp once per style mutation so every selected tile re-styles.
+                struct EmptyStyleable;
+                impl super::cesium_3d_tile_style_engine::StyleableTile for EmptyStyleable {
+                    fn last_style_time(&self) -> u64 { 0 }
+                    fn set_last_style_time(&mut self, _time: u64) {}
+                    fn apply_style(&mut self, _style: Option<&Cesium3DTileStyle>) {}
+                    fn features_length(&self) -> usize { 0 }
+                }
+                let mut empty: [EmptyStyleable; 0] = [];
+                self.style_engine.apply_style_to_tiles(&mut empty);
+                self.style_engine.reset_dirty();
+            }
+            let style_time = self.style_engine.last_style_time();
+            let active_style = self.style_engine.style().cloned();
+            let debug_colorize_changed = self.debug_colorize_tiles != self.last_debug_colorize_tiles;
+            self.last_debug_colorize_tiles = self.debug_colorize_tiles;
+
             for id in self.selected_tiles.clone() {
                 let clipping = if self.tiles[id].traversal.is_clipped {
                     self.clipping_planes.as_ref().filter(|p| p.borrow().enabled).map(|p| {
@@ -1533,6 +1641,17 @@ impl Cesium3DTileset {
                         enable_pick: self.options.enable_pick,
                         show_credits_on_screen: self.options.show_credits_on_screen,
                     });
+                    if style_time > 0 && tile.last_style_time != style_time {
+                        content.apply_style(active_style.as_ref())?;
+                        tile.last_style_time = style_time;
+                        self.statistics.number_of_tiles_styled += 1;
+                        self.statistics.number_of_features_styled += content.metrics().features;
+                    }
+                    if self.debug_colorize_tiles || debug_colorize_changed {
+                        let hue = ((id as f64) * 0.618_033_988_75).fract();
+                        let debug_color = Color::from_hsl(hue, 0.75, 0.55, 1.0);
+                        content.apply_debug_settings(self.debug_colorize_tiles, debug_color)?;
+                    }
                     if let Err(error) = content.update(frame) {
                         if !expired {
                             tile.state = Cesium3DTileContentState::Failed;
@@ -1701,6 +1820,10 @@ impl Cesium3DTileset {
         if let Some(planes) = self.clipping_planes.take() {
             planes.borrow_mut().destroy()?;
         }
+        if let Some(polygons) = self.clipping_polygons.take() {
+            polygons.borrow_mut().destroy();
+        }
+        self.imagery_layers.remove_all(Some(true));
         for request in self.height_requests.drain(..) {
             request.active.set(false);
         }

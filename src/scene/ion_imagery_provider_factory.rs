@@ -1,6 +1,9 @@
 //! CesiumJS `IonImageryProviderFactory`: supported external imagery asset
-//! types and factory mapping for Cesium ion asset endpoints.
+//! types and complete factory dispatch for Cesium ion asset endpoints.
 
+use super::ion_imagery_provider::{create_provider_from_endpoint, IonImageryProviderOptions};
+use super::{ImageryLoader, ImageryProvider};
+use crate::core::{ImageHost, Resource, RuntimeError};
 use serde_json::Value;
 
 /// Known external imagery service types supported by Cesium ion endpoints.
@@ -97,5 +100,18 @@ impl IonImageryProviderFactory {
     /// Extracts the external asset type name from the endpoint JSON, if present.
     pub fn external_type(endpoint: &Value) -> Option<&str> {
         endpoint.get("externalType").and_then(|v| v.as_str())
+    }
+
+    /// Instantiates the concrete [`ImageryProvider`] for a Cesium ion endpoint
+    /// payload across all 11 external types (`ARCGIS_MAPSERVER`, `BING`,
+    /// `GOOGLE_EARTH`, `MAPBOX`, `SINGLE_TILE`, `TMS`, `URL_TEMPLATE`, `WMS`,
+    /// `WMTS`, `GOOGLE_2D_MAPS`, `AZURE_MAPS`) plus native TMS endpoints.
+    pub async fn create_provider<H: ImageHost + 'static>(
+        loader: ImageryLoader<H>,
+        endpoint: &Value,
+        endpoint_resource: &Resource,
+        options: &IonImageryProviderOptions,
+    ) -> Result<Box<dyn ImageryProvider>, RuntimeError> {
+        create_provider_from_endpoint(loader, endpoint, endpoint_resource, options).await
     }
 }

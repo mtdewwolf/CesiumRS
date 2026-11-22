@@ -72,14 +72,34 @@ impl IonImageryProvider {
             return Err(RuntimeError::new(format!("Cesium ion asset {asset_id} is not an imagery asset.")));
         }
         let tile_credits = IonResource::get_credits_from_endpoint(&endpoint, &endpoint_resource);
-        let endpoint_options = endpoint.get("options").cloned().unwrap_or(Value::Null);
-        let external_type = endpoint["externalType"].as_str();
-        // External assets carry their service URL in `options.url`; native
-        // TMS imagery assets carry it at the endpoint's top level.
-        let url = endpoint_options["url"].as_str().or_else(|| endpoint["url"].as_str()).unwrap_or("").to_owned();
-        let resource = ion_resource(&url, &endpoint_resource);
+        let inner = super::IonImageryProviderFactory::create_provider(
+            loader,
+            &endpoint,
+            &endpoint_resource,
+            &options,
+        )
+        .await?;
+        let error_event = Rc::new(RefCell::new(Default::default()));
+        Ok(Self { inner, tile_credits, error_event })
+    }
 
-        let inner: Box<dyn ImageryProvider> = match external_type {
+    pub fn inner(&self) -> &dyn ImageryProvider {
+        self.inner.as_ref()
+    }
+}
+
+pub(crate) async fn create_provider_from_endpoint<H: ImageHost + 'static>(
+    loader: ImageryLoader<H>,
+    endpoint: &Value,
+    endpoint_resource: &Resource,
+    options: &IonImageryProviderOptions,
+) -> Result<Box<dyn ImageryProvider>, RuntimeError> {
+    let endpoint_options = endpoint.get("options").cloned().unwrap_or(Value::Null);
+    let external_type = endpoint["externalType"].as_str();
+    let url = endpoint_options["url"].as_str().or_else(|| endpoint["url"].as_str()).unwrap_or("").to_owned();
+    let resource = ion_resource(&url, endpoint_resource);
+
+    let inner: Box<dyn ImageryProvider> = match external_type {
             Some("BING") => {
                 let mut bing_options =
                     BingMapsImageryProviderOptions::new(endpoint_options["key"].as_str().unwrap_or(""));
@@ -223,13 +243,7 @@ impl IonImageryProvider {
                 return Err(RuntimeError::new(format!("Unrecognized Cesium ion imagery type: {other}")));
             }
         };
-        let error_event = Rc::new(RefCell::new(Default::default()));
-        Ok(Self { inner, tile_credits, error_event })
-    }
-
-    pub fn inner(&self) -> &dyn ImageryProvider {
-        self.inner.as_ref()
-    }
+    Ok(inner)
 }
 
 fn ion_resource(url: &str, endpoint_resource: &Resource) -> Resource {

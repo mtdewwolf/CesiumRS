@@ -4,6 +4,10 @@ use crate::core::{
     BoundingSphere, Cartesian2, Cartesian3, Matrix3, Matrix4, OrientedBoundingBox, RuntimeError,
 };
 use crate::core::math::{equals_epsilon, negative_pi_to_pi, EPSILON10, PI, TWO_PI};
+use crate::renderer::{Gl, UniformValue};
+use super::super::clipping_plane::{ClippingPlane, ClippingPlaneHandle};
+use super::super::voxel_bounds_collection::{VoxelBoundsCollection, VoxelBoundsCollectionOptions};
+use std::collections::BTreeMap;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct CylinderShaderUniforms {
@@ -311,6 +315,105 @@ impl VoxelCylinderShape {
 
     pub fn render_bound_plane_distances(&self) -> [f64; 2] {
         [self.render_min.z, -self.render_max.z]
+    }
+
+    /// Returns the two clipping plane handles representing the cylinder height render bounds.
+    pub fn render_bound_planes(&self) -> [ClippingPlaneHandle; 2] {
+        [
+            ClippingPlane::handle(Cartesian3::UNIT_Z.negate(), self.render_min.z),
+            ClippingPlane::handle(Cartesian3::UNIT_Z, -self.render_max.z),
+        ]
+    }
+
+    /// Creates a GPU-backed [`VoxelBoundsCollection`] for this cylinder's height render-bound planes.
+    pub fn render_bound_planes_collection<G: Gl>(&self) -> VoxelBoundsCollection<G> {
+        VoxelBoundsCollection::new(VoxelBoundsCollectionOptions {
+            planes: self.render_bound_planes().to_vec(),
+            ..Default::default()
+        })
+    }
+
+    /// Shader uniform map matching CesiumJS `VoxelCylinderShape#shaderUniforms`.
+    pub fn shader_uniforms_map(&self) -> BTreeMap<String, UniformValue> {
+        let u = &self.shader_uniforms;
+        let mut map = BTreeMap::new();
+        map.insert(
+            "cameraShapePosition".into(),
+            UniformValue::Float(vec![
+                u.camera_shape_position.x as f32,
+                u.camera_shape_position.y as f32,
+                u.camera_shape_position.z as f32,
+            ]),
+        );
+        map.insert(
+            "cylinderEcToRadialTangentUp".into(),
+            UniformValue::Matrix {
+                dimension: 3,
+                values: u.cylinder_ec_to_radial_tangent_up.0.iter().map(|&v| v as f32).collect(),
+            },
+        );
+        map.insert(
+            "cylinderRenderRadiusMinMax".into(),
+            UniformValue::Float(vec![u.cylinder_render_radius_min_max.x as f32, u.cylinder_render_radius_min_max.y as f32]),
+        );
+        map.insert(
+            "cylinderRenderAngleMinMax".into(),
+            UniformValue::Float(vec![u.cylinder_render_angle_min_max.x as f32, u.cylinder_render_angle_min_max.y as f32]),
+        );
+        map.insert(
+            "cylinderLocalToShapeUvRadius".into(),
+            UniformValue::Float(vec![u.cylinder_local_to_shape_uv_radius.x as f32, u.cylinder_local_to_shape_uv_radius.y as f32]),
+        );
+        map.insert(
+            "cylinderLocalToShapeUvAngle".into(),
+            UniformValue::Float(vec![u.cylinder_local_to_shape_uv_angle.x as f32, u.cylinder_local_to_shape_uv_angle.y as f32]),
+        );
+        map.insert(
+            "cylinderLocalToShapeUvHeight".into(),
+            UniformValue::Float(vec![u.cylinder_local_to_shape_uv_height.x as f32, u.cylinder_local_to_shape_uv_height.y as f32]),
+        );
+        map.insert(
+            "cylinderShapeUvAngleRangeOrigin".into(),
+            UniformValue::Float(vec![u.cylinder_shape_uv_angle_range_origin as f32]),
+        );
+        map
+    }
+
+    /// Shader defines map matching CesiumJS `VoxelCylinderShape#shaderDefines`.
+    pub fn shader_defines_map(&self) -> BTreeMap<String, String> {
+        let d = &self.shader_defines;
+        let mut map = BTreeMap::new();
+        if d.has_shape_bounds_angle {
+            map.insert("CYLINDER_HAS_SHAPE_BOUNDS_ANGLE".into(), "true".into());
+        }
+        if d.has_render_bounds_radius_min {
+            map.insert("CYLINDER_HAS_RENDER_BOUNDS_RADIUS_MIN".into(), "true".into());
+        }
+        if d.has_render_bounds_radius_flat {
+            map.insert("CYLINDER_HAS_RENDER_BOUNDS_RADIUS_FLAT".into(), "true".into());
+        }
+        if d.has_render_bounds_angle {
+            map.insert("CYLINDER_HAS_RENDER_BOUNDS_ANGLE".into(), "true".into());
+        }
+        if d.has_render_bounds_angle_range_equal_zero {
+            map.insert("CYLINDER_HAS_RENDER_BOUNDS_ANGLE_RANGE_EQUAL_ZERO".into(), "true".into());
+        }
+        if d.has_render_bounds_angle_range_under_half {
+            map.insert("CYLINDER_HAS_RENDER_BOUNDS_ANGLE_RANGE_UNDER_HALF".into(), "true".into());
+        }
+        if d.has_render_bounds_angle_range_over_half {
+            map.insert("CYLINDER_HAS_RENDER_BOUNDS_ANGLE_RANGE_OVER_HALF".into(), "true".into());
+        }
+        if self.shader_maximum_intersections_length > 0 {
+            map.insert("CYLINDER_INTERSECTION_INDEX_RADIUS_MAX".into(), d.intersection_index_radius_max.to_string());
+        }
+        if let Some(i) = d.intersection_index_radius_min {
+            map.insert("CYLINDER_INTERSECTION_INDEX_RADIUS_MIN".into(), i.to_string());
+        }
+        if let Some(i) = d.intersection_index_angle {
+            map.insert("CYLINDER_INTERSECTION_INDEX_ANGLE".into(), i.to_string());
+        }
+        map
     }
 
     pub fn tile_obb(&self, level: u32, coords: [u32; 3]) -> OrientedBoundingBox {

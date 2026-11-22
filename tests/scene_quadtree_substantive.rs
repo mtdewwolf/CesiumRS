@@ -665,3 +665,227 @@ fn find_tile_skips_mutably_borrowed_ancestors() {
     drop(child_guard);
     assert!(QuadtreePrimitive::<SubstantiveTileProvider>::find_tile_in_roots(Some(&roots), coordinate).is_some());
 }
+
+#[test]
+fn quadtree_time_slices_and_globe_surface_tile_gpu_resources() {
+    use cesium_rs::core::heightmap_terrain_data::{HeightmapTerrainData, HeightmapTerrainDataOptions};
+    use cesium_rs::core::terrain_encoding::{TerrainEncoding, TerrainEncodingOptions};
+    use cesium_rs::core::terrain_mesh::{TerrainMesh, TerrainMeshOptions};
+    use cesium_rs::core::terrain_provider::TerrainEdgeIndices;
+    use cesium_rs::core::{webgl_constants, BoundingSphere, Rectangle, RuntimeError, TypedArray};
+    use cesium_rs::renderer::{Context, Gl, GlValue};
+    use cesium_rs::scene::globe_surface_tile::GlobeSurfaceTile;
+    use cesium_rs::scene::terrain_state::TerrainState;
+    use std::cell::Cell;
+
+    // 1. Time-slice enforcement in process_tile_load_queue & update_heights
+    let scheme: Arc<dyn TilingScheme> = Arc::new(GeographicTilingScheme::default());
+    let mut provider = SubstantiveTileProvider::new(scheme.clone());
+    provider.distance_to_tile = 10_000_000.0;
+    let mut qp = QuadtreePrimitive::new(QuadtreePrimitiveOptions {
+        tile_provider: provider,
+        maximum_screen_space_error: Some(2.0),
+        tile_cache_size: Some(10),
+        loading_descendant_limit: Some(20),
+        preload_ancestors: Some(false),
+        preload_siblings: Some(false),
+    });
+    assert!(qp.tile_provider().ready());
+    let tick = Rc::new(Cell::new(0.0f64));
+    let tick_c = Rc::clone(&tick);
+    qp.set_clock(Rc::new(move || {
+        let now = tick_c.get();
+        tick_c.set(now + 10.0); // Advance 10ms per clock read -> exceeds 5ms budget after 1 tile
+        now
+    }));
+    qp.load_queue_time_slice = 5.0;
+    qp.update_heights_time_slice = 5.0;
+
+    let mut camera = create_substantive_camera(Cartesian3::new(10_000_000.0, 0.0, 0.0));
+    let mut frame1 = create_substantive_frame_state(1, &mut camera);
+    qp.begin_frame(&frame1);
+    qp.render(&mut frame1, &mut camera);
+    assert_eq!(qp.tile_load_queue_high.len(), 2);
+    qp.process_tile_load_queue(&frame1);
+    // Budget expired after loading 1 of the 2 high-priority tiles
+    assert_eq!(qp.tile_provider().loaded_tiles.borrow().len(), 1);
+
+    // 2. GlobeSurfaceTile async terrain request + real GPU VertexArray + water mask inheritance
+    #[derive(Clone, Default)]
+    struct MockGl {
+        next: Rc<Cell<u32>>,
+        buffers: Rc<Cell<usize>>,
+        textures: Rc<Cell<usize>>,
+    }
+    impl Gl for MockGl {
+        type Object = u32;
+        fn drawing_buffer_size(&self) -> Result<[u32; 2], RuntimeError> {
+            Ok([256, 256])
+        }
+        fn invoke(&self, name: &str, args: &[GlValue<u32>]) -> Result<GlValue<u32>, RuntimeError> {
+            if name == "createBuffer" {
+                self.buffers.set(self.buffers.get() + 1);
+            }
+            if name == "createTexture" {
+                self.textures.set(self.textures.get() + 1);
+            }
+            if name.starts_with("create") || name == "fenceSync" {
+                let id = self.next.get() + 1;
+                self.next.set(id);
+                return Ok(GlValue::Object(id));
+            }
+            Ok(match name {
+                "getParameter" => match args.first() {
+                    Some(GlValue::Number(n))
+                        if *n == webgl_constants::ALIASED_LINE_WIDTH_RANGE as f64
+                            || *n == webgl_constants::ALIASED_POINT_SIZE_RANGE as f64
+                            || *n == webgl_constants::MAX_VIEWPORT_DIMS as f64 =>
+                    {
+                        GlValue::Numbers(vec![1.0, 16384.0])
+                    }
+                    _ => GlValue::Number(16384.0),
+                },
+                "getExtension" => GlValue::Object(0),
+                "checkFramebufferStatus" => GlValue::Number(webgl_constants::FRAMEBUFFER_COMPLETE as f64),
+                "getShaderParameter" | "getProgramParameter" => GlValue::Bool(true),
+                _ => GlValue::Null,
+            })
+        }
+    }
+
+    let gl = MockGl::default();
+    let ctx = Context::new_webgl2(gl.clone());
+
+    let mut parent_tile = GlobeSurfaceTile::new();
+    let htd = HeightmapTerrainData::new(HeightmapTerrainDataOptions::new(
+        TypedArray::Float32(vec![100.0; 4]),
+        2,
+        2,
+    ))
+    .unwrap();
+    parent_tile.request_terrain_data(Box::pin(std::future::ready(Ok(Box::new(htd) as Box<dyn cesium_rs::scene::globe_surface_tile::SurfaceTerrainData>))));
+    assert_eq!(parent_tile.terrain_state, TerrainState::Receiving);
+    assert_eq!(parent_tile.poll_terrain_data(), TerrainState::Received);
+    assert!(parent_tile.terrain_data.is_some());
+
+    let mesh = TerrainMesh::new(TerrainMeshOptions {
+        center: Cartesian3::ZERO,
+        vertices: vec![0.0; 18],
+        indices: TypedArray::Uint16(vec![0, 1, 2]),
+        index_count_without_skirts: Some(3),
+        vertex_count_without_skirts: 3,
+        minimum_height: 0.0,
+        maximum_height: 100.0,
+        rectangle: Rectangle::from_degrees(0.0, 0.0, 10.0, 10.0),
+        bounding_sphere_3d: BoundingSphere::new(Cartesian3::ZERO, 1000.0),
+        occludee_point_in_scaled_space: None,
+        vertex_stride: Some(6),
+        oriented_bounding_box: None,
+        encoding: TerrainEncoding::new(TerrainEncodingOptions::default()).unwrap(),
+        edges: TerrainEdgeIndices::default(),
+    });
+    parent_tile.set_mesh(mesh);
+    assert!(!parent_tile.has_vertex_array);
+    let va = parent_tile.create_vertex_array(&ctx).unwrap();
+    assert!(parent_tile.has_vertex_array);
+    assert_eq!(parent_tile.terrain_state, TerrainState::Ready);
+    assert!(parent_tile.vertex_array::<MockGl>().is_some());
+    assert_eq!(va.number_of_attributes(), 2);
+    assert!(gl.buffers.get() >= 2);
+
+    // Unquantized mesh with geodetic surface normals must produce 3 attributes (0, 1, 2) from encoding.get_attributes()
+    let normal_encoding = TerrainEncoding::new(TerrainEncodingOptions {
+        has_geodetic_surface_normals: true,
+        ..Default::default()
+    })
+    .unwrap();
+    assert_eq!(normal_encoding.stride, 9);
+    let mut normal_tile = GlobeSurfaceTile::new();
+    normal_tile.set_mesh(TerrainMesh::new(TerrainMeshOptions {
+        center: Cartesian3::ZERO,
+        vertices: vec![0.0; 27],
+        indices: TypedArray::Uint16(vec![0, 1, 2]),
+        index_count_without_skirts: Some(3),
+        vertex_count_without_skirts: 3,
+        minimum_height: 0.0,
+        maximum_height: 100.0,
+        rectangle: Rectangle::from_degrees(0.0, 0.0, 10.0, 10.0),
+        bounding_sphere_3d: BoundingSphere::new(Cartesian3::ZERO, 1000.0),
+        occludee_point_in_scaled_space: None,
+        vertex_stride: Some(9),
+        oriented_bounding_box: None,
+        encoding: normal_encoding,
+        edges: TerrainEdgeIndices::default(),
+    }));
+    let normal_va = normal_tile.create_vertex_array(&ctx).unwrap();
+    assert_eq!(normal_va.number_of_attributes(), 3);
+    let a0 = normal_va.get_attribute(0).unwrap();
+    let a1 = normal_va.get_attribute(1).unwrap();
+    let a2 = normal_va.get_attribute(2).unwrap();
+    assert_eq!((a0.index, a0.components, a0.offset, a0.stride), (0, 4, 0, 36));
+    assert_eq!((a1.index, a1.components, a1.offset, a1.stride), (1, 2, 16, 36));
+    assert_eq!((a2.index, a2.components, a2.offset, a2.stride), (2, 3, 24, 36));
+
+    // Quantized (Bits12) mesh with WebMercatorT + vertex normals + geodetic surface normals
+    let quant_encoding = TerrainEncoding::new(TerrainEncodingOptions {
+        center: Some(Cartesian3::ZERO),
+        axis_aligned_bounding_box: Some(cesium_rs::core::AxisAlignedBoundingBox::new(
+            Cartesian3::new(-10.0, -10.0, -10.0),
+            Cartesian3::new(10.0, 10.0, 10.0),
+            None,
+        )),
+        minimum_height: Some(0.0),
+        maximum_height: Some(100.0),
+        from_enu: Some(cesium_rs::core::Matrix4::IDENTITY),
+        has_web_mercator_t: true,
+        has_vertex_normals: true,
+        has_geodetic_surface_normals: true,
+        ..Default::default()
+    })
+    .unwrap();
+    let expected_quant_attrs = quant_encoding.get_attributes();
+    let mut quant_tile = GlobeSurfaceTile::new();
+    quant_tile.set_mesh(TerrainMesh::new(TerrainMeshOptions {
+        center: Cartesian3::ZERO,
+        vertices: vec![0.0; quant_encoding.stride * 3],
+        indices: TypedArray::Uint16(vec![0, 1, 2]),
+        index_count_without_skirts: Some(3),
+        vertex_count_without_skirts: 3,
+        minimum_height: 0.0,
+        maximum_height: 100.0,
+        rectangle: Rectangle::from_degrees(0.0, 0.0, 10.0, 10.0),
+        bounding_sphere_3d: BoundingSphere::new(Cartesian3::ZERO, 1000.0),
+        occludee_point_in_scaled_space: None,
+        vertex_stride: Some(quant_encoding.stride),
+        oriented_bounding_box: None,
+        encoding: quant_encoding,
+        edges: TerrainEdgeIndices::default(),
+    }));
+    let quant_va = quant_tile.create_vertex_array(&ctx).unwrap();
+    assert_eq!(quant_va.number_of_attributes(), expected_quant_attrs.len());
+    for (i, exp) in expected_quant_attrs.iter().enumerate() {
+        let got = quant_va.get_attribute(i).unwrap();
+        assert_eq!(
+            (got.index, got.components, got.offset, got.stride),
+            (exp.index, u32::from(exp.components_per_attribute), exp.offset_in_bytes, exp.stride_in_bytes)
+        );
+    }
+
+    let _wm = parent_tile.upload_water_mask(&ctx, 2, 2, &[0, 255, 255, 0]).unwrap();
+    assert!(parent_tile.has_water_mask_texture);
+    assert!(parent_tile.water_mask_texture::<MockGl>().is_some());
+
+    let mut child_tile = GlobeSurfaceTile::new();
+    let parent_rect = Rectangle::from_degrees(0.0, 0.0, 10.0, 10.0);
+    let child_rect = Rectangle::from_degrees(5.0, 5.0, 10.0, 10.0);
+    assert!(child_tile.inherit_water_mask_from_ancestor::<MockGl>(&child_rect, &parent_tile, &parent_rect));
+    assert!(child_tile.has_water_mask_texture);
+    assert!((child_tile.water_mask_translation_and_scale.z - 0.5).abs() < 1e-9);
+    assert!((child_tile.water_mask_translation_and_scale.w - 0.5).abs() < 1e-9);
+
+    parent_tile.free_resources();
+    assert!(!parent_tile.has_vertex_array);
+    assert!(parent_tile.vertex_array::<MockGl>().is_none());
+    assert!(!parent_tile.has_water_mask_texture);
+    assert!(parent_tile.water_mask_texture::<MockGl>().is_none());
+}

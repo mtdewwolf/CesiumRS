@@ -237,5 +237,146 @@ fn all_voxel_shape_constructors_match_their_default_bounds() {
         assert!(shape.update(Matrix4::IDENTITY,kind.min_bounds(),kind.max_bounds(),None,None));
         let mut packed=[0.;12];shape.tile_obb(1,[0,0,0]).pack(&mut packed,0);
         assert!(packed.iter().all(|v|v.is_finite()));
+        assert!(!shape.shader_uniforms().is_empty());
+        assert!(!shape.shader_defines().is_empty());
     }
+}
+
+#[test]
+fn voxel_shapes_expose_render_planes_shader_uniforms_and_defines() {
+    let mut box_shape = VoxelBoxShape::default();
+    assert!(box_shape.update(
+        Matrix4::IDENTITY,
+        Cartesian3::new(-1., -1., -1.),
+        Cartesian3::new(1., 1., 1.),
+        Some(Cartesian3::new(-0.5, -0.25, 0.0)),
+        Some(Cartesian3::new(0.5, 0.75, 1.0)),
+    ));
+    box_shape.update_view_transforms(Matrix3::IDENTITY).unwrap();
+    let box_defines = box_shape.shader_defines_map();
+    assert_eq!(box_defines.get("BOX_INTERSECTION_INDEX").map(String::as_str), Some("0"));
+    let box_uniforms = box_shape.shader_uniforms_map();
+    assert!(box_uniforms.contains_key("boxEcToXyz"));
+    assert!(box_uniforms.contains_key("boxLocalToShapeUvScale"));
+    assert!(box_uniforms.contains_key("boxLocalToShapeUvTranslate"));
+    assert_eq!(box_shape.render_bound_planes().len(), 6);
+    assert_eq!(box_shape.render_bound_plane_distances(), [-0.5, -0.25, 0.0, -0.5, -0.75, -1.0]);
+
+    let mut cyl = VoxelCylinderShape::default();
+    assert!(cyl.update(
+        Matrix4::IDENTITY,
+        Cartesian3::new(0.2, -1.0, -1.0),
+        Cartesian3::new(1.0, 1.0, 1.0),
+        None,
+        None,
+    ));
+    assert_eq!(cyl.render_bound_planes().len(), 2);
+    let cyl_defines = cyl.shader_defines_map();
+    assert_eq!(cyl_defines.get("CYLINDER_HAS_RENDER_BOUNDS_RADIUS_MIN").map(String::as_str), Some("true"));
+    assert_eq!(cyl_defines.get("CYLINDER_INTERSECTION_INDEX_RADIUS_MAX").map(String::as_str), Some("0"));
+    assert_eq!(cyl_defines.get("CYLINDER_INTERSECTION_INDEX_RADIUS_MIN").map(String::as_str), Some("1"));
+    assert!(cyl.shader_uniforms_map().contains_key("cylinderRenderRadiusMinMax"));
+
+    let mut ell = VoxelEllipsoidShape::default();
+    assert!(ell.update(
+        Matrix4::from_scale(Ellipsoid::WGS84.radii),
+        Cartesian3::new(-0.5, -0.5, 0.0),
+        Cartesian3::new(0.5, 0.5, 1000.0),
+        None,
+        None,
+    ));
+    let ell_defines = ell.shader_defines_map();
+    assert_eq!(ell_defines.get("ELLIPSOID_HAS_RENDER_BOUNDS_LONGITUDE").map(String::as_str), Some("true"));
+    assert_eq!(ell_defines.get("ELLIPSOID_INTERSECTION_INDEX_HEIGHT_MAX").map(String::as_str), Some("0"));
+    assert_eq!(ell_defines.get("ELLIPSOID_INTERSECTION_INDEX_HEIGHT_MIN").map(String::as_str), Some("1"));
+    assert!(ell.shader_uniforms_map().contains_key("ellipsoidRadii"));
+}
+
+#[test]
+fn spatial_node_megatexture_keyframe_lifecycle_and_voxel_cell_curved_shapes() {
+    use cesium_rs::scene::spatial_node::{KeyframeLoadState, MegatextureSlots};
+
+    #[derive(Default)]
+    struct DummyMegatexture {
+        active: Vec<Option<usize>>,
+    }
+    impl MegatextureSlots for DummyMegatexture {
+        fn add(&mut self, data: &TypedArray) -> isize {
+            let idx = self.active.len();
+            self.active.push(Some(data.len()));
+            idx as isize
+        }
+        fn remove(&mut self, index: isize) {
+            self.active[index as usize] = None;
+        }
+    }
+
+    let mut cyl = VoxelCylinderShape::default();
+    assert!(cyl.update(
+        Matrix4::IDENTITY,
+        VoxelCylinderShape::default_min_bounds(),
+        VoxelCylinderShape::default_max_bounds(),
+        None,
+        None,
+    ));
+    let mut node = SpatialNode::new(0, [0, 0, 0], &cyl, Cartesian3::new(2., 2., 2.));
+    node.create_keyframe_node(1.0);
+    assert_eq!(node.keyframe_nodes.len(), 1);
+    let content = VoxelContent::from_metadata_array(vec![TypedArray::Float32(vec![1.0; 8])]);
+    node.keyframe_nodes[0].content = Some(content);
+    node.keyframe_nodes[0].state = KeyframeLoadState::Loaded;
+
+    let cell = VoxelCell::from_keyframe_node(
+        1u32,
+        0,
+        3,
+        &node,
+        &node.keyframe_nodes[0],
+        &[("temp".into(), MetadataType::Scalar)],
+        &cyl,
+        Cartesian3::new(2., 2., 2.),
+        Cartesian3::ZERO,
+    )
+    .unwrap();
+    assert_eq!(cell.get_names(), vec!["temp"]);
+    assert_eq!(cell.get_property("temp").unwrap().to_f64_vec(), vec![1.0]);
+    assert_eq!(cell.metadata().len(), 1);
+
+    let mut megatextures = vec![DummyMegatexture::default()];
+    let slot = node.add_keyframe_node_to_megatextures(1.0, &mut megatextures).unwrap();
+    assert_eq!(slot, 0);
+    assert_eq!(node.renderable_keyframes.len(), 1);
+    assert!(node.add_keyframe_node_to_megatextures(1.0, &mut megatextures).is_err());
+
+    node.destroy_keyframe_node(1.0, &mut megatextures).unwrap();
+    assert!(node.keyframe_nodes.is_empty());
+    assert!(node.renderable_keyframes.is_empty());
+    assert_eq!(megatextures[0].active[0], None);
+}
+
+#[test]
+fn cesium_content_factory_dispatch_and_glb_slice_validation() {
+    use cesium_rs::scene::cesium_3d_tile_content_factory::Cesium3DTileContentHandler;
+    assert_eq!(
+        Cesium3DTileContentFactory::dispatch("b3dm", &[]),
+        Some(Cesium3DTileContentHandler::ModelB3dm)
+    );
+    assert_eq!(
+        Cesium3DTileContentFactory::dispatch("glb", &[]),
+        Some(Cesium3DTileContentHandler::ModelGltf)
+    );
+    assert_eq!(
+        Cesium3DTileContentFactory::dispatch("glb", &["KHR_gaussian_splatting".into()]),
+        Some(Cesium3DTileContentHandler::GaussianSplatGltf)
+    );
+    assert_eq!(
+        Cesium3DTileContentFactory::dispatch("geoJson", &[]),
+        Some(Cesium3DTileContentHandler::ModelGeoJson)
+    );
+    assert!(Cesium3DTileContentFactory::glb_slice(&[0u8; 8], 0).is_err());
+    let mut glb = vec![0u8; 20];
+    glb[0..4].copy_from_slice(b"glTF");
+    glb[8..12].copy_from_slice(&16u32.to_le_bytes());
+    let sliced = Cesium3DTileContentFactory::glb_slice(&glb, 0).unwrap();
+    assert_eq!(sliced.len(), 16);
 }

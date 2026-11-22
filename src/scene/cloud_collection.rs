@@ -1,37 +1,483 @@
-//! CPU collection and vertex attribute preparation for CesiumJS `CloudCollection`.
-//!
-//! # Architecture and Parity Status
-//! This module provides partial CPU-side behavior for CesiumJS `CloudCollection`
-//! corresponding to `@cesium/engine 23.0.0`:
-//! - Complete collection management: `add`, `remove`, `remove_all`, `contains`, `get`, `len`.
-//! - Deferred removal and compaction semantics matching CesiumJS `removeClouds`.
-//! - Precomputed noise texture dimensions `u_noiseTextureDimensions` (128, 4, 0.25).
-//! - Position-only bounding spheres are a CesiumRS extension, not safe for
-//!   culling cloud extents; `model_matrix` is also an extension.
-//! - Handle borrows must be released before collection methods access them; a
-//!   handle borrowed during collection drop can retain stale attachment state.
-//! - Methods that compact or inspect clouds may panic on active handle borrows.
-//!   After destroy, read/remove operations return empty values rather than
-//!   CesiumJS's destroyed-object errors.
-//! - Vertex attribute formatting for both instanced (`instanced_attributes`) and batched
-//!   quad (`batched_attributes`) vertex layouts; GPU parity remains unverified.
-//!
-//! # GPU and Rendering Limitations
-//! - Volumetric Noise Compute Pass: The generation of 3D Perlin/Worley noise into a
-//!   4096x512 RGBA texture via compute command / `CloudNoiseVS` & `CloudNoiseFS` requires
-//!   a GPU render pass and framebuffer attachment.
-//! - Vertex Array Facade & Buffers: Static index buffer generation (batched vs instanced)
-//!   and dynamic vertex array facade buffer commits (`VertexArrayFacade.commit` / `subCommit`)
-//!   are deferred to the graphics backend.
-//! - Render Pipeline Integration: `CloudCollection.prototype.update` translucent draw command
-//!   emission and shader caching (`CloudCollectionVS` / `CloudCollectionFS`) require an active
-//!   scene frame state and context.
-//! - Avoidance of Fake Resources: Hardware textures, OpenGL/Vulkan pipeline handles, and
-//!   dummy compute buffers are omitted to preserve honest CPU testing boundaries.
+//! CesiumJS `CloudCollection`: cumulus cloud collection, vertex attribute
+//! packing, 3D Worley noise compute pass, `VertexArrayFacade` GPU upload
+//! (instanced and batched), and translucent draw command emission.
 
+use super::blending_state;
 use super::cumulus_cloud::*;
-use crate::core::{BoundingSphere, Cartesian3, Color, EncodedCartesian3, Matrix4};
-use std::{cell::RefCell, rc::Rc};
+use super::frame_state::FrameState;
+use super::scene::{Result as SceneResult, SceneCommand, SceneDrawOptions, ScenePrimitive};
+use super::Cesium3DTilePass;
+use crate::core::{
+    BoundingSphere, Cartesian3, Color, ComponentDatatype, EncodedCartesian3, IndexDatatype, Matrix4, PixelFormat,
+    PrimitiveType, RuntimeError,
+};
+use crate::renderer::render_state::DepthTest;
+use crate::renderer::{
+    Attachment, Buffer, BufferData, BufferKind, BufferUsage, Context, DrawMetadata, FacadeAttribute, Framebuffer,
+    FramebufferOptions, Gl, Pass, PixelDatatype, RenderState, SampledTexture, Sampler, ShaderProgram,
+    ShaderProgramOptions, ShaderSource, Texture, TextureMagnificationFilter, TextureMinificationFilter,
+    TextureOptions, TextureWrap, UniformValue, VertexArray, VertexArrayFacade, VertexAttribute, Viewport,
+};
+use crate::shaders::root::{CLOUD_COLLECTION_FS, CLOUD_COLLECTION_VS, CLOUD_NOISE_FS, CLOUD_NOISE_VS};
+use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct CloudShaderKey {
+    instanced: bool,
+    debug_billboards: bool,
+    debug_ellipsoids: bool,
+}
+
+struct CloudCollectionGpu<G: Gl> {
+    context: Context<G>,
+    noise_texture: Option<Rc<Texture<G>>>,
+    noise_framebuffer: Option<Rc<Framebuffer<G>>>,
+    noise_quad_va: Option<Rc<VertexArray<G>>>,
+    noise_shader: Option<Rc<ShaderProgram<G>>>,
+    noise_dirty: bool,
+    last_noise_detail: f64,
+    last_noise_offset: Cartesian3,
+
+    facade: Option<VertexArrayFacade<G>>,
+    index_buffer: Option<Buffer<G>>,
+    index_buffer_capacity: usize,
+    shader_program: Option<Rc<ShaderProgram<G>>>,
+    shader_key: Option<CloudShaderKey>,
+    use_instancing: bool,
+    last_cloud_count: usize,
+}
+
+impl<G: Gl + 'static> CloudCollectionGpu<G> {
+    fn new(context: Context<G>) -> SceneResult<Self> {
+        let use_instancing = context.capabilities()?.instanced_arrays;
+        Ok(Self {
+            context,
+            noise_texture: None,
+            noise_framebuffer: None,
+            noise_quad_va: None,
+            noise_shader: None,
+            noise_dirty: true,
+            last_noise_detail: f64::NAN,
+            last_noise_offset: Cartesian3::new(f64::NAN, f64::NAN, f64::NAN),
+            facade: None,
+            index_buffer: None,
+            index_buffer_capacity: 0,
+            shader_program: None,
+            shader_key: None,
+            use_instancing,
+            last_cloud_count: usize::MAX,
+        })
+    }
+
+    fn ensure_noise_resources(&mut self) -> SceneResult<()> {
+        if self.noise_texture.is_none() {
+            let mut opts = TextureOptions::rgba(NOISE_TEXTURE_WIDTH as u32, NOISE_TEXTURE_HEIGHT as u32);
+            opts.pixel_format = PixelFormat::Rgba;
+            opts.pixel_datatype = PixelDatatype::UnsignedByte;
+            opts.sampler = Sampler {
+                wrap_s: TextureWrap::Repeat,
+                wrap_t: TextureWrap::Repeat,
+                minification_filter: TextureMinificationFilter::Linear,
+                magnification_filter: TextureMagnificationFilter::Linear,
+                ..Default::default()
+            };
+            let tex = Rc::new(Texture::new(&self.context, opts, None)?);
+            let fb = Rc::new(Framebuffer::new(
+                &self.context,
+                FramebufferOptions {
+                    colors: vec![Attachment::Texture(tex.clone())],
+                    ..Default::default()
+                },
+            )?);
+            self.noise_texture = Some(tex);
+            self.noise_framebuffer = Some(fb);
+        }
+        if self.noise_quad_va.is_none() {
+            let verts: [f32; 8] = [-1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0];
+            let vbytes: Vec<u8> = verts.iter().flat_map(|f| f.to_le_bytes()).collect();
+            let vbuf = Buffer::new(
+                &self.context,
+                BufferKind::Vertex,
+                BufferUsage::StaticDraw,
+                BufferData::Bytes(&vbytes),
+            )?;
+            let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+            let ibytes: Vec<u8> = indices.iter().flat_map(|i| i.to_le_bytes()).collect();
+            let ibuf = Buffer::new(
+                &self.context,
+                BufferKind::Index(IndexDatatype::UnsignedShort),
+                BufferUsage::StaticDraw,
+                BufferData::Bytes(&ibytes),
+            )?;
+            let va = Rc::new(VertexArray::new(
+                &self.context,
+                vec![VertexAttribute::buffer(0, vbuf, 2)],
+                Some(ibuf),
+            )?);
+            self.noise_quad_va = Some(va);
+        }
+        if self.noise_shader.is_none() {
+            let prog = ShaderProgram::from_sources(
+                &self.context,
+                &ShaderProgramOptions {
+                    vertex_shader_source: ShaderSource::new(CLOUD_NOISE_VS.source),
+                    fragment_shader_source: ShaderSource::new(CLOUD_NOISE_FS.source),
+                    attribute_locations: BTreeMap::from([("position".to_string(), 0)]),
+                },
+            )?;
+            self.noise_shader = Some(Rc::new(prog));
+        }
+        Ok(())
+    }
+
+    fn ensure_index_buffer(&mut self, quad_count: usize) -> SceneResult<Buffer<G>> {
+        let needed_quads = if self.use_instancing { 1 } else { quad_count.max(1) };
+        if self.index_buffer.is_none() || self.index_buffer_capacity < needed_quads {
+            let mut indices = Vec::with_capacity(needed_quads * 6);
+            for q in 0..needed_quads {
+                let base = (q * 4) as u16;
+                indices.extend_from_slice(&[base, base + 1, base + 2, base, base + 2, base + 3]);
+            }
+            let bytes: Vec<u8> = indices.iter().flat_map(|i| i.to_le_bytes()).collect();
+            let buf = Buffer::new(
+                &self.context,
+                BufferKind::Index(IndexDatatype::UnsignedShort),
+                BufferUsage::StaticDraw,
+                BufferData::Bytes(&bytes),
+            )?;
+            self.index_buffer = Some(buf);
+            self.index_buffer_capacity = needed_quads;
+        }
+        Ok(self.index_buffer.as_ref().expect("initialized above").clone())
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn update_and_emit(
+        &mut self,
+        clouds: &[Option<CumulusCloudHandle>],
+        noise_detail: f64,
+        noise_offset: Cartesian3,
+        noise_dims: Cartesian3,
+        debug_billboards: bool,
+        debug_ellipsoids: bool,
+        model_matrix: Matrix4,
+        bounding_sphere_wc: BoundingSphere,
+        frame: &mut FrameState,
+    ) -> SceneResult<()> {
+        let active: Vec<&CumulusCloudHandle> = clouds.iter().flatten().collect();
+        if active.is_empty() {
+            return Ok(());
+        }
+
+        self.ensure_noise_resources()?;
+        if self.noise_dirty || self.last_noise_detail != noise_detail || self.last_noise_offset != noise_offset {
+            self.last_noise_detail = noise_detail;
+            self.last_noise_offset = noise_offset;
+            self.noise_dirty = false;
+
+            let va = self.noise_quad_va.as_ref().expect("noise va").clone();
+            let prog = self.noise_shader.as_ref().expect("noise shader").clone();
+            let fb = self.noise_framebuffer.as_ref().expect("noise fb").clone();
+            let mut draw_opts = SceneDrawOptions::new(va, prog);
+            draw_opts.primitive_type = PrimitiveType::Triangles;
+            draw_opts.count = Some(6);
+            draw_opts.framebuffer = Some(fb);
+            draw_opts.state = RenderState {
+                viewport: Some(Viewport {
+                    x: 0,
+                    y: 0,
+                    width: NOISE_TEXTURE_WIDTH as u32,
+                    height: NOISE_TEXTURE_HEIGHT as u32,
+                }),
+                depth_test: DepthTest { enabled: false, ..Default::default() },
+                depth_mask: false,
+                ..Default::default()
+            };
+            draw_opts.uniforms = vec![
+                (
+                    "u_noiseTextureDimensions".into(),
+                    UniformValue::Float(vec![noise_dims.x as f32, noise_dims.y as f32, noise_dims.z as f32]),
+                ),
+                ("u_noiseDetail".into(), UniformValue::Float(vec![noise_detail as f32])),
+                (
+                    "u_noiseOffset".into(),
+                    UniformValue::Float(vec![noise_offset.x as f32, noise_offset.y as f32, noise_offset.z as f32]),
+                ),
+            ];
+            let meta = DrawMetadata {
+                cull: false,
+                owner: Some("CloudCollectionNoise".into()),
+                ..Default::default()
+            };
+            frame.command_list.push(SceneCommand::from_draw(
+                "CloudCollectionNoise",
+                self.context.clone(),
+                Pass::Compute,
+                meta,
+                draw_opts,
+            ));
+        }
+
+        let any_dirty = self.facade.is_none()
+            || self.last_cloud_count != active.len()
+            || active.iter().any(|h| h.borrow().is_dirty());
+
+        if any_dirty {
+            let count = active.len();
+            let vertex_count = if self.use_instancing { count } else { count * 4 };
+            let needs_new_facade = self.facade.is_none();
+            if needs_new_facade {
+                let mut attrs = Vec::new();
+                let base_loc = if self.use_instancing {
+                    let dir_data: [f32; 8] = [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0];
+                    let dir_bytes: Vec<u8> = dir_data.iter().flat_map(|f| f.to_le_bytes()).collect();
+                    let dir_buf = Buffer::new(
+                        &self.context,
+                        BufferKind::Vertex,
+                        BufferUsage::StaticDraw,
+                        BufferData::Bytes(&dir_bytes),
+                    )?;
+                    let mut dir_attr = FacadeAttribute::new(0, 2);
+                    dir_attr.vertex_buffer = Some(dir_buf);
+                    attrs.push(dir_attr);
+                    1
+                } else {
+                    0
+                };
+                attrs.push(FacadeAttribute::new(base_loc, 4));
+                attrs.push(FacadeAttribute::new(base_loc + 1, 4));
+                attrs.push(FacadeAttribute::new(base_loc + 2, 4));
+                attrs.push(FacadeAttribute::new(base_loc + 3, 4));
+                let mut color_attr = FacadeAttribute::new(base_loc + 4, 4);
+                color_attr.datatype = ComponentDatatype::UnsignedByte;
+                color_attr.normalize = true;
+                attrs.push(color_attr);
+                self.facade = Some(VertexArrayFacade::new(
+                    &self.context,
+                    attrs,
+                    vertex_count,
+                    self.use_instancing,
+                )?);
+            } else if let Some(facade) = self.facade.as_mut() {
+                if facade.size() != vertex_count {
+                    facade.resize(vertex_count)?;
+                }
+            }
+
+            let base_loc = if self.use_instancing { 1 } else { 0 };
+            let facade = self.facade.as_mut().expect("facade initialized");
+            for (idx, handle) in active.iter().enumerate() {
+                let mut cloud = handle.borrow_mut();
+                if self.use_instancing {
+                    let attr = CloudVertexAttributes::instanced_from_cloud(&cloud);
+                    facade.write(base_loc, idx, &attr.position_high_and_scale_x)?;
+                    facade.write(base_loc + 1, idx, &attr.position_low_and_scale_y)?;
+                    facade.write(base_loc + 2, idx, &attr.packed_attribute0)?;
+                    facade.write(base_loc + 3, idx, &attr.packed_attribute1)?;
+                    facade.write(
+                        base_loc + 4,
+                        idx,
+                        &[
+                            f64::from(attr.color[0]),
+                            f64::from(attr.color[1]),
+                            f64::from(attr.color[2]),
+                            f64::from(attr.color[3]),
+                        ],
+                    )?;
+                } else {
+                    let quad = CloudVertexAttributes::batched_quad_from_cloud(&cloud);
+                    for (corner, attr) in quad.iter().enumerate() {
+                        let v = idx * 4 + corner;
+                        facade.write(base_loc, v, &attr.position_high_and_scale_x)?;
+                        facade.write(base_loc + 1, v, &attr.position_low_and_scale_y)?;
+                        facade.write(base_loc + 2, v, &attr.packed_attribute0)?;
+                        facade.write(base_loc + 3, v, &attr.packed_attribute1)?;
+                        facade.write(
+                            base_loc + 4,
+                            v,
+                            &[
+                                f64::from(attr.color[0]),
+                                f64::from(attr.color[1]),
+                                f64::from(attr.color[2]),
+                                f64::from(attr.color[3]),
+                            ],
+                        )?;
+                    }
+                }
+                cloud.clear_dirty();
+            }
+
+            let index_buf = self.ensure_index_buffer(count)?;
+            self.facade.as_mut().expect("facade initialized").commit(Some(index_buf))?;
+            self.last_cloud_count = count;
+        }
+
+        let key = CloudShaderKey {
+            instanced: self.use_instancing,
+            debug_billboards,
+            debug_ellipsoids,
+        };
+        if self.shader_program.is_none() || self.shader_key != Some(key) {
+            if let Some(old) = self.shader_program.take() {
+                let _ = old.destroy();
+            }
+            let mut vs = ShaderSource::new(CLOUD_COLLECTION_VS.source);
+            let mut fs = ShaderSource::new(CLOUD_COLLECTION_FS.source);
+            let mut locations = Vec::new();
+            let base_loc = if self.use_instancing {
+                vs.defines.push("INSTANCED".into());
+                locations.push(("direction".to_string(), 0));
+                1
+            } else {
+                0
+            };
+            locations.push(("positionHighAndScaleX".to_string(), base_loc));
+            locations.push(("positionLowAndScaleY".to_string(), base_loc + 1));
+            locations.push(("packedAttribute0".to_string(), base_loc + 2));
+            locations.push(("packedAttribute1".to_string(), base_loc + 3));
+            locations.push(("color".to_string(), base_loc + 4));
+
+            if debug_billboards {
+                fs.defines.push("DEBUG_BILLBOARDS".into());
+            }
+            if debug_ellipsoids {
+                fs.defines.push("DEBUG_ELLIPSOIDS".into());
+            }
+            let prog = ShaderProgram::from_sources(
+                &self.context,
+                &ShaderProgramOptions {
+                    vertex_shader_source: vs,
+                    fragment_shader_source: fs,
+                    attribute_locations: locations.into_iter().collect(),
+                },
+            )?;
+            self.shader_program = Some(Rc::new(prog));
+            self.shader_key = Some(key);
+        }
+
+        if !frame.passes.render {
+            return Ok(());
+        }
+
+        let program = self.shader_program.as_ref().expect("compiled above").clone();
+        let noise_tex = self.noise_texture.as_ref().expect("noise texture").clone() as Rc<dyn SampledTexture<G>>;
+        let arrays = self
+            .facade
+            .as_ref()
+            .and_then(|f| f.vertex_arrays())
+            .unwrap_or(&[]);
+
+        for (va_idx, entry) in arrays.iter().enumerate() {
+            let mut draw_opts = SceneDrawOptions::new(entry.vertex_array.clone(), program.clone());
+            draw_opts.primitive_type = PrimitiveType::Triangles;
+            if self.use_instancing {
+                draw_opts.count = Some(6);
+                draw_opts.instance_count = active.len() as u32;
+            } else {
+                draw_opts.count = Some(entry.indices_count as usize);
+            }
+            draw_opts.state = RenderState {
+                depth_test: DepthTest { enabled: true, ..Default::default() },
+                depth_mask: false,
+                blending: blending_state::alpha_blend(),
+                ..Default::default()
+            };
+            draw_opts.uniforms = vec![
+                (
+                    "u_noiseTextureDimensions".into(),
+                    UniformValue::Float(vec![noise_dims.x as f32, noise_dims.y as f32, noise_dims.z as f32]),
+                ),
+                ("u_noiseDetail".into(), UniformValue::Float(vec![noise_detail as f32])),
+            ];
+            draw_opts.textures.push(("u_noiseTexture".into(), noise_tex.clone()));
+            let meta = DrawMetadata {
+                bounding_volume: Some(bounding_sphere_wc),
+                model_matrix: Some(model_matrix),
+                owner: Some("CloudCollection".into()),
+                ..Default::default()
+            };
+            frame.command_list.push(SceneCommand::from_draw(
+                format!("CloudCollection-{va_idx}"),
+                self.context.clone(),
+                Pass::Translucent,
+                meta,
+                draw_opts,
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn destroy(&mut self) {
+        if let Some(mut f) = self.facade.take() {
+            let _ = f.destroy();
+        }
+        if let Some(p) = self.shader_program.take() {
+            let _ = p.destroy();
+        }
+        if let Some(p) = self.noise_shader.take() {
+            let _ = p.destroy();
+        }
+        if let Some(va) = self.noise_quad_va.take() {
+            let _ = va.destroy();
+        }
+        if let Some(fb) = self.noise_framebuffer.take() {
+            let _ = fb.destroy();
+        }
+        if let Some(tex) = self.noise_texture.take() {
+            let _ = tex.destroy();
+        }
+        self.index_buffer = None;
+    }
+}
+
+trait CloudCollectionBackend {
+    #[allow(clippy::too_many_arguments)]
+    fn update_and_emit(
+        &mut self,
+        clouds: &[Option<CumulusCloudHandle>],
+        noise_detail: f64,
+        noise_offset: Cartesian3,
+        noise_dims: Cartesian3,
+        debug_billboards: bool,
+        debug_ellipsoids: bool,
+        model_matrix: Matrix4,
+        bounding_sphere_wc: BoundingSphere,
+        frame: &mut FrameState,
+    ) -> SceneResult<()>;
+    fn destroy(&mut self);
+}
+
+impl<G: Gl + 'static> CloudCollectionBackend for CloudCollectionGpu<G> {
+    fn update_and_emit(
+        &mut self,
+        clouds: &[Option<CumulusCloudHandle>],
+        noise_detail: f64,
+        noise_offset: Cartesian3,
+        noise_dims: Cartesian3,
+        debug_billboards: bool,
+        debug_ellipsoids: bool,
+        model_matrix: Matrix4,
+        bounding_sphere_wc: BoundingSphere,
+        frame: &mut FrameState,
+    ) -> SceneResult<()> {
+        CloudCollectionGpu::update_and_emit(
+            self,
+            clouds,
+            noise_detail,
+            noise_offset,
+            noise_dims,
+            debug_billboards,
+            debug_ellipsoids,
+            model_matrix,
+            bounding_sphere_wc,
+            frame,
+        )
+    }
+    fn destroy(&mut self) {
+        CloudCollectionGpu::destroy(self);
+    }
+}
 
 /// Shared handle modeling CesiumJS cloud mutable reference semantics.
 pub type CumulusCloudHandle = Rc<RefCell<CumulusCloud>>;
@@ -191,6 +637,7 @@ pub struct CloudCollection {
 
     base_volume: BoundingSphere,
     base_volume_wc: BoundingSphere,
+    gpu: Option<Box<dyn CloudCollectionBackend>>,
 }
 
 impl Default for CloudCollection {
@@ -221,7 +668,43 @@ impl CloudCollection {
 
             base_volume: BoundingSphere::default(),
             base_volume_wc: BoundingSphere::default(),
+            gpu: None,
         }
+    }
+
+    /// Creates a new `CloudCollection` attached to a renderer `Context<G>`.
+    pub fn new_with_context<G: Gl + 'static>(
+        options: CloudCollectionOptions,
+        context: Context<G>,
+    ) -> SceneResult<Self> {
+        let mut coll = Self::with_options(options);
+        coll.attach_context(context)?;
+        Ok(coll)
+    }
+
+    /// Attaches a renderer `Context<G>` for noise-texture generation,
+    /// `VertexArrayFacade` commits, and translucent cloud rendering.
+    pub fn attach_context<G: Gl + 'static>(&mut self, context: Context<G>) -> SceneResult<()> {
+        if self.destroyed {
+            return Err(RuntimeError::new("CloudCollection has been destroyed."));
+        }
+        self.gpu = Some(Box::new(CloudCollectionGpu::new(context)?));
+        Ok(())
+    }
+
+    /// Updates GPU resources and emits noise compute + translucent draw commands.
+    pub fn update_with_context<G: Gl + 'static>(
+        &mut self,
+        context: &Context<G>,
+        frame: &mut FrameState,
+    ) -> SceneResult<()> {
+        if self.destroyed {
+            return Err(RuntimeError::new("CloudCollection has been destroyed."));
+        }
+        if self.gpu.is_none() {
+            self.attach_context(context.clone())?;
+        }
+        ScenePrimitive::update(self, frame)
     }
 
     /// Returns `true` if the collection has been destroyed.
@@ -321,9 +804,37 @@ impl CloudCollection {
     /// Destroys the collection and detaches all contained clouds.
     pub fn destroy(&mut self) {
         if !self.destroyed {
+            if let Some(mut gpu) = self.gpu.take() {
+                gpu.destroy();
+            }
             self.remove_all();
             self.destroyed = true;
         }
+    }
+
+    /// Computes a culling-safe bounding sphere in model space incorporating
+    /// every cloud's scale and maximum ellipsoid extents.
+    pub fn extent_bounding_sphere(&mut self) -> BoundingSphere {
+        self.compact();
+        let mut union: Option<BoundingSphere> = None;
+        for handle in self.clouds.iter().flatten() {
+            let c = handle.borrow();
+            let sc = c.scale();
+            let ms = c.maximum_size();
+            let r = 0.5 * sc.x.abs().max(sc.y.abs()).max(ms.x.abs()).max(ms.y.abs()).max(ms.z.abs());
+            let bs = BoundingSphere::new(c.position(), r);
+            union = Some(match union {
+                Some(acc) => acc.union(&bs),
+                None => bs,
+            });
+        }
+        union.unwrap_or_default()
+    }
+
+    /// Computes a culling-safe bounding sphere in world coordinates.
+    pub fn extent_bounding_sphere_wc(&mut self) -> BoundingSphere {
+        let model = self.extent_bounding_sphere();
+        BoundingSphere::transform(&model, &self.model_matrix)
     }
 
     /// Recomputes bounding spheres from current cloud positions.
@@ -414,6 +925,54 @@ impl CloudCollection {
             }
         }
         counts
+    }
+}
+
+impl ScenePrimitive for CloudCollection {
+    fn pre_passes_update(&mut self, _frame: &mut FrameState) -> SceneResult<()> {
+        Ok(())
+    }
+
+    fn update(&mut self, frame: &mut FrameState) -> SceneResult<()> {
+        if self.destroyed {
+            return Err(RuntimeError::new("CloudCollection has been destroyed."));
+        }
+        if !self.show {
+            return Ok(());
+        }
+        self.compact();
+        if self.clouds.is_empty() {
+            return Ok(());
+        }
+        let extent_wc = self.extent_bounding_sphere_wc();
+        let noise_dims = self.noise_texture_dimensions();
+        if let Some(gpu) = self.gpu.as_mut() {
+            gpu.update_and_emit(
+                &self.clouds,
+                self.noise_detail,
+                self.noise_offset,
+                noise_dims,
+                self.debug_billboards,
+                self.debug_ellipsoids,
+                self.model_matrix,
+                extent_wc,
+                frame,
+            )?;
+        }
+        Ok(())
+    }
+
+    fn post_passes_update(&mut self, _frame: &mut FrameState) -> SceneResult<()> {
+        Ok(())
+    }
+
+    fn update_for_pass(&mut self, _frame: &mut FrameState, _pass: Cesium3DTilePass) -> SceneResult<()> {
+        Ok(())
+    }
+
+    fn destroy(&mut self) -> SceneResult<()> {
+        CloudCollection::destroy(self);
+        Ok(())
     }
 }
 

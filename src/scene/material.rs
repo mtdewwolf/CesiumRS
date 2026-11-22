@@ -8,10 +8,12 @@
 //! which a renderer host calls with resolved image data.
 
 use crate::core::{Cartesian2, Cartesian3, Cartesian4, Color, Matrix2, Matrix3, Matrix4, RuntimeError};
+use crate::renderer::{
+    Context, CubeMap, Gl, SampledTexture, Texture, TextureBinding, TextureMagnificationFilter,
+    TextureMinificationFilter, UniformValue,
+};
 use crate::shaders::materials as material_shaders;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
-
-use crate::renderer::{TextureMagnificationFilter, TextureMinificationFilter};
 
 /// `Material.DefaultImageId`.
 pub const DEFAULT_IMAGE_ID: &str = "czm_defaultImage";
@@ -283,6 +285,8 @@ pub struct Material {
     /// Exact original/generated identifiers for this material's own uniforms.
     /// Values are read from the material tree at submission time.
     uniform_binding_names: Vec<(String, String)>,
+    /// Type-erased GPU textures (`TextureBinding<G>`) keyed by original uniform name.
+    resolved_textures: HashMap<String, super::frame_state::FrameResource>,
     pub translucent: Option<bool>,
     pub minification_filter: TextureMinificationFilter,
     pub magnification_filter: TextureMagnificationFilter,
@@ -331,6 +335,7 @@ impl Material {
             materials: Vec::new(),
             uniforms: Vec::new(),
             uniform_binding_names: Vec::new(),
+            resolved_textures: HashMap::new(),
             translucent: options.translucent,
             minification_filter: options.minification_filter.unwrap_or(TextureMinificationFilter::Linear),
             magnification_filter: options.magnification_filter.unwrap_or(TextureMagnificationFilter::Linear),
@@ -453,6 +458,7 @@ impl Material {
         self.materials.clear();
         self.uniforms.clear();
         self.uniform_binding_names.clear();
+        self.resolved_textures.clear();
 
         let cached =
             with_material_cache(|c| c.get(&self.type_name).cloned().map(|f| (f, c.get_translucent(&self.type_name))));
@@ -574,6 +580,132 @@ impl Material {
     /// Resolve a URL uniform to an owned GPU texture id (host adapter hook).
     pub fn set_texture(&mut self, uniform_name: &str, texture_id: impl Into<String>) {
         let _ = self.set_uniform(uniform_name, MaterialValue::Sampler2D(MaterialImage::Texture(texture_id.into())));
+    }
+
+    /// Binds a live GPU `Texture<G>` to a `sampler2D` uniform, marking it
+    /// resolved and updating its `<name>Dimensions` uniform when declared.
+    pub fn set_gpu_texture<G: Gl + 'static>(&mut self, uniform_name: &str, texture: Rc<Texture<G>>) {
+        let dims = Cartesian3::new(texture.width() as f64, texture.height() as f64, 0.0);
+        self.resolved_textures.insert(
+            uniform_name.to_string(),
+            super::frame_state::FrameResource::new(TextureBinding::Texture(texture)),
+        );
+        let _ = self.set_uniform(
+            uniform_name,
+            MaterialValue::Sampler2D(MaterialImage::Texture(uniform_name.to_string())),
+        );
+        let dims_name = format!("{uniform_name}Dimensions");
+        let _ = self.set_uniform(&dims_name, MaterialValue::IntVec3(dims));
+    }
+
+    /// Binds a live GPU `CubeMap<G>` to a `samplerCube` uniform.
+    pub fn set_gpu_cube_map<G: Gl + 'static>(&mut self, uniform_name: &str, cube_map: Rc<CubeMap<G>>) {
+        self.resolved_textures.insert(
+            uniform_name.to_string(),
+            super::frame_state::FrameResource::new(TextureBinding::CubeMap(cube_map)),
+        );
+        let _ = self.set_uniform(
+            uniform_name,
+            MaterialValue::SamplerCube(MaterialCubeMap::Texture(uniform_name.to_string())),
+        );
+    }
+
+    /// Converts all non-sampler uniforms in the material tree into renderer
+    /// [`UniformValue`] entries keyed by their generated GLSL names.
+    pub fn uniform_values(&self) -> Vec<(String, UniformValue)> {
+        self.uniform_bindings()
+            .into_iter()
+            .filter_map(|(name, value)| {
+                let numbers = || value.numbers().unwrap_or_default().into_iter().map(|v| v as f32).collect();
+                let uniform = match &value {
+                    MaterialValue::Bool(v) => UniformValue::Int(vec![i32::from(*v)]),
+                    MaterialValue::IntVec3(v) => UniformValue::Int(vec![v.x as i32, v.y as i32, v.z as i32]),
+                    MaterialValue::Mat2(_) => UniformValue::Matrix { dimension: 2, values: numbers() },
+                    MaterialValue::Mat3(_) => UniformValue::Matrix { dimension: 3, values: numbers() },
+                    MaterialValue::Mat4(_) => UniformValue::Matrix { dimension: 4, values: numbers() },
+                    MaterialValue::Channels(_) | MaterialValue::Sampler2D(_) | MaterialValue::SamplerCube(_) => {
+                        return None;
+                    }
+                    _ => UniformValue::Float(numbers()),
+                };
+                Some((name, uniform))
+            })
+            .collect()
+    }
+
+    /// Resolves all `sampler2D` and `samplerCube` uniforms in the material tree
+    /// into [`TextureBinding<G>`] entries, falling back to `context.default_texture()`
+    /// or `context.default_cube_map()` when a sampler has no uploaded GPU texture.
+    pub fn resolve_texture_bindings<G: Gl + 'static>(
+        &self,
+        context: &Context<G>,
+    ) -> Result<Vec<(String, TextureBinding<G>)>, RuntimeError> {
+        let mut out = Vec::new();
+        self.collect_texture_bindings(context, &mut out)?;
+        Ok(out)
+    }
+
+    /// Resolves all sampler uniforms as trait objects for [`super::SceneDrawOptions`].
+    #[allow(clippy::type_complexity)]
+    pub fn resolve_sampled_textures<G: Gl + 'static>(
+        &self,
+        context: &Context<G>,
+    ) -> Result<Vec<(String, Rc<dyn SampledTexture<G>>)>, RuntimeError> {
+        let bindings = self.resolve_texture_bindings(context)?;
+        Ok(bindings
+            .into_iter()
+            .map(|(name, binding)| {
+                let sampled: Rc<dyn SampledTexture<G>> = match binding {
+                    TextureBinding::Texture(t) => t,
+                    TextureBinding::CubeMap(c) => c,
+                    TextureBinding::Volume(v) => v,
+                };
+                (name, sampled)
+            })
+            .collect())
+    }
+
+    fn collect_texture_bindings<G: Gl + 'static>(
+        &self,
+        context: &Context<G>,
+        out: &mut Vec<(String, TextureBinding<G>)>,
+    ) -> Result<(), RuntimeError> {
+        for (original, generated) in &self.uniform_binding_names {
+            let Some(value) = self.uniform(original) else {
+                continue;
+            };
+            match value {
+                MaterialValue::Sampler2D(_) => {
+                    let binding = self
+                        .resolved_textures
+                        .get(original)
+                        .and_then(|res| res.get::<TextureBinding<G>>())
+                        .cloned();
+                    let binding = match binding {
+                        Some(b) => b,
+                        None => TextureBinding::Texture(context.default_texture()?),
+                    };
+                    out.push((generated.clone(), binding));
+                }
+                MaterialValue::SamplerCube(_) => {
+                    let binding = self
+                        .resolved_textures
+                        .get(original)
+                        .and_then(|res| res.get::<TextureBinding<G>>())
+                        .cloned();
+                    let binding = match binding {
+                        Some(b) => b,
+                        None => TextureBinding::CubeMap(context.default_cube_map()?),
+                    };
+                    out.push((generated.clone(), binding));
+                }
+                _ => {}
+            }
+        }
+        for (_, child) in &self.materials {
+            child.collect_texture_bindings(context, out)?;
+        }
+        Ok(())
     }
 
     /// Cesium's `Material#update` texture hook; the Rust renderer owns the
@@ -968,24 +1100,5 @@ fn builtin_cache() -> MaterialCache {
 
 /// Numeric renderer uniforms by their generated shader names.
 pub(crate) fn material_uniform_values(material: &Material) -> Vec<(String, crate::renderer::UniformValue)> {
-    use crate::renderer::UniformValue;
-    material
-        .uniform_bindings()
-        .into_iter()
-        .filter_map(|(name, value)| {
-            let numbers = || value.numbers().unwrap_or_default().into_iter().map(|v| v as f32).collect();
-            let uniform = match &value {
-                MaterialValue::Bool(v) => UniformValue::Int(vec![i32::from(*v)]),
-                MaterialValue::IntVec3(v) => UniformValue::Int(vec![v.x as i32, v.y as i32, v.z as i32]),
-                MaterialValue::Mat2(_) => UniformValue::Matrix { dimension: 2, values: numbers() },
-                MaterialValue::Mat3(_) => UniformValue::Matrix { dimension: 3, values: numbers() },
-                MaterialValue::Mat4(_) => UniformValue::Matrix { dimension: 4, values: numbers() },
-                MaterialValue::Channels(_) | MaterialValue::Sampler2D(_) | MaterialValue::SamplerCube(_) => {
-                    return None
-                }
-                _ => UniformValue::Float(numbers()),
-            };
-            Some((name, uniform))
-        })
-        .collect()
+    material.uniform_values()
 }

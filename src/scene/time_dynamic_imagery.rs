@@ -10,8 +10,14 @@
 //! interval preloads recently requested tiles.
 
 use super::{ImageryFuture, ImageryProviderError};
-use crate::core::{JulianDate, TimeInterval, TimeIntervalCollection};
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use crate::core::{event::ListenerId, Clock, ClockTick, JulianDate, TimeInterval, TimeIntervalCollection};
+use std::{
+    cell::{Cell, RefCell},
+    collections::HashMap,
+    rc::Rc,
+    sync::{Arc, Mutex},
+    task::{Context as TaskContext, Poll, Waker},
+};
 
 /// A tile request that may be preloaded for the approaching interval.
 #[derive(Clone)]
@@ -54,13 +60,16 @@ pub struct TimeDynamicImageryOptions<T> {
     pub reload_function: ReloadFunction,
 }
 
+type PendingClockTicks = (Arc<Mutex<Vec<ClockTick>>>, bool);
+
 pub struct TimeDynamicImagery<T> {
     times: TimeIntervalCollection<T>,
     request_image: RequestImageFunction<T>,
     reload: ReloadFunction,
-    current_interval_index: isize,
+    current_interval_index: Cell<isize>,
     tile_cache: RefCell<HashMap<isize, HashMap<String, CachedTile>>>,
     tiles_requested_for_interval: RefCell<Vec<TimeDynamicTileRequest>>,
+    pending_clock_ticks: RefCell<Option<PendingClockTicks>>,
 }
 
 impl<T: Clone> TimeDynamicImagery<T> {
@@ -69,9 +78,10 @@ impl<T: Clone> TimeDynamicImagery<T> {
             times: options.times,
             request_image: options.request_image_function,
             reload: options.reload_function,
-            current_interval_index: -1,
+            current_interval_index: Cell::new(-1),
             tile_cache: RefCell::new(HashMap::new()),
             tiles_requested_for_interval: RefCell::new(Vec::new()),
+            pending_clock_ticks: RefCell::new(None),
         }
     }
 
@@ -87,12 +97,14 @@ impl<T: Clone> TimeDynamicImagery<T> {
 
     /// Cesium's `currentInterval`: the interval containing the last update.
     pub fn current_interval(&self) -> Option<&TimeInterval<T>> {
-        usize::try_from(self.current_interval_index).ok().and_then(|index| self.times.get(index))
+        self.sync_clock();
+        usize::try_from(self.current_interval_index.get()).ok().and_then(|index| self.times.get(index))
     }
 
     /// The current interval index; `-1` before the first update.
     pub fn current_interval_index(&self) -> isize {
-        self.current_interval_index
+        self.sync_clock();
+        self.current_interval_index.get()
     }
 
     /// Advances to the interval containing `time` and preloads if the next
@@ -101,11 +113,17 @@ impl<T: Clone> TimeDynamicImagery<T> {
     ///
     /// `can_animate`, `should_animate` and `multiplier` come from the clock.
     pub fn update(&mut self, time: &JulianDate, can_animate: bool, should_animate: bool, multiplier: f64) -> bool {
+        self.sync_clock();
+        self.update_inner(time, can_animate, should_animate, multiplier)
+    }
+
+    fn update_inner(&self, time: &JulianDate, can_animate: bool, should_animate: bool, multiplier: f64) -> bool {
         let index = self.times.index_of(time);
-        if index != self.current_interval_index {
-            self.tile_cache.borrow_mut().remove(&self.current_interval_index);
+        let prev = self.current_interval_index.get();
+        if index != prev {
+            self.tile_cache.borrow_mut().remove(&prev);
             self.tiles_requested_for_interval.borrow_mut().clear();
-            self.current_interval_index = index;
+            self.current_interval_index.set(index);
             self.reload.clone()();
             return true;
         }
@@ -163,9 +181,10 @@ impl<T: Clone> TimeDynamicImagery<T> {
 
     /// Returns a cached tile and removes it from the cache, as Cesium does.
     pub fn get_from_cache(&self, x: i32, y: i32, level: u32) -> Option<ImageryFuture> {
+        self.sync_clock();
         let key = tile_key(x, y, level);
         let mut cache = self.tile_cache.borrow_mut();
-        let current = cache.get_mut(&self.current_interval_index)?;
+        let current = cache.get_mut(&self.current_interval_index.get())?;
         let item = current.remove(&key)?;
         let _ = item.request;
         Some(item.future)
@@ -222,6 +241,70 @@ impl<T: Clone> TimeDynamicImagery<T> {
     /// Number of pending preload candidates.
     pub fn pending_preload_count(&self) -> usize {
         self.tiles_requested_for_interval.borrow().len()
+    }
+
+    /// Updates directly from a [`Clock`]'s current time and animation state.
+    pub fn update_from_clock(&mut self, clock: &Clock) -> bool {
+        self.update(&clock.current_time(), clock.can_animate, clock.should_animate(), clock.multiplier())
+    }
+
+    /// Subscribes to `clock.on_tick_state` so interval transitions and preloading
+    /// track every `clock.tick()`, mirroring CesiumJS's `clock.onTick` listener.
+    pub fn subscribe_to_clock(&self, clock: &mut Clock) -> ListenerId {
+        let can_animate = clock.can_animate;
+        let _ = self.update_inner(&clock.current_time(), can_animate, clock.should_animate(), clock.multiplier());
+        let queue = Arc::new(Mutex::new(Vec::<ClockTick>::new()));
+        *self.pending_clock_ticks.borrow_mut() = Some((Arc::clone(&queue), can_animate));
+        clock.on_tick_state.add_event_listener(move |tick| {
+            queue.lock().unwrap_or_else(|e| e.into_inner()).push(*tick);
+        })
+    }
+
+    /// Applies any clock ticks recorded since the last check. Returns true if
+    /// any tick caused an interval transition.
+    pub fn sync_clock(&self) -> bool {
+        let ticks_and_can = {
+            let guard = self.pending_clock_ticks.borrow();
+            guard.as_ref().map(|(q, can)| {
+                let mut locked = q.lock().unwrap_or_else(|e| e.into_inner());
+                (std::mem::take(&mut *locked), *can)
+            })
+        };
+        let Some((ticks, can_animate)) = ticks_and_can else {
+            return false;
+        };
+        let mut reloaded = false;
+        for tick in ticks {
+            if self.update_inner(&tick.current_time, can_animate, tick.should_animate, tick.multiplier) {
+                reloaded = true;
+            }
+        }
+        reloaded
+    }
+
+    /// Polls all currently cached preload futures once so eager/ready futures
+    /// advance and remain cached as ready results. Returns how many finished.
+    pub fn poll_cached_futures(&self) -> usize {
+        self.sync_clock();
+        let mut ready_count = 0usize;
+        let waker = Waker::noop();
+        let mut cx = TaskContext::from_waker(waker);
+        let mut caches = self.tile_cache.borrow_mut();
+        for cache in caches.values_mut() {
+            for cached in cache.values_mut() {
+                let mut fut = std::mem::replace(&mut cached.future, Box::pin(std::future::pending()));
+                match fut.as_mut().poll(&mut cx) {
+                    Poll::Ready(result) => {
+                        ready_count += 1;
+                        cached.future = Box::pin(std::future::ready(result));
+                    }
+                    Poll::Pending => {
+                        cached.future = fut;
+                    }
+                }
+            }
+        }
+        ready_count
     }
 }
 

@@ -405,6 +405,11 @@ pub struct RendererSceneBackend<G: Gl> {
     pub textures: FrameTextures<G>,
     pass_state: PassState<G>,
     pub(crate) view_resources: Option<Rc<std::cell::RefCell<super::ViewResources<G>>>>,
+    #[allow(clippy::type_complexity)]
+    post_process_binding: Option<(
+        Rc<std::cell::RefCell<super::post_process_stage_collection::PostProcessStageCollection<G>>>,
+        Rc<std::cell::RefCell<Option<super::post_process_stage_collection::PostProcessSceneInputs<G>>>>,
+    )>,
     original_pass_state: PassState<G>,
     using_globe_depth: bool,
     using_oit: bool,
@@ -422,6 +427,7 @@ impl<G: Gl> RendererSceneBackend<G> {
             textures: FrameTextures::default(),
             pass_state: PassState::default(),
             view_resources: None,
+            post_process_binding: None,
             original_pass_state: PassState::default(),
             using_globe_depth: false,
             using_oit: false,
@@ -432,6 +438,20 @@ impl<G: Gl> RendererSceneBackend<G> {
             translucent_depth_commands: Vec::new(),
             classification_commands: Vec::new(),
         }
+    }
+    /// Binds a post-process collection and its resolved-attachment slot so the
+    /// backend refreshes color/depth/id/target inputs after MSAA/depth resolve.
+    pub fn set_post_process_binding(
+        &mut self,
+        collection: Rc<std::cell::RefCell<super::post_process_stage_collection::PostProcessStageCollection<G>>>,
+        inputs: Rc<std::cell::RefCell<Option<super::post_process_stage_collection::PostProcessSceneInputs<G>>>>,
+    ) {
+        self.post_process_binding = Some((collection, inputs));
+    }
+    pub fn post_process_collection(
+        &self,
+    ) -> Option<Rc<std::cell::RefCell<super::post_process_stage_collection::PostProcessStageCollection<G>>>> {
+        self.post_process_binding.as_ref().map(|(c, _)| Rc::clone(c))
     }
 }
 impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
@@ -568,24 +588,73 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
         }
         Ok(())
     }
-    fn resolve_framebuffers(&mut self, _frame: &FrameState) -> Result<()> {
+    fn resolve_framebuffers(&mut self, frame: &FrameState) -> Result<()> {
         if self.using_globe_depth {
             if let Some(resources) = &self.view_resources {
                 let mut resources = resources.borrow_mut();
                 if let Some(globe) = &resources.globe_depth {
                     globe.prepare_color_textures(false)?;
                 }
-                if self.oit_used {
+                let post_process_ready = frame.passes.render
+                    && self.post_process_binding.as_ref().is_some_and(|(c, _)| c.borrow().ready());
+                let mut oit_composited_color: Option<Rc<renderer::Texture<G>>> = None;
+                let mut post_process_handles_output = false;
+
+                if self.oit_used && post_process_ready {
+                    let viewport = match self.original_pass_state.viewport {
+                        Some(v) => v,
+                        None => {
+                            let [width, height] = self.dimensions()?;
+                            Viewport { x: 0, y: 0, width, height }
+                        }
+                    };
+                    resources.scene_framebuffer.update(&self.context, viewport, frame.high_dynamic_range, 1)?;
+                    let mut oit_pass = self.original_pass_state.clone();
+                    oit_pass.framebuffer = resources.scene_framebuffer.framebuffer().cloned();
                     if let Some(oit) = &mut resources.oit {
-                        oit.execute(&self.context, &self.original_pass_state)?;
+                        oit.execute(&self.context, &oit_pass)?;
+                    }
+                    resources.translucent_tile_classification.execute(&self.context, &oit_pass, frame.passes.pick)?;
+                    oit_composited_color = resources.scene_framebuffer.color_texture()?.cloned();
+                } else {
+                    if self.oit_used {
+                        if let Some(oit) = &mut resources.oit {
+                            oit.execute(&self.context, &self.original_pass_state)?;
+                        }
+                    }
+                    resources.translucent_tile_classification.execute(
+                        &self.context,
+                        if self.oit_used { &self.original_pass_state } else { &self.pass_state },
+                        frame.passes.pick,
+                    )?;
+                }
+
+                if frame.passes.render {
+                    if let Some((collection, inputs_slot)) = &self.post_process_binding {
+                        if let Some(globe) = &resources.globe_depth {
+                            let color = match oit_composited_color {
+                                Some(c) => Some(c),
+                                None => globe.color_texture()?.cloned(),
+                            };
+                            if let Some(color) = color {
+                                let depth = globe.depth_stencil_texture().cloned();
+                                let id = resources.scene_framebuffer.id_texture()?.cloned();
+                                *inputs_slot.borrow_mut() =
+                                    Some(super::post_process_stage_collection::PostProcessSceneInputs {
+                                        color,
+                                        depth,
+                                        id,
+                                        target: self.original_pass_state.framebuffer.clone(),
+                                        pass: self.original_pass_state.clone(),
+                                    });
+                                if collection.borrow().ready() {
+                                    post_process_handles_output = true;
+                                }
+                            }
+                        }
                     }
                 }
-                resources.translucent_tile_classification.execute(
-                    &self.context,
-                    if self.oit_used { &self.original_pass_state } else { &self.pass_state },
-                    _frame.passes.pick,
-                )?;
-                if !self.oit_used {
+                if !self.oit_used && !post_process_handles_output {
                     if let Some(globe) = &mut resources.globe_depth {
                         globe.execute_copy_color(&self.context, &self.original_pass_state)?;
                     }
@@ -778,10 +847,44 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
         self.context.end_frame()
     }
     fn destroy(&mut self) -> Result<()> {
+        if let Some((_, inputs)) = self.post_process_binding.take() {
+            inputs.borrow_mut().take();
+        }
         if let Some(resources) = self.view_resources.take() {
             resources.borrow_mut().destroy()?;
         }
         self.context.destroy()
+    }
+}
+
+impl<G: Gl + 'static> Scene<RendererSceneBackend<G>> {
+    /// Installs a [`super::PostProcessStageCollection`] effect on this scene and
+    /// wires resolved framebuffer color/depth/id attachments into it every frame.
+    pub fn enable_post_process_stages(
+        &mut self,
+    ) -> Result<Rc<std::cell::RefCell<super::post_process_stage_collection::PostProcessStageCollection<G>>>> {
+        self.alive()?;
+        if let Some(existing) = self.backend.post_process_collection() {
+            return Ok(existing);
+        }
+        let collection = Rc::new(std::cell::RefCell::new(
+            super::post_process_stage_collection::PostProcessStageCollection::new(&self.backend.context)?,
+        ));
+        let inputs = Rc::new(std::cell::RefCell::new(None));
+        self.backend.set_post_process_binding(Rc::clone(&collection), Rc::clone(&inputs));
+        self.effects.push(Box::new(super::post_process_stage_collection::PostProcessSceneEffect {
+            context: self.backend.context.clone(),
+            collection: Rc::clone(&collection),
+            inputs,
+        }));
+        Ok(collection)
+    }
+
+    /// Returns the scene's bound [`super::PostProcessStageCollection`], if enabled.
+    pub fn post_process_stages(
+        &self,
+    ) -> Option<Rc<std::cell::RefCell<super::post_process_stage_collection::PostProcessStageCollection<G>>>> {
+        self.backend.post_process_collection()
     }
 }
 /// A primitive may produce ordinary renderer commands or perform additional
@@ -1300,7 +1403,35 @@ impl<B: SceneBackend> Scene<B> {
             vertical_exaggeration: self.frame_state.vertical_exaggeration,
             vertical_exaggeration_relative_height: self.frame_state.vertical_exaggeration_relative_height,
         };
-        self.screen_space_camera_controller.update_with_environment(&mut self.camera, monotonic_seconds, environment)?;
+        struct SceneCameraSurface<'a> {
+            globe: Option<&'a dyn SceneGlobe>,
+            frame_state: &'a FrameState,
+            pick_position_cache: &'a std::collections::HashMap<String, Option<Cartesian3>>,
+        }
+        impl super::CameraSurface for SceneCameraSurface<'_> {
+            fn pick_globe(&self, ray: &Ray) -> Option<Cartesian3> {
+                self.globe.filter(|g| g.show()).and_then(|g| g.pick(ray, self.frame_state))
+            }
+            fn pick_depth(&self, window_position: Cartesian2) -> Option<Cartesian3> {
+                let key = format!(
+                    "({}, {})",
+                    math::js_number_to_string(window_position.x),
+                    math::js_number_to_string(window_position.y)
+                );
+                self.pick_position_cache.get(&key).copied().flatten()
+            }
+        }
+        let surface = SceneCameraSurface {
+            globe: self.globe.as_deref(),
+            frame_state: &self.frame_state,
+            pick_position_cache: &self.pick_position_cache,
+        };
+        self.screen_space_camera_controller.update_with_surface(
+            &mut self.camera,
+            monotonic_seconds,
+            environment,
+            Some(&surface),
+        )?;
         self.camera.update(self.camera.mode()).map_err(|e| RuntimeError::new(e.to_string()))?;
         self.camera.update_camera_changed(monotonic_seconds * 1000.);
         Ok(())

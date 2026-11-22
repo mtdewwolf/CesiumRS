@@ -1,8 +1,9 @@
-//! CesiumJS `Tileset3DTileContent`: external tileset structural content. The
-//! synchronous loader callback installs the child tree before readiness is set.
-use super::{FrameState, TileContentMetrics, TileId, TilesetContent};
-use crate::core::{Cartesian3, Ray, Resource, RuntimeError};
+//! CesiumJS `Tileset3DTileContent`: external tileset structural content.
+//! The synchronous loader callback installs the child tree before readiness is set.
+use super::{Cesium3DTileStyle, FrameState, TileContentMetrics, TileId, TilesetContent};
+use crate::core::{Cartesian3, Color, Ray, Resource, RuntimeError};
 use serde_json::Value;
+
 pub struct Tileset3DTileContent {
     pub tile: TileId,
     pub resource: Resource,
@@ -12,6 +13,7 @@ pub struct Tileset3DTileContent {
     ready: bool,
     destroyed: bool,
 }
+
 impl Tileset3DTileContent {
     pub fn from_json(
         tile: TileId,
@@ -30,21 +32,79 @@ impl Tileset3DTileContent {
             destroyed: false,
         })
     }
+
+    pub fn features_length(&self) -> usize {
+        0
+    }
+
+    pub fn points_length(&self) -> usize {
+        0
+    }
+
+    pub fn triangles_length(&self) -> usize {
+        0
+    }
+
+    pub fn geometry_byte_length(&self) -> usize {
+        0
+    }
+
+    pub fn textures_byte_length(&self) -> usize {
+        0
+    }
+
+    pub fn batch_table_byte_length(&self) -> usize {
+        0
+    }
+
+    pub fn inner_contents(&self) -> Option<&[()]> {
+        None
+    }
+
+    pub fn batch_table(&self) -> Option<()> {
+        None
+    }
+
     pub fn ready(&self) -> bool {
         self.ready
     }
+
     pub fn url(&self) -> String {
         self.resource.get_url_component(true, false)
     }
+
+    pub fn metadata(&self) -> Option<&Value> {
+        self.metadata.as_ref()
+    }
+
+    pub fn set_metadata(&mut self, metadata: Option<Value>) {
+        self.metadata = metadata;
+    }
+
+    pub fn group(&self) -> Option<&Value> {
+        self.group.as_ref()
+    }
+
+    pub fn set_group(&mut self, group: Option<Value>) {
+        self.group = group;
+    }
+
     pub fn has_property(&self, _batch: usize, _name: &str) -> bool {
         false
     }
+
     pub fn get_feature(&self, _batch: usize) -> Option<()> {
         None
     }
+
+    pub fn apply_debug_settings(&mut self, _enabled: bool, _color: Color) {}
+
+    pub fn apply_style(&mut self, _style: Option<&Cesium3DTileStyle>) {}
+
     pub fn is_destroyed(&self) -> bool {
         self.destroyed
     }
+
     fn check(&self) -> Result<(), RuntimeError> {
         if self.destroyed {
             Err(RuntimeError::new("Content was destroyed"))
@@ -53,21 +113,26 @@ impl Tileset3DTileContent {
         }
     }
 }
+
 impl TilesetContent for Tileset3DTileContent {
     fn metrics(&self) -> TileContentMetrics {
         TileContentMetrics::default()
     }
+
     fn process(&mut self, _: &FrameState) -> Result<bool, RuntimeError> {
         self.check()?;
         Ok(self.ready)
     }
+
     fn update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
         self.check()
     }
+
     fn pick(&self, _: &Ray, _: &FrameState) -> Result<Option<Cartesian3>, RuntimeError> {
         self.check()?;
         Ok(None)
     }
+
     fn destroy(&mut self) -> Result<(), RuntimeError> {
         self.destroyed = true;
         self.ready = false;

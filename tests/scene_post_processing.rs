@@ -2,10 +2,6 @@
 use cesium_rs::core::*;
 use cesium_rs::renderer::*;
 use cesium_rs::scene::*;
-use cesium_rs::scene::auto_exposure::*;
-use cesium_rs::scene::post_process_stage::*;
-use cesium_rs::scene::post_process_stage_collection::*;
-use cesium_rs::scene::post_process_stage_library::*;
 use cesium_rs::scene::post_process_stage_texture_cache::*;
 use serde_json::Value;
 use std::{
@@ -43,7 +39,7 @@ impl Gl for TestHost {
         Ok([self.0.width.get(), self.0.height.get()])
     }
 
-    fn invoke(&self, name: &str, _: &[GlValue<u32>]) -> Result<GlValue<u32>, RuntimeError> {
+    fn invoke(&self, name: &str, args: &[GlValue<u32>]) -> Result<GlValue<u32>, RuntimeError> {
         self.0.calls.borrow_mut().push(name.into());
         if name.starts_with("create") || name == "fenceSync" {
             let id = self.0.next.get() + 1;
@@ -51,8 +47,18 @@ impl Gl for TestHost {
             return Ok(GlValue::Object(id));
         }
         Ok(match name {
-            "getParameter" => GlValue::Number(16384.),
+            "getParameter" => match args.first() {
+                Some(GlValue::Number(n))
+                    if *n == webgl_constants::ALIASED_LINE_WIDTH_RANGE as f64
+                        || *n == webgl_constants::ALIASED_POINT_SIZE_RANGE as f64
+                        || *n == webgl_constants::MAX_VIEWPORT_DIMS as f64 =>
+                {
+                    GlValue::Numbers(vec![1.0, 16384.0])
+                }
+                _ => GlValue::Number(16384.),
+            },
             "getExtension" => GlValue::Object(0),
+            "checkFramebufferStatus" => GlValue::Number(webgl_constants::FRAMEBUFFER_COMPLETE as f64),
             "getShaderParameter" | "getProgramParameter" => GlValue::Bool(true),
             _ => GlValue::Null,
         })
@@ -337,4 +343,161 @@ fn post_process_stage_collection_pipeline_execution() {
 
     col.destroy().unwrap();
     assert!(col.is_destroyed());
+}
+
+#[test]
+fn post_process_composite_aliases_auto_exposure_toggle_and_scissor_clear() {
+    let host = TestHost::default();
+    let context = Context::new_webgl2(host);
+
+    let mut col = PostProcessStageCollection::<TestHost>::new(&context).unwrap();
+    // Enable built-in composites that reference sub-composites by name
+    col.bloom_mut().set_enabled(true);
+    col.ambient_occlusion_mut().set_enabled(true);
+    col.fxaa_mut().set_enabled(true);
+
+    // Add depth-of-field (references "czm_depth_of_field_blur") and multi-edge silhouette
+    let dof = PostProcessStageLibrary::create_depth_of_field_stage::<TestHost>().unwrap();
+    let edge1 = PostProcessStageLibrary::create_edge_detection_stage::<TestHost>().unwrap();
+    let edge2 = PostProcessStageLibrary::create_edge_detection_stage::<TestHost>().unwrap();
+    let mut sil = PostProcessStageLibrary::create_silhouette_stage::<TestHost>(Some(vec![edge1, edge2])).unwrap();
+    sil.set_selected(Some(vec![SelectedFeature::Color(Color::RED)]));
+    col.add(dof).unwrap();
+    col.add(sil).unwrap();
+
+    // Toggling auto_exposure must actually rebuild tonemapping with #define AUTO_EXPOSURE
+    // and preserve exposure & enabled state
+    col.set_exposure(2.5);
+    col.set_auto_exposure_enabled(true).unwrap();
+    assert!(col.auto_exposure_enabled());
+    assert!(col.tonemapping().fragment_shader().contains("#define AUTO_EXPOSURE"));
+    assert_eq!(col.exposure(), 2.5);
+
+    col.update(&context, true, true).unwrap();
+    assert!(col.ready());
+    assert!(col.has_selected());
+
+    // Composite names must resolve to valid output textures through the texture cache
+    assert!(col.texture_cache().get_output_texture("czm_bloom_contrast_bias_blur").is_some());
+    assert!(col.texture_cache().get_output_texture("czm_depth_of_field_blur").is_some());
+    assert!(col.texture_cache().get_output_texture("czm_edge_detection_composite").is_some());
+
+    // Dependencies on composites must prevent framebuffer aliasing conflicts
+    let blur_fb = col.texture_cache().get_framebuffer("czm_depth_of_field_blur").unwrap();
+    let dof_fb = col.texture_cache().get_framebuffer("czm_depth_of_field_composite").unwrap();
+    assert!(!Rc::ptr_eq(&blur_fb, &dof_fb));
+
+    let color_tex = Rc::new(Texture::new(&context, TextureOptions::rgba(800, 600), None).unwrap());
+    let mut depth_opts = TextureOptions::rgba(800, 600);
+    depth_opts.pixel_format = PixelFormat::DepthComponent;
+    depth_opts.pixel_datatype = PixelDatatype::UnsignedInt;
+    let depth_tex = Rc::new(Texture::new(&context, depth_opts, None).unwrap());
+    let id_tex = Rc::new(Texture::new(&context, TextureOptions::rgba(800, 600), None).unwrap());
+
+    col.execute(&context, &color_tex, Some(&depth_tex), Some(&id_tex)).unwrap();
+    assert!(col.output_texture().is_some());
+
+    // Disable auto_exposure and verify shader rebuilt without AUTO_EXPOSURE
+    col.set_auto_exposure_enabled(false).unwrap();
+    assert!(!col.tonemapping().fragment_shader().contains("#define AUTO_EXPOSURE"));
+
+    // Scissor set then cleared should succeed cleanly
+    let mut opts = PostProcessStageOptions::<TestHost>::new("void main() { out_FragColor = vec4(1.0); }");
+    opts.scissor_rectangle = Some(BoundingRectangle::new(0.0, 0.0, 100.0, 100.0));
+    let mut sc_stage = PostProcessStage::new(opts).unwrap();
+    sc_stage.update(&context, false).unwrap();
+    let mut fb = FramebufferManager::new(FramebufferManagerOptions { color: true, ..Default::default() }).unwrap();
+    fb.update(&context, 800, 600, Some(1), Some(PixelDatatype::UnsignedByte), Some(PixelFormat::Rgba)).unwrap();
+    sc_stage.set_framebuffer(fb.framebuffer().cloned(), fb.color_texture(0).unwrap().cloned());
+    sc_stage.execute(&context, &color_tex, None, None, None).unwrap();
+    sc_stage.set_scissor_rectangle(None);
+    sc_stage.execute(&context, &color_tex, None, None, None).unwrap();
+
+    sc_stage.destroy().unwrap();
+    fb.destroy().unwrap();
+    col.destroy().unwrap();
+}
+
+#[test]
+fn scene_enable_post_process_stages_resolves_attachments_and_resizes() {
+    let host = TestHost::default();
+    let context = Context::new_webgl2(host.clone());
+    let backend = RendererSceneBackend::new(context);
+    let time = JulianDate::new(2451545.0, 0.0, TimeStandard::Tai);
+    let mut scene = Scene::new(backend, CameraOptions::new(800.0, 600.0), SceneOptions::default(), time).unwrap();
+    scene.rethrow_render_errors = true;
+
+    let stages = scene.enable_post_process_stages().unwrap();
+    assert!(scene.post_process_stages().is_some());
+
+    // Add a custom stage and enable FXAA
+    {
+        let mut col = stages.borrow_mut();
+        col.add(PostProcessStageLibrary::create_black_and_white_stage::<TestHost>().unwrap()).unwrap();
+        col.fxaa_mut().set_enabled(true);
+    }
+
+    // Render frame 1 at 800x600
+    assert!(scene.render(time).unwrap());
+    {
+        let col = stages.borrow();
+        assert!(col.ready());
+        let out = col.output_texture().expect("post process output");
+        assert_eq!((out.width(), out.height()), (800, 600));
+    }
+
+    // Resize drawing buffer and render frame 2 at 640x480
+    host.0.width.set(640);
+    host.0.height.set(480);
+    assert!(scene.force_render(time).unwrap());
+    {
+        let col = stages.borrow();
+        let out = col.output_texture().expect("resized post process output");
+        assert_eq!((out.width(), out.height()), (640, 480));
+    }
+
+    scene.destroy().unwrap();
+}
+
+#[test]
+fn scene_post_process_receives_oit_composited_color_texture() {
+    let host = TestHost::default();
+    let context = Context::new_webgl2(host.clone());
+    let backend = RendererSceneBackend::new(context.clone());
+    let time = JulianDate::new(2451545.0, 0.0, TimeStandard::Tai);
+    let mut scene = Scene::new(backend, CameraOptions::new(640.0, 480.0), SceneOptions::default(), time).unwrap();
+    scene.rethrow_render_errors = true;
+
+    // Install a translucent primitive so OIT is used on the frame
+    struct TranslucentStub;
+    impl ScenePrimitive for TranslucentStub {
+        fn pre_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> { Ok(()) }
+        fn update(&mut self, frame: &mut FrameState) -> Result<(), RuntimeError> {
+            frame.command_list.push(SceneCommand::new("translucent-stub", Pass::Translucent, Rc::new(|_| Ok(()))));
+            Ok(())
+        }
+        fn post_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> { Ok(()) }
+        fn update_for_pass(&mut self, _: &mut FrameState, _: Cesium3DTilePass) -> Result<(), RuntimeError> { Ok(()) }
+        fn destroy(&mut self) -> Result<(), RuntimeError> { Ok(()) }
+    }
+    scene.primitives.push(Box::new(TranslucentStub));
+
+    let stages = scene.enable_post_process_stages().unwrap();
+    stages
+        .borrow_mut()
+        .add(PostProcessStageLibrary::create_black_and_white_stage::<TestHost>().unwrap())
+        .unwrap();
+
+    assert!(scene.render(time).unwrap());
+    // When OIT + post-processing both run, OIT composites into scene_framebuffer (creating its color texture)
+    // and supplies that composited texture to post-processing rather than the opaque-only globe_depth color texture.
+    let vr = scene.view.resources::<TestHost>().expect("view resources");
+    let vr_b = vr.borrow();
+    let oit_composited = vr_b.scene_framebuffer.color_texture().unwrap().expect("OIT composited into scene_framebuffer");
+    let globe_opaque = vr_b.globe_depth.as_ref().unwrap().color_texture().unwrap().expect("globe opaque color");
+    assert!(!Rc::ptr_eq(oit_composited, globe_opaque));
+    assert_eq!((oit_composited.width(), oit_composited.height()), (800, 600));
+    drop(vr_b);
+    assert!(stages.borrow().output_texture().is_some());
+    scene.destroy().unwrap();
 }

@@ -169,13 +169,22 @@ impl ScreenSpaceCameraController {
         camera.mode() != SceneMode::ColumbusView || (camera.position.x.abs() < max.x && camera.position.y.abs() < max.y)
     }
     pub fn update(&mut self, camera: &mut Camera, time: f64) -> Result<(), RuntimeError> {
-        self.update_with_environment(camera, time, ControllerEnvironment::default())
+        self.update_with_surface(camera, time, ControllerEnvironment::default(), None)
     }
     pub fn update_with_environment(
         &mut self,
         camera: &mut Camera,
         time: f64,
         environment: ControllerEnvironment,
+    ) -> Result<(), RuntimeError> {
+        self.update_with_surface(camera, time, environment, None)
+    }
+    pub fn update_with_surface(
+        &mut self,
+        camera: &mut Camera,
+        time: f64,
+        environment: ControllerEnvironment,
+        surface: Option<&dyn crate::scene::CameraSurface>,
     ) -> Result<(), RuntimeError> {
         self.alive()?;
         self.aggregator.set_client_width(camera.client_width);
@@ -247,7 +256,7 @@ impl ScreenSpaceCameraController {
                     let start = self.aggregator.get_start_mouse_position(t, m);
                     if self.aggregator.is_moving(t, m) {
                         let movement = self.aggregator.get_movement(t, m);
-                        self.act(camera, start, movement, action, environment, false);
+                        self.act(camera, start, movement, action, environment, false, surface);
                         if let Some(i) = inertia {
                             self.inertia_enabled[i] = true;
                             if i == 1 {
@@ -290,6 +299,7 @@ impl ScreenSpaceCameraController {
                                         action,
                                         environment,
                                         true,
+                                        surface,
                                     );
                                 }
                             }
@@ -335,6 +345,7 @@ impl ScreenSpaceCameraController {
             Ellipsoid::UNIT_SPHERE
         }
     }
+    #[allow(clippy::too_many_arguments)]
     fn act(
         &mut self,
         c: &mut Camera,
@@ -343,13 +354,14 @@ impl ScreenSpaceCameraController {
         action: Action,
         env: ControllerEnvironment,
         inertia: bool,
+        surface: Option<&dyn crate::scene::CameraSurface>,
     ) {
         match action {
-            Action::Zoom => self.zoom(c, start, event.distance.unwrap_or(event.movement), env, inertia),
-            Action::Translate => self.translate(c, start, event.movement, env),
-            Action::Spin => self.spin(c, start, event.movement, env, inertia),
+            Action::Zoom => self.zoom(c, start, event.distance.unwrap_or(event.movement), env, inertia, surface),
+            Action::Translate => self.translate(c, start, event.movement, env, surface),
+            Action::Spin => self.spin(c, start, event.movement, env, inertia, surface),
             Action::Rotate => self.rotate(c, event.movement, None),
-            Action::Tilt => self.tilt(c, start, event.angle_and_height.unwrap_or(event.movement), env),
+            Action::Tilt => self.tilt(c, start, event.angle_and_height.unwrap_or(event.movement), env, surface),
             Action::Look => self.look(
                 c,
                 event.movement,
@@ -358,7 +370,14 @@ impl ScreenSpaceCameraController {
             Action::Twist => self.twist(c, event),
         }
     }
-    fn translate(&mut self, c: &mut Camera, start: Cartesian2, m: CameraMovement, env: ControllerEnvironment) {
+    fn translate(
+        &mut self,
+        c: &mut Camera,
+        start: Cartesian2,
+        m: CameraMovement,
+        env: ControllerEnvironment,
+        surface: Option<&dyn crate::scene::CameraSurface>,
+    ) {
         if c.mode() == SceneMode::ColumbusView && self.continue_strafe(c, start, m) {
             return;
         }
@@ -369,7 +388,7 @@ impl ScreenSpaceCameraController {
             a.origin.subtract(b.origin)
         } else {
             let point = if c.position.z < self.exaggerated(self.minimum_picking_terrain_height, env) {
-                pick(c, m.start_position, env.has_globe)
+                pick(c, m.start_position, env.has_globe, surface)
             } else {
                 None
             };
@@ -481,6 +500,7 @@ impl ScreenSpaceCameraController {
         m: CameraMovement,
         env: ControllerEnvironment,
         inertia: bool,
+        surface: Option<&dyn crate::scene::CameraSurface>,
     ) {
         let mut ellipsoid = self.ellipsoid(c);
         if c.transform() != Matrix4::IDENTITY {
@@ -527,7 +547,7 @@ impl ScreenSpaceCameraController {
             && c.position_cartographic()
                 .is_some_and(|p| p.height < self.exaggerated(self.minimum_picking_terrain_height, env))
         {
-            let Some(point) = pick(c, m.start_position, true) else {
+            let Some(point) = pick(c, m.start_position, true, surface) else {
                 self.spin_looking = Some(start);
                 self.look(c, m, ellipsoid.geodetic_surface_normal(c.position));
                 return;
@@ -560,7 +580,7 @@ impl ScreenSpaceCameraController {
         let mut pair = None;
         if !inertia && height < self.exaggerated(self.minimum_picking_terrain_height, env) && !env.has_globe {
             let point = if m.start_position != self.pan_mouse {
-                pick(c, m.start_position, false)
+                pick(c, m.start_position, false, surface)
             } else {
                 Some(self.pan_world)
             };
@@ -699,7 +719,14 @@ impl ScreenSpaceCameraController {
             c.look_up(Some(angle));
         }
     }
-    fn tilt(&mut self, c: &mut Camera, start: Cartesian2, m: CameraMovement, env: ControllerEnvironment) {
+    fn tilt(
+        &mut self,
+        c: &mut Camera,
+        start: Cartesian2,
+        m: CameraMovement,
+        env: ControllerEnvironment,
+        surface: Option<&dyn crate::scene::CameraSurface>,
+    ) {
         if self.tilt_center.map(|v| v.0) != Some(start) {
             self.tilt_looking = false;
             self.tilt_on_ellipsoid = false;
@@ -724,7 +751,7 @@ impl ScreenSpaceCameraController {
             self.on_map(c) && height <= self.exaggerated(self.minimum_picking_terrain_height, env)
         };
         if terrain {
-            self.tilt_on_terrain(c, start, m, env);
+            self.tilt_on_terrain(c, start, m, env, surface);
             return;
         }
         self.tilt_on_ellipsoid = true;
@@ -781,7 +808,14 @@ impl ScreenSpaceCameraController {
             let _ = c.set_transform(old);
         }
     }
-    fn tilt_on_terrain(&mut self, c: &mut Camera, start: Cartesian2, m: CameraMovement, env: ControllerEnvironment) {
+    fn tilt_on_terrain(
+        &mut self,
+        c: &mut Camera,
+        start: Cartesian2,
+        m: CameraMovement,
+        env: ControllerEnvironment,
+        surface: Option<&dyn crate::scene::CameraSurface>,
+    ) {
         if c.transform() != Matrix4::IDENTITY {
             return;
         }
@@ -798,7 +832,7 @@ impl ScreenSpaceCameraController {
             let picked = if mode == SceneMode::Scene3D
                 || c.position.z < self.exaggerated(self.minimum_picking_terrain_height, env)
             {
-                pick(c, start, env.has_globe)
+                pick(c, start, env.has_globe, surface)
             } else {
                 None
             };
@@ -941,6 +975,7 @@ impl ScreenSpaceCameraController {
         m: CameraMovement,
         env: ControllerEnvironment,
         inertia: bool,
+        surface: Option<&dyn crate::scene::CameraSurface>,
     ) {
         let mode = c.mode();
         let ellipsoid = self.ellipsoid(c);
@@ -961,7 +996,11 @@ impl ScreenSpaceCameraController {
         } else {
             height < threshold
         };
-        let intersection = if need_pick && mode != SceneMode::Scene2D { pick(c, window, has_globe) } else { None };
+        let intersection = if need_pick && mode != SceneMode::Scene2D {
+            pick(c, window, has_globe, surface)
+        } else {
+            None
+        };
         let mut measure = intersection.and_then(|p| ray.map(|r| r.origin.distance(p)));
         if let Some(d) = measure {
             self.pre_intersection_distance = d;
@@ -1010,7 +1049,7 @@ impl ScreenSpaceCameraController {
                 if mode == SceneMode::Scene2D {
                     c.get_pick_ray(start).map(|r| Cartesian3::new(r.origin.y, r.origin.z, r.origin.x))
                 } else {
-                    pick(c, start, has_globe)
+                    pick(c, start, has_globe, surface)
                 }
             } else {
                 None
@@ -1049,7 +1088,7 @@ impl ScreenSpaceCameraController {
                 {
                     vector = true;
                 } else {
-                    let center = pick(c, Cartesian2::new(c.client_width * 0.5, c.client_height * 0.5), has_globe);
+                    let center = pick(c, Cartesian2::new(c.client_width * 0.5, c.client_height * 0.5), has_globe, surface);
                     if let Some(center) = center {
                         if cartographic_height < 1e6 {
                             if c.direction.dot(normal) >= -0.5 {
@@ -1213,10 +1252,15 @@ fn plane_hit(ray: Ray, height: f64) -> Option<Cartesian3> {
     let t = (height - ray.origin.x) / ray.direction.x;
     (t >= 0.).then(|| ray.origin.add(ray.direction.multiply_by_scalar(t)))
 }
-fn pick(c: &mut Camera, p: Cartesian2, has_globe: bool) -> Option<Cartesian3> {
+fn pick(
+    c: &mut Camera,
+    p: Cartesian2,
+    has_globe: bool,
+    fallback_surface: Option<&dyn crate::scene::CameraSurface>,
+) -> Option<Cartesian3> {
     let ray = c.get_pick_ray(p)?;
     let camera_position = c.position_wc();
-    let surface = c.surface.as_ref()?;
+    let surface = c.surface.as_deref().or(fallback_surface)?;
     let globe = if has_globe { surface.pick_globe(&ray) } else { None };
     let depth = surface.pick_depth(p);
     match (globe, depth) {

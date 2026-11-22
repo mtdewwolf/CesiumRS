@@ -23,12 +23,14 @@ use std::{
 };
 
 use super::{
+    batch_table::BatchTable,
     billboard::*,
     billboard_texture::{poll_pending, TextureHost},
-    blending_state, is_height_reference_clamp,
+    blending_state, is_height_reference_clamp, is_height_reference_relative,
     scene::{Result, SceneDrawOptions, ScenePrimitive},
     scene_transforms::SceneTransformState,
-    sdf_settings, BlendOption, Cesium3DTilePass, FrameState, HorizontalOrigin, SceneCommand, SceneMode, VerticalOrigin,
+    sdf_settings, BlendOption, Cesium3DTilePass, FrameState, HeightReference, HorizontalOrigin, SceneCommand, SceneMode,
+    VerticalOrigin,
 };
 use crate::{
     core::{
@@ -268,6 +270,7 @@ pub struct BillboardCollection<G: Gl + 'static> {
     sp_translucent: Option<Program<G>>,
     debug_program: Option<Rc<ShaderProgram<G>>>,
     vaf: Option<VertexArrayFacade<G>>,
+    batch_table: Option<Rc<RefCell<BatchTable<G>>>>,
     commands: Vec<BillboardCommand>,
     all_billboards_ready: bool,
     destroyed: Rc<Cell<bool>>,
@@ -359,6 +362,7 @@ impl<G: Gl + 'static> BillboardCollection<G> {
                 id: NEXT_ID.fetch_add(1, Ordering::Relaxed),
                 queue: RefCell::default(),
                 textures,
+                height_sampler: RefCell::new(None),
             }),
             billboards: Vec::new(),
             billboards_removed: false,
@@ -390,10 +394,28 @@ impl<G: Gl + 'static> BillboardCollection<G> {
             sp_translucent: None,
             debug_program: None,
             vaf: None,
+            batch_table: None,
             commands: Vec::new(),
             all_billboards_ready: false,
             destroyed: Rc::new(Cell::new(false)),
         }
+    }
+
+    /// Attaches a scene height sampler enabling `HeightReference::ClampTo*` and
+    /// `RelativeTo*` clamping for billboards in this collection.
+    pub fn set_height_sampler(&mut self, sampler: Option<HeightSampler>) {
+        *self.shared.height_sampler.borrow_mut() = sampler;
+    }
+
+    /// Attaches an optional vector-tile [`BatchTable`] to inject batched vertex
+    /// attributes and bind `batchTexture` on draw commands.
+    pub fn set_batch_table(&mut self, batch_table: Option<Rc<RefCell<BatchTable<G>>>>) {
+        self.batch_table = batch_table;
+        self.compiled_shader = None;
+    }
+
+    pub fn batch_table(&self) -> Option<&Rc<RefCell<BatchTable<G>>>> {
+        self.batch_table.as_ref()
     }
 
     fn check(&self) -> Result<()> {
@@ -777,9 +799,7 @@ impl<G: Gl + 'static> BillboardCollection<G> {
         b: &Billboard<G>,
     ) -> Result<()> {
         if is_height_reference_clamp(b.height_reference()) {
-            // Clamping needs a scene; without one there is no globe to test
-            // depth against.
-            self.shader.clamp_to_ground = false;
+            self.shader.clamp_to_ground = self.shared.has_height_sampler() && w.depth_texture;
         }
         let l = *self.locations();
         if w.vertex_texture_reads {
@@ -913,7 +933,13 @@ impl<G: Gl + 'static> BillboardCollection<G> {
 
     fn compile(&mut self, context: &Context<G>, vertex_texture_reads: bool) -> Result<()> {
         let s = self.shader;
-        let mut vertex = ShaderSource::new(BILLBOARD_COLLECTION_VS.source);
+        let vs_source = if let Some(bt) = &self.batch_table {
+            let cb = bt.borrow().vertex_shader_callback();
+            cb(BILLBOARD_COLLECTION_VS.source)
+        } else {
+            BILLBOARD_COLLECTION_VS.source.to_string()
+        };
+        let mut vertex = ShaderSource::new(vs_source);
         for (enabled, define) in [
             (self.instanced, "INSTANCED"),
             (s.rotation, "ROTATION"),
@@ -938,11 +964,12 @@ impl<G: Gl + 'static> BillboardCollection<G> {
         }
         let sdf_edge = math::js_number_to_string(1.0 - sdf_settings::CUTOFF);
         let locations = self.locations().map();
+        let has_batch_table = self.batch_table.is_some();
         let build = |previous: Option<Program<G>>, first: Option<&str>| -> Result<Program<G>> {
             let mut fragment = ShaderSource::new(BILLBOARD_COLLECTION_FS.source);
             fragment.defines = first.into_iter().map(String::from).collect();
             // The vector-tile define, empty without a batch table.
-            fragment.defines.push(String::new());
+            fragment.defines.push(if has_batch_table { "VECTOR_TILE".into() } else { String::new() });
             if s.clamp_to_ground {
                 fragment.defines.push(depth_check.to_string());
             }
@@ -1021,6 +1048,29 @@ impl<G: Gl + 'static> BillboardCollection<G> {
         poll_pending(&self.shared.textures);
         let mut all_ready = true;
         let billboards: Vec<Billboard<G>> = self.billboards.iter().flatten().cloned().collect();
+        // Evaluate height clamping for billboards with non-None HeightReference
+        if let Some(sampler) = self.shared.height_sampler.borrow().clone() {
+            let ellipsoid = frame.uniform.map_projection.ellipsoid();
+            for b in &billboards {
+                let hr = b.height_reference();
+                if hr != HeightReference::None {
+                    if let Some(mut carto) = ellipsoid.cartesian_to_cartographic(b.position()) {
+                        if let Some(surface_h) = sampler(&carto, hr) {
+                            carto.height = if is_height_reference_relative(hr) {
+                                surface_h + carto.height
+                            } else {
+                                surface_h
+                            };
+                            let clamped = ellipsoid.cartographic_to_cartesian(&carto);
+                            b.set_clamped_position(Some(clamped));
+                        }
+                    }
+                }
+            }
+        }
+        if let Some(bt) = &self.batch_table {
+            bt.borrow_mut().update(&context)?;
+        }
         for b in &billboards {
             if b.load_error().is_some() {
                 b.set_image(None);
@@ -1215,8 +1265,15 @@ impl<G: Gl + 'static> BillboardCollection<G> {
                 options.count = Some(draw_count as usize);
                 options.instance_count = instance_count as u32;
                 options.textures.push(("u_atlas".into(), atlas_texture.clone() as Rc<dyn SampledTexture<G>>));
+                if let Some(bt) = &self.batch_table {
+                    let bt = bt.borrow();
+                    if let Some(bt_tex) = bt.texture().cloned() {
+                        options.textures.push(("batchTexture".into(), bt_tex as Rc<dyn SampledTexture<G>>));
+                    }
+                    options.uniforms.extend(bt.uniform_values());
+                }
                 let h = self.highlight_color;
-                options.uniforms = vec![
+                options.uniforms.extend([
                     (
                         "u_highlightColor".into(),
                         UniformValue::Float(vec![h.red as f32, h.green as f32, h.blue as f32, h.alpha as f32]),
@@ -1229,7 +1286,7 @@ impl<G: Gl + 'static> BillboardCollection<G> {
                         "u_threePointDepthTestDistance".into(),
                         UniformValue::Float(vec![self.three_point_depth_test_distance as f32]),
                     ),
-                ];
+                ]);
                 frame.command_list.push(SceneCommand::from_draw(
                     format!("billboard-collection-{}-{j}", self.shared.id),
                     context.clone(),

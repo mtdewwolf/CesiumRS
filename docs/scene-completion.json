@@ -27,29 +27,33 @@
       "module": "Scene/Scene",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "Executable frame/event/primitive runtime, clipping, mixed-LOD stencil, transforms and color picking; integrates View depth/MSAA resources, weighted OIT, classification command plumbing, typed SceneGlobe/SceneEffect boundaries, Scene.getHeight and depth/drill/ray/metadata/height/most-detailed picking APIs. 568 GPU comparisons validate render/color-pick paths plus depth resources/OIT and tile-classification depth handoff; lifecycle tests validate globe/effects execution and failure isolation."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Executable frame/event/primitive/globe/effect runtime, post-process stage pipeline, globe-picked camera controller, clipping, OIT, classification, and full picking APIs; verified in scene_runtime, scene_post_processing, and scene_completion."
     },
     {
       "module": "Scene/Cesium3DTileset",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "JSON/schema/Ion loading, exact volumes, base/skip/most-detailed traversal with foveated/progressive priorities, external/multiple/implicit content expansion, expiry, CPU height queries/callbacks, async lifecycle, shared texture accounting and LRU. Reference trees, S2/metadata expansion and lifecycle tests. Rendering formats require a content factory; plane clipping and mixed-LOD stencil/backface rendering are executable; styling/polygon clipping/imagery/environment/debug remain; docs/scene.md."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "JSON/schema/Ion loading, exact volumes, base/skip/most-detailed traversal, external/multiple/implicit expansion, plane & polygon clipping, styling engine, imagery layers, IBL, debug colorization, and GPU rendering; verified in scene_runtime, scene_completion, and scene_model_commands."
     },
     {
       "module": "Scene/View",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "Camera movement, visible sets, exact multi-frustum fitting/binning (update_frustums, insert_into_bin), camera_equal, compute/overlay routing, shadow ranges and debug overlap; owns pick, depth, Scene/id, globe depth/translucency, edge, OIT and classification resources. 184 fitting cases, 72 binning cases, nine movement sequences, resource lifecycle fixtures and real GPU depth/OIT comparisons."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Camera movement, visible sets, exact multi-frustum fitting/binning, compute/overlay routing, shadow ranges, and owned depth/MSAA/OIT/pick/classification resources; verified in scene_view and scene_completion."
     },
     {
       "module": "Scene/Picking",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "Color sync/async picking and culling plus depth positions, metadata/voxel reads, drill/ray/height APIs, offscreen camera from ray, sample height rays and most-detailed preload queues. Validated against pinned reference ray fixtures, spiral readback and GPU comparisons; native tests cover restoration, visibility and queue lifetimes."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Sync/async color picking, culling, depth positions, metadata/voxel reads, drill/ray/height APIs, offscreen camera from ray, and most-detailed preload queues; verified in scene_picking_reference, scene_picking_resources, and scene_runtime."
     },
     {
       "module": "Scene/TranslucentTileClassification",
@@ -135,8 +139,9 @@
       "module": "Scene/ScreenSpaceCameraController",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "in-progress",
-      "remaining": "Host-driven camera gestures, inertia and environment inputs; pinned controller sequences pass. Scene owns the controller: process_input feeds it and initialize_frame updates it before camera.update with Cesium's globe height, camera-underground state and vertical exaggeration (a scene drag matches a standalone controller exactly). Globe picking for surface-anchored gestures and complete parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Host-driven gestures, inertia, environment inputs, and Scene globe/depth surface-anchored picking; verified in scene_input_tweens_morphing and scene_runtime."
     },
     {
       "module": "Scene/SceneTransitioner",
@@ -158,142 +163,161 @@
       "module": "Scene/AutoExposure",
       "baselineStatus": "partial",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Luminance reduction stages and texture lifecycle; mock GPU reduction cases pass. Scene post-processing integration and real GPU parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Luminance reduction pyramid stages, texture lifecycle, Scene post-process integration, and live tonemapping toggle; verified in scene_post_processing."
     },
     {
       "module": "Scene/PostProcessStage",
       "baselineStatus": "partial",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Effect stage options, uniforms, selection and execution; mock GPU and reference cases pass. Scene integration and real GPU parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Effect stage options, uniforms, selection, scissor clear restoration, and Scene execution; verified in scene_post_processing."
     },
     {
       "module": "Scene/PostProcessStageCollection",
       "baselineStatus": "partial",
       "workstream": "model-effects",
-      "status": "in-progress",
-      "remaining": "Built-in and user stage management and execution; mock GPU pipeline tests pass. Scene integration and real GPU parity validation remain.",
-      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Built-in and user stages, live auto-exposure/tonemapper rebuild, composite alias registration, and Scene::enable_post_process_stages integration; verified in scene_post_processing."
     },
     {
       "module": "Scene/PostProcessStageComposite",
       "baselineStatus": "partial",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Composite stage management, dependencies and execution; exercised by mock GPU pipeline tests. Scene integration and real GPU parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Composite stage chaining, dependency resolution, and composite output aliasing; verified in scene_post_processing."
     },
     {
       "module": "Scene/PostProcessStageLibrary",
       "baselineStatus": "partial",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Factories for common post-process stages; pinned factory cases pass. Scene integration and real GPU parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Factories for all built-in post-process stages and composites wired with texture-cache alias resolution; verified in scene_post_processing."
     },
     {
       "module": "Scene/PostProcessStageTextureCache",
       "baselineStatus": "partial",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Framebuffer allocation and dependency tracking; mock GPU cache tests pass. Scene integration and real GPU parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Minimal framebuffer allocation, resizing, dependency tracking, and composite alias resolution; verified in scene_post_processing."
     },
     {
       "module": "Scene/ArcGisMapServerImageryProvider",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "MapServer metadata, tile/export requests, credits and feature parsing; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "MapServer metadata, tile/export requests, credits, feature parsing, and ImageryLayer/IonImageryProviderFactory integration; verified in scene_imagery_providers and scene_imagery_layers."
     },
     {
       "module": "Scene/Azure2DImageryProvider",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "Azure raster URLs and viewport credits; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Azure raster URLs, viewport credits, and ImageryLayer/IonImageryProviderFactory integration; verified in scene_imagery_providers and scene_imagery_layers."
     },
     {
       "module": "Scene/BingMapsImageryProvider",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "Metadata, quadkeys, tile URLs and credits; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Metadata, quadkeys, tile URLs, credits, and ImageryLayer/IonImageryProviderFactory integration; verified in scene_imagery_providers and scene_imagery_layers."
     },
     {
       "module": "Scene/createWorldImageryAsync",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "in-progress",
-      "remaining": "World imagery style and async ion provider factory; style asset IDs are tested, and ImageryLayer.fromWorldImagery consumes it. Full ion provider parity remains."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "World imagery style asset resolution and async ion provider construction consumed by ImageryLayer::from_world_imagery; verified in scene_imagery_providers."
     },
     {
       "module": "Scene/Google2DImageryProvider",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "Session, tile URLs and viewport attribution; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Session, tile URLs, viewport attribution, and ImageryLayer/IonImageryProviderFactory integration; verified in scene_imagery_providers and scene_imagery_layers."
     },
     {
       "module": "Scene/GoogleEarthEnterpriseImageryProvider",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "GEE imagery packets, metadata and tiles; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "GEE imagery packets, metadata, tiles, and ImageryLayer integration; verified in scene_imagery_providers and scene_imagery_layers."
     },
     {
       "module": "Scene/GoogleEarthEnterpriseMapsProvider",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "GEE Maps metadata and tile URLs; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "GEE Maps metadata, tile URLs, and ImageryLayer integration; verified in scene_imagery_providers and scene_imagery_layers."
     },
     {
       "module": "Scene/GridImageryProvider",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "Host canvas grid drawing and tile responses; pinned provider fixtures pass. ImageryLayer integration and real canvas parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Host canvas grid drawing, tile responses, and ImageryLayer integration; verified in scene_imagery_providers and scene_imagery_layers."
     },
     {
       "module": "Scene/IonImageryProvider",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "Ion endpoint dispatch and provider delegation; native TMS and non-imagery cases are tested. External provider dispatch parity and ImageryLayer integration remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Ion endpoint resolution delegating all external and native TMS imagery types through IonImageryProviderFactory; verified in scene_imagery_providers."
     },
     {
       "module": "Scene/TileCoordinatesImageryProvider",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "Host canvas tile borders and coordinate labels; pinned provider fixtures pass. ImageryLayer integration and real canvas parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Host canvas tile borders, coordinate labels, and ImageryLayer integration; verified in scene_imagery_providers and scene_imagery_layers."
     },
     {
       "module": "Scene/TileMapServiceImageryProvider",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "TMS metadata parsing, fallback and tile URLs; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "TMS metadata parsing, fallback, tile URLs, and ImageryLayer/IonImageryProviderFactory integration; verified in scene_imagery_providers and scene_imagery_layers."
     },
     {
       "module": "Scene/TimeDynamicImagery",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "Explicit clock advancement, interval caching and preloading for WMS/WMTS; native interval and dynamic URL tests pass. Clock event integration and complete parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Clock.onTick subscription via on_tick_state, interval caching, preloading, and cached future polling; verified in scene_imagery_layers and scene_imagery_providers."
     },
     {
       "module": "Scene/WebMapServiceImageryProvider",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "WMS tile and feature requests, projections and time-dynamic dimensions; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "WMS tile/feature requests, projections, time-dynamic dimensions, and ImageryLayer integration; verified in scene_imagery_providers and scene_imagery_layers."
     },
     {
       "module": "Scene/WebMapTileServiceImageryProvider",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "WMTS KVP and REST URLs, matrix labels, dynamic dimensions and interval future caching; pinned provider fixtures and eight native time-dynamic tests. Cached futures are not driven in the background, and ImageryLayer integration and full service parity remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "WMTS KVP/REST URLs, matrix labels, time-dynamic dimensions, interval caching/polling, and ImageryLayer integration; verified in scene_imagery_providers and scene_wmts_time_dynamic."
     },
     {
       "module": "Scene/Imagery",
@@ -307,15 +331,17 @@
       "module": "Scene/TileImagery",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "Associates imagery and texture coordinates, processes provider state and ancestor fallback with reference release; native lifecycle cases. Complete terrain integration and GPU upload/reprojection remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Imagery/texture-coordinate association, state machine, ancestor fallback, reference release, and GlobeSurfaceTile integration; verified in scene_imagery_layers and scene_globe_surface_tile."
     },
     {
       "module": "Scene/ImageryLayer",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "in-progress",
-      "remaining": "Options, bounds, transforms, cache, preliminary skeletons and the provider request lifecycle with Cesium's per-tile request, per-server throttling, cancellation, retries and credit order. fromProviderAsync/fromWorldImagery with readyEvent/errorEvent (pinned scenarios), renderer texture upload, filter/mipmap/anisotropy handling and queued Web Mercator reprojection through ImageryTexturePipeline. Complete skeleton coverage (texture rectangles, antimeridian) remains; texel-spacing fixture gaps are unchanged."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Full options, cache, request lifecycle, texture upload/reprojection, and exact _createTileImagerySkeletons (base-layer clamping, 1/512 snapping, Web Mercator coords, antimeridian splitting); verified in scene_imagery_layers and scene_imagery_layer_lifecycle."
     },
     {
       "module": "Scene/ImageryLayerCollection",
@@ -336,78 +362,89 @@
       "module": "Scene/PolylineCollection",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "in-progress",
-      "remaining": "Validated against 31 updates of a SwiftShader capture. Remaining: binding texture-valued material uniforms for image materials."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Validated against 31 SwiftShader updates with full material uniform and resolved GPU texture binding; verified in scene_polyline_collection and scene_clouds."
     },
     {
       "module": "Scene/Billboard",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "in-progress",
-      "remaining": "Everything but terrain clamping is validated against the SwiftShader capture. Clamping needs Scene.updateHeight."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Full billboard state, atlas indexing, and terrain height clamping via HeightSampler; verified in scene_billboard_collection and scene_primitive_runtime."
     },
     {
       "module": "Scene/BillboardCollection",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "in-progress",
-      "remaining": "The update pipeline is validated against 85 captured updates (instanced and batched). The scene option (terrain clamping, clamp-to-ground shaders) and the vector-tile batch table remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Instanced/batched GPU pipeline (85 SwiftShader updates) plus height clamping (CLAMP_TO_GROUND) and optional BatchTable (VECTOR_TILE); verified in scene_billboard_collection and scene_primitive_runtime."
     },
     {
       "module": "Scene/CumulusCloud",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU cloud properties, dimension defaults, mutation and collection lifecycle; pinned snapshots and native tests. Scene rendering and GPU integration remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Cloud properties, dimension defaults, mutation, collection lifecycle, and GPU instanced/batched rendering; verified in scene_clouds."
     },
     {
       "module": "Scene/CloudCollection",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU collection and preliminary attributes; pinned snapshots and native lifecycle tests. Attribute expectations are calculated by the generator. Bounds and model matrix are Rust extensions and do not include cloud extents; noise texture generation, GPU buffers and draw commands remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Extent-aware bounding spheres, 4096x512 noise texture compute pass, instanced/batched VertexArrayFacade draw pipeline, and ScenePrimitive integration; verified in scene_clouds."
     },
     {
       "module": "Scene/Label",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU label options, limited font and bidirectional text processing, bounds based on simulated glyph metrics; pinned snapshots and native tests. Browser font and text layout parity, glyph atlas, terrain and GPU integration remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Label options, font/RTL processing, terrain height clamping, and SDF glyph/background rendering; verified in scene_labels and scene_primitive_runtime."
     },
     {
       "module": "Scene/LabelCollection",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU label collection and simulated fixed-width glyph layout; pinned snapshots and native tests. Position-only bounds are not suitable for text culling; actual font metrics, glyph atlas, picking and GPU/Scene integration remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "SDF glyph rasterizer, paired glyph/background BillboardCollection GPU pipeline, expanded bounds, height clamping, and ScenePrimitive integration; verified in scene_labels and scene_primitive_runtime."
     },
     {
       "module": "Scene/QuadtreeTile",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "CPU hierarchy, lazy children, neighbors, position cache and resource cleanup; pinned tile snapshots and native tests. Full resource-provider behavior, custom-data routing and integration with working traversal remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Quadtree hierarchy, lazy children, neighbors, position cache, custom-data routing, and resource cleanup integrated with QuadtreePrimitive and GlobeSurfaceTile; verified in scene_quadtree and scene_quadtree_substantive."
     },
     {
       "module": "Scene/QuadtreePrimitive",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "CPU tile selection, load priority queues, eligible-resource eviction, progress events and provider-backed height callbacks; pinned defaults and native lifecycle tests. Real terrain/Scene integration, load and height time budgets, projected-mode picking and full traversal parity remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Tile selection, priority load queues, time-sliced load/height budgets, cache trimming, progress events, 3D/projected picking, and SceneGlobe/ScenePrimitive integration; verified in scene_quadtree, scene_quadtree_substantive, and scene_runtime."
     },
     {
       "module": "Scene/VoxelCell",
       "baselineStatus": "partial",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "Typed metadata slices and padded sample box bounds checked in 6 source cases. Caller supplies resolved node/content; no Scene picking or curved-shape integration. See docs/scene-mz-cpu.md."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Typed metadata slices, curved-shape bounds, sample picking, and Scene voxel pick integration; verified in scene_voxel_utilities and scene_mz_cpu."
     },
     {
       "module": "Scene/Tileset3DTileContent",
       "baselineStatus": "partial",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "External-tree load callback, readiness, URL, metadata/group, zero metrics and lifecycle. Pinned callback fixture; existing resource loader integration remains StructuralContent. See docs/scene-mz-cpu.md."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "External tileset load callback, TilesetContent/StructuralContent integration, readiness, URL, metadata/group, metrics, and lifecycle; verified in scene_voxel_utilities and scene_mz_cpu."
     },
     {
       "module": "Scene/PerformanceDisplay",
@@ -421,24 +458,25 @@
       "module": "Scene/VoxelContent",
       "baselineStatus": "partial",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "Typed metadata-array readiness/request-render/lifecycle checked against source. No glTF loader or attribute reordering. See docs/scene-mz-cpu.md."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Typed metadata arrays, glTF binary/JSON payload parsing and attribute reordering, readiness, request-render, and lifecycle; verified in scene_voxel_utilities and scene_mz_cpu."
     },
     {
       "module": "Scene/VoxelBoxShape",
       "baselineStatus": "partial",
       "workstream": "voxel-utilities",
-      "status": "in-progress",
-      "remaining": "CPU bounds, tile/sample OBBs and UV/view transforms; 24 source scenarios. Render-bound plane collection and shader/GPU integration absent. See docs/scene-mz-cpu.md.",
-      "evidence": "Voxel utility and CPU suites pass; pinned VoxelBoxState validates initial/update shader count and render plane distances. Remaining renderer and loading gaps remain open."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Complete box bounds, tile/sample OBBs, UV/view transforms, render-bound plane collection, shader defines/uniforms, and ray intersection; verified in scene_voxel_utilities and scene_mz_cpu."
     },
     {
       "module": "Scene/SpatialNode",
       "baselineStatus": "partial",
       "workstream": "voxel-utilities",
-      "status": "in-progress",
-      "remaining": "CPU box octree bounds, screen error and ancestor temporal selection; 8 source cases. No megatexture/keyframe loading lifecycle, visibility adapter or owned parent graph. See docs/scene-mz-cpu.md.",
-      "evidence": "Voxel utility and CPU suites pass; pinned VoxelBoxState validates initial/update shader count and render plane distances. Remaining renderer and loading gaps remain open."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Octree spatial node bounds, screen error, ancestor temporal selection, owned parent/child graph, megatexture keyframe lifecycle, and visibility adapter; verified in scene_voxel_utilities and scene_mz_cpu."
     },
     {
       "module": "Scene/VoxelShapeType",
@@ -539,8 +577,9 @@
       "module": "Scene/QuadtreeTileProvider",
       "baselineStatus": "partial",
       "workstream": "integration",
-      "status": "pending",
-      "remaining": "Existing traversal provider extracted into dedicated module, preserving imports; six pinned geometric-error cases and traversal regressions. Quadtree back-reference/error-event contract remains absent. See docs/scene-nz-contracts.md."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Provider trait with geometric error, visibility, loading, ready state, error event, and quadtree attachment hook; verified in scene_nz_contracts and scene_quadtree_substantive."
     },
     {
       "module": "Scene/ShadowMapShader",
@@ -554,15 +593,17 @@
       "module": "Scene/SkyBox",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "3D/morphing render-pass filtering, HDR command delegation, source mutation, Earth URLs and destruction. Requires caller-supplied panorama renderer; built-in loading remains. See docs/scene-nz-contracts.md."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "3D/morphing pass filtering, HDR command delegation, and built-in CubeMapSkyBoxPanorama GPU renderer with ScenePrimitive integration; verified in scene_nz_contracts and scene_clouds."
     },
     {
       "module": "Scene/ViewportQuad",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "Executable material GLSL overlay commands, viewport/blending/uniform updates and material replacement/destruction; recording GL draw tests. Texture resolution and Scene submission remain host-owned. See docs/scene-nz-contracts.md."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Executable overlay ViewportCommand with material uniform/texture resolution and ScenePrimitive integration; verified in scene_nz_contracts and scene_clouds."
     },
     {
       "module": "Scene/VoxelBoundsCollection",
@@ -576,9 +617,9 @@
       "module": "Scene/VoxelShape",
       "baselineStatus": "partial",
       "workstream": "voxel-utilities",
-      "status": "in-progress",
-      "remaining": "CPU dynamic shape contract backed by existing VoxelBoxShape; bounds, transforms, UV and tile/sample OBBs. Shader uniforms/defines/intersections remain. See docs/scene-nz-contracts.md.",
-      "evidence": "Voxel utility and CPU suites pass; pinned VoxelBoxState validates initial/update shader count and render plane distances. Remaining renderer and loading gaps remain open."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Dynamic shape contract backed by Box, Cylinder, and Ellipsoid shapes with render-bound plane collection, shader defines/uniforms, and ray intersection; verified in scene_voxel_utilities and scene_nz_contracts."
     },
     {
       "module": "Scene/BillboardTexture",
@@ -591,8 +632,9 @@
       "module": "Scene/Cesium3DTileContentFactory",
       "baselineStatus": "partial",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "Maps tile magic headers and format identifiers to content types and classifies raw payloads. Partial CPU behavior; complete upstream behavior and parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Maps tile magic headers, format identifiers, and JSON payloads to content types and dispatches renderable/structural content factories; verified in scene_voxel_utilities and scene_batch_a_m."
     },
     {
       "module": "Scene/DebugInspector",
@@ -614,8 +656,9 @@
       "module": "Scene/EquirectangularPanorama",
       "baselineStatus": "partial",
       "workstream": "collections",
-      "status": "pending",
-      "remaining": "CPU material setup, transform and bounds; image loading and rendering remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Panorama material, transform, bounds, and GPU ellipsoid geometry rendering on Pass::Environment; verified in scene_batch_a_m and scene_clouds."
     },
     {
       "module": "Scene/FrameRateMonitor",
@@ -645,8 +688,9 @@
       "module": "Scene/IonImageryProviderFactory",
       "baselineStatus": "partial",
       "workstream": "imagery",
-      "status": "pending",
-      "remaining": "Factory resolution mapping for supported external Cesium ion imagery asset types and endpoints. Partial CPU behavior; complete upstream behavior and parity validation remain."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Dispatches all supported external Cesium ion imagery provider types and native TMS endpoints; verified in scene_batch_a_m and scene_imagery_providers."
     },
     {
       "module": "Scene/Moon",

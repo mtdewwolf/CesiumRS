@@ -4,11 +4,18 @@ use super::{
     quadtree_occluders::QuadtreeOccluders,
     quadtree_tile::{QuadtreeTile, QuadtreeTileHandle},
 };
-use crate::core::{TilingScheme, Visibility};
+use crate::core::{Ellipsoid, Event, TileProviderError, TilingScheme, Visibility};
 use std::sync::Arc;
 /// Provider interface supplying tile data, visibility, and geometry error.
 pub trait QuadtreeTileProvider {
     fn tiling_scheme(&self) -> Arc<dyn TilingScheme>;
+    fn ready(&self) -> bool {
+        true
+    }
+    fn error_event(&self) -> Option<&Event<TileProviderError<String>>> {
+        None
+    }
+    fn on_quadtree_attached(&mut self, _ellipsoid: Ellipsoid) {}
     fn get_level_maximum_geometric_error(&self, level: u32) -> f64;
     fn load_tile(&mut self, frame_state: &FrameState, tile: &QuadtreeTileHandle);
     fn compute_tile_visibility(
