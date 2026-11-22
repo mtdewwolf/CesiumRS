@@ -595,21 +595,48 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
                 if let Some(globe) = &resources.globe_depth {
                     globe.prepare_color_textures(false)?;
                 }
-                if self.oit_used {
-                    if let Some(oit) = &mut resources.oit {
-                        oit.execute(&self.context, &self.original_pass_state)?;
-                    }
-                }
-                resources.translucent_tile_classification.execute(
-                    &self.context,
-                    if self.oit_used { &self.original_pass_state } else { &self.pass_state },
-                    frame.passes.pick,
-                )?;
+                let post_process_ready = frame.passes.render
+                    && self.post_process_binding.as_ref().is_some_and(|(c, _)| c.borrow().ready());
+                let mut oit_composited_color: Option<Rc<renderer::Texture<G>>> = None;
                 let mut post_process_handles_output = false;
+
+                if self.oit_used && post_process_ready {
+                    let viewport = match self.original_pass_state.viewport {
+                        Some(v) => v,
+                        None => {
+                            let [width, height] = self.dimensions()?;
+                            Viewport { x: 0, y: 0, width, height }
+                        }
+                    };
+                    resources.scene_framebuffer.update(&self.context, viewport, frame.high_dynamic_range, 1)?;
+                    let mut oit_pass = self.original_pass_state.clone();
+                    oit_pass.framebuffer = resources.scene_framebuffer.framebuffer().cloned();
+                    if let Some(oit) = &mut resources.oit {
+                        oit.execute(&self.context, &oit_pass)?;
+                    }
+                    resources.translucent_tile_classification.execute(&self.context, &oit_pass, frame.passes.pick)?;
+                    oit_composited_color = resources.scene_framebuffer.color_texture()?.cloned();
+                } else {
+                    if self.oit_used {
+                        if let Some(oit) = &mut resources.oit {
+                            oit.execute(&self.context, &self.original_pass_state)?;
+                        }
+                    }
+                    resources.translucent_tile_classification.execute(
+                        &self.context,
+                        if self.oit_used { &self.original_pass_state } else { &self.pass_state },
+                        frame.passes.pick,
+                    )?;
+                }
+
                 if frame.passes.render {
                     if let Some((collection, inputs_slot)) = &self.post_process_binding {
                         if let Some(globe) = &resources.globe_depth {
-                            if let Some(color) = globe.color_texture()?.cloned() {
+                            let color = match oit_composited_color {
+                                Some(c) => Some(c),
+                                None => globe.color_texture()?.cloned(),
+                            };
+                            if let Some(color) = color {
                                 let depth = globe.depth_stencil_texture().cloned();
                                 let id = resources.scene_framebuffer.id_texture()?.cloned();
                                 *inputs_slot.borrow_mut() =

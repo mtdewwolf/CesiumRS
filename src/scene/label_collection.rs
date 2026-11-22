@@ -103,8 +103,8 @@ impl GlyphRasterizer for DefaultSdfGlyphRasterizer {
 }
 
 struct LabelBillboards<G: Gl + 'static> {
-    _background: Option<Billboard<G>>,
-    _glyphs: Vec<Billboard<G>>,
+    background: Option<Billboard<G>>,
+    glyphs: Vec<(bool, f64, f64, Billboard<G>)>,
 }
 
 struct LabelCollectionGpu<G: Gl + 'static> {
@@ -165,11 +165,13 @@ impl<G: Gl + 'static> LabelCollectionGpu<G> {
         self.glyphs.coarse_depth_test_distance = coarse_depth_test_distance;
         self.glyphs.three_point_depth_test_distance = three_point_depth_test_distance;
 
-        // Rebuild billboard backing when label count changed or any label is dirty
+        // Rebuild billboard backing when label count, glyphs, layout, or background presence changed
         let needs_rebuild = self.per_label.len() != labels.len()
-            || labels
-                .iter()
-                .any(|h| h.borrow().rebind_all_glyphs() || h.borrow().reposition_all_glyphs());
+            || labels.iter().zip(self.per_label.iter()).any(|(h, backing)| {
+                let l = h.borrow();
+                let wants_bg = l.is_attached() && l.show_background();
+                l.rebind_all_glyphs() || l.reposition_all_glyphs() || (backing.background.is_some() != wants_bg)
+            });
 
         if needs_rebuild {
             self.backgrounds.remove_all()?;
@@ -179,7 +181,7 @@ impl<G: Gl + 'static> LabelCollectionGpu<G> {
             for handle in labels {
                 let label = handle.borrow();
                 if !label.is_attached() {
-                    self.per_label.push(LabelBillboards { _background: None, _glyphs: Vec::new() });
+                    self.per_label.push(LabelBillboards { background: None, glyphs: Vec::new() });
                     continue;
                 }
                 let hr = if self.glyphs.is_destroyed() { HeightReference::None } else { label.height_reference() };
@@ -248,8 +250,9 @@ impl<G: Gl + 'static> LabelCollectionGpu<G> {
 
                     for (ch, bm) in bitmaps {
                         let img_id = format!("czm_glyph_{}_{}", ch as u32, font_key);
+                        let is_ws = ch.is_whitespace();
                         let opts = BillboardOptions {
-                            show: label.show() && !ch.is_whitespace(),
+                            show: label.show() && !is_ws,
                             position: label.position(),
                             pixel_offset: Cartesian2::new(
                                 label.pixel_offset().x + x_off * total_scale,
@@ -274,13 +277,67 @@ impl<G: Gl + 'static> LabelCollectionGpu<G> {
                         };
                         let img = BillboardImage::pixels(bm.width, bm.height, bm.rgba_sdf);
                         if let Ok(bb) = self.glyphs.add(opts, Some(img)) {
-                            glyph_bbs.push(bb);
+                            glyph_bbs.push((is_ws, x_off, y_off, bb));
                         }
                         x_off += bm.advance;
                     }
                 }
 
-                self.per_label.push(LabelBillboards { _background: bg, _glyphs: glyph_bbs });
+                self.per_label.push(LabelBillboards { background: bg, glyphs: glyph_bbs });
+            }
+        } else {
+            // Synchronize ordinary dirty properties in place without rebuilding the glyph atlas
+            for (handle, backing) in labels.iter().zip(self.per_label.iter()) {
+                let label = handle.borrow();
+                if !label.is_dirty() || !label.is_attached() {
+                    continue;
+                }
+                let hr = if self.glyphs.is_destroyed() { HeightReference::None } else { label.height_reference() };
+                let total_scale = label.total_scale();
+                let fill = match label.style() {
+                    LabelStyle::Outline => Color::new(0.0, 0.0, 0.0, 0.0),
+                    _ => label.fill_color(),
+                };
+                let outline_width = match label.style() {
+                    LabelStyle::Fill => 0.0,
+                    _ => label.outline_width(),
+                };
+                if let Some(bg) = &backing.background {
+                    let tr = label.background_translate.unwrap_or(Cartesian2::ZERO);
+                    bg.set_show(label.show());
+                    bg.set_position(label.position());
+                    bg.set_pixel_offset(Cartesian2::new(label.pixel_offset().x + tr.x, label.pixel_offset().y + tr.y));
+                    bg.set_eye_offset(label.eye_offset());
+                    bg.set_scale(total_scale);
+                    bg.set_color(label.background_color());
+                    bg.set_height_reference(hr)?;
+                    bg.set_scale_by_distance(label.scale_by_distance())?;
+                    bg.set_translucency_by_distance(label.translucency_by_distance())?;
+                    bg.set_pixel_offset_scale_by_distance(label.pixel_offset_scale_by_distance())?;
+                    bg.set_distance_display_condition(label.distance_display_condition())?;
+                    bg.set_disable_depth_test_distance(label.disable_depth_test_distance())?;
+                    bg.set_id(label.id().map(str::to_string))?;
+                }
+                for (is_ws, x_off, y_off, bb) in &backing.glyphs {
+                    bb.set_show(label.show() && !*is_ws);
+                    bb.set_position(label.position());
+                    bb.set_pixel_offset(Cartesian2::new(
+                        label.pixel_offset().x + *x_off * total_scale,
+                        label.pixel_offset().y + *y_off * total_scale,
+                    ));
+                    bb.set_eye_offset(label.eye_offset());
+                    bb.set_scale(total_scale);
+                    bb.set_color(fill);
+                    bb.set_outline_color(label.outline_color());
+                    bb.set_outline_width(outline_width);
+                    bb.set_height_reference(hr)?;
+                    bb.set_scale_by_distance(label.scale_by_distance())?;
+                    bb.set_translucency_by_distance(label.translucency_by_distance())?;
+                    bb.set_pixel_offset_scale_by_distance(label.pixel_offset_scale_by_distance())?;
+                    bb.set_distance_display_condition(label.distance_display_condition())?;
+                    bb.set_disable_depth_test_distance(label.disable_depth_test_distance())?;
+                    bb.set_id(label.id().map(str::to_string))?;
+                }
             }
         }
 
@@ -305,7 +362,6 @@ impl<G: Gl + 'static> LabelCollectionGpu<G> {
 trait LabelCollectionBackend {
     fn set_height_sampler(&mut self, sampler: Option<HeightSampler>);
     fn set_rasterizer(&mut self, rasterizer: Rc<dyn GlyphRasterizer>);
-    #[allow(clippy::too_many_arguments)]
     #[allow(clippy::too_many_arguments)]
     fn sync_and_update(
         &mut self,

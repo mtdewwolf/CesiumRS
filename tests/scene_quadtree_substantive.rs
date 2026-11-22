@@ -786,11 +786,90 @@ fn quadtree_time_slices_and_globe_surface_tile_gpu_resources() {
     });
     parent_tile.set_mesh(mesh);
     assert!(!parent_tile.has_vertex_array);
-    let _va = parent_tile.create_vertex_array(&ctx).unwrap();
+    let va = parent_tile.create_vertex_array(&ctx).unwrap();
     assert!(parent_tile.has_vertex_array);
     assert_eq!(parent_tile.terrain_state, TerrainState::Ready);
     assert!(parent_tile.vertex_array::<MockGl>().is_some());
+    assert_eq!(va.number_of_attributes(), 2);
     assert!(gl.buffers.get() >= 2);
+
+    // Unquantized mesh with geodetic surface normals must produce 3 attributes (0, 1, 2) from encoding.get_attributes()
+    let normal_encoding = TerrainEncoding::new(TerrainEncodingOptions {
+        has_geodetic_surface_normals: true,
+        ..Default::default()
+    })
+    .unwrap();
+    assert_eq!(normal_encoding.stride, 9);
+    let mut normal_tile = GlobeSurfaceTile::new();
+    normal_tile.set_mesh(TerrainMesh::new(TerrainMeshOptions {
+        center: Cartesian3::ZERO,
+        vertices: vec![0.0; 27],
+        indices: TypedArray::Uint16(vec![0, 1, 2]),
+        index_count_without_skirts: Some(3),
+        vertex_count_without_skirts: 3,
+        minimum_height: 0.0,
+        maximum_height: 100.0,
+        rectangle: Rectangle::from_degrees(0.0, 0.0, 10.0, 10.0),
+        bounding_sphere_3d: BoundingSphere::new(Cartesian3::ZERO, 1000.0),
+        occludee_point_in_scaled_space: None,
+        vertex_stride: Some(9),
+        oriented_bounding_box: None,
+        encoding: normal_encoding,
+        edges: TerrainEdgeIndices::default(),
+    }));
+    let normal_va = normal_tile.create_vertex_array(&ctx).unwrap();
+    assert_eq!(normal_va.number_of_attributes(), 3);
+    let a0 = normal_va.get_attribute(0).unwrap();
+    let a1 = normal_va.get_attribute(1).unwrap();
+    let a2 = normal_va.get_attribute(2).unwrap();
+    assert_eq!((a0.index, a0.components, a0.offset, a0.stride), (0, 4, 0, 36));
+    assert_eq!((a1.index, a1.components, a1.offset, a1.stride), (1, 2, 16, 36));
+    assert_eq!((a2.index, a2.components, a2.offset, a2.stride), (2, 3, 24, 36));
+
+    // Quantized (Bits12) mesh with WebMercatorT + vertex normals + geodetic surface normals
+    let quant_encoding = TerrainEncoding::new(TerrainEncodingOptions {
+        center: Some(Cartesian3::ZERO),
+        axis_aligned_bounding_box: Some(cesium_rs::core::AxisAlignedBoundingBox::new(
+            Cartesian3::new(-10.0, -10.0, -10.0),
+            Cartesian3::new(10.0, 10.0, 10.0),
+            None,
+        )),
+        minimum_height: Some(0.0),
+        maximum_height: Some(100.0),
+        from_enu: Some(cesium_rs::core::Matrix4::IDENTITY),
+        has_web_mercator_t: true,
+        has_vertex_normals: true,
+        has_geodetic_surface_normals: true,
+        ..Default::default()
+    })
+    .unwrap();
+    let expected_quant_attrs = quant_encoding.get_attributes();
+    let mut quant_tile = GlobeSurfaceTile::new();
+    quant_tile.set_mesh(TerrainMesh::new(TerrainMeshOptions {
+        center: Cartesian3::ZERO,
+        vertices: vec![0.0; quant_encoding.stride * 3],
+        indices: TypedArray::Uint16(vec![0, 1, 2]),
+        index_count_without_skirts: Some(3),
+        vertex_count_without_skirts: 3,
+        minimum_height: 0.0,
+        maximum_height: 100.0,
+        rectangle: Rectangle::from_degrees(0.0, 0.0, 10.0, 10.0),
+        bounding_sphere_3d: BoundingSphere::new(Cartesian3::ZERO, 1000.0),
+        occludee_point_in_scaled_space: None,
+        vertex_stride: Some(quant_encoding.stride),
+        oriented_bounding_box: None,
+        encoding: quant_encoding,
+        edges: TerrainEdgeIndices::default(),
+    }));
+    let quant_va = quant_tile.create_vertex_array(&ctx).unwrap();
+    assert_eq!(quant_va.number_of_attributes(), expected_quant_attrs.len());
+    for (i, exp) in expected_quant_attrs.iter().enumerate() {
+        let got = quant_va.get_attribute(i).unwrap();
+        assert_eq!(
+            (got.index, got.components, got.offset, got.stride),
+            (exp.index, u32::from(exp.components_per_attribute), exp.offset_in_bytes, exp.stride_in_bytes)
+        );
+    }
 
     let _wm = parent_tile.upload_water_mask(&ctx, 2, 2, &[0, 255, 255, 0]).unwrap();
     assert!(parent_tile.has_water_mask_texture);

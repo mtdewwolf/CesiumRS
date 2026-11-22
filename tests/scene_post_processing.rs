@@ -458,3 +458,46 @@ fn scene_enable_post_process_stages_resolves_attachments_and_resizes() {
 
     scene.destroy().unwrap();
 }
+
+#[test]
+fn scene_post_process_receives_oit_composited_color_texture() {
+    let host = TestHost::default();
+    let context = Context::new_webgl2(host.clone());
+    let backend = RendererSceneBackend::new(context.clone());
+    let time = JulianDate::new(2451545.0, 0.0, TimeStandard::Tai);
+    let mut scene = Scene::new(backend, CameraOptions::new(640.0, 480.0), SceneOptions::default(), time).unwrap();
+    scene.rethrow_render_errors = true;
+
+    // Install a translucent primitive so OIT is used on the frame
+    struct TranslucentStub;
+    impl ScenePrimitive for TranslucentStub {
+        fn pre_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> { Ok(()) }
+        fn update(&mut self, frame: &mut FrameState) -> Result<(), RuntimeError> {
+            frame.command_list.push(SceneCommand::new("translucent-stub", Pass::Translucent, Rc::new(|_| Ok(()))));
+            Ok(())
+        }
+        fn post_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> { Ok(()) }
+        fn update_for_pass(&mut self, _: &mut FrameState, _: Cesium3DTilePass) -> Result<(), RuntimeError> { Ok(()) }
+        fn destroy(&mut self) -> Result<(), RuntimeError> { Ok(()) }
+    }
+    scene.primitives.push(Box::new(TranslucentStub));
+
+    let stages = scene.enable_post_process_stages().unwrap();
+    stages
+        .borrow_mut()
+        .add(PostProcessStageLibrary::create_black_and_white_stage::<TestHost>().unwrap())
+        .unwrap();
+
+    assert!(scene.render(time).unwrap());
+    // When OIT + post-processing both run, OIT composites into scene_framebuffer (creating its color texture)
+    // and supplies that composited texture to post-processing rather than the opaque-only globe_depth color texture.
+    let vr = scene.view.resources::<TestHost>().expect("view resources");
+    let vr_b = vr.borrow();
+    let oit_composited = vr_b.scene_framebuffer.color_texture().unwrap().expect("OIT composited into scene_framebuffer");
+    let globe_opaque = vr_b.globe_depth.as_ref().unwrap().color_texture().unwrap().expect("globe opaque color");
+    assert!(!Rc::ptr_eq(oit_composited, globe_opaque));
+    assert_eq!((oit_composited.width(), oit_composited.height()), (800, 600));
+    drop(vr_b);
+    assert!(stages.borrow().output_texture().is_some());
+    scene.destroy().unwrap();
+}

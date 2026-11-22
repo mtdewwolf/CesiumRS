@@ -38,7 +38,7 @@ use crate::core::heightmap_terrain_data::HeightmapTerrainData;
 use crate::core::terrain_mesh::TerrainMesh;
 use crate::core::terrain_picker::TerrainSceneMode;
 use crate::core::{
-    BoundingSphere, Cartesian3, Cartesian4, Cartographic, ComponentDatatype, GeographicProjection,
+    BoundingSphere, Cartesian3, Cartesian4, Cartographic, GeographicProjection,
     IndexDatatype, MapProjection, PixelDatatype, PixelFormat, Ray, Rectangle, RuntimeError, TilingScheme,
     TypedArray,
 };
@@ -356,8 +356,6 @@ impl GlobeSurfaceTile {
         let mesh = mesh_guard
             .as_ref()
             .ok_or_else(|| RuntimeError::new("GlobeSurfaceTile has no TerrainMesh to upload"))?;
-        let stride_floats = mesh.stride.max(3);
-        let stride_bytes = stride_floats * std::mem::size_of::<f32>();
         let mut vertex_bytes = Vec::with_capacity(mesh.vertices.len() * 4);
         for v in &mesh.vertices {
             vertex_bytes.extend_from_slice(&v.to_le_bytes());
@@ -395,18 +393,22 @@ impl GlobeSurfaceTile {
             BufferUsage::StaticDraw,
             BufferData::Bytes(&index_bytes),
         )?;
-        let mut attr0 = VertexAttribute::buffer(0, vertex_buffer.clone(), 4.min(stride_floats as u32));
-        attr0.datatype = ComponentDatatype::Float;
-        attr0.stride = stride_bytes;
-        let mut attrs = vec![attr0];
-        if stride_floats > 4 {
-            let mut attr1 =
-                VertexAttribute::buffer(1, vertex_buffer, (stride_floats - 4).min(4) as u32);
-            attr1.datatype = ComponentDatatype::Float;
-            attr1.offset = 16;
-            attr1.stride = stride_bytes;
-            attrs.push(attr1);
-        }
+        let attrs: Vec<VertexAttribute<G>> = mesh
+            .encoding
+            .get_attributes()
+            .into_iter()
+            .map(|attr| {
+                let mut va = VertexAttribute::buffer(
+                    attr.index,
+                    vertex_buffer.clone(),
+                    u32::from(attr.components_per_attribute),
+                );
+                va.datatype = attr.component_datatype;
+                va.offset = attr.offset_in_bytes;
+                va.stride = attr.stride_in_bytes;
+                va
+            })
+            .collect();
         let va = Rc::new(VertexArray::new(context, attrs, Some(index_buffer))?);
         let pick_sphere = mesh.bounding_sphere_3d;
         drop(mesh_guard);

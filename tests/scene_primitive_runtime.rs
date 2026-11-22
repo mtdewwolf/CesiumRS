@@ -201,6 +201,7 @@ fn billboard_clamping_batch_table_and_labels_sdf_gpu_pipeline() {
     struct MockGl {
         next: Rc<Cell<u32>>,
         draws: Rc<Cell<usize>>,
+        buffer_uploads: Rc<Cell<usize>>,
     }
     impl Gl for MockGl {
         type Object = u32;
@@ -212,6 +213,9 @@ fn billboard_clamping_batch_table_and_labels_sdf_gpu_pipeline() {
                 let id = self.next.get() + 1;
                 self.next.set(id);
                 return Ok(GlValue::Object(id));
+            }
+            if name == "bufferData" || name == "bufferSubData" {
+                self.buffer_uploads.set(self.buffer_uploads.get() + 1);
             }
             if name == "drawElements"
                 || name == "drawElementsInstanced"
@@ -282,7 +286,7 @@ fn billboard_clamping_batch_table_and_labels_sdf_gpu_pipeline() {
 
     let mut labels = LabelCollection::new_with_context(ctx.clone());
     labels.set_height_sampler(Some(Rc::new(|_, _| Some(250.0))));
-    labels
+    let label = labels
         .add(LabelOptions {
             position: pos,
             text: "Hi!".into(),
@@ -300,6 +304,32 @@ fn billboard_clamping_batch_table_and_labels_sdf_gpu_pipeline() {
     let clamped_carto = Ellipsoid::WGS84.cartesian_to_cartographic(bb.clamped_position().unwrap()).unwrap();
     assert!((clamped_carto.height - 500.0).abs() < 1e-3);
     assert!(gl.draws.get() >= 2, "expected GPU draws for billboards and SDF labels");
+
+    // Stabilize initial atlas/buffer uploads, then verify an unchanged frame performs fewer
+    // buffer uploads than a frame where ordinary label properties (not text/font) are mutated.
+    assert!(scene.force_render(time).unwrap());
+    let uploads_before_clean = gl.buffer_uploads.get();
+    assert!(scene.force_render(time).unwrap());
+    let uploads_on_clean_frame = gl.buffer_uploads.get() - uploads_before_clean;
+
+    {
+        let mut l = label.borrow_mut();
+        l.set_position(Ellipsoid::WGS84.cartographic_to_cartesian(&Cartographic::from_degrees(1.0, 1.0, 100.0)));
+        l.set_pixel_offset(Cartesian2::new(10.0, 20.0));
+        l.set_background_color(Color::RED);
+        l.set_show(false);
+        assert!(l.is_dirty());
+        assert!(!l.rebind_all_glyphs());
+        assert!(!l.reposition_all_glyphs());
+    }
+    let uploads_before_dirty = gl.buffer_uploads.get();
+    assert!(scene.force_render(time).unwrap());
+    let uploads_on_dirty_frame = gl.buffer_uploads.get() - uploads_before_dirty;
+    assert!(!label.borrow().is_dirty());
+    assert!(
+        uploads_on_dirty_frame > uploads_on_clean_frame,
+        "mutating ordinary label properties (show/position/pixel_offset/background_color) must re-sync GPU billboards (clean={uploads_on_clean_frame}, dirty={uploads_on_dirty_frame})"
+    );
 
     scene.destroy().unwrap();
 }
