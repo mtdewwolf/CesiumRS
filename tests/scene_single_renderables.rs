@@ -24,6 +24,8 @@ use std::{
 struct Host {
     next: Rc<Cell<u32>>,
     calls: Rc<RefCell<Vec<Value>>>,
+    bound_textures: Rc<RefCell<Vec<u32>>>,
+    draw_count: Rc<Cell<usize>>,
 }
 
 fn fnv(bytes: &[u8]) -> String {
@@ -62,6 +64,14 @@ impl Gl for Host {
         };
         if let Some(r) = record {
             self.calls.borrow_mut().push(r);
+        }
+        if name == "bindTexture" {
+            if let Some(GlValue::Object(id)) = args.get(1) {
+                self.bound_textures.borrow_mut().push(*id);
+            }
+        }
+        if name == "drawElements" || name == "drawArrays" {
+            self.draw_count.set(self.draw_count.get() + 1);
         }
         let first = match args.first() {
             Some(GlValue::Number(v)) => Some(*v),
@@ -374,7 +384,8 @@ fn updates_match_cesium_single_renderables() {
             frame.passes.render = o["render"].as_bool().unwrap_or(true);
             host.calls.borrow_mut().clear();
             frame.command_list.clear();
-            moon.update(&mut frame).unwrap();
+            let returned = moon.update(&mut frame).unwrap();
+            assert!(frame.command_list.is_empty(), "{ctx}: Moon::update leaves frame.command_list untouched");
             let e = steps.next().unwrap();
             assert_eq!(e["op"], *op);
             assert!(same(&Value::Array(host.calls.borrow().clone()), &e["uploads"]), "{ctx}: uploads");
@@ -393,13 +404,81 @@ fn updates_match_cesium_single_renderables() {
             assert_eq!(json!(ep.depth_test_enabled), e["depthTestEnabled"], "{ctx}: depthTestEnabled");
             let commands = ep.commands();
             if e["command"].is_null() {
+                assert!(returned.is_none(), "{ctx}: expected no returned command");
                 assert_eq!(commands.len(), 0, "{ctx}: no command");
             } else {
+                assert!(returned.is_some(), "{ctx}: expected returned executable SceneCommand");
                 assert_eq!(commands.len(), 1, "{ctx}: command count");
                 check_command(&commands[0], &e["command"], &ctx);
             }
         }
         assert!(steps.next().is_none(), "moon: unreplayed steps");
         moon.destroy().unwrap();
+    }
+
+    // ---- Moon ScenePrimitive submission & EllipsoidPrimitive material textures ----
+    {
+        use cesium_rs::renderer::{Pass, Texture, TextureOptions};
+        use cesium_rs::scene::{SceneDrawMode, ScenePrimitive, SceneSubmission};
+
+        let make_submission = |pass: Pass, metadata: cesium_rs::renderer::DrawMetadata, pick: bool| SceneSubmission {
+            pass,
+            frustum: 0,
+            near: 1.0,
+            far: 1e9,
+            draw_mode: SceneDrawMode { pick, ..Default::default() },
+            oit: None,
+            metadata_pick: None,
+            framebuffer: None,
+            viewport: None,
+            scissor_test: None,
+            blending_enabled: None,
+            metadata,
+            clipping_planes: None,
+            tileset_draw: None,
+        };
+
+        let host = Host::default();
+        let context = Context::new_webgl2(host.clone());
+        let mut moon = Moon::<Host>::new(MoonOptions::default());
+        let mut frame = base_frame(&context, JulianDate::new(2451545., 0., TimeStandard::Tai));
+        frame.passes.render = true;
+        ScenePrimitive::update(&mut moon, &mut frame).unwrap();
+        assert_eq!(frame.command_list.len(), 1, "ScenePrimitive::update enqueues Moon draw command");
+        let cmd = &frame.command_list[0];
+        host.draw_count.set(0);
+        (cmd.execute)(make_submission(cmd.pass, cmd.metadata.clone(), false)).unwrap();
+        assert_eq!(host.draw_count.get(), 1, "Moon SceneCommand executes a GL draw");
+
+        let tex = Rc::new(Texture::new(&context, TextureOptions::rgba(1, 1), None).unwrap());
+        let tex_id = host.next.get();
+        context.with_texture_cache(|cache| cache.add_texture("custom-tex", tex.clone())).unwrap();
+        let mut material = Material::from_type("Image");
+        material.set_texture("image", "custom-tex");
+        let mut ellipsoid = EllipsoidPrimitive::<Host>::new(EllipsoidPrimitiveOptions {
+            radii: Some(Cartesian3::new(10.0, 20.0, 30.0)),
+            material: Some(material),
+            ..Default::default()
+        });
+        frame.command_list.clear();
+        frame.passes.render = true;
+        frame.passes.pick = true;
+        ellipsoid.update(&mut frame).unwrap();
+        assert_eq!(frame.command_list.len(), 2, "color and pick commands queued");
+        for command in &frame.command_list {
+            host.bound_textures.borrow_mut().clear();
+            (command.execute)(make_submission(
+                command.pass,
+                command.metadata.clone(),
+                command.metadata.pick_only,
+            ))
+            .unwrap();
+            assert!(
+                host.bound_textures.borrow().contains(&tex_id),
+                "command {} must bind material texture {tex_id}, bound {:?}",
+                command.id,
+                *host.bound_textures.borrow()
+            );
+        }
     }
 }

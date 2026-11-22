@@ -11,7 +11,7 @@ use std::{collections::BTreeMap, rc::Rc};
 use super::{
     blending_state,
     frame_state::FrameState,
-    material::{Material, MaterialValue, COLOR_TYPE},
+    material::{Material, MaterialImage, MaterialValue, COLOR_TYPE},
     scene::{Result, SceneCommand, SceneDrawOptions, ScenePrimitive},
     scene_mode::SceneMode,
     CullFace,
@@ -20,7 +20,7 @@ use crate::{
     core::{BoundingSphere, BoxGeometry, Cartesian3, Matrix4, RuntimeError, VertexFormat},
     renderer::{
         render_state::DepthTest, BufferUsage, Context, DrawMetadata, GeometryUploadOptions, Gl, Pass, PickColorQualifier,
-        PickId, RenderState, ShaderProgram, ShaderProgramOptions, ShaderSource, UniformValue, VertexArray,
+        PickId, RenderState, SampledTexture, ShaderProgram, ShaderProgramOptions, ShaderSource, UniformValue, VertexArray,
     },
     shaders::root::{ELLIPSOID_FS, ELLIPSOID_VS},
 };
@@ -300,6 +300,11 @@ impl<G: Gl + 'static> EllipsoidPrimitive<G> {
         }
 
         let passes = frame.passes;
+        let material_textures = if passes.render || passes.pick {
+            material_textures(&self.material, &context)?
+        } else {
+            Vec::new()
+        };
 
         if passes.render {
             let mut cmd_uniforms: Vec<(String, Vec<f64>)> = vec![
@@ -340,6 +345,7 @@ impl<G: Gl + 'static> EllipsoidPrimitive<G> {
             let mut options = SceneDrawOptions::new(self.vertex_array.clone().expect("vertex array"), program);
             options.state = self.render_state.clone().expect("render state");
             options.uniforms = renderer_uniforms;
+            options.textures = material_textures.clone();
             frame.command_list.push(SceneCommand::from_draw(
                 "ellipsoid-primitive-color",
                 context.clone(),
@@ -411,6 +417,7 @@ impl<G: Gl + 'static> EllipsoidPrimitive<G> {
             let mut options = SceneDrawOptions::new(self.vertex_array.clone().expect("vertex array"), program);
             options.state = self.render_state.clone().expect("render state");
             options.uniforms = renderer_uniforms;
+            options.textures = material_textures;
             frame.command_list.push(SceneCommand::from_draw(
                 "ellipsoid-primitive-pick",
                 context.clone(),
@@ -553,6 +560,38 @@ fn material_uniform_values(material: &Material) -> Vec<(String, UniformValue)> {
             Some((name, uniform))
         })
         .collect()
+}
+
+type SampledTextureBindings<G> = Vec<(String, Rc<dyn SampledTexture<G>>)>;
+
+/// The material's sampler uniforms resolved to sampled GPU textures by generated name.
+fn material_textures<G: Gl + 'static>(
+    material: &Material,
+    context: &Context<G>,
+) -> Result<SampledTextureBindings<G>> {
+    let mut textures: SampledTextureBindings<G> = Vec::new();
+    for (name, value) in material.uniform_bindings() {
+        match value {
+            MaterialValue::Sampler2D(image) => {
+                let resolved = match image {
+                    MaterialImage::Texture(id) => context.with_texture_cache(|cache| Ok(cache.get_texture(&id)))?,
+                    MaterialImage::Url(url) => context.with_texture_cache(|cache| Ok(cache.get_texture(&url)))?,
+                    MaterialImage::Default => None,
+                };
+                let texture = match resolved {
+                    Some(texture) => texture,
+                    None => context.default_texture()?,
+                };
+                textures.push((name, texture as Rc<dyn SampledTexture<G>>));
+            }
+            MaterialValue::SamplerCube(_) => {
+                let cube = context.default_cube_map()?;
+                textures.push((name, cube as Rc<dyn SampledTexture<G>>));
+            }
+            _ => {}
+        }
+    }
+    Ok(textures)
 }
 
 impl<G: Gl + 'static> ScenePrimitive for EllipsoidPrimitive<G> {

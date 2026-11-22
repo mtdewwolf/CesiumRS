@@ -5,7 +5,7 @@
 use super::ellipsoid_primitive::{EllipsoidPrimitive, EllipsoidPrimitiveOptions};
 use super::frame_state::FrameState;
 use super::material::{Material, MaterialImage, MaterialValue, IMAGE_TYPE};
-use super::scene::{Result, ScenePrimitive};
+use super::scene::{Result, SceneCommand, ScenePrimitive};
 use crate::core::simon1994_planetary_positions;
 use crate::core::{
     EarthOrientationParameters, Ellipsoid, IauOrientationAxes, Iau2006XysData, Matrix3, Matrix4, RuntimeError, Transforms,
@@ -101,11 +101,11 @@ impl<G: Gl + 'static> Moon<G> {
     }
 
     /// Cesium's `Moon.prototype.update`.
-    pub fn update(&mut self, frame: &mut FrameState) -> Result<()> {
+    pub fn update(&mut self, frame: &mut FrameState) -> Result<Option<SceneCommand>> {
         self.check()?;
         if !self.show {
             self.ellipsoid_primitive.clear_commands();
-            return Ok(());
+            return Ok(None);
         }
 
         let _ = self.ellipsoid_primitive.material.set_uniform(
@@ -119,8 +119,9 @@ impl<G: Gl + 'static> Moon<G> {
         // it, leaving the frame's command list untouched.
         let saved = std::mem::take(&mut frame.command_list);
         let result = self.ellipsoid_primitive.update(frame);
-        frame.command_list = saved;
-        result
+        let mut scratch = std::mem::replace(&mut frame.command_list, saved);
+        result?;
+        Ok(if scratch.len() == 1 { scratch.pop() } else { None })
     }
 
     /// Returns `true` if this primitive has been destroyed.
@@ -153,7 +154,10 @@ impl<G: Gl + 'static> ScenePrimitive for Moon<G> {
     }
 
     fn update(&mut self, frame: &mut FrameState) -> Result<()> {
-        Moon::update(self, frame)
+        if let Some(command) = Moon::update(self, frame)? {
+            frame.command_list.push(command);
+        }
+        Ok(())
     }
 
     fn post_passes_update(&mut self, _frame: &mut FrameState) -> Result<()> {
@@ -161,7 +165,10 @@ impl<G: Gl + 'static> ScenePrimitive for Moon<G> {
     }
 
     fn update_for_pass(&mut self, frame: &mut FrameState, _pass: super::Cesium3DTilePass) -> Result<()> {
-        Moon::update(self, frame)
+        if let Some(command) = Moon::update(self, frame)? {
+            frame.command_list.push(command);
+        }
+        Ok(())
     }
 
     fn destroy(&mut self) -> Result<()> {
