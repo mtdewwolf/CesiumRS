@@ -242,6 +242,7 @@ impl Iau2006XysData {
         let degree = self.interpolation_order;
         let work: Vec<f64> = self.x_table.iter().map(|t| x - t).collect();
         let mut result = Iau2006XysSample::default();
+        #[allow(clippy::needless_range_loop)]
         for i in 0..=degree {
             let mut coef = 1.0;
             for (j, w) in work.iter().enumerate() {

@@ -84,12 +84,15 @@ fn assert_close(actual: f64, expected: f64, tol: f64, label: &str) {
 
 // --- Recording WebGL2 host ---------------------------------------------------
 
+type CallArgsLog = Rc<RefCell<Vec<(String, Vec<f64>)>>>;
+type UploadLog = Rc<RefCell<Vec<(u32, u32, Vec<u8>)>>>;
+
 #[derive(Clone)]
 struct RecordingGl {
     next: Rc<Cell<u32>>,
     calls: Rc<RefCell<Vec<String>>>,
-    call_args: Rc<RefCell<Vec<(String, Vec<f64>)>>>,
-    uploads: Rc<RefCell<Vec<(u32, u32, Vec<u8>)>>>,
+    call_args: CallArgsLog,
+    uploads: UploadLog,
     draws: Rc<Cell<usize>>,
     depth_texture: bool,
     max_texture_size: u32,
@@ -233,7 +236,7 @@ fn empty_3d_tile_content_matches_cesium_reference() {
     let ray = Ray::new(Cartesian3::ZERO, Cartesian3::UNIT_Z);
     assert!(c.pick(&ray, &frame).is_none());
     assert_eq!(TilesetContent::metrics(&c), Default::default());
-    assert_eq!(TilesetContent::process(&mut c, &frame).unwrap(), true);
+    assert!(TilesetContent::process(&mut c, &frame).unwrap());
     TilesetContent::update(&mut c, &mut frame).unwrap();
     assert_eq!(TilesetContent::pick(&c, &ray, &frame).unwrap(), None);
 
@@ -609,7 +612,7 @@ fn gaussian_splat_coordinators_match_cesium_reference_and_worker_fixtures() {
                             other => panic!("{kind}/{mode}: unexpected poll {other:?}"),
                         };
                         assert_eq!(v, sc["afterVal"]);
-                        let _ = sorter.radix_sort_indexes(json!({})).unwrap().unwrap();
+                        drop(sorter.radix_sort_indexes(json!({})).unwrap().unwrap());
                     }
                     Ok(None) => panic!("{kind}/{mode}: expected task or error"),
                     Err(e) => {
@@ -638,7 +641,7 @@ fn gaussian_splat_coordinators_match_cesium_reference_and_worker_fixtures() {
                             other => panic!("{kind}/{mode}: unexpected poll {other:?}"),
                         };
                         assert_eq!(v, sc["afterVal"]);
-                        let _ = gen.generate_from_attributes(json!({})).unwrap().unwrap();
+                        drop(gen.generate_from_attributes(json!({})).unwrap().unwrap());
                     }
                     Ok(None) => panic!("{kind}/{mode}: expected task or error"),
                     Err(e) => {
@@ -841,7 +844,7 @@ fn voxel_bounds_collection_matches_cesium_swiftshader_capture() {
             assert_eq!(*uh, step["texture"]["height"].as_u64().unwrap() as u32, "{label}: upload h");
             assert_eq!(bytes.len(), exp_floats.len() * 4, "{label}: upload bytes len");
             let actual_floats: Vec<f32> =
-                bytes.chunks_exact(4).map(|c| f32::from_le_bytes(c.try_into().unwrap())).collect();
+                bytes.as_chunks::<4>().0.iter().map(|&c| f32::from_le_bytes(c)).collect();
             for (i, (a, ev)) in actual_floats.iter().zip(exp_floats.iter()).enumerate() {
                 let e = ev.as_f64().unwrap() as f32;
                 assert!(
@@ -1278,13 +1281,15 @@ fn model_draw_commands_matches_cesium_swiftshader_capture() {
         let node_res = NodeRenderResources::new(&model_res, 0);
 
         let mut prim_mc = mc::Primitive::<RecordingGl>::default();
-        let mut pos_attr = mc::Attribute::<RecordingGl>::default();
-        pos_attr.semantic = Some(mc::AttributeSemantic::Vertex(
-            cesium_rs::scene::VertexAttributeSemantic::Position,
-        ));
-        pos_attr.min = Some(mc::MathValue::Cartesian3(Cartesian3::new(-4., -3., -2.)));
-        pos_attr.max = Some(mc::MathValue::Cartesian3(Cartesian3::new(6., 7., 8.)));
-        pos_attr.count = Some(3);
+        let pos_attr = mc::Attribute::<RecordingGl> {
+            semantic: Some(mc::AttributeSemantic::Vertex(
+                cesium_rs::scene::VertexAttributeSemantic::Position,
+            )),
+            min: Some(mc::MathValue::Cartesian3(Cartesian3::new(-4., -3., -2.))),
+            max: Some(mc::MathValue::Cartesian3(Cartesian3::new(6., 7., 8.))),
+            count: Some(3),
+            ..Default::default()
+        };
         prim_mc.attributes.push(pos_attr);
 
         let mut resources = PrimitiveRenderResources::new(&node_res, 0, &prim_mc, None, None).unwrap();
@@ -1307,8 +1312,10 @@ fn model_draw_commands_matches_cesium_swiftshader_capture() {
         resources.batch_offsets = Some(vec![0]);
 
         let mut frame = make_frame([8, 8]);
-        let mut opts = ModelDrawBuildOptions::default();
-        opts.derived = ModelDrawCommandOptions { shadows: ShadowMode::Enabled, ..Default::default() };
+        let mut opts = ModelDrawBuildOptions {
+            derived: ModelDrawCommandOptions { shadows: ShadowMode::Enabled, ..Default::default() },
+            ..Default::default()
+        };
 
         let make_indices = |buffer: Option<Buffer<RecordingGl>>| mc::Indices {
             index_datatype: Some(IndexDatatype::UnsignedShort),

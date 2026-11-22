@@ -169,9 +169,8 @@ impl JobScheduler {
         let budget = &self.budgets[idx];
         if budget.used_this_frame + budget.stolen_from_me_this_frame >= budget.total {
             let mut found = false;
-            for i in 0..self.budgets.len() {
+            for (i, candidate) in self.budgets.iter().enumerate() {
                 stolen_idx = Some(i);
-                let candidate = &self.budgets[i];
                 if candidate.used_this_frame + candidate.stolen_from_me_this_frame < candidate.total
                     && !candidate.starved_last_frame
                 {
