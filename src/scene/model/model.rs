@@ -26,8 +26,7 @@ fn structural_metadata<G: Gl + 'static>(
     resource: Option<&crate::scene::FrameResource>,
 ) -> Option<&StructuralMetadata<G>> {
     let m = resource?;
-    m.get::<StructuralMetadata<G>>()
-        .or_else(|| m.get::<Rc<StructuralMetadata<G>>>().map(Rc::as_ref))
+    m.get::<StructuralMetadata<G>>().or_else(|| m.get::<Rc<StructuralMetadata<G>>>().map(Rc::as_ref))
 }
 
 /// The loader retains cache leases while the graph owns a component snapshot.
@@ -345,6 +344,15 @@ impl<G: Gl + 'static> Model<G> {
             && self.options.silhouette_color.alpha > 0.
             && self.options.classification_type.is_none()
     }
+    /// Sets the custom light color used by the model's lighting shader.
+    pub fn set_light_color(&mut self, color: Option<Cartesian3>) {
+        let had_color = self.uniform_state.borrow().light_color.is_some();
+        self.uniform_state.borrow_mut().light_color = color;
+        if had_color != color.is_some() {
+            self.reset_draw_commands();
+        }
+    }
+
     pub fn reset_draw_commands(&mut self) {
         self.commands_built = false;
     }

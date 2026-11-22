@@ -284,7 +284,7 @@ impl EntityComponent for ReferenceProperty {
         self.weak.upgrade().map(|p| p.as_position())
     }
 }
-struct ReferencePosition(Rc<ReferenceProperty>);
+pub(crate) struct ReferencePosition(pub(crate) Rc<ReferenceProperty>);
 impl PositionProperty for ReferencePosition {
     fn reference_frame(&self) -> ReferenceFrame {
         self.0.reference_frame().unwrap_or(ReferenceFrame::Fixed)

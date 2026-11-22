@@ -69,6 +69,20 @@ fn model_state(c: &Value) -> Rc<RefCell<ModelUniformState>> {
     Rc::new(RefCell::new(state))
 }
 
+#[test]
+fn custom_light_uniform_tracks_changes() {
+    let state = model_state(&json!({"lightColor": [1, 2, 3]}));
+    let model = ModelRenderResources::<Host>::new(Rc::clone(&state));
+    let node = NodeRenderResources::new(&model, 0);
+    let primitive = base_primitive(vec![]);
+    let mut resources = PrimitiveRenderResources::new(&node, 0, &primitive, None, None).unwrap();
+    lighting_pipeline_stage::process(&mut resources, &primitive);
+    let uniform = &resources.uniform_map["model_lightColorHdr"];
+    assert_eq!(uniform(), UniformValue::Float(vec![1., 2., 3.]));
+    state.borrow_mut().light_color = Some(Cartesian3::new(4., 5., 6.));
+    assert_eq!(uniform(), UniformValue::Float(vec![4., 5., 6.]));
+}
+
 fn math_value(attribute_type: AttributeType, v: &Value) -> mc::MathValue {
     match attribute_type {
         AttributeType::Scalar => mc::MathValue::Number(if let Some(a) = v.as_array() { n(&a[0]) } else { n(v) }),
