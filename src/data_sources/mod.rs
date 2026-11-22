@@ -176,3 +176,27 @@ pub mod height_reference_on_entity_property_changed;
 pub use height_reference_on_entity_property_changed::{
     height_reference_on_entity_property_changed, HeightReferenceUpdaterHost,
 };
+
+pub mod get_element;
+mod visualizer_values;
+pub use get_element::{get_element, ElementInput};
+pub mod terrain_offset_property;
+pub use terrain_offset_property::{
+    TerrainHeightCallback, TerrainHeightHandle, TerrainOffsetProperty, TerrainOffsetScene,
+};
+pub mod entity_view;
+pub use entity_view::{EntityView, DEFAULT_OFFSET_3D};
+pub mod entity_cluster;
+pub use entity_cluster::{ClusterEventPayload, ClusterPrimitives, EntityCluster, EntityClusterOptions};
+pub mod billboard_visualizer;
+pub use billboard_visualizer::{BillboardImageResolver, BillboardVisualizer};
+pub mod label_visualizer;
+pub use label_visualizer::LabelVisualizer;
+pub mod point_visualizer;
+pub use point_visualizer::PointVisualizer;
+pub mod path_visualizer;
+pub use path_visualizer::{sub_sample as path_sub_sample, PathVisualizer};
+pub mod model_visualizer;
+pub use model_visualizer::{ModelFactory, ModelHeightQuery, ModelLoadRequest, ModelVisualizer};
+pub mod cesium_3d_tileset_visualizer;
+pub use cesium_3d_tileset_visualizer::{Cesium3DTilesetVisualizer, TilesetFactory};

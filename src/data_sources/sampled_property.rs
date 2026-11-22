@@ -367,6 +367,10 @@ impl<T: SampledValue> SampledProperty<T> {
         let index = if index < 0 { index.checked_add(s.times.len() as isize)? } else { index };
         usize::try_from(index).ok().and_then(|i| s.times.get(i)).copied()
     }
+    /// Snapshot of the sorted sample timestamps.
+    pub fn times(&self) -> Vec<JulianDate> {
+        self.state.borrow().times.clone()
+    }
     pub fn remove_sample(&self, time: &JulianDate) -> bool {
         let removed = {
             let mut s = self.state.borrow_mut();

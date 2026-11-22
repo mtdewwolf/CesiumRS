@@ -11,12 +11,16 @@ use std::rc::Rc;
 /// Process a primitive with its material's lighting model.
 pub fn process<G: Gl>(resources: &mut PrimitiveRenderResources<G>, _primitive: &mc::Primitive<G>) {
     let light_color = resources.model.borrow().light_color;
-    if let Some(color) = light_color {
+    if light_color.is_some() {
         resources.shader_builder.add_define("USE_CUSTOM_LIGHT_COLOR", None, ShaderDestination::FRAGMENT);
         resources.shader_builder.add_uniform("vec3", "model_lightColorHdr", ShaderDestination::FRAGMENT);
+        let model = Rc::clone(&resources.model);
         resources.uniform_map.insert(
             "model_lightColorHdr".into(),
-            Rc::new(move || UniformValue::Float(vec![color.x as f32, color.y as f32, color.z as f32])),
+            Rc::new(move || {
+                let color = model.borrow().light_color.unwrap_or_default();
+                UniformValue::Float(vec![color.x as f32, color.y as f32, color.z as f32])
+            }),
         );
     }
 
