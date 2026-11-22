@@ -55,15 +55,17 @@
       "module": "Scene/TranslucentTileClassification",
       "baselineStatus": "implemented",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Owned translucent depth, packed depth and classification accumulation targets; Scene command routing and sampler restoration implemented. Independent GPU classification comparisons still pending."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Owned translucent depth, packed depth and classification accumulation targets with Scene command routing, scissor/stencil/alpha-blend states and sampler restoration; validated against a CesiumJS SwiftShader WebGL2 capture in tests/scene_pending_validations.rs alongside the 16 Scene classification depth-handoff pixel cases."
     },
     {
       "module": "Scene/PickedMetadataInfo",
       "baselineStatus": "implemented",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Owned metadata shader selection, class property and optional value transform; integrated with Scene metadata reads. End-to-end metadata-render validation pending."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Owned metadata shader selection, class property and optional value transform; validated against a CesiumJS SwiftShader WebGL2 capture covering DerivedCommand metadata shaders, pixel render/readback, MetadataPicking decoding and Scene::pick_metadata_with_info in tests/scene_pending_validations.rs."
     },
     {
       "module": "Scene/Primitive",
@@ -100,22 +102,25 @@
       "module": "Scene/Model/Model",
       "baselineStatus": "implemented",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Model lifecycle, loader factories, runtime stage dispatch, animation, transforms, styles, feature tables, deferred ready events and owned draw submission. 64 visibility reference cases and native lifecycle/style tests; complete end-to-end WebGL model parity remains unchecked. Terrain clamping and environment updates use ModelUpdateServices host hooks."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Side-by-side SwiftShader WebGL2 pixel validation against pinned @cesium/engine 23.0.0 in examples/model_validation.rs + tools/cesium/model-validation-check.mjs (docs/model-effects-evidence/webgl2-model-validation.json, 13 checks, 0 max channel diff covering glTF/GLB unlit, color REPLACE/MIX, scale/transform, show toggle & runtime modelMatrix update, CustomShader, and B3DM/I3DM/PNTS/GeoJSON), plus 64 visibility reference cases and native regressions in tests/scene_pending_validations.rs and tests/scene_model_commands.rs. Terrain clamping and environment updates use ModelUpdateServices host hooks."
     },
     {
       "module": "Scene/Model/ModelDrawCommands",
       "baselineStatus": "implemented",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Build owned GPU vertex arrays and shader resources from pipeline outputs, retain textures and pick identities, and connect ordinary/classification wrappers. Native integration coverage; complete GPU pipeline parity remains unchecked."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Builds owned GPU vertex arrays, shader programs and ordinary/classification draw commands from pipeline outputs; validated against a 6-scenario CesiumJS SwiftShader WebGL2 capture in tests/scene_pending_validations.rs plus native command suites in tests/scene_model_commands.rs."
     },
     {
       "module": "Scene/Model/Model3DTileContent",
       "baselineStatus": "implemented",
       "workstream": "model-effects",
-      "status": "pending",
-      "remaining": "Model-backed built-in glTF/GLB, b3dm, i3dm, pnts and GeoJSON factory, real-frame processing, feature access, metrics, animation, picking and destruction. Native readiness/submission regression; full content-format rendering parity remains unchecked."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Side-by-side SwiftShader WebGL2 pixel validation against pinned @cesium/engine 23.0.0 in examples/model_validation.rs + tools/cesium/model-validation-check.mjs (docs/model-effects-evidence/webgl2-model-validation.json, 0 max channel diff across glTF/GLB, B3DM base/styled/debug-color with batch-table feature queries, I3DM instancing, PNTS point clouds, and GeoJSON via ModelTileFactory), plus native regressions in tests/scene_pending_validations.rs and tests/scene_model_commands.rs."
     },
     {
       "module": "Scene/CameraEventAggregator",
@@ -446,9 +451,9 @@
       "module": "Scene/GaussianSplatSorter",
       "baselineStatus": "implemented",
       "workstream": "model-effects",
-      "status": "in-progress",
-      "remaining": "Coordinates background web worker radix sorting of Gaussian splats by camera distance.",
-      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Worker-backed radix sorter coordinator with native Rust worker; concurrency bounds, initialization/error lifecycle and all finite pinned @cesium/wasm-splats worker cases validated in tests/scene_pending_validations.rs."
     },
     {
       "module": "Scene/DepthPlane",
@@ -475,46 +480,49 @@
       "module": "Scene/GaussianSplatRenderResources",
       "baselineStatus": "implemented",
       "workstream": "model-effects",
-      "status": "in-progress",
-      "remaining": "Shader builder, render state, and alpha options for Gaussian splat drawing stages.",
-      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Shader builder, render state, alpha options and dynamic uniform providers for Gaussian splat drawing stages; validated against pinned CesiumJS reference for log-depth on/off in tests/scene_pending_validations.rs."
     },
     {
       "module": "Scene/JobScheduler",
       "baselineStatus": "implemented",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "Frame budget coordinator for scheduling and executing texture, program, and general engine jobs."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Per-type frame budget coordinator with stealing, starvation tracking, disable_this_frame and try_new validation; validated against multi-frame CesiumJS JobScheduler traces in tests/scene_pending_validations.rs."
     },
     {
       "module": "Scene/createTangentSpaceDebugPrimitive",
       "baselineStatus": "implemented",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "Creates colored debug line primitive for normal, tangent, and bitangent geometry attributes."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Creates colored debug line primitive for normal/tangent/bitangent attributes (plus GeometryFactory helper); validated against pinned CesiumJS reference instances, line segments, bounds and appearance shaders in tests/scene_pending_validations.rs."
     },
     {
       "module": "Scene/Empty3DTileContent",
       "baselineStatus": "implemented",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "Tile content for empty/leaf tiles in 3D Tiles hierarchies without geometry or textures."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Empty 3D Tiles leaf content and TilesetContent adapter; validated against pinned CesiumJS Empty3DTileContent reference in tests/scene_pending_validations.rs."
     },
     {
       "module": "Scene/GaussianSplatTextureGenerator",
       "baselineStatus": "implemented",
       "workstream": "model-effects",
-      "status": "in-progress",
-      "remaining": "Coordinates background web worker generation of attribute textures for Gaussian splats.",
-      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Worker-backed Gaussian splat attribute texture generator coordinator with native Rust worker; concurrency bounds, initialization/error lifecycle and all finite pinned @cesium/wasm-splats worker cases validated in tests/scene_pending_validations.rs."
     },
     {
       "module": "Scene/BrdfLutGenerator",
       "baselineStatus": "implemented",
       "workstream": "model-effects",
-      "status": "in-progress",
-      "remaining": "Generates 256x256 BRDF split-sum look-up texture for image-based lighting and PBR materials.",
-      "evidence": "Integrated model-effects report and shader/native tests; see docs/scene-completion-model-effects.md for still-open behavior and GPU proof."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Generates 256x256 RGBA8 BRDF split-sum lookup texture; validated against pinned CesiumJS SwiftShader WebGL2 capture (262,144 bytes, max diff 0 in docs/model-effects-evidence/webgl2-brdf-postprocess.json) plus recording-GL lifecycle and shared-shader tests in tests/scene_pending_validations.rs and tests/scene_nz_contracts.rs."
     },
     {
       "module": "Scene/ParticleSystem",
@@ -556,8 +564,9 @@
       "module": "Scene/VoxelBoundsCollection",
       "baselineStatus": "implemented",
       "workstream": "voxel-utilities",
-      "status": "pending",
-      "remaining": "Plane events/indexing, value membership, transformed normalized float packing, RGBA float texture grow/shrink/upload and destruction; recording GL tests. Browser GPU validation remains. See docs/scene-nz-contracts.md."
+      "status": "validated",
+      "remaining": "",
+      "evidence": "Constructor options, plane events/indexing, value membership, transformed Hessian-normal float packing, RGBA32F texture grow/no-resize/shrink/upload and destruction; validated against a 9-step CesiumJS SwiftShader WebGL2 capture and GPU float readback in tests/scene_pending_validations.rs."
     },
     {
       "module": "Scene/VoxelShape",

@@ -1,0 +1,1450 @@
+{
+  "cesium": "23.0.0",
+  "voxelBoundsCollection": {
+    "maxTextureSize": 8192,
+    "initialModel": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1,
+      2,
+      3,
+      1
+    ],
+    "transformB": [
+      1.5017078993370958,
+      1.169714052415796,
+      -0.6137120013895627,
+      0,
+      -0.2540983515144949,
+      0.4041745960263646,
+      0.1485830531539219,
+      0,
+      1.6873859418525754,
+      -0.26874054708447526,
+      3.616698384105458,
+      0,
+      10,
+      -20,
+      5,
+      1
+    ],
+    "steps": [
+      {
+        "label": "ctor",
+        "length": 2,
+        "unionClippingRegions": true,
+        "clippingPlanesState": 2,
+        "indices": [
+          0,
+          1
+        ],
+        "textureResolution": [
+          2,
+          2
+        ],
+        "texture": null,
+        "events": [],
+        "uploads": [],
+        "gpuReadbackHash": null,
+        "gpuReadbackFloats": null,
+        "glError": 0
+      },
+      {
+        "label": "update-initial",
+        "length": 2,
+        "unionClippingRegions": true,
+        "clippingPlanesState": 2,
+        "indices": [
+          0,
+          1
+        ],
+        "textureResolution": [
+          2,
+          2
+        ],
+        "texture": {
+          "width": 2,
+          "height": 2,
+          "pixelFormat": 6408,
+          "pixelDatatype": 5126,
+          "flipY": false
+        },
+        "events": [],
+        "uploads": [],
+        "gpuReadbackHash": "c6309c055099575",
+        "gpuReadbackFloats": [
+          1,
+          0,
+          0,
+          2.5,
+          0,
+          1,
+          0,
+          -4,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "glError": 0
+      },
+      {
+        "label": "update-transformed",
+        "length": 2,
+        "unionClippingRegions": false,
+        "clippingPlanesState": -2,
+        "indices": [
+          0,
+          1
+        ],
+        "textureResolution": [
+          2,
+          2
+        ],
+        "texture": {
+          "width": 2,
+          "height": 2,
+          "pixelFormat": 6408,
+          "pixelDatatype": 5126,
+          "flipY": false
+        },
+        "events": [],
+        "uploads": [
+          {
+            "width": 2,
+            "height": 2,
+            "format": 6408,
+            "type": 5126,
+            "byteLength": 64,
+            "hash": "4d3288c5c75fee45",
+            "floats": [
+              0.46645063161849976,
+              -0.8594509363174438,
+              0.20920789241790771,
+              0.04400194063782692,
+              -0.4371495544910431,
+              0.873169481754303,
+              -0.215581476688385,
+              -0.04343901202082634,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "gpuReadbackHash": "4d3288c5c75fee45",
+        "gpuReadbackFloats": [
+          0.46645063161849976,
+          -0.8594509363174438,
+          0.20920789241790771,
+          0.04400194063782692,
+          -0.4371495544910431,
+          0.873169481754303,
+          -0.215581476688385,
+          -0.04343901202082634,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "glError": 0
+      },
+      {
+        "label": "mutate-plane",
+        "length": 2,
+        "unionClippingRegions": false,
+        "clippingPlanesState": -2,
+        "indices": [
+          0,
+          1
+        ],
+        "textureResolution": [
+          2,
+          2
+        ],
+        "texture": {
+          "width": 2,
+          "height": 2,
+          "pixelFormat": 6408,
+          "pixelDatatype": 5126,
+          "flipY": false
+        },
+        "events": [],
+        "uploads": [
+          {
+            "width": 2,
+            "height": 2,
+            "format": 6408,
+            "type": 5126,
+            "byteLength": 64,
+            "hash": "a88212e16baffe57",
+            "floats": [
+              0.46645063161849976,
+              -0.8594509363174438,
+              0.20920789241790771,
+              0.04400194063782692,
+              0.4405246376991272,
+              -0.8665693998336792,
+              0.2345113307237625,
+              0.043336693197488785,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "gpuReadbackHash": "a88212e16baffe57",
+        "gpuReadbackFloats": [
+          0.46645063161849976,
+          -0.8594509363174438,
+          0.20920789241790771,
+          0.04400194063782692,
+          0.4405246376991272,
+          -0.8665693998336792,
+          0.2345113307237625,
+          0.043336693197488785,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "glError": 0
+      },
+      {
+        "label": "grow-to-6",
+        "length": 6,
+        "unionClippingRegions": false,
+        "clippingPlanesState": -6,
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "textureResolution": [
+          6,
+          2
+        ],
+        "texture": {
+          "width": 6,
+          "height": 2,
+          "pixelFormat": 6408,
+          "pixelDatatype": 5126,
+          "flipY": false
+        },
+        "events": [
+          {
+            "kind": "added",
+            "index": 2,
+            "distance": 1
+          },
+          {
+            "kind": "added",
+            "index": 3,
+            "distance": 3
+          },
+          {
+            "kind": "added",
+            "index": 4,
+            "distance": 5
+          },
+          {
+            "kind": "added",
+            "index": 5,
+            "distance": 6
+          }
+        ],
+        "uploads": [],
+        "gpuReadbackHash": "bd50d3abe47c3d84",
+        "gpuReadbackFloats": [
+          1,
+          0,
+          0,
+          2.5,
+          0,
+          0.6000000238418579,
+          0.800000011920929,
+          7.25,
+          0,
+          0,
+          1,
+          1,
+          -1,
+          0,
+          0,
+          3,
+          0,
+          -1,
+          0,
+          5,
+          0,
+          0,
+          -1,
+          6,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "glError": 0
+      },
+      {
+        "label": "remove-no-resize",
+        "length": 4,
+        "unionClippingRegions": false,
+        "clippingPlanesState": -4,
+        "indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "textureResolution": [
+          6,
+          2
+        ],
+        "texture": {
+          "width": 6,
+          "height": 2,
+          "pixelFormat": 6408,
+          "pixelDatatype": 5126,
+          "flipY": false
+        },
+        "events": [
+          {
+            "kind": "removed",
+            "index": 0,
+            "distance": 2.5
+          },
+          {
+            "kind": "removed",
+            "index": 2,
+            "distance": 3
+          }
+        ],
+        "uploads": [
+          {
+            "width": 6,
+            "height": 2,
+            "format": 6408,
+            "type": 5126,
+            "byteLength": 192,
+            "hash": "dd8df8d93e5d74d0",
+            "floats": [
+              0,
+              0.6000000238418579,
+              0.800000011920929,
+              7.25,
+              0,
+              0,
+              1,
+              1,
+              0,
+              -1,
+              0,
+              5,
+              0,
+              0,
+              -1,
+              6,
+              0,
+              -1,
+              0,
+              5,
+              0,
+              0,
+              -1,
+              6,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "gpuReadbackHash": "dd8df8d93e5d74d0",
+        "gpuReadbackFloats": [
+          0,
+          0.6000000238418579,
+          0.800000011920929,
+          7.25,
+          0,
+          0,
+          1,
+          1,
+          0,
+          -1,
+          0,
+          5,
+          0,
+          0,
+          -1,
+          6,
+          0,
+          -1,
+          0,
+          5,
+          0,
+          0,
+          -1,
+          6,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "glError": 0,
+        "removedP0": true,
+        "removedMissing": false,
+        "removedExtra1": true,
+        "p0IndexAfterRemove": 0
+      },
+      {
+        "label": "shrink-to-2",
+        "length": 2,
+        "unionClippingRegions": false,
+        "clippingPlanesState": -2,
+        "indices": [
+          0,
+          1
+        ],
+        "textureResolution": [
+          2,
+          2
+        ],
+        "texture": {
+          "width": 2,
+          "height": 2,
+          "pixelFormat": 6408,
+          "pixelDatatype": 5126,
+          "flipY": false
+        },
+        "events": [
+          {
+            "kind": "removed",
+            "index": 1,
+            "distance": 1
+          },
+          {
+            "kind": "removed",
+            "index": 1,
+            "distance": 5
+          }
+        ],
+        "uploads": [],
+        "gpuReadbackHash": "f3e4bd7155fe9dd",
+        "gpuReadbackFloats": [
+          0,
+          0.6000000238418579,
+          0.800000011920929,
+          7.25,
+          0,
+          0,
+          -1,
+          6,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "glError": 0
+      },
+      {
+        "label": "remove-all",
+        "length": 0,
+        "unionClippingRegions": false,
+        "clippingPlanesState": 0,
+        "indices": [],
+        "textureResolution": null,
+        "texture": null,
+        "events": [
+          {
+            "kind": "removed",
+            "index": 0,
+            "distance": 7.25
+          },
+          {
+            "kind": "removed",
+            "index": 1,
+            "distance": 6
+          }
+        ],
+        "uploads": [],
+        "gpuReadbackHash": null,
+        "gpuReadbackFloats": null,
+        "glError": 0
+      },
+      {
+        "label": "re-add-1",
+        "length": 1,
+        "unionClippingRegions": false,
+        "clippingPlanesState": -1,
+        "indices": [
+          0
+        ],
+        "textureResolution": [
+          1,
+          2
+        ],
+        "texture": {
+          "width": 1,
+          "height": 2,
+          "pixelFormat": 6408,
+          "pixelDatatype": 5126,
+          "flipY": false
+        },
+        "events": [
+          {
+            "kind": "added",
+            "index": 0,
+            "distance": -1.5
+          }
+        ],
+        "uploads": [],
+        "gpuReadbackHash": "76f9972c35838515",
+        "gpuReadbackFloats": [
+          0,
+          0,
+          1,
+          -1.5,
+          0,
+          0,
+          0,
+          0
+        ],
+        "glError": 0
+      }
+    ],
+    "destroyed": true
+  },
+  "brdfLutGenerator": {
+    "beforeTexture": null,
+    "width": 256,
+    "height": 256,
+    "pixelFormat": 6408,
+    "pixelDatatype": 5121,
+    "sampler": {
+      "minificationFilter": 9728,
+      "magnificationFilter": 9728,
+      "wrapS": 33071,
+      "wrapT": 33071
+    },
+    "viewport": {
+      "x": 0,
+      "y": 0,
+      "width": 256,
+      "height": 256
+    },
+    "drawsAfterFirst": 1,
+    "sameTextureOnSecond": true,
+    "drawsAfterSecond": 1,
+    "byteLength": 262144,
+    "hash": "791af992c763cd1e",
+    "samples": [
+      [
+        0,
+        2,
+        253,
+        0,
+        255
+      ],
+      [
+        4,
+        7,
+        248,
+        0,
+        255
+      ],
+      [
+        1020,
+        255,
+        0,
+        0,
+        255
+      ],
+      [
+        131584,
+        212,
+        6,
+        0,
+        255
+      ],
+      [
+        262140,
+        79,
+        0,
+        0,
+        255
+      ]
+    ],
+    "glError": 0,
+    "isDestroyedAfter": true
+  },
+  "pickedMetadataInfo": [
+    {
+      "name": "scalar-uint8-unnorm",
+      "schemaId": "schemaA",
+      "className": "Building",
+      "propertyName": "height",
+      "classProp": {
+        "type": "SCALAR",
+        "componentType": "UINT8",
+        "normalized": false
+      },
+      "hasValueTransform": false,
+      "offset": null,
+      "scale": null,
+      "cacheKey": "pickMetadata-schemaA-Building-height",
+      "derivedDefines": [
+        "EXISTING_DEFINE",
+        "METADATA_PICKING_VALUE_TYPE uint",
+        "METADATA_PICKING_VALUE_STRING metadata.height",
+        "METADATA_PICKING_VALUE_COMPONENT_X (float(value)) / float(255)",
+        "METADATA_PICKING_VALUE_COMPONENT_Y 0.0",
+        "METADATA_PICKING_VALUE_COMPONENT_Z 0.0",
+        "METADATA_PICKING_VALUE_COMPONENT_W 0.0",
+        "METADATA_PICKING_ENABLED"
+      ],
+      "pixel": [
+        180,
+        0,
+        0,
+        0
+      ],
+      "decoded": 180,
+      "glError": 0
+    },
+    {
+      "name": "scalar-uint8-norm-no-schema",
+      "schemaId": null,
+      "className": "Building",
+      "propertyName": "ratio",
+      "classProp": {
+        "type": "SCALAR",
+        "componentType": "UINT8",
+        "normalized": true
+      },
+      "hasValueTransform": false,
+      "offset": null,
+      "scale": null,
+      "cacheKey": "pickMetadata-undefined-Building-ratio",
+      "derivedDefines": [
+        "EXISTING_DEFINE",
+        "METADATA_PICKING_VALUE_TYPE float",
+        "METADATA_PICKING_VALUE_STRING metadata.ratio",
+        "METADATA_PICKING_VALUE_COMPONENT_X float(value)",
+        "METADATA_PICKING_VALUE_COMPONENT_Y 0.0",
+        "METADATA_PICKING_VALUE_COMPONENT_Z 0.0",
+        "METADATA_PICKING_VALUE_COMPONENT_W 0.0",
+        "METADATA_PICKING_ENABLED"
+      ],
+      "pixel": [
+        102,
+        0,
+        0,
+        0
+      ],
+      "decoded": 0.4,
+      "glError": 0
+    },
+    {
+      "name": "scalar-uint8-transform",
+      "schemaId": "schemaT",
+      "className": "Building",
+      "propertyName": "temp",
+      "classProp": {
+        "type": "SCALAR",
+        "componentType": "UINT8",
+        "normalized": false,
+        "offset": 10,
+        "scale": 2
+      },
+      "hasValueTransform": true,
+      "offset": 10,
+      "scale": 2,
+      "cacheKey": "pickMetadata-schemaT-Building-temp",
+      "derivedDefines": [
+        "EXISTING_DEFINE",
+        "METADATA_PICKING_VALUE_TYPE uint",
+        "METADATA_PICKING_VALUE_STRING metadata.temp",
+        "METADATA_PICKING_VALUE_COMPONENT_X (((float(value) - float(10)) / float(2))) / float(255)",
+        "METADATA_PICKING_VALUE_COMPONENT_Y 0.0",
+        "METADATA_PICKING_VALUE_COMPONENT_Z 0.0",
+        "METADATA_PICKING_VALUE_COMPONENT_W 0.0",
+        "METADATA_PICKING_ENABLED"
+      ],
+      "pixel": [
+        50,
+        0,
+        0,
+        0
+      ],
+      "decoded": 110,
+      "glError": 0
+    },
+    {
+      "name": "vec2-uint8-unnorm",
+      "schemaId": "schemaV",
+      "className": "Plot",
+      "propertyName": "xy",
+      "classProp": {
+        "type": "VEC2",
+        "componentType": "UINT8",
+        "normalized": false
+      },
+      "hasValueTransform": false,
+      "offset": null,
+      "scale": null,
+      "cacheKey": "pickMetadata-schemaV-Plot-xy",
+      "derivedDefines": [
+        "EXISTING_DEFINE",
+        "METADATA_PICKING_VALUE_TYPE uvec2",
+        "METADATA_PICKING_VALUE_STRING metadata.xy",
+        "METADATA_PICKING_VALUE_COMPONENT_X (float(value.x)) / float(255)",
+        "METADATA_PICKING_VALUE_COMPONENT_Y (float(value.y)) / float(255)",
+        "METADATA_PICKING_VALUE_COMPONENT_Z 0.0",
+        "METADATA_PICKING_VALUE_COMPONENT_W 0.0",
+        "METADATA_PICKING_ENABLED"
+      ],
+      "pixel": [
+        64,
+        192,
+        0,
+        0
+      ],
+      "decoded": [
+        64,
+        192
+      ],
+      "glError": 0
+    },
+    {
+      "name": "vec3-uint8-norm-transform",
+      "schemaId": "schemaV3",
+      "className": "Plot",
+      "propertyName": "rgb",
+      "classProp": {
+        "type": "VEC3",
+        "componentType": "UINT8",
+        "normalized": true,
+        "offset": [
+          0.1,
+          0.2,
+          0.3
+        ],
+        "scale": [
+          0.5,
+          0.5,
+          0.5
+        ]
+      },
+      "hasValueTransform": true,
+      "offset": [
+        0.1,
+        0.2,
+        0.3
+      ],
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "cacheKey": "pickMetadata-schemaV3-Plot-rgb",
+      "derivedDefines": [
+        "EXISTING_DEFINE",
+        "METADATA_PICKING_VALUE_TYPE vec3",
+        "METADATA_PICKING_VALUE_STRING metadata.rgb",
+        "METADATA_PICKING_VALUE_COMPONENT_X ((float(value.x) - float(0.1)) / float(0.5))",
+        "METADATA_PICKING_VALUE_COMPONENT_Y ((float(value.y) - float(0.2)) / float(0.5))",
+        "METADATA_PICKING_VALUE_COMPONENT_Z ((float(value.z) - float(0.3)) / float(0.5))",
+        "METADATA_PICKING_VALUE_COMPONENT_W 0.0",
+        "METADATA_PICKING_ENABLED"
+      ],
+      "pixel": [
+        51,
+        102,
+        204,
+        0
+      ],
+      "decoded": [
+        0.2,
+        0.4,
+        0.7
+      ],
+      "glError": 0
+    },
+    {
+      "name": "vec4-uint8-unnorm",
+      "schemaId": "schemaV4",
+      "className": "Plot",
+      "propertyName": "rgba",
+      "classProp": {
+        "type": "VEC4",
+        "componentType": "UINT8",
+        "normalized": false
+      },
+      "hasValueTransform": false,
+      "offset": null,
+      "scale": null,
+      "cacheKey": "pickMetadata-schemaV4-Plot-rgba",
+      "derivedDefines": [
+        "EXISTING_DEFINE",
+        "METADATA_PICKING_VALUE_TYPE uvec4",
+        "METADATA_PICKING_VALUE_STRING metadata.rgba",
+        "METADATA_PICKING_VALUE_COMPONENT_X (float(value.x)) / float(255)",
+        "METADATA_PICKING_VALUE_COMPONENT_Y (float(value.y)) / float(255)",
+        "METADATA_PICKING_VALUE_COMPONENT_Z (float(value.z)) / float(255)",
+        "METADATA_PICKING_VALUE_COMPONENT_W (float(value.w)) / float(255)",
+        "METADATA_PICKING_ENABLED"
+      ],
+      "pixel": [
+        10,
+        20,
+        30,
+        250
+      ],
+      "decoded": [
+        10,
+        20,
+        30,
+        250
+      ],
+      "glError": 0
+    },
+    {
+      "name": "scalar-array3-uint8",
+      "schemaId": "schemaArr",
+      "className": "Plot",
+      "propertyName": "arr",
+      "classProp": {
+        "type": "SCALAR",
+        "componentType": "UINT8",
+        "array": true,
+        "count": 3,
+        "normalized": false
+      },
+      "hasValueTransform": false,
+      "offset": null,
+      "scale": null,
+      "cacheKey": "pickMetadata-schemaArr-Plot-arr",
+      "derivedDefines": [
+        "EXISTING_DEFINE",
+        "METADATA_PICKING_VALUE_TYPE uvec3",
+        "METADATA_PICKING_VALUE_STRING metadata.arr",
+        "METADATA_PICKING_VALUE_COMPONENT_X (float(value.x)) / float(255)",
+        "METADATA_PICKING_VALUE_COMPONENT_Y (float(value.y)) / float(255)",
+        "METADATA_PICKING_VALUE_COMPONENT_Z (float(value.z)) / float(255)",
+        "METADATA_PICKING_VALUE_COMPONENT_W 0.0",
+        "METADATA_PICKING_ENABLED"
+      ],
+      "pixel": null,
+      "decoded": null,
+      "glError": 0
+    }
+  ],
+  "translucentTileClassification": {
+    "afterUnflagged": {
+      "supported": true,
+      "hasTranslucentDepth": false,
+      "frustumsDrawn": 0,
+      "hasDepthTex": false
+    },
+    "afterDepth1": {
+      "hasTranslucentDepth": true,
+      "frustumsDrawn": 1,
+      "depthTex": {
+        "width": 8,
+        "height": 8,
+        "pixelFormat": 34041,
+        "pixelDatatype": 34042
+      },
+      "rsDepth": {
+        "viewport": [
+          0,
+          0,
+          8,
+          8
+        ],
+        "scissorEnabled": false,
+        "scissorRect": [
+          0,
+          0,
+          8,
+          8
+        ],
+        "stencilEnabled": false,
+        "stencilFrontFunc": 519,
+        "stencilRef": 0,
+        "blendingEnabled": false,
+        "blendingSrcRgb": 1,
+        "blendingDstRgb": 0
+      },
+      "rsAccumulate": {
+        "viewport": [
+          0,
+          0,
+          8,
+          8
+        ],
+        "scissorEnabled": false,
+        "scissorRect": [
+          0,
+          0,
+          8,
+          8
+        ],
+        "stencilEnabled": true,
+        "stencilFrontFunc": 514,
+        "stencilRef": 128,
+        "blendingEnabled": false,
+        "blendingSrcRgb": 1,
+        "blendingDstRgb": 0
+      },
+      "rsComp": {
+        "viewport": [
+          0,
+          0,
+          8,
+          8
+        ],
+        "scissorEnabled": false,
+        "scissorRect": [
+          0,
+          0,
+          8,
+          8
+        ],
+        "stencilEnabled": false,
+        "stencilFrontFunc": 519,
+        "stencilRef": 0,
+        "blendingEnabled": true,
+        "blendingSrcRgb": 770,
+        "blendingDstRgb": 771
+      },
+      "pickDefines": [
+        "PICK"
+      ]
+    },
+    "afterExec1": {
+      "compositeUsedClassification": true,
+      "hasTranslucentDepth": false,
+      "frustumsDrawn": 0,
+      "globeDepthRestored1": true
+    },
+    "beforeExec2": {
+      "frustumsDrawn": 2,
+      "rsDepthSub": {
+        "viewport": [
+          0,
+          0,
+          8,
+          8
+        ],
+        "scissorEnabled": true,
+        "scissorRect": [
+          1,
+          2,
+          4,
+          4
+        ],
+        "stencilEnabled": false,
+        "stencilFrontFunc": 519,
+        "stencilRef": 0,
+        "blendingEnabled": false,
+        "blendingSrcRgb": 1,
+        "blendingDstRgb": 0
+      },
+      "rsAccumulateSub": {
+        "viewport": [
+          0,
+          0,
+          8,
+          8
+        ],
+        "scissorEnabled": true,
+        "scissorRect": [
+          1,
+          2,
+          4,
+          4
+        ],
+        "stencilEnabled": true,
+        "stencilFrontFunc": 514,
+        "stencilRef": 128,
+        "blendingEnabled": false,
+        "blendingSrcRgb": 1,
+        "blendingDstRgb": 0
+      },
+      "rsCompSub": {
+        "viewport": [
+          0,
+          0,
+          8,
+          8
+        ],
+        "scissorEnabled": true,
+        "scissorRect": [
+          1,
+          2,
+          4,
+          4
+        ],
+        "stencilEnabled": false,
+        "stencilFrontFunc": 519,
+        "stencilRef": 0,
+        "blendingEnabled": true,
+        "blendingSrcRgb": 770,
+        "blendingDstRgb": 771
+      }
+    },
+    "afterExec2": {
+      "compositeUsedAccumulation": true,
+      "hasTranslucentDepth": false,
+      "frustumsDrawn": 0,
+      "globeDepthRestored2": true
+    },
+    "afterResize": {
+      "depthDims": [
+        12,
+        6
+      ],
+      "packedDims": [
+        12,
+        6
+      ],
+      "glError": 0
+    },
+    "execLog": [
+      {
+        "globeDepthIsPacked": false,
+        "fbIsClassification": true
+      },
+      {
+        "pass": 6,
+        "globeDepthIsPacked": true,
+        "fbIsClassification": true
+      },
+      {
+        "pass": 6,
+        "globeDepthIsPacked": false,
+        "fbIsClassification": true
+      },
+      {
+        "pass": 6,
+        "globeDepthIsPacked": true,
+        "fbIsClassification": true
+      },
+      {
+        "pass": 6,
+        "globeDepthIsPacked": false,
+        "fbIsClassification": true
+      },
+      {
+        "pass": 6,
+        "globeDepthIsPacked": true,
+        "fbIsClassification": true
+      },
+      {
+        "pass": 6,
+        "globeDepthIsPacked": false,
+        "fbIsClassification": true
+      }
+    ],
+    "destroyed": true
+  },
+  "modelDrawCommands": {
+    "translateMatrix": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      10,
+      20,
+      30,
+      1
+    ],
+    "mirrorMatrix": [
+      -1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1
+    ],
+    "nodeMatrix": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1,
+      2,
+      3,
+      1
+    ],
+    "cases": [
+      {
+        "name": "ordinary-3d",
+        "error": null,
+        "isClassification": false,
+        "cullFace": 1029,
+        "pass": 8,
+        "primitiveType": 4,
+        "count": 3,
+        "instanceCount": 2,
+        "cull": true,
+        "debugShowBoundingVolume": false,
+        "pickId": "czm_pickColor",
+        "pickMetadataAllowed": true,
+        "castShadows": true,
+        "receiveShadows": true,
+        "hasIndexBuffer": true,
+        "usedWireframeIndexBuffer": false,
+        "modelMatrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          11,
+          22,
+          33,
+          1
+        ],
+        "boundingSphere": {
+          "center": [
+            12,
+            24,
+            36
+          ],
+          "radius": 5
+        },
+        "hasModelVs": false,
+        "hasModelFs": false,
+        "glError": 0
+      },
+      {
+        "name": "mirrored-cull-front",
+        "error": null,
+        "isClassification": false,
+        "cullFace": 1028,
+        "pass": 8,
+        "primitiveType": 4,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": true,
+        "debugShowBoundingVolume": false,
+        "pickId": "czm_pickColor",
+        "pickMetadataAllowed": true,
+        "castShadows": true,
+        "receiveShadows": false,
+        "hasIndexBuffer": true,
+        "usedWireframeIndexBuffer": false,
+        "modelMatrix": [
+          -1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "boundingSphere": {
+          "center": [
+            -1,
+            2,
+            3
+          ],
+          "radius": 5
+        },
+        "hasModelVs": false,
+        "hasModelFs": false,
+        "glError": 0
+      },
+      {
+        "name": "wireframe-index-override",
+        "error": null,
+        "isClassification": false,
+        "cullFace": 1029,
+        "pass": 8,
+        "primitiveType": 1,
+        "count": 6,
+        "instanceCount": 0,
+        "cull": true,
+        "debugShowBoundingVolume": false,
+        "pickId": "czm_pickColor",
+        "pickMetadataAllowed": true,
+        "castShadows": true,
+        "receiveShadows": true,
+        "hasIndexBuffer": true,
+        "usedWireframeIndexBuffer": true,
+        "modelMatrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "boundingSphere": {
+          "center": [
+            1,
+            2,
+            3
+          ],
+          "radius": 5
+        },
+        "hasModelVs": false,
+        "hasModelFs": false,
+        "glError": 0
+      },
+      {
+        "name": "projected-2d",
+        "error": null,
+        "isClassification": false,
+        "cullFace": 1029,
+        "pass": 9,
+        "primitiveType": 4,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": true,
+        "debugShowBoundingVolume": false,
+        "pickId": "czm_pickColor",
+        "pickMetadataAllowed": true,
+        "castShadows": true,
+        "receiveShadows": true,
+        "hasIndexBuffer": false,
+        "usedWireframeIndexBuffer": false,
+        "modelMatrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          11,
+          22,
+          33,
+          1
+        ],
+        "boundingSphere": {
+          "center": [
+            10,
+            20,
+            30
+          ],
+          "radius": 7
+        },
+        "hasModelVs": false,
+        "hasModelFs": false,
+        "glError": 0
+      },
+      {
+        "name": "classification",
+        "error": null,
+        "isClassification": true,
+        "cullFace": 1029,
+        "pass": 8,
+        "primitiveType": 4,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": true,
+        "debugShowBoundingVolume": false,
+        "pickId": null,
+        "pickMetadataAllowed": true,
+        "castShadows": false,
+        "receiveShadows": false,
+        "hasIndexBuffer": true,
+        "usedWireframeIndexBuffer": false,
+        "modelMatrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "boundingSphere": {
+          "center": [
+            1,
+            2,
+            3
+          ],
+          "radius": 5
+        },
+        "hasModelVs": false,
+        "hasModelFs": false,
+        "glError": 0
+      },
+      {
+        "name": "missing-indices-buffer-error",
+        "error": "Indices must be provided as a Buffer"
+      }
+    ]
+  }
+}

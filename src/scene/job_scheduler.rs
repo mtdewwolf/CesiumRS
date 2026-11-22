@@ -7,6 +7,7 @@
 
 use super::job_type::JobType;
 use crate::core::clock::get_timestamp;
+use crate::core::RuntimeError;
 
 /// Budget and frame tracking for one job type.
 #[derive(Clone, Debug, PartialEq)]
@@ -84,6 +85,22 @@ impl JobScheduler {
         }
     }
 
+    /// Creates a job scheduler from a budget slice, validating that one budget
+    /// is supplied for each [`JobType`] as in CesiumJS.
+    pub fn try_new(budgets: &[f64]) -> Result<Self, RuntimeError> {
+        if budgets.len() != JobType::NUMBER_OF_JOB_TYPES as usize {
+            return Err(RuntimeError::new(
+                "A budget must be specified for each job type; budgets.length should equal JobType.NUMBER_OF_JOB_TYPES.",
+            ));
+        }
+        Ok(Self::new(Some([budgets[0], budgets[1], budgets[2]])))
+    }
+
+    /// Whether each job type has executed at least once.
+    pub fn executed_this_frame(&self) -> &[bool; 3] {
+        &self.executed_this_frame
+    }
+
     /// Allows overriding the clock function (e.g. for testing).
     pub fn set_timestamp_provider(&mut self, provider: Option<fn() -> f64>) {
         self.timestamp_fn = provider;
@@ -151,26 +168,20 @@ impl JobScheduler {
         let mut stolen_idx = None;
         let budget = &self.budgets[idx];
         if budget.used_this_frame + budget.stolen_from_me_this_frame >= budget.total {
-            let mut found = None;
+            let mut found = false;
             for i in 0..self.budgets.len() {
+                stolen_idx = Some(i);
                 let candidate = &self.budgets[i];
                 if candidate.used_this_frame + candidate.stolen_from_me_this_frame < candidate.total
                     && !candidate.starved_last_frame
                 {
-                    found = Some(i);
+                    found = true;
                     break;
                 }
             }
 
-            match found {
-                Some(i) => {
-                    stolen_idx = Some(i);
-                }
-                None => {
-                    if progress_this_frame {
-                        return false;
-                    }
-                }
+            if !found && progress_this_frame {
+                return false;
             }
 
             if progress_this_frame {
@@ -180,7 +191,7 @@ impl JobScheduler {
 
         let start_time = self.now();
         job();
-        let duration = (self.now() - start_time).max(0.0);
+        let duration = self.now() - start_time;
 
         self.total_used_this_frame += duration;
 

@@ -1,7 +1,8 @@
 //! CesiumJS `Empty3DTileContent`: empty content for tiles in a 3D Tiles tileset
 //! that do not have content (e.g. used for hierarchical culling optimizations).
 
-use crate::core::RuntimeError;
+use super::{FrameState, TileContentMetrics, TilesetContent};
+use crate::core::{Cartesian3, Ray, RuntimeError};
 
 /// Represents empty content for tiles in a 3D Tiles tileset.
 #[derive(Clone, Debug, PartialEq)]
@@ -48,11 +49,27 @@ impl Empty3DTileContent {
         0
     }
 
+    pub fn inner_contents(&self) -> Option<&[()]> {
+        None
+    }
+
     pub fn ready(&self) -> bool {
         true
     }
 
     pub fn url(&self) -> Option<&str> {
+        None
+    }
+
+    pub fn metadata(&self) -> Option<()> {
+        None
+    }
+
+    pub fn batch_table(&self) -> Option<()> {
+        None
+    }
+
+    pub fn group(&self) -> Option<()> {
         None
     }
 
@@ -82,12 +99,48 @@ impl Empty3DTileContent {
 
     pub fn update(&mut self) {}
 
+    pub fn pick(&self, _ray: &Ray, _frame_state: &FrameState) -> Option<Cartesian3> {
+        None
+    }
+
     pub fn is_destroyed(&self) -> bool {
         self.destroyed
     }
 
     pub fn destroy(&mut self) {
         self.destroyed = true;
+    }
+}
+
+impl TilesetContent for Empty3DTileContent {
+    fn metrics(&self) -> TileContentMetrics {
+        TileContentMetrics::default()
+    }
+
+    fn process(&mut self, _: &FrameState) -> Result<bool, RuntimeError> {
+        if self.destroyed {
+            return Err(RuntimeError::new("Empty3DTileContent was destroyed"));
+        }
+        Ok(self.ready())
+    }
+
+    fn update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+        if self.destroyed {
+            return Err(RuntimeError::new("Empty3DTileContent was destroyed"));
+        }
+        Ok(())
+    }
+
+    fn pick(&self, _: &Ray, _: &FrameState) -> Result<Option<Cartesian3>, RuntimeError> {
+        if self.destroyed {
+            return Err(RuntimeError::new("Empty3DTileContent was destroyed"));
+        }
+        Ok(None)
+    }
+
+    fn destroy(&mut self) -> Result<(), RuntimeError> {
+        self.destroyed = true;
+        Ok(())
     }
 }
 
