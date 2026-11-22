@@ -85,14 +85,14 @@ fn assert_close(actual: f64, expected: f64, tol: f64, label: &str) {
 // --- Recording WebGL2 host ---------------------------------------------------
 
 type CallArgsLog = Rc<RefCell<Vec<(String, Vec<f64>)>>>;
-type UploadsLog = Rc<RefCell<Vec<(u32, u32, Vec<u8>)>>>;
+type UploadLog = Rc<RefCell<Vec<(u32, u32, Vec<u8>)>>>;
 
 #[derive(Clone)]
 struct RecordingGl {
     next: Rc<Cell<u32>>,
     calls: Rc<RefCell<Vec<String>>>,
     call_args: CallArgsLog,
-    uploads: UploadsLog,
+    uploads: UploadLog,
     draws: Rc<Cell<usize>>,
     depth_texture: bool,
     max_texture_size: u32,
@@ -846,7 +846,7 @@ fn voxel_bounds_collection_matches_cesium_swiftshader_capture() {
             assert_eq!(*uh, step["texture"]["height"].as_u64().unwrap() as u32, "{label}: upload h");
             assert_eq!(bytes.len(), exp_floats.len() * 4, "{label}: upload bytes len");
             let actual_floats: Vec<f32> =
-                bytes.as_chunks::<4>().0.iter().map(|c| f32::from_le_bytes(*c)).collect();
+                bytes.as_chunks::<4>().0.iter().map(|&c| f32::from_le_bytes(c)).collect();
             for (i, (a, ev)) in actual_floats.iter().zip(exp_floats.iter()).enumerate() {
                 let e = ev.as_f64().unwrap() as f32;
                 assert!(
