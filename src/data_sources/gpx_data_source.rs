@@ -239,10 +239,7 @@ impl GpxDataSource {
             *self.version.borrow_mut() = version;
             changed = true;
         }
-        let clock_changed = match (self.clock.borrow().as_ref(), clock.as_ref()) {
-            (None, None) => false,
-            _ => true,
-        };
+        let clock_changed = !matches!((self.clock.borrow().as_ref(), clock.as_ref()), (None, None));
         if clock_changed {
             *self.clock.borrow_mut() = clock;
             changed = true;
@@ -270,7 +267,7 @@ impl GpxDataSource {
         clock.set_clock_range(Some(ClockRange::LoopStop));
         clock.set_clock_step(Some(ClockStep::SystemClockMultiplier));
         let diff = JulianDate::seconds_difference(&stop, &start);
-        let mult = (diff / 60.0).max(1.0).min(3.15569e7).round();
+        let mult = (diff / 60.0).clamp(1.0, 3.15569e7).round();
         clock.set_multiplier(Some(mult));
         Some(Rc::new(clock))
     }

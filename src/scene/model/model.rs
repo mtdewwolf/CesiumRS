@@ -22,6 +22,14 @@ use std::{
 };
 type Result<T> = std::result::Result<T, RuntimeError>;
 
+fn structural_metadata<G: Gl + 'static>(
+    resource: Option<&crate::scene::FrameResource>,
+) -> Option<&StructuralMetadata<G>> {
+    let m = resource?;
+    m.get::<StructuralMetadata<G>>()
+        .or_else(|| m.get::<Rc<StructuralMetadata<G>>>().map(Rc::as_ref))
+}
+
 /// The loader retains cache leases while the graph owns a component snapshot.
 /// GPU objects in snapshots have shared ownership; incremental textures refresh
 /// the snapshot once their loaders have finished.
@@ -436,7 +444,7 @@ impl<G: Gl + 'static> Model<G> {
         }
         if self.scene_graph.is_none() {
             if let Some(components) = self.pending_components.take() {
-                let metadata = components.structural_metadata.as_ref().and_then(|m| m.get::<StructuralMetadata<G>>());
+                let metadata = structural_metadata::<G>(components.structural_metadata.as_ref());
                 if let Some(metadata) = metadata {
                     let max_texture_size = self.context.limits()?.maximum_texture_size;
                     self.feature_tables = metadata
@@ -697,7 +705,7 @@ impl<G: Gl + 'static> Model<G> {
         Ok(())
     }
     fn apply_current_style(&mut self, graph: &ModelSceneGraph<G, ModelDrawCommandKind<G>>) -> Result<()> {
-        let structural = graph.components().structural_metadata.as_ref().and_then(|m| m.get::<StructuralMetadata<G>>());
+        let structural = structural_metadata::<G>(graph.components().structural_metadata.as_ref());
         let table = self.feature_table_id.and_then(|i| self.feature_tables.get(i)).filter(|t| t.features_length() > 0);
         if self.options.model_type == ModelType::TilePnts
             && (table.is_none() || structural.is_some_and(|m| !m.property_attributes().is_empty()))
@@ -811,7 +819,7 @@ impl<G: Gl + 'static> Model<G> {
         }
         resources.node_render_resources = (0..graph.components().nodes.len()).map(|_| None).collect();
         let structural = graph.components().structural_metadata.clone();
-        let metadata = structural.as_ref().and_then(|m| m.get::<StructuralMetadata<G>>());
+        let metadata = structural_metadata::<G>(structural.as_ref());
         let pick_sources =
             self.feature_tables.iter().map(|t| t.picking_pipeline_source().map(Some)).collect::<Result<Vec<_>>>()?;
         let batch_statistics: Vec<_> = self.feature_tables.iter().map(|t| Some(t.batch_statistics())).collect();

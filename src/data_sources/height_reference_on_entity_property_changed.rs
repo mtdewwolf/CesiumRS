@@ -5,6 +5,8 @@ use super::{CallbackProperty, Entity, PropertyInput, PropertyRef};
 use crate::core::Cartesian3;
 use std::rc::Rc;
 
+pub type CenterPositionCallback = Rc<dyn Fn(Option<&crate::core::JulianDate>) -> Option<Cartesian3>>;
+
 /// Host state representing a `GeometryUpdater` with optional height reference.
 pub trait HeightReferenceUpdaterHost {
     type TerrainOffset;
@@ -16,7 +18,7 @@ pub trait HeightReferenceUpdaterHost {
     fn is_dynamic(&self) -> bool;
     fn take_terrain_offset(&mut self) -> Option<Self::TerrainOffset>;
     fn destroy_terrain_offset(&mut self, offset: Self::TerrainOffset);
-    fn compute_center(&self) -> Rc<dyn Fn(Option<&crate::core::JulianDate>) -> Option<Cartesian3>>;
+    fn compute_center(&self) -> CenterPositionCallback;
     fn create_terrain_offset(
         &mut self,
         center_position: PropertyRef<Cartesian3>,

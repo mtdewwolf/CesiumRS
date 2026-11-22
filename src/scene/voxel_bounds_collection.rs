@@ -30,7 +30,24 @@ impl<G: Gl> Default for VoxelBoundsCollection<G> {
         }
     }
 }
+#[derive(Default)]
+pub struct VoxelBoundsCollectionOptions {
+    pub planes: Vec<ClippingPlaneHandle>,
+    pub model_matrix: Option<Matrix4>,
+    pub union_clipping_regions: Option<bool>,
+}
 impl<G: Gl> VoxelBoundsCollection<G> {
+    pub fn new(options: VoxelBoundsCollectionOptions) -> Self {
+        let mut collection = Self {
+            model_matrix: options.model_matrix.unwrap_or(Matrix4::IDENTITY),
+            union_clipping_regions: options.union_clipping_regions.unwrap_or(false),
+            ..Default::default()
+        };
+        for plane in options.planes {
+            collection.add(plane);
+        }
+        collection
+    }
     pub fn len(&self) -> usize {
         self.planes.len()
     }

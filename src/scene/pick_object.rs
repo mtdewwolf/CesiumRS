@@ -25,6 +25,15 @@ impl PickedMetadataInfo {
         )?);
         Ok(Self { shader, class_property, value_transform })
     }
+    pub fn schema_id(&self) -> Option<&str> {
+        self.shader.schema_id.as_deref()
+    }
+    pub fn class_name(&self) -> &str {
+        &self.shader.class_name
+    }
+    pub fn property_name(&self) -> &str {
+        &self.shader.property_name
+    }
 }
 /// Register this object with Context.create_pick_id. Attach its show handles
 /// to the corresponding SceneCommand visibility fields so drill picks can

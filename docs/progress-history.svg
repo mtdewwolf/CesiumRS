@@ -110,7 +110,7 @@
 <circle fill="transparent" cx="589.5" cy="102.2" r="3"><title>81. Imagery GPU pipeline and surface-tile tracker · 2026-11-02 · 72.5%</title></circle>
 <circle fill="transparent" cx="596.1" cy="102.2" r="3"><title>82. Imagery requests and provider factories · 2026-11-04 · 72.5%</title></circle>
 <circle fill="transparent" cx="602.8" cy="102.0" r="3"><title>83. Imagery collection picking · 2026-11-04 · 72.6%</title></circle>
-<circle fill="transparent" cx="609.4" cy="100.1" r="3"><title>84. Scene collections, tweens and morph integration · 2026-11-06 · 73.6%</title></circle>
+<circle fill="transparent" cx="609.4" cy="100.1" r="3"><title>84. Scene collections, tweens and morph integration · 2026-11-22 · 73.6%</title></circle>
 <circle class="history-point" cx="616.0" cy="96.1" r="4"><title>85. Primitive, renderables &amp; DataSources · 2026-11-22 · 75.7%</title></circle>
 <text class="dim history-axis" x="60.0" y="263" text-anchor="middle">1</text>
 <text class="dim history-axis" x="245.3" y="263" text-anchor="middle">29</text>

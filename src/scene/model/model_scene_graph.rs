@@ -191,8 +191,8 @@ impl<G: Gl, D> ModelSceneGraph<G, D> {
     /// Builds the runtime scene graph, including skins and articulations.
     pub fn new(components: mc::Components<G>, options: ModelSceneGraphOptions) -> Result<Self, RuntimeError> {
         let axis_correction_matrix = model_utility::get_axis_correction_matrix(
-            components.up_axis.unwrap_or(Axis::Y),
-            components.forward_axis.unwrap_or(Axis::Z),
+            components.up_axis.unwrap_or(Axis::Z),
+            components.forward_axis.unwrap_or(Axis::X),
         );
         let project_to_2d = options.pipeline.project_to_2d;
 

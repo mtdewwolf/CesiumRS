@@ -8,7 +8,7 @@ use super::per_instance_color_appearance::{PerInstanceColorAppearance, PerInstan
 use super::primitive::{Primitive, PrimitiveOptions};
 use crate::core::color_geometry_instance_attribute::ColorGeometryInstanceAttribute;
 use crate::core::geometry_pipeline::create_line_segments_for_vectors;
-use crate::core::{Color, Geometry, GeometryInstance, Matrix4};
+use crate::core::{Color, Geometry, GeometryFactory, GeometryInstance, Matrix4};
 use crate::renderer::Gl;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -57,6 +57,21 @@ pub fn create_tangent_space_debug_primitive<G: Gl + 'static>(
     });
 
     Some(primitive)
+}
+
+/// Computes `geometry` from a [`GeometryFactory`] and creates a tangent-space
+/// debug [`Primitive`], matching CesiumJS's uncomputed-geometry path.
+pub fn create_tangent_space_debug_primitive_from_factory<G: Gl + 'static, F: GeometryFactory>(
+    factory: &F,
+    length: Option<f64>,
+    model_matrix: Option<Matrix4>,
+) -> Option<Primitive<G>> {
+    let geometry = factory.create_geometry()?;
+    create_tangent_space_debug_primitive(CreateTangentSpaceDebugPrimitiveOptions {
+        geometry,
+        length,
+        model_matrix,
+    })
 }
 
 #[cfg(test)]

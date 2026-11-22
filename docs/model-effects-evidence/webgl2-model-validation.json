@@ -1,0 +1,89 @@
+[
+  {
+    "name": "gltf-unlit-base-color",
+    "pixels": 4096,
+    "nonZeroPixels": 484,
+    "maxChannelDiff": 0
+  },
+  {
+    "name": "gltf-color-replace-scale-transform",
+    "pixels": 4096,
+    "nonZeroPixels": 121,
+    "maxChannelDiff": 0
+  },
+  {
+    "name": "gltf-color-mix",
+    "pixels": 4096,
+    "nonZeroPixels": 484,
+    "maxChannelDiff": 0
+  },
+  {
+    "name": "gltf-lifecycle-step-0",
+    "pixels": 4096,
+    "nonZeroPixels": 484,
+    "maxChannelDiff": 0
+  },
+  {
+    "name": "gltf-lifecycle-step-1",
+    "pixels": 4096,
+    "nonZeroPixels": 0,
+    "maxChannelDiff": 0
+  },
+  {
+    "name": "gltf-lifecycle-step-2",
+    "pixels": 4096,
+    "nonZeroPixels": 506,
+    "maxChannelDiff": 0
+  },
+  {
+    "name": "gltf-custom-shader",
+    "pixels": 4096,
+    "nonZeroPixels": 484,
+    "maxChannelDiff": 0
+  },
+  {
+    "name": "b3dm-tile-content-base",
+    "pixels": 4096,
+    "nonZeroPixels": 572,
+    "maxChannelDiff": 0
+  },
+  {
+    "name": "b3dm-tile-content-styled",
+    "pixels": 4096,
+    "nonZeroPixels": 572,
+    "maxChannelDiff": 0
+  },
+  {
+    "name": "b3dm-tile-content-debug-color",
+    "pixels": 4096,
+    "nonZeroPixels": 572,
+    "maxChannelDiff": 0
+  },
+  {
+    "name": "i3dm-tile-content",
+    "pixels": 4096,
+    "nonZeroPixels": 136,
+    "maxChannelDiff": 0
+  },
+  {
+    "name": "pnts-tile-content",
+    "pixels": 4096,
+    "nonZeroPixels": 4,
+    "maxChannelDiff": 0
+  },
+  {
+    "name": "geojson-tile-content-factory",
+    "pixels": 4096,
+    "nonZeroPixels": 96,
+    "maxChannelDiff": 0,
+    "commands": 1,
+    "metrics": {
+      "features": 1,
+      "points": 0,
+      "triangles": 0,
+      "geometryBytes": 96,
+      "textureBytes": 0,
+      "batchTableBytes": 0
+    }
+  }
+]

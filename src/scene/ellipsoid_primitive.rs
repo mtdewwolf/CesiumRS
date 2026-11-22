@@ -313,11 +313,13 @@ impl<G: Gl + 'static> EllipsoidPrimitive<G> {
             ];
             renderer_uniforms.extend(material_uniform_values(&self.material));
 
-            let mut metadata = DrawMetadata::default();
-            metadata.bounding_volume = Some(self.bounding_sphere);
-            metadata.model_matrix = Some(self.computed_model_matrix);
-            metadata.debug_show_bounding_volume = self.debug_show_bounding_volume;
-            metadata.execute_in_closest_frustum = translucent;
+            let metadata = DrawMetadata {
+                bounding_volume: Some(self.bounding_sphere),
+                model_matrix: Some(self.computed_model_matrix),
+                debug_show_bounding_volume: self.debug_show_bounding_volume,
+                execute_in_closest_frustum: translucent,
+                ..Default::default()
+            };
 
             let pass = if translucent { Pass::Translucent } else { Pass::Opaque };
             let program = self.shader_program.clone().expect("color shader compiled");
@@ -382,11 +384,13 @@ impl<G: Gl + 'static> EllipsoidPrimitive<G> {
             ];
             renderer_uniforms.extend(material_uniform_values(&self.material));
 
-            let mut metadata = DrawMetadata::default();
-            metadata.bounding_volume = Some(self.bounding_sphere);
-            metadata.model_matrix = Some(self.computed_model_matrix);
-            metadata.pick_only = true;
-            metadata.execute_in_closest_frustum = translucent;
+            let metadata = DrawMetadata {
+                bounding_volume: Some(self.bounding_sphere),
+                model_matrix: Some(self.computed_model_matrix),
+                pick_only: true,
+                execute_in_closest_frustum: translucent,
+                ..Default::default()
+            };
 
             let pass = if translucent { Pass::Translucent } else { Pass::Opaque };
             let program = self.pick_shader_program.clone().expect("pick shader compiled");

@@ -695,7 +695,10 @@ pub use tileset_3d_tile_content::Tileset3DTileContent;
 pub mod brdf_lut_generator;
 pub use brdf_lut_generator::BrdfLutGenerator;
 pub mod create_tangent_space_debug_primitive;
-pub use create_tangent_space_debug_primitive::{create_tangent_space_debug_primitive, CreateTangentSpaceDebugPrimitiveOptions};
+pub use create_tangent_space_debug_primitive::{
+    create_tangent_space_debug_primitive, create_tangent_space_debug_primitive_from_factory,
+    CreateTangentSpaceDebugPrimitiveOptions,
+};
 pub mod debug_camera_primitive;
 pub use debug_camera_primitive::{DebugCameraPrimitive, DebugCameraPrimitiveOptions};
 pub mod debug_model_matrix_primitive;
@@ -728,7 +731,7 @@ pub use panorama_provider::PanoramaProvider;
 pub use particle_system::{ParticleImage, ParticleSystem, ParticleSystemCallback, ParticleSystemOptions};
 pub use sky_box::SkyBox;
 pub use viewport_quad::ViewportQuad;
-pub use voxel_bounds_collection::VoxelBoundsCollection;
+pub use voxel_bounds_collection::{VoxelBoundsCollection, VoxelBoundsCollectionOptions};
 pub use voxel_provider::{VoxelProvider, VoxelRequest};
 pub use voxel_shape::VoxelShape;
 

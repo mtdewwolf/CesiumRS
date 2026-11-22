@@ -182,9 +182,13 @@ impl<G: Gl + 'static> DepthPlane<G> {
         let depth_quad = compute_depth_quad(&ellipsoid, camera);
 
         if self.vertex_array.is_none() {
-            let mut attributes = GeometryAttributes::default();
-            attributes.position =
-                Some(GeometryAttribute::floats(3, &depth_quad.iter().map(|&v| f64::from(v)).collect::<Vec<_>>()));
+            let attributes = GeometryAttributes {
+                position: Some(GeometryAttribute::floats(
+                    3,
+                    &depth_quad.iter().map(|&v| f64::from(v)).collect::<Vec<_>>(),
+                )),
+                ..Default::default()
+            };
             let geometry =
                 Geometry::new(attributes, Some(TypedArray::Uint16(vec![0, 1, 2, 2, 1, 3])), PrimitiveType::Triangles);
             let va = VertexArray::from_geometry(
@@ -209,8 +213,7 @@ impl<G: Gl + 'static> DepthPlane<G> {
 
         // Build (or rebuild after a program replacement) the draw command.
         if self.command.is_none() || program_replaced {
-            let mut metadata = DrawMetadata::default();
-            metadata.bounding_volume = Some(self.bounding_volume);
+            let metadata = DrawMetadata { bounding_volume: Some(self.bounding_volume), ..Default::default() };
             let mut options =
                 SceneDrawOptions::new(self.vertex_array.clone().expect("vertex array"), self.shader_program.clone().expect("shader program"));
             options.state = self.render_state.clone();

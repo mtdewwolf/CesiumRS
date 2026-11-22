@@ -378,11 +378,13 @@ fn replay_kml_tour_wait() {
     );
 }
 
+type DoneCallback = Rc<dyn Fn(bool)>;
+
 struct MockEntry {
     id: String,
     sync_done: bool,
     trace: Rc<RefCell<Vec<Value>>>,
-    done: RefCell<Option<Rc<dyn Fn(bool)>>>,
+    done: RefCell<Option<DoneCallback>>,
 }
 impl MockEntry {
     fn new(id: &str, sync_done: bool, trace: Rc<RefCell<Vec<Value>>>) -> Rc<Self> {
@@ -510,9 +512,7 @@ impl HeightReferenceUpdaterHost for MockHost {
     fn compute_center(&self) -> Rc<dyn Fn(Option<&JulianDate>) -> Option<Cartesian3>> {
         Rc::new(|_| Some(Cartesian3::new(1., 2., 3.)))
     }
-    fn create_terrain_offset(&mut self, _: PropertyRef<Cartesian3>, _: PropertyInput) -> () {
-        ()
-    }
+    fn create_terrain_offset(&mut self, _: PropertyRef<Cartesian3>, _: PropertyInput) {}
     fn set_terrain_offset(&mut self, offset: Option<()>) {
         self.terrain_offset = offset;
     }
