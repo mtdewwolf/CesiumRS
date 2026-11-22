@@ -145,7 +145,7 @@ fn test_depth_plane_computations() {
         assert!(val.is_finite());
     }
 
-    let mut dp = DepthPlane::new(100.0);
+    let mut dp = DepthPlane::<TestGl>::new(100.0);
     assert_eq!(dp.ellipsoid_offset, 100.0);
     assert!(!dp.is_destroyed());
     dp.destroy();
