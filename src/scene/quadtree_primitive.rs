@@ -885,8 +885,8 @@ impl<P: QuadtreeTileProvider> QuadtreePrimitive<P> {
 
                 if !all_are_renderable && !any_were_rendered_last_frame {
                     // Kick descendants
-                    for i in first_rendered_descendant_index..self.tiles_to_render.len() {
-                        let work_tile = self.tiles_to_render[i].clone();
+                    for tile_ref in &self.tiles_to_render[first_rendered_descendant_index..] {
+                        let work_tile = tile_ref.clone();
                         let mut curr: Option<QuadtreeTileHandle> = Some(work_tile);
                         while let Some(w) = curr {
                             if Rc::ptr_eq(&w, tile) {

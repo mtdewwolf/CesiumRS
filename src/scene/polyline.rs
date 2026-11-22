@@ -401,9 +401,7 @@ impl Polyline {
     pub(crate) fn clean(&self) {
         let mut s = self.0.borrow_mut();
         s.dirty = false;
-        for k in 0..NUMBER_OF_PROPERTIES - 1 {
-            s.properties_changed[k] = 0;
-        }
+        s.properties_changed[..NUMBER_OF_PROPERTIES - 1].fill(0);
     }
 
     /// `_destroy`.
