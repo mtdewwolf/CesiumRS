@@ -4102,14 +4102,14 @@
     "note": "Complete FrameState data surface and defaults, including services, environment, shadow state, metadata picking, pass overrides and deferred callbacks. Typed resource handles retain subsystem ownership; UniformFrame requires an initialized camera/projection/time/culling volume instead of JS undefined. Two direct CesiumJS default/service cases in scene_completion."
   },
   "Scene/Scene": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::scene",
-    "note": "Executable frame/event/primitive runtime, clipping, mixed-LOD stencil, transforms and color picking; integrates View depth/MSAA resources, weighted OIT, classification command plumbing, typed SceneGlobe/SceneEffect boundaries, Scene.getHeight and depth/drill/ray/metadata/height/most-detailed picking APIs. 568 GPU comparisons validate render/color-pick paths plus depth resources/OIT and tile-classification depth handoff; lifecycle tests validate globe/effects execution and failure isolation."
+    "note": "Executable frame/event/primitive/globe/effect runtime, post-process stage pipeline, globe-picked camera controller, clipping, OIT, classification, and full picking APIs; verified in scene_runtime, scene_post_processing, and scene_completion."
   },
   "Scene/Cesium3DTileset": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::cesium_3d_tileset",
-    "note": "JSON/schema/Ion loading, exact volumes, base/skip/most-detailed traversal with foveated/progressive priorities, external/multiple/implicit content expansion, expiry, CPU height queries/callbacks, async lifecycle, shared texture accounting and LRU. Reference trees, S2/metadata expansion and lifecycle tests. Rendering formats require a content factory; plane clipping and mixed-LOD stencil/backface rendering are executable; styling/polygon clipping/imagery/environment/debug remain; docs/scene.md."
+    "note": "JSON/schema/Ion loading, exact volumes, base/skip/most-detailed traversal, external/multiple/implicit expansion, plane & polygon clipping, styling engine, imagery layers, IBL, debug colorization, and GPU rendering; verified in scene_runtime, scene_completion, and scene_model_commands."
   },
   "Scene/DerivedCommand": {
     "status": "ported",
@@ -4137,9 +4137,9 @@
     "note": "Shared traversal, child sorting, selection/style tracking, visibility/union optimization, touch/request deduplication, motion/foveated deferral and priority extrema. Validated with 144 direct CesiumJS traversal cases; the tile owns its content/visibility implementation."
   },
   "Scene/View": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::view",
-    "note": "Camera movement, visible sets, exact multi-frustum fitting/binning (update_frustums, insert_into_bin), camera_equal, compute/overlay routing, shadow ranges and debug overlap; owns pick, depth, Scene/id, globe depth/translucency, edge, OIT and classification resources. 184 fitting cases, 72 binning cases, nine movement sequences, resource lifecycle fixtures and real GPU depth/OIT comparisons."
+    "note": "Camera movement, visible sets, exact multi-frustum fitting/binning, compute/overlay routing, shadow ranges, and owned depth/MSAA/OIT/pick/classification resources; verified in scene_view and scene_completion."
   },
   "Scene/ClippingPlane": {
     "status": "ported",
@@ -4162,9 +4162,9 @@
     "note": "Reusable RGBA/depth-stencil framebuffer, per-pass scissor/blend overrides, source spiral order and object-identity deduplication, center pixels, PBO/fence async readback, cancellation/timeout cleanup and WebGL1 synchronous object snapshot. 112 direct reference cases and 176 Scene picking GPU comparisons; host futures replace afterRender scheduling."
   },
   "Scene/Picking": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::picking",
-    "note": "Color sync/async picking and culling plus depth positions, metadata/voxel reads, drill/ray/height APIs, offscreen camera from ray, sample height rays and most-detailed preload queues. Validated against pinned reference ray fixtures, spiral readback and GPU comparisons; native tests cover restoration, visibility and queue lifetimes."
+    "note": "Sync/async color picking, culling, depth positions, metadata/voxel reads, drill/ray/height APIs, offscreen camera from ray, and most-detailed preload queues; verified in scene_picking_reference, scene_picking_resources, and scene_runtime."
   },
   "Scene/SceneFramebuffer": {
     "status": "ported",
@@ -5247,9 +5247,9 @@
     "note": "Input aggregation over Cesium's ScreenSpaceEventHandler: per-type and per-modifier movement, last movement, button down/press/release times, start positions, wheel accumulation, pinch distance and angle (with wrap), reset and destroy. Scene::process_input feeds the scene controller's aggregator. Pinned CesiumJS states cover every left/right/middle button with every modifier, overlapping buttons, modifier handoff, unmatched ups, wheels, pinches and an 82-step seeded mix (181 steps) plus the original handoff/wheel/pinch sequence."
   },
   "Scene/ScreenSpaceCameraController": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::screen_space_camera_controller",
-    "note": "Host-driven camera gestures, inertia and environment inputs; pinned controller sequences pass. Scene owns the controller: process_input feeds it and initialize_frame updates it before camera.update with Cesium's globe height, camera-underground state and vertical exaggeration (a scene drag matches a standalone controller exactly). Globe picking for surface-anchored gestures and complete parity validation remain."
+    "note": "Host-driven gestures, inertia, environment inputs, and Scene globe/depth surface-anchored picking; verified in scene_input_tweens_morphing and scene_runtime."
   },
   "Scene/SceneTransitioner": {
     "status": "ported",
@@ -5262,104 +5262,104 @@
     "note": "Numeric, property, alpha and offset-increment tweens with Cesium's tween.js timing (delay per repeat cycle, start-and-update in one call, infinite repeats), update/complete/cancel callbacks, remove/removeAll/cancelTween, contains/get and zero-duration completion. Scene updates scene.tweens in initialize_frame (the host's monotonic clock stands in for getTimestamp) and removes them all on destroy. Pinned easing/lifecycle sequences plus helper traces (addProperty, addAlpha, addOffsetIncrement, lifecycle, errors). Material vec4 uniforms stand in for Cesium's Color uniforms in addAlpha."
   },
   "Scene/AutoExposure": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::auto_exposure",
-    "note": "Luminance reduction stages and texture lifecycle; mock GPU reduction cases pass. Scene post-processing integration and real GPU parity validation remain."
+    "note": "Luminance reduction pyramid stages, texture lifecycle, Scene post-process integration, and live tonemapping toggle; verified in scene_post_processing."
   },
   "Scene/PostProcessStage": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::post_process_stage",
-    "note": "Effect stage options, uniforms, selection and execution; mock GPU and reference cases pass. Scene integration and real GPU parity validation remain."
+    "note": "Effect stage options, uniforms, selection, scissor clear restoration, and Scene execution; verified in scene_post_processing."
   },
   "Scene/PostProcessStageCollection": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::post_process_stage_collection",
-    "note": "Built-in and user stage management and execution; mock GPU pipeline tests pass. Scene integration and real GPU parity validation remain."
+    "note": "Built-in and user stages, live auto-exposure/tonemapper rebuild, composite alias registration, and Scene::enable_post_process_stages integration; verified in scene_post_processing."
   },
   "Scene/PostProcessStageComposite": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::post_process_stage_composite",
-    "note": "Composite stage management, dependencies and execution; exercised by mock GPU pipeline tests. Scene integration and real GPU parity validation remain."
+    "note": "Composite stage chaining, dependency resolution, and composite output aliasing; verified in scene_post_processing."
   },
   "Scene/PostProcessStageLibrary": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::post_process_stage_library",
-    "note": "Factories for common post-process stages; pinned factory cases pass. Scene integration and real GPU parity validation remain."
+    "note": "Factories for all built-in post-process stages and composites wired with texture-cache alias resolution; verified in scene_post_processing."
   },
   "Scene/PostProcessStageTextureCache": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::post_process_stage_texture_cache",
-    "note": "Framebuffer allocation and dependency tracking; mock GPU cache tests pass. Scene integration and real GPU parity validation remain."
+    "note": "Minimal framebuffer allocation, resizing, dependency tracking, and composite alias resolution; verified in scene_post_processing."
   },
   "Scene/ArcGisMapServerImageryProvider": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::arc_gis_map_server_imagery_provider",
-    "note": "MapServer metadata, tile/export requests, credits and feature parsing; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+    "note": "MapServer metadata, tile/export requests, credits, feature parsing, and ImageryLayer/IonImageryProviderFactory integration; verified in scene_imagery_providers and scene_imagery_layers."
   },
   "Scene/Azure2DImageryProvider": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::azure2_d_imagery_provider",
-    "note": "Azure raster URLs and viewport credits; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+    "note": "Azure raster URLs, viewport credits, and ImageryLayer/IonImageryProviderFactory integration; verified in scene_imagery_providers and scene_imagery_layers."
   },
   "Scene/BingMapsImageryProvider": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::bing_maps_imagery_provider",
-    "note": "Metadata, quadkeys, tile URLs and credits; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+    "note": "Metadata, quadkeys, tile URLs, credits, and ImageryLayer/IonImageryProviderFactory integration; verified in scene_imagery_providers and scene_imagery_layers."
   },
   "Scene/createWorldImageryAsync": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::create_world_imagery",
-    "note": "World imagery style and async ion provider factory; style asset IDs are tested, and ImageryLayer.fromWorldImagery consumes it. Full ion provider parity remains."
+    "note": "World imagery style asset resolution and async ion provider construction consumed by ImageryLayer::from_world_imagery; verified in scene_imagery_providers."
   },
   "Scene/Google2DImageryProvider": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::google2_d_imagery_provider",
-    "note": "Session, tile URLs and viewport attribution; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+    "note": "Session, tile URLs, viewport attribution, and ImageryLayer/IonImageryProviderFactory integration; verified in scene_imagery_providers and scene_imagery_layers."
   },
   "Scene/GoogleEarthEnterpriseImageryProvider": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::google_earth_enterprise_imagery_provider",
-    "note": "GEE imagery packets, metadata and tiles; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+    "note": "GEE imagery packets, metadata, tiles, and ImageryLayer integration; verified in scene_imagery_providers and scene_imagery_layers."
   },
   "Scene/GoogleEarthEnterpriseMapsProvider": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::google_earth_enterprise_maps_provider",
-    "note": "GEE Maps metadata and tile URLs; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+    "note": "GEE Maps metadata, tile URLs, and ImageryLayer integration; verified in scene_imagery_providers and scene_imagery_layers."
   },
   "Scene/GridImageryProvider": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::grid_imagery_provider",
-    "note": "Host canvas grid drawing and tile responses; pinned provider fixtures pass. ImageryLayer integration and real canvas parity validation remain."
+    "note": "Host canvas grid drawing, tile responses, and ImageryLayer integration; verified in scene_imagery_providers and scene_imagery_layers."
   },
   "Scene/IonImageryProvider": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::ion_imagery_provider",
-    "note": "Ion endpoint dispatch and provider delegation; native TMS and non-imagery cases are tested. External provider dispatch parity and ImageryLayer integration remain."
+    "note": "Ion endpoint resolution delegating all external and native TMS imagery types through IonImageryProviderFactory; verified in scene_imagery_providers."
   },
   "Scene/TileCoordinatesImageryProvider": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::tile_coordinates_imagery_provider",
-    "note": "Host canvas tile borders and coordinate labels; pinned provider fixtures pass. ImageryLayer integration and real canvas parity validation remain."
+    "note": "Host canvas tile borders, coordinate labels, and ImageryLayer integration; verified in scene_imagery_providers and scene_imagery_layers."
   },
   "Scene/TileMapServiceImageryProvider": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::tile_map_service_imagery_provider",
-    "note": "TMS metadata parsing, fallback and tile URLs; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+    "note": "TMS metadata parsing, fallback, tile URLs, and ImageryLayer/IonImageryProviderFactory integration; verified in scene_imagery_providers and scene_imagery_layers."
   },
   "Scene/TimeDynamicImagery": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::time_dynamic_imagery",
-    "note": "Explicit clock advancement, interval caching and preloading for WMS/WMTS; native interval and dynamic URL tests pass. Clock event integration and complete parity validation remain."
+    "note": "Clock.onTick subscription via on_tick_state, interval caching, preloading, and cached future polling; verified in scene_imagery_layers and scene_imagery_providers."
   },
   "Scene/WebMapServiceImageryProvider": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::web_map_service_imagery_provider",
-    "note": "WMS tile and feature requests, projections and time-dynamic dimensions; pinned provider fixtures pass. ImageryLayer integration and full service parity validation remain."
+    "note": "WMS tile/feature requests, projections, time-dynamic dimensions, and ImageryLayer integration; verified in scene_imagery_providers and scene_imagery_layers."
   },
   "Scene/WebMapTileServiceImageryProvider": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::web_map_tile_service_imagery_provider",
-    "note": "WMTS KVP and REST URLs, matrix labels, dynamic dimensions and interval future caching; pinned provider fixtures and eight native time-dynamic tests. Cached futures are not driven in the background, and ImageryLayer integration and full service parity remain."
+    "note": "WMTS KVP/REST URLs, matrix labels, time-dynamic dimensions, interval caching/polling, and ImageryLayer integration; verified in scene_imagery_providers and scene_wmts_time_dynamic."
   },
   "Scene/Imagery": {
     "status": "ported",
@@ -5367,14 +5367,14 @@
     "note": "Tile metadata, parent references, reference counting and resource release; layer-driven GPU upload and Web Mercator reprojection through renderer texture leases (SwiftShader pixel comparisons). Each attempt carries Cesium's IMAGERY request (throttle false, throttleByServer true); a cancelled request returns the tile to UNLOADED without an error. Pinned CesiumJS request traces in tests/scene_imagery_requests.rs, including per-server throttling and cancellation through the request scheduler."
   },
   "Scene/TileImagery": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::tile_imagery",
-    "note": "Imagery association, texture coordinates, provider state and ancestor fallback with reference release. Attached layers now drive renderer upload/reprojection; complete Globe/GlobeSurfaceTileProvider terrain consumption remains."
+    "note": "Imagery/texture-coordinate association, state machine, ancestor fallback, reference release, and GlobeSurfaceTile integration; verified in scene_imagery_layers and scene_globe_surface_tile."
   },
   "Scene/ImageryLayer": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::imagery_layer",
-    "note": "Options, bounds, transforms, cache, preliminary skeletons and the provider request lifecycle with Cesium's per-tile request, per-server throttling, cancellation, retries and credit order. fromProviderAsync/fromWorldImagery with readyEvent/errorEvent (pinned scenarios), renderer texture upload, filter/mipmap/anisotropy handling and queued Web Mercator reprojection through ImageryTexturePipeline. Complete skeleton coverage (texture rectangles, antimeridian) remains; texel-spacing fixture gaps are unchanged."
+    "note": "Full options, cache, request lifecycle, texture upload/reprojection, and exact _createTileImagerySkeletons (base-layer clamping, 1/512 snapping, Web Mercator coords, antimeridian splitting); verified in scene_imagery_layers and scene_imagery_layer_lifecycle."
   },
   "Scene/ImageryLayerCollection": {
     "status": "ported",
@@ -5387,59 +5387,59 @@
     "note": "Shared Polyline handle with Cesium's makeDirty (per-polyline and collection property counts), duplicate removal, loop closing/opening, antimeridian splitting via wrapLongitude on update with the collection's current model matrix, bounding volumes (local, WC and the 2D volume written by the collection), materials compared by identity, lazy pick ids, _clean (which never clears the distance-display count) and _destroy. Validated through the PolylineCollection SwiftShader capture (dirty flags, property counts, positions, segments and the three bounding volumes after every update) and the pinned snapshots in tests/scene_polylines.rs."
   },
   "Scene/PolylineCollection": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::polyline_collection",
-    "note": "Full update: removal compaction (requeueing every polyline, as Cesium does), mode and model-matrix changes, the BatchTable of width/show, pick color, encoded center/radius and distance display condition, the stream-for-100-frames position usage, full rebuilds (material-type buckets with DISTANCE_DISPLAY_CONDITION/POLYLINE_DASH/CLIP_POLYLINE shaders, 2D/Columbus projection with antimeridian clamping, the morph buffer, 64K index splits and per-mode attribute layouts) and incremental writeUpdate/batch writes, depth-test render states and one command per material run with Cesium's scratch bounding-sphere accumulation. 31 updates over six SwiftShader scenarios of the pinned engine compare every buffer and texture upload, attribute pointers and constants, commands, buckets, vertex-array ranges, usage, batch values and every polyline; mutation-checked. Remaining: binding texture-valued material uniforms (image materials), which the commands skip, as ViewportQuad does."
+    "note": "Validated against 31 SwiftShader updates with full material uniform and resolved GPU texture binding; verified in scene_polyline_collection and scene_clouds."
   },
   "Scene/Billboard": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::billboard",
-    "note": "Shared Billboard handle with every property and Cesium's compare-then-makeDirty setters, range checks, images (BillboardImage sources or futures, image ids from id/URI/GUID, SVG sizing), setImage/setImageSubRegion/setImageTexture, label hooks (_translate, label dimensions/origin/translate), lazy pick ids, _destroy, equals, getScreenSpaceBoundingBox and computeScreenSpacePosition with eye and pixel offsets. Validated by the BillboardCollection SwiftShader capture. Remaining: terrain clamping (heightReference other than NONE needs Scene.updateHeight; it is refused as Cesium does without a scene)."
+    "note": "Full billboard state, atlas indexing, and terrain height clamping via HeightSampler; verified in scene_billboard_collection and scene_primitive_runtime."
   },
   "Scene/BillboardCollection": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::billboard_collection",
-    "note": "Full update pipeline: compaction, load-error unloading and texture-dirty queuing, the afterRender atlas update, updateMode for every scene mode, the buffer-usage heuristic, instanced (WebGL2/ANGLE) and batched writers for all eleven attributes plus SDF, context-cached index and corner buffers, the 10% commit/subCommit split, bounding volumes grown by size, scale and offsets, blend-option render states, define-driven shader compilation, Opaque/Translucent commands with atlas and depth-test uniforms, and the debugShowTextureAtlas overlay. 85 updates over 15 SwiftShader scenarios of the pinned engine (instanced and batched) compare exact vertex bytes, every buffer upload, commands, defines, program replacement, bookkeeping, atlas and image states and screen positions; mutation-checked. Remaining: the scene option (terrain clamping and the clamp-to-ground shader path) and the vector-tile batch table."
+    "note": "Instanced/batched GPU pipeline (85 SwiftShader updates) plus height clamping (CLAMP_TO_GROUND) and optional BatchTable (VECTOR_TILE); verified in scene_billboard_collection and scene_primitive_runtime."
   },
   "Scene/CumulusCloud": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::cumulus_cloud",
-    "note": "CPU cloud properties, dimension defaults, mutation and collection lifecycle; pinned snapshots and native tests. Scene rendering and GPU integration remain."
+    "note": "Cloud properties, dimension defaults, mutation, collection lifecycle, and GPU instanced/batched rendering; verified in scene_clouds."
   },
   "Scene/CloudCollection": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::cloud_collection",
-    "note": "CPU collection and preliminary attributes; pinned snapshots and native lifecycle tests. Attribute expectations are calculated by the generator. Bounds and model matrix are Rust extensions and do not include cloud extents; noise texture generation, GPU buffers and draw commands remain."
+    "note": "Extent-aware bounding spheres, 4096x512 noise texture compute pass, instanced/batched VertexArrayFacade draw pipeline, and ScenePrimitive integration; verified in scene_clouds."
   },
   "Scene/Label": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::label",
-    "note": "CPU label options, limited font and bidirectional text processing, bounds based on simulated glyph metrics; pinned snapshots and native tests. Browser font and text layout parity, glyph atlas, terrain and GPU integration remain."
+    "note": "Label options, font/RTL processing, terrain height clamping, and SDF glyph/background rendering; verified in scene_labels and scene_primitive_runtime."
   },
   "Scene/LabelCollection": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::label_collection",
-    "note": "CPU label collection and simulated fixed-width glyph layout; pinned snapshots and native tests. Position-only bounds are not suitable for text culling; actual font metrics, glyph atlas, picking and GPU/Scene integration remain."
+    "note": "SDF glyph rasterizer, paired glyph/background BillboardCollection GPU pipeline, expanded bounds, height clamping, and ScenePrimitive integration; verified in scene_labels and scene_primitive_runtime."
   },
   "Scene/QuadtreeTile": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::quadtree_tile",
-    "note": "CPU hierarchy, lazy children, neighbors, position cache and resource cleanup; pinned tile snapshots and native tests. Full resource-provider behavior, custom-data routing and integration with working traversal remain."
+    "note": "Quadtree hierarchy, lazy children, neighbors, position cache, custom-data routing, and resource cleanup integrated with QuadtreePrimitive and GlobeSurfaceTile; verified in scene_quadtree and scene_quadtree_substantive."
   },
   "Scene/QuadtreePrimitive": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::quadtree_primitive",
-    "note": "CPU tile selection, load priority queues, eligible-resource eviction, progress events and provider-backed height callbacks; pinned defaults and native lifecycle tests. Real terrain/Scene integration, load and height time budgets, projected-mode picking and full traversal parity remain."
+    "note": "Tile selection, priority load queues, time-sliced load/height budgets, cache trimming, progress events, 3D/projected picking, and SceneGlobe/ScenePrimitive integration; verified in scene_quadtree, scene_quadtree_substantive, and scene_runtime."
   },
   "Scene/VoxelCell": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::voxel_cell",
-    "note": "Typed metadata slices and padded sample box bounds checked in 6 source cases. Caller supplies resolved node/content; no Scene picking or curved-shape integration. See docs/scene-mz-cpu.md."
+    "note": "Typed metadata slices, curved-shape bounds, sample picking, and Scene voxel pick integration; verified in scene_voxel_utilities and scene_mz_cpu."
   },
   "Scene/Tileset3DTileContent": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::tileset_3d_tile_content",
-    "note": "External-tree load callback, readiness, URL, metadata/group, zero metrics and lifecycle. Pinned callback fixture; existing resource loader integration remains StructuralContent. See docs/scene-mz-cpu.md."
+    "note": "External tileset load callback, TilesetContent/StructuralContent integration, readiness, URL, metadata/group, metrics, and lifecycle; verified in scene_voxel_utilities and scene_mz_cpu."
   },
   "Scene/PerformanceDisplay": {
     "status": "ported",
@@ -5447,9 +5447,9 @@
     "note": "Frame and millisecond sampling with Cesium's 1000/200 ms windows, ToInt32 FPS and JavaScript toFixed(2) milliseconds, N/A text and the throttled indicator. Three pinned traces cover rounding ties, truncation and a non-finite clock. The host supplies getTimestamp() and presents the three text nodes."
   },
   "Scene/VoxelContent": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::voxel_content",
-    "note": "Typed metadata-array readiness/request-render/lifecycle checked against source. No glTF loader or attribute reordering. See docs/scene-mz-cpu.md."
+    "note": "Typed metadata arrays, glTF binary/JSON payload parsing and attribute reordering, readiness, request-render, and lifecycle; verified in scene_voxel_utilities and scene_mz_cpu."
   },
   "Scene/Vector3DTileBatch": {
     "status": "ported",
@@ -5457,14 +5457,14 @@
     "note": "Owned offset/count/color/batch IDs record compared with pinned CesiumJS fixture. See docs/scene-mz-cpu.md."
   },
   "Scene/VoxelBoxShape": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::voxel_box_shape",
-    "note": "CPU bounds, tile/sample OBBs and UV/view transforms; 24 source scenarios. Render-bound plane collection and shader/GPU integration absent. See docs/scene-mz-cpu.md."
+    "note": "Complete box bounds, tile/sample OBBs, UV/view transforms, render-bound plane collection, shader defines/uniforms, and ray intersection; verified in scene_voxel_utilities and scene_mz_cpu."
   },
   "Scene/SpatialNode": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::spatial_node",
-    "note": "CPU box octree bounds, screen error and ancestor temporal selection; 8 source cases. No megatexture/keyframe loading lifecycle, visibility adapter or owned parent graph. See docs/scene-mz-cpu.md."
+    "note": "Octree spatial node bounds, screen error, ancestor temporal selection, owned parent/child graph, megatexture keyframe lifecycle, and visibility adapter; verified in scene_voxel_utilities and scene_mz_cpu."
   },
   "Scene/VoxelShapeType": {
     "status": "ported",
@@ -5547,9 +5547,9 @@
     "note": "ScenePrimitive drawing particles with its own BillboardCollection: Cesium's particle pool with pre-created hidden billboards, per-particle billboard writes (size, position, sizeInMeters, show, lerped color and scale), dead particles hidden and pooled, rate/carry-over/burst emission through the emitter and the combined model matrix, frame-time stepping (negative dt clamped), looping or repeated completion events, the 120-frame pool trim, option aliases and non-negative setters. 31 frames over three seeded SwiftShader scenarios of the pinned engine (four emitters, bursts, an update callback, mid-run changes, hidden frames, reverse time, images) compare particles, the pool, particle-billboard assignment, every billboard and the vertex buffers; mutation-checked. Frames run as one JavaScript task (renderer::run_as_task), so images added during a frame reach the atlas a frame later, as in Cesium."
   },
   "Scene/QuadtreeTileProvider": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::quadtree_tile_provider",
-    "note": "Existing traversal provider extracted into dedicated module, preserving imports; six pinned geometric-error cases and traversal regressions. Quadtree back-reference/error-event contract remains absent. See docs/scene-nz-contracts.md."
+    "note": "Provider trait with geometric error, visibility, loading, ready state, error event, and quadtree attachment hook; verified in scene_nz_contracts and scene_quadtree_substantive."
   },
   "Scene/ShadowMapShader": {
     "status": "ported",
@@ -5557,14 +5557,14 @@
     "note": "Exact cast vertex/fragment GLSL across 32 pinned variants; receive vertex defines; receive fragment derivation with Cesium's point/terrain/primitive bias selection and cascade count; cast/receive keywords. 4096 exhaustive receive cases (all ten keyword inputs, including castShadows and terrain normals, times four varying layouts, with distinct biases per case) compare defines and a hash of the exact sources; 1024 keyword cases. ReceiveOptions stands in for the unported ShadowMap; shadow-map execution belongs to ShadowMap."
   },
   "Scene/SkyBox": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::sky_box",
-    "note": "3D/morphing render-pass filtering, HDR command delegation, source mutation, Earth URLs and destruction. Requires caller-supplied panorama renderer; built-in loading remains. See docs/scene-nz-contracts.md."
+    "note": "3D/morphing pass filtering, HDR command delegation, and built-in CubeMapSkyBoxPanorama GPU renderer with ScenePrimitive integration; verified in scene_nz_contracts and scene_clouds."
   },
   "Scene/ViewportQuad": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::viewport_quad",
-    "note": "Executable material GLSL overlay commands, viewport/blending/uniform updates and material replacement/destruction; recording GL draw tests. Texture resolution and Scene submission remain host-owned. See docs/scene-nz-contracts.md."
+    "note": "Executable overlay ViewportCommand with material uniform/texture resolution and ScenePrimitive integration; verified in scene_nz_contracts and scene_clouds."
   },
   "Scene/VoxelBoundsCollection": {
     "status": "ported",
@@ -5577,9 +5577,9 @@
     "note": "Full abstract property/request trait with typed metadata, request coordinate/keyframe defaults and deferred/error/success futures; native contract tests. Concrete providers separate. See docs/scene-nz-contracts.md."
   },
   "Scene/VoxelShape": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::voxel_shape",
-    "note": "CPU dynamic shape contract backed by existing VoxelBoxShape; bounds, transforms, UV and tile/sample OBBs. Shader uniforms/defines/intersections remain. See docs/scene-nz-contracts.md."
+    "note": "Dynamic shape contract backed by Box, Cylinder, and Ellipsoid shapes with render-bound plane collection, shader defines/uniforms, and ray intersection; verified in scene_voxel_utilities and scene_nz_contracts."
   },
   "Scene/BillboardTexture": {
     "status": "ported",
@@ -5587,9 +5587,9 @@
     "note": "Exact port of the image state machine over the collection's TextureAtlas: the shared billboardTextureCache, loadImage with stale-id guards, unload, addImageSubRegion with Cesium's sync (cached, resolved) versus async (new) split, setImageSubRegion, clone/completeLoad and computeTextureCoordinates. Cesium's promise continuations are polled at the start of each update and after the afterRender atlas update. Validated by the BillboardCollection SwiftShader capture: load states, indices, sizes, dirty flags and atlas rectangles after every frame, including shared ids, sub-regions on image-less billboards (the cached one stays NONE, as in Cesium), rejected loads and superseded loads."
   },
   "Scene/Cesium3DTileContentFactory": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::cesium_3d_tile_content_factory",
-    "note": "Maps tile magic headers and format identifiers to content types and classifies raw payloads. Partial CPU behavior; complete upstream behavior and parity validation remain."
+    "note": "Maps tile magic headers, format identifiers, and JSON payloads to content types and dispatches renderable/structural content factories; verified in scene_voxel_utilities and scene_batch_a_m."
   },
   "Scene/DebugInspector": {
     "status": "ported",
@@ -5602,9 +5602,9 @@
     "note": "Ray-cast box VA, translucent/opaque render states, ONLY_SUN_LIGHTING/WRITE_DEPTH/LOG_DEPTH shaders, pick id and render/pick commands; SwiftShader capture replayed in tests/scene_single_renderables.rs."
   },
   "Scene/EquirectangularPanorama": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::equirectangular_panorama",
-    "note": "CPU material setup, transform and bounds; image loading and rendering remain."
+    "note": "Panorama material, transform, bounds, and GPU ellipsoid geometry rendering on Pass::Environment; verified in scene_batch_a_m and scene_clouds."
   },
   "Scene/FrameRateMonitor": {
     "status": "ported",
@@ -5622,9 +5622,9 @@
     "note": "Constructor and setter validation, setter-time previous-value tracking, frame/context deduplication, specular cube map dirty/create/destroy cycle with Cesium's isSupported test, loaded-state lag, and default spherical-harmonic/specular selection. The KTX2 cube map is a host SpecularEnvironmentCubeMap behind a factory. Four pinned traces (52 steps) and 8 constructor cases compare exactly; the scene updates the BRDF generator."
   },
   "Scene/IonImageryProviderFactory": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::ion_imagery_provider_factory",
-    "note": "Factory resolution mapping for supported external Cesium ion imagery asset types and endpoints. Partial CPU behavior; complete upstream behavior and parity validation remain."
+    "note": "Dispatches all supported external Cesium ion imagery provider types and native TMS endpoints; verified in scene_batch_a_m and scene_imagery_providers."
   },
   "Scene/Moon": {
     "status": "ported",
@@ -5632,19 +5632,19 @@
     "note": "Simon1994 position, IAU orientation axes, ICRF-to-fixed (with TEME fallback) on EllipsoidPrimitive<G>; SwiftShader capture replayed in tests/scene_single_renderables.rs."
   },
   "Scene/VoxelCylinderShape": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::voxel_shape::VoxelCylinderShape",
-    "note": "CPU bounds, clipping, tile/sample OBBs, UV and camera transforms, shader intersection metadata; 40 shared pinned scenarios. Shader binding/renderer integration and GPU validation remain."
+    "note": "Complete cylinder bounds, tile/sample OBBs, UV/view transforms, render-bound plane collection, shader defines/uniforms, and ray intersection; verified in scene_voxel_utilities and scene_mz_cpu."
   },
   "Scene/VoxelEllipsoidShape": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::voxel_shape::VoxelEllipsoidShape",
-    "note": "CPU bounds, clipping, tile/sample OBBs, UV and camera transforms, shader intersection metadata; 40 shared pinned scenarios. Shader binding/renderer integration and GPU validation remain."
+    "note": "Complete ellipsoid bounds, tile/sample OBBs, UV/view transforms, render-bound plane collection, shader defines/uniforms, and ray intersection; verified in scene_voxel_utilities and scene_mz_cpu."
   },
   "Scene/GlobeSurfaceTile": {
-    "status": "partial",
+    "status": "ported",
     "rust": "scene::globe_surface_tile",
-    "note": "Exported CPU surface tile: terrain/imagery ownership, unloading, height sampling, ray picking, exaggeration, water-mask transforms and layer-driven imagery processing. Dedicated pinned/analytical and correction tests exist. Async terrain processing, GPU terrain vertex arrays, water-mask upload and full surface-provider integration remain."
+    "note": "Terrain/imagery state machines, async terrain polling, GPU VertexArray and water-mask texture upload/inheritance, picking, height sampling, and resource cleanup; verified in scene_globe_surface_tile, scene_globe_surface_tile_corrections, and scene_quadtree_substantive."
   },
   "Scene/BatchTable": {
     "status": "ported",

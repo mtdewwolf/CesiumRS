@@ -603,23 +603,23 @@ impl<G: Gl> PostProcessStage<G> {
 
         // Scissor test
         let mut pass_state = PassState::default();
-        if let Some(rect) = self.scissor_rectangle {
-            if rect.width > 0.0 && rect.height > 0.0 {
-                let vp = Viewport {
-                    x: rect.x as i32,
-                    y: rect.y as i32,
-                    width: rect.width as u32,
-                    height: rect.height as u32,
-                };
-                pass_state.scissor_test = Some(ScissorTest {
-                    enabled: true,
-                    rectangle: vp,
-                });
-                cmd.options.render_state.scissor_test = ScissorTest {
-                    enabled: true,
-                    rectangle: vp,
-                };
-            }
+        if let Some(rect) = self.scissor_rectangle.filter(|r| r.width > 0.0 && r.height > 0.0) {
+            let vp = Viewport {
+                x: rect.x as i32,
+                y: rect.y as i32,
+                width: rect.width as u32,
+                height: rect.height as u32,
+            };
+            pass_state.scissor_test = Some(ScissorTest {
+                enabled: true,
+                rectangle: vp,
+            });
+            cmd.options.render_state.scissor_test = ScissorTest {
+                enabled: true,
+                rectangle: vp,
+            };
+        } else {
+            cmd.options.render_state.scissor_test = ScissorTest::default();
         }
 
         cmd.execute(context, &pass_state)?;

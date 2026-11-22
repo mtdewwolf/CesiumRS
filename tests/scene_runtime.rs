@@ -1163,3 +1163,185 @@ fn scene_input_completes_morphs() {
     assert!(scene.transitioner.is_morphing(), "the morph keeps running");
     assert_ne!(scene.mode(), SceneMode::Scene3D);
 }
+
+#[test]
+fn scene_globe_surface_picking_and_tileset_style_polygons_imagery_ibl_debug() {
+    use cesium_rs::scene::cesium_3d_tile_style::Cesium3DTileStyle;
+    use cesium_rs::scene::clipping_polygon::{ClippingPolygon, ClippingPolygonOptions};
+    use cesium_rs::scene::clipping_polygon_collection::{ClippingPolygonCollection, ClippingPolygonCollectionOptions};
+    use cesium_rs::scene::imagery_layer::{ImageryLayer, ImageryLayerOptions};
+    use cesium_rs::scene::quadtree_primitive::{QuadtreePrimitive, QuadtreePrimitiveOptions, QuadtreeTileProvider};
+    use cesium_rs::scene::quadtree_tile::{QuadtreeTile, QuadtreeTileHandle};
+    use cesium_rs::scene::quadtree_occluders::QuadtreeOccluders;
+    use std::cell::RefCell;
+
+    // 1. QuadtreePrimitive mounted directly as scene.globe + SceneGlobe::pick wired into ScreenSpaceCameraController
+    struct GlobeProvider {
+        scheme: Arc<dyn TilingScheme>,
+    }
+    impl QuadtreeTileProvider for GlobeProvider {
+        fn tiling_scheme(&self) -> Arc<dyn TilingScheme> {
+            Arc::clone(&self.scheme)
+        }
+        fn get_level_maximum_geometric_error(&self, level: u32) -> f64 {
+            1000.0 / (1u64 << level) as f64
+        }
+        fn load_tile(&mut self, _frame_state: &FrameState, tile: &QuadtreeTileHandle) {
+            let mut b = tile.borrow_mut();
+            b.state = QuadtreeTileLoadState::Done;
+            b.renderable = true;
+        }
+        fn compute_tile_visibility(
+            &self,
+            _tile: &QuadtreeTile,
+            _frame_state: &FrameState,
+            _occluders: Option<&QuadtreeOccluders>,
+        ) -> Visibility {
+            Visibility::Full
+        }
+        fn compute_distance_to_tile(&self, _tile: &QuadtreeTile, _frame_state: &FrameState) -> f64 {
+            50_000.0
+        }
+        fn show_tile_this_frame(&mut self, _tile: &QuadtreeTileHandle, _frame_state: &mut FrameState) {}
+        fn can_refine(&self, _tile: &QuadtreeTile) -> bool {
+            false
+        }
+    }
+
+    let picks = Rc::new(Cell::new(0usize));
+    let qp = QuadtreePrimitive::new(QuadtreePrimitiveOptions {
+        tile_provider: GlobeProvider {
+            scheme: Arc::new(GeographicTilingScheme::default()),
+        },
+        maximum_screen_space_error: Some(2.0),
+        tile_cache_size: Some(16),
+        loading_descendant_limit: Some(10),
+        preload_ancestors: Some(false),
+        preload_siblings: Some(false),
+    });
+
+    // Verify SceneGlobe pick is called during Scene::initialize_frame low-altitude camera drag
+    struct CountingGlobe(Rc<Cell<usize>>, QuadtreePrimitive<GlobeProvider>);
+    impl SceneGlobe for CountingGlobe {
+        fn update(&mut self, frame: &mut FrameState) -> Result<(), RuntimeError> {
+            SceneGlobe::update(&mut self.1, frame)
+        }
+        fn render(&mut self, frame: &mut FrameState) -> Result<(), RuntimeError> {
+            SceneGlobe::render(&mut self.1, frame)
+        }
+        fn pick(&self, ray: &Ray, frame: &FrameState) -> Option<Cartesian3> {
+            self.0.set(self.0.get() + 1);
+            let _ = self.1.pick(ray, frame);
+            intersection_tests::ray_ellipsoid(ray, &Ellipsoid::WGS84).map(|iv| ray.get_point(iv.start))
+        }
+        fn rendered_surface_tiles(&self) -> &[QuadtreeTileHandle] {
+            SceneGlobe::rendered_surface_tiles(&self.1)
+        }
+        fn get_height(&self, cartographic: &Cartographic) -> Option<f64> {
+            SceneGlobe::get_height(&self.1, cartographic).or(Some(0.0))
+        }
+        fn destroy(&mut self) -> Result<(), RuntimeError> {
+            SceneGlobe::destroy(&mut self.1)
+        }
+    }
+
+    let mut scene = Scene::new(host(), CameraOptions::new(800., 600.), SceneOptions::default(), epoch()).unwrap();
+    scene.globe = Some(Box::new(CountingGlobe(Rc::clone(&picks), qp)));
+    // Position camera low (< minimum_picking_terrain_height = 150km) looking at WGS84 surface
+    let low_pos = Ellipsoid::WGS84.cartographic_to_cartesian(&Cartographic::from_degrees(0.0, 0.0, 10_000.0));
+    scene.camera.set_view(CameraView {
+        destination: Some(CameraDestination::Cartesian(low_pos)),
+        ..Default::default()
+    }).unwrap();
+    scene.process_input(&input(ScreenInputKind::MouseDown, 1000., 400., 300.)).unwrap();
+    scene.process_input(&input(ScreenInputKind::MouseMove, 1010., 440., 310.)).unwrap();
+    scene.initialize_frame(1.01).unwrap();
+    assert!(picks.get() >= 1, "expected Scene::initialize_frame to wire globe picking into camera controller");
+    assert!(scene.render(epoch()).unwrap());
+
+    // 2. Cesium3DTileset style engine, clipping polygons, imagery layers, IBL, and debug colorize
+    let styled_calls = Rc::new(Cell::new(0usize));
+    let debug_calls = Rc::new(Cell::new(0usize));
+    struct StylableContent {
+        styled: Rc<Cell<usize>>,
+        debug: Rc<Cell<usize>>,
+    }
+    impl TilesetContent for StylableContent {
+        fn apply_style(&mut self, _style: Option<&Cesium3DTileStyle>) -> Result<(), RuntimeError> {
+            self.styled.set(self.styled.get() + 1);
+            Ok(())
+        }
+        fn apply_debug_settings(&mut self, _enabled: bool, _color: Color) -> Result<(), RuntimeError> {
+            self.debug.set(self.debug.get() + 1);
+            Ok(())
+        }
+        fn metrics(&self) -> TileContentMetrics {
+            TileContentMetrics { features: 4, ..Default::default() }
+        }
+        fn process(&mut self, _: &FrameState) -> Result<bool, RuntimeError> {
+            Ok(true)
+        }
+        fn update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+            Ok(())
+        }
+        fn pick(&self, _: &Ray, _: &FrameState) -> Result<Option<Cartesian3>, RuntimeError> {
+            Ok(None)
+        }
+        fn destroy(&mut self) -> Result<(), RuntimeError> {
+            Ok(())
+        }
+    }
+
+    let mut tileset = simple_tileset(TilesetOptions { foveated_screen_space_error: false, ..Default::default() }, None);
+    tileset.install_content(0, Box::new(StylableContent {
+        styled: Rc::clone(&styled_calls),
+        debug: Rc::clone(&debug_calls),
+    })).unwrap();
+    let style = Cesium3DTileStyle::new(Some(&json!({ "color": "color('red')" }))).unwrap();
+    tileset.set_style(Some(style));
+    assert!(tileset.style().is_some());
+    tileset.debug_colorize_tiles = true;
+
+    let poly = ClippingPolygon::new(ClippingPolygonOptions {
+        positions: vec![
+            Ellipsoid::WGS84.cartographic_to_cartesian(&Cartographic::from_degrees(0.0, 0.0, 0.0)),
+            Ellipsoid::WGS84.cartographic_to_cartesian(&Cartographic::from_degrees(1.0, 0.0, 0.0)),
+            Ellipsoid::WGS84.cartographic_to_cartesian(&Cartographic::from_degrees(1.0, 1.0, 0.0)),
+        ],
+        ellipsoid: None,
+    });
+    let polys = Rc::new(RefCell::new(ClippingPolygonCollection::new(ClippingPolygonCollectionOptions {
+        polygons: vec![poly],
+        enabled: Some(true),
+        inverse: Some(false),
+    })));
+    tileset.set_clipping_polygons(Some(Rc::clone(&polys))).unwrap();
+    assert!(tileset.clipping_polygons().is_some());
+    tileset.imagery_layers_mut().add(ImageryLayer::handle(None, ImageryLayerOptions::default()), None).unwrap();
+    assert_eq!(tileset.imagery_layers().len(), 1);
+    tileset.image_based_lighting_mut().set_image_based_lighting_factor(Cartesian2::new(0.8, 0.8)).unwrap();
+
+    let mut f = unrestricted_frame();
+    tileset.pre_passes_update(&mut f).unwrap();
+    tileset.update_for_pass(&mut f, &mut TilesetPassState::new(Cesium3DTilePass::Render)).unwrap();
+    assert_eq!(styled_calls.get(), 1);
+    assert_eq!(tileset.statistics.number_of_tiles_styled, 1);
+    assert_eq!(tileset.statistics.number_of_features_styled, 4);
+    assert_eq!(debug_calls.get(), 1);
+
+    // Calling again without changing style does NOT re-style
+    tileset.pre_passes_update(&mut f).unwrap();
+    tileset.update_for_pass(&mut f, &mut TilesetPassState::new(Cesium3DTilePass::Render)).unwrap();
+    assert_eq!(styled_calls.get(), 1);
+
+    // Marking style dirty re-styles on next pass
+    tileset.make_style_dirty();
+    tileset.pre_passes_update(&mut f).unwrap();
+    tileset.update_for_pass(&mut f, &mut TilesetPassState::new(Cesium3DTilePass::Render)).unwrap();
+    assert_eq!(styled_calls.get(), 2);
+
+    tileset.destroy().unwrap();
+    assert!(polys.borrow().is_destroyed());
+    assert_eq!(tileset.imagery_layers().len(), 0);
+    scene.destroy().unwrap();
+}

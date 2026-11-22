@@ -6,6 +6,8 @@ use crate::core::{
 };
 use crate::core::math::{equals_epsilon, lerp, EPSILON3, EPSILON10, PI, PI_OVER_TWO};
 use crate::core::transforms::Transforms;
+use crate::renderer::UniformValue;
+use std::collections::BTreeMap;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct EllipsoidShaderUniforms {
@@ -499,6 +501,137 @@ impl VoxelEllipsoidShape {
     }
     pub fn render_max_bounds(&self) -> Cartesian3 {
         self.render_max
+    }
+
+    /// Shader uniform map matching CesiumJS `VoxelEllipsoidShape#shaderUniforms`.
+    pub fn shader_uniforms_map(&self) -> BTreeMap<String, UniformValue> {
+        let u = &self.shader_uniforms;
+        let mut map = BTreeMap::new();
+        map.insert(
+            "cameraPositionCartographic".into(),
+            UniformValue::Float(vec![
+                u.camera_position_cartographic.x as f32,
+                u.camera_position_cartographic.y as f32,
+                u.camera_position_cartographic.z as f32,
+            ]),
+        );
+        map.insert(
+            "ellipsoidEcToEastNorthUp".into(),
+            UniformValue::Matrix {
+                dimension: 3,
+                values: u.ellipsoid_ec_to_east_north_up.0.iter().map(|&v| v as f32).collect(),
+            },
+        );
+        map.insert(
+            "ellipsoidRadii".into(),
+            UniformValue::Float(vec![u.ellipsoid_radii.x as f32, u.ellipsoid_radii.y as f32, u.ellipsoid_radii.z as f32]),
+        );
+        map.insert("eccentricitySquared".into(), UniformValue::Float(vec![u.eccentricity_squared as f32]));
+        map.insert("evoluteScale".into(), UniformValue::Float(vec![u.evolute_scale.x as f32, u.evolute_scale.y as f32]));
+        map.insert(
+            "ellipsoidCurvatureAtLatitude".into(),
+            UniformValue::Float(vec![
+                u.ellipsoid_curvature_at_latitude.x as f32,
+                u.ellipsoid_curvature_at_latitude.y as f32,
+            ]),
+        );
+        map.insert(
+            "ellipsoidInverseRadiiSquared".into(),
+            UniformValue::Float(vec![
+                u.ellipsoid_inverse_radii_squared.x as f32,
+                u.ellipsoid_inverse_radii_squared.y as f32,
+                u.ellipsoid_inverse_radii_squared.z as f32,
+            ]),
+        );
+        map.insert(
+            "ellipsoidRenderLongitudeMinMax".into(),
+            UniformValue::Float(vec![
+                u.ellipsoid_render_longitude_min_max.x as f32,
+                u.ellipsoid_render_longitude_min_max.y as f32,
+            ]),
+        );
+        map.insert(
+            "ellipsoidShapeUvLongitudeRangeOrigin".into(),
+            UniformValue::Float(vec![u.ellipsoid_shape_uv_longitude_range_origin as f32]),
+        );
+        map.insert(
+            "ellipsoidShapeUvLongitudeMinMaxMid".into(),
+            UniformValue::Float(vec![
+                u.ellipsoid_shape_uv_longitude_min_max_mid.x as f32,
+                u.ellipsoid_shape_uv_longitude_min_max_mid.y as f32,
+                u.ellipsoid_shape_uv_longitude_min_max_mid.z as f32,
+            ]),
+        );
+        map.insert(
+            "ellipsoidLocalToShapeUvLongitude".into(),
+            UniformValue::Float(vec![
+                u.ellipsoid_local_to_shape_uv_longitude.x as f32,
+                u.ellipsoid_local_to_shape_uv_longitude.y as f32,
+            ]),
+        );
+        map.insert(
+            "ellipsoidLocalToShapeUvLatitude".into(),
+            UniformValue::Float(vec![
+                u.ellipsoid_local_to_shape_uv_latitude.x as f32,
+                u.ellipsoid_local_to_shape_uv_latitude.y as f32,
+            ]),
+        );
+        map.insert(
+            "ellipsoidRenderLatitudeSinMinMax".into(),
+            UniformValue::Float(vec![
+                u.ellipsoid_render_latitude_sin_min_max.x as f32,
+                u.ellipsoid_render_latitude_sin_min_max.y as f32,
+            ]),
+        );
+        map.insert(
+            "ellipsoidInverseHeightDifference".into(),
+            UniformValue::Float(vec![u.ellipsoid_inverse_height_difference as f32]),
+        );
+        map.insert(
+            "clipMinMaxHeight".into(),
+            UniformValue::Float(vec![u.clip_min_max_height.x as f32, u.clip_min_max_height.y as f32]),
+        );
+        map
+    }
+
+    /// Shader defines map matching CesiumJS `VoxelEllipsoidShape#shaderDefines`.
+    pub fn shader_defines_map(&self) -> BTreeMap<String, String> {
+        let d = &self.shader_defines;
+        let mut map = BTreeMap::new();
+        let mut flag = |cond: bool, key: &str| {
+            if cond {
+                map.insert(key.into(), "true".into());
+            }
+        };
+        flag(d.has_render_bounds_longitude, "ELLIPSOID_HAS_RENDER_BOUNDS_LONGITUDE");
+        flag(d.has_render_bounds_longitude_range_equal_zero, "ELLIPSOID_HAS_RENDER_BOUNDS_LONGITUDE_RANGE_EQUAL_ZERO");
+        flag(d.has_render_bounds_longitude_range_under_half, "ELLIPSOID_HAS_RENDER_BOUNDS_LONGITUDE_RANGE_UNDER_HALF");
+        flag(d.has_render_bounds_longitude_range_over_half, "ELLIPSOID_HAS_RENDER_BOUNDS_LONGITUDE_RANGE_OVER_HALF");
+        flag(d.has_render_bounds_longitude_min_discontinuity, "ELLIPSOID_HAS_RENDER_BOUNDS_LONGITUDE_MIN_DISCONTINUITY");
+        flag(d.has_render_bounds_longitude_max_discontinuity, "ELLIPSOID_HAS_RENDER_BOUNDS_LONGITUDE_MAX_DISCONTINUITY");
+        flag(d.has_shape_bounds_longitude, "ELLIPSOID_HAS_SHAPE_BOUNDS_LONGITUDE");
+        flag(d.has_shape_bounds_longitude_min_max_reversed, "ELLIPSOID_HAS_SHAPE_BOUNDS_LONGITUDE_MIN_MAX_REVERSED");
+        flag(d.has_render_bounds_latitude_max_under_half, "ELLIPSOID_HAS_RENDER_BOUNDS_LATITUDE_MAX_UNDER_HALF");
+        flag(d.has_render_bounds_latitude_max_equal_half, "ELLIPSOID_HAS_RENDER_BOUNDS_LATITUDE_MAX_EQUAL_HALF");
+        flag(d.has_render_bounds_latitude_max_over_half, "ELLIPSOID_HAS_RENDER_BOUNDS_LATITUDE_MAX_OVER_HALF");
+        flag(d.has_render_bounds_latitude_min_under_half, "ELLIPSOID_HAS_RENDER_BOUNDS_LATITUDE_MIN_UNDER_HALF");
+        flag(d.has_render_bounds_latitude_min_equal_half, "ELLIPSOID_HAS_RENDER_BOUNDS_LATITUDE_MIN_EQUAL_HALF");
+        flag(d.has_render_bounds_latitude_min_over_half, "ELLIPSOID_HAS_RENDER_BOUNDS_LATITUDE_MIN_OVER_HALF");
+        flag(d.has_shape_bounds_latitude, "ELLIPSOID_HAS_SHAPE_BOUNDS_LATITUDE");
+        if let Some(i) = d.intersection_index_longitude {
+            map.insert("ELLIPSOID_INTERSECTION_INDEX_LONGITUDE".into(), i.to_string());
+        }
+        if let Some(i) = d.intersection_index_latitude_max {
+            map.insert("ELLIPSOID_INTERSECTION_INDEX_LATITUDE_MAX".into(), i.to_string());
+        }
+        if let Some(i) = d.intersection_index_latitude_min {
+            map.insert("ELLIPSOID_INTERSECTION_INDEX_LATITUDE_MIN".into(), i.to_string());
+        }
+        if self.shader_maximum_intersections_length > 0 {
+            map.insert("ELLIPSOID_INTERSECTION_INDEX_HEIGHT_MAX".into(), d.intersection_index_height_max.to_string());
+            map.insert("ELLIPSOID_INTERSECTION_INDEX_HEIGHT_MIN".into(), d.intersection_index_height_min.to_string());
+        }
+        map
     }
 
     pub fn tile_obb(&self, level: u32, coords: [u32; 3]) -> OrientedBoundingBox {

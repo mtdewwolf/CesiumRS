@@ -452,3 +452,133 @@ fn adding_hidden_imagery_layer_emits_visibility_event() {
     collection.add(ImageryLayer::handle(None, ImageryLayerOptions::default()), None).unwrap();
     assert_eq!(*events.lock().unwrap(), vec![(0, false)]);
 }
+
+#[test]
+#[allow(clippy::arc_with_non_send_sync)]
+fn imagery_skeletons_compute_exact_texture_rectangles_base_clamping_and_antimeridian() {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
+    // 1. Web Mercator partial non-base overlap computes sub-unit minU/minV/maxU/maxV
+    struct MercatorProvider {
+        scheme: WebMercatorTilingScheme,
+        rect: Rectangle,
+        error: ImageryErrorEvent,
+    }
+    impl ImageryProvider for MercatorProvider {
+        fn rectangle(&self) -> &Rectangle { &self.rect }
+        fn tile_width(&self) -> f64 { 256.0 }
+        fn tile_height(&self) -> f64 { 256.0 }
+        fn maximum_level(&self) -> Option<u32> { Some(4) }
+        fn tiling_scheme(&self) -> &dyn TilingScheme { &self.scheme }
+        fn error_event(&self) -> &ImageryErrorEvent { &self.error }
+        fn request_image(&self, _: i32, _: i32, _: u32) -> Option<ImageryFuture> { None }
+    }
+
+    let scheme = WebMercatorTilingScheme::default();
+    let provider = Arc::new(MercatorProvider {
+        rect: Rectangle::from_degrees(0.0, 0.0, 90.0, 45.0),
+        scheme,
+        error: Rc::new(RefCell::new(Default::default())),
+    });
+    let mut layer = ImageryLayer::new(Some(provider.clone()), ImageryLayerOptions::default());
+    // Terrain tile covers [0..180, 0..60] — imagery only covers western/southern half!
+    let terrain = Rectangle::from_degrees(0.0, 0.0, 180.0, 60.0);
+    let skeletons = layer.create_tile_imagery_skeletons(&terrain, 1, 1e6);
+    assert!(!skeletons.is_empty());
+    assert!(skeletons[0].use_web_mercator_t);
+    let tc = skeletons[0].texture_coordinate_rectangle;
+    assert!(tc.x >= 0.0 && tc.z <= 0.55, "expected maxU ~0.5 for half-width overlap, got {:?}", tc);
+    assert!(tc.y >= 0.0 && tc.w < 1.0, "expected maxV < 1.0 for partial latitude overlap, got {:?}", tc);
+
+    // 2. Base layer non-overlap clamps to nearest edge instead of returning empty
+    let mut base_layer = ImageryLayer::new(Some(provider), ImageryLayerOptions::default());
+    base_layer.set_base_layer(true);
+    let outside_terrain = Rectangle::from_degrees(-90.0, -45.0, -10.0, -5.0);
+    let base_skeletons = base_layer.create_tile_imagery_skeletons(&outside_terrain, 1, 1e6);
+    assert!(!base_skeletons.is_empty(), "base layer must stretch edge texels outside imagery bounds");
+
+    // 3. Antimeridian-crossing layer rectangle splits across +-pi
+    let geo_scheme = GeographicTilingScheme::default();
+    struct AntimeridianProvider {
+        scheme: GeographicTilingScheme,
+        rect: Rectangle,
+        error: ImageryErrorEvent,
+    }
+    impl ImageryProvider for AntimeridianProvider {
+        fn rectangle(&self) -> &Rectangle { &self.rect }
+        fn tile_width(&self) -> f64 { 256.0 }
+        fn tile_height(&self) -> f64 { 256.0 }
+        fn maximum_level(&self) -> Option<u32> { Some(2) }
+        fn tiling_scheme(&self) -> &dyn TilingScheme { &self.scheme }
+        fn error_event(&self) -> &ImageryErrorEvent { &self.error }
+        fn request_image(&self, _: i32, _: i32, _: u32) -> Option<ImageryFuture> { None }
+    }
+    let anti_provider = Arc::new(AntimeridianProvider {
+        rect: Rectangle::from_degrees(170.0, -10.0, -170.0, 10.0),
+        scheme: geo_scheme,
+        error: Rc::new(RefCell::new(Default::default())),
+    });
+    let mut anti_layer = ImageryLayer::new(Some(anti_provider), ImageryLayerOptions::default());
+    let west_half_terrain = Rectangle::from_degrees(-180.0, -20.0, -160.0, 20.0);
+    let east_half_terrain = Rectangle::from_degrees(160.0, -20.0, 180.0, 20.0);
+    assert!(!anti_layer.create_tile_imagery_skeletons(&west_half_terrain, 1, 1e6).is_empty());
+    assert!(!anti_layer.create_tile_imagery_skeletons(&east_half_terrain, 1, 1e6).is_empty());
+}
+
+#[test]
+fn time_dynamic_imagery_clock_subscription_and_future_polling() {
+    use cesium_rs::core::clock::ClockOptions;
+    use cesium_rs::scene::time_dynamic_imagery::{TimeDynamicImagery, TimeDynamicImageryOptions};
+    use std::cell::Cell;
+    use std::rc::Rc;
+
+    let t0 = JulianDate::new(2451545.0, 0.0, TimeStandard::Tai);
+    let t1 = t0.add_seconds(10.0);
+    let t2 = t0.add_seconds(20.0);
+    let mut times = TimeIntervalCollection::new();
+    times.add_interval(TimeInterval::new(t0, t1, true, false, Some("frame-0")));
+    times.add_interval(TimeInterval::new(t1, t2, true, false, Some("frame-1")));
+
+    let reloads = Rc::new(Cell::new(0usize));
+    let reloads_c = reloads.clone();
+    let mut imagery = TimeDynamicImagery::new(TimeDynamicImageryOptions {
+        times,
+        request_image_function: Rc::new(|_, _, _, _| {
+            Some(Box::pin(std::future::ready(Ok(ImageryImage::Image(FrameResource::new(vec![255u8; 4]))))))
+        }),
+        reload_function: Rc::new(move || reloads_c.set(reloads_c.get() + 1)),
+    });
+
+    let mut clock = Clock::new_at(
+        ClockOptions {
+            start_time: Some(t0),
+            stop_time: Some(t2),
+            current_time: Some(t0),
+            multiplier: Some(1.0),
+            should_animate: Some(true),
+            can_animate: Some(true),
+            clock_step: Some(ClockStep::TickDependent),
+            ..Default::default()
+        },
+        0.0,
+    )
+    .unwrap();
+
+    let listener_id = imagery.subscribe_to_clock(&mut clock);
+    assert_eq!(imagery.current_interval_index(), 0);
+    assert_eq!(reloads.get(), 1);
+
+    // Queue a tile near end of interval 0 -> preloads interval 1
+    clock.set_current_time(t0.add_seconds(7.0));
+    imagery.check_approaching_interval(0, 0, 0, &clock.current_time(), true, true, 1.0, None);
+    assert_eq!(imagery.poll_cached_futures(), 1);
+
+    // Advance clock into interval 1 via tick() -> listener records tick and syncs cleanly
+    clock.set_current_time(t0.add_seconds(10.5));
+    clock.tick_at(1000.0);
+    assert_eq!(imagery.current_interval_index(), 1);
+    assert_eq!(reloads.get(), 2);
+    assert!(imagery.get_from_cache(0, 0, 0).is_some());
+    assert!(clock.on_tick_state.remove_event_listener(listener_id));
+}

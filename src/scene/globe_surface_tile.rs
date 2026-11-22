@@ -26,16 +26,25 @@
 //!    water mask texture binding, surface shader compilation, and frustum command generation are
 //!    handled during renderer passes. CPU meshes alone do not fabricate GPU vertex array handles.
 
+use std::any::Any;
 use std::cell::RefCell;
+use std::future::Future;
+use std::pin::Pin;
 use std::rc::Rc;
 use std::sync::Arc;
+use std::task::{Context as TaskContext, Poll, Waker};
 
 use crate::core::heightmap_terrain_data::HeightmapTerrainData;
 use crate::core::terrain_mesh::TerrainMesh;
 use crate::core::terrain_picker::TerrainSceneMode;
 use crate::core::{
-    BoundingSphere, Cartesian3, Cartesian4, Cartographic, GeographicProjection, MapProjection,
-    Ray, Rectangle, TilingScheme,
+    BoundingSphere, Cartesian3, Cartesian4, Cartographic, ComponentDatatype, GeographicProjection,
+    IndexDatatype, MapProjection, PixelDatatype, PixelFormat, Ray, Rectangle, RuntimeError, TilingScheme,
+    TypedArray,
+};
+use crate::renderer::{
+    Buffer, BufferData, BufferKind, BufferUsage, Context, Gl, Texture, TextureOptions, VertexArray,
+    VertexAttribute,
 };
 use crate::scene::frame_state::FrameState;
 use crate::scene::imagery_layer::ImageryLayer;
@@ -90,6 +99,10 @@ impl SurfaceTerrainData for HeightmapTerrainData {
         self.was_created_by_upsampling()
     }
 }
+
+/// Async future resolving a tile's [`SurfaceTerrainData`].
+pub type TerrainDataFuture =
+    Pin<Box<dyn Future<Output = Result<Box<dyn SurfaceTerrainData>, RuntimeError>>>>;
 
 /// Contains additional information about a [`QuadtreeTile`] of the globe's surface,
 /// encapsulating state transition logic and resource management.
@@ -148,6 +161,16 @@ pub struct GlobeSurfaceTile {
 
     /// Whether this tile requires height query recomputation by the quadtree LOD scheduler.
     pub needs_height_update: bool,
+
+    /// Owned GPU vertex array handle (`Rc<VertexArray<G>>`), created via [`Self::create_vertex_array`].
+    gpu_vertex_array: Option<Box<dyn Any>>,
+
+    /// Owned GPU water-mask texture (`Rc<Texture<G>>`), created via [`Self::upload_water_mask`]
+    /// or inherited via [`Self::inherit_water_mask_from_ancestor`].
+    gpu_water_mask_texture: Option<Box<dyn Any>>,
+
+    /// Optional in-flight terrain request future.
+    pending_terrain_future: Option<TerrainDataFuture>,
 }
 
 impl std::fmt::Debug for GlobeSurfaceTile {
@@ -195,6 +218,9 @@ impl GlobeSurfaceTile {
             rectangle: None,
             tiling_scheme: None,
             needs_height_update: false,
+            gpu_vertex_array: None,
+            gpu_water_mask_texture: None,
+            pending_terrain_future: None,
         }
     }
 
@@ -281,11 +307,177 @@ impl GlobeSurfaceTile {
         *self.mesh.borrow_mut() = None;
         self.has_vertex_array = false;
         self.needs_height_update = false;
+        self.gpu_vertex_array = None;
+        self.gpu_water_mask_texture = None;
+        self.pending_terrain_future = None;
 
         for tile_imagery in &mut self.imagery {
             tile_imagery.free_resources();
         }
         self.imagery.clear();
+    }
+
+    /// Starts an asynchronous terrain-data request and transitions `terrain_state` to `Receiving`.
+    pub fn request_terrain_data(&mut self, future: TerrainDataFuture) {
+        self.pending_terrain_future = Some(future);
+        self.terrain_state = TerrainState::Receiving;
+    }
+
+    /// Polls any pending terrain-data request once, advancing `terrain_state` to
+    /// `Received` on success or `Failed` on error.
+    pub fn poll_terrain_data(&mut self) -> TerrainState {
+        let Some(mut fut) = self.pending_terrain_future.take() else {
+            return self.terrain_state;
+        };
+        let waker = Waker::noop();
+        let mut cx = TaskContext::from_waker(waker);
+        match fut.as_mut().poll(&mut cx) {
+            Poll::Ready(Ok(data)) => {
+                self.terrain_data = Some(data);
+                self.terrain_state = TerrainState::Received;
+            }
+            Poll::Ready(Err(_)) => {
+                self.terrain_state = TerrainState::Failed;
+            }
+            Poll::Pending => {
+                self.pending_terrain_future = Some(fut);
+            }
+        }
+        self.terrain_state
+    }
+
+    /// Uploads this tile's CPU [`TerrainMesh`] to a real GPU [`VertexArray<G>`],
+    /// setting `has_vertex_array = true` and advancing `terrain_state` to `Ready`.
+    pub fn create_vertex_array<G: Gl + 'static>(
+        &mut self,
+        context: &Context<G>,
+    ) -> Result<Rc<VertexArray<G>>, RuntimeError> {
+        let mesh_guard = self.mesh.borrow();
+        let mesh = mesh_guard
+            .as_ref()
+            .ok_or_else(|| RuntimeError::new("GlobeSurfaceTile has no TerrainMesh to upload"))?;
+        let stride_floats = mesh.stride.max(3);
+        let stride_bytes = stride_floats * std::mem::size_of::<f32>();
+        let mut vertex_bytes = Vec::with_capacity(mesh.vertices.len() * 4);
+        for v in &mesh.vertices {
+            vertex_bytes.extend_from_slice(&v.to_le_bytes());
+        }
+        let vertex_buffer = Buffer::new(
+            context,
+            BufferKind::Vertex,
+            BufferUsage::StaticDraw,
+            BufferData::Bytes(&vertex_bytes),
+        )?;
+        let (index_datatype, index_bytes): (IndexDatatype, Vec<u8>) = match &mesh.indices {
+            TypedArray::Uint16(v) => {
+                let mut bytes = Vec::with_capacity(v.len() * 2);
+                for x in v {
+                    bytes.extend_from_slice(&x.to_le_bytes());
+                }
+                (IndexDatatype::UnsignedShort, bytes)
+            }
+            TypedArray::Uint32(v) => {
+                let mut bytes = Vec::with_capacity(v.len() * 4);
+                for x in v {
+                    bytes.extend_from_slice(&x.to_le_bytes());
+                }
+                (IndexDatatype::UnsignedInt, bytes)
+            }
+            _ => {
+                return Err(RuntimeError::new(
+                    "TerrainMesh indices must be Uint16 or Uint32",
+                ));
+            }
+        };
+        let index_buffer = Buffer::new(
+            context,
+            BufferKind::Index(index_datatype),
+            BufferUsage::StaticDraw,
+            BufferData::Bytes(&index_bytes),
+        )?;
+        let mut attr0 = VertexAttribute::buffer(0, vertex_buffer.clone(), 4.min(stride_floats as u32));
+        attr0.datatype = ComponentDatatype::Float;
+        attr0.stride = stride_bytes;
+        let mut attrs = vec![attr0];
+        if stride_floats > 4 {
+            let mut attr1 =
+                VertexAttribute::buffer(1, vertex_buffer, (stride_floats - 4).min(4) as u32);
+            attr1.datatype = ComponentDatatype::Float;
+            attr1.offset = 16;
+            attr1.stride = stride_bytes;
+            attrs.push(attr1);
+        }
+        let va = Rc::new(VertexArray::new(context, attrs, Some(index_buffer))?);
+        let pick_sphere = mesh.bounding_sphere_3d;
+        drop(mesh_guard);
+        self.pick_bounding_sphere = pick_sphere;
+        self.gpu_vertex_array = Some(Box::new(Rc::clone(&va)));
+        self.has_vertex_array = true;
+        self.terrain_state = TerrainState::Ready;
+        Ok(va)
+    }
+
+    /// Returns the owned GPU [`VertexArray<G>`], if created for this renderer type.
+    pub fn vertex_array<G: Gl + 'static>(&self) -> Option<Rc<VertexArray<G>>> {
+        self.gpu_vertex_array
+            .as_ref()
+            .and_then(|v| v.downcast_ref::<Rc<VertexArray<G>>>())
+            .cloned()
+    }
+
+    /// Uploads a water-mask texture for this tile (`1`-byte alpha or `4`-byte RGBA pixels).
+    pub fn upload_water_mask<G: Gl + 'static>(
+        &mut self,
+        context: &Context<G>,
+        width: u32,
+        height: u32,
+        pixels: &[u8],
+    ) -> Result<Rc<Texture<G>>, RuntimeError> {
+        let expected_rgba = (width as usize) * (height as usize) * 4;
+        let (format, data): (PixelFormat, Vec<u8>) = if pixels.len() == expected_rgba {
+            (PixelFormat::Rgba, pixels.to_vec())
+        } else {
+            let mut rgba = Vec::with_capacity(expected_rgba);
+            for &b in pixels.iter().take((width as usize) * (height as usize)) {
+                rgba.extend_from_slice(&[b, b, b, 255]);
+            }
+            rgba.resize(expected_rgba, 0);
+            (PixelFormat::Rgba, rgba)
+        };
+        let mut opts = TextureOptions::rgba(width.max(1), height.max(1));
+        opts.pixel_format = format;
+        opts.pixel_datatype = PixelDatatype::UnsignedByte;
+        let tex = Rc::new(Texture::new(context, opts, Some(&data))?);
+        self.gpu_water_mask_texture = Some(Box::new(Rc::clone(&tex)));
+        self.has_water_mask_texture = true;
+        self.water_mask_translation_and_scale = Cartesian4::new(0.0, 0.0, 1.0, 1.0);
+        Ok(tex)
+    }
+
+    /// Inherits a water-mask GPU texture from an ancestor tile, computing the
+    /// sub-rectangle translation and scale.
+    pub fn inherit_water_mask_from_ancestor<G: Gl + 'static>(
+        &mut self,
+        tile_rectangle: &Rectangle,
+        ancestor: &GlobeSurfaceTile,
+        ancestor_rectangle: &Rectangle,
+    ) -> bool {
+        let Some(tex) = ancestor.water_mask_texture::<G>() else {
+            return false;
+        };
+        self.gpu_water_mask_texture = Some(Box::new(tex));
+        self.has_water_mask_texture = true;
+        self.water_mask_translation_and_scale =
+            Self::compute_water_mask_translation_and_scale(tile_rectangle, ancestor_rectangle);
+        true
+    }
+
+    /// Returns the owned GPU water-mask texture, if attached for this renderer type.
+    pub fn water_mask_texture<G: Gl + 'static>(&self) -> Option<Rc<Texture<G>>> {
+        self.gpu_water_mask_texture
+            .as_ref()
+            .and_then(|v| v.downcast_ref::<Rc<Texture<G>>>())
+            .cloned()
     }
 
     /// Computes translation and scale for sampling a water mask texture from an ancestor tile.

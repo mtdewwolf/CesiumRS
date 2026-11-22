@@ -626,6 +626,14 @@ pub mod post_process_stage_collection;
 pub mod post_process_stage_composite;
 pub mod post_process_stage_library;
 pub mod post_process_stage_texture_cache;
+pub use auto_exposure::AutoExposure;
+pub use post_process_stage::{PostProcessStage, PostProcessStageOptions, PostProcessUniformValue, SelectedFeature};
+pub use post_process_stage_collection::{PostProcessSceneEffect, PostProcessSceneInputs, PostProcessStageCollection};
+pub use post_process_stage_composite::{
+    PostProcessStageComposite, PostProcessStageCompositeOptions, PostProcessStageItem,
+};
+pub use post_process_stage_library::PostProcessStageLibrary;
+pub use post_process_stage_texture_cache::PostProcessStageTextureCache;
 pub mod point_primitive;
 pub mod point_primitive_collection;
 pub mod imagery;
@@ -646,7 +654,7 @@ pub use polyline_collection::{PolylineCollection, PolylineCollectionOptions};
 
 pub mod billboard;
 pub mod billboard_collection;
-pub use billboard::{Billboard, BillboardImage, BillboardOptions};
+pub use billboard::{Billboard, BillboardImage, BillboardOptions, HeightSampler};
 pub use billboard_collection::{BillboardCollection, BillboardCollectionOptions};
 
 pub mod cumulus_cloud;
@@ -657,7 +665,7 @@ pub use cloud_collection::{CloudCollection, CloudCollectionOptions, CumulusCloud
 pub mod label;
 pub mod label_collection;
 pub use label::{Label, LabelOptions};
-pub use label_collection::{LabelCollection, LabelHandle};
+pub use label_collection::{DefaultSdfGlyphRasterizer, GlyphBitmap, GlyphRasterizer, LabelCollection, LabelHandle};
 
 pub mod quadtree_tile;
 pub mod quadtree_primitive;
@@ -721,6 +729,7 @@ pub mod panorama_provider;
 pub mod particle_system;
 pub mod quadtree_tile_provider;
 pub mod shadow_map_shader;
+pub use shadow_map_shader::{receive_fragment, ReceiveBias, ReceiveOptions};
 pub mod sky_box;
 pub mod viewport_quad;
 pub mod voxel_bounds_collection;
@@ -729,7 +738,7 @@ pub mod voxel_shape;
 pub use panorama::Panorama;
 pub use panorama_provider::PanoramaProvider;
 pub use particle_system::{ParticleImage, ParticleSystem, ParticleSystemCallback, ParticleSystemOptions};
-pub use sky_box::SkyBox;
+pub use sky_box::{CubeMapSkyBoxPanorama, SkyBox};
 pub use viewport_quad::ViewportQuad;
 pub use voxel_bounds_collection::{VoxelBoundsCollection, VoxelBoundsCollectionOptions};
 pub use voxel_provider::{VoxelProvider, VoxelRequest};

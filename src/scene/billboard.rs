@@ -20,8 +20,8 @@ use futures_util::{future::LocalBoxFuture, FutureExt};
 use super::billboard_texture::{source_with_size, BillboardTexture, TextureHost};
 use crate::{
     core::{
-        create_guid::create_guid, BoundingRectangle, Cartesian2, Cartesian3, Color, DistanceDisplayCondition, Matrix4,
-        NearFarScalar, RuntimeError,
+        create_guid::create_guid, BoundingRectangle, Cartesian2, Cartesian3, Cartographic, Color,
+        DistanceDisplayCondition, Matrix4, NearFarScalar, RuntimeError,
     },
     renderer::{AtlasImageRequest, Context, Gl, PickId, TextureAtlas, TextureSource},
     scene::{
@@ -201,14 +201,22 @@ impl<G: Gl + 'static> Default for UpdateQueue<G> {
     }
 }
 
+/// Callback supplying surface heights (terrain and/or 3D Tiles) for billboard
+/// height clamping (`HeightReference::ClampTo*` / `RelativeTo*`).
+pub type HeightSampler = Rc<dyn Fn(&Cartographic, HeightReference) -> Option<f64>>;
+
 /// The state a collection shares with its billboards.
 pub(crate) struct CollectionShared<G: Gl + 'static> {
     pub(crate) id: u64,
     pub(crate) queue: RefCell<UpdateQueue<G>>,
     pub(crate) textures: Rc<TextureHost<G>>,
+    pub(crate) height_sampler: RefCell<Option<HeightSampler>>,
 }
 
 impl<G: Gl + 'static> CollectionShared<G> {
+    pub(crate) fn has_height_sampler(&self) -> bool {
+        self.height_sampler.borrow().is_some()
+    }
     /// `_updateBillboard`: queue a billboard that is not already dirty and
     /// count the property.
     pub(crate) fn update_billboard(&self, billboard: &Billboard<G>, property: usize) {
@@ -287,8 +295,8 @@ impl<G: Gl + 'static> Billboard<G> {
         index: usize,
     ) -> Result<Self, RuntimeError> {
         options.validate()?;
-        // `_updateClamping` without a scene.
-        if options.height_reference != HeightReference::None {
+        // `_updateClamping` without a scene / height sampler.
+        if options.height_reference != HeightReference::None && !collection.has_height_sampler() {
             return Err(RuntimeError::new("Height reference is not supported without a scene."));
         }
         let texture = Rc::new(RefCell::new(BillboardTexture::new(Rc::downgrade(&collection.textures))));
@@ -394,16 +402,46 @@ impl<G: Gl + 'static> Billboard<G> {
     pub fn height_reference(&self) -> HeightReference {
         self.0.borrow().o.height_reference
     }
-    /// Without a scene, only `NONE` is accepted.
+    /// Sets the billboard's height reference. Non-`None` values require the
+    /// owning collection to have a scene height sampler attached.
     pub fn set_height_reference(&self, value: HeightReference) -> Result<(), RuntimeError> {
         if value != self.height_reference() {
             if value != HeightReference::None {
-                return Err(RuntimeError::new("Height reference is not supported without a scene."));
+                let has_sampler = self
+                    .0
+                    .borrow()
+                    .collection
+                    .as_ref()
+                    .and_then(Weak::upgrade)
+                    .is_some_and(|c| c.has_height_sampler());
+                if !has_sampler {
+                    return Err(RuntimeError::new("Height reference is not supported without a scene."));
+                }
             }
-            self.0.borrow_mut().o.height_reference = value;
+            {
+                let mut s = self.0.borrow_mut();
+                s.o.height_reference = value;
+                if value == HeightReference::None {
+                    s.clamped_position = None;
+                }
+            }
             self.make_dirty(POSITION_INDEX);
         }
         Ok(())
+    }
+
+    /// Updates this billboard's clamped world position from a sampled surface height.
+    pub(crate) fn set_clamped_position(&self, clamped: Option<Cartesian3>) {
+        let changed = self.0.borrow().clamped_position != clamped;
+        if changed {
+            self.0.borrow_mut().clamped_position = clamped;
+            self.make_dirty(POSITION_INDEX);
+        }
+    }
+
+    /// Returns the currently clamped position if height clamping is active.
+    pub fn clamped_position(&self) -> Option<Cartesian3> {
+        self.0.borrow().clamped_position
     }
 
     fn check_range(value: Option<(f64, f64)>, message: &str) -> Result<(), RuntimeError> {

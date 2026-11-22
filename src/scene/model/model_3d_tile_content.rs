@@ -88,6 +88,9 @@ impl<G: Gl + 'static> TilesetContent for Model3DTileContent<G> {
         self.model.options.enable_pick = state.enable_pick;
         self.model.options.show_credits_on_screen = state.show_credits_on_screen;
     }
+    fn apply_debug_settings(&mut self, enabled: bool, color: Color) -> Result<()> {
+        Model3DTileContent::apply_debug_settings(self, enabled, color)
+    }
     fn metrics(&self) -> TileContentMetrics {
         let s = &self.model.statistics;
         let batch: usize = self.model.feature_tables.iter().map(|t| t.batch_texture().byte_length()).sum();

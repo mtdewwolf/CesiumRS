@@ -911,10 +911,10 @@ impl ImageryLayer {
         false
     }
 
-    /// Creates preliminary imagery tile skeletons for a terrain tile.
-    ///
-    /// Skeletons are automatically associated with this layer's stable identity
-    /// and attached handle (if wrapped in an [`ImageryLayerHandle`]).
+    /// Creates preliminary imagery tile skeletons for a terrain tile, matching
+    /// CesiumJS `ImageryLayer.prototype._createTileImagerySkeletons` including
+    /// base-layer edge clamping, `1/512` edge snapping, Web Mercator native
+    /// texture coordinate rectangles, and antimeridian splitting.
     pub fn create_tile_imagery_skeletons(
         &mut self,
         tile_rectangle: &Rectangle,
@@ -922,7 +922,7 @@ impl ImageryLayer {
         target_geometric_error: f64,
     ) -> Vec<TileImagery> {
         let provider = match self.imagery_provider.as_ref() {
-            Some(p) => p,
+            Some(p) => p.clone(),
             None => return Vec::new(),
         };
 
@@ -937,70 +937,211 @@ impl ImageryLayer {
             }
         }
 
-        let imagery_bounds = match provider.rectangle().intersection(&self.rectangle) {
-            Some(b) => b,
-            None => return Vec::new(),
-        };
-
-        let overlap = match tile_rectangle.intersection(&imagery_bounds) {
-            Some(r) => r,
-            None => {
-                if !self.is_base_layer {
-                    return Vec::new();
-                }
-                imagery_bounds
+        let split_antimeridian = |r: &Rectangle| -> Vec<Rectangle> {
+            if r.west > r.east {
+                vec![
+                    Rectangle::new(r.west, r.south, std::f64::consts::PI, r.north),
+                    Rectangle::new(-std::f64::consts::PI, r.south, r.east, r.north),
+                ]
+            } else {
+                vec![*r]
             }
         };
 
-        let latitude_closest_to_equator = if overlap.south > 0.0 {
-            overlap.south
-        } else if overlap.north < 0.0 {
-            overlap.north
-        } else {
-            0.0
-        };
+        let mut halves: Vec<Rectangle> = Vec::new();
+        for p_half in split_antimeridian(provider.rectangle()) {
+            for l_half in split_antimeridian(&self.rectangle) {
+                if let Some(inter) = p_half.intersection(&l_half) {
+                    halves.push(inter);
+                }
+            }
+        }
+        if halves.is_empty() {
+            return Vec::new();
+        }
 
-        let imagery_level = self
-            .get_level_with_maximum_texel_spacing(
+        let mut results = Vec::new();
+        for bounds in halves {
+            self.append_skeletons_for_bounds(
+                &provider,
+                tile_rectangle,
+                &bounds,
                 target_geometric_error,
-                latitude_closest_to_equator,
-            )
-            .unwrap_or(0)
-            .max(0) as u32;
+                &mut results,
+            );
+        }
+        results
+    }
 
-        let imagery_level = provider
-            .maximum_level()
-            .map_or(imagery_level, |max| imagery_level.min(max));
-        let imagery_level = imagery_level.max(provider.minimum_level());
-
-        let tiling_scheme = provider.tiling_scheme();
-        let nw = match tiling_scheme.position_to_tile_xy(&overlap.northwest(), imagery_level) {
-            Some(c) => c,
-            None => return Vec::new(),
-        };
-        let se = match tiling_scheme.position_to_tile_xy(&overlap.southeast(), imagery_level) {
-            Some(c) => c,
-            None => return Vec::new(),
-        };
-
+    fn append_skeletons_for_bounds(
+        &mut self,
+        provider: &Arc<dyn ImageryProvider>,
+        tile_rectangle: &Rectangle,
+        imagery_bounds_geo: &Rectangle,
+        target_geometric_error: f64,
+        results: &mut Vec<TileImagery>,
+    ) {
         let max_lat = WebMercatorProjection::maximum_latitude();
         let use_web_mercator_t = !provider.tiling_scheme().projection().is_geographic()
             && tile_rectangle.north < max_lat
             && tile_rectangle.south > -max_lat;
 
-        let handle_opt = self.weak_self.as_ref().and_then(|w| w.upgrade());
-        let layer_id = self.id();
-        let layer_idx = if self.layer_index >= 0 {
-            Some(self.layer_index as usize)
-        } else {
-            None
+        let rectangle = match tile_rectangle.intersection(imagery_bounds_geo) {
+            Some(r) => r,
+            None => {
+                if !self.is_base_layer {
+                    return;
+                }
+                // Stretch texels at the edge of the base layer over the entire globe
+                let (south, north) = if tile_rectangle.south >= imagery_bounds_geo.north {
+                    (imagery_bounds_geo.north, imagery_bounds_geo.north)
+                } else if tile_rectangle.north <= imagery_bounds_geo.south {
+                    (imagery_bounds_geo.south, imagery_bounds_geo.south)
+                } else {
+                    (
+                        tile_rectangle.south.max(imagery_bounds_geo.south),
+                        tile_rectangle.north.min(imagery_bounds_geo.north),
+                    )
+                };
+                let (west, east) = if tile_rectangle.west >= imagery_bounds_geo.east {
+                    (imagery_bounds_geo.east, imagery_bounds_geo.east)
+                } else if tile_rectangle.east <= imagery_bounds_geo.west {
+                    (imagery_bounds_geo.west, imagery_bounds_geo.west)
+                } else {
+                    (
+                        tile_rectangle.west.max(imagery_bounds_geo.west),
+                        tile_rectangle.east.min(imagery_bounds_geo.east),
+                    )
+                };
+                Rectangle::new(west, south, east, north)
+            }
         };
 
-        let mut results = Vec::new();
-        for x in (nw.x as i32)..=(se.x as i32) {
-            for y in (nw.y as i32)..=(se.y as i32) {
-                let img = self.get_imagery_from_cache(x, y, imagery_level, None);
-                let tex_coords = Cartesian4::new(0.0, 0.0, 1.0, 1.0);
+        let latitude_closest_to_equator = if rectangle.south > 0.0 {
+            rectangle.south
+        } else if rectangle.north < 0.0 {
+            rectangle.north
+        } else {
+            0.0
+        };
+
+        let imagery_level = Self::compute_level_with_maximum_texel_spacing(
+            provider.tiling_scheme(),
+            provider.tile_width(),
+            target_geometric_error,
+            latitude_closest_to_equator,
+        )
+        .max(0) as u32;
+
+        let imagery_level = provider.maximum_level().map_or(imagery_level, |max| imagery_level.min(max));
+        let imagery_level = imagery_level.max(provider.minimum_level());
+
+        let tiling_scheme = provider.tiling_scheme();
+        let Some(nw_c) = tiling_scheme.position_to_tile_xy(&rectangle.northwest(), imagery_level) else {
+            return;
+        };
+        let Some(se_c) = tiling_scheme.position_to_tile_xy(&rectangle.southeast(), imagery_level) else {
+            return;
+        };
+        let mut nw_x = nw_c.x as i32;
+        let mut nw_y = nw_c.y as i32;
+        let mut se_x = se_c.x as i32;
+        let mut se_y = se_c.y as i32;
+
+        // 1/512 tile-edge snapping
+        let mut very_close_x = tile_rectangle.width() / 512.0;
+        let mut very_close_y = tile_rectangle.height() / 512.0;
+
+        let nw_rect = tiling_scheme.tile_xy_to_rectangle(nw_x as f64, nw_y as f64, imagery_level);
+        if (nw_rect.south - tile_rectangle.north).abs() < very_close_y && nw_y < se_y {
+            nw_y += 1;
+        }
+        if (nw_rect.east - tile_rectangle.west).abs() < very_close_x && nw_x < se_x {
+            nw_x += 1;
+        }
+
+        let se_rect = tiling_scheme.tile_xy_to_rectangle(se_x as f64, se_y as f64, imagery_level);
+        if (se_rect.north - tile_rectangle.south).abs() < very_close_y && se_y > nw_y {
+            se_y -= 1;
+        }
+        if (se_rect.west - tile_rectangle.east).abs() < very_close_x && se_x > nw_x {
+            se_x -= 1;
+        }
+
+        let mut terrain_rect = *tile_rectangle;
+        let mut imagery_bounds = *imagery_bounds_geo;
+        let first_geo = tiling_scheme.tile_xy_to_rectangle(nw_x as f64, nw_y as f64, imagery_level);
+        let mut clipped_first = simple_rect_intersection(&first_geo, &imagery_bounds).unwrap_or(first_geo);
+
+        if use_web_mercator_t {
+            terrain_rect = tiling_scheme.rectangle_to_native_rectangle(&terrain_rect);
+            clipped_first = tiling_scheme.rectangle_to_native_rectangle(&clipped_first);
+            imagery_bounds = tiling_scheme.rectangle_to_native_rectangle(&imagery_bounds);
+            very_close_x = terrain_rect.width() / 512.0;
+            very_close_y = terrain_rect.height() / 512.0;
+        }
+
+        let tile_rect_fn = |x: i32, y: i32| -> Rectangle {
+            if use_web_mercator_t {
+                tiling_scheme.tile_xy_to_native_rectangle(x as f64, y as f64, imagery_level)
+            } else {
+                tiling_scheme.tile_xy_to_rectangle(x as f64, y as f64, imagery_level)
+            }
+        };
+
+        let terrain_w = terrain_rect.width();
+        let terrain_h = terrain_rect.height();
+
+        let mut max_u = 0.0;
+        let mut min_v = 1.0;
+
+        if !self.is_base_layer && (clipped_first.west - terrain_rect.west).abs() >= very_close_x && terrain_w > 0.0 {
+            max_u = ((clipped_first.west - terrain_rect.west) / terrain_w).min(1.0);
+        }
+        if !self.is_base_layer && (clipped_first.north - terrain_rect.north).abs() >= very_close_y && terrain_h > 0.0 {
+            min_v = ((clipped_first.north - terrain_rect.south) / terrain_h).max(0.0);
+        }
+        let initial_min_v = min_v;
+
+        let handle_opt = self.weak_self.as_ref().and_then(|w| w.upgrade());
+        let layer_id = self.id();
+        let layer_idx = if self.layer_index >= 0 { Some(self.layer_index as usize) } else { None };
+
+        for i in nw_x..=se_x {
+            let min_u = max_u;
+            let col_rect = tile_rect_fn(i, nw_y);
+            let Some(clipped_col) = simple_rect_intersection(&col_rect, &imagery_bounds) else {
+                continue;
+            };
+            max_u = if terrain_w > 0.0 {
+                ((clipped_col.east - terrain_rect.west) / terrain_w).min(1.0)
+            } else {
+                1.0
+            };
+            if i == se_x && (self.is_base_layer || (clipped_col.east - terrain_rect.east).abs() < very_close_x) {
+                max_u = 1.0;
+            }
+
+            min_v = initial_min_v;
+
+            for j in nw_y..=se_y {
+                let max_v = min_v;
+                let cell_rect = tile_rect_fn(i, j);
+                let Some(clipped_cell) = simple_rect_intersection(&cell_rect, &imagery_bounds) else {
+                    continue;
+                };
+                min_v = if terrain_h > 0.0 {
+                    ((clipped_cell.south - terrain_rect.south) / terrain_h).max(0.0)
+                } else {
+                    0.0
+                };
+                if j == se_y && (self.is_base_layer || (clipped_cell.south - terrain_rect.south).abs() < very_close_y)
+                {
+                    min_v = 0.0;
+                }
+
+                let img = self.get_imagery_from_cache(i, j, imagery_level, None);
+                let tex_coords = Cartesian4::new(min_u, min_v, max_u, max_v);
                 let mut tile_img = TileImagery::new(img, tex_coords, use_web_mercator_t);
                 tile_img.imagery_layer = handle_opt.clone();
                 tile_img.layer_id = Some(layer_id);
@@ -1008,7 +1149,20 @@ impl ImageryLayer {
                 results.push(tile_img);
             }
         }
-        results
+    }
+}
+
+/// Non-wrapping axis-aligned rectangle intersection matching CesiumJS `Rectangle.simpleIntersection`,
+/// safe for both geographic radians and projected Web Mercator meter coordinates.
+fn simple_rect_intersection(a: &Rectangle, b: &Rectangle) -> Option<Rectangle> {
+    let west = a.west.max(b.west);
+    let east = a.east.min(b.east);
+    let south = a.south.max(b.south);
+    let north = a.north.min(b.north);
+    if south >= north || west >= east {
+        None
+    } else {
+        Some(Rectangle::new(west, south, east, north))
     }
 }
 

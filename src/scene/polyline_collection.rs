@@ -1079,6 +1079,9 @@ impl<G: Gl + 'static> PolylineCollection<G> {
                     if let Some(texture) = &batch_texture {
                         options.textures.push(("batchTexture".into(), texture.clone() as Rc<dyn SampledTexture<G>>));
                     }
+                    if let Ok(mat_textures) = material.borrow().resolve_sampled_textures(context) {
+                        options.textures.extend(mat_textures);
+                    }
                     let metadata = DrawMetadata {
                         bounding_volume: Some(volume),
                         model_matrix: Some(model_matrix),

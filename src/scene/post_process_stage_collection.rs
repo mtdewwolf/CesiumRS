@@ -8,7 +8,8 @@ use crate::{
         post_process_stage_composite::{PostProcessStageComposite, PostProcessStageItem},
         post_process_stage_library::PostProcessStageLibrary,
         post_process_stage_texture_cache::{
-            get_composite_dependencies, get_stage_dependencies, PostProcessStageTextureCache,
+            collect_composite_aliases, get_composite_dependencies, get_last_stage_name, get_stage_dependencies,
+            PostProcessStageTextureCache,
         },
         tonemapper::Tonemapper,
     },
@@ -182,6 +183,11 @@ impl<G: Gl> PostProcessStageCollection<G> {
         if self.tonemapper == tonemapper {
             return Ok(());
         }
+        self.rebuild_tonemapping_stage(tonemapper)
+    }
+
+    fn rebuild_tonemapping_stage(&mut self, tonemapper: Tonemapper) -> Result<(), RuntimeError> {
+        let was_enabled = self.tonemapping.enabled();
         self.tonemapping.destroy()?;
         let use_auto = self.auto_exposure_enabled;
         self.tonemapping = match tonemapper {
@@ -193,6 +199,7 @@ impl<G: Gl> PostProcessStageCollection<G> {
             Tonemapper::PbrNeutral => PostProcessStageLibrary::create_pbr_neutral_tonemapping_stage(use_auto)?,
             Tonemapper::Aces => PostProcessStageLibrary::create_aces_tonemapping_stage(use_auto)?,
         };
+        self.tonemapping.set_enabled(was_enabled);
         self.tonemapping.set_uniform("exposure", self.exposure);
         self.tonemapper = tonemapper;
         self.texture_cache_dirty = true;
@@ -213,9 +220,11 @@ impl<G: Gl> PostProcessStageCollection<G> {
     }
 
     pub fn set_auto_exposure_enabled(&mut self, enabled: bool) -> Result<(), RuntimeError> {
+        if self.auto_exposure_enabled == enabled {
+            return Ok(());
+        }
         self.auto_exposure_enabled = enabled;
-        // recreate tonemapping stage with new auto exposure setting
-        self.set_tonemapper(self.tonemapper)
+        self.rebuild_tonemapping_stage(self.tonemapper)
     }
 
     pub fn fxaa(&self) -> &PostProcessStage<G> {
@@ -398,22 +407,33 @@ impl<G: Gl> PostProcessStageCollection<G> {
 
         // Cache allocation must traverse arbitrary nesting, matching composite execution.
         let mut all_leaf_stages = Vec::new();
+        let mut composite_aliases = HashMap::new();
         if ao_enabled {
+            if let Some(last) = self.ao.stages().last() {
+                composite_aliases.insert(self.ao.name().to_string(), get_last_stage_name(last));
+            }
+            collect_composite_aliases(self.ao.stages(), &mut composite_aliases);
             Self::collect_leaves(self.ao.stages(), &mut all_leaf_stages);
         }
         if bloom_enabled {
+            if let Some(last) = self.bloom.stages().last() {
+                composite_aliases.insert(self.bloom.name().to_string(), get_last_stage_name(last));
+            }
+            collect_composite_aliases(self.bloom.stages(), &mut composite_aliases);
             Self::collect_leaves(self.bloom.stages(), &mut all_leaf_stages);
         }
         if tonemapping_enabled {
             all_leaf_stages.push(&self.tonemapping);
         }
         for &idx in &self.active_stages {
+            collect_composite_aliases(std::slice::from_ref(&self.stages[idx]), &mut composite_aliases);
             Self::collect_leaves(std::slice::from_ref(&self.stages[idx]), &mut all_leaf_stages);
         }
         if fxaa_enabled {
             all_leaf_stages.push(&self.fxaa);
         }
 
+        self.texture_cache.set_composite_aliases(composite_aliases);
         self.texture_cache.update(context, &all_leaf_stages, &dependencies)?;
 
         // Connect framebuffers to stages
@@ -628,11 +648,14 @@ impl<G: Gl> super::scene::SceneEffect for PostProcessSceneEffect<G> {
         if !frame.passes.render {
             return Ok(());
         }
+        let mut collection = self.collection.borrow_mut();
+        if !collection.ready() {
+            return Ok(());
+        }
         let inputs = self.inputs.borrow();
         let inputs = inputs
             .as_ref()
             .ok_or_else(|| RuntimeError::new("Post-processing requires resolved Scene color attachments"))?;
-        let mut collection = self.collection.borrow_mut();
         collection.clear(&self.context)?;
         collection.execute(&self.context, &inputs.color, inputs.depth.as_ref(), inputs.id.as_ref())?;
         collection.copy(&self.context, inputs.target.clone(), &inputs.pass)
