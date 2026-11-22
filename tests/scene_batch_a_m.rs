@@ -1,19 +1,59 @@
 #![recursion_limit = "256"]
 use cesium_rs::core::{
     Cartesian2, Cartesian3, Color, Ellipsoid, JulianDate, Matrix4, NearFarScalar,
-    Rectangle, TimeStandard,
+    Rectangle, RuntimeError, TimeStandard,
 };
-use cesium_rs::renderer::UniformFrame;
+use cesium_rs::renderer::{Context, Gl, GlValue, UniformFrame};
 use cesium_rs::scene::camera::{Camera, CameraOptions};
 use cesium_rs::scene::frame_state::FrameState;
 use cesium_rs::scene::{
     Cesium3DTileContentFactory, Cesium3DTileContentType,
     EllipsoidPrimitive, EllipsoidPrimitiveOptions, EquirectangularPanorama,
-    EquirectangularPanoramaOptions, FrameRateMonitor, FrameRateMonitorOptions, GlobeTranslucency,
+    EquirectangularPanoramaOptions, FrameRateMonitor, FrameRateMonitorOptions, FrameResource,
+    GlobeTranslucency,
     ImageBasedLighting, IonImageryExternalType, IonImageryProviderFactory, Moon, MoonOptions,
     ScenePrimitive,
 };
 use serde_json::json;
+
+#[derive(Default)]
+struct TestGl;
+impl Gl for TestGl {
+    type Object = u32;
+    fn drawing_buffer_size(&self) -> Result<[u32; 2], RuntimeError> {
+        Ok([256, 256])
+    }
+    fn invoke(&self, method: &str, args: &[GlValue<u32>]) -> Result<GlValue<u32>, RuntimeError> {
+        let first = match args.first() {
+            Some(GlValue::Number(v)) => Some(*v),
+            _ => None,
+        };
+        Ok(if method.starts_with("create") {
+            GlValue::Object(1)
+        } else {
+            match method {
+                "getParameter" if first == Some(3379.) => GlValue::Number(8192.),
+                "getParameter" if matches!(first, Some(33901.) | Some(33902.) | Some(3386.)) => {
+                    GlValue::Numbers(vec![1., 4096.])
+                }
+                "getParameter" => GlValue::Number(4096.),
+                "getExtension" => GlValue::Object(0),
+                "getProgramParameter"
+                    if args.get(1).is_some_and(|a| matches!(a, GlValue::Number(v) if *v == 35721. || *v == 35718.)) =>
+                {
+                    GlValue::Number(0.)
+                }
+                "getShaderParameter" | "getProgramParameter" => GlValue::Bool(true),
+                "checkFramebufferStatus" => GlValue::Number(36053.),
+                _ => GlValue::Null,
+            }
+        })
+    }
+}
+
+fn with_context(frame: &mut FrameState) {
+    frame.context = Some(FrameResource::new(Context::new_webgl2(TestGl)));
+}
 
 fn make_dummy_frame_state() -> FrameState {
     let mut camera = Camera::new(CameraOptions::new(800.0, 600.0));
@@ -141,12 +181,16 @@ fn test_debug_inspector_shader_and_frustum_colors() {
 
 #[test]
 fn test_ellipsoid_primitive_computations_and_lifecycle() {
-    let mut primitive = EllipsoidPrimitive::new(EllipsoidPrimitiveOptions {
+    let mut primitive = EllipsoidPrimitive::<TestGl>::new(EllipsoidPrimitiveOptions {
         center: Some(Cartesian3::new(100.0, 200.0, 300.0)),
         radii: Some(Cartesian3::new(10.0, 20.0, 40.0)),
         model_matrix: Some(Matrix4::IDENTITY),
         ..Default::default()
     });
+
+    let mut frame_state = make_dummy_frame_state();
+    with_context(&mut frame_state);
+    assert!(primitive.update(&mut frame_state).is_ok());
 
     assert_eq!(primitive.computed_model_matrix().get_translation(), Cartesian3::new(100.0, 200.0, 300.0));
     let inv_sq = primitive.one_over_ellipsoid_radii_squared();
@@ -156,9 +200,6 @@ fn test_ellipsoid_primitive_computations_and_lifecycle() {
 
     assert_eq!(primitive.bounding_sphere().radius, 40.0);
     assert_eq!(primitive.bounding_sphere().center, Cartesian3::new(100.0, 200.0, 300.0));
-
-    let mut frame_state = make_dummy_frame_state();
-    assert!(primitive.update(&mut frame_state).is_ok());
 
     assert!(primitive.destroy().is_ok());
     assert!(primitive.is_destroyed());
@@ -350,7 +391,7 @@ fn test_ion_imagery_provider_factory_resolution() {
 
 #[test]
 fn test_moon_astronomical_position_and_ellipsoid() {
-    let moon = Moon::new(MoonOptions::default());
+    let moon = Moon::<TestGl>::new(MoonOptions::default());
     assert_eq!(moon.ellipsoid.radii, Ellipsoid::MOON.radii);
     assert_eq!(moon.texture_url, "Assets/Textures/moonSmall.jpg");
     assert!(moon.show);
@@ -369,8 +410,9 @@ fn test_moon_astronomical_position_and_ellipsoid() {
     );
 
     // Update with 3D FrameState
-    let mut moon_mut = Moon::new(MoonOptions::default());
+    let mut moon_mut = Moon::<TestGl>::new(MoonOptions::default());
     let mut frame_state = make_dummy_frame_state();
+    with_context(&mut frame_state);
     assert!(moon_mut.update(&mut frame_state).is_ok());
 
     assert!(moon_mut.destroy().is_ok());

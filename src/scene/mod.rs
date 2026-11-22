@@ -741,7 +741,7 @@ pub use debug_inspector::{
     debug_show_frustums_color, DebugInspector, DebugShowOptions,
 };
 pub mod ellipsoid_primitive;
-pub use ellipsoid_primitive::{EllipsoidPrimitive, EllipsoidPrimitiveOptions};
+pub use ellipsoid_primitive::{EllipsoidCommand, EllipsoidPrimitive, EllipsoidPrimitiveOptions};
 pub mod equirectangular_panorama;
 pub use equirectangular_panorama::{EquirectangularPanorama, EquirectangularPanoramaOptions};
 pub mod frame_rate_monitor;

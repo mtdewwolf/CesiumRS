@@ -1,15 +1,14 @@
 //! CesiumJS `Moon`: draws the Moon in 3D at its astronomical position and
-//! orientation based on the Simon 1994 planetary ephemeris and IAU orientation parameters.
+//! orientation based on the Simon 1994 planetary ephemeris and IAU orientation
+//! parameters, on top of an [`EllipsoidPrimitive`].
 
 use super::ellipsoid_primitive::{EllipsoidPrimitive, EllipsoidPrimitiveOptions};
 use super::frame_state::FrameState;
 use super::material::{Material, MaterialImage, MaterialValue, IMAGE_TYPE};
 use super::scene::{Result, ScenePrimitive};
-use super::scene_mode::SceneMode;
 use crate::core::simon1994_planetary_positions;
-use crate::core::{
-    Ellipsoid, IauOrientationAxes, Matrix3, Matrix4, RuntimeError, Transforms,
-};
+use crate::core::{Ellipsoid, IauOrientationAxes, Matrix3, Matrix4, RuntimeError, Transforms};
+use crate::renderer::Gl;
 
 /// Default texture URL path for the Moon in CesiumJS.
 pub const DEFAULT_MOON_TEXTURE_URL: &str = "Assets/Textures/moonSmall.jpg";
@@ -34,46 +33,40 @@ impl Default for MoonOptions {
     }
 }
 
-/// Draws the Moon in 3D using an astronomical coordinate frame on an `EllipsoidPrimitive`.
-pub struct Moon {
+/// Draws the Moon in 3D using an astronomical coordinate frame on an
+/// `EllipsoidPrimitive`.
+pub struct Moon<G: Gl + 'static> {
     pub show: bool,
     pub texture_url: String,
     pub ellipsoid: Ellipsoid,
     pub only_sun_lighting: bool,
-    pub ellipsoid_primitive: EllipsoidPrimitive,
+    pub ellipsoid_primitive: EllipsoidPrimitive<G>,
     axes: IauOrientationAxes,
     destroyed: bool,
 }
 
-impl Default for Moon {
+impl<G: Gl + 'static> Default for Moon<G> {
     fn default() -> Self {
         Self::new(MoonOptions::default())
     }
 }
 
-impl Moon {
+impl<G: Gl + 'static> Moon<G> {
     /// Creates a new `Moon` primitive with the given options.
     pub fn new(options: MoonOptions) -> Self {
         let show = options.show.unwrap_or(true);
-        let texture_url = options
-            .texture_url
-            .unwrap_or_else(|| DEFAULT_MOON_TEXTURE_URL.to_string());
+        let texture_url = options.texture_url.unwrap_or_else(|| DEFAULT_MOON_TEXTURE_URL.to_string());
         let ellipsoid = options.ellipsoid.unwrap_or(Ellipsoid::MOON);
         let only_sun_lighting = options.only_sun_lighting.unwrap_or(true);
 
         let mut ellipsoid_primitive = EllipsoidPrimitive::new(EllipsoidPrimitiveOptions {
             radii: Some(ellipsoid.radii),
+            material: Some(Material::from_type(IMAGE_TYPE)),
             only_sun_lighting: Some(only_sun_lighting),
             depth_test_enabled: Some(false),
             ..Default::default()
         });
-
-        let mut material = Material::from_type(IMAGE_TYPE);
-        let _ = material.set_uniform(
-            "image",
-            MaterialValue::Sampler2D(MaterialImage::Url(texture_url.clone())),
-        );
-        ellipsoid_primitive.material = material;
+        ellipsoid_primitive.material.translucent = Some(false);
 
         Self {
             show,
@@ -92,48 +85,77 @@ impl Moon {
         let rotation_axes = self.axes.evaluate(time);
         let rotation = Matrix3::multiply(&icrf_to_fixed, &rotation_axes.transpose());
 
-        let translation_inertial =
-            simon1994_planetary_positions::compute_moon_position_in_earth_inertial_frame(time);
+        let translation_inertial = simon1994_planetary_positions::compute_moon_position_in_earth_inertial_frame(time);
         let translation = icrf_to_fixed.multiply_by_vector(translation_inertial);
 
         Matrix4::from_rotation_translation(&rotation, translation)
+    }
+
+    /// Cesium's `Moon.prototype.update`.
+    pub fn update(&mut self, frame: &mut FrameState) -> Result<()> {
+        self.check()?;
+        if !self.show {
+            self.ellipsoid_primitive.clear_commands();
+            return Ok(());
+        }
+
+        let _ = self.ellipsoid_primitive.material.set_uniform(
+            "image",
+            MaterialValue::Sampler2D(MaterialImage::Url(self.texture_url.clone())),
+        );
+        self.ellipsoid_primitive.only_sun_lighting = self.only_sun_lighting;
+        self.ellipsoid_primitive.model_matrix = self.compute_moon_transform(&frame.time);
+
+        // The Moon captures its single command into a scratch list and returns
+        // it, leaving the frame's command list untouched.
+        let saved = std::mem::take(&mut frame.command_list);
+        let result = self.ellipsoid_primitive.update(frame);
+        frame.command_list = saved;
+        result
     }
 
     /// Returns `true` if this primitive has been destroyed.
     pub fn is_destroyed(&self) -> bool {
         self.destroyed
     }
+
+    fn check(&self) -> Result<()> {
+        if self.destroyed {
+            Err(RuntimeError::new("This object was destroyed, i.e., destroy() was called."))
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Cesium's `Moon.prototype.destroy`.
+    pub fn destroy(&mut self) -> Result<()> {
+        if self.destroyed {
+            return Ok(());
+        }
+        self.ellipsoid_primitive.destroy()?;
+        self.destroyed = true;
+        Ok(())
+    }
 }
 
-impl ScenePrimitive for Moon {
+impl<G: Gl + 'static> ScenePrimitive for Moon<G> {
     fn pre_passes_update(&mut self, _frame: &mut FrameState) -> Result<()> {
         Ok(())
     }
 
     fn update(&mut self, frame: &mut FrameState) -> Result<()> {
-        if self.destroyed {
-            return Err(RuntimeError::new("Moon primitive is destroyed"));
-        }
-        if !self.show || frame.mode != SceneMode::Scene3D {
-            return Ok(());
-        }
-
-        let model_matrix = self.compute_moon_transform(&frame.time);
-        self.ellipsoid_primitive.model_matrix = model_matrix;
-        self.ellipsoid_primitive.only_sun_lighting = self.only_sun_lighting;
-        self.ellipsoid_primitive.update(frame)
+        Moon::update(self, frame)
     }
 
     fn post_passes_update(&mut self, _frame: &mut FrameState) -> Result<()> {
         Ok(())
     }
 
-    fn update_for_pass(&mut self, frame: &mut FrameState, pass: super::Cesium3DTilePass) -> Result<()> {
-        self.ellipsoid_primitive.update_for_pass(frame, pass)
+    fn update_for_pass(&mut self, frame: &mut FrameState, _pass: super::Cesium3DTilePass) -> Result<()> {
+        Moon::update(self, frame)
     }
 
     fn destroy(&mut self) -> Result<()> {
-        self.destroyed = true;
-        self.ellipsoid_primitive.destroy()
+        Moon::destroy(self)
     }
 }
