@@ -12,7 +12,7 @@ use crate::{
     scene::{
         polyline::{Polyline, PolylineOptions},
         polyline_collection::{PolylineCollection, PolylineCollectionOptions},
-        SceneMode, ScenePrimitive,
+        FrameState, SceneMode, ScenePrimitive,
     },
 };
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -219,6 +219,17 @@ impl<G: Gl + 'static> PathVisualizer<G> {
 
     pub fn set_scene_mode(&mut self, mode: SceneMode) {
         self.scene_mode = mode;
+    }
+
+    /// Submits the sampled paths from the most recent update to the renderer.
+    pub fn update_frame(&self, frame: &mut FrameState) -> Result<(), RuntimeError> {
+        let mut updaters = self.updaters.borrow_mut();
+        for reference_frame in [ReferenceFrame::Fixed, ReferenceFrame::Inertial] {
+            if let Some(updater) = updaters.get_mut(&reference_frame) {
+                updater.polyline_collection.update(frame)?;
+            }
+        }
+        Ok(())
     }
 
     pub fn polyline_for(&self, entity_id: &str) -> Option<Polyline> {

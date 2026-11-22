@@ -392,6 +392,9 @@ pub trait SceneBackend {
     fn frame_context(&self) -> Option<super::FrameResource> {
         None
     }
+    fn configure_frame(&self, frame: &mut FrameState) {
+        frame.context = self.frame_context();
+    }
     fn dimensions(&self) -> Result<[u32; 2]>;
     fn begin_frame(&mut self, frame: &FrameState) -> Result<()>;
     fn clear(&mut self, color: Color, depth: Option<f64>, stencil: Option<i32>) -> Result<()>;
@@ -708,6 +711,9 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
     }
     fn frame_context(&self) -> Option<super::FrameResource> {
         Some(super::FrameResource::new(self.context.clone()))
+    }
+    fn configure_frame(&self, frame: &mut FrameState) {
+        frame.set_renderer_context(self.context.clone());
     }
     fn dimensions(&self) -> Result<[u32; 2]> {
         self.context.drawing_buffer_size()
@@ -1107,7 +1113,7 @@ impl<B: SceneBackend> Scene<B> {
         let mut uniform = UniformFrame::new(snapshot, time);
         uniform.map_projection = projection;
         let mut frame_state = FrameState::new(uniform, volume, [width, height]);
-        frame_state.context = backend.frame_context();
+        backend.configure_frame(&mut frame_state);
         frame_state.context_capabilities = capabilities.clone();
         frame_state.stencil_buffer = backend.stencil_buffer()?;
         let mut fog = Fog::default();

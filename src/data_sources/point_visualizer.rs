@@ -132,6 +132,7 @@ impl<G: Gl + 'static> Visualizer for PointVisualizer<G> {
 
             let pos = position.unwrap();
             let mut needs_redraw = false;
+            let mut update_clamping = false;
 
             let (point_primitive, billboard) = {
                 let mut items = self.items.borrow_mut();
@@ -143,6 +144,7 @@ impl<G: Gl + 'static> Visualizer for PointVisualizer<G> {
                     let b = self.cluster.get_billboard(&entity)?;
                     b.set_id(Some(entity.id().to_owned()))?;
                     b.set_image(None);
+                    update_clamping = b.position() == pos && b.height_reference() == height_reference;
                     item.billboard = Some(b);
                     needs_redraw = true;
                 } else if height_reference == HeightReference::None && item.point_primitive.is_none() {
@@ -247,6 +249,10 @@ impl<G: Gl + 'static> Visualizer for PointVisualizer<G> {
                     let image =
                         rasterize_billboard_point(new_color, new_outline_color, new_outline_width, new_pixel_size);
                     billboard.set_image_with_id(texture_id, image);
+                }
+
+                if update_clamping {
+                    billboard.set_clamped_position(None);
                 }
             }
         }

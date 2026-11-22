@@ -200,3 +200,68 @@ pub mod model_visualizer;
 pub use model_visualizer::{ModelFactory, ModelHeightQuery, ModelLoadRequest, ModelVisualizer};
 pub mod cesium_3d_tileset_visualizer;
 pub use cesium_3d_tileset_visualizer::{Cesium3DTilesetVisualizer, TilesetFactory};
+pub mod czml_data_source;
+pub use czml_data_source::{
+    CzmlDataSource, CzmlInput, CzmlLoadOptions, CzmlPropertyTarget, CzmlUpdater, CzmlUpdaterFn, CzmlValueType,
+};
+pub mod kml_data_source;
+pub use kml_data_source::{
+    KmlAuthor, KmlDataSource, KmlExtendedDataEntry, KmlFeatureData, KmlInput, KmlLink, KmlOptions, KmlScreenOverlay,
+    KmlScreenOverlayContainer, KmlUnsupportedNodeEvent, NowProvider,
+};
+pub mod export_kml;
+pub use export_kml::{export_kml, ExportKmlModelCallback, ExportKmlOptions, ExportKmlResult};
+pub mod geometry_updater;
+pub use geometry_updater::{
+    BasicGeometryScene, GeometryAppearanceKind, GeometryBatchPrimitive, GeometryChangedEvent, GeometryScene,
+    GeometryUpdater, GeometryUpdaterBase, GeometryUpdaterRef, GroundGeometryPrimitive, InstanceAttributeRecord,
+    SceneHeightSampler, SharedGroundPrimitive,
+};
+pub mod ground_geometry_updater;
+pub use ground_geometry_updater::{GroundExtrudedHeight, GroundGeometryUpdater};
+pub mod dynamic_geometry_updater;
+pub use dynamic_geometry_updater::{DynamicGeometryHooks, DynamicGeometryUpdater, StandardDynamicGeometryUpdater};
+pub mod dynamic_geometry_batch;
+pub use dynamic_geometry_batch::DynamicGeometryBatch;
+pub mod geometry_updater_set;
+pub use geometry_updater_set::{GeometryUpdaterFactory, GeometryUpdaterRegistration, GeometryUpdaterSet};
+pub mod static_geometry_color_batch;
+pub use static_geometry_color_batch::StaticGeometryColorBatch;
+pub mod static_geometry_per_material_batch;
+pub use static_geometry_per_material_batch::StaticGeometryPerMaterialBatch;
+pub mod static_ground_geometry_color_batch;
+pub use static_ground_geometry_color_batch::StaticGroundGeometryColorBatch;
+pub mod static_ground_geometry_per_material_batch;
+pub use static_ground_geometry_per_material_batch::StaticGroundGeometryPerMaterialBatch;
+pub mod static_ground_polyline_per_material_batch;
+pub use static_ground_polyline_per_material_batch::StaticGroundPolylinePerMaterialBatch;
+pub mod static_outline_geometry_batch;
+pub use static_outline_geometry_batch::StaticOutlineGeometryBatch;
+pub mod box_geometry_updater;
+pub use box_geometry_updater::BoxGeometryUpdater;
+pub mod corridor_geometry_updater;
+pub use corridor_geometry_updater::CorridorGeometryUpdater;
+pub mod cylinder_geometry_updater;
+pub use cylinder_geometry_updater::CylinderGeometryUpdater;
+pub mod ellipse_geometry_updater;
+pub use ellipse_geometry_updater::EllipseGeometryUpdater;
+pub mod ellipsoid_geometry_updater;
+pub use ellipsoid_geometry_updater::{DynamicEllipsoidGeometryUpdater, EllipsoidGeometryUpdater};
+pub mod plane_geometry_updater;
+pub use plane_geometry_updater::PlaneGeometryUpdater;
+pub mod polygon_geometry_updater;
+pub use polygon_geometry_updater::PolygonGeometryUpdater;
+pub mod polyline_geometry_updater;
+pub use polyline_geometry_updater::{
+    DynamicPolylineCollection, DynamicPolylineEntry, DynamicPolylineGeometryUpdater, PolylineGeometryUpdater,
+};
+pub mod polyline_volume_geometry_updater;
+pub use polyline_volume_geometry_updater::PolylineVolumeGeometryUpdater;
+pub mod rectangle_geometry_updater;
+pub use rectangle_geometry_updater::RectangleGeometryUpdater;
+pub mod wall_geometry_updater;
+pub use wall_geometry_updater::WallGeometryUpdater;
+pub mod geometry_visualizer;
+pub use geometry_visualizer::GeometryVisualizer;
+pub mod polyline_visualizer;
+pub use polyline_visualizer::PolylineVisualizer;

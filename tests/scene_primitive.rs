@@ -11,6 +11,7 @@ use serde_json::{json, Value};
 use std::{
     cell::{Cell, RefCell},
     collections::{BTreeMap, HashMap},
+    rc::Rc,
 };
 
 #[derive(Default)]
@@ -21,6 +22,7 @@ struct RecordingGl {
     deleted: RefCell<Vec<String>>,
     active_attributes: Vec<Vec<String>>,
     programs: RefCell<HashMap<u32, usize>>,
+    texture_updates: RefCell<Vec<Vec<u8>>>,
 }
 
 fn fnv(bytes: &[u8]) -> String {
@@ -54,6 +56,11 @@ impl Gl for RecordingGl {
             Some(GlValue::Bytes(bytes) | GlValue::Pixels { bytes, .. }) => Some(bytes.as_slice()),
             _ => None,
         };
+        if method == "texSubImage2D" {
+            if let Some(bytes) = data(8) {
+                self.texture_updates.borrow_mut().push(bytes.to_vec());
+            }
+        }
         let call = match method {
             "bufferData" => data(1).map(|bytes| json!([method, arg(0), arg(2), bytes.len(), fnv(bytes)])),
             "texImage2D" | "texSubImage2D" if args.len() == 9 => {
@@ -133,6 +140,153 @@ fn frame(context: &Context<RecordingGl>) -> FrameState {
     frame.context_capabilities = context.capabilities().unwrap();
     frame.passes.render = true;
     frame
+}
+
+#[test]
+fn data_source_display_queues_geometry_and_polyline_draws() {
+    use cesium_rs::data_sources::*;
+
+    let context = Context::new_webgl2(RecordingGl::default());
+    let mut frame = frame(&context);
+    frame.scene_3d_only = true;
+    let backend = RendererSceneBackend::new(context);
+    let mut render_scene =
+        Scene::new(backend, CameraOptions::new(8.0, 8.0), SceneOptions::default(), frame.time).unwrap();
+    render_scene.backend.configure_frame(&mut frame);
+    let host = BasicGeometryScene::attach_to(&mut render_scene);
+    let scene = host.clone();
+    let factory: VisualizerFactory = Rc::new(move |source| {
+        vec![
+            Box::new(GeometryVisualizer::new(scene.clone(), source.entities(), None, None)),
+            Box::new(PolylineVisualizer::new(scene.clone(), source.entities(), None, None)),
+        ]
+    });
+    let display = DataSourceDisplay::new(DataSourceCollection::new(), factory);
+    let source = display.default_data_source();
+    let position = Cartesian3::new(6_999_984.0, 0.0, 0.0);
+    let entity = Entity::with_id("box");
+    entity.set_position(Some(Rc::new(ConstantPositionProperty::new(Some(position), ReferenceFrame::Fixed)))).unwrap();
+    let graphics = Rc::new(BoxGraphics::new());
+    graphics.set_dimensions(Some(PropertyInput::value(Cartesian3::new(4.0, 4.0, 4.0)))).unwrap();
+    entity.set_property("box", Some(PropertyInput::Component(graphics))).unwrap();
+    source.entities().add(entity.clone()).unwrap();
+
+    let line = Entity::with_id("dynamic-line");
+    let graphics = Rc::new(PolylineGraphics::new());
+    let positions = DynamicValue::Positions(Rc::new(vec![position, position + Cartesian3::UNIT_Y]));
+    let callback = CallbackProperty::new(Rc::new(move |_, _| Ok(Some(positions.clone()))), false);
+    graphics.set_positions(Some(PropertyInput::Component(PropertyComponent::wrap(Rc::new(callback))))).unwrap();
+    graphics.set_arc_type(Some(PropertyInput::value(ArcType::None as u8 as f64))).unwrap();
+    line.set_property("polyline", Some(PropertyInput::Component(graphics))).unwrap();
+    let samples = Rc::new(SampledPositionProperty::new(ReferenceFrame::Fixed, 0));
+    samples.add_sample(frame.time.add_seconds(-1.0), &position, None).unwrap();
+    samples.add_sample(frame.time.add_seconds(1.0), &(position + Cartesian3::UNIT_Z), None).unwrap();
+    line.set_position(Some(samples)).unwrap();
+    let path = Rc::new(PathGraphics::new());
+    path.set_lead_time(Some(PropertyInput::value(1.0))).unwrap();
+    path.set_trail_time(Some(PropertyInput::value(1.0))).unwrap();
+    line.set_property("path", Some(PropertyInput::Component(path))).unwrap();
+    source.entities().add(line).unwrap();
+
+    assert!(!display.update(&frame.time).unwrap());
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    loop {
+        frame.command_list.clear();
+        render_scene.primitives[0].update(&mut frame).unwrap();
+        for callback in std::mem::take(&mut frame.after_render) {
+            callback().unwrap();
+        }
+        if display.update(&frame.time).unwrap() {
+            break;
+        }
+        assert!(std::time::Instant::now() < deadline, "geometry batch failed to become ready");
+        std::thread::yield_now();
+    }
+    frame.command_list.clear();
+    render_scene.primitives[0].update(&mut frame).unwrap();
+    let box_draw = frame.command_list.iter().find(|command| command.id.starts_with("Primitive#")).unwrap();
+    assert_eq!(box_draw.metadata.bounding_volume.unwrap().center, position);
+    assert!(frame.command_list.iter().any(|command| command.id.starts_with("polyline-collection-")));
+
+    let mut paths = PathVisualizer::<RecordingGl>::new(SceneMode::Scene3D, source.entities().clone());
+    paths.update(&frame.time).unwrap();
+    frame.command_list.clear();
+    paths.update_frame(&mut frame).unwrap();
+    assert!(frame.command_list.iter().any(|command| command.id.starts_with("polyline-collection-")));
+    paths.destroy();
+
+    assert_eq!(display.get_bounding_sphere(&entity, false, &mut BoundingSphere::default()), BoundingSphereState::Done,);
+    display.destroy();
+    assert!(host.primitives.borrow().is_empty());
+}
+
+#[test]
+fn static_polylines_upload_animated_depth_fail_colors() {
+    use cesium_rs::data_sources::*;
+
+    let color_fill =
+        Rc::new(ColorMaterialProperty::new(Some(PropertyInput::value(Color::RED))).unwrap()) as ComponentRef;
+    let material_fill = Rc::new(PolylineDashMaterialProperty::new());
+    let mut missing_uploads = Vec::new();
+    // The distance-display attribute makes this a float RGBA batch texture.
+    let expected_texel = [37.0_f32, 83.0, 173.0, 255.0].map(f32::to_le_bytes).concat();
+    for (kind, fill) in [("color", color_fill), ("material", material_fill)] {
+        let context = Context::new_webgl2(RecordingGl::default());
+        let mut frame = frame(&context);
+        frame.set_renderer_context(context.clone());
+        frame.scene_3d_only = true;
+        let scene = BasicGeometryScene::new();
+        let collection = EntityCollection::new();
+        let mut visualizer = PolylineVisualizer::new(scene.clone(), &collection, None, None);
+        let polyline = Rc::new(PolylineGraphics::new());
+        let position = Cartesian3::new(6_999_984.0, 0.0, 0.0);
+        polyline
+            .set_positions(Some(PropertyInput::value(Rc::new(vec![position, position + Cartesian3::UNIT_Y]))))
+            .unwrap();
+        polyline.set_arc_type(Some(PropertyInput::value(ArcType::None as u8 as f64))).unwrap();
+        polyline.set_material(Some(PropertyInput::Component(fill))).unwrap();
+        let start = frame.time;
+        let end_color = Color::from_bytes(37.0, 83.0, 173.0, 255.0);
+        let color = CallbackProperty::new(
+            Rc::new(move |time, _| Ok(Some(if *time == start { Color::WHITE } else { end_color }))),
+            false,
+        );
+        let color = PropertyInput::Component(PropertyComponent::wrap(Rc::new(color)));
+        let depth_fail = Rc::new(ColorMaterialProperty::new(Some(color)).unwrap());
+        polyline.set_depth_fail_material(Some(PropertyInput::Component(depth_fail))).unwrap();
+        let line = Entity::with_id("static-line");
+        line.set_property("polyline", Some(PropertyInput::Component(polyline))).unwrap();
+        collection.add(line).unwrap();
+
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while !visualizer.update(&start).unwrap() {
+            frame.command_list.clear();
+            scene.primitives.borrow_mut().update(&mut frame).unwrap();
+            for callback in std::mem::take(&mut frame.after_render) {
+                callback().unwrap();
+            }
+            assert!(std::time::Instant::now() < deadline, "polyline batch failed to become ready");
+            std::thread::yield_now();
+        }
+        frame.command_list.clear();
+        scene.primitives.borrow_mut().update(&mut frame).unwrap();
+        context.host().texture_updates.borrow_mut().clear();
+
+        visualizer.update(&start.add_seconds(1.0)).unwrap();
+        frame.command_list.clear();
+        scene.primitives.borrow_mut().update(&mut frame).unwrap();
+        if !context
+            .host()
+            .texture_updates
+            .borrow()
+            .iter()
+            .any(|bytes| bytes.as_chunks::<16>().0.iter().any(|texel| texel.as_slice() == expected_texel))
+        {
+            missing_uploads.push(kind);
+        }
+        visualizer.destroy();
+    }
+    assert!(missing_uploads.is_empty(), "depth-fail color upload missing from {missing_uploads:?} batches");
 }
 
 fn sphere(value: Option<BoundingSphere>) -> Value {

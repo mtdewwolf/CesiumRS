@@ -1,0 +1,1 @@
+{"module":"GeometryUpdaterSet","cesium":"23.0.0","cases":[{"f":"lifecycle","a":[],"r":{"initialCount":10,"activeBefore":["box-set-1","rectangle-set-1"],"activeAfterWall":["box-set-1","rectangle-set-1","wall-set-1"],"activeAfterRemoveBox":["rectangle-set-1","wall-set-1"],"changedIds":["wall-set-1","box-set-1"],"destroyed":true}}]}

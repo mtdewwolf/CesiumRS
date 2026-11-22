@@ -1,12 +1,12 @@
 //! CesiumJS `EntityView`: tracks an entity with a [`Camera`] in 3D, 2D, or Columbus View.
 use super::{
-    visualizer_values::eval_cartesian3_opt, EntityRef, PositionContext, PositionPropertyRef, Property, PropertyRef,
-    VelocityVectorProperty,
+    visualizer_values::{dynamic_to_quaternion, eval_cartesian3_opt, eval_dynamic},
+    EntityRef, PositionContext, PositionPropertyRef, Property, PropertyRef, VelocityVectorProperty,
 };
 use crate::{
     core::{
-        math, BoundingSphere, Cartesian3, Ellipsoid, HeadingPitchRange, JulianDate, Matrix3, Matrix4, Quaternion,
-        RuntimeError, TrackingReferenceFrame, Transforms,
+        math, BoundingSphere, Cartesian3, Ellipsoid, HeadingPitchRange, JulianDate, Matrix4, RuntimeError,
+        TrackingReferenceFrame, Transforms,
     },
     scene::{Camera, CameraOffset, Scene, SceneBackend, SceneMode},
 };
@@ -89,20 +89,24 @@ impl EntityView {
 
         let entity = Rc::clone(&self.entity);
         let tracking_reference_frame = entity.tracking_reference_frame();
-        self.bounding_sphere = bounding_sphere;
         let Some(position_property) = entity.position() else {
             return Ok(());
         };
         let object_changed = !self.last_entity.as_ref().is_some_and(|prev| Rc::ptr_eq(prev, &entity));
         let scene_mode_changed = self.mode != Some(scene_mode);
 
+        let view_from_slot = entity.get_property("viewFrom");
+        let has_view_from = view_from_slot.is_some();
+        if !has_view_from {
+            self.bounding_sphere = bounding_sphere;
+        } else if object_changed {
+            self.bounding_sphere = None;
+        }
+
         let mut update_look_at = object_changed || scene_mode_changed;
         let mut save_camera = true;
 
         if object_changed {
-            let view_from_slot = entity.get_property("viewFrom");
-            let has_view_from = view_from_slot.is_some();
-
             if !has_view_from {
                 if let Some(sphere) = bounding_sphere {
                     let mut pitch = -math::PI_OVER_FOUR;
@@ -218,14 +222,9 @@ impl EntityView {
 
             let saved = save_camera.then_some((camera.position, camera.direction, camera.up));
 
-            let orientation = match self.entity.get_property("orientation") {
-                Some(super::PropertyInput::Component(c)) => match c.get_value(time, None)? {
-                    Some(super::DynamicValue::Quaternion(q)) => Some(q),
-                    _ => None,
-                },
-                Some(super::PropertyInput::Value(super::DynamicValue::Quaternion(q))) => Some(q),
-                _ => None,
-            };
+            let orientation = eval_dynamic(self.entity.get_property("orientation").as_ref(), time)?
+                .as_ref()
+                .and_then(dynamic_to_quaternion);
 
             let velocity = self.velocity_property.get_value(Some(time), None)?;
 
@@ -272,7 +271,6 @@ impl EntityView {
             camera.look_at_transform(current, offset).map_err(|e| RuntimeError::new(e.0))?;
         }
 
-        let _ = (Matrix3::IDENTITY, Quaternion::IDENTITY);
         Ok(())
     }
 }

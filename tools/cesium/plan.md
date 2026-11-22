@@ -35,7 +35,7 @@ Along the way, `core::js_math` made the port's `sin`, `cos`, `log` and the other
    - ✅ network heightmap/quantized and 3D Tiles terrain providers, Google Earth Enterprise metadata and terrain, world-terrain factories. Ion resources/geocoding and platform clients are now validated. Bing, Google, Pelias, OpenCage and coordinate geocoders pass deterministic parsing, request construction, attribution and error fixtures.
 11. ✅ **Contracts and host behavior:** interpolation/packing interfaces, geometry factories, video bindings, terrain sampling, screen-space gestures and canvas text/pin rendering validated.
 
-Core, Renderer, Shaders and Workers have reached 100% of applicable modules; Scene remains in progress; DataSources property foundations and composite collections are now validated. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. The viewer already runs on Core — it was migrated ahead of 100% Core so the two implementations could not drift apart. After Core, proceed to Renderer and Scene.
+Core, Renderer, Shaders and Workers have reached 100% of applicable modules; Scene remains in progress. DataSources has validated loaders, visualizers, and geometry updaters, with ground rendering dependent on the remaining Scene primitives. Progress requires implemented behavior and reference validation; placeholder APIs do not count. Existing n/a entries describe JavaScript-specific idioms and must retain explicit Rust replacement notes. The viewer already runs on Core — it was migrated ahead of 100% Core so the two implementations could not drift apart. After Core, proceed to Renderer and Scene.
 
 ### Validated partial-module batch
 
@@ -264,3 +264,12 @@ checks, alongside the existing ordering, readiness and compute-queue suites.
 Next in imagery: complete ImageryLayer skeleton coverage and texel-spacing
 validation, then service-specific provider parity and time-dynamic integration.
 Globe and GlobeSurfaceTileProvider remain separate terrain-renderer projects.
+
+
+### DataSources loaders and visualizers
+
+CZML, KML, KMZ, KML export, entity visualizers, and geometry batching add 95
+CesiumJS cases across 37 modules. Scene renders ordinary geometry and polylines
+through `Primitive` and `PolylineCollection`. Seven DataSources entries remain
+partial because terrain and tileset classification depend on
+`ClassificationPrimitive`, `GroundPrimitive`, and `GroundPolylinePrimitive`.

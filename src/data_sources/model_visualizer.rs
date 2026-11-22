@@ -239,7 +239,13 @@ impl<G: Gl + 'static> Visualizer for ModelVisualizer<G> {
                     time,
                     DEFAULT_INCREMENTALLY_LOAD_TEXTURES,
                 )?;
-                let environment_map_options = eval_dynamic(graphics.environment_map_options().as_ref(), time)?;
+                let environment_map_options =
+                    eval_dynamic(graphics.environment_map_options().as_ref(), time)?.or_else(|| {
+                        Some(DynamicValue::Record(vec![(
+                            "maximumPositionEpsilon".to_owned(),
+                            Some(DynamicValue::Number(f64::INFINITY)),
+                        )]))
+                    });
                 let req = ModelLoadRequest {
                     entity_id: id.clone(),
                     resource,

@@ -1,11 +1,10 @@
 # DataSources
 
-**41 of 108 DataSources modules** are ported against `@cesium/engine` 23.0.0,
-with two more partial. They provide values, positions, motion, property bags,
-entities, collections, references, the seventeen concrete graphics classes and
-a Color material. Visualizers, the remaining material types, CZML, KML, GeoJSON
-and GPX remain unported. Scene status is tracked separately in
-[scene.md](scene.md).
+The [port tracker](../PORTING.md#datasources) lists 101 validated modules and
+seven partial modules against `@cesium/engine` 23.0.0. The partial modules cover
+ground geometry and polylines. They prepare instances and manage batch state.
+Scene still needs `ClassificationPrimitive`, `GroundPrimitive`, and
+`GroundPolylinePrimitive` to render them against terrain and tiles.
 
 | Cesium module | Rust API | Behavior |
 | --- | --- | --- |
@@ -372,9 +371,28 @@ integration tests** for Entity coercion, nested references, event forwarding,
 composite cloning/merging, shared field identity and unsupported material
 inputs. DataSources now has **809 pinned scenarios** overall.
 
-Next, implement the remaining material properties, `NodeTransformationProperty`
-and its raw PropertyBag factories, DataSourceClock/data-source collections and
-the loaders in dependency order. The largest document modules are CzmlDataSource
-(5,142 upstream lines), KmlDataSource (4,249), GeoJsonDataSource (1,064) and
-GpxDataSource (1,018). Their property/entity dependencies must exist before their
-loader behavior can be completed and validated.
+## Loaders and visualizers
+
+| Rust API | Behavior |
+| --- | --- |
+| `CzmlDataSource` | Loads or processes CZML packets into entities, graphics, property references, sampled positions, materials, and a data-source clock. URL input uses a host `ResourceClient`. |
+| `KmlDataSource` | Loads XML, KMZ bytes, or a resource. NetworkLinks refresh on an interval, at expiry, or after a camera stop. `update_camera` supplies the current view for camera-dependent requests. |
+| `export_kml` | Exports an entity collection as KML with external files or as a KMZ archive. A host callback supplies model assets. |
+| `BillboardVisualizer`, `LabelVisualizer`, `PointVisualizer`, `EntityCluster` | Share reusable scene objects and manage screen-space clusters. |
+| `ModelVisualizer`, `Cesium3DTilesetVisualizer` | Use host factories to load resources. They update visibility, transforms, and bounding spheres. |
+| `PathVisualizer`, `EntityView`, `TerrainOffsetProperty` | Sample paths, track an entity with the camera, and maintain offsets from changing terrain. |
+| `GeometryVisualizer`, `PolylineVisualizer` | Route entities to geometry updaters and batches for the entity's material, outline, visibility, and time dependence. |
+
+`DataSourceDisplay` accepts a `VisualizerFactory` for each source.
+`BasicGeometryScene::attach_to` puts a shared geometry collection into a
+`Scene`. A factory can pass that host to both `GeometryVisualizer` and
+`PolylineVisualizer`. The host selects ordinary geometry on a renderer that
+lacks terrain classification. For a headless replay, `BasicGeometryScene::new`
+also exercises the ground batch rules.
+
+The current batch adds 95 CesiumJS cases across 37 modules. The Rust replay suites
+are `data_sources_czml`, `data_sources_kml`, `data_sources_visualizers`, and
+`data_sources_geometry`. The `scene_primitive` suite checks that
+`DataSourceDisplay` sends static geometry and dynamic polylines to the Scene
+renderer. KML lifecycle tests cover delayed NetworkLink responses and camera
+stops.

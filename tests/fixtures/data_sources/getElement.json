@@ -1,0 +1,1 @@
+{"module":"getElement","cesium":"23.0.0","cases":[{"f":"resolve","a":["map"],"r":{"found":"map","error":null}},{"f":"resolve","a":[{"direct":"canvas-1"}],"r":{"found":"canvas-1","error":null}},{"f":"resolve","a":["missing"],"r":{"found":null,"error":"Element with id \"missing\" does not exist in the document."}}]}

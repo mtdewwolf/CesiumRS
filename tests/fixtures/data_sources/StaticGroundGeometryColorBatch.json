@@ -1,0 +1,1 @@
+{"module":"StaticGroundGeometryColorBatch","cesium":"23.0.0","cases":[{"f":"lifecycle","a":[],"r":{"firstUpdate":false,"batchCount":3,"groundCount":3,"batchCountAfterRemove":2,"groundCountAfterRemove":2,"groundCountAfterClear":0}}]}
