@@ -6,9 +6,8 @@
 //! context without float textures.
 //!
 //! Texture calls are compared as data uploads (size, format, type and exact
-//! bytes): the renderer's `Texture` issues its sampler and pixel-store calls
-//! in its own order, and fills a new texture with `texSubImage2D` where
-//! Cesium uses a second `texImage2D`; the texture contents are the same.
+//! bytes). The renderer's `Texture` issues its sampler and pixel-store calls
+//! in its own order.
 
 use cesium_rs::core::*;
 use cesium_rs::renderer::{Context, Gl, GlValue, UniformValue};
