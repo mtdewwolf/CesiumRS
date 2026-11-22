@@ -1,5 +1,5 @@
 //! Heterogeneous property values. Math values own their data; JSON objects keep identity.
-use super::{JsonReference, PropertyValue};
+use super::{GeoJsonPin, JsonReference, PropertyValue};
 use crate::core::*;
 use serde_json::{json, Value};
 use std::rc::Rc;
@@ -16,6 +16,9 @@ pub enum DynamicValue {
     Cartesian2(Cartesian2),
     Cartesian3(Cartesian3),
     Cartesian4(Cartesian4),
+    Positions(Rc<Vec<Cartesian3>>),
+    PolygonHierarchy(Rc<PolygonHierarchy>),
+    Pin(Rc<GeoJsonPin>),
     Quaternion(Quaternion),
     Color(Color),
     Matrix3(Matrix3),
@@ -34,6 +37,10 @@ fn json_order(value: Value) -> Value {
         Value::Array(value) => Value::Array(value.into_iter().map(json_order).collect()),
         value => value,
     }
+}
+fn hierarchy_json(hierarchy: &PolygonHierarchy) -> Value {
+    json!({"positions":hierarchy.positions.iter().map(|p|p.to_array()).collect::<Vec<_>>(),
+           "holes":hierarchy.holes.iter().map(hierarchy_json).collect::<Vec<_>>()})
 }
 impl DynamicValue {
     pub fn from_json(value: Value) -> Self {
@@ -60,6 +67,9 @@ impl DynamicValue {
             Self::Cartesian2(v) => json!(v.to_array()),
             Self::Cartesian3(v) => json!(v.to_array()),
             Self::Cartesian4(v) => json!(v.to_array()),
+            Self::Positions(v) => json!(v.iter().map(|p| p.to_array()).collect::<Vec<_>>()),
+            Self::PolygonHierarchy(v) => hierarchy_json(v),
+            Self::Pin(v) => v.to_json(),
             Self::Quaternion(v) => json!([v.x, v.y, v.z, v.w]),
             Self::Color(v) => json!([v.red, v.green, v.blue, v.alpha]),
             Self::Matrix3(v) => json!(v.0),
@@ -83,6 +93,8 @@ impl DynamicValue {
             }),
             Self::Record(v) => v.iter().find(|(k, _)| k == name).and_then(|(_, v)| v.clone()),
             Self::Json(v) => v.value().get(name).cloned().map(Self::from_json),
+            Self::PolygonHierarchy(v) if name == "positions" => Some(Self::Positions(Rc::new(v.positions.clone()))),
+            Self::PolygonHierarchy(_) | Self::Pin(_) => self.to_json().get(name).cloned().map(Self::from_json),
             _ => None,
         }
     }
@@ -111,6 +123,9 @@ impl PropertyValue for DynamicValue {
             (Self::Matrix4(a), Self::Matrix4(b)) => a == b,
             (Self::Date(a), Self::Date(b)) => a == b,
             (Self::Resource(a), Self::Resource(b)) => Rc::ptr_eq(a, b),
+            (Self::Positions(a), Self::Positions(b)) => Rc::ptr_eq(a, b),
+            (Self::PolygonHierarchy(a), Self::PolygonHierarchy(b)) => Rc::ptr_eq(a, b),
+            (Self::Pin(a), Self::Pin(b)) => Rc::ptr_eq(a, b),
             (Self::Json(a), Self::Json(b)) => a.property_equals(b),
             (Self::Record(a), Self::Record(b)) => {
                 a.len() == b.len()
@@ -133,6 +148,9 @@ impl PropertyValue for DynamicValue {
             | (Self::Number(_), Self::Number(_))
             | (Self::String(_), Self::String(_)) => self.property_equals(other),
             (Self::Resource(a), Self::Resource(b)) => Rc::ptr_eq(a, b),
+            (Self::Positions(a), Self::Positions(b)) => Rc::ptr_eq(a, b),
+            (Self::PolygonHierarchy(a), Self::PolygonHierarchy(b)) => Rc::ptr_eq(a, b),
+            (Self::Pin(a), Self::Pin(b)) => Rc::ptr_eq(a, b),
             (Self::Json(a), Self::Json(b)) => a.property_equals(b),
             (Self::Date(a), Self::Date(b)) => Rc::ptr_eq(a, b),
             (Self::Entity(a), Self::Entity(b)) => std::rc::Weak::ptr_eq(a, b),
@@ -174,7 +192,8 @@ impl PropertyValue for DynamicValue {
             Self::Matrix4(v) => v.property_string(),
             Self::Date(v) => v.to_iso8601(None),
             Self::Json(v) => v.property_string(),
-            Self::Record(_) => "[object Object]".into(),
+            Self::Positions(v) => v.iter().map(PropertyValue::property_string).collect::<Vec<_>>().join(","),
+            Self::PolygonHierarchy(_) | Self::Pin(_) | Self::Record(_) => "[object Object]".into(),
         }
     }
 }
@@ -215,6 +234,9 @@ value!(Color, Color);
 value!(Matrix3, Matrix3);
 value!(Matrix4, Matrix4);
 value!(Rc<JulianDate>, Date);
+value!(Rc<Vec<Cartesian3>>, Positions);
+value!(Rc<PolygonHierarchy>, PolygonHierarchy);
+value!(Rc<GeoJsonPin>, Pin);
 value!(JsonReference, Json);
 impl From<Resource> for DynamicValue {
     fn from(value: Resource) -> Self {

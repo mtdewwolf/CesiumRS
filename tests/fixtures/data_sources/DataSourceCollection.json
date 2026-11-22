@@ -1,0 +1,1 @@
+{"module":"DataSourceCollection","cesium":"23.0.0","cases":[{"f":"lifecycle","a":[],"r":[[["add",0,1],["add",1,2],["add",2,3],["move",0,1,0],["move",1,2,0],["move",2,0,1],["move",1,1,2],["remove",0,2],["destroy",0],["remove",2,2],["destroy",2],["remove",1,2],["destroy",1]],[2,1,0],[2,0],true,false,true]}]}

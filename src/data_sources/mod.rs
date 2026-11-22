@@ -140,3 +140,21 @@ pub mod rotation;
 pub use rotation::Rotation;
 pub mod data_source_clock;
 pub use data_source_clock::DataSourceClock;
+
+pub mod bounding_sphere_state;
+pub use bounding_sphere_state::BoundingSphereState;
+pub mod visualizer;
+pub use visualizer::Visualizer;
+pub mod data_source;
+pub use data_source::{DataSource, DataSourceRef, DataSourceState};
+pub mod custom_data_source;
+pub use custom_data_source::CustomDataSource;
+pub mod data_source_collection;
+pub use data_source_collection::{DataSourceCollection, DataSourceMembership, DataSourceMove};
+pub mod data_source_display;
+pub use data_source_display::{DataSourceDisplay, VisualizerFactory};
+pub mod geo_json_data_source;
+pub use geo_json_data_source::{
+    CrsFunction, CrsLinkResolver, CrsRegistry, DescribeProperty, GeoJsonDataSource, GeoJsonInput, GeoJsonOptions,
+    GeoJsonPin, PinSymbol,
+};
