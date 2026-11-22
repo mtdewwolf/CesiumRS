@@ -4207,14 +4207,14 @@
     "note": "Raw little-endian component/element/array decoding, 64-bit BigInts, normalization, value transforms and vector/matrix objects; 500 pinned-source cases. Shader pipeline rejects variable-length arrays."
   },
   "Scene/TranslucentTileClassification": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::translucent_tile_classification",
-    "note": "Owned translucent depth, packed depth and classification accumulation targets; Scene command routing and sampler restoration implemented. Independent GPU classification comparisons still pending."
+    "note": "Owned translucent depth, packed depth and classification accumulation targets with Scene command routing, scissor/stencil/alpha-blend states and sampler restoration; validated against a CesiumJS SwiftShader WebGL2 capture in tests/scene_pending_validations.rs alongside the 16 Scene classification depth-handoff pixel cases."
   },
   "Scene/PickedMetadataInfo": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::pick_object",
-    "note": "Owned metadata shader selection, class property and optional value transform; integrated with Scene metadata reads. End-to-end metadata-render validation pending."
+    "note": "Owned metadata shader selection, class property and optional value transform; validated against a CesiumJS SwiftShader WebGL2 capture covering DerivedCommand metadata shaders, pixel render/readback, MetadataPicking decoding and Scene::pick_metadata_with_info in tests/scene_pending_validations.rs."
   },
   "Scene/ResourceLoader": {
     "status": "ported",
@@ -5117,9 +5117,9 @@
     "note": "Color/pick fragment and vertex ShaderSources with propagated EC/WC/normal/texture-coordinate dependencies, material and per-instance-color appearances, Cesium's first-projection caching of the EAST/WEST_MOST_X extent defines with JavaScript toFixed formatting, and the static planar and spherical texture-coordinate attribute helpers, attribute checks and planar/spherical selection. 144 pinned shader cases across nine appearances, a projection-caching case and 24 attribute cases compare exactly. An appearance without a material stands in for instanceof PerInstanceColorAppearance; classification rendering awaits ClassificationPrimitive and GroundPrimitive."
   },
   "Scene/Model/Model": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::model::model",
-    "note": "Model lifecycle, loader factories, runtime stage dispatch, animation, transforms, styles, feature tables, deferred ready events and owned draw submission. 64 visibility reference cases and native lifecycle/style tests; complete end-to-end WebGL model parity remains unchecked. Terrain clamping and environment updates use ModelUpdateServices host hooks."
+    "note": "Model lifecycle, loader factories, runtime stage dispatch, animation, transforms, styles, feature tables, deferred ready events and owned draw submission. Validated pixel-for-pixel (0 channel diff) against pinned @cesium/engine 23.0.0 on SwiftShader WebGL2 in examples/model_validation.rs + tools/cesium/model-validation-check.mjs (glTF/GLB unlit, color REPLACE/MIX, scale/transform, show toggle & runtime modelMatrix update, CustomShader, B3DM/I3DM/PNTS/GeoJSON), plus 64 visibility reference cases and native suites. Terrain clamping and environment updates use ModelUpdateServices host hooks."
   },
   "Scene/Model/ModelDrawCommand": {
     "status": "ported",
@@ -5132,14 +5132,14 @@
     "note": "48 pinned cases cover terrain/tiles/both, render/pick/invert, batches and wireframe."
   },
   "Scene/Model/ModelDrawCommands": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::model::model_draw_commands",
-    "note": "Build owned GPU vertex arrays and shader resources from pipeline outputs, retain textures and pick identities, and connect ordinary/classification wrappers. Native integration coverage; complete GPU pipeline parity remains unchecked."
+    "note": "Builds owned GPU vertex arrays, shader programs and ordinary/classification draw commands from pipeline outputs; validated against a 6-scenario CesiumJS SwiftShader WebGL2 capture in tests/scene_pending_validations.rs plus native command suites in tests/scene_model_commands.rs."
   },
   "Scene/Model/Model3DTileContent": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::model::model_3d_tile_content",
-    "note": "Model-backed built-in glTF/GLB, b3dm, i3dm, pnts and GeoJSON factory, real-frame processing, feature access, metrics, animation, picking and destruction. Native readiness/submission regression; full content-format rendering parity remains unchecked."
+    "note": "Model-backed built-in glTF/GLB, b3dm, i3dm, pnts and GeoJSON factory, real-frame processing, feature access, metrics, styling, debug settings, animation, picking and destruction. Validated pixel-for-pixel (0 channel diff) against pinned @cesium/engine 23.0.0 across all 5 content formats on SwiftShader WebGL2 in examples/model_validation.rs + tools/cesium/model-validation-check.mjs, plus native regressions in tests/scene_pending_validations.rs and tests/scene_model_commands.rs."
   },
   "Scene/Model/pickModel": {
     "status": "ported",
@@ -5482,9 +5482,9 @@
     "note": "Stable z-index updates/removal/destruction compared with pinned source traces. Rust-owned primitives use collection-local handles; finite z-indices only. See docs/scene-mz-cpu.md."
   },
   "Scene/GaussianSplatSorter": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::gaussian_splat_sorter",
-    "note": "Coordinates background web worker radix sorting of Gaussian splats by camera distance."
+    "note": "Worker-backed radix sorter coordinator with native Rust worker; concurrency bounds, initialization/error lifecycle and all finite pinned @cesium/wasm-splats worker cases validated in tests/scene_pending_validations.rs."
   },
   "Scene/DepthPlane": {
     "status": "partial",
@@ -5502,34 +5502,34 @@
     "note": "CPU geometry and state implemented; rendering is not yet supported."
   },
   "Scene/GaussianSplatRenderResources": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::gaussian_splat_render_resources",
-    "note": "Shader builder, render state, and alpha options for Gaussian splat drawing stages."
+    "note": "Shader builder, render state, alpha options and dynamic uniform providers for Gaussian splat drawing stages; validated against pinned CesiumJS reference for log-depth on/off in tests/scene_pending_validations.rs."
   },
   "Scene/JobScheduler": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::job_scheduler",
-    "note": "Frame budget coordinator for scheduling and executing texture, program, and general engine jobs."
+    "note": "Per-type frame budget coordinator with stealing, starvation tracking, disable_this_frame and try_new validation; validated against multi-frame CesiumJS JobScheduler traces in tests/scene_pending_validations.rs."
   },
   "Scene/createTangentSpaceDebugPrimitive": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::create_tangent_space_debug_primitive",
-    "note": "Creates colored debug line primitive for normal, tangent, and bitangent geometry attributes."
+    "note": "Creates colored debug line primitive for normal/tangent/bitangent attributes (plus GeometryFactory helper); validated against pinned CesiumJS reference instances, line segments, bounds and appearance shaders in tests/scene_pending_validations.rs."
   },
   "Scene/Empty3DTileContent": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::empty_3d_tile_content",
-    "note": "Tile content for empty/leaf tiles in 3D Tiles hierarchies without geometry or textures."
+    "note": "Empty 3D Tiles leaf content and TilesetContent adapter; validated against pinned CesiumJS Empty3DTileContent reference in tests/scene_pending_validations.rs."
   },
   "Scene/GaussianSplatTextureGenerator": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::gaussian_splat_texture_generator",
-    "note": "Coordinates background web worker generation of attribute textures for Gaussian splats."
+    "note": "Worker-backed Gaussian splat attribute texture generator coordinator with native Rust worker; concurrency bounds, initialization/error lifecycle and all finite pinned @cesium/wasm-splats worker cases validated in tests/scene_pending_validations.rs."
   },
   "Scene/BrdfLutGenerator": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::brdf_lut_generator",
-    "note": "Generates 256x256 BRDF split-sum look-up texture for image-based lighting and PBR materials."
+    "note": "Generates 256x256 RGBA8 BRDF split-sum lookup texture; validated against pinned CesiumJS SwiftShader WebGL2 capture (262,144 bytes, max diff 0 in docs/model-effects-evidence/webgl2-brdf-postprocess.json) plus recording-GL lifecycle and shared-shader tests in tests/scene_pending_validations.rs and tests/scene_nz_contracts.rs."
   },
   "Scene/Panorama": {
     "status": "ported",
@@ -5567,9 +5567,9 @@
     "note": "Executable material GLSL overlay commands, viewport/blending/uniform updates and material replacement/destruction; recording GL draw tests. Texture resolution and Scene submission remain host-owned. See docs/scene-nz-contracts.md."
   },
   "Scene/VoxelBoundsCollection": {
-    "status": "implemented",
+    "status": "ported",
     "rust": "scene::voxel_bounds_collection",
-    "note": "Plane events/indexing, value membership, transformed normalized float packing, RGBA float texture grow/shrink/upload and destruction; recording GL tests. Browser GPU validation remains. See docs/scene-nz-contracts.md."
+    "note": "Constructor options, plane events/indexing, value membership, transformed Hessian-normal float packing, RGBA32F texture grow/no-resize/shrink/upload and destruction; validated against a 9-step CesiumJS SwiftShader WebGL2 capture and GPU float readback in tests/scene_pending_validations.rs."
   },
   "Scene/VoxelProvider": {
     "status": "ported",

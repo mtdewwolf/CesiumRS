@@ -117,6 +117,10 @@ impl Primitive {
         &self.geometries
     }
 
+    pub fn geometry_instances(&self) -> Option<&[GeometryInstance]> {
+        self.geometry_instances.as_deref()
+    }
+
     pub fn bounding_spheres(&self) -> &[Option<BoundingSphere>] {
         &self.bounding_spheres
     }

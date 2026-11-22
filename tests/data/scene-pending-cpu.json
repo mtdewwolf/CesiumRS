@@ -1,0 +1,2884 @@
+{
+  "cesium": "23.0.0",
+  "empty3DTileContent": {
+    "initial": {
+      "featuresLength": 0,
+      "pointsLength": 0,
+      "trianglesLength": 0,
+      "geometryByteLength": 0,
+      "texturesByteLength": 0,
+      "batchTableByteLength": 0,
+      "innerContents": null,
+      "ready": true,
+      "url": null,
+      "metadata": null,
+      "batchTable": null,
+      "group": null,
+      "featurePropertiesDirty": false,
+      "hasProperty": false,
+      "getFeature": null,
+      "pick": null,
+      "isDestroyed": false
+    },
+    "setMetadataError": "Empty3DTileContent cannot have content metadata",
+    "setGroupError": "Empty3DTileContent cannot have group metadata",
+    "dirtyAfterSet": true,
+    "isDestroyedAfter": true
+  },
+  "jobScheduler": {
+    "constructorCases": [
+      {
+        "name": "default",
+        "budgets": null,
+        "error": null,
+        "state": {
+          "totalBudget": 50,
+          "totalUsedThisFrame": 0,
+          "executedThisFrame": [
+            false,
+            false,
+            false
+          ],
+          "budgets": [
+            {
+              "total": 10,
+              "usedThisFrame": 0,
+              "stolenFromMeThisFrame": 0,
+              "starvedThisFrame": false,
+              "starvedLastFrame": false
+            },
+            {
+              "total": 10,
+              "usedThisFrame": 0,
+              "stolenFromMeThisFrame": 0,
+              "starvedThisFrame": false,
+              "starvedLastFrame": false
+            },
+            {
+              "total": 30,
+              "usedThisFrame": 0,
+              "stolenFromMeThisFrame": 0,
+              "starvedThisFrame": false,
+              "starvedLastFrame": false
+            }
+          ]
+        }
+      },
+      {
+        "name": "custom",
+        "budgets": [
+          5,
+          15,
+          20
+        ],
+        "error": null,
+        "state": {
+          "totalBudget": 40,
+          "totalUsedThisFrame": 0,
+          "executedThisFrame": [
+            false,
+            false,
+            false
+          ],
+          "budgets": [
+            {
+              "total": 5,
+              "usedThisFrame": 0,
+              "stolenFromMeThisFrame": 0,
+              "starvedThisFrame": false,
+              "starvedLastFrame": false
+            },
+            {
+              "total": 15,
+              "usedThisFrame": 0,
+              "stolenFromMeThisFrame": 0,
+              "starvedThisFrame": false,
+              "starvedLastFrame": false
+            },
+            {
+              "total": 20,
+              "usedThisFrame": 0,
+              "stolenFromMeThisFrame": 0,
+              "starvedThisFrame": false,
+              "starvedLastFrame": false
+            }
+          ]
+        }
+      },
+      {
+        "name": "zeros",
+        "budgets": [
+          0,
+          0,
+          0
+        ],
+        "error": null,
+        "state": {
+          "totalBudget": 0,
+          "totalUsedThisFrame": 0,
+          "executedThisFrame": [
+            false,
+            false,
+            false
+          ],
+          "budgets": [
+            {
+              "total": 0,
+              "usedThisFrame": 0,
+              "stolenFromMeThisFrame": 0,
+              "starvedThisFrame": false,
+              "starvedLastFrame": false
+            },
+            {
+              "total": 0,
+              "usedThisFrame": 0,
+              "stolenFromMeThisFrame": 0,
+              "starvedThisFrame": false,
+              "starvedLastFrame": false
+            },
+            {
+              "total": 0,
+              "usedThisFrame": 0,
+              "stolenFromMeThisFrame": 0,
+              "starvedThisFrame": false,
+              "starvedLastFrame": false
+            }
+          ]
+        }
+      },
+      {
+        "name": "fractional",
+        "budgets": [
+          2.5,
+          3.5,
+          4.25
+        ],
+        "error": null,
+        "state": {
+          "totalBudget": 10.25,
+          "totalUsedThisFrame": 0,
+          "executedThisFrame": [
+            false,
+            false,
+            false
+          ],
+          "budgets": [
+            {
+              "total": 2.5,
+              "usedThisFrame": 0,
+              "stolenFromMeThisFrame": 0,
+              "starvedThisFrame": false,
+              "starvedLastFrame": false
+            },
+            {
+              "total": 3.5,
+              "usedThisFrame": 0,
+              "stolenFromMeThisFrame": 0,
+              "starvedThisFrame": false,
+              "starvedLastFrame": false
+            },
+            {
+              "total": 4.25,
+              "usedThisFrame": 0,
+              "stolenFromMeThisFrame": 0,
+              "starvedThisFrame": false,
+              "starvedLastFrame": false
+            }
+          ]
+        }
+      },
+      {
+        "name": "tooShort",
+        "budgets": [
+          10,
+          20
+        ],
+        "error": "A budget must be specified for each job type; budgets.length should equal JobType.NUMBER_OF_JOB_TYPES.",
+        "state": null
+      },
+      {
+        "name": "tooLong",
+        "budgets": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "error": "A budget must be specified for each job type; budgets.length should equal JobType.NUMBER_OF_JOB_TYPES.",
+        "state": null
+      },
+      {
+        "name": "empty",
+        "budgets": [],
+        "error": "A budget must be specified for each job type; budgets.length should equal JobType.NUMBER_OF_JOB_TYPES.",
+        "state": null
+      }
+    ],
+    "traces": [
+      {
+        "name": "stealing-and-starvation",
+        "budgets": [
+          10,
+          10,
+          10
+        ],
+        "steps": [
+          {
+            "op": [
+              "exec",
+              0,
+              5
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 30,
+              "totalUsedThisFrame": 5,
+              "executedThisFrame": [
+                true,
+                false,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 5,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              0,
+              6
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 30,
+              "totalUsedThisFrame": 11,
+              "executedThisFrame": [
+                true,
+                false,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 11,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              0,
+              6
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 30,
+              "totalUsedThisFrame": 17,
+              "executedThisFrame": [
+                true,
+                false,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 11,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 6,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              0,
+              5
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 30,
+              "totalUsedThisFrame": 22,
+              "executedThisFrame": [
+                true,
+                false,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 11,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 11,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              0,
+              9
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 30,
+              "totalUsedThisFrame": 31,
+              "executedThisFrame": [
+                true,
+                false,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 11,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 11,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 9,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              0,
+              2
+            ],
+            "ran": false,
+            "invoked": false,
+            "state": {
+              "totalBudget": 30,
+              "totalUsedThisFrame": 31,
+              "executedThisFrame": [
+                true,
+                false,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 11,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 11,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 9,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              1,
+              4
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 30,
+              "totalUsedThisFrame": 35,
+              "executedThisFrame": [
+                true,
+                true,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 11,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 11,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 13,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              1,
+              1
+            ],
+            "ran": false,
+            "invoked": false,
+            "state": {
+              "totalBudget": 30,
+              "totalUsedThisFrame": 35,
+              "executedThisFrame": [
+                true,
+                true,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 11,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 11,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 13,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              2,
+              2
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 30,
+              "totalUsedThisFrame": 37,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 11,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 11,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 15,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "reset"
+            ],
+            "ran": null,
+            "invoked": false,
+            "state": {
+              "totalBudget": 30,
+              "totalUsedThisFrame": 0,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              0,
+              12
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 30,
+              "totalUsedThisFrame": 12,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 12,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              0,
+              5
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 30,
+              "totalUsedThisFrame": 17,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 12,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 5,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              2,
+              6
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 30,
+              "totalUsedThisFrame": 23,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 12,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 6,
+                  "stolenFromMeThisFrame": 5,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              0,
+              1
+            ],
+            "ran": false,
+            "invoked": false,
+            "state": {
+              "totalBudget": 30,
+              "totalUsedThisFrame": 23,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 12,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 6,
+                  "stolenFromMeThisFrame": 5,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "reset"
+            ],
+            "ran": null,
+            "invoked": false,
+            "state": {
+              "totalBudget": 30,
+              "totalUsedThisFrame": 0,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              1,
+              3
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 30,
+              "totalUsedThisFrame": 3,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 3,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "disable-this-frame-guaranteed-progress",
+        "budgets": [
+          10,
+          10,
+          30
+        ],
+        "steps": [
+          {
+            "op": [
+              "disable"
+            ],
+            "ran": null,
+            "invoked": false,
+            "state": {
+              "totalBudget": 50,
+              "totalUsedThisFrame": 50,
+              "executedThisFrame": [
+                false,
+                false,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 30,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              0,
+              4
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 50,
+              "totalUsedThisFrame": 54,
+              "executedThisFrame": [
+                true,
+                false,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 4,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 30,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              0,
+              2
+            ],
+            "ran": false,
+            "invoked": false,
+            "state": {
+              "totalBudget": 50,
+              "totalUsedThisFrame": 54,
+              "executedThisFrame": [
+                true,
+                false,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 4,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 30,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              1,
+              3
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 50,
+              "totalUsedThisFrame": 57,
+              "executedThisFrame": [
+                true,
+                true,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 4,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 3,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 30,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              1,
+              2
+            ],
+            "ran": false,
+            "invoked": false,
+            "state": {
+              "totalBudget": 50,
+              "totalUsedThisFrame": 57,
+              "executedThisFrame": [
+                true,
+                true,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 4,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 3,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 30,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              2,
+              5
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 50,
+              "totalUsedThisFrame": 62,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 4,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 3,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 30,
+                  "usedThisFrame": 5,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              2,
+              2
+            ],
+            "ran": false,
+            "invoked": false,
+            "state": {
+              "totalBudget": 50,
+              "totalUsedThisFrame": 62,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 4,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 3,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 30,
+                  "usedThisFrame": 5,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "reset"
+            ],
+            "ran": null,
+            "invoked": false,
+            "state": {
+              "totalBudget": 50,
+              "totalUsedThisFrame": 0,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 30,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "disable"
+            ],
+            "ran": null,
+            "invoked": false,
+            "state": {
+              "totalBudget": 50,
+              "totalUsedThisFrame": 50,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 30,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              0,
+              1
+            ],
+            "ran": false,
+            "invoked": false,
+            "state": {
+              "totalBudget": 50,
+              "totalUsedThisFrame": 50,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 30,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              1,
+              1
+            ],
+            "ran": false,
+            "invoked": false,
+            "state": {
+              "totalBudget": 50,
+              "totalUsedThisFrame": 50,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 30,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              2,
+              1
+            ],
+            "ran": false,
+            "invoked": false,
+            "state": {
+              "totalBudget": 50,
+              "totalUsedThisFrame": 50,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 10,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 30,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "first-progress-all-exhausted-fallthrough",
+        "budgets": [
+          5,
+          5,
+          5
+        ],
+        "steps": [
+          {
+            "op": [
+              "exec",
+              1,
+              6
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 15,
+              "totalUsedThisFrame": 6,
+              "executedThisFrame": [
+                false,
+                true,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 5,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 5,
+                  "usedThisFrame": 6,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 5,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              1,
+              6
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 15,
+              "totalUsedThisFrame": 12,
+              "executedThisFrame": [
+                false,
+                true,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 5,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 6,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 5,
+                  "usedThisFrame": 6,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 5,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              2,
+              6
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 15,
+              "totalUsedThisFrame": 18,
+              "executedThisFrame": [
+                false,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 5,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 6,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 5,
+                  "usedThisFrame": 6,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 5,
+                  "usedThisFrame": 6,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              2,
+              6
+            ],
+            "ran": false,
+            "invoked": false,
+            "state": {
+              "totalBudget": 15,
+              "totalUsedThisFrame": 18,
+              "executedThisFrame": [
+                false,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 5,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 6,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 5,
+                  "usedThisFrame": 6,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 5,
+                  "usedThisFrame": 6,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "reset"
+            ],
+            "ran": null,
+            "invoked": false,
+            "state": {
+              "totalBudget": 15,
+              "totalUsedThisFrame": 0,
+              "executedThisFrame": [
+                false,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 5,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 5,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 5,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              1,
+              5
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 15,
+              "totalUsedThisFrame": 5,
+              "executedThisFrame": [
+                false,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 5,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 5,
+                  "usedThisFrame": 5,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 5,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              1,
+              5
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 15,
+              "totalUsedThisFrame": 10,
+              "executedThisFrame": [
+                false,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 5,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 5,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 5,
+                  "usedThisFrame": 5,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 5,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              0,
+              3
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 15,
+              "totalUsedThisFrame": 13,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 5,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 5,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 5,
+                  "usedThisFrame": 5,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 5,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 3,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "zero-budgets-and-zero-duration",
+        "budgets": [
+          0,
+          0,
+          0
+        ],
+        "steps": [
+          {
+            "op": [
+              "exec",
+              0,
+              0
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 0,
+              "totalUsedThisFrame": 0,
+              "executedThisFrame": [
+                true,
+                false,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              0,
+              0
+            ],
+            "ran": false,
+            "invoked": false,
+            "state": {
+              "totalBudget": 0,
+              "totalUsedThisFrame": 0,
+              "executedThisFrame": [
+                true,
+                false,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              1,
+              1.5
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 0,
+              "totalUsedThisFrame": 1.5,
+              "executedThisFrame": [
+                true,
+                true,
+                false
+              ],
+              "budgets": [
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 1.5,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              2,
+              0.25
+            ],
+            "ran": true,
+            "invoked": true,
+            "state": {
+              "totalBudget": 0,
+              "totalUsedThisFrame": 1.75,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 1.75,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "reset"
+            ],
+            "ran": null,
+            "invoked": false,
+            "state": {
+              "totalBudget": 0,
+              "totalUsedThisFrame": 0,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          },
+          {
+            "op": [
+              "exec",
+              0,
+              1
+            ],
+            "ran": false,
+            "invoked": false,
+            "state": {
+              "totalBudget": 0,
+              "totalUsedThisFrame": 0,
+              "executedThisFrame": [
+                true,
+                true,
+                true
+              ],
+              "budgets": [
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": true,
+                  "starvedLastFrame": true
+                },
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                },
+                {
+                  "total": 0,
+                  "usedThisFrame": 0,
+                  "stolenFromMeThisFrame": 0,
+                  "starvedThisFrame": false,
+                  "starvedLastFrame": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "tangentSpaceDebugPrimitive": {
+    "positions": [
+      0,
+      0,
+      0,
+      10,
+      0,
+      0,
+      0,
+      10,
+      0
+    ],
+    "normals": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1
+    ],
+    "tangents": [
+      1,
+      0,
+      0,
+      0.6,
+      0.8,
+      0,
+      1,
+      0,
+      0
+    ],
+    "bitangents": [
+      0,
+      1,
+      0,
+      -0.8,
+      0.6,
+      0,
+      0,
+      1,
+      0
+    ],
+    "cases": [
+      {
+        "name": "none",
+        "attrs": [],
+        "length": null,
+        "matrix": null,
+        "result": null
+      },
+      {
+        "name": "normal-default",
+        "attrs": [
+          "normal"
+        ],
+        "length": null,
+        "matrix": null,
+        "result": {
+          "asynchronous": false,
+          "appearance": {
+            "flat": true,
+            "translucent": false,
+            "vertexShaderSource": "in vec3 position3DHigh;\nin vec3 position3DLow;\nin vec4 color;\nin float batchId;\n\nout vec4 v_color;\n\nvoid main()\n{\n    vec4 p = czm_computePosition();\n\n    v_color = color;\n\n    gl_Position = czm_modelViewProjectionRelativeToEye * p;\n}\n",
+            "fragmentShaderSource": "in vec4 v_color;\n\nvoid main()\n{\n    out_FragColor = czm_gammaCorrect(v_color);\n}\n"
+          },
+          "instances": [
+            {
+              "modelMatrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1
+              ],
+              "color": {
+                "componentDatatype": 5121,
+                "componentsPerAttribute": 4,
+                "normalize": true,
+                "value": [
+                  255,
+                  0,
+                  0,
+                  255
+                ]
+              },
+              "primitiveType": 1,
+              "positions": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                10000,
+                10,
+                0,
+                0,
+                10,
+                0,
+                10000,
+                0,
+                10,
+                0,
+                0,
+                10,
+                10000
+              ],
+              "boundingSphere": null
+            }
+          ]
+        }
+      },
+      {
+        "name": "tangent-custom-len",
+        "attrs": [
+          "tangent"
+        ],
+        "length": 25.5,
+        "matrix": null,
+        "result": {
+          "asynchronous": false,
+          "appearance": {
+            "flat": true,
+            "translucent": false,
+            "vertexShaderSource": "in vec3 position3DHigh;\nin vec3 position3DLow;\nin vec4 color;\nin float batchId;\n\nout vec4 v_color;\n\nvoid main()\n{\n    vec4 p = czm_computePosition();\n\n    v_color = color;\n\n    gl_Position = czm_modelViewProjectionRelativeToEye * p;\n}\n",
+            "fragmentShaderSource": "in vec4 v_color;\n\nvoid main()\n{\n    out_FragColor = czm_gammaCorrect(v_color);\n}\n"
+          },
+          "instances": [
+            {
+              "modelMatrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1
+              ],
+              "color": {
+                "componentDatatype": 5121,
+                "componentsPerAttribute": 4,
+                "normalize": true,
+                "value": [
+                  0,
+                  255,
+                  0,
+                  255
+                ]
+              },
+              "primitiveType": 1,
+              "positions": [
+                0,
+                0,
+                0,
+                25.5,
+                0,
+                0,
+                10,
+                0,
+                0,
+                25.300000607967377,
+                20.40000030398369,
+                0,
+                0,
+                10,
+                0,
+                25.5,
+                10,
+                0
+              ],
+              "boundingSphere": null
+            }
+          ]
+        }
+      },
+      {
+        "name": "bitangent-negative-len",
+        "attrs": [
+          "bitangent"
+        ],
+        "length": -7.25,
+        "matrix": null,
+        "result": {
+          "asynchronous": false,
+          "appearance": {
+            "flat": true,
+            "translucent": false,
+            "vertexShaderSource": "in vec3 position3DHigh;\nin vec3 position3DLow;\nin vec4 color;\nin float batchId;\n\nout vec4 v_color;\n\nvoid main()\n{\n    vec4 p = czm_computePosition();\n\n    v_color = color;\n\n    gl_Position = czm_modelViewProjectionRelativeToEye * p;\n}\n",
+            "fragmentShaderSource": "in vec4 v_color;\n\nvoid main()\n{\n    out_FragColor = czm_gammaCorrect(v_color);\n}\n"
+          },
+          "instances": [
+            {
+              "modelMatrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1
+              ],
+              "color": {
+                "componentDatatype": 5121,
+                "componentsPerAttribute": 4,
+                "normalize": true,
+                "value": [
+                  0,
+                  0,
+                  255,
+                  255
+                ]
+              },
+              "primitiveType": 1,
+              "positions": [
+                0,
+                0,
+                0,
+                0,
+                -7.25,
+                0,
+                10,
+                0,
+                0,
+                15.800000086426735,
+                -4.35000017285347,
+                0,
+                0,
+                10,
+                0,
+                0,
+                2.75,
+                0
+              ],
+              "boundingSphere": null
+            }
+          ]
+        }
+      },
+      {
+        "name": "all-three-transformed",
+        "attrs": [
+          "normal",
+          "tangent",
+          "bitangent"
+        ],
+        "length": 4,
+        "matrix": [
+          1.7551651237807453,
+          0.958851077208406,
+          0,
+          0,
+          -1.438276615812609,
+          2.632747685671118,
+          0,
+          0,
+          0,
+          0,
+          3.9999999999999996,
+          0,
+          100,
+          -50,
+          25,
+          1
+        ],
+        "result": {
+          "asynchronous": false,
+          "appearance": {
+            "flat": true,
+            "translucent": false,
+            "vertexShaderSource": "in vec3 position3DHigh;\nin vec3 position3DLow;\nin vec4 color;\nin float batchId;\n\nout vec4 v_color;\n\nvoid main()\n{\n    vec4 p = czm_computePosition();\n\n    v_color = color;\n\n    gl_Position = czm_modelViewProjectionRelativeToEye * p;\n}\n",
+            "fragmentShaderSource": "in vec4 v_color;\n\nvoid main()\n{\n    out_FragColor = czm_gammaCorrect(v_color);\n}\n"
+          },
+          "instances": [
+            {
+              "modelMatrix": [
+                1.7551651237807453,
+                0.958851077208406,
+                0,
+                0,
+                -1.438276615812609,
+                2.632747685671118,
+                0,
+                0,
+                0,
+                0,
+                3.9999999999999996,
+                0,
+                100,
+                -50,
+                25,
+                1
+              ],
+              "color": {
+                "componentDatatype": 5121,
+                "componentsPerAttribute": 4,
+                "normalize": true,
+                "value": [
+                  255,
+                  0,
+                  0,
+                  255
+                ]
+              },
+              "primitiveType": 1,
+              "positions": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                4,
+                10,
+                0,
+                0,
+                10,
+                0,
+                4,
+                0,
+                10,
+                0,
+                0,
+                10,
+                4
+              ],
+              "boundingSphere": null
+            },
+            {
+              "modelMatrix": [
+                1.7551651237807453,
+                0.958851077208406,
+                0,
+                0,
+                -1.438276615812609,
+                2.632747685671118,
+                0,
+                0,
+                0,
+                0,
+                3.9999999999999996,
+                0,
+                100,
+                -50,
+                25,
+                1
+              ],
+              "color": {
+                "componentDatatype": 5121,
+                "componentsPerAttribute": 4,
+                "normalize": true,
+                "value": [
+                  0,
+                  255,
+                  0,
+                  255
+                ]
+              },
+              "primitiveType": 1,
+              "positions": [
+                0,
+                0,
+                0,
+                4,
+                0,
+                0,
+                10,
+                0,
+                0,
+                12.400000095367432,
+                3.200000047683716,
+                0,
+                0,
+                10,
+                0,
+                4,
+                10,
+                0
+              ],
+              "boundingSphere": null
+            },
+            {
+              "modelMatrix": [
+                1.7551651237807453,
+                0.958851077208406,
+                0,
+                0,
+                -1.438276615812609,
+                2.632747685671118,
+                0,
+                0,
+                0,
+                0,
+                3.9999999999999996,
+                0,
+                100,
+                -50,
+                25,
+                1
+              ],
+              "color": {
+                "componentDatatype": 5121,
+                "componentsPerAttribute": 4,
+                "normalize": true,
+                "value": [
+                  0,
+                  0,
+                  255,
+                  255
+                ]
+              },
+              "primitiveType": 1,
+              "positions": [
+                0,
+                0,
+                0,
+                0,
+                4,
+                0,
+                10,
+                0,
+                0,
+                6.799999952316284,
+                2.4000000953674316,
+                0,
+                0,
+                10,
+                0,
+                0,
+                14,
+                0
+              ],
+              "boundingSphere": null
+            }
+          ]
+        }
+      }
+    ],
+    "factoryCase": {
+      "dimensions": [
+        2,
+        4,
+        6
+      ],
+      "length": 3,
+      "instanceCount": 1,
+      "asynchronous": false,
+      "color": [
+        255,
+        0,
+        0,
+        255
+      ],
+      "positions": [
+        -1,
+        -2,
+        3,
+        -1,
+        -2,
+        6,
+        1,
+        -2,
+        3,
+        1,
+        -2,
+        6,
+        1,
+        2,
+        3,
+        1,
+        2,
+        6,
+        -1,
+        2,
+        3,
+        -1,
+        2,
+        6,
+        -1,
+        -2,
+        -3,
+        -1,
+        -2,
+        -6,
+        1,
+        -2,
+        -3,
+        1,
+        -2,
+        -6,
+        1,
+        2,
+        -3,
+        1,
+        2,
+        -6,
+        -1,
+        2,
+        -3,
+        -1,
+        2,
+        -6,
+        1,
+        -2,
+        -3,
+        4,
+        -2,
+        -3,
+        1,
+        2,
+        -3,
+        4,
+        2,
+        -3,
+        1,
+        2,
+        3,
+        4,
+        2,
+        3,
+        1,
+        -2,
+        3,
+        4,
+        -2,
+        3,
+        -1,
+        -2,
+        -3,
+        -4,
+        -2,
+        -3,
+        -1,
+        2,
+        -3,
+        -4,
+        2,
+        -3,
+        -1,
+        2,
+        3,
+        -4,
+        2,
+        3,
+        -1,
+        -2,
+        3,
+        -4,
+        -2,
+        3,
+        -1,
+        2,
+        -3,
+        -1,
+        5,
+        -3,
+        1,
+        2,
+        -3,
+        1,
+        5,
+        -3,
+        1,
+        2,
+        3,
+        1,
+        5,
+        3,
+        -1,
+        2,
+        3,
+        -1,
+        5,
+        3,
+        -1,
+        -2,
+        -3,
+        -1,
+        -5,
+        -3,
+        1,
+        -2,
+        -3,
+        1,
+        -5,
+        -3,
+        1,
+        -2,
+        3,
+        1,
+        -5,
+        3,
+        -1,
+        -2,
+        3,
+        -1,
+        -5,
+        3
+      ]
+    }
+  },
+  "gaussianSplatRenderResources": [
+    {
+      "useLogDepth": false,
+      "renderStateOptions": {
+        "frontFace": 2305,
+        "cull": {
+          "enabled": false,
+          "face": 1029
+        },
+        "lineWidth": 1,
+        "polygonOffset": {
+          "enabled": false,
+          "factor": 0,
+          "units": 0
+        },
+        "scissorTest": {
+          "enabled": false,
+          "rectangle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        "depthRange": {
+          "near": 0,
+          "far": 1
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 515
+        },
+        "colorMask": {
+          "red": true,
+          "green": true,
+          "blue": true,
+          "alpha": true
+        },
+        "depthMask": true,
+        "stencilMask": -1,
+        "blending": {
+          "enabled": false,
+          "color": {
+            "red": 0,
+            "green": 0,
+            "blue": 0,
+            "alpha": 0
+          },
+          "equationRgb": 32774,
+          "equationAlpha": 32774,
+          "functionSourceRgb": 1,
+          "functionSourceAlpha": 1,
+          "functionDestinationRgb": 0,
+          "functionDestinationAlpha": 0
+        },
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "sampleCoverage": {
+          "enabled": false,
+          "value": 1,
+          "invert": false
+        }
+      },
+      "alphaOptions": {
+        "pass": null,
+        "alphaMode": null,
+        "alphaCutoff": null
+      },
+      "hasSkipLevelOfDetail": false,
+      "uniformKeys": [],
+      "vertexDefines": [],
+      "fragmentDefines": []
+    },
+    {
+      "useLogDepth": true,
+      "renderStateOptions": {
+        "frontFace": 2305,
+        "cull": {
+          "enabled": false,
+          "face": 1029
+        },
+        "lineWidth": 1,
+        "polygonOffset": {
+          "enabled": false,
+          "factor": 0,
+          "units": 0
+        },
+        "scissorTest": {
+          "enabled": false,
+          "rectangle": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        "depthRange": {
+          "near": 0,
+          "far": 1
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 515
+        },
+        "colorMask": {
+          "red": true,
+          "green": true,
+          "blue": true,
+          "alpha": true
+        },
+        "depthMask": true,
+        "stencilMask": -1,
+        "blending": {
+          "enabled": false,
+          "color": {
+            "red": 0,
+            "green": 0,
+            "blue": 0,
+            "alpha": 0
+          },
+          "equationRgb": 32774,
+          "equationAlpha": 32774,
+          "functionSourceRgb": 1,
+          "functionSourceAlpha": 1,
+          "functionDestinationRgb": 0,
+          "functionDestinationAlpha": 0
+        },
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "sampleCoverage": {
+          "enabled": false,
+          "value": 1,
+          "invert": false
+        }
+      },
+      "alphaOptions": {
+        "pass": null,
+        "alphaMode": null,
+        "alphaCutoff": null
+      },
+      "hasSkipLevelOfDetail": false,
+      "uniformKeys": [],
+      "vertexDefines": [],
+      "fragmentDefines": [
+        "LOG_DEPTH_READ_ONLY"
+      ]
+    }
+  ],
+  "gaussianCoordinators": {
+    "concurrencyFormula": [
+      {
+        "hardwareConcurrency": 0,
+        "maxSortingConcurrency": 1
+      },
+      {
+        "hardwareConcurrency": 1,
+        "maxSortingConcurrency": 1
+      },
+      {
+        "hardwareConcurrency": 2,
+        "maxSortingConcurrency": 1
+      },
+      {
+        "hardwareConcurrency": 3,
+        "maxSortingConcurrency": 2
+      },
+      {
+        "hardwareConcurrency": 4,
+        "maxSortingConcurrency": 3
+      },
+      {
+        "hardwareConcurrency": 8,
+        "maxSortingConcurrency": 7
+      },
+      {
+        "hardwareConcurrency": 16,
+        "maxSortingConcurrency": 15
+      }
+    ],
+    "sorter": [
+      {
+        "mode": "success",
+        "beforeInit": null,
+        "initCount": 1,
+        "workerName": "gaussianSplatSorter",
+        "wasmBinaryFile": "ThirdParty/wasm_splats_bg.wasm",
+        "readyAfter": true,
+        "afterVal": "scheduled-ok",
+        "afterErr": null,
+        "secondErr": null,
+        "scheduledCount": 2
+      },
+      {
+        "mode": "falseInit",
+        "beforeInit": null,
+        "initCount": 1,
+        "workerName": "gaussianSplatSorter",
+        "wasmBinaryFile": "ThirdParty/wasm_splats_bg.wasm",
+        "readyAfter": false,
+        "afterVal": null,
+        "afterErr": "Gaussian splat sorter could not be initialized.",
+        "secondErr": "Gaussian splat sorter could not be initialized.",
+        "scheduledCount": 0
+      },
+      {
+        "mode": "rejectInit",
+        "beforeInit": null,
+        "initCount": 1,
+        "workerName": "gaussianSplatSorter",
+        "wasmBinaryFile": "ThirdParty/wasm_splats_bg.wasm",
+        "readyAfter": false,
+        "afterVal": null,
+        "afterErr": "wasm load failed",
+        "secondErr": "wasm load failed",
+        "scheduledCount": 0
+      }
+    ],
+    "textureGenerator": [
+      {
+        "mode": "success",
+        "beforeInit": null,
+        "initCount": 1,
+        "workerName": "gaussianSplatTextureGenerator",
+        "wasmBinaryFile": "ThirdParty/wasm_splats_bg.wasm",
+        "readyAfter": true,
+        "afterVal": "scheduled-ok",
+        "afterErr": null,
+        "secondErr": null,
+        "scheduledCount": 2
+      },
+      {
+        "mode": "falseInit",
+        "beforeInit": null,
+        "initCount": 1,
+        "workerName": "gaussianSplatTextureGenerator",
+        "wasmBinaryFile": "ThirdParty/wasm_splats_bg.wasm",
+        "readyAfter": false,
+        "afterVal": null,
+        "afterErr": "Gaussian splat sorter could not be initialized.",
+        "secondErr": "Gaussian splat sorter could not be initialized.",
+        "scheduledCount": 0
+      },
+      {
+        "mode": "rejectInit",
+        "beforeInit": null,
+        "initCount": 1,
+        "workerName": "gaussianSplatTextureGenerator",
+        "wasmBinaryFile": "ThirdParty/wasm_splats_bg.wasm",
+        "readyAfter": false,
+        "afterVal": null,
+        "afterErr": "wasm load failed",
+        "secondErr": "wasm load failed",
+        "scheduledCount": 0
+      }
+    ]
+  }
+}

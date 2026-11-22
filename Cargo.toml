@@ -103,3 +103,9 @@ crate-type = ["cdylib"]
 name = "model_effects_validation"
 crate-type = ["cdylib"]
 required-features = ["browser"]
+
+# Dedicated Scene Model & Model3DTileContent WebGL2 parity harness.
+[[example]]
+name = "model_validation"
+crate-type = ["cdylib"]
+required-features = ["browser"]
