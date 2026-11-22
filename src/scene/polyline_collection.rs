@@ -1217,6 +1217,23 @@ fn material_id(material: &crate::scene::material::Material) -> String {
     format!("{}:{:?}", material.type_name, material.uniform_bindings())
 }
 
+pub(crate) type CreatePolylines = fn() -> Box<dyn RenderPolylines>;
+
+pub(crate) trait RenderPolylines: ScenePrimitive {
+    fn add_polyline(&mut self, options: PolylineOptions) -> Result<Polyline>;
+    fn remove_polyline(&mut self, polyline: &Polyline) -> Result<bool>;
+}
+
+impl<G: Gl + 'static> RenderPolylines for PolylineCollection<G> {
+    fn add_polyline(&mut self, options: PolylineOptions) -> Result<Polyline> {
+        self.add(options)
+    }
+
+    fn remove_polyline(&mut self, polyline: &Polyline) -> Result<bool> {
+        self.remove(polyline)
+    }
+}
+
 impl<G: Gl + 'static> ScenePrimitive for PolylineCollection<G> {
     fn pre_passes_update(&mut self, _: &mut FrameState) -> Result<()> {
         Ok(())

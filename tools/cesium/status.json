@@ -5790,5 +5790,190 @@
     "status": "ported",
     "rust": "data_sources::height_reference_on_entity_property_changed",
     "note": "Shared height-reference property-change hook recreating terrain offsets; replayed in tests/data_sources_gpx_kml_tour.rs."
+  },
+  "DataSources/BillboardVisualizer": {
+    "status": "ported",
+    "rust": "data_sources::billboard_visualizer",
+    "note": "Entity visibility, image resolution, billboard attributes, clamping and bounds. CesiumJS replay in tests/data_sources_visualizers.rs."
+  },
+  "DataSources/BoxGeometryUpdater": {
+    "status": "ported",
+    "rust": "data_sources::box_geometry_updater",
+    "note": "Fill and outline geometry, visibility, height offsets and dynamic dimensions. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/Cesium3DTilesetVisualizer": {
+    "status": "ported",
+    "rust": "data_sources::cesium_3d_tileset_visualizer",
+    "note": "Host-loaded tilesets with URI replacement, visibility, transforms and bounds. CesiumJS replay in tests/data_sources_visualizers.rs."
+  },
+  "DataSources/CorridorGeometryUpdater": {
+    "status": "ported",
+    "rust": "data_sources::corridor_geometry_updater",
+    "note": "Ground eligibility, extrusion, fill and outline geometry, and terrain offsets. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/CylinderGeometryUpdater": {
+    "status": "ported",
+    "rust": "data_sources::cylinder_geometry_updater",
+    "note": "Cylinder dimensions, fill, outline and height-referenced model transforms. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/CzmlDataSource": {
+    "status": "ported",
+    "rust": "data_sources::czml_data_source",
+    "note": "CZML 1.0 load and process with document clocks, entity packets, interval and sampled properties, references, materials and custom updaters. CesiumJS replay in tests/data_sources_czml.rs."
+  },
+  "DataSources/DynamicGeometryBatch": {
+    "status": "ported",
+    "rust": "data_sources::dynamic_geometry_batch",
+    "note": "Creates, updates and removes dynamic updaters and delegates bounding-sphere queries. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/DynamicGeometryUpdater": {
+    "status": "partial",
+    "rust": "data_sources::dynamic_geometry_updater",
+    "note": "Rebuilds time-varying fills and outlines. Ground batches prepare instances but need Scene ground rendering. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/EllipseGeometryUpdater": {
+    "status": "ported",
+    "rust": "data_sources::ellipse_geometry_updater",
+    "note": "Ellipse geometry with rotation, extrusion, ground eligibility and terrain offsets. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/EllipsoidGeometryUpdater": {
+    "status": "ported",
+    "rust": "data_sources::ellipsoid_geometry_updater",
+    "note": "Fill and outline geometry with radii, slices and cones. Dynamic ellipsoids update the primitive model matrix. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/EntityCluster": {
+    "status": "ported",
+    "rust": "data_sources::entity_cluster",
+    "note": "Screen-space clusters, reusable labels, points and billboards, and cluster events. CesiumJS replay in tests/data_sources_visualizers.rs."
+  },
+  "DataSources/EntityView": {
+    "status": "ported",
+    "rust": "data_sources::entity_view",
+    "note": "Entity tracking and camera offsets across scene modes and tracking frames. CesiumJS replay in tests/data_sources_visualizers.rs."
+  },
+  "DataSources/GeometryUpdater": {
+    "status": "ported",
+    "rust": "data_sources::geometry_updater",
+    "note": "Shared geometry state, defaults, change events, visibility checks and instance attributes. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/GeometryUpdaterSet": {
+    "status": "ported",
+    "rust": "data_sources::geometry_updater_set",
+    "note": "Entity subscriptions, updater registration and geometry change forwarding. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/GeometryVisualizer": {
+    "status": "partial",
+    "rust": "data_sources::geometry_visualizer",
+    "note": "Routes shapes to materials, colors, outlines and dynamic batches. Ground rendering requires Scene classification. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/GroundGeometryUpdater": {
+    "status": "ported",
+    "rust": "data_sources::ground_geometry_updater",
+    "note": "Height and extrusion rules, terrain eligibility and position offsets. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/KmlDataSource": {
+    "status": "ported",
+    "rust": "data_sources::kml_data_source",
+    "note": "KML and KMZ with styles, overlays, tracks, tours and NetworkLink refresh on interval, expiry or camera stop. CesiumJS replay in tests/data_sources_kml.rs."
+  },
+  "DataSources/LabelVisualizer": {
+    "status": "ported",
+    "rust": "data_sources::label_visualizer",
+    "note": "Label appearance, availability, pooled labels and bounds. CesiumJS replay in tests/data_sources_visualizers.rs."
+  },
+  "DataSources/ModelVisualizer": {
+    "status": "ported",
+    "rust": "data_sources::model_visualizer",
+    "note": "Host-loaded glTF models with URI replacement, per-frame graphics, animation, articulations and bounds. CesiumJS replay in tests/data_sources_visualizers.rs."
+  },
+  "DataSources/PathVisualizer": {
+    "status": "ported",
+    "rust": "data_sources::path_visualizer",
+    "note": "Fixed and inertial path sampling, lead and trail windows, material and visibility. CesiumJS replay in tests/data_sources_visualizers.rs."
+  },
+  "DataSources/PlaneGeometryUpdater": {
+    "status": "ported",
+    "rust": "data_sources::plane_geometry_updater",
+    "note": "Plane dimensions, model transforms, fill and outline geometry. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/PointVisualizer": {
+    "status": "ported",
+    "rust": "data_sources::point_visualizer",
+    "note": "Points and clamped billboards, styling, pool reuse and bounds. CesiumJS replay in tests/data_sources_visualizers.rs."
+  },
+  "DataSources/PolygonGeometryUpdater": {
+    "status": "ported",
+    "rust": "data_sources::polygon_geometry_updater",
+    "note": "Polygon hierarchy, ground eligibility, extrusion, fill and outline geometry. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/PolylineGeometryUpdater": {
+    "status": "partial",
+    "rust": "data_sources::polyline_geometry_updater",
+    "note": "Static and dynamic polylines, arc construction and clamp selection. Ground drawings require GroundPolylinePrimitive. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/PolylineVisualizer": {
+    "status": "partial",
+    "rust": "data_sources::polyline_visualizer",
+    "note": "Routes polyline entities through color, material and dynamic batches. Ground drawings require GroundPolylinePrimitive. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/PolylineVolumeGeometryUpdater": {
+    "status": "ported",
+    "rust": "data_sources::polyline_volume_geometry_updater",
+    "note": "Geodesic volume geometry and outlines with cross-section and corner options. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/RectangleGeometryUpdater": {
+    "status": "ported",
+    "rust": "data_sources::rectangle_geometry_updater",
+    "note": "Rectangle geometry with rotation, extrusion, ground eligibility and terrain offsets. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/StaticGeometryColorBatch": {
+    "status": "ported",
+    "rust": "data_sources::static_geometry_color_batch",
+    "note": "Batches opaque and translucent instances and updates visibility, color, distance limits and offsets. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/StaticGeometryPerMaterialBatch": {
+    "status": "ported",
+    "rust": "data_sources::static_geometry_per_material_batch",
+    "note": "Groups by material, rebuilds on material changes and updates per-instance visibility and bounds. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/StaticGroundGeometryColorBatch": {
+    "status": "partial",
+    "rust": "data_sources::static_ground_geometry_color_batch",
+    "note": "Groups by color, overlap and z-index. Ground classification draw commands require Scene GroundPrimitive. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/StaticGroundGeometryPerMaterialBatch": {
+    "status": "partial",
+    "rust": "data_sources::static_ground_geometry_per_material_batch",
+    "note": "Groups by material, overlap and z-index. Ground classification draw commands require Scene GroundPrimitive. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/StaticGroundPolylinePerMaterialBatch": {
+    "status": "partial",
+    "rust": "data_sources::static_ground_polyline_per_material_batch",
+    "note": "Groups clamped polylines by material and z-index. Ground drawings require Scene GroundPolylinePrimitive. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/StaticOutlineGeometryBatch": {
+    "status": "ported",
+    "rust": "data_sources::static_outline_geometry_batch",
+    "note": "Groups outlines by line width and translucency, with visibility and bounding-sphere queries. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/TerrainOffsetProperty": {
+    "status": "ported",
+    "rust": "data_sources::terrain_offset_property",
+    "note": "Samples terrain height, handles terrain and morph changes, and releases height subscriptions. CesiumJS replay in tests/data_sources_visualizers.rs."
+  },
+  "DataSources/WallGeometryUpdater": {
+    "status": "ported",
+    "rust": "data_sources::wall_geometry_updater",
+    "note": "Wall fill and outlines with position, height, granularity and dynamic options. CesiumJS replay in tests/data_sources_geometry.rs."
+  },
+  "DataSources/exportKml": {
+    "status": "ported",
+    "rust": "data_sources::export_kml",
+    "note": "KML and KMZ export with sampled tracks, graphics, external files and host model callbacks. CesiumJS replay in tests/data_sources_kml.rs."
+  },
+  "DataSources/getElement": {
+    "status": "ported",
+    "rust": "data_sources::get_element",
+    "note": "Resolves an element ID with a host callback or returns a supplied element. CesiumJS replay in tests/data_sources_visualizers.rs."
   }
 }

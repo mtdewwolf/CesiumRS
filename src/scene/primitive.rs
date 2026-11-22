@@ -3,7 +3,7 @@
 use super::{
     appearance::Appearance,
     batch_table::{BatchTable, BatchTableAttribute, BatchValue},
-    material::material_uniform_values,
+    material::{material_uniform_values, Material},
     primitive_pipeline::{CombineGeometryParameters, CombineGeometryResults, PickOffset, PrimitivePipeline},
     primitive_shader::{self, ShaderRewrites},
     primitive_state::PrimitiveState,
@@ -136,6 +136,48 @@ enum GeometryWork {
     Creating(TaskFuture<Vec<GeometryInstance>>),
     Created(Vec<GeometryInstance>),
     Combining(TaskFuture<CombineGeometryResults>),
+}
+
+pub(crate) type CreatePrimitive = fn(PrimitiveOptions) -> Box<dyn RenderPrimitive>;
+
+/// The part of a primitive's interface used by entity geometry batches.
+pub(crate) trait RenderPrimitive: ScenePrimitive {
+    fn ready(&self) -> bool;
+    fn set_properties(&mut self, show: bool, shadows: ShadowMode);
+    fn set_model_matrix(&mut self, model_matrix: Matrix4);
+    fn set_material(&mut self, material: Material, depth_fail: bool);
+    fn set_instance_attribute(&mut self, id: &str, name: &str, value: TypedArray) -> Result<()>;
+}
+
+impl<G: Gl + 'static> RenderPrimitive for Primitive<G> {
+    fn ready(&self) -> bool {
+        self.is_ready()
+    }
+
+    fn set_properties(&mut self, show: bool, shadows: ShadowMode) {
+        self.show = show;
+        self.shadows = shadows;
+    }
+
+    fn set_model_matrix(&mut self, model_matrix: Matrix4) {
+        self.model_matrix = model_matrix;
+    }
+
+    fn set_material(&mut self, material: Material, depth_fail: bool) {
+        let appearance = if depth_fail { &mut self.depth_fail_appearance } else { &mut self.appearance };
+        if let Some(slot) = appearance.as_deref_mut().and_then(Appearance::material_mut) {
+            *slot = material;
+        }
+    }
+
+    fn set_instance_attribute(&mut self, id: &str, name: &str, value: TypedArray) -> Result<()> {
+        if let Some(mut attributes) = self.get_geometry_instance_attributes(id)? {
+            if attributes.get(name)?.is_some_and(|previous| previous != value) {
+                attributes.set(name, &value)?;
+            }
+        }
+        Ok(())
+    }
 }
 
 pub struct Primitive<G: Gl + 'static> {

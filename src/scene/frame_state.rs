@@ -78,6 +78,8 @@ pub struct FrameState {
     pub high_dynamic_range: bool,
     pub msaa_samples: u32,
     pub context: Option<FrameResource>,
+    pub(crate) create_primitive: Option<super::primitive::CreatePrimitive>,
+    pub(crate) create_polylines: Option<super::polyline_collection::CreatePolylines>,
     pub context_capabilities: crate::renderer::ContextCapabilities,
     pub stencil_buffer: bool,
     pub(crate) clipping_plane_updates: Vec<Rc<RefCell<super::ClippingPlaneCollection>>>,
@@ -138,6 +140,13 @@ pub struct FrameState {
     pub vertical_exaggeration_relative_height: f64,
 }
 impl FrameState {
+    /// Installs the typed renderer used by primitives created during a frame.
+    pub fn set_renderer_context<G: crate::renderer::Gl + 'static>(&mut self, context: crate::renderer::Context<G>) {
+        self.context = Some(FrameResource::new(context));
+        self.create_primitive = Some(|options| Box::new(super::Primitive::<G>::new(options)));
+        self.create_polylines = Some(|| Box::new(super::PolylineCollection::<G>::default()));
+    }
+
     /// Ask Scene's concrete backend to upload a collection during pre-passes.
     pub fn schedule_clipping_planes_update(&mut self, planes: Rc<RefCell<super::ClippingPlaneCollection>>) {
         if !self.clipping_plane_updates.iter().any(|p| Rc::ptr_eq(p, &planes)) {
@@ -152,6 +161,8 @@ impl FrameState {
             high_dynamic_range: false,
             msaa_samples: 1,
             context: None,
+            create_primitive: None,
+            create_polylines: None,
             context_capabilities: crate::renderer::ContextCapabilities::default(),
             stencil_buffer: false,
             clipping_plane_updates: Vec::new(),
