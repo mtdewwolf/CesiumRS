@@ -1356,3 +1356,63 @@ actual CesiumJS methods into `tests/data/scene-imagery-picking.json`.
 and adds seven native concurrency, ownership and reentrancy checks. The custom
 ellipsoid case deliberately uses an independent map projection, so picking uses
 the scene's configured ellipsoid rather than the projection's ellipsoid.
+
+## Atmosphere, shadows, environment maps and ground classification
+
+`scene::shadow_map` owns Cesium's directional, spot and point-light shadow
+maps: constructor validation, terrain/primitive/point biases, render-state
+creation, viewport-packed textures, framebuffer depth/color/cube layouts,
+`ShadowMapCamera` fitting, log/linear cascade splits and matrices, light-space
+uniforms and cast/receive draw derivation through the validated
+`shadow_map_shader` boundary. `ShadowMapOptions` is the typed constructor;
+`update_pass` clears a pass and the `create_*_command` helpers wrap derived
+draws. Debug camera/point-light primitives are not reproduced. The pinned
+`generate-scene-shadow-map.mjs` captures constructor cases and full CPU
+camera/cascade/visibility updates (with framebuffer resources stubbed, as the
+module performs no GL work for those paths); `tests/scene_shadow_map.rs`
+compares them exactly. GPU shadow rendering and debug overlays are not
+pixel-validated.
+
+`scene::sky_atmosphere`, `scene::sun` and `scene::sun_post_process` cover the
+sky/environment pass. `SkyAtmosphere` packs ellipsoid radii and dynamic
+lighting, selects color-correct/per-fragment/translucent defines, orients the
+unit ellipsoid from the inverse view rotation and supplies the scattering
+uniforms. `Sun` regenerates its procedural glow texture on size/glow/HDR
+changes, emits a compute command and projects its world position and limb into
+window coordinates. `SunPostProcess` builds the six-stage down-sample,
+bright-pass, two-pass blur and additive-blend chain, with a texture cache,
+sun-centered scissor rectangles and copy/clear helpers. Pinned fixtures compare
+constructor/property values, glow clamping, stage scales, sample modes, uniform
+sets and shader sources; GPU texture and flare pixels are not validated.
+
+`scene::specular_environment_cube_map` installs host-decoded KTX2 cube maps
+with padded null mip levels, the Cesium sampler and support/error lifecycle.
+`scene::dynamic_environment_map_manager` implements Cesium's position epsilon,
+dirty flags, command budget, radiance face commands, convolution mip commands
+and float irradiance readback into nine spherical-harmonic coefficients.
+Compute commands are returned through `take_commands` because the portable
+Scene command list carries draws, not compute work. `scene::cube_map_panorama`
+and `scene::google_street_view_cube_map_panorama_provider` build the six-face
+panorama, HDR shader variant, credit and deferred load errors; the provider
+derives Google Street View face URLs, metadata queries and the north-down-east
+transform. URL loading is host-owned through `ResourceClient`.
+
+`scene::classification_primitive` is the shared shadow-volume renderer for
+terrain and 3D Tiles: stencil-depth, color, pick and ignore-show passes,
+per-instance color validation, pick offsets, `ShadowVolumeAppearance`
+color/pick shaders and extent-aware bounds. It reuses `Primitive` for geometry
+combination/upload/batch attributes through read-only accessors.
+`scene::ground_primitive` prepares approximate terrain heights, vertical
+exaggeration, planar/spherical extents, extruded shadow volumes and OBB/2D
+bounds. `scene::ground_polyline_primitive` prepares
+`GroundPolylineGeometry` projection state and renders inverted-winding,
+stencil-masked polyline shadow volumes for 3D/2D/morph. `scene::invert_classification`
+owns the classified/unclassified color targets and stencil-masked composite.
+
+`generate-scene-atmosphere-environment.mjs` writes
+`tests/data/scene-atmosphere-environment.json`;
+`tests/scene_atmosphere_environment.rs` replays constructor/property,
+render-state, URL/transform, terrain-height/OBB, validation-message and
+lifecycle cases, plus a BoxGeometry classification command-structure check and
+cast/receive derivation assertions. GPU classification, terrain clamping and
+full-scene invert rendering remain unvalidated.
