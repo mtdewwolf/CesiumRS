@@ -13,15 +13,14 @@ pub struct RenderableKeyframe {
 }
 
 /// Lifecycle state of a [`KeyframeNode`], matching CesiumJS `KeyframeNode.LoadState`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum KeyframeLoadState {
     Unloaded = 0,
     Receiving = 1,
-    Received = 2,
-    Processing = 3,
-    Loaded = 4,
-    Failed = 5,
-    Unavailable = 6,
+    Processing = 2,
+    Loaded = 3,
+    Failed = 4,
+    Unavailable = 5,
 }
 
 /// A single temporal keyframe attached to a [`SpatialNode`], matching CesiumJS `KeyframeNode`.
@@ -34,6 +33,7 @@ pub struct KeyframeNode {
     pub content: Option<VoxelContent>,
     pub megatexture_index: isize,
     pub priority: f64,
+    pub high_priority_frame_number: i64,
 }
 
 impl KeyframeNode {
@@ -45,7 +45,8 @@ impl KeyframeNode {
             state: KeyframeLoadState::Unloaded,
             content: None,
             megatexture_index: -1,
-            priority: 0.0,
+            priority: -f64::MAX,
+            high_priority_frame_number: -1,
         }
     }
 
@@ -59,6 +60,18 @@ impl KeyframeNode {
         }
         self.megatexture_index = -1;
         self.state = KeyframeLoadState::Unloaded;
+        self.priority = -f64::MAX;
+        self.high_priority_frame_number = -1;
+    }
+
+    /// `KeyframeNode.priorityComparator`, in Cesium's arithmetic form.
+    pub fn priority_comparator(a: &Self, b: &Self) -> f64 {
+        a.priority - b.priority
+    }
+
+    /// `KeyframeNode.searchComparator`.
+    pub fn search_comparator_distance(a: &Self, b: &Self) -> f64 {
+        a.keyframe - b.keyframe
     }
 }
 
@@ -80,9 +93,24 @@ pub struct SpatialNode {
     pub keyframes: Vec<f64>,
     pub keyframe_nodes: Vec<KeyframeNode>,
     pub renderable_keyframes: Vec<RenderableKeyframe>,
+    /// Megatexture slots parallel to `renderable_keyframes`. It is separate so
+    /// `RenderableKeyframe` remains the public value used by ancestor selection.
+    pub renderable_megatexture_indices: Vec<isize>,
     pub previous: Option<RenderableKeyframe>,
     pub next: Option<RenderableKeyframe>,
+    /// Megatexture index of the selected previous/next renderable keyframe.
+    pub previous_megatexture_index: isize,
+    pub next_megatexture_index: isize,
+    /// Megatexture index of the owner's parent previous selection, used by
+    /// `generateOctree`'s parent level blend.
+    pub previous_parent_megatexture_index: isize,
+    pub next_parent_megatexture_index: isize,
     pub lerp: f64,
+    /// Constructed octree children, or `None` when pruned.
+    pub children: Option<Vec<SpatialNode>>,
+    /// Parent level and screen-space error, used for level blending.
+    pub parent_level: Option<u32>,
+    pub parent_screen_space_error: f64,
 }
 
 impl SpatialNode {
@@ -98,9 +126,17 @@ impl SpatialNode {
             keyframes: vec![],
             keyframe_nodes: vec![],
             renderable_keyframes: vec![],
+            renderable_megatexture_indices: vec![],
             previous: None,
             next: None,
+            previous_megatexture_index: -1,
+            next_megatexture_index: -1,
+            previous_parent_megatexture_index: -1,
+            next_parent_megatexture_index: -1,
             lerp: 0.0,
+            children: None,
+            parent_level: None,
+            parent_screen_space_error: 0.0,
         };
         node.compute_bounding_volumes(shape);
         node
@@ -185,10 +221,13 @@ impl SpatialNode {
         node.megatexture_index = slot;
         match self.renderable_keyframes.binary_search_by(|f| f.keyframe.total_cmp(&keyframe)) {
             Ok(_) => return Err(RuntimeError::new("Keyframe already renderable")),
-            Err(pos) => self.renderable_keyframes.insert(
-                pos,
-                RenderableKeyframe { level: self.level, coords: self.coords, keyframe },
-            ),
+            Err(pos) => {
+                self.renderable_keyframes.insert(
+                    pos,
+                    RenderableKeyframe { level: self.level, coords: self.coords, keyframe },
+                );
+                self.renderable_megatexture_indices.insert(pos, slot);
+            }
         }
         Ok(slot)
     }
@@ -216,6 +255,9 @@ impl SpatialNode {
                 .binary_search_by(|f| f.keyframe.total_cmp(&keyframe))
                 .map_err(|_| RuntimeError::new("Renderable keyframe node does not exist."))?;
             self.renderable_keyframes.remove(ridx);
+            if ridx < self.renderable_megatexture_indices.len() {
+                self.renderable_megatexture_indices.remove(ridx);
+            }
         }
         node.unload();
         Ok(())
@@ -226,9 +268,14 @@ impl SpatialNode {
         let next = location.ceil();
         let mut best_prev = None;
         let mut best_next = None;
+        let mut best_prev_index = -1;
+        let mut best_next_index = -1;
+        let mut best_prev_parent_index = -1;
+        let mut best_next_parent_index = -1;
         let mut min_prev = f64::MAX;
         let mut min_next = f64::MAX;
-        for node in std::iter::once(&*self).chain(ancestors.iter().copied()) {
+        let nodes: Vec<&SpatialNode> = std::iter::once(&*self).chain(ancestors.iter().copied()).collect();
+        for (node_index, node) in nodes.iter().enumerate() {
             let frames = &node.renderable_keyframes;
             if frames.is_empty() {
                 continue;
@@ -244,10 +291,17 @@ impl SpatialNode {
             if weight(da) < min_prev {
                 min_prev = weight(da);
                 best_prev = Some(a.clone());
+                best_prev_index = node.renderable_megatexture_indices.get(i).copied().unwrap_or(-1);
+                best_prev_parent_index = nodes
+                    .get(node_index + 1)
+                    .map_or(-1, |parent| parent.previous_megatexture_index);
             }
             if weight(db) < min_next {
                 min_next = weight(db);
                 best_next = Some(b.clone());
+                best_next_index = node.renderable_megatexture_indices.get(j).copied().unwrap_or(-1);
+                best_next_parent_index =
+                    nodes.get(node_index + 1).map_or(-1, |parent| parent.next_megatexture_index);
             }
             if da == 0.0 && db == 0.0 {
                 break;
@@ -255,6 +309,10 @@ impl SpatialNode {
         }
         self.previous = best_prev;
         self.next = best_next;
+        self.previous_megatexture_index = best_prev_index;
+        self.next_megatexture_index = best_next_index;
+        self.previous_parent_megatexture_index = best_prev_parent_index;
+        self.next_parent_megatexture_index = best_next_parent_index;
         if let Some((a, b)) = self.previous.as_ref().zip(self.next.as_ref()) {
             self.lerp = if a.keyframe == b.keyframe {
                 0.0
