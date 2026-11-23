@@ -3626,6 +3626,56 @@
     "rust": "scene::billboard_load_state",
     "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
   },
+  "Scene/I3SDataProvider": {
+    "status": "ported",
+    "rust": "scene::i3s_data_provider",
+    "note": "Building Scene Layer: from_url/add_layers/statistics/sublayers, tile loading through I3SLayer, ArcGISTiledElevationTerrainProvider geoid heights, attribute statistics names/values, filterByAttributes, ScenePrimitive hooks."
+  },
+  "Scene/I3SLayer": {
+    "status": "ported",
+    "rust": "scene::i3s_layer",
+    "note": "Layer resource/version, geometry-definition ranks, node pages, tileset creation via Cesium3DTileset::from_json, extent, visibility, symbology, filterByAttributes."
+  },
+  "Scene/I3SNode": {
+    "status": "ported",
+    "rust": "scene::i3s_node",
+    "note": "Node tree, load/loadChildren/loadField(s), geometry and feature data, create_3d_tile_definition, create_content_url (decode + generate_gltf + binarize_gltf), picked-position field queries. The Cesium3DTile content integration is a gap."
+  },
+  "Scene/I3SGeometry": {
+    "status": "ported",
+    "rust": "scene::i3s_geometry",
+    "note": "Binary load, getClosestPointIndexOnTriangle, generate_gltf material/texture assembly. The Cesium3DTile linkage is a gap."
+  },
+  "Scene/I3SSymbology": {
+    "status": "ported",
+    "rust": "scene::i3s_symbology",
+    "note": "Default/unique-value/class-break symbology parsing and _getSymbology for picked positions."
+  },
+  "Scene/I3SField": {
+    "status": "ported",
+    "rust": "scene::i3s_field",
+    "note": "Binary attribute header/body parsing, values and names; validation and error messages as in Cesium."
+  },
+  "Scene/I3SStatistics": {
+    "status": "ported",
+    "rust": "scene::i3s_statistics",
+    "note": "Statistics document resource, loaded data, summary names and mostFrequentValues."
+  },
+  "Scene/I3SFeature": {
+    "status": "ported",
+    "rust": "scene::i3s_feature",
+    "note": "Feature resource and loaded data."
+  },
+  "Scene/I3SSublayer": {
+    "status": "ported",
+    "rust": "scene::i3s_sublayer",
+    "note": "Sublayer tree (group/3DObject), resources, visibility, and the layers each sublayer owns."
+  },
+  "Scene/I3SDecoder": {
+    "status": "ported",
+    "rust": "scene::i3s_decoder",
+    "note": "Transcode I3S to the native workers::decode_i3s mesh document, mirroring the CesiumJS worker payload."
+  },
   "Scene/Camera": {
     "status": "ported",
     "rust": "scene::camera",
