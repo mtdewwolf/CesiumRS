@@ -33,7 +33,7 @@ impl I3SField {
                 .and_then(|data| data.get("mesh"))
                 .and_then(|mesh| mesh.get("attribute"))
                 .and_then(|attribute| attribute.get("resource"))
-                .and_then(Value::as_str)
+                .and_then(|v| v.as_str().map(str::to_owned).or_else(|| v.as_u64().map(|n| n.to_string())))
                 .unwrap_or_default();
             layer.resource().get_derived_resource(DerivedResourceOptions {
                 url: Some(format!("nodes/{node_resource}/{uri}")),

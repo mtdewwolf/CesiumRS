@@ -5,8 +5,12 @@ use cesium_rs::core::{
     ResourceTransport,
 };
 use cesium_rs::scene::{
-    decode_i3s, I3SDataProvider, I3SDataProviderOptions, I3SGeometry, I3SLayer, I3SNode,
+    decode_i3s, I3SDataProvider, I3SDataProviderOptions, I3SField, I3SGeometry, I3SLayer, I3SNode,
     LayerParent,
+};
+use cesium_rs::workers::decode_i3s::{
+    I3sMesh, I3sMeshData, I3sNode as I3sWorkerNode, I3sPrimitive, I3sPrimitiveExtensions,
+    I3sPropertyTable, I3sRootExtensions,
 };
 use futures_util::FutureExt;
 use serde_json::{json, Value};
@@ -308,4 +312,150 @@ fn i3s_legacy_schema_decoding_and_gltf_generation() {
 
     // Direct smoke check on I3SLayer::new / I3SNode / I3SGeometry types.
     let _ = (I3SLayer::new, I3SNode::new_root, I3SGeometry::new, LayerParent::Provider);
+}
+
+#[test]
+fn i3s_child_transform_order_numeric_resources_and_gltf_extensions() {
+    let base = "https://i3s.test/SceneServer";
+    let layer_json = json!({
+        "id": 0,
+        "layerType": "3DObject",
+        "name": "ExtLayer",
+        "spatialReference": { "wkid": 4326 },
+        "store": { "version": "1.7" },
+        "nodePages": { "nodesPerPage": 4, "rootIndex": 0, "lodSelectionMetricType": "maxScreenThreshold" },
+        "materialDefinitions": [{
+            "pbrMetallicRoughness": {
+                "baseColorTexture": { "textureSetDefinitionId": 0 }
+            }
+        }],
+        "textureSetDefinitions": [{
+            "formats": [{ "name": "0_0", "format": "jpg" }]
+        }]
+    });
+    // Non-identity 90-degree Z rotation quaternion on parent: [0, 0, sin(pi/4), cos(pi/4)]
+    let s = std::f64::consts::FRAC_1_SQRT_2;
+    let page0 = json!({
+        "nodes": [
+            {
+                "index": 0,
+                "children": [1],
+                "obb": {
+                    "center": [-122.45, 37.75, 10.0],
+                    "halfSize": [50.0, 50.0, 20.0],
+                    "quaternion": [0.0, 0.0, s, s]
+                },
+                "lodThreshold": 128.0
+            },
+            {
+                "index": 1,
+                "obb": {
+                    "center": [-122.44, 37.76, 15.0],
+                    "halfSize": [25.0, 25.0, 10.0],
+                    "quaternion": [0.0, 0.0, 0.0, 1.0]
+                },
+                "lodThreshold": 64.0,
+                "mesh": {
+                    "geometry": { "definition": 0, "resource": 7 },
+                    "material": { "definition": 0, "resource": 42 },
+                    "attribute": { "resource": 99 }
+                }
+            }
+        ]
+    });
+
+    let transport = MapTransport::new()
+        .json(base, layer_json)
+        .json("https://i3s.test/SceneServer/layers/0/nodepages/0/", page0);
+    let client = ResourceClient::new(Rc::new(transport));
+
+    let provider = I3SDataProvider::from_url(Resource::new(base).unwrap(), I3SDataProviderOptions::default(), &client)
+        .now_or_never()
+        .unwrap()
+        .expect("provider load");
+    let layer = provider.layers()[0].clone();
+
+    let mut root_guard = layer.root_node_mut();
+    let root = root_guard.as_mut().unwrap();
+    root.load_children(&client).now_or_never().unwrap().unwrap();
+    let def = root.create_3d_tile_definition().expect("root def");
+
+    // Verify parent * child_local == child_global (i.e. local = parent_inv * global).
+    let to_mat4 = |v: &Value| {
+        let a: Vec<f64> = v.as_array().unwrap().iter().map(|x| x.as_f64().unwrap()).collect();
+        Matrix4::from_column_major_array([
+            a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15],
+        ])
+    };
+    let parent_m = to_mat4(&def["transform"]);
+    let child_local_m = to_mat4(&def["children"][0]["transform"]);
+    let composed = Matrix4::multiply(&parent_m, &child_local_m);
+    // Child orientation is identity quaternion, so composed upper-left 3x3 must be identity!
+    assert!((composed.0[0] - 1.0).abs() < 1e-9, "expected parent * child_local rotation to be identity, got {:?}", composed.0);
+    assert!((composed.0[5] - 1.0).abs() < 1e-9, "expected parent * child_local rotation to be identity, got {:?}", composed.0);
+    assert!((composed.0[10] - 1.0).abs() < 1e-9, "expected parent * child_local rotation to be identity, got {:?}", composed.0);
+    assert!(composed.0[1].abs() < 1e-9);
+    assert!(composed.0[4].abs() < 1e-9);
+
+    let child = &root.children()[0];
+
+    // Numeric attribute resource ID is preserved in I3SField URL.
+    let field = I3SField::new(child, json!({ "key": "f_0", "name": "OBJECTID" }));
+    assert!(
+        field.resource().url().contains("nodes/99/attributes/f_0/0"),
+        "expected numeric attribute resource 99 in URL, got {}",
+        field.resource().url()
+    );
+
+    // Numeric material resource ID is preserved in texture URI, and glTF extensions include
+    // EXT_structural_metadata schema + EXT_mesh_features + CESIUM_primitive_outline.indices.
+    let geom = I3SGeometry::new(child, "./geometries/0/");
+    let synthetic_mesh = I3sMeshData {
+        buffers: vec![vec![0u8; 12]],
+        buffer_views: vec![],
+        accessors: vec![],
+        meshes: vec![I3sMesh {
+            primitives: vec![I3sPrimitive {
+                attributes: vec![("POSITION", 0)],
+                indices: 1,
+                material: 0,
+                transparent: false,
+                extensions: I3sPrimitiveExtensions {
+                    feature_count: Some(2.0),
+                    outline: Some(3),
+                },
+            }],
+        }],
+        nodes: vec![I3sWorkerNode { mesh: 0 }],
+        nodes_in_scene: vec![0],
+        root_extensions: Some(I3sRootExtensions {
+            property_table: Some(I3sPropertyTable { count: 2.0, values: 4 }),
+        }),
+        extensions_used: Some(vec![
+            "EXT_mesh_features".to_string(),
+            "EXT_structural_metadata".to_string(),
+            "CESIUM_primitive_outline".to_string(),
+        ]),
+        positions: None,
+        indices: None,
+        feature_index: None,
+        source_url: None,
+        cartesian_center: None,
+        parent_rotation: None,
+    };
+    let gltf = geom.generate_gltf(child, &synthetic_mesh);
+    let image_uri = gltf["images"][0]["uri"].as_str().unwrap_or_default();
+    assert!(
+        image_uri.contains("nodes/42/textures/0_0"),
+        "expected numeric material resource 42 in texture URI, got {image_uri}"
+    );
+    let ext_meta = &gltf["extensions"]["EXT_structural_metadata"];
+    assert_eq!(ext_meta["schema"]["id"].as_str(), Some("i3s-metadata-schema-001"));
+    assert_eq!(ext_meta["propertyTables"][0]["class"].as_str(), Some("feature"));
+    assert_eq!(ext_meta["propertyTables"][0]["properties"]["index"]["values"].as_u64(), Some(4));
+
+    let prim_ext = &gltf["meshes"][0]["primitives"][0]["extensions"];
+    assert_eq!(prim_ext["EXT_mesh_features"]["featureIds"][0]["featureCount"].as_u64(), Some(2));
+    assert_eq!(prim_ext["CESIUM_primitive_outline"]["indices"].as_u64(), Some(3));
+    assert!(prim_ext["CESIUM_primitive_outline"].get("outline").is_none());
 }

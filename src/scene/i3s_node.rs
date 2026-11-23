@@ -510,7 +510,7 @@ impl I3SNode {
         let mut local_transform = global_transform;
         if self.parent_global_transform.is_some() {
             if let Some(parent_inverse_global) = &self.parent_inverse_global_transform {
-                local_transform = Matrix4::multiply(&global_transform, parent_inverse_global);
+                local_transform = Matrix4::multiply(parent_inverse_global, &global_transform);
             }
         }
         self.global_transform = Some(global_transform);

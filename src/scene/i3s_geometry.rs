@@ -225,10 +225,14 @@ impl I3SGeometry {
                                             }
                                         }
                                     }
+                                    let material_resource = material_info
+                                        .get("resource")
+                                        .and_then(|v| v.as_str().map(str::to_owned).or_else(|| v.as_u64().map(|n| n.to_string())))
+                                        .unwrap_or_default();
                                     if let Some(resource) = layer
                                         .as_ref()
                                         .and_then(|layer| layer.resource().get_derived_resource(DerivedResourceOptions {
-                                            url: Some(format!("nodes/{}/textures/{texture_name}", material_info.get("resource").and_then(Value::as_str).unwrap_or_default())),
+                                            url: Some(format!("nodes/{material_resource}/textures/{texture_name}")),
                                             ..DerivedResourceOptions::default()
                                         }))
                                     {
@@ -392,7 +396,38 @@ fn root_extensions_value(extensions: Option<&I3sRootExtensions>) -> Value {
     if let Some(property_table) = &extensions.property_table {
         obj.insert(
             "EXT_structural_metadata".to_string(),
-            json!({ "propertyTables": [{ "count": property_table.count, "values": property_table.values }] }),
+            json!({
+                "schema": {
+                    "id": "i3s-metadata-schema-001",
+                    "name": "I3S metadata schema 001",
+                    "description": "The schema for I3S metadata",
+                    "version": "1.0",
+                    "classes": {
+                        "feature": {
+                            "name": "feature",
+                            "description": "Feature metadata",
+                            "properties": {
+                                "index": {
+                                    "description": "The feature index",
+                                    "type": "SCALAR",
+                                    "componentType": "FLOAT32",
+                                    "required": true
+                                }
+                            }
+                        }
+                    }
+                },
+                "propertyTables": [{
+                    "name": "feature-indices-mapping",
+                    "class": "feature",
+                    "count": property_table.count as u64,
+                    "properties": {
+                        "index": {
+                            "values": property_table.values
+                        }
+                    }
+                }]
+            }),
         );
     }
     Value::Object(obj)
@@ -433,11 +468,27 @@ fn gltf_primitive_value(primitive: &crate::workers::decode_i3s::I3sPrimitive) ->
         attributes.insert(semantic.to_string(), Value::from(*index as u32));
     }
     value.insert("attributes".to_string(), Value::Object(attributes));
-    if primitive.extensions.feature_count.is_some() {
-        value.insert("extensions".to_string(), json!({ "EXT_mesh_features": { "featureCount": primitive.extensions.feature_count } }));
+    let mut extensions = Map::new();
+    if let Some(feature_count) = primitive.extensions.feature_count {
+        extensions.insert(
+            "EXT_mesh_features".to_string(),
+            json!({
+                "featureIds": [{
+                    "attribute": 0,
+                    "propertyTable": 0,
+                    "featureCount": feature_count as u64
+                }]
+            }),
+        );
     }
     if let Some(outline) = primitive.extensions.outline {
-        value.insert("extensions".to_string(), json!({ "CESIUM_primitive_outline": { "outline": outline as u32 } }));
+        extensions.insert(
+            "CESIUM_primitive_outline".to_string(),
+            json!({ "indices": outline as u32 }),
+        );
+    }
+    if !extensions.is_empty() {
+        value.insert("extensions".to_string(), Value::Object(extensions));
     }
     if primitive.transparent {
         value.insert("extra".to_string(), json!({ "isTransparent": true }));
