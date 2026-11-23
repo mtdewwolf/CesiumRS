@@ -6025,5 +6025,34 @@
     "status": "ported",
     "rust": "data_sources::get_element",
     "note": "Resolves an element ID with a host callback or returns a supplied element. CesiumJS replay in tests/data_sources_visualizers.rs."
+  },
+  "Scene/Megatexture": {
+    "status": "partial",
+    "rust": "scene::megatexture",
+    "note": "Atlas sizing algorithm with pinned-source fixtures; GPU texture allocation and upload, slot lists, sampling and lifecycle remain unimplemented. Rust replay has not run because the host lacks a C linker."
+  },
+  "Scene/Globe": {
+    "status": "todo",
+    "note": "Not implemented in this branch."
+  },
+  "Scene/GlobeSurfaceShaderSet": {
+    "status": "todo",
+    "note": "Not implemented in this branch."
+  },
+  "Scene/GlobeSurfaceTileProvider": {
+    "status": "todo",
+    "note": "Not implemented in this branch."
+  },
+  "Scene/GlobeTranslucencyState": {
+    "status": "todo",
+    "note": "Not implemented in this branch."
+  },
+  "Scene/TerrainFillMesh": {
+    "status": "todo",
+    "note": "Not implemented in this branch."
+  },
+  "Scene/createElevationBandMaterial": {
+    "status": "todo",
+    "note": "Not implemented in this branch."
   }
 }

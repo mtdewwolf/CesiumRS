@@ -42,6 +42,7 @@ macro_rules! string_enum {
     };
 }
 
+pub mod megatexture;
 pub mod batch_table;
 pub use batch_table::{BatchTable, BatchTableAttribute, BatchValue};
 pub mod batch_texture;

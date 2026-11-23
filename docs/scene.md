@@ -1356,3 +1356,12 @@ actual CesiumJS methods into `tests/data/scene-imagery-picking.json`.
 and adds seven native concurrency, ownership and reentrancy checks. The custom
 ellipsoid case deliberately uses an independent map projection, so picking uses
 the scene's configured ellipsoid rather than the projection's ellipsoid.
+
+## Megatexture atlas sizing
+
+`scene::megatexture::get_3d_texture_dimension` computes atlas dimensions from
+positive tile dimensions, memory capacity, requested tile count, and the host's
+3D texture limit. `generate-scene-megatexture.mjs` records pinned CesiumJS
+results for the replay suite. Texture allocation, uploads, slot management,
+sampling, and destruction are not implemented. The Rust replay has not run on
+this host because a C linker is unavailable.
