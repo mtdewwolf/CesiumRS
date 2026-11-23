@@ -634,9 +634,9 @@
   {
     "milestone": "DataSources loaders and visualizers",
     "date": "2026-11-23",
-    "percent": 88.89,
-    "ported": 1211,
+    "percent": 89.33,
+    "ported": 1218,
     "implemented": 0,
-    "validatedPercent": 88.44
+    "validatedPercent": 89.33
   }
 ]
