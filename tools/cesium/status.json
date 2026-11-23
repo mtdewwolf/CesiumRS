@@ -6025,5 +6025,55 @@
     "status": "ported",
     "rust": "data_sources::get_element",
     "note": "Resolves an element ID with a host callback or returns a supplied element. CesiumJS replay in tests/data_sources_visualizers.rs."
+  },
+  "Scene/Megatexture": {
+    "status": "ported",
+    "rust": "scene::megatexture",
+    "note": "3D tile allocation lists, texture-memory sizing, add/remove and tile-offset uploads; validated against pinned CesiumJS scene-voxel-traversal fixtures in tests/scene_voxel_traversal.rs."
+  },
+  "Scene/VoxelTraversal": {
+    "status": "ported",
+    "rust": "scene::voxel_traversal",
+    "note": "Keyframe/node selection, bounded priority queue, provider requests and futures, megatexture replacement, octree/leaf texel generation and statistics/events; exact hierarchy, priorities, state and texel bytes validated against a 3-frame CesiumJS capture in tests/scene_voxel_traversal.rs."
+  },
+  "Scene/VoxelRenderResources": {
+    "status": "ported",
+    "rust": "scene::voxel_render_resources",
+    "note": "Shader assembly, shape/format/clipping/depth defines and uniform lists; exact vertex/fragment source and defines validated by tests/scene_voxel_draw_commands.rs against pinned CesiumJS."
+  },
+  "Scene/processVoxelProperties": {
+    "status": "ported",
+    "rust": "scene::process_voxel_properties",
+    "note": "Metadata statistics/properties structs and functions; exact generated GLSL validated by tests/scene_voxel_draw_commands.rs against pinned CesiumJS."
+  },
+  "Scene/buildVoxelDrawCommands": {
+    "status": "ported",
+    "rust": "scene::build_voxel_draw_commands",
+    "note": "Plane accessor functions, three shader variants and the pre-multiplied-alpha render state; exact sources, defines and state validated by tests/scene_voxel_draw_commands.rs against pinned CesiumJS."
+  },
+  "Scene/VoxelPrimitive": {
+    "status": "implemented",
+    "rust": "scene::voxel_primitive",
+    "note": "Bounds/transform/exaggeration state, clipping, traversal integration, uniforms, NDC scissor culling, render/pick/pick-voxel commands and destroy. Native lifecycle tests cover construction, setters, two-frame traversal and destruction; GPU pixel output is not captured yet."
+  },
+  "Scene/Cesium3DTilesVoxelProvider": {
+    "status": "partial",
+    "rust": "scene::cesium_3d_tiles_voxel_provider",
+    "note": "from_url/from_json validation, schema/metadata attributes, tile count, box/region/cylinder shapes and implicit-tileset/subtree setup. Remaining: asynchronous glTF voxel attribute decoding for requestData and an end-to-end tileset fixture."
+  },
+  "Scene/PointCloud": {
+    "status": "implemented",
+    "rust": "scene::point_cloud",
+    "note": "PNTS parsing, attributes/quantization/colors/normals/batch ids, shader/style generation, uniform map, render states, model/2D transform and destroy; exact shader, attribute layout, buffer sizes and render state validated against pinned CesiumJS in tests/scene_point_cloud.rs. Remaining: per-point binary batch-table styleable properties and Draco decoding."
+  },
+  "Scene/PointCloudEyeDomeLighting": {
+    "status": "partial",
+    "rust": "scene::point_cloud_eye_dome_lighting",
+    "note": "Support check, two-color+depth framebuffer, blend/clear commands, EDL shader source and MRT shader derivation. Remaining: replacing already-built SceneCommand point draws with the EC derived command, which the owned command closure does not permit yet."
+  },
+  "Scene/TimeDynamicPointCloud": {
+    "status": "implemented",
+    "rust": "scene::time_dynamic_point_cloud",
+    "note": "Interval scheduling, prefetch by clock multiplier and average load time, frame readiness/memory budget, events, clipping/style dirtiness and EDL invocation; native scheduling/clock/memory tests in tests/scene_voxel_primitive.rs. Remaining: pinned frame-loading fixture."
   }
 }
