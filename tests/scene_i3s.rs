@@ -459,3 +459,104 @@ fn i3s_child_transform_order_numeric_resources_and_gltf_extensions() {
     assert_eq!(prim_ext["CESIUM_primitive_outline"]["indices"].as_u64(), Some(3));
     assert!(prim_ext["CESIUM_primitive_outline"].get("outline").is_none());
 }
+
+#[test]
+fn i3s_legacy_root_children_published_and_geometry_free_node_identity() {
+    // 1. Legacy 1.6 layer: root children must be loaded BEFORE tileset creation
+    //    so they appear in the tileset tree immediately.
+    let legacy_base = "https://i3s.test/LegacyTree/SceneServer";
+    let legacy_layer = json!({
+        "id": 0,
+        "layerType": "3DObject",
+        "name": "LegacyTree",
+        "spatialReference": { "wkid": 4326 },
+        "store": { "version": "1.6", "rootNode": "nodes/root" }
+    });
+    let legacy_root = json!({
+        "id": "root",
+        "obb": {
+            "center": [-122.45, 37.75, 10.0],
+            "halfSize": [50.0, 50.0, 20.0],
+            "quaternion": [0.0, 0.0, 0.0, 1.0]
+        },
+        "lodSelection": [{ "metricType": "maxScreenThreshold", "maxError": 64.0 }],
+        "children": [{ "id": "child0", "href": "../child0" }]
+    });
+    let legacy_child = json!({
+        "id": "child0",
+        "obb": {
+            "center": [-122.45, 37.75, 10.0],
+            "halfSize": [25.0, 25.0, 10.0],
+            "quaternion": [0.0, 0.0, 0.0, 1.0]
+        },
+        "lodSelection": [{ "metricType": "maxScreenThreshold", "maxError": 32.0 }]
+    });
+
+    let transport = MapTransport::new()
+        .json(legacy_base, legacy_layer)
+        .json("https://i3s.test/LegacyTree/SceneServer/layers/0/nodes/root/", legacy_root)
+        .json("https://i3s.test/LegacyTree/SceneServer/layers/0/nodes/child0/", legacy_child);
+    let client = ResourceClient::new(Rc::new(transport));
+
+    let provider = I3SDataProvider::from_url(Resource::new(legacy_base).unwrap(), I3SDataProviderOptions::default(), &client)
+        .now_or_never()
+        .unwrap()
+        .expect("legacy layer load");
+    let layer = provider.layers()[0].clone();
+    assert!(layer.root_node().as_ref().unwrap().children_published());
+    let tileset_guard = layer.tileset_mut();
+    let tileset = tileset_guard.as_ref().expect("tileset created");
+    let root_tile_id = tileset.root.expect("root tile");
+    assert_eq!(tileset.tiles[root_tile_id].children.len(), 1);
+    drop(tileset_guard);
+
+    // 2. Node-page intermediate node without `mesh` gets a unique resolvable URI.
+    let np_base = "https://i3s.test/NodePages/SceneServer";
+    let np_layer = json!({
+        "id": 0,
+        "layerType": "3DObject",
+        "name": "NodePages",
+        "spatialReference": { "wkid": 4326 },
+        "store": { "version": "1.7" },
+        "nodePages": { "nodesPerPage": 4, "rootIndex": 0, "lodSelectionMetricType": "maxScreenThreshold" }
+    });
+    let np_page0 = json!({
+        "nodes": [
+            {
+                "index": 0,
+                "children": [1],
+                "obb": { "center": [-122.45, 37.75, 10.0], "halfSize": [50.0, 50.0, 20.0], "quaternion": [0.0, 0.0, 0.0, 1.0] },
+                "lodThreshold": 128.0
+            },
+            {
+                "index": 1,
+                "children": [2],
+                "obb": { "center": [-122.45, 37.75, 10.0], "halfSize": [25.0, 25.0, 10.0], "quaternion": [0.0, 0.0, 0.0, 1.0] },
+                "lodThreshold": 64.0
+            },
+            {
+                "index": 2,
+                "obb": { "center": [-122.45, 37.75, 10.0], "halfSize": [10.0, 10.0, 5.0], "quaternion": [0.0, 0.0, 0.0, 1.0] },
+                "lodThreshold": 32.0
+            }
+        ]
+    });
+    let np_transport = MapTransport::new()
+        .json(np_base, np_layer)
+        .json("https://i3s.test/NodePages/SceneServer/layers/0/nodepages/0/", np_page0);
+    let np_client = ResourceClient::new(Rc::new(np_transport));
+    let np_provider = I3SDataProvider::from_url(Resource::new(np_base).unwrap(), I3SDataProviderOptions::default(), &np_client)
+        .now_or_never()
+        .unwrap()
+        .expect("node-page layer load");
+    let np_layer_rc = np_provider.layers()[0].clone();
+    let mut np_root_guard = np_layer_rc.root_node_mut();
+    let np_root = np_root_guard.as_mut().unwrap();
+    np_root.load_children(&np_client).now_or_never().unwrap().unwrap();
+    let mid_url = np_root.children()[0]
+        .resource()
+        .expect("geometry-free intermediate node must have a resolvable resource")
+        .url();
+    assert!(mid_url.contains("nodes/index-1/"), "unexpected intermediate URL: {mid_url}");
+    assert_eq!(np_root.find_node_path_by_url(&mid_url), Some(vec![0]));
+}

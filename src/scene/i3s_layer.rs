@@ -24,7 +24,9 @@ use crate::scene::tileset_content::{RenderableTileFactory, TileContentFailure, T
 use serde_json::{json, Value};
 use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
+use std::future::poll_fn;
 use std::rc::{Rc, Weak};
+use std::task::{Poll, Waker};
 
 /// Parent of a top-level layer or of a sublayer-owned layer.
 #[derive(Clone, Debug)]
@@ -52,16 +54,25 @@ impl LayerParent {
 }
 
 /// Restores a temporarily taken root `I3SNode` back into `I3SLayer::root_node` on
-/// drop so async operations never hold a `RefCell` borrow across `.await`.
+/// drop so async operations never hold a `RefCell` borrow across `.await`, and
+/// wakes any queued concurrent tile requests waiting for tree access.
 struct RootNodeGuard {
     layer: Rc<I3SLayer>,
     node: Option<I3SNode>,
 }
 
 impl RootNodeGuard {
-    fn take(layer: Rc<I3SLayer>) -> Self {
-        let node = layer.root_node.borrow_mut().take();
-        Self { layer, node }
+    async fn acquire(layer: Rc<I3SLayer>) -> Self {
+        let node = poll_fn(|cx| {
+            if let Some(node) = layer.root_node.borrow_mut().take() {
+                Poll::Ready(node)
+            } else {
+                layer.root_node_waiters.borrow_mut().push(cx.waker().clone());
+                Poll::Pending
+            }
+        })
+        .await;
+        Self { layer, node: Some(node) }
     }
 
     fn as_mut(&mut self) -> Option<&mut I3SNode> {
@@ -73,6 +84,10 @@ impl Drop for RootNodeGuard {
     fn drop(&mut self) {
         if let Some(node) = self.node.take() {
             *self.layer.root_node.borrow_mut() = Some(node);
+            let waiters: Vec<Waker> = self.layer.root_node_waiters.borrow_mut().drain(..).collect();
+            for waker in waiters {
+                waker.wake();
+            }
         }
     }
 }
@@ -198,6 +213,10 @@ struct I3SLayerContentLoader {
 impl TilesetContentLoader for I3SLayerContentLoader {
     fn request(&self, request: TileContentRequest) -> Option<TileContentFuture> {
         let layer = self.layer.upgrade()?;
+        if layer.root_node.borrow().is_none() {
+            // Defer scheduling while another in-flight request holds the node tree.
+            return None;
+        }
         let client = self.client.clone();
         let factory = self.factory.clone();
         Some(Box::pin(async move {
@@ -205,16 +224,20 @@ impl TilesetContentLoader for I3SLayerContentLoader {
                 return Err(RuntimeError::new("tile request cancelled"));
             }
             let target_url = request.resource.url();
-            let mut root_guard = RootNodeGuard::take(Rc::clone(&layer));
+            let mut root_guard = RootNodeGuard::acquire(Rc::clone(&layer)).await;
+            if request.cancelled.get() {
+                return Err(RuntimeError::new("tile request cancelled"));
+            }
             let Some(root_node) = root_guard.as_mut() else {
                 return Ok(Box::new(Empty3DTileContent::new()) as Box<dyn TilesetContent>);
             };
             let target_path = root_node.find_node_path_by_url(&target_url).unwrap_or_default();
             let target_node = root_node.node_at_path_mut(&target_path);
-            let had_children = target_node.children_ready();
             let mut expansions = Vec::new();
-            if !had_children {
+            if !target_node.children_ready() {
                 target_node.load_children(&client).await?;
+            }
+            if !target_node.children_published() {
                 for child in target_node.children_mut() {
                     if let Some(child_def) = child.create_3d_tile_definition() {
                         expansions.push(TileExpansion::External {
@@ -226,6 +249,7 @@ impl TilesetContentLoader for I3SLayerContentLoader {
                         });
                     }
                 }
+                target_node.mark_children_published();
             }
             let glb = target_node.create_content_url(&client).await?;
             drop(root_guard);
@@ -268,6 +292,7 @@ pub struct I3SLayer {
     resource: Resource,
     data: Value,
     root_node: RefCell<Option<I3SNode>>,
+    root_node_waiters: RefCell<Vec<Waker>>,
     node_pages: RefCell<HashMap<usize, Value>>,
     extent: Option<Rectangle>,
     tileset: RefCell<Option<Cesium3DTileset>>,
@@ -328,6 +353,7 @@ impl I3SLayer {
             resource,
             data: layer_data,
             root_node: RefCell::new(None),
+            root_node_waiters: RefCell::new(Vec::new()),
             node_pages: RefCell::new(HashMap::new()),
             client,
             extent,
@@ -417,21 +443,16 @@ impl I3SLayer {
             provider.load_geoid_data().await;
         }
         if let Some(this) = self.weak_self().and_then(|w| w.upgrade()) {
-            let mut root_guard = RootNodeGuard::take(this);
+            let mut root_guard = RootNodeGuard::acquire(this).await;
             if let Some(root_node) = root_guard.as_mut() {
                 root_node.load(client).await?;
+                if self.legacy_version_16() == Some(true) {
+                    root_node.load_children(client).await?;
+                }
             }
             drop(root_guard);
         }
         self.create_3d_tileset(cesium3d_tileset_options)?;
-        if self.legacy_version_16() == Some(true) {
-            if let Some(this) = self.weak_self().and_then(|w| w.upgrade()) {
-                let mut root_guard = RootNodeGuard::take(this);
-                if let Some(root_node) = root_guard.as_mut() {
-                    root_node.load_children(client).await?;
-                }
-            }
-        }
         Ok(())
     }
 

@@ -47,6 +47,7 @@ pub struct I3SNode {
     inverse_rotation_matrix: Option<Matrix3>,
     symbology_data: Option<Value>,
     children_ready: bool,
+    children_published: bool,
 }
 
 impl I3SNode {
@@ -109,6 +110,7 @@ impl I3SNode {
             inverse_rotation_matrix: None,
             symbology_data: None,
             children_ready: false,
+            children_published: false,
         }
     }
 
@@ -133,6 +135,7 @@ impl I3SNode {
             inverse_rotation_matrix: None,
             symbology_data: None,
             children_ready: false,
+            children_published: false,
         }
     }
 
@@ -159,6 +162,18 @@ impl I3SNode {
     /// Whether [`I3SNode::load_children`] has already run for this node.
     pub fn children_ready(&self) -> bool {
         self.children_ready
+    }
+
+    /// Whether this node's loaded children have already been published into the
+    /// owning `Cesium3DTileset` (either in the initial tile definition or via
+    /// `TileExpansion`).
+    pub fn children_published(&self) -> bool {
+        self.children_published
+    }
+
+    /// Marks this node's children as published into the tileset.
+    pub fn mark_children_published(&mut self) {
+        self.children_published = true;
     }
 
     /// Finds the child-index path to the node in this subtree whose resource URL matches `url`.
@@ -248,6 +263,12 @@ impl I3SNode {
             if let Some(resource_index) = resource_index {
                 uri = Some(format!("nodes/{resource_index}/"));
             }
+        }
+        if uri.is_none() {
+            // Geometry-free intermediate node-page children still need a unique
+            // resolvable URI so tileset content requests route to this node and
+            // expand its subtree instead of falling back to the root node.
+            uri = Some(format!("nodes/index-{node_index}/"));
         }
         if let Some(uri) = uri {
             let base = self
@@ -519,6 +540,9 @@ impl I3SNode {
 
         // Get children definition.
         let children_definition: Vec<Value> = self.children.iter_mut().map(|child| child.create_3d_tile_definition().unwrap_or(Value::Null)).collect();
+        if self.children_ready {
+            self.children_published = true;
+        }
 
         // `Matrix4` stores elements in column-major order; serialize the
         // underlying matrix array without transposing it, as
