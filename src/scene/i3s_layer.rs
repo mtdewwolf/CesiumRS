@@ -1,15 +1,26 @@
 //! Port of CesiumJS `Scene/I3SLayer`.
 
+use crate::core::cartesian3::Cartesian3;
+use crate::core::color::Color;
+use crate::core::ray::Ray;
 use crate::core::rectangle::Rectangle;
 use crate::core::resource::{DerivedResourceOptions, Resource};
 use crate::core::resource_client::ResourceClient;
 use crate::core::runtime_error::RuntimeError;
-use crate::scene::cesium_3d_tileset::{Cesium3DTileset, TilesetOptions};
+use crate::scene::cesium_3d_tile_content_type::Cesium3DTileContentType;
+use crate::scene::cesium_3d_tile_style::Cesium3DTileStyle;
+use crate::scene::cesium_3d_tileset::{
+    Cesium3DTileset, TileContentFuture, TileContentMetrics, TileContentModelState, TileContentRequest, TilesetContent,
+    TilesetContentLoader, TilesetOptions,
+};
+use crate::scene::empty_3d_tile_content::Empty3DTileContent;
+use crate::scene::frame_state::FrameState;
 use crate::scene::i3s_data_provider::I3SDataProvider;
 use crate::scene::i3s_node::I3SNode;
 use crate::scene::i3s_sublayer::I3SSublayer;
 use crate::scene::i3s_symbology::I3SSymbology;
 use crate::scene::scene::Result;
+use crate::scene::tileset_content::{RenderableTileFactory, TileContentFailure, TileExpansion};
 use serde_json::{json, Value};
 use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
@@ -27,7 +38,7 @@ impl LayerParent {
     pub fn resource(&self) -> Resource {
         match self {
             Self::Provider(provider) => provider.upgrade().expect("I3S layer parent provider").resource().clone(),
-            Self::Sublayer(sublayer) => sublayer.upgrade().expect("I3S layer parent sublayer").resource().expect("I3S layer parent sublayer resource").clone(),
+            Self::Sublayer(sublayer) => sublayer.upgrade().expect("I3S layer parent sublayer").resource().expect("I3S layer parent sublayer resource"),
         }
     }
 
@@ -37,6 +48,203 @@ impl LayerParent {
             Self::Provider(provider) => provider.upgrade().is_some_and(|p| p.show()),
             Self::Sublayer(sublayer) => sublayer.upgrade().is_some_and(|s| s.show()),
         }
+    }
+}
+
+/// Restores a temporarily taken root `I3SNode` back into `I3SLayer::root_node` on
+/// drop so async operations never hold a `RefCell` borrow across `.await`.
+struct RootNodeGuard {
+    layer: Rc<I3SLayer>,
+    node: Option<I3SNode>,
+}
+
+impl RootNodeGuard {
+    fn take(layer: Rc<I3SLayer>) -> Self {
+        let node = layer.root_node.borrow_mut().take();
+        Self { layer, node }
+    }
+
+    fn as_mut(&mut self) -> Option<&mut I3SNode> {
+        self.node.as_mut()
+    }
+}
+
+impl Drop for RootNodeGuard {
+    fn drop(&mut self) {
+        if let Some(node) = self.node.take() {
+            *self.layer.root_node.borrow_mut() = Some(node);
+        }
+    }
+}
+
+/// Decoded I3S tile content that holds optional delegated renderable content,
+/// the decoded GLB payload, and child tile expansions discovered when a node
+/// loads its children on demand.
+pub struct I3STileContent {
+    inner: Option<Box<dyn TilesetContent>>,
+    glb_bytes: Option<Vec<u8>>,
+    expansions: Vec<TileExpansion>,
+    destroyed: bool,
+}
+
+impl I3STileContent {
+    pub fn glb_bytes(&self) -> Option<&[u8]> {
+        self.glb_bytes.as_deref()
+    }
+}
+
+impl TilesetContent for I3STileContent {
+    fn configure_model(&mut self, state: &TileContentModelState) {
+        if let Some(inner) = self.inner.as_mut() {
+            inner.configure_model(state);
+        }
+    }
+
+    fn apply_style(&mut self, style: Option<&Cesium3DTileStyle>) -> Result<()> {
+        if let Some(inner) = self.inner.as_mut() {
+            return inner.apply_style(style);
+        }
+        Ok(())
+    }
+
+    fn apply_debug_settings(&mut self, enabled: bool, color: Color) -> Result<()> {
+        if let Some(inner) = self.inner.as_mut() {
+            return inner.apply_debug_settings(enabled, color);
+        }
+        Ok(())
+    }
+
+    fn process_with_frame(&mut self, frame: &mut FrameState) -> Result<bool> {
+        if let Some(inner) = self.inner.as_mut() {
+            return inner.process_with_frame(frame);
+        }
+        Ok(!self.destroyed)
+    }
+
+    fn is_renderable(&self) -> bool {
+        self.inner.as_ref().map_or_else(|| self.glb_bytes.is_some(), |inner| inner.is_renderable())
+    }
+
+    fn take_failures(&mut self) -> Vec<TileContentFailure> {
+        self.inner.as_mut().map_or_else(Vec::new, |inner| inner.take_failures())
+    }
+
+    fn metrics(&self) -> TileContentMetrics {
+        if let Some(inner) = self.inner.as_ref() {
+            return inner.metrics();
+        }
+        TileContentMetrics {
+            geometry_bytes: self.glb_bytes.as_ref().map_or(0, |b| b.len() as u64),
+            ..TileContentMetrics::default()
+        }
+    }
+
+    fn process(&mut self, frame: &FrameState) -> Result<bool> {
+        if let Some(inner) = self.inner.as_mut() {
+            return inner.process(frame);
+        }
+        Ok(!self.destroyed)
+    }
+
+    fn update(&mut self, frame: &mut FrameState) -> Result<()> {
+        if let Some(inner) = self.inner.as_mut() {
+            return inner.update(frame);
+        }
+        Ok(())
+    }
+
+    fn pick(&self, ray: &Ray, frame: &FrameState) -> Result<Option<Cartesian3>> {
+        if let Some(inner) = self.inner.as_ref() {
+            return inner.pick(ray, frame);
+        }
+        Ok(None)
+    }
+
+    fn destroy(&mut self) -> Result<()> {
+        self.destroyed = true;
+        self.expansions.clear();
+        self.glb_bytes = None;
+        if let Some(inner) = self.inner.as_mut() {
+            inner.destroy()?;
+        }
+        Ok(())
+    }
+
+    fn texture_allocations(&self) -> Vec<(Option<String>, u64)> {
+        self.inner
+            .as_ref()
+            .map_or_else(|| vec![(None, self.metrics().texture_bytes)], |inner| inner.texture_allocations())
+    }
+
+    fn take_expansions(&mut self) -> Vec<TileExpansion> {
+        let mut out = std::mem::take(&mut self.expansions);
+        if let Some(inner) = self.inner.as_mut() {
+            out.extend(inner.take_expansions());
+        }
+        out
+    }
+}
+
+/// An I3S-aware [`TilesetContentLoader`]: resolves the matching `I3SNode` for
+/// the requested tile URI, loads any unloaded child nodes as tile expansions,
+/// decodes the node's I3S geometry to GLB, and delegates renderable content
+/// creation to the provider's [`RenderableTileFactory`] when configured.
+struct I3SLayerContentLoader {
+    layer: Weak<I3SLayer>,
+    client: ResourceClient,
+    factory: Option<Rc<dyn RenderableTileFactory>>,
+}
+
+impl TilesetContentLoader for I3SLayerContentLoader {
+    fn request(&self, request: TileContentRequest) -> Option<TileContentFuture> {
+        let layer = self.layer.upgrade()?;
+        let client = self.client.clone();
+        let factory = self.factory.clone();
+        Some(Box::pin(async move {
+            if request.cancelled.get() {
+                return Err(RuntimeError::new("tile request cancelled"));
+            }
+            let target_url = request.resource.url();
+            let mut root_guard = RootNodeGuard::take(Rc::clone(&layer));
+            let Some(root_node) = root_guard.as_mut() else {
+                return Ok(Box::new(Empty3DTileContent::new()) as Box<dyn TilesetContent>);
+            };
+            let target_path = root_node.find_node_path_by_url(&target_url).unwrap_or_default();
+            let target_node = root_node.node_at_path_mut(&target_path);
+            let had_children = target_node.children_ready();
+            let mut expansions = Vec::new();
+            if !had_children {
+                target_node.load_children(&client).await?;
+                for child in target_node.children_mut() {
+                    if let Some(child_def) = child.create_3d_tile_definition() {
+                        expansions.push(TileExpansion::External {
+                            resource: layer.resource().clone(),
+                            json: json!({
+                                "asset": { "version": "1.0" },
+                                "root": child_def,
+                            }),
+                        });
+                    }
+                }
+            }
+            let glb = target_node.create_content_url(&client).await?;
+            drop(root_guard);
+            if request.cancelled.get() {
+                return Err(RuntimeError::new("tile request cancelled"));
+            }
+            let inner = match (factory, glb.clone()) {
+                (Some(factory), Some(glb_bytes)) => {
+                    Some(factory.create(request, Cesium3DTileContentType::GltfBinary, glb_bytes).await?)
+                }
+                _ => None,
+            };
+            Ok(Box::new(I3STileContent {
+                inner,
+                glb_bytes: glb,
+                expansions,
+                destroyed: false,
+            }) as Box<dyn TilesetContent>)
+        }))
     }
 }
 
@@ -60,17 +268,19 @@ pub struct I3SLayer {
     resource: Resource,
     data: Value,
     root_node: RefCell<Option<I3SNode>>,
-    node_pages: RefCell<HashMap<usize, Vec<Value>>>,
+    node_pages: RefCell<HashMap<usize, Value>>,
     extent: Option<Rectangle>,
     tileset: RefCell<Option<Cesium3DTileset>>,
     geometry_definitions: Option<Vec<Vec<I3sGeometryBufferInfo>>>,
     filters: RefCell<Vec<Value>>,
     symbology: RefCell<Option<I3SSymbology>>,
+    weak_self: RefCell<Option<Weak<I3SLayer>>>,
+    client: Option<ResourceClient>,
 }
 
 impl I3SLayer {
     /// Port of `new I3SLayer(dataProvider, layerData, parent)`.
-    pub fn new(data_provider: &Rc<I3SDataProvider>, parent: LayerParent, mut layer_data: Value) -> Result<Rc<I3SLayer>> {
+    pub fn new(data_provider: &Rc<I3SDataProvider>, parent: LayerParent, mut layer_data: Value, client: Option<ResourceClient>) -> Result<Rc<I3SLayer>> {
         if layer_data.get("href").is_none() && layer_data.get("id").is_some() {
             let id = layer_data.get("id").map(Value::to_string).unwrap_or_default();
             layer_data.as_object_mut().expect("I3S layer data is an object").insert("href".to_string(), Value::String(format!("layers/{id}")));
@@ -119,17 +329,24 @@ impl I3SLayer {
             data: layer_data,
             root_node: RefCell::new(None),
             node_pages: RefCell::new(HashMap::new()),
+            client,
             extent,
             tileset: RefCell::new(None),
             geometry_definitions: None,
             filters: RefCell::new(Vec::new()),
             symbology: RefCell::new(None),
+            weak_self: RefCell::new(None),
         };
         layer.compute_geometry_definitions(true);
-        let mut this = Rc::new(layer);
-        let root_node = I3SNode::new_root(&this);
-        Rc::get_mut(&mut this).expect("new layer").root_node = RefCell::new(Some(root_node));
+        let this = Rc::new(layer);
+        this.root_node.replace(Some(I3SNode::new_root(&this)));
+        *this.weak_self.borrow_mut() = Some(Rc::downgrade(&this));
         Ok(this)
+    }
+
+    /// The layer's [`Weak`] (the content loader holds one).
+    pub(crate) fn weak_self(&self) -> Option<Weak<I3SLayer>> {
+        self.weak_self.borrow().clone()
     }
 
     /// Port of the `resource` getter.
@@ -199,13 +416,20 @@ impl I3SLayer {
         if let Some(provider) = self.data_provider.upgrade() {
             provider.load_geoid_data().await;
         }
-        if let Some(root_node) = self.root_node_mut().as_mut() {
-            root_node.load(client).await?;
+        if let Some(this) = self.weak_self().and_then(|w| w.upgrade()) {
+            let mut root_guard = RootNodeGuard::take(this);
+            if let Some(root_node) = root_guard.as_mut() {
+                root_node.load(client).await?;
+            }
+            drop(root_guard);
         }
         self.create_3d_tileset(cesium3d_tileset_options)?;
         if self.legacy_version_16() == Some(true) {
-            if let Some(root_node) = self.root_node_mut().as_mut() {
-                root_node.load_children(client).await?;
+            if let Some(this) = self.weak_self().and_then(|w| w.upgrade()) {
+                let mut root_guard = RootNodeGuard::take(this);
+                if let Some(root_node) = root_guard.as_mut() {
+                    root_node.load_children(client).await?;
+                }
             }
         }
         Ok(())
@@ -287,10 +511,11 @@ impl I3SLayer {
         Ok(data.get("nodes").and_then(Value::as_array).and_then(|nodes| nodes.get(offset_in_page)).cloned().unwrap_or(Value::Null))
     }
 
-    /// Port of `I3SLayer.prototype._loadNodePage`.
+    /// Port of `I3SLayer.prototype._loadNodePage`: returns the page object,
+    /// cached under the same shape the fetch produces.
     pub async fn load_node_page(&self, page: usize, client: &ResourceClient) -> Result<Value> {
-        if let Some(nodes) = self.node_pages.borrow().get(&page) {
-            return Ok(Value::Array(nodes.clone()));
+        if let Some(data) = self.node_pages.borrow().get(&page) {
+            return Ok(data.clone());
         }
         let node_page_resource = self
             .resource()
@@ -300,9 +525,7 @@ impl I3SLayer {
             })
             .expect("valid node page URI");
         let data = I3SDataProvider::load_json(&node_page_resource, client).await?;
-        self.node_pages
-            .borrow_mut()
-            .insert(page, data.get("nodes").and_then(Value::as_array).cloned().unwrap_or_default());
+        self.node_pages.borrow_mut().insert(page, data.clone());
         Ok(data)
     }
 
@@ -326,7 +549,13 @@ impl I3SLayer {
         }
     }
 
-    /// Port of `I3SLayer.prototype._create3DTileset`.
+    /// An I3S-aware [`TilesetContentLoader`] for `create_3d_tileset`.
+    fn client(&self) -> Option<ResourceClient> {
+        self.client.clone()
+    }
+
+    /// Port of `I3SLayer.prototype._create3DTileset`, wiring an I3S-aware
+    /// [`TilesetContentLoader`] into `Cesium3DTileset::from_json`.
     fn create_3d_tileset(&self, cesium3d_tileset_options: Option<TilesetOptions>) -> Result<()> {
         let root_definition = self.root_node_mut().as_mut().and_then(|root| root.create_3d_tile_definition());
         let in_place_tileset = json!({
@@ -334,7 +563,12 @@ impl I3SLayer {
             "geometricError": f64::MAX,
             "root": root_definition,
         });
-        let tileset = Cesium3DTileset::from_json(self.resource().clone(), &in_place_tileset, cesium3d_tileset_options.unwrap_or_default(), None)?;
+        let factory = self.data_provider.upgrade().and_then(|p| p.content_factory());
+        let loader = self
+            .weak_self()
+            .zip(self.client())
+            .map(|(layer, client)| Rc::new(I3SLayerContentLoader { layer, client, factory }) as Rc<dyn TilesetContentLoader>);
+        let tileset = Cesium3DTileset::from_json(self.resource().clone(), &in_place_tileset, cesium3d_tileset_options.unwrap_or_default(), loader)?;
         *self.tileset.borrow_mut() = Some(tileset);
         if let Some(tileset) = self.tileset_mut().as_mut() {
             tileset.options.show = self.parent.show();
@@ -363,9 +597,8 @@ impl I3SLayer {
         self.filters.borrow()
     }
 
-    /// Returns the [`Ref`](std::cell::Ref) of the layer's root node, for
-    /// callers that need to read it (e.g. [`I3SDataProvider::from_url`]).
-    pub(crate) fn root_node_ref(&self) -> Ref<'_, Option<I3SNode>> {
+    /// Returns the [`Ref`](std::cell::Ref) of the layer's root node.
+    pub fn root_node(&self) -> Ref<'_, Option<I3SNode>> {
         self.root_node.borrow()
     }
 }

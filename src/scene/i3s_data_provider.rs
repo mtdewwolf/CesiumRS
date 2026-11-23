@@ -12,12 +12,13 @@ use crate::scene::i3s_layer::{I3SLayer, LayerParent};
 use crate::scene::i3s_statistics::I3SStatistics;
 use crate::scene::i3s_sublayer::I3SSublayer;
 use crate::scene::scene::{Result, ScenePrimitive};
+use crate::scene::tileset_content::RenderableTileFactory;
 use crate::core::network_terrain::NetworkTerrainData;
 use crate::workers::decode_i3s::I3sGeoid;
 use crate::core::query::QueryValue;
 use crate::core::terrain_provider::TerrainProvider;
 use serde_json::Value;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 /// Port of `I3SDataProvider.ConstructorOptions`.
@@ -31,6 +32,7 @@ pub struct I3SDataProviderOptions {
     pub apply_symbology: Option<bool>,
     pub calculate_normals: Option<bool>,
     pub cesium3d_tileset_options: Option<TilesetOptions>,
+    pub content_factory: Option<Rc<dyn RenderableTileFactory>>,
 }
 
 /// A geoid heightmap the I3S transcoder samples when placing bounds.
@@ -110,13 +112,14 @@ impl From<I3sGeoidHeightMap> for I3sGeoid {
 /// Port of `I3SDataProvider`: the main public class for I3S support.
 pub struct I3SDataProvider {
     name: Option<String>,
-    show: bool,
+    show: Cell<bool>,
     geoid_tiled_terrain_provider: Option<Rc<ArcGISTiledElevationTerrainProvider>>,
-    show_features: bool,
-    adjust_material_alpha_mode: bool,
-    apply_symbology: bool,
-    calculate_normals: bool,
+    show_features: Cell<bool>,
+    adjust_material_alpha_mode: Cell<bool>,
+    apply_symbology: Cell<bool>,
+    calculate_normals: Cell<bool>,
     cesium3d_tileset_options: Option<TilesetOptions>,
+    content_factory: Option<Rc<dyn RenderableTileFactory>>,
     options: I3SDataProviderOptions,
     resource: Resource,
     data: Option<Value>,
@@ -126,6 +129,7 @@ pub struct I3SDataProvider {
     layers_extent: RefCell<Vec<Rectangle>>,
     extent: RefCell<Option<Rectangle>>,
     geoid_data_list: RefCell<Option<Vec<I3sGeoidHeightMap>>>,
+    client: Option<ResourceClient>,
 }
 
 impl I3SDataProvider {
@@ -133,13 +137,14 @@ impl I3SDataProvider {
     pub fn new(options: I3SDataProviderOptions) -> Self {
         Self {
             name: options.name.clone(),
-            show: options.show.unwrap_or(true),
+            show: Cell::new(options.show.unwrap_or(true)),
             geoid_tiled_terrain_provider: options.geoid_tiled_terrain_provider.clone(),
-            show_features: options.show_features.unwrap_or(false),
-            adjust_material_alpha_mode: options.adjust_material_alpha_mode.unwrap_or(false),
-            apply_symbology: options.apply_symbology.unwrap_or(false),
-            calculate_normals: options.calculate_normals.unwrap_or(false),
+            show_features: Cell::new(options.show_features.unwrap_or(false)),
+            adjust_material_alpha_mode: Cell::new(options.adjust_material_alpha_mode.unwrap_or(false)),
+            apply_symbology: Cell::new(options.apply_symbology.unwrap_or(false)),
+            calculate_normals: Cell::new(options.calculate_normals.unwrap_or(false)),
             cesium3d_tileset_options: options.cesium3d_tileset_options.clone(),
+            content_factory: options.content_factory.clone(),
             options,
             resource: Resource::new("").expect("I3S provider placeholder URI"),
             data: None,
@@ -149,6 +154,7 @@ impl I3SDataProvider {
             layers_extent: RefCell::new(Vec::new()),
             extent: RefCell::new(None),
             geoid_data_list: RefCell::new(None),
+            client: None,
         }
     }
 
@@ -159,12 +165,12 @@ impl I3SDataProvider {
 
     /// Port of the `show` getter and setter.
     pub fn show(&self) -> bool {
-        self.show
+        self.show.get()
     }
 
-    pub fn set_show(&mut self, value: bool) {
-        if self.show != value {
-            self.show = value;
+    pub fn set_show(&self, value: bool) {
+        if self.show.get() != value {
+            self.show.set(value);
             for layer in self.layers.borrow().iter() {
                 layer.update_visibility();
             }
@@ -198,7 +204,7 @@ impl I3SDataProvider {
 
     /// Port of the `extent` getter: the union of layer extents.
     pub fn extent(&self) -> Option<Rectangle> {
-        self.extent.borrow().clone()
+        *self.extent.borrow()
     }
 
     /// Port of the `resource` getter.
@@ -208,89 +214,86 @@ impl I3SDataProvider {
 
     /// Port of the `showFeatures` getter.
     pub fn show_features(&self) -> bool {
-        self.show_features
+        self.show_features.get()
     }
 
     /// Port of the `adjustMaterialAlphaMode` getter.
     pub fn adjust_material_alpha_mode(&self) -> bool {
-        self.adjust_material_alpha_mode
+        self.adjust_material_alpha_mode.get()
     }
 
     /// Port of the `applySymbology` getter.
     pub fn apply_symbology(&self) -> bool {
-        self.apply_symbology
+        self.apply_symbology.get()
     }
 
     /// Port of the `calculateNormals` getter.
     pub fn calculate_normals(&self) -> bool {
-        self.calculate_normals
+        self.calculate_normals.get()
+    }
+
+    /// Optional renderable tile content factory forwarded to each layer's tileset loader.
+    pub fn content_factory(&self) -> Option<Rc<dyn RenderableTileFactory>> {
+        self.content_factory.clone()
     }
 
     /// Port of `I3SDataProvider.fromUrl`.
-    pub async fn from_url(resource: Resource, options: I3SDataProviderOptions, client: &ResourceClient) -> Result<I3SDataProvider> {
-        let resource = resource;
+    pub async fn from_url(resource: Resource, options: I3SDataProviderOptions, client: &ResourceClient) -> Result<Rc<I3SDataProvider>> {
         // Set a query parameter for json to avoid failure on html pages.
         resource.set_query_parameters(&vec![("f".to_string(), Some(QueryValue::Single("pjson".to_string())))], true);
         let data = I3SDataProvider::load_json(&resource, client).await?;
         let mut provider = I3SDataProvider::new(options);
         provider.resource = resource;
         provider.data = Some(data.clone());
-        let mut provider_rc = Rc::new(provider);
+        provider.client = Some(client.clone());
+        let provider_rc = Rc::new(provider);
         let layers_data = if let Some(layers) = data.get("layers").and_then(Value::as_array) {
             layers.clone()
         } else {
             vec![data.clone()]
         };
         for layer_data in layers_data {
-            Self::add_layers(&mut provider_rc, &layer_data, client).await?;
+            Self::add_layers(&provider_rc, &layer_data, client).await?;
         }
         provider_rc.compute_extent();
         // Start loading all of the tiles.
         for layer in provider_rc.layers() {
             layer.load(provider_rc.cesium3d_tileset_options.clone(), client).await?;
         }
-        Rc::try_unwrap(provider_rc).map_err(|_| RuntimeError::new("I3S provider is still referenced"))
+        Ok(provider_rc)
     }
 
     /// Port of `addLayers` (Cesium's private helper).
-    async fn add_layers(provider_rc: &mut Rc<I3SDataProvider>, data: &Value, client: &ResourceClient) -> Result<()> {
+    async fn add_layers(provider_rc: &Rc<I3SDataProvider>, data: &Value, client: &ResourceClient) -> Result<()> {
         let building_layer_url = match data.get("layerType").and_then(Value::as_str) {
             Some("Building") => {
                 // The Building Scene Layer requires features to be shown to support
                 // filtering; it enables transparency and symbology and calculates
                 // flat normals by default.
-                {
-                    let Some(provider) = Rc::get_mut(provider_rc) else { return Ok(()) };
-                    if provider.options.show_features.is_none() {
-                        provider.show_features = true;
-                    }
-                    if provider.options.adjust_material_alpha_mode.is_none() {
-                        provider.adjust_material_alpha_mode = true;
-                    }
-                    if provider.options.apply_symbology.is_none() {
-                        provider.apply_symbology = true;
-                    }
-                    if provider.options.calculate_normals.is_none() {
-                        provider.calculate_normals = true;
-                    }
+                if provider_rc.options.show_features.is_none() {
+                    provider_rc.show_features.set(true);
+                }
+                if provider_rc.options.adjust_material_alpha_mode.is_none() {
+                    provider_rc.adjust_material_alpha_mode.set(true);
+                }
+                if provider_rc.options.apply_symbology.is_none() {
+                    provider_rc.apply_symbology.set(true);
+                }
+                if provider_rc.options.calculate_normals.is_none() {
+                    provider_rc.calculate_normals.set(true);
                 }
                 Some(build_layer_url(&provider_rc.resource().clone(), data.get("id").and_then(Value::as_u64).unwrap_or_default()))
             }
             Some("3DObject") | Some("IntegratedMesh") => {
-                {
-                    let Some(provider) = Rc::get_mut(provider_rc) else { return Ok(()) };
-                    if provider.calculate_normals == false && data.get("textureSetDefinitions").is_none() {
-                        // I3S layers without textures calculate flat normals by default.
-                        provider.calculate_normals = true;
-                    }
+                if !provider_rc.calculate_normals.get() && data.get("textureSetDefinitions").is_none() {
+                    // I3S layers without textures calculate flat normals by default.
+                    provider_rc.calculate_normals.set(true);
                 }
-                let layer = I3SLayer::new(&*provider_rc, LayerParent::Provider(Rc::downgrade(&*provider_rc)), data.clone())?;
-                let extent = layer.extent();
-                let Some(provider) = Rc::get_mut(provider_rc) else { return Ok(()) };
-                if let Some(extent) = extent {
-                    provider.layers_extent.borrow_mut().push(extent.clone());
+                let layer = I3SLayer::new(provider_rc, LayerParent::Provider(Rc::downgrade(provider_rc)), data.clone(), provider_rc.client())?;
+                if let Some(extent) = layer.extent() {
+                    provider_rc.layers_extent.borrow_mut().push(*extent);
                 }
-                provider.layers.borrow_mut().push(layer);
+                provider_rc.layers.borrow_mut().push(layer);
                 None
             }
             _ => {
@@ -306,19 +309,17 @@ impl I3SDataProvider {
             if let Some(sublayers_data) = data.get("sublayers").and_then(Value::as_array) {
                 for sublayer_data in sublayers_data.clone() {
                     let sublayer =
-                        I3SSublayer::from_data(&*provider_rc, &building_layer_url, sublayer_data, LayerParent::Provider(Rc::downgrade(&*provider_rc)), client)
+                        I3SSublayer::from_data(provider_rc, &building_layer_url, sublayer_data, LayerParent::Provider(Rc::downgrade(provider_rc)), client)
                             .await?;
-                    let Some(provider) = Rc::get_mut(provider_rc) else { return Ok(()) };
-                    provider.sublayers.borrow_mut().push(sublayer.clone());
-                    provider.layers.borrow_mut().extend(sublayer.i3s_layers().iter().cloned());
+                    provider_rc.sublayers.borrow_mut().push(sublayer.clone());
+                    provider_rc.layers.borrow_mut().extend(sublayer.i3s_layers());
                 }
             }
             if let Some(statistics_href) = data.get("statisticsHRef").and_then(Value::as_str) {
                 let uri = format!("{building_layer_url}/{statistics_href}");
-                let mut statistics = I3SStatistics::new(&*provider_rc, &uri);
+                let mut statistics = I3SStatistics::new(provider_rc, &uri);
                 statistics.load(client).await?;
-                let Some(provider) = Rc::get_mut(provider_rc) else { return Ok(()) };
-                provider.attribute_statistics.borrow_mut().push(statistics);
+                provider_rc.attribute_statistics.borrow_mut().push(statistics);
             }
             if let Some(full_extent) = data.get("fullExtent") {
                 let extent = Rectangle::from_degrees(
@@ -327,16 +328,10 @@ impl I3SDataProvider {
                     full_extent.get("xmax").and_then(Value::as_f64).unwrap_or_default(),
                     full_extent.get("ymax").and_then(Value::as_f64).unwrap_or_default(),
                 );
-                let Some(provider) = Rc::get_mut(provider_rc) else { return Ok(()) };
-                provider.layers_extent.borrow_mut().push(extent);
+                provider_rc.layers_extent.borrow_mut().push(extent);
             }
         }
         Ok(())
-    }
-
-    /// Port of `I3SDataProvider._fetchJson`.
-    pub(crate) async fn fetch_json(resource: &Resource, client: &ResourceClient) -> Result<Value> {
-        I3SDataProvider::load_json(resource, client).await
     }
 
     /// Port of `I3SDataProvider.loadJson`.
@@ -380,9 +375,12 @@ impl I3SDataProvider {
     }
 
     /// Port of `I3SDataProvider.prototype._binarizeGltf`: the binary glTF
-    /// (GLB) document of an in-memory glTF.
+    /// (GLB) document of an in-memory glTF (4-byte aligned JSON chunk).
     pub fn binarize_gltf(raw_gltf: &Value) -> Vec<u8> {
-        let json_bytes = serde_json::to_vec(raw_gltf).unwrap_or_default();
+        let mut json_bytes = serde_json::to_vec(raw_gltf).unwrap_or_default();
+        while !json_bytes.len().is_multiple_of(4) {
+            json_bytes.push(b' ');
+        }
         let length = 20u32 + json_bytes.len() as u32;
         let mut buffer = Vec::with_capacity(length as usize);
         buffer.extend_from_slice(b"glTF");
@@ -434,6 +432,11 @@ impl I3SDataProvider {
     /// Returns the loaded geoid height maps (the provider's `_geoidDataList`).
     pub fn geoid_data_list(&self) -> Option<Vec<I3sGeoidHeightMap>> {
         self.geoid_data_list.borrow().clone()
+    }
+
+    /// The shared [`ResourceClient`] used by this provider.
+    pub fn client(&self) -> Option<ResourceClient> {
+        self.client.clone()
     }
 
     /// Port of `I3SDataProvider.prototype.filterByAttributes`.

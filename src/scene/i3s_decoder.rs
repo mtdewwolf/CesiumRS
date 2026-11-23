@@ -13,7 +13,7 @@ use serde_json::Value;
 /// task cannot be scheduled this frame, like Cesium's `undefined`.
 pub fn decode(
     url: &str,
-    _default_geometry_schema: &Value,
+    default_geometry_schema: &Value,
     node: &I3SNode,
     feature_data: Option<&crate::scene::i3s_feature::I3SFeature>,
     symbology_data: Option<&Value>,
@@ -53,10 +53,16 @@ pub fn decode(
         .collect();
     let _ = feature_data; // The native worker decodes feature data from the binary payload.
 
+    let schema_list = |key: &str| {
+        default_geometry_schema
+            .get(key)
+            .and_then(Value::as_array)
+            .map(|items| items.iter().filter_map(Value::as_str).map(str::to_owned).collect())
+    };
     let parameters = I3sDecodeParameters {
         binary_data: geometry_data.data().cloned().unwrap_or_default(),
-        ordering: None,
-        feature_attribute_order: None,
+        ordering: schema_list("ordering"),
+        feature_attribute_order: schema_list("featureAttributeOrder"),
         buffer_attributes: geometry_data.geometry_buffer_info.as_ref().map(|info| info.attributes.clone()),
         geoid_data_list,
         cartographic_center: Some(cartographic_center),

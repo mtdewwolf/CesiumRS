@@ -46,7 +46,6 @@ pub struct I3SNode {
     inverse_global_transform: Option<Matrix4>,
     inverse_rotation_matrix: Option<Matrix3>,
     symbology_data: Option<Value>,
-    is_loading: bool,
     children_ready: bool,
 }
 
@@ -81,21 +80,24 @@ impl I3SNode {
 
     /// Port of `new I3SNode(parent, ref, false)`.
     pub fn new_child(parent: &I3SNode, r#ref: Value) -> Self {
-        let resource = parent.resource().and_then(|resource| {
-            resource.get_derived_resource(DerivedResourceOptions {
-                url: Some(format!("{}/", r#ref.as_str().unwrap_or_default())),
-                ..DerivedResourceOptions::default()
+        let node_index = r#ref.as_u64().map(|index| index as usize);
+        let resource = node_index.is_none().then(|| {
+            parent.resource().and_then(|resource| {
+                resource.get_derived_resource(DerivedResourceOptions {
+                    url: Some(format!("{}/", r#ref.as_str().unwrap_or_default())),
+                    ..DerivedResourceOptions::default()
+                })
             })
-        });
+        }).flatten();
         Self {
             layer: parent.layer.clone(),
             parent: None,
-            parent_global_transform: parent.global_transform.clone(),
-            parent_inverse_global_transform: parent.inverse_global_transform.clone(),
+            parent_global_transform: parent.global_transform,
+            parent_inverse_global_transform: parent.inverse_global_transform,
             data_provider: parent.data_provider.clone(),
             is_root: false,
             level: parent.level + 1,
-            node_index: None,
+            node_index,
             resource,
             data: None,
             geometry_data: Vec::new(),
@@ -106,7 +108,6 @@ impl I3SNode {
             inverse_global_transform: None,
             inverse_rotation_matrix: None,
             symbology_data: None,
-            is_loading: false,
             children_ready: false,
         }
     }
@@ -131,7 +132,6 @@ impl I3SNode {
             inverse_global_transform: None,
             inverse_rotation_matrix: None,
             symbology_data: None,
-            is_loading: false,
             children_ready: false,
         }
     }
@@ -149,6 +149,39 @@ impl I3SNode {
     /// Port of the `children` getter.
     pub fn children(&self) -> &[I3SNode] {
         &self.children
+    }
+
+    /// Mutable access to child nodes.
+    pub fn children_mut(&mut self) -> &mut [I3SNode] {
+        &mut self.children
+    }
+
+    /// Whether [`I3SNode::load_children`] has already run for this node.
+    pub fn children_ready(&self) -> bool {
+        self.children_ready
+    }
+
+    /// Finds the child-index path to the node in this subtree whose resource URL matches `url`.
+    pub fn find_node_path_by_url(&self, url: &str) -> Option<Vec<usize>> {
+        if self.resource.as_ref().is_some_and(|r| r.url() == url) {
+            return Some(Vec::new());
+        }
+        for (idx, child) in self.children.iter().enumerate() {
+            if let Some(mut path) = child.find_node_path_by_url(url) {
+                path.insert(0, idx);
+                return Some(path);
+            }
+        }
+        None
+    }
+
+    /// Returns a mutable reference to the descendant at `path` (empty path returns `self`).
+    pub fn node_at_path_mut(&mut self, path: &[usize]) -> &mut I3SNode {
+        let mut current = self;
+        for &idx in path {
+            current = &mut current.children[idx];
+        }
+        current
     }
 
     /// Port of the `geometryData` getter.
@@ -207,8 +240,13 @@ impl I3SNode {
         if self.is_root {
             uri = Some("nodes/root/".to_string());
         } else if let Some(mesh) = self.data.as_ref().and_then(|d| d.get("mesh")) {
-            if let Some(resource_index) = mesh.get("geometry").and_then(|g| g.get("resource")).and_then(Value::as_str) {
-                uri = Some(format!("../{resource_index}/"));
+            let resource_val = mesh.get("geometry").and_then(|g| g.get("resource"));
+            let resource_index = resource_val
+                .and_then(Value::as_str)
+                .map(str::to_owned)
+                .or_else(|| resource_val.and_then(Value::as_u64).map(|n| n.to_string()));
+            if let Some(resource_index) = resource_index {
+                uri = Some(format!("nodes/{resource_index}/"));
             }
         }
         if let Some(uri) = uri {
@@ -415,20 +453,17 @@ impl I3SNode {
         }
 
         let mut bounding_volume = Map::new();
-        let mut span = 0.0;
         let half_size = obb.as_ref().and_then(|obb| obb.get("halfSize")).and_then(Value::as_array).cloned();
         let hs = |i: usize| half_size.as_ref().and_then(|a| a.get(i)).and_then(Value::as_f64).unwrap_or_default();
         let mbs3 = mbs.as_ref().and_then(|m| m.as_array()).and_then(|a| a.get(3)).and_then(Value::as_f64).unwrap_or_default();
-        let position: Cartesian3;
-        if let Some(_obb) = &obb {
+        let position = Ellipsoid::WGS84.cartographic_to_cartesian(&geo_position);
+        let mut span = if obb.is_some() {
             bounding_volume.insert("box".to_string(), json!([0.0, 0.0, 0.0, hs(0), 0.0, 0.0, 0.0, hs(1), 0.0, 0.0, 0.0, hs(2)]));
-            span = hs(0).max(hs(1)).max(hs(2));
-            position = Ellipsoid::WGS84.cartographic_to_cartesian(&geo_position);
+            hs(0).max(hs(1)).max(hs(2))
         } else {
             bounding_volume.insert("sphere".to_string(), json!([0.0, 0.0, 0.0, mbs3]));
-            position = Ellipsoid::WGS84.cartographic_to_cartesian(&geo_position);
-            span = mbs3;
-        }
+            mbs3
+        };
         span *= 2.0;
 
         // Compute the geometric error: meters/pixel density required to pop the next LOD.
@@ -472,7 +507,7 @@ impl I3SNode {
         let inverse_rotation_matrix = rotation_matrix.inverse();
         let global_transform = Matrix4::from_rotation_translation(&rotation_matrix, position);
         let inverse_global_transform = global_transform.inverse().ok()?;
-        let mut local_transform = global_transform.clone();
+        let mut local_transform = global_transform;
         if self.parent_global_transform.is_some() {
             if let Some(parent_inverse_global) = &self.parent_inverse_global_transform {
                 local_transform = Matrix4::multiply(&global_transform, parent_inverse_global);
@@ -485,12 +520,10 @@ impl I3SNode {
         // Get children definition.
         let children_definition: Vec<Value> = self.children.iter_mut().map(|child| child.create_3d_tile_definition().unwrap_or(Value::Null)).collect();
 
-        let transform = [
-            local_transform.0[0], local_transform.0[4], local_transform.0[8], local_transform.0[12],
-            local_transform.0[1], local_transform.0[5], local_transform.0[9], local_transform.0[13],
-            local_transform.0[2], local_transform.0[6], local_transform.0[10], local_transform.0[14],
-            local_transform.0[3], local_transform.0[7], local_transform.0[11], local_transform.0[15],
-        ];
+        // `Matrix4` stores elements in column-major order; serialize the
+        // underlying matrix array without transposing it, as
+        // `Cesium3DTileset::from_json` reads the transform array directly.
+        let transform: Vec<f64> = local_transform.0.to_vec();
 
         Some(json!({
             "children": children_definition,

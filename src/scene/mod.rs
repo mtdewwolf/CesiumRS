@@ -490,7 +490,7 @@ pub use i3s_field::I3SField;
 pub mod i3s_geometry;
 pub use i3s_geometry::{I3sClosestPoint, I3SGeometry};
 pub mod i3s_layer;
-pub use i3s_layer::{I3sGeometryBufferInfo, I3SLayer, LayerParent};
+pub use i3s_layer::{I3SLayer, I3STileContent, I3sGeometryBufferInfo, LayerParent};
 pub mod i3s_node;
 pub use i3s_node::I3SNode;
 pub mod i3s_statistics;

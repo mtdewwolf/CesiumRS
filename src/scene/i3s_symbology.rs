@@ -260,12 +260,12 @@ fn object_key(value: &Value) -> String {
 fn find_hash_for_unique_values(hash: &Value, values: &[Vec<Value>], hash_level: usize, value_index: usize) -> Option<Value> {
     let level_values = values.get(hash_level)?;
     let hash_value = level_values.get(value_index)?;
-    let inner_hash = hash.get(object_key(hash_value));
+    let inner_hash = hash.get(object_key(hash_value))?;
     let next_level = hash_level + 1;
-    if inner_hash.is_some() && next_level < values.len() {
-        return find_hash_for_unique_values(inner_hash.unwrap(), values, next_level, value_index);
+    if next_level < values.len() {
+        return find_hash_for_unique_values(inner_hash, values, next_level, value_index);
     }
-    inner_hash.cloned()
+    Some(inner_hash.clone())
 }
 
 /// `bisect`: first index with `array[i] >= value`.

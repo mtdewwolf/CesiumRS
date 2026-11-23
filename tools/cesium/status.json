@@ -3639,12 +3639,12 @@
   "Scene/I3SNode": {
     "status": "ported",
     "rust": "scene::i3s_node",
-    "note": "Node tree, load/loadChildren/loadField(s), geometry and feature data, create_3d_tile_definition, create_content_url (decode + generate_gltf + binarize_gltf), picked-position field queries. The Cesium3DTile content integration is a gap."
+    "note": "Node tree, load/loadChildren/loadField(s), geometry and feature data, create_3d_tile_definition, create_content_url (decode + generate_gltf + binarize_gltf), picked-position field queries, and Cesium3DTileset content-loader integration. Tested in tests/scene_i3s.rs."
   },
   "Scene/I3SGeometry": {
     "status": "ported",
     "rust": "scene::i3s_geometry",
-    "note": "Binary load, getClosestPointIndexOnTriangle, generate_gltf material/texture assembly. The Cesium3DTile linkage is a gap."
+    "note": "Binary load, getClosestPointIndexOnTriangle, generate_gltf material/texture/data-URI buffer assembly, wired via I3SLayerContentLoader. Tested in tests/scene_i3s.rs."
   },
   "Scene/I3SSymbology": {
     "status": "ported",

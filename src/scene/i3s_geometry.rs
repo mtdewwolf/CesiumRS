@@ -34,12 +34,15 @@ impl I3SGeometry {
     pub fn new(parent: &I3SNode, uri: &str) -> Self {
         let layer = parent.layer().expect("I3S geometry parent has a layer");
         let resource = if parent.node_index().is_some() {
-            let geometry_resource = parent
+            let resource_val = parent
                 .data()
                 .and_then(|data| data.get("mesh"))
                 .and_then(|mesh| mesh.get("geometry"))
-                .and_then(|geometry| geometry.get("resource"))
+                .and_then(|geometry| geometry.get("resource"));
+            let geometry_resource = resource_val
                 .and_then(Value::as_str)
+                .map(str::to_owned)
+                .or_else(|| resource_val.and_then(Value::as_u64).map(|n| n.to_string()))
                 .unwrap_or_default();
             layer.resource().get_derived_resource(DerivedResourceOptions {
                 url: Some(format!("nodes/{geometry_resource}/{uri}")),
@@ -65,6 +68,11 @@ impl I3SGeometry {
             geometry_definitions: None,
             geometry_buffer_info: None,
         }
+    }
+
+    /// Port of the `dataProvider` getter.
+    pub fn data_provider(&self) -> Option<Rc<I3SDataProvider>> {
+        self.data_provider.upgrade()
     }
 
     /// Port of the `resource` getter.
@@ -288,28 +296,22 @@ impl I3SGeometry {
             }
         }
 
-        let _gltf_meshes: Vec<Value> = mesh
-            .meshes
+        let mut gltf_doc = Map::new();
+        gltf_doc.insert("scene".to_string(), Value::from(0));
+        gltf_doc.insert("scenes".to_string(), json!([{ "nodes": mesh.nodes_in_scene }]));
+        gltf_doc.insert("nodes".to_string(), Value::Array(mesh.nodes.iter().map(|n| json!({ "mesh": n.mesh })).collect()));
+        gltf_doc.insert("meshes".to_string(), Value::Array(mesh.meshes.iter().map(gltf_mesh_value).collect()));
+        let gltf_buffers: Vec<Value> = mesh
+            .buffers
             .iter()
-            .map(|m| {
+            .map(|b| {
                 json!({
-                    "primitives": m.primitives.iter().map(|p| {
-                        let mut attributes = Map::new();
-                        for (semantic, index) in &p.attributes {
-                            attributes.insert(semantic.to_string(), Value::from(*index));
-                        }
-                        json!({ "attributes": attributes, "indices": p.indices, "material": p.material })
-                    }).collect::<Vec<_>>()
+                    "byteLength": b.len(),
+                    "uri": format!("data:application/octet-stream;base64,{}", base64_encode(b))
                 })
             })
             .collect();
-
-        let mut gltf_doc = Map::new();
-        gltf_doc.insert("scene".to_string(), Value::from(0));
-        gltf_doc.insert("scenes".to_string(), json!({ "nodes": mesh.nodes_in_scene }));
-        gltf_doc.insert("nodes".to_string(), Value::Array(mesh.nodes.iter().map(|n| json!({ "mesh": n.mesh })).collect()));
-        gltf_doc.insert("meshes".to_string(), Value::Array(mesh.meshes.iter().map(gltf_mesh_value).collect()));
-        gltf_doc.insert("buffers".to_string(), Value::Array(mesh.buffers.iter().map(|b| Value::Array(b.iter().map(|b| Value::from(*b)).collect())).collect()));
+        gltf_doc.insert("buffers".to_string(), Value::Array(gltf_buffers));
         gltf_doc.insert("bufferViews".to_string(), Value::Array(mesh.buffer_views.iter().map(gltf_buffer_view_value).collect()));
         gltf_doc.insert("accessors".to_string(), Value::Array(mesh.accessors.iter().map(gltf_accessor_value).collect()));
         gltf_doc.insert("materials".to_string(), Value::Array(gltf_materials));
@@ -366,6 +368,21 @@ fn convert_color_factor(factor: &Value) -> Value {
         }
     }
     Value::Array(converted)
+}
+
+/// Minimal base64 encoder for data-URI glTF buffers.
+fn base64_encode(data: &[u8]) -> String {
+    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(data.len().div_ceil(3) * 4);
+    for chunk in data.chunks(3) {
+        let b = [chunk[0], *chunk.get(1).unwrap_or(&0), *chunk.get(2).unwrap_or(&0)];
+        let n = ((b[0] as u32) << 16) | ((b[1] as u32) << 8) | b[2] as u32;
+        out.push(ALPHABET[(n >> 18) as usize & 63] as char);
+        out.push(ALPHABET[(n >> 12) as usize & 63] as char);
+        out.push(if chunk.len() > 1 { ALPHABET[(n >> 6) as usize & 63] as char } else { '=' });
+        out.push(if chunk.len() > 2 { ALPHABET[n as usize & 63] as char } else { '=' });
+    }
+    out
 }
 
 /// Serializes `I3sRootExtensions` to the glTF document `extensions` shape.

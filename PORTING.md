@@ -768,9 +768,9 @@ partial because terrain and tileset classification depend on
 | I3SDecoder | 134 | ✅ ported | `scene::i3s_decoder` | Transcode I3S to the native workers::decode_i3s mesh document, mirroring the CesiumJS worker payload. |
 | I3SFeature | 62 | ✅ ported | `scene::i3s_feature` | Feature resource and loaded data. |
 | I3SField | 361 | ✅ ported | `scene::i3s_field` | Binary attribute header/body parsing, values and names; validation and error messages as in Cesium. |
-| I3SGeometry | 478 | ✅ ported | `scene::i3s_geometry` | Binary load, getClosestPointIndexOnTriangle, generate_gltf material/texture assembly. The Cesium3DTile linkage is a gap. |
+| I3SGeometry | 478 | ✅ ported | `scene::i3s_geometry` | Binary load, getClosestPointIndexOnTriangle, generate_gltf material/texture/data-URI buffer assembly, wired via I3SLayerContentLoader. Tested in tests/scene_i3s.rs. |
 | I3SLayer | 461 | ✅ ported | `scene::i3s_layer` | Layer resource/version, geometry-definition ranks, node pages, tileset creation via Cesium3DTileset::from_json, extent, visibility, symbology, filterByAttributes. |
-| I3SNode | 928 | ✅ ported | `scene::i3s_node` | Node tree, load/loadChildren/loadField(s), geometry and feature data, create_3d_tile_definition, create_content_url (decode + generate_gltf + binarize_gltf), picked-position field queries. The Cesium3DTile content integration is a gap. |
+| I3SNode | 928 | ✅ ported | `scene::i3s_node` | Node tree, load/loadChildren/loadField(s), geometry and feature data, create_3d_tile_definition, create_content_url (decode + generate_gltf + binarize_gltf), picked-position field queries, and Cesium3DTileset content-loader integration. Tested in tests/scene_i3s.rs. |
 | I3SStatistics | 95 | ✅ ported | `scene::i3s_statistics` | Statistics document resource, loaded data, summary names and mostFrequentValues. |
 | I3SSublayer | 176 | ✅ ported | `scene::i3s_sublayer` | Sublayer tree (group/3DObject), resources, visibility, and the layers each sublayer owns. |
 | I3SSymbology | 337 | ✅ ported | `scene::i3s_symbology` | Default/unique-value/class-break symbology parsing and _getSymbology for picked positions. |

@@ -5,6 +5,7 @@ use crate::scene::i3s_data_provider::I3SDataProvider;
 use crate::scene::i3s_layer::{I3SLayer, LayerParent};
 use crate::scene::scene::Result;
 use serde_json::Value;
+use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
 
 /// Port of `I3SSublayer`: a sublayer of an I3S Building Scene Layer. Do not
@@ -16,10 +17,10 @@ pub struct I3SSublayer {
     data: Value,
     name: Option<String>,
     model_name: Option<String>,
-    visibility: bool,
-    resource: Option<Resource>,
-    sublayers: Vec<Rc<I3SSublayer>>,
-    i3s_layers: Vec<Rc<I3SLayer>>,
+    visibility: Cell<bool>,
+    resource: RefCell<Option<Resource>>,
+    sublayers: RefCell<Vec<Rc<I3SSublayer>>>,
+    i3s_layers: RefCell<Vec<Rc<I3SLayer>>>,
 }
 
 impl I3SSublayer {
@@ -34,11 +35,16 @@ impl I3SSublayer {
             data: sublayer_data,
             name,
             model_name,
-            visibility,
-            resource: None,
-            sublayers: Vec::new(),
-            i3s_layers: Vec::new(),
+            visibility: Cell::new(visibility),
+            resource: RefCell::new(None),
+            sublayers: RefCell::new(Vec::new()),
+            i3s_layers: RefCell::new(Vec::new()),
         }
+    }
+
+    /// Port of the `dataProvider` getter.
+    pub fn data_provider(&self) -> Option<Rc<I3SDataProvider>> {
+        self.data_provider.upgrade()
     }
 
     /// Port of the `data` getter.
@@ -57,25 +63,25 @@ impl I3SSublayer {
     }
 
     /// Port of the `resource` getter.
-    pub fn resource(&self) -> Option<&Resource> {
-        self.resource.as_ref()
+    pub fn resource(&self) -> Option<Resource> {
+        self.resource.borrow().clone()
     }
 
     /// Port of the `sublayers` getter: child sublayers.
-    pub fn sublayers(&self) -> &[Rc<I3SSublayer>] {
-        &self.sublayers
+    pub fn sublayers(&self) -> Vec<Rc<I3SSublayer>> {
+        self.sublayers.borrow().clone()
     }
 
     /// Port of the `visibility` getter and setter. Setting it flips the
     /// visibility of the layers this sublayer owns.
     pub fn visibility(&self) -> bool {
-        self.visibility
+        self.visibility.get()
     }
 
-    pub fn set_visibility(&mut self, value: bool) {
-        if self.visibility != value {
-            self.visibility = value;
-            for layer in &self.i3s_layers {
+    pub fn set_visibility(&self, value: bool) {
+        if self.visibility.get() != value {
+            self.visibility.set(value);
+            for layer in self.i3s_layers.borrow().iter() {
                 layer.update_visibility();
             }
         }
@@ -83,13 +89,13 @@ impl I3SSublayer {
 
     /// Port of the `show` getter: `visibility && parent.show`.
     pub fn show(&self) -> bool {
-        self.visibility && parent_show(&self.parent)
+        self.visibility.get() && parent_show(&self.parent)
     }
 
     /// The layers owned by this sublayer, as `Rc`s so a group can share them
     /// with the provider.
-    pub fn i3s_layers(&self) -> &[Rc<I3SLayer>] {
-        &self.i3s_layers
+    pub fn i3s_layers(&self) -> Vec<Rc<I3SLayer>> {
+        self.i3s_layers.borrow().clone()
     }
 
     /// Port of `I3SSublayer._fromData`.
@@ -100,7 +106,7 @@ impl I3SSublayer {
         parent: LayerParent,
         client: &crate::core::resource_client::ResourceClient,
     ) -> Result<Rc<I3SSublayer>> {
-        let mut sublayer = Rc::new(Self::new(data_provider, parent, sublayer_data));
+        let sublayer = Rc::new(Self::new(data_provider, parent, sublayer_data));
         let layer_type = sublayer
             .data
             .get("layerType")
@@ -126,10 +132,9 @@ impl I3SSublayer {
                     .await?,
                 );
             }
-            let group = Rc::get_mut(&mut sublayer).expect("sublayer is not shared yet");
             for child in child_sublayers {
-                group.i3s_layers.extend(child.i3s_layers.iter().cloned());
-                group.sublayers.push(child);
+                sublayer.i3s_layers.borrow_mut().extend(child.i3s_layers());
+                sublayer.sublayers.borrow_mut().push(child);
             }
         } else if layer_type.as_deref() == Some("3DObject") {
             let sublayer_id = sublayer
@@ -138,12 +143,13 @@ impl I3SSublayer {
                 .and_then(Value::as_u64)
                 .unwrap_or_default();
             let sublayer_url = format!("{building_layer_url}/sublayers/{sublayer_id}");
-            let resource = Resource::new(sublayer_url.clone()).expect("valid sublayer URI");
+            let resource = Resource::new(sublayer_url).expect("valid sublayer URI");
             resource.set_query_parameters(&data_provider.resource().options().query_parameters.clone(), false);
             resource.append_forward_slash();
+            *sublayer.resource.borrow_mut() = Some(resource.clone());
             let layer_data = I3SDataProvider::load_json(&resource, client).await?;
-            let layer = I3SLayer::new(data_provider, LayerParent::Sublayer(Rc::downgrade(&sublayer)), layer_data)?;
-            Rc::get_mut(&mut sublayer).expect("sublayer is not shared yet").i3s_layers.push(layer);
+            let layer = I3SLayer::new(data_provider, LayerParent::Sublayer(Rc::downgrade(&sublayer)), layer_data, data_provider.client())?;
+            sublayer.i3s_layers.borrow_mut().push(layer);
         } else {
             eprintln!(
                 "{} layer {} is skipped as not supported.",
