@@ -3,10 +3,13 @@
 use crate::core::arcgis_tiled_elevation_terrain_provider::ArcGISTiledElevationTerrainProvider;
 use crate::core::cartesian3::Cartesian3;
 use crate::core::cartographic::Cartographic;
+use crate::core::ellipsoid::Ellipsoid;
+use crate::core::map_projection::MapProjection;
 use crate::core::rectangle::Rectangle;
 use crate::core::resource::Resource;
 use crate::core::resource_client::ResourceClient;
 use crate::core::runtime_error::RuntimeError;
+use crate::core::web_mercator_projection::WebMercatorProjection;
 use crate::scene::cesium_3d_tileset::{TilesetOptions, TilesetPassState};
 use crate::scene::i3s_layer::{I3SLayer, LayerParent};
 use crate::scene::i3s_statistics::I3SStatistics;
@@ -44,6 +47,8 @@ pub struct I3sGeoidHeightMap {
     pub scale: f64,
     pub offset: f64,
     pub buffer: Vec<f64>,
+    pub web_mercator: bool,
+    pub web_mercator_radii: Option<Cartesian3>,
 }
 
 impl I3sGeoidHeightMap {
@@ -69,9 +74,18 @@ impl I3sGeoidHeightMap {
         bilinear_interpolate(x, y, h00, h10, h01, h11) * self.scale + self.offset
     }
 
-    /// The projected position of the geoid point in native coordinates.
+    /// The projected position of the geoid point in native coordinates
+    /// (radians for geographic geoids, meters for Web Mercator geoids).
     pub fn project(&self, cartographic: &Cartographic) -> Cartesian3 {
-        Cartesian3::new(cartographic.longitude, cartographic.latitude, cartographic.height)
+        if self.web_mercator {
+            let ellipsoid = self
+                .web_mercator_radii
+                .map(|r| Ellipsoid::new(r.x, r.y, r.z))
+                .unwrap_or(Ellipsoid::WGS84);
+            WebMercatorProjection::new(ellipsoid).project(cartographic)
+        } else {
+            Cartesian3::new(cartographic.longitude, cartographic.latitude, cartographic.height)
+        }
     }
 }
 
@@ -103,8 +117,8 @@ impl From<I3sGeoidHeightMap> for I3sGeoid {
             buffer: height_map.buffer,
             scale: height_map.scale,
             offset: height_map.offset,
-            web_mercator: false,
-            web_mercator_radii: None,
+            web_mercator: height_map.web_mercator,
+            web_mercator_radii: height_map.web_mercator_radii,
         }
     }
 }
@@ -546,13 +560,22 @@ async fn get_covered_tiles(terrain_provider: &ArcGISTiledElevationTerrainProvide
                 continue;
             };
             let geoid_buffer: Vec<f64> = height_map.buffer().map(|b| b.to_f64_vec()).unwrap_or_default();
+            let is_web_mercator = (tiling_scheme.projection().project(&Cartographic::new(1.0, 0.0, 0.0)).x - 1.0).abs() > 1e-6;
+            let native_extent = if is_web_mercator {
+                tiling_scheme.tile_xy_to_native_rectangle(x, y, terrain_provider.lod_count)
+            } else {
+                tiling_scheme.tile_xy_to_rectangle(x, y, terrain_provider.lod_count)
+            };
+            let web_mercator_radii = is_web_mercator.then_some(tiling_scheme.ellipsoid().radii);
             height_maps.push(I3sGeoidHeightMap {
-                native_extent: tiling_scheme.tile_xy_to_native_rectangle(x, y, terrain_provider.lod_count),
+                native_extent,
                 width: height_map.width(),
                 height: height_map.height(),
                 scale: height_map.structure().samples.height_scale,
                 offset: height_map.structure().samples.height_offset,
                 buffer: geoid_buffer,
+                web_mercator: is_web_mercator,
+                web_mercator_radii,
             });
             y += 1.0;
         }

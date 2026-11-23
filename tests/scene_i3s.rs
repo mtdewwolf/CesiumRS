@@ -508,6 +508,14 @@ fn i3s_legacy_root_children_published_and_geometry_free_node_identity() {
     let tileset = tileset_guard.as_ref().expect("tileset created");
     let root_tile_id = tileset.root.expect("root tile");
     assert_eq!(tileset.tiles[root_tile_id].children.len(), 1);
+    let child_tile_id = tileset.tiles[root_tile_id].children[0];
+    // Legacy child transform must be parent-relative (near identity since both root and child share center & orientation).
+    let child_t = tileset.tiles[child_tile_id].transform;
+    let local_offset = (child_t.0[12].powi(2) + child_t.0[13].powi(2) + child_t.0[14].powi(2)).sqrt();
+    assert!(
+        local_offset < 1.0,
+        "legacy child transform must be parent-relative, got translation magnitude {local_offset}"
+    );
     drop(tileset_guard);
 
     // 2. Node-page intermediate node without `mesh` gets a unique resolvable URI.

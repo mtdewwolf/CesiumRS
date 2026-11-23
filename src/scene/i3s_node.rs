@@ -538,6 +538,14 @@ impl I3SNode {
         self.inverse_global_transform = Some(inverse_global_transform);
         self.inverse_rotation_matrix = Some(inverse_rotation_matrix);
 
+        // Refresh children's cached parent transforms before recursing so
+        // eagerly loaded children (e.g. legacy 1.6 root children loaded before
+        // `create_3d_tileset`) compute parent-relative local transforms.
+        for child in &mut self.children {
+            child.parent_global_transform = self.global_transform;
+            child.parent_inverse_global_transform = self.inverse_global_transform;
+        }
+
         // Get children definition.
         let children_definition: Vec<Value> = self.children.iter_mut().map(|child| child.create_3d_tile_definition().unwrap_or(Value::Null)).collect();
         if self.children_ready {

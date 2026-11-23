@@ -99,6 +99,7 @@ pub struct I3STileContent {
     inner: Option<Box<dyn TilesetContent>>,
     glb_bytes: Option<Vec<u8>>,
     expansions: Vec<TileExpansion>,
+    publish_target: Option<(Weak<I3SLayer>, Vec<usize>)>,
     destroyed: bool,
 }
 
@@ -193,6 +194,13 @@ impl TilesetContent for I3STileContent {
 
     fn take_expansions(&mut self) -> Vec<TileExpansion> {
         let mut out = std::mem::take(&mut self.expansions);
+        if let Some((layer_weak, path)) = self.publish_target.take() {
+            if let Some(layer) = layer_weak.upgrade() {
+                if let Some(root) = layer.root_node_mut().as_mut() {
+                    root.node_at_path_mut(&path).mark_children_published();
+                }
+            }
+        }
         if let Some(inner) = self.inner.as_mut() {
             out.extend(inner.take_expansions());
         }
@@ -234,6 +242,7 @@ impl TilesetContentLoader for I3SLayerContentLoader {
             let target_path = root_node.find_node_path_by_url(&target_url).unwrap_or_default();
             let target_node = root_node.node_at_path_mut(&target_path);
             let mut expansions = Vec::new();
+            let mut should_mark_published = false;
             if !target_node.children_ready() {
                 target_node.load_children(&client).await?;
             }
@@ -249,7 +258,7 @@ impl TilesetContentLoader for I3SLayerContentLoader {
                         });
                     }
                 }
-                target_node.mark_children_published();
+                should_mark_published = true;
             }
             let glb = target_node.create_content_url(&client).await?;
             drop(root_guard);
@@ -262,10 +271,12 @@ impl TilesetContentLoader for I3SLayerContentLoader {
                 }
                 _ => None,
             };
+            let publish_target = should_mark_published.then(|| (Rc::downgrade(&layer), target_path));
             Ok(Box::new(I3STileContent {
                 inner,
                 glb_bytes: glb,
                 expansions,
+                publish_target,
                 destroyed: false,
             }) as Box<dyn TilesetContent>)
         }))
