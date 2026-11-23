@@ -6025,5 +6025,55 @@
     "status": "ported",
     "rust": "data_sources::get_element",
     "note": "Resolves an element ID with a host callback or returns a supplied element. CesiumJS replay in tests/data_sources_visualizers.rs."
+  },
+  "Scene/Vector3DTilePrimitive": {
+    "status": "implemented",
+    "rust": "scene::vector_3d_tile_primitive",
+    "note": "CPU rebatching (duplicate-colour detection, 120-frame grace, descending toRgba sort, equal-colour merge, index rewrite), constructor metrics, updateCommands splits, features, debug colours and style evaluation match pinned fixtures in tests/scene_vector_gaussian.rs. Builds classification stencil/colour/pick SceneCommands, shaders and render states. The unported Cesium3DTileBatchTable is a typed Vector3DTileBatchTable trait; commands are not GPU-executed or compared with Cesium."
+  },
+  "Scene/Vector3DTileGeometry": {
+    "status": "implemented",
+    "rust": "scene::vector_3d_tile_geometry",
+    "note": "Composes the validated createVectorTileGeometries worker output into Vector3DTilePrimitive with the pinned two-frame lifecycle, packed bounding-sphere/batch unpack and 0/0 metrics before readiness. Worker parameter parity and GPU command execution are not independently validated."
+  },
+  "Scene/Vector3DTilePoints": {
+    "status": "partial",
+    "rust": "scene::vector_3d_tile_points",
+    "note": "Two-phase point decoding, billboard/label/anchor-line records, the full Cesium3DTilePointFeature property surface with upstream defaults and side effects, style/debug application, heightOffset cartography and destruction. Decoded positions and parsed content fields match pinned vctr fixtures. BillboardCollection/LabelCollection/PolylineCollection rendering, texture-atlas accounting and pick IDs are not driven; texturesByteLength reports decoded image payload instead of atlas memory."
+  },
+  "Scene/Vector3DTilePolygons": {
+    "status": "implemented",
+    "rust": "scene::vector_3d_tile_polygons",
+    "note": "Parses counts/index counts/indices/positions and per-polygon heights, packs the pinned worker buffer, unpacks oriented bounding boxes and batches, and composes Vector3DTilePrimitive with the constructor's discarded-centre quirk. Parsed fields and worker parameters match pinned vctr fixtures; GPU execution is not compared."
+  },
+  "Scene/Vector3DTilePolylines": {
+    "status": "implemented",
+    "rust": "scene::vector_3d_tile_polylines",
+    "note": "Worker-backed floating polyline decode, five-attribute vertex layout, PolylineCommon/Vector3DTilePolylinesVS program with VECTOR_TILE and CLIP_POLYLINE, polygon-offset alpha RenderState, u_modifiedModelView/u_highlightColor uniforms, retained decoded positions and getPolylinePositions. Parsed fields/packing match pinned fixtures; commands are not GPU-executed."
+  },
+  "Scene/Vector3DTileClampedPolylines": {
+    "status": "implemented",
+    "rust": "scene::vector_3d_tile_clamped_polylines",
+    "note": "Seven-attribute volume layout, worker decode, bundled ApproximateTerrainHeights bounding-volume update with the pinned default-height worker ordering, front-face cull/pre-multiplied-alpha render states, terrain and 3D Tiles stencil commands, classification filtering, height uniforms and getPositions. Parsed fields match pinned fixtures; commands are not GPU-executed."
+  },
+  "Scene/Vector3DTileContent": {
+    "status": "implemented",
+    "rust": "scene::vector_3d_tile_content",
+    "note": "Header/version/length validation, JSON and binary batch sections, REGION and RTC_CENTER, default and partial batch-id rules, polygon/polyline/point views, floating-vs-clamped selection, feature composition, metrics, style/debug, TilesetContent adapter and destruction. 2 pinned parses and 7 pinned error cases match in tests/scene_vector_gaussian.rs. Batch-table JSON arrays become feature properties; binary properties/hierarchy and feature expansion callbacks are not decoded."
+  },
+  "Scene/GaussianSplatPrimitive": {
+    "status": "implemented",
+    "rust": "scene::gaussian_splat_primitive",
+    "note": "Ported snapshot and steady-sort state machines, aggregation, attribute texture and spherical-harmonics texture generation, integer texture formats, colour sorting interval/angle/position thresholds, texture retirement, atomic commits, shader defines/uniforms, instanced screen-quad VertexArray and GaussianSplats command, plus destruction. Tileset state is a per-frame typed view. Native lifecycle test drives snapshot->texture->sort->command; GPU execution is not compared."
+  },
+  "Scene/GaussianSplat3DTileContent": {
+    "status": "implemented",
+    "rust": "scene::gaussian_splat_3d_tile_content",
+    "note": "Attribute extraction, spherical-harmonic degree/coefficient detection, exact float32ToFloat16, RG32UI half-float packing, transforms, metrics, metadata/group, style/pick no-ops and destruction are ported; half conversion, degree names and degree 1/2/3 packing match instrumented pinned Cesium in tests/scene_vector_gaussian.rs. Construction from GltfLoader attributes is supplied by the caller; the async fromGltf wrapper is not ported."
+  },
+  "Scene/createBillboardPointCallback": {
+    "status": "implemented",
+    "rust": "scene::create_billboard_point_callback",
+    "note": "Callback contract, WebIDL canvas size truncation/modulo, drawing-command order, outline disk, destination-out punch and CSS colour compositing are ported and compared with a command-recording canvas in tests/scene_vector_gaussian.rs. Native RGBA8 output uses 8x8 supersampled coverage; browser Canvas antialiasing is implementation-defined, so only fully covered/transparent pixels are asserted."
   }
 }
