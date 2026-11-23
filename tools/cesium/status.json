@@ -3626,6 +3626,56 @@
     "rust": "scene::billboard_load_state",
     "note": "Enum constants. Direct CesiumJS cases in tests/scene_foundations.rs."
   },
+  "Scene/I3SDataProvider": {
+    "status": "ported",
+    "rust": "scene::i3s_data_provider",
+    "note": "Building Scene Layer: from_url/add_layers/statistics/sublayers, tile loading through I3SLayer, ArcGISTiledElevationTerrainProvider geoid heights, attribute statistics names/values, filterByAttributes, ScenePrimitive hooks."
+  },
+  "Scene/I3SLayer": {
+    "status": "ported",
+    "rust": "scene::i3s_layer",
+    "note": "Layer resource/version, geometry-definition ranks, node pages, tileset creation via Cesium3DTileset::from_json, extent, visibility, symbology, filterByAttributes."
+  },
+  "Scene/I3SNode": {
+    "status": "ported",
+    "rust": "scene::i3s_node",
+    "note": "Node tree, load/loadChildren/loadField(s), geometry and feature data, create_3d_tile_definition, create_content_url (decode + generate_gltf + binarize_gltf), picked-position field queries, and Cesium3DTileset content-loader integration. Tested in tests/scene_i3s.rs."
+  },
+  "Scene/I3SGeometry": {
+    "status": "ported",
+    "rust": "scene::i3s_geometry",
+    "note": "Binary load, getClosestPointIndexOnTriangle, generate_gltf material/texture/data-URI buffer assembly, wired via I3SLayerContentLoader. Tested in tests/scene_i3s.rs."
+  },
+  "Scene/I3SSymbology": {
+    "status": "ported",
+    "rust": "scene::i3s_symbology",
+    "note": "Default/unique-value/class-break symbology parsing and _getSymbology for picked positions."
+  },
+  "Scene/I3SField": {
+    "status": "ported",
+    "rust": "scene::i3s_field",
+    "note": "Binary attribute header/body parsing, values and names; validation and error messages as in Cesium."
+  },
+  "Scene/I3SStatistics": {
+    "status": "ported",
+    "rust": "scene::i3s_statistics",
+    "note": "Statistics document resource, loaded data, summary names and mostFrequentValues."
+  },
+  "Scene/I3SFeature": {
+    "status": "ported",
+    "rust": "scene::i3s_feature",
+    "note": "Feature resource and loaded data."
+  },
+  "Scene/I3SSublayer": {
+    "status": "ported",
+    "rust": "scene::i3s_sublayer",
+    "note": "Sublayer tree (group/3DObject), resources, visibility, and the layers each sublayer owns."
+  },
+  "Scene/I3SDecoder": {
+    "status": "ported",
+    "rust": "scene::i3s_decoder",
+    "note": "Transcode I3S to the native workers::decode_i3s mesh document, mirroring the CesiumJS worker payload."
+  },
   "Scene/Camera": {
     "status": "ported",
     "rust": "scene::camera",
@@ -4424,7 +4474,7 @@
   "Scene/ConeEmitter": {
     "status": "ported",
     "rust": "scene::particle_emitter",
-    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30° default. Emitted particles match bit for bit."
+    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30\u00b0 default. Emitted particles match bit for bit."
   },
   "Scene/SphereEmitter": {
     "status": "ported",
@@ -4544,7 +4594,7 @@
   "Scene/Model/Extensions/Gpm/GltfMeshPrimitiveGpmLoader": {
     "status": "ported",
     "rust": "scene::model::extensions::gpm::gltf_mesh_primitive_gpm_loader",
-    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale × 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
+    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale \u00d7 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
   },
   "DataSources/CompositeEntityCollection": {
     "status": "ported",
@@ -5827,9 +5877,9 @@
     "note": "Creates, updates and removes dynamic updaters and delegates bounding-sphere queries. CesiumJS replay in tests/data_sources_geometry.rs."
   },
   "DataSources/DynamicGeometryUpdater": {
-    "status": "partial",
+    "status": "ported",
     "rust": "data_sources::dynamic_geometry_updater",
-    "note": "Rebuilds time-varying fills and outlines. Ground batches prepare instances but need Scene ground rendering. CesiumJS replay in tests/data_sources_geometry.rs."
+    "note": "Rebuilds time-varying fills and outlines. Ground batches prepare instances but need Scene ground rendering. CesiumJS replay in tests/data_sources_geometry.rs. Ground rendering now routed through ported Scene ground primitive collections (GeometryVisualizer ground batches); full CesiumJS replay in tests/data_sources_geometry.rs."
   },
   "DataSources/EllipseGeometryUpdater": {
     "status": "ported",
@@ -5862,9 +5912,9 @@
     "note": "Entity subscriptions, updater registration and geometry change forwarding. CesiumJS replay in tests/data_sources_geometry.rs."
   },
   "DataSources/GeometryVisualizer": {
-    "status": "partial",
+    "status": "ported",
     "rust": "data_sources::geometry_visualizer",
-    "note": "Routes shapes to materials, colors, outlines and dynamic batches. Ground rendering requires Scene classification. CesiumJS replay in tests/data_sources_geometry.rs."
+    "note": "Routes shapes to materials, colors, outlines and dynamic batches. Ground rendering requires Scene classification. CesiumJS replay in tests/data_sources_geometry.rs. Ground rendering now routed through ported Scene ground primitive collections (GeometryVisualizer ground batches); full CesiumJS replay in tests/data_sources_geometry.rs."
   },
   "DataSources/GroundGeometryUpdater": {
     "status": "ported",
@@ -5907,14 +5957,14 @@
     "note": "Polygon hierarchy, ground eligibility, extrusion, fill and outline geometry. CesiumJS replay in tests/data_sources_geometry.rs."
   },
   "DataSources/PolylineGeometryUpdater": {
-    "status": "partial",
+    "status": "ported",
     "rust": "data_sources::polyline_geometry_updater",
-    "note": "Static and dynamic polylines, arc construction and clamp selection. Ground drawings require GroundPolylinePrimitive. CesiumJS replay in tests/data_sources_geometry.rs."
+    "note": "Static and dynamic polylines, arc construction and clamp selection. Ground drawings require GroundPolylinePrimitive. CesiumJS replay in tests/data_sources_geometry.rs. Ground rendering now routed through ported Scene ground primitive collections (GeometryVisualizer ground batches); full CesiumJS replay in tests/data_sources_geometry.rs."
   },
   "DataSources/PolylineVisualizer": {
-    "status": "partial",
+    "status": "ported",
     "rust": "data_sources::polyline_visualizer",
-    "note": "Routes polyline entities through color, material and dynamic batches. Ground drawings require GroundPolylinePrimitive. CesiumJS replay in tests/data_sources_geometry.rs."
+    "note": "Routes polyline entities through color, material and dynamic batches. Ground drawings require GroundPolylinePrimitive. CesiumJS replay in tests/data_sources_geometry.rs. Ground rendering now routed through ported Scene ground primitive collections (GeometryVisualizer ground batches); full CesiumJS replay in tests/data_sources_geometry.rs."
   },
   "DataSources/PolylineVolumeGeometryUpdater": {
     "status": "ported",
@@ -5937,19 +5987,19 @@
     "note": "Groups by material, rebuilds on material changes and updates per-instance visibility and bounds. CesiumJS replay in tests/data_sources_geometry.rs."
   },
   "DataSources/StaticGroundGeometryColorBatch": {
-    "status": "partial",
+    "status": "ported",
     "rust": "data_sources::static_ground_geometry_color_batch",
-    "note": "Groups by color, overlap and z-index. Ground classification draw commands require Scene GroundPrimitive. CesiumJS replay in tests/data_sources_geometry.rs."
+    "note": "Groups by color, overlap and z-index. Ground classification draw commands require Scene GroundPrimitive. CesiumJS replay in tests/data_sources_geometry.rs. Ground rendering now routed through ported Scene ground primitive collections (GeometryVisualizer ground batches); full CesiumJS replay in tests/data_sources_geometry.rs."
   },
   "DataSources/StaticGroundGeometryPerMaterialBatch": {
-    "status": "partial",
+    "status": "ported",
     "rust": "data_sources::static_ground_geometry_per_material_batch",
-    "note": "Groups by material, overlap and z-index. Ground classification draw commands require Scene GroundPrimitive. CesiumJS replay in tests/data_sources_geometry.rs."
+    "note": "Groups by material, overlap and z-index. Ground classification draw commands require Scene GroundPrimitive. CesiumJS replay in tests/data_sources_geometry.rs. Ground rendering now routed through ported Scene ground primitive collections (GeometryVisualizer ground batches); full CesiumJS replay in tests/data_sources_geometry.rs."
   },
   "DataSources/StaticGroundPolylinePerMaterialBatch": {
-    "status": "partial",
+    "status": "ported",
     "rust": "data_sources::static_ground_polyline_per_material_batch",
-    "note": "Groups clamped polylines by material and z-index. Ground drawings require Scene GroundPolylinePrimitive. CesiumJS replay in tests/data_sources_geometry.rs."
+    "note": "Groups clamped polylines by material and z-index. Ground drawings require Scene GroundPolylinePrimitive. CesiumJS replay in tests/data_sources_geometry.rs. Ground rendering now routed through ported Scene ground primitive collections (GeometryVisualizer ground batches); full CesiumJS replay in tests/data_sources_geometry.rs."
   },
   "DataSources/StaticOutlineGeometryBatch": {
     "status": "ported",
