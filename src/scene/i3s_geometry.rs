@@ -121,14 +121,17 @@ impl I3SGeometry {
         let mut best_dist_sq = 0.0;
         let mut best_index: Option<u32> = None;
         let mut best_pt: Option<Cartesian3> = None;
-        // Faithful to Cesium: the index count doubles as the triangle count.
-        let tri_count = attributes.indices.as_ref().map(Vec::len).unwrap_or_else(|| positions.len() / 3);
+        let tri_count = attributes
+            .indices
+            .as_ref()
+            .map(|indices| indices.len() / 3)
+            .unwrap_or_else(|| positions.len() / 9);
         for tri_index in 0..tri_count {
             let (i0, i1, i2): (usize, usize, usize) = if let Some(indices) = attributes.indices.as_ref() {
                 (
-                    indices.get(tri_index).copied().unwrap_or_default() as usize,
-                    indices.get(tri_index + 1).copied().unwrap_or_default() as usize,
-                    indices.get(tri_index + 2).copied().unwrap_or_default() as usize,
+                    indices.get(tri_index * 3).copied().unwrap_or_default() as usize,
+                    indices.get(tri_index * 3 + 1).copied().unwrap_or_default() as usize,
+                    indices.get(tri_index * 3 + 2).copied().unwrap_or_default() as usize,
                 )
             } else {
                 (tri_index * 3, tri_index * 3 + 1, tri_index * 3 + 2)

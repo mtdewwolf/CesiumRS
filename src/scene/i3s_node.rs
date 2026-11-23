@@ -354,17 +354,21 @@ impl I3SNode {
         if self.children_ready {
             return Ok(());
         }
-        if let Some(children) = self.data.as_ref().and_then(|d| d.get("children")).and_then(Value::as_array).cloned() {
-            for child in &children {
-                let r#ref = child.get("href").cloned().unwrap_or_else(|| child.clone());
-                let new_child = I3SNode::new_child(self, r#ref);
-                self.children.push(new_child);
+        if self.children.is_empty() {
+            if let Some(children) = self.data.as_ref().and_then(|d| d.get("children")).and_then(Value::as_array).cloned() {
+                for child in &children {
+                    let r#ref = child.get("href").cloned().unwrap_or_else(|| child.clone());
+                    let new_child = I3SNode::new_child(self, r#ref);
+                    self.children.push(new_child);
+                }
+            }
+        }
+        for child in &mut self.children {
+            if child.data.is_none() {
+                child.load(client).await?;
             }
         }
         self.children_ready = true;
-        for child in &mut self.children {
-            child.load(client).await?;
-        }
         Ok(())
     }
 
