@@ -1,0 +1,2920 @@
+{
+  "maximumDistance": 20000,
+  "constructor": [
+    {
+      "name": "default",
+      "size": 2048,
+      "enabled": false,
+      "softShadows": true,
+      "normalOffset": false,
+      "darkness": 0.4,
+      "maximumDistance": 4000,
+      "fadingEnabled": false,
+      "isPointLight": false,
+      "textureSize": [
+        4096,
+        4096
+      ],
+      "textureOffsets": [
+        [
+          0.5,
+          0,
+          0,
+          0,
+          0,
+          0.5,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0.5,
+          0,
+          0,
+          0,
+          0,
+          0.5,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0.5,
+          0,
+          0,
+          1
+        ],
+        [
+          0.5,
+          0,
+          0,
+          0,
+          0,
+          0.5,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0.5,
+          0,
+          1
+        ],
+        [
+          0.5,
+          0,
+          0,
+          0,
+          0,
+          0.5,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0.5,
+          0.5,
+          0,
+          1
+        ]
+      ],
+      "viewports": [
+        [
+          0,
+          0,
+          2048,
+          2048
+        ],
+        [
+          2048,
+          0,
+          2048,
+          2048
+        ],
+        [
+          0,
+          2048,
+          2048,
+          2048
+        ],
+        [
+          2048,
+          2048,
+          2048,
+          2048
+        ]
+      ],
+      "passCount": 4,
+      "primitiveBias": {
+        "polygonOffset": true,
+        "polygonOffsetFactor": 1.1,
+        "polygonOffsetUnits": 4,
+        "normalOffset": false,
+        "normalOffsetScale": 0.1,
+        "normalShading": true,
+        "normalShadingSmooth": 0.05,
+        "depthBias": 0.00002
+      },
+      "terrainBias": {
+        "polygonOffset": true,
+        "polygonOffsetFactor": 1.1,
+        "polygonOffsetUnits": 4,
+        "normalOffset": false,
+        "normalOffsetScale": 0.5,
+        "normalShading": true,
+        "normalShadingSmooth": 0.3,
+        "depthBias": 0.0001
+      },
+      "pointBias": {
+        "polygonOffset": false,
+        "polygonOffsetFactor": 1.1,
+        "polygonOffsetUnits": 4,
+        "normalOffset": false,
+        "normalOffsetScale": 0,
+        "normalShading": true,
+        "normalShadingSmooth": 0.1,
+        "depthBias": 0.0005
+      },
+      "primitiveRenderState": {
+        "cull": {
+          "enabled": true,
+          "face": 1029
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "colorMask": {
+          "red": false,
+          "green": false,
+          "blue": false,
+          "alpha": false
+        },
+        "polygonOffset": {
+          "enabled": true,
+          "factor": 1.1,
+          "units": 4
+        },
+        "blending": false,
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "stencilMask": -1
+      },
+      "terrainRenderState": {
+        "cull": {
+          "enabled": true,
+          "face": 1029
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "colorMask": {
+          "red": false,
+          "green": false,
+          "blue": false,
+          "alpha": false
+        },
+        "polygonOffset": {
+          "enabled": true,
+          "factor": 1.1,
+          "units": 4
+        },
+        "blending": false,
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "stencilMask": -1
+      },
+      "pointRenderState": {
+        "cull": {
+          "enabled": true,
+          "face": 1029
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "colorMask": {
+          "red": false,
+          "green": false,
+          "blue": false,
+          "alpha": false
+        },
+        "polygonOffset": {
+          "enabled": false,
+          "factor": 1.1,
+          "units": 4
+        },
+        "blending": false,
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "stencilMask": -1
+      }
+    },
+    {
+      "name": "oneCascade",
+      "size": 2048,
+      "enabled": false,
+      "softShadows": true,
+      "normalOffset": false,
+      "darkness": 0.4,
+      "maximumDistance": 4000,
+      "fadingEnabled": false,
+      "isPointLight": false,
+      "textureSize": [
+        2048,
+        2048
+      ],
+      "textureOffsets": [
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "viewports": [
+        [
+          0,
+          0,
+          2048,
+          2048
+        ]
+      ],
+      "passCount": 1,
+      "primitiveBias": {
+        "polygonOffset": true,
+        "polygonOffsetFactor": 1.1,
+        "polygonOffsetUnits": 4,
+        "normalOffset": false,
+        "normalOffsetScale": 0.1,
+        "normalShading": true,
+        "normalShadingSmooth": 0.05,
+        "depthBias": 0.00002
+      },
+      "terrainBias": {
+        "polygonOffset": true,
+        "polygonOffsetFactor": 1.1,
+        "polygonOffsetUnits": 4,
+        "normalOffset": false,
+        "normalOffsetScale": 0.5,
+        "normalShading": true,
+        "normalShadingSmooth": 0.3,
+        "depthBias": 0.0001
+      },
+      "pointBias": {
+        "polygonOffset": false,
+        "polygonOffsetFactor": 1.1,
+        "polygonOffsetUnits": 4,
+        "normalOffset": false,
+        "normalOffsetScale": 0,
+        "normalShading": true,
+        "normalShadingSmooth": 0.1,
+        "depthBias": 0.0005
+      },
+      "primitiveRenderState": {
+        "cull": {
+          "enabled": true,
+          "face": 1029
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "colorMask": {
+          "red": false,
+          "green": false,
+          "blue": false,
+          "alpha": false
+        },
+        "polygonOffset": {
+          "enabled": true,
+          "factor": 1.1,
+          "units": 4
+        },
+        "blending": false,
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "stencilMask": -1
+      },
+      "terrainRenderState": {
+        "cull": {
+          "enabled": true,
+          "face": 1029
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "colorMask": {
+          "red": false,
+          "green": false,
+          "blue": false,
+          "alpha": false
+        },
+        "polygonOffset": {
+          "enabled": true,
+          "factor": 1.1,
+          "units": 4
+        },
+        "blending": false,
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "stencilMask": -1
+      },
+      "pointRenderState": {
+        "cull": {
+          "enabled": true,
+          "face": 1029
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "colorMask": {
+          "red": false,
+          "green": false,
+          "blue": false,
+          "alpha": false
+        },
+        "polygonOffset": {
+          "enabled": false,
+          "factor": 1.1,
+          "units": 4
+        },
+        "blending": false,
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "stencilMask": -1
+      }
+    },
+    {
+      "name": "size1024",
+      "size": 1024,
+      "enabled": false,
+      "softShadows": true,
+      "normalOffset": false,
+      "darkness": 0.4,
+      "maximumDistance": 4000,
+      "fadingEnabled": false,
+      "isPointLight": false,
+      "textureSize": [
+        2048,
+        2048
+      ],
+      "textureOffsets": [
+        [
+          0.5,
+          0,
+          0,
+          0,
+          0,
+          0.5,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0.5,
+          0,
+          0,
+          0,
+          0,
+          0.5,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0.5,
+          0,
+          0,
+          1
+        ],
+        [
+          0.5,
+          0,
+          0,
+          0,
+          0,
+          0.5,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0.5,
+          0,
+          1
+        ],
+        [
+          0.5,
+          0,
+          0,
+          0,
+          0,
+          0.5,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0.5,
+          0.5,
+          0,
+          1
+        ]
+      ],
+      "viewports": [
+        [
+          0,
+          0,
+          1024,
+          1024
+        ],
+        [
+          1024,
+          0,
+          1024,
+          1024
+        ],
+        [
+          0,
+          1024,
+          1024,
+          1024
+        ],
+        [
+          1024,
+          1024,
+          1024,
+          1024
+        ]
+      ],
+      "passCount": 4,
+      "primitiveBias": {
+        "polygonOffset": true,
+        "polygonOffsetFactor": 1.1,
+        "polygonOffsetUnits": 4,
+        "normalOffset": false,
+        "normalOffsetScale": 0.1,
+        "normalShading": true,
+        "normalShadingSmooth": 0.05,
+        "depthBias": 0.00002
+      },
+      "terrainBias": {
+        "polygonOffset": true,
+        "polygonOffsetFactor": 1.1,
+        "polygonOffsetUnits": 4,
+        "normalOffset": false,
+        "normalOffsetScale": 0.5,
+        "normalShading": true,
+        "normalShadingSmooth": 0.3,
+        "depthBias": 0.0001
+      },
+      "pointBias": {
+        "polygonOffset": false,
+        "polygonOffsetFactor": 1.1,
+        "polygonOffsetUnits": 4,
+        "normalOffset": false,
+        "normalOffsetScale": 0,
+        "normalShading": true,
+        "normalShadingSmooth": 0.1,
+        "depthBias": 0.0005
+      },
+      "primitiveRenderState": {
+        "cull": {
+          "enabled": true,
+          "face": 1029
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "colorMask": {
+          "red": false,
+          "green": false,
+          "blue": false,
+          "alpha": false
+        },
+        "polygonOffset": {
+          "enabled": true,
+          "factor": 1.1,
+          "units": 4
+        },
+        "blending": false,
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "stencilMask": -1
+      },
+      "terrainRenderState": {
+        "cull": {
+          "enabled": true,
+          "face": 1029
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "colorMask": {
+          "red": false,
+          "green": false,
+          "blue": false,
+          "alpha": false
+        },
+        "polygonOffset": {
+          "enabled": true,
+          "factor": 1.1,
+          "units": 4
+        },
+        "blending": false,
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "stencilMask": -1
+      },
+      "pointRenderState": {
+        "cull": {
+          "enabled": true,
+          "face": 1029
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "colorMask": {
+          "red": false,
+          "green": false,
+          "blue": false,
+          "alpha": false
+        },
+        "polygonOffset": {
+          "enabled": false,
+          "factor": 1.1,
+          "units": 4
+        },
+        "blending": false,
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "stencilMask": -1
+      }
+    },
+    {
+      "name": "pointLight",
+      "size": 2048,
+      "enabled": false,
+      "softShadows": true,
+      "normalOffset": false,
+      "darkness": 0.4,
+      "maximumDistance": 4000,
+      "fadingEnabled": false,
+      "isPointLight": true,
+      "textureSize": [
+        2048,
+        2048
+      ],
+      "textureOffsets": [
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "viewports": [
+        [
+          0,
+          0,
+          2048,
+          2048
+        ],
+        [
+          0,
+          0,
+          2048,
+          2048
+        ],
+        [
+          0,
+          0,
+          2048,
+          2048
+        ],
+        [
+          0,
+          0,
+          2048,
+          2048
+        ],
+        [
+          0,
+          0,
+          2048,
+          2048
+        ],
+        [
+          0,
+          0,
+          2048,
+          2048
+        ]
+      ],
+      "passCount": 6,
+      "primitiveBias": {
+        "polygonOffset": true,
+        "polygonOffsetFactor": 1.1,
+        "polygonOffsetUnits": 4,
+        "normalOffset": false,
+        "normalOffsetScale": 0.1,
+        "normalShading": true,
+        "normalShadingSmooth": 0.05,
+        "depthBias": 0.00002
+      },
+      "terrainBias": {
+        "polygonOffset": true,
+        "polygonOffsetFactor": 1.1,
+        "polygonOffsetUnits": 4,
+        "normalOffset": false,
+        "normalOffsetScale": 0.5,
+        "normalShading": true,
+        "normalShadingSmooth": 0.3,
+        "depthBias": 0.0001
+      },
+      "pointBias": {
+        "polygonOffset": false,
+        "polygonOffsetFactor": 1.1,
+        "polygonOffsetUnits": 4,
+        "normalOffset": false,
+        "normalOffsetScale": 0,
+        "normalShading": true,
+        "normalShadingSmooth": 0.1,
+        "depthBias": 0.0005
+      },
+      "primitiveRenderState": {
+        "cull": {
+          "enabled": true,
+          "face": 1029
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "colorMask": {
+          "red": true,
+          "green": true,
+          "blue": true,
+          "alpha": true
+        },
+        "polygonOffset": {
+          "enabled": true,
+          "factor": 1.1,
+          "units": 4
+        },
+        "blending": false,
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "stencilMask": -1
+      },
+      "terrainRenderState": {
+        "cull": {
+          "enabled": true,
+          "face": 1029
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "colorMask": {
+          "red": true,
+          "green": true,
+          "blue": true,
+          "alpha": true
+        },
+        "polygonOffset": {
+          "enabled": true,
+          "factor": 1.1,
+          "units": 4
+        },
+        "blending": false,
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "stencilMask": -1
+      },
+      "pointRenderState": {
+        "cull": {
+          "enabled": true,
+          "face": 1029
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "colorMask": {
+          "red": true,
+          "green": true,
+          "blue": true,
+          "alpha": true
+        },
+        "polygonOffset": {
+          "enabled": false,
+          "factor": 1.1,
+          "units": 4
+        },
+        "blending": false,
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "stencilMask": -1
+      }
+    },
+    {
+      "name": "spotLight",
+      "size": 2048,
+      "enabled": false,
+      "softShadows": true,
+      "normalOffset": false,
+      "darkness": 0.4,
+      "maximumDistance": 4000,
+      "fadingEnabled": false,
+      "isPointLight": false,
+      "textureSize": [
+        2048,
+        2048
+      ],
+      "textureOffsets": [
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "viewports": [
+        [
+          0,
+          0,
+          2048,
+          2048
+        ]
+      ],
+      "passCount": 1,
+      "primitiveBias": {
+        "polygonOffset": true,
+        "polygonOffsetFactor": 1.1,
+        "polygonOffsetUnits": 4,
+        "normalOffset": false,
+        "normalOffsetScale": 0.1,
+        "normalShading": true,
+        "normalShadingSmooth": 0.05,
+        "depthBias": 0.00002
+      },
+      "terrainBias": {
+        "polygonOffset": true,
+        "polygonOffsetFactor": 1.1,
+        "polygonOffsetUnits": 4,
+        "normalOffset": false,
+        "normalOffsetScale": 0.5,
+        "normalShading": true,
+        "normalShadingSmooth": 0.3,
+        "depthBias": 0.0001
+      },
+      "pointBias": {
+        "polygonOffset": false,
+        "polygonOffsetFactor": 1.1,
+        "polygonOffsetUnits": 4,
+        "normalOffset": false,
+        "normalOffsetScale": 0,
+        "normalShading": true,
+        "normalShadingSmooth": 0.1,
+        "depthBias": 0.0005
+      },
+      "primitiveRenderState": {
+        "cull": {
+          "enabled": true,
+          "face": 1029
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "colorMask": {
+          "red": false,
+          "green": false,
+          "blue": false,
+          "alpha": false
+        },
+        "polygonOffset": {
+          "enabled": true,
+          "factor": 1.1,
+          "units": 4
+        },
+        "blending": false,
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "stencilMask": -1
+      },
+      "terrainRenderState": {
+        "cull": {
+          "enabled": true,
+          "face": 1029
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "colorMask": {
+          "red": false,
+          "green": false,
+          "blue": false,
+          "alpha": false
+        },
+        "polygonOffset": {
+          "enabled": true,
+          "factor": 1.1,
+          "units": 4
+        },
+        "blending": false,
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "stencilMask": -1
+      },
+      "pointRenderState": {
+        "cull": {
+          "enabled": true,
+          "face": 1029
+        },
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "colorMask": {
+          "red": false,
+          "green": false,
+          "blue": false,
+          "alpha": false
+        },
+        "polygonOffset": {
+          "enabled": false,
+          "factor": 1.1,
+          "units": 4
+        },
+        "blending": false,
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "backFunction": 519,
+          "reference": 0,
+          "mask": -1,
+          "frontOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          },
+          "backOperation": {
+            "fail": 7680,
+            "zFail": 7680,
+            "zPass": 7680
+          }
+        },
+        "stencilMask": -1
+      }
+    }
+  ],
+  "update": [
+    {
+      "name": "cascades",
+      "lightCamera": {
+        "view": [
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          "-0",
+          -7000000,
+          1
+        ],
+        "inverseView": [
+          0,
+          0,
+          -1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          7000000,
+          0,
+          0,
+          1
+        ],
+        "positionWC": [
+          7000000,
+          0,
+          0
+        ],
+        "directionWC": [
+          -1,
+          0,
+          0
+        ],
+        "upWC": [
+          0,
+          1,
+          0
+        ],
+        "rightWC": [
+          0,
+          0,
+          -1
+        ],
+        "frustum": {
+          "near": 1,
+          "far": 10000,
+          "fov": 0.7853981633974483,
+          "aspectRatio": 1,
+          "xOffset": 0,
+          "yOffset": 0
+        }
+      },
+      "sceneCamera": {
+        "view": [
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          "-0",
+          -7000000,
+          1
+        ],
+        "inverseView": [
+          0,
+          0,
+          -1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          7000000,
+          0,
+          0,
+          1
+        ],
+        "positionWC": [
+          7000000,
+          0,
+          0
+        ],
+        "directionWC": [
+          -1,
+          0,
+          0
+        ],
+        "upWC": [
+          0,
+          1,
+          0
+        ],
+        "rightWC": [
+          0,
+          0,
+          -1
+        ],
+        "frustum": {
+          "near": 1,
+          "far": 5000,
+          "fov": 1.0471975511965976,
+          "aspectRatio": 1.5
+        }
+      },
+      "shadowMapCamera": {
+        "view": [
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -7000998.999999999,
+          1
+        ],
+        "inverseView": [
+          0,
+          0,
+          -1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          7000998.999999999,
+          0,
+          0,
+          1
+        ],
+        "positionWC": [
+          7000998.999999999,
+          0,
+          0
+        ],
+        "directionWC": [
+          -1,
+          0,
+          0
+        ],
+        "upWC": [
+          0,
+          1,
+          0
+        ],
+        "rightWC": [
+          0,
+          0,
+          -1
+        ],
+        "frustum": {
+          "left": -2886.751345642375,
+          "right": 2886.751345642375,
+          "bottom": -1924.5008974397822,
+          "top": 1924.5008974397822,
+          "near": 0.01,
+          "far": 6009.000000481494
+        }
+      },
+      "sceneCameraNearFar": [
+        1,
+        5000
+      ],
+      "distance": 4999,
+      "outOfView": false,
+      "darkness": 0.3,
+      "lightDirectionEC": [
+        "-0",
+        "-0",
+        1
+      ],
+      "lightPositionEC": [
+        0,
+        0,
+        -7000000,
+        100
+      ],
+      "shadowMapMatrix": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "cascadeSplits": [
+        [
+          1,
+          132.64306773728342,
+          313.68961030678923,
+          910.1682017512244
+        ],
+        [
+          132.64306773728342,
+          313.68961030678923,
+          910.1682017512244,
+          5000
+        ]
+      ],
+      "cascadeDistances": [
+        131.64306773728342,
+        181.04654256950582,
+        596.4785914444351,
+        4089.8317982487756
+      ],
+      "cascadeMatrices": [
+        [
+          0.00326449553228679,
+          0,
+          0,
+          0,
+          0,
+          0.004896743299301877,
+          0,
+          0,
+          0,
+          0,
+          -0.0008836786662956625,
+          0,
+          0.25,
+          0.25,
+          0.882786150841639,
+          1
+        ],
+        [
+          0.0013803858580795163,
+          0,
+          0,
+          0,
+          0,
+          0.0020705787871128155,
+          0,
+          0,
+          0,
+          0,
+          -0.0007618005125916401,
+          0,
+          0.7499999999999997,
+          0.24999999999999978,
+          0.7610310940735872,
+          1
+        ],
+        [
+          0.0004757501976650369,
+          0,
+          0,
+          0,
+          0,
+          0.0007136252964991581,
+          0,
+          0,
+          0,
+          0,
+          -0.0005237910609419855,
+          0,
+          0.25,
+          0.75,
+          0.5232620319702619,
+          1
+        ],
+        [
+          0.00008660254038761649,
+          0,
+          0,
+          0,
+          0,
+          0.00012990381056763765,
+          0,
+          0,
+          0,
+          0,
+          -0.00016669472694578205,
+          0,
+          0.75,
+          0.75,
+          0.16652636527123832,
+          1
+        ]
+      ],
+      "passes": [
+        {
+          "cameraView": [
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            -1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            -7000998.999999999,
+            1
+          ],
+          "frustum": {
+            "left": -76.58151084215888,
+            "right": 76.58151084215888,
+            "bottom": -51.05434055235082,
+            "top": 51.05434055235082,
+            "near": 0.01,
+            "far": 1131.6430676986363
+          },
+          "cullingPlanes": [
+            [
+              0,
+              0,
+              -1,
+              76.58151084215888
+            ],
+            [
+              "-0",
+              "-0",
+              1,
+              76.58151084215888
+            ],
+            [
+              0,
+              1,
+              0,
+              51.05434055235082
+            ],
+            [
+              "-0",
+              -1,
+              "-0",
+              51.05434055235082
+            ],
+            [
+              -1,
+              0,
+              0,
+              7000998.989999999
+            ],
+            [
+              1,
+              "-0",
+              "-0",
+              -6999867.3569323
+            ]
+          ]
+        },
+        {
+          "cameraView": [
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            -1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            -7000998.999999999,
+            1
+          ],
+          "frustum": {
+            "left": -181.10878095188264,
+            "right": 181.1087809518831,
+            "bottom": -120.73918730163177,
+            "top": 120.739187301632,
+            "near": 0.01,
+            "far": 1312.689610306387
+          },
+          "cullingPlanes": [
+            [
+              0,
+              0,
+              -1,
+              181.10878095188264
+            ],
+            [
+              "-0",
+              "-0",
+              1,
+              181.1087809518831
+            ],
+            [
+              0,
+              1,
+              0,
+              120.73918730163177
+            ],
+            [
+              "-0",
+              -1,
+              "-0",
+              120.739187301632
+            ],
+            [
+              -1,
+              0,
+              0,
+              7000998.989999999
+            ],
+            [
+              1,
+              "-0",
+              "-0",
+              -6999686.310389693
+            ]
+          ]
+        },
+        {
+          "cameraView": [
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            -1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            -7000998.999999999,
+            1
+          ],
+          "frustum": {
+            "left": -525.4858562896875,
+            "right": 525.4858562896875,
+            "bottom": -350.3239041923382,
+            "top": 350.3239041923382,
+            "near": 0.01,
+            "far": 1909.1682017486144
+          },
+          "cullingPlanes": [
+            [
+              0,
+              0,
+              -1,
+              525.4858562896875
+            ],
+            [
+              "-0",
+              "-0",
+              1,
+              525.4858562896875
+            ],
+            [
+              0,
+              1,
+              0,
+              350.3239041923382
+            ],
+            [
+              "-0",
+              -1,
+              "-0",
+              350.3239041923382
+            ],
+            [
+              -1,
+              0,
+              0,
+              7000998.989999999
+            ],
+            [
+              1,
+              "-0",
+              "-0",
+              -6999089.831798251
+            ]
+          ]
+        },
+        {
+          "cameraView": [
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            -1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            -7000998.999999999,
+            1
+          ],
+          "frustum": {
+            "left": -2886.751345642375,
+            "right": 2886.751345642375,
+            "bottom": -1924.5008972991698,
+            "top": 1924.5008972991698,
+            "near": 0.01,
+            "far": 5998.999999997138
+          },
+          "cullingPlanes": [
+            [
+              0,
+              0,
+              -1,
+              2886.751345642375
+            ],
+            [
+              "-0",
+              "-0",
+              1,
+              2886.751345642375
+            ],
+            [
+              0,
+              1,
+              0,
+              1924.5008972991698
+            ],
+            [
+              "-0",
+              -1,
+              "-0",
+              1924.5008972991698
+            ],
+            [
+              -1,
+              0,
+              0,
+              7000998.989999999
+            ],
+            [
+              1,
+              "-0",
+              "-0",
+              -6995000.000000002
+            ]
+          ]
+        }
+      ],
+      "cullingPlanes": [
+        [
+          0,
+          0,
+          -1,
+          2886.751345642375
+        ],
+        [
+          "-0",
+          "-0",
+          1,
+          2886.751345642375
+        ],
+        [
+          0,
+          1,
+          0,
+          1924.5008974397822
+        ],
+        [
+          "-0",
+          -1,
+          "-0",
+          1924.5008974397822
+        ],
+        [
+          -1,
+          0,
+          0,
+          7000998.989999999
+        ],
+        [
+          1,
+          "-0",
+          "-0",
+          -6994989.999999518
+        ]
+      ]
+    },
+    {
+      "name": "cascadesClose",
+      "lightCamera": {
+        "view": [
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          "-0",
+          -7000000,
+          1
+        ],
+        "inverseView": [
+          0,
+          0,
+          -1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          7000000,
+          0,
+          0,
+          1
+        ],
+        "positionWC": [
+          7000000,
+          0,
+          0
+        ],
+        "directionWC": [
+          -1,
+          0,
+          0
+        ],
+        "upWC": [
+          0,
+          1,
+          0
+        ],
+        "rightWC": [
+          0,
+          0,
+          -1
+        ],
+        "frustum": {
+          "near": 1,
+          "far": 10000,
+          "fov": 0.7853981633974483,
+          "aspectRatio": 1,
+          "xOffset": 0,
+          "yOffset": 0
+        }
+      },
+      "sceneCamera": {
+        "view": [
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          "-0",
+          -7000000,
+          1
+        ],
+        "inverseView": [
+          0,
+          0,
+          -1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          7000000,
+          0,
+          0,
+          1
+        ],
+        "positionWC": [
+          7000000,
+          0,
+          0
+        ],
+        "directionWC": [
+          -1,
+          0,
+          0
+        ],
+        "upWC": [
+          0,
+          1,
+          0
+        ],
+        "rightWC": [
+          0,
+          0,
+          -1
+        ],
+        "frustum": {
+          "near": 1,
+          "far": 5000,
+          "fov": 1.0471975511965976,
+          "aspectRatio": 1.5
+        }
+      },
+      "shadowMapCamera": {
+        "view": [
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -7000989.999999999,
+          1
+        ],
+        "inverseView": [
+          0,
+          0,
+          -1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          7000989.999999999,
+          0,
+          0,
+          1
+        ],
+        "positionWC": [
+          7000989.999999999,
+          0,
+          0
+        ],
+        "directionWC": [
+          -1,
+          0,
+          0
+        ],
+        "upWC": [
+          0,
+          1,
+          0
+        ],
+        "rightWC": [
+          0,
+          0,
+          -1
+        ],
+        "frustum": {
+          "left": -2886.751346088563,
+          "right": 2886.751346088563,
+          "bottom": -1924.5008972202531,
+          "top": 1924.5008972202531,
+          "near": 0.01,
+          "far": 5999.999999641441
+        }
+      },
+      "sceneCameraNearFar": [
+        10,
+        5000
+      ],
+      "distance": 4990,
+      "outOfView": false,
+      "darkness": 0.3,
+      "lightDirectionEC": [
+        "-0",
+        "-0",
+        1
+      ],
+      "lightPositionEC": [
+        0,
+        0,
+        -7000000,
+        100
+      ],
+      "shadowMapMatrix": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "cascadeSplits": [
+        [
+          10,
+          35,
+          185,
+          885
+        ],
+        [
+          35,
+          185,
+          885,
+          5000
+        ]
+      ],
+      "cascadeDistances": [
+        25,
+        150,
+        700,
+        3673.1158629034926
+      ],
+      "cascadeMatrices": [
+        [
+          0.012371791482943269,
+          0,
+          0,
+          0,
+          0,
+          0.0185576872248899,
+          0,
+          0,
+          0,
+          0,
+          -0.0009756192743361476,
+          0,
+          0.25,
+          0.2499999999999979,
+          0.9658533253996211,
+          1
+        ],
+        [
+          0.0023406091994044617,
+          0,
+          0,
+          0,
+          0,
+          0.0035109137990775308,
+          0,
+          0,
+          0,
+          0,
+          -0.0008510710729482641,
+          0,
+          0.7500000000000006,
+          0.2499999999999996,
+          0.8425518515077783,
+          1
+        ],
+        [
+          0.0004892798891439991,
+          0,
+          0,
+          0,
+          0,
+          0.0007339198337148737,
+          0,
+          0,
+          0,
+          0,
+          -0.000533336177793727,
+          0,
+          0.2500000000000001,
+          0.7499999999999998,
+          0.5279974826535181,
+          1
+        ],
+        [
+          0.00008660254037840954,
+          0,
+          0,
+          0,
+          0,
+          0.0001299038105729645,
+          0,
+          0,
+          0,
+          0,
+          -0.000166945186886824,
+          0,
+          0.75,
+          0.75,
+          0.16527406556588176,
+          1
+        ]
+      ],
+      "passes": [
+        {
+          "cameraView": [
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            -1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            -7000989.999999999,
+            1
+          ],
+          "frustum": {
+            "left": -20.20725942113313,
+            "right": 20.20725942113313,
+            "bottom": -13.471506280410495,
+            "top": 13.471506280410722,
+            "near": 0.01,
+            "far": 1024.999999998147
+          },
+          "cullingPlanes": [
+            [
+              0,
+              0,
+              -1,
+              20.20725942113313
+            ],
+            [
+              "-0",
+              "-0",
+              1,
+              20.20725942113313
+            ],
+            [
+              0,
+              1,
+              0,
+              13.471506280410495
+            ],
+            [
+              "-0",
+              -1,
+              "-0",
+              13.471506280410722
+            ],
+            [
+              -1,
+              0,
+              0,
+              7000989.989999999
+            ],
+            [
+              1,
+              "-0",
+              "-0",
+              -6999965.000000001
+            ]
+          ]
+        },
+        {
+          "cameraView": [
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            -1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            -7000989.999999999,
+            1
+          ],
+          "frustum": {
+            "left": -106.8097998006715,
+            "right": 106.80979980067104,
+            "bottom": -71.20653320103884,
+            "top": 71.20653320103906,
+            "near": 0.01,
+            "far": 1174.99999999591
+          },
+          "cullingPlanes": [
+            [
+              0,
+              0,
+              -1,
+              106.8097998006715
+            ],
+            [
+              "-0",
+              "-0",
+              1,
+              106.80979980067104
+            ],
+            [
+              0,
+              1,
+              0,
+              71.20653320103884
+            ],
+            [
+              "-0",
+              -1,
+              "-0",
+              71.20653320103906
+            ],
+            [
+              -1,
+              0,
+              0,
+              7000989.989999999
+            ],
+            [
+              1,
+              "-0",
+              "-0",
+              -6999815.000000003
+            ]
+          ]
+        },
+        {
+          "cameraView": [
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            -1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            -7000989.999999999,
+            1
+          ],
+          "frustum": {
+            "left": -510.9549882325596,
+            "right": 510.9549882325591,
+            "bottom": -340.6366588222281,
+            "top": 340.6366588222286,
+            "near": 0.01,
+            "far": 1874.999999997262
+          },
+          "cullingPlanes": [
+            [
+              0,
+              0,
+              -1,
+              510.9549882325596
+            ],
+            [
+              "-0",
+              "-0",
+              1,
+              510.9549882325591
+            ],
+            [
+              0,
+              1,
+              0,
+              340.6366588222281
+            ],
+            [
+              "-0",
+              -1,
+              "-0",
+              340.6366588222286
+            ],
+            [
+              -1,
+              0,
+              0,
+              7000989.989999999
+            ],
+            [
+              1,
+              "-0",
+              "-0",
+              -6999115.000000002
+            ]
+          ]
+        },
+        {
+          "cameraView": [
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            -1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            -7000989.999999999,
+            1
+          ],
+          "frustum": {
+            "left": -2886.7513459492734,
+            "right": 2886.751345949273,
+            "bottom": -1924.5008972202531,
+            "top": 1924.5008972202531,
+            "near": 0.01,
+            "far": 5989.999999998761
+          },
+          "cullingPlanes": [
+            [
+              0,
+              0,
+              -1,
+              2886.7513459492734
+            ],
+            [
+              "-0",
+              "-0",
+              1,
+              2886.751345949273
+            ],
+            [
+              0,
+              1,
+              0,
+              1924.5008972202531
+            ],
+            [
+              "-0",
+              -1,
+              "-0",
+              1924.5008972202531
+            ],
+            [
+              -1,
+              0,
+              0,
+              7000989.989999999
+            ],
+            [
+              1,
+              "-0",
+              "-0",
+              -6995000
+            ]
+          ]
+        }
+      ],
+      "cullingPlanes": [
+        [
+          0,
+          0,
+          -1,
+          2886.751346088563
+        ],
+        [
+          "-0",
+          "-0",
+          1,
+          2886.751346088563
+        ],
+        [
+          0,
+          1,
+          0,
+          1924.5008972202531
+        ],
+        [
+          "-0",
+          -1,
+          "-0",
+          1924.5008972202531
+        ],
+        [
+          -1,
+          0,
+          0,
+          7000989.989999999
+        ],
+        [
+          1,
+          "-0",
+          "-0",
+          -6994990.000000358
+        ]
+      ]
+    },
+    {
+      "name": "single",
+      "lightCamera": {
+        "view": [
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          "-0",
+          -7000000,
+          1
+        ],
+        "inverseView": [
+          0,
+          0,
+          -1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          7000000,
+          0,
+          0,
+          1
+        ],
+        "positionWC": [
+          7000000,
+          0,
+          0
+        ],
+        "directionWC": [
+          -1,
+          0,
+          0
+        ],
+        "upWC": [
+          0,
+          1,
+          0
+        ],
+        "rightWC": [
+          0,
+          0,
+          -1
+        ],
+        "frustum": {
+          "near": 1,
+          "far": 10000,
+          "fov": 0.7853981633974483,
+          "aspectRatio": 1,
+          "xOffset": 0,
+          "yOffset": 0
+        }
+      },
+      "sceneCamera": {
+        "view": [
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          "-0",
+          -7000000,
+          1
+        ],
+        "inverseView": [
+          0,
+          0,
+          -1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          7000000,
+          0,
+          0,
+          1
+        ],
+        "positionWC": [
+          7000000,
+          0,
+          0
+        ],
+        "directionWC": [
+          -1,
+          0,
+          0
+        ],
+        "upWC": [
+          0,
+          1,
+          0
+        ],
+        "rightWC": [
+          0,
+          0,
+          -1
+        ],
+        "frustum": {
+          "near": 1,
+          "far": 5000,
+          "fov": 1.0471975511965976,
+          "aspectRatio": 1.5
+        }
+      },
+      "shadowMapCamera": {
+        "view": [
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          -7000998.999999999,
+          1
+        ],
+        "inverseView": [
+          0,
+          0,
+          -1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          7000998.999999999,
+          0,
+          0,
+          1
+        ],
+        "positionWC": [
+          7000998.999999999,
+          0,
+          0
+        ],
+        "directionWC": [
+          -1,
+          0,
+          0
+        ],
+        "upWC": [
+          0,
+          1,
+          0
+        ],
+        "rightWC": [
+          0,
+          0,
+          -1
+        ],
+        "frustum": {
+          "left": -2886.751345642375,
+          "right": 2886.751345642375,
+          "bottom": -1924.5008974397822,
+          "top": 1924.5008974397822,
+          "near": 0.01,
+          "far": 6009.000000481494
+        }
+      },
+      "sceneCameraNearFar": [
+        1,
+        5000
+      ],
+      "distance": 4999,
+      "outOfView": false,
+      "darkness": 0.3,
+      "lightDirectionEC": [
+        "-0",
+        "-0",
+        1
+      ],
+      "lightPositionEC": [
+        0,
+        0,
+        -7000000,
+        100
+      ],
+      "shadowMapMatrix": [
+        0.00017320508077523297,
+        0,
+        0,
+        0,
+        0,
+        0.0002598076211162926,
+        0,
+        0,
+        0,
+        0,
+        -0.0001664173180384509,
+        0,
+        0.5,
+        0.5,
+        0.16624923654694612,
+        1
+      ],
+      "cascadeSplits": [
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "cascadeDistances": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "cascadeMatrices": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "passes": [
+        {
+          "cameraView": [
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            -1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            -7000998.999999999,
+            1
+          ],
+          "frustum": {
+            "left": -2886.751345642375,
+            "right": 2886.751345642375,
+            "bottom": -1924.5008974397822,
+            "top": 1924.5008974397822,
+            "near": 0.01,
+            "far": 6009.000000481494
+          },
+          "cullingPlanes": null
+        }
+      ],
+      "cullingPlanes": [
+        [
+          0,
+          0,
+          -1,
+          2886.751345642375
+        ],
+        [
+          "-0",
+          "-0",
+          1,
+          2886.751345642375
+        ],
+        [
+          0,
+          1,
+          0,
+          1924.5008974397822
+        ],
+        [
+          "-0",
+          -1,
+          "-0",
+          1924.5008974397822
+        ],
+        [
+          -1,
+          0,
+          0,
+          7000998.989999999
+        ],
+        [
+          1,
+          "-0",
+          "-0",
+          -6994989.999999518
+        ]
+      ]
+    }
+  ]
+}

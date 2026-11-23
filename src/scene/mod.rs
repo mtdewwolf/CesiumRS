@@ -47,6 +47,11 @@ pub use batch_table::{BatchTable, BatchTableAttribute, BatchValue};
 pub mod batch_texture;
 pub use batch_texture::BatchTexture;
 pub mod alpha_mode;
+pub mod classification_primitive;
+pub use classification_primitive::{
+    classification_color_state, classification_pick_state, stencil_depth_state, ClassificationPrimitive,
+    ClassificationPrimitiveOptions,
+};
 pub mod clipping_plane;
 pub mod clipping_plane_collection;
 pub mod clipping_plane_shader;
@@ -71,6 +76,8 @@ pub use cesium_3d_tileset::{
     TilesetTile, TilesetTraversalKind,
 };
 pub mod atmosphere;
+pub mod cube_map_panorama;
+pub use cube_map_panorama::{CubeMapPanorama, CubeMapPanoramaOptions, CubeMapSources};
 pub mod derived_command;
 pub use derived_command::{DerivedCommand, PickMetadataShader, SceneDrawMode};
 pub mod edge_framebuffer;
@@ -748,9 +755,20 @@ pub mod panorama;
 pub mod panorama_provider;
 pub mod particle_system;
 pub mod quadtree_tile_provider;
+pub mod shadow_map;
+pub use shadow_map::{
+    ShadowBias, ShadowMap, ShadowMapCamera, ShadowMapFrustum, ShadowMapLightCamera, ShadowMapOptions,
+};
 pub mod shadow_map_shader;
 pub use shadow_map_shader::{receive_fragment, ReceiveBias, ReceiveOptions};
+pub mod sky_atmosphere;
+pub use sky_atmosphere::SkyAtmosphere;
+pub mod sun;
+pub use sun::{sun_position, Sun, SunCommands};
+pub mod sun_post_process;
+pub use sun_post_process::SunPostProcess;
 pub mod sky_box;
+pub mod specular_environment_cube_map;
 pub mod viewport_quad;
 pub mod voxel_bounds_collection;
 pub mod voxel_provider;
@@ -775,10 +793,23 @@ pub use debug_inspector::{
 };
 pub mod ellipsoid_primitive;
 pub use ellipsoid_primitive::{EllipsoidCommand, EllipsoidPrimitive, EllipsoidPrimitiveOptions};
+pub mod dynamic_environment_map_manager;
+pub use dynamic_environment_map_manager::{
+    DynamicEnvironmentMapManager, DynamicEnvironmentMapManagerOptions,
+};
 pub mod equirectangular_panorama;
 pub use equirectangular_panorama::{EquirectangularPanorama, EquirectangularPanoramaOptions};
 pub mod frame_rate_monitor;
 pub use frame_rate_monitor::{FrameRateMonitor, FrameRateMonitorOptions};
+pub mod google_street_view_cube_map_panorama_provider;
+pub use google_street_view_cube_map_panorama_provider::{
+    GoogleStreetViewCubeMapPanoramaProvider, GoogleStreetViewCubeMapPanoramaProviderOptions,
+    GoogleStreetViewLoadPanoramaOptions, GoogleStreetViewPanoramaData, NearestPanoId,
+};
+pub mod ground_primitive;
+pub use ground_primitive::{GroundPrimitive, GroundPrimitiveOptions};
+pub mod ground_polyline_primitive;
+pub use ground_polyline_primitive::{polyline_render_state, GroundPolylinePrimitive, GroundPolylinePrimitiveOptions};
 pub mod globe_translucency;
 pub use globe_translucency::GlobeTranslucency;
 pub mod image_based_lighting;
@@ -786,6 +817,8 @@ pub use image_based_lighting::{
     specular_environment_cube_map_supported, ImageBasedLighting, ImageBasedLightingConstructorOptions,
     SpecularEnvironmentCubeMap, SpecularEnvironmentCubeMapFactory,
 };
+pub mod invert_classification;
+pub use invert_classification::{InvertClassification, InvertClassificationDepth};
 pub mod ion_imagery_provider_factory;
 pub use ion_imagery_provider_factory::{IonImageryExternalType, IonImageryProviderFactory};
 pub mod moon;
