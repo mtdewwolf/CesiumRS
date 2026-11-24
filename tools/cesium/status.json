@@ -5636,6 +5636,51 @@
     "rust": "scene::billboard_texture",
     "note": "Exact port of the image state machine over the collection's TextureAtlas: the shared billboardTextureCache, loadImage with stale-id guards, unload, addImageSubRegion with Cesium's sync (cached, resolved) versus async (new) split, setImageSubRegion, clone/completeLoad and computeTextureCoordinates. Cesium's promise continuations are polled at the start of each update and after the afterRender atlas update. Validated by the BillboardCollection SwiftShader capture: load states, indices, sizes, dirty flags and atlas rectangles after every frame, including shared ids, sub-regions on image-less billboards (the cached one stays NONE, as in Cesium), rejected loads and superseded loads."
   },
+  "Scene/Cesium3DTile": {
+    "status": "implemented",
+    "rust": "scene::cesium_3d_tile",
+    "note": "Tile state, transform, bounding volumes, geometric error, header/content lifecycle and visibility helpers integrated with Cesium3DTileset."
+  },
+  "Scene/Cesium3DTileBatchTable": {
+    "status": "implemented",
+    "rust": "scene::cesium_3d_tile_batch_table",
+    "note": "Per-feature JSON/binary property access, show/color state, pick color allocation and batch table hierarchy integration."
+  },
+  "Scene/Cesium3DTileContent": {
+    "status": "implemented",
+    "rust": "scene::cesium_3d_tile_content",
+    "note": "Shared tile payload parsing, feature/style/debug/picking content trait and content metrics contract."
+  },
+  "Scene/Cesium3DTileFeature": {
+    "status": "implemented",
+    "rust": "scene::cesium_3d_tile_feature",
+    "note": "Batch-table-backed 3D Tiles feature wrapper exposing show, color, pickId, property ids and get/set property accessors."
+  },
+  "Scene/Cesium3DTilePointFeature": {
+    "status": "implemented",
+    "rust": "scene::cesium_3d_tile_point_feature",
+    "note": "Point feature wrapper with show, color, position, pointSize, label/billboard styling and batch table property access."
+  },
+  "Scene/Implicit3DTileContent": {
+    "status": "implemented",
+    "rust": "scene::implicit_3d_tile_content",
+    "note": "Implicit tiling subtree content wrapper integrating with tileset expansion and traversal."
+  },
+  "Scene/Multiple3DTileContent": {
+    "status": "implemented",
+    "rust": "scene::multiple_3d_tile_content",
+    "note": "Aggregates multiple child tile contents, forwarding readiness, updates, styling, debug settings, picking and destruction."
+  },
+  "Scene/Composite3DTileContent": {
+    "status": "implemented",
+    "rust": "scene::composite_3d_tile_content",
+    "note": "Legacy cmpt envelope unpacking with nested compositeIndex URLs, concurrent child loading/failure cleanup, metadata/group forwarding and pinned CPU replay in tests/scene_composite_content.rs."
+  },
+  "Scene/Geometry3DTileContent": {
+    "status": "implemented",
+    "rust": "scene::geometry_3d_tile_content",
+    "note": "Legacy geom tile parser and box/cylinder/ellipsoid/sphere batch geometry content builder."
+  },
   "Scene/Cesium3DTileContentFactory": {
     "status": "ported",
     "rust": "scene::cesium_3d_tile_content_factory",

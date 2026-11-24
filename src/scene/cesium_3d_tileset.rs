@@ -74,43 +74,7 @@ impl TileContentMetrics {
         self.geometry_bytes.saturating_add(self.texture_bytes).saturating_add(self.batch_table_bytes)
     }
 }
-/// Concrete content owns GPU resources and/or CPU meshes. A content loader
-/// reports failure through Result; dropping an in-flight request cancels it.
-pub trait TilesetContent {
-    fn configure_model(&mut self, _state: &TileContentModelState) {}
-    /// Applies a tileset style to this tile's features, if supported by the content.
-    fn apply_style(&mut self, _style: Option<&Cesium3DTileStyle>) -> Result<()> {
-        Ok(())
-    }
-    /// Applies tileset debug colorization settings to this tile's content.
-    fn apply_debug_settings(&mut self, _enabled: bool, _color: Color) -> Result<()> {
-        Ok(())
-    }
-    /// Mutable processing lets model content defer readiness until after the
-    /// real frame renders, just like a standalone model's ready event.
-    fn process_with_frame(&mut self, frame: &mut FrameState) -> Result<bool> {
-        self.process(frame)
-    }
-    fn is_renderable(&self) -> bool {
-        true
-    }
-    fn take_failures(&mut self) -> Vec<TileContentFailure> {
-        Vec::new()
-    }
-    fn metrics(&self) -> TileContentMetrics;
-    fn process(&mut self, frame: &FrameState) -> Result<bool>;
-    fn update(&mut self, frame: &mut FrameState) -> Result<()>;
-    fn pick(&self, ray: &Ray, frame: &FrameState) -> Result<Option<Cartesian3>>;
-    fn destroy(&mut self) -> Result<()>;
-    /// Model contents override this with stable GPU texture identities. Other
-    /// content owns its texture bytes independently.
-    fn texture_allocations(&self) -> Vec<(Option<String>, u64)> {
-        vec![(None, self.metrics().texture_bytes)]
-    }
-    fn take_expansions(&mut self) -> Vec<TileExpansion> {
-        Vec::new()
-    }
-}
+pub use super::cesium_3d_tile_content::Cesium3DTileContent as TilesetContent;
 #[derive(Clone, Debug)]
 pub struct TileContentModelState {
     pub model_matrix: Matrix4,
@@ -301,6 +265,7 @@ pub struct TilesetTile {
     pub base_resource: Resource,
     pub implicit_coordinates: Option<ImplicitTileCoordinates>,
     pub implicit_subtree: Option<Rc<ImplicitSubtree>>,
+    pub implicit_content_metadata: Vec<Option<ImplicitMetadataView>>,
     pub implicit_metadata: Option<ImplicitMetadataView>,
     pub state: Cesium3DTileContentState,
     pub content: Option<Box<dyn TilesetContent>>,
@@ -324,15 +289,7 @@ pub struct TilesetTile {
     pub metadata: Option<TileMetadata>,
     pub last_style_time: u64,
     pub(super) source_bounds: Value,
-    volume_exaggeration: [f64; 2],
-}
-impl TilesetTile {
-    pub fn has_empty_content(&self) -> bool {
-        self.content_resource.is_none()
-    }
-    pub fn content_ready(&self) -> bool {
-        self.state == Cesium3DTileContentState::Ready
-    }
+    pub(super) volume_exaggeration: [f64; 2],
 }
 pub(super) struct PendingContent {
     pub(super) id: TileId,
@@ -974,6 +931,7 @@ impl Cesium3DTileset {
             base_resource: resource.clone(),
             implicit_coordinates: coordinates,
             implicit_subtree: None,
+            implicit_content_metadata: Vec::new(),
             implicit_metadata: None,
             state,
             content: None,
@@ -1074,55 +1032,10 @@ impl Cesium3DTileset {
     }
     fn update_transforms(&mut self) -> Result<()> {
         for i in 0..self.tiles.len() {
-            if self.tiles[i].destroyed {
-                continue;
+            if !self.tiles[i].destroyed {
+                let parent = self.tiles[i].parent.map_or(self.model_matrix, |p| self.tiles[p].computed_transform);
+                self.tiles[i].update_transform(parent, self.exaggeration)?;
             }
-            let parent = self.tiles[i].parent.map_or(self.model_matrix, |p| self.tiles[p].computed_transform);
-            let transform = parent.multiply(&self.tiles[i].transform);
-            if self.tiles[i].computed_transform == transform && self.tiles[i].volume_exaggeration == self.exaggeration {
-                continue;
-            }
-            self.tiles[i].computed_transform = transform;
-            self.tiles[i].volume_exaggeration = self.exaggeration;
-            self.tiles[i].volume = TilesetVolume::from_header(
-                &self.tiles[i].source_bounds,
-                transform,
-                self.tiles[i].initial_transform,
-                self.exaggeration[0],
-                self.exaggeration[1],
-            )?;
-            self.tiles[i].bounding_sphere = *self.tiles[i].volume.sphere();
-            let headers = super::tileset_content::content_headers(&self.tiles[i].header);
-            self.tiles[i].content_volume = if super::tileset_content::is_multiple(&self.tiles[i].header) {
-                None
-            } else {
-                headers
-                    .first()
-                    .and_then(|h| h.get("boundingVolume"))
-                    .map(|v| {
-                        TilesetVolume::from_header(
-                            v,
-                            transform,
-                            self.tiles[i].initial_transform,
-                            self.exaggeration[0],
-                            self.exaggeration[1],
-                        )
-                    })
-                    .transpose()?
-            };
-            self.tiles[i].viewer_request_volume = self.tiles[i]
-                .header
-                .get("viewerRequestVolume")
-                .map(|v| {
-                    TilesetVolume::from_header(
-                        v,
-                        transform,
-                        self.tiles[i].initial_transform,
-                        self.exaggeration[0],
-                        self.exaggeration[1],
-                    )
-                })
-                .transpose()?;
         }
         Ok(())
     }
@@ -1245,6 +1158,33 @@ impl Cesium3DTileset {
         if self.tiles.get(id).is_none_or(|t| t.destroyed || t.content.is_some()) {
             return Err(RuntimeError::new("invalid tile or tile already has content"));
         }
+        let tile = &self.tiles[id];
+        let shared = FeatureMetadata {
+            tile: tile
+                .implicit_metadata
+                .clone()
+                .map(shared_metadata)
+                .or_else(|| tile.metadata.clone().map(shared_metadata)),
+            subtree: tile.implicit_subtree.as_ref().and_then(|s| s.metadata()).cloned().map(shared_metadata),
+            tileset: self.metadata().cloned().map(shared_metadata),
+            ..Default::default()
+        };
+        let mut layers = Vec::new();
+        for (index, header) in tileset_content::content_headers(&tile.header).iter().enumerate() {
+            let implicit = tile.implicit_content_metadata.get(index).cloned().flatten();
+            let content_metadata = match implicit {
+                Some(view) => Some(shared_metadata(view)),
+                None => find_content_metadata(self.schema().map(|s| &**s), header)
+                    .map_err(|e| RuntimeError::new(e.to_string()))?
+                    .map(shared_metadata),
+            };
+            layers.push(FeatureMetadata {
+                content: content_metadata,
+                group: find_group_metadata(self.metadata_extension.as_ref(), header).cloned().map(shared_metadata),
+                ..shared.clone()
+            });
+        }
+        content.set_feature_metadata(&layers);
         for expansion in content.take_expansions() {
             self.expand_content(id, expansion)?;
         }
@@ -1641,8 +1581,9 @@ impl Cesium3DTileset {
                         enable_pick: self.options.enable_pick,
                         show_credits_on_screen: self.options.show_credits_on_screen,
                     });
-                    if style_time > 0 && tile.last_style_time != style_time {
+                    if (style_time > 0 && tile.last_style_time != style_time) || content.feature_properties_dirty() {
                         content.apply_style(active_style.as_ref())?;
+                        content.set_feature_properties_dirty(false);
                         tile.last_style_time = style_time;
                         self.statistics.number_of_tiles_styled += 1;
                         self.statistics.number_of_features_styled += content.metrics().features;
@@ -1894,4 +1835,8 @@ impl ScenePrimitive for Cesium3DTileset {
     fn destroy(&mut self) -> Result<()> {
         Cesium3DTileset::destroy(self)
     }
+}
+
+fn shared_metadata(entity: impl MetadataEntity + 'static) -> Rc<dyn MetadataEntity> {
+    Rc::new(entity)
 }

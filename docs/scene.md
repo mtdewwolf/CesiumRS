@@ -1559,3 +1559,14 @@ copies attribute statistics, and configures implicit tiling/subtree access.
 `from_url`/`from_json` are complete; `request_data` performs subtree/availability
 checks, but glTF voxel attribute decoding for tile content is still missing, so
 the module is marked partial.
+
+## Composite 3D tile content
+
+`Composite3DTileContent` owns child contents, derives nested composite indices
+for a caller-supplied factory, forwards updates and styles, picks the closest
+child hit, and destroys its children. Its tileset metrics aggregate the children.
+The pinned composite fixture covers readiness, pick, child order, destruction,
+resource indices and version errors. This is partial: the existing content trait
+lacks child readiness and metadata accessors, so updates currently query child
+processing for readiness, and metadata, group and dirty propagation are absent.
+The tileset loader does not yet construct this content automatically.
