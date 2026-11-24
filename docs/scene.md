@@ -1357,6 +1357,92 @@ and adds seven native concurrency, ownership and reentrancy checks. The custom
 ellipsoid case deliberately uses an independent map projection, so picking uses
 the scene's configured ellipsoid rather than the projection's ellipsoid.
 
+## Vector 3D Tiles and Gaussian splats
+
+`scene::vector_3d_tile_content` parses `vctr` tiles and composes the vector
+primitives. It validates the magic/version/byte-length header, JSON and binary
+batch sections, `REGION` and `RTC_CENTER`, and the pinned batch-id rules: all
+groups or none, with sequential ids assigned across polygons, then polylines,
+then points. Polygons read plural or legacy singular count properties, support
+per-polygon heights, and pack indices, positions, centre, ellipsoid and rectangle
+for `createVectorTilePolygons`. Polylines read counts and widths (default 2),
+decode through the ported `decode_vector_polyline_positions` for the
+`examineVectorLinesFunction` callback, and select floating or clamped polylines
+from the tileset classification type. Points read `POINTS_LENGTH * 3` quantized
+positions. `TilesetContent` supplies feature metrics, style/debug application,
+processing and destruction. Batch-table JSON arrays become per-feature
+properties for style expressions; binary batch properties and hierarchy are not
+decoded, and the 3D Tiles core port must supply tileset integration and
+`Cesium3DTileBatchTable` behaviour through `Vector3DTileBatchTable`.
+
+`scene::vector_3d_tile_primitive` owns classification meshes. It ports colour
+re-batching exactly: duplicate-`toRgba` detection, the 120-frame grace period,
+stable descending sort, merging equal-coloured batches, CPU index rewrite and
+`updateCommands` range splitting. It builds position/`a_batchId` vertex arrays,
+the pinned stencil-depth, colour and pick render states, `VectorTileVS` /
+`ShadowVolumeFS` programs (including the appended pick `main`), derived
+terrain/3D Tiles commands, wireframe and invert-classification commands. The
+batch table is a trait because its concrete port belongs to the 3D Tiles core
+group.
+
+`Vector3DTileGeometry`, `Vector3DTilePolygons`, `Vector3DTilePolylines` and
+`Vector3DTileClampedPolylines` compose the already-validated vector-tile workers
+behind the pinned two-frame lifecycle: the first update schedules the decode,
+the next installs the primitive or vertex array. Geometry unpacks bounding-size
+fields and batches and forwards sphere bounds. Polygons keep the source quirk
+that the constructor's `center` is overwritten, so the centre is always the
+rectangle centre on WGS84. Floating polylines use the five-attribute layout and
+`getPolylinePositions`. Clamped polylines use seven attributes, bundled
+`ApproximateTerrainHeights`, the pinned ordering that decodes with default
+heights before updating the oriented bounding box, front-face culling,
+pre-multiplied alpha, 3D Tiles stencil state and classification filtering.
+
+`Vector3DTilePoints` decodes points and models billboards, labels and anchor
+lines as CPU records, including the complete `Cesium3DTilePointFeature`
+property surface, defaults, texture-id construction, height-offset cartography
+and style application. It does not drive the billboard/label/polyline
+collections, their atlases or pick ids; `texturesByteLength` reports decoded
+image payload rather than atlas memory. The tracker marks it partial.
+
+`scene::gaussian_splat_primitive` ports both asynchronous state machines:
+snapshot building (aggregate, attribute texture, spherical-harmonics texture,
+sort, atomic commit) and steady re-sorting (frame interval, 0.5° angle and one
+metre position thresholds, request generations, superseded results). It packs
+integer `RGBA32UI`/`RG32UI` textures, aggregates SH data, retires replaced
+textures for one frame, builds the instanced screen-quad vertex array and the
+`GaussianSplats` command with the pinned shader defines/uniforms, and exposes
+command structure for validation. Tileset state arrives as a per-frame
+`GaussianSplatTilesetState`; selected tiles implement `GaussianSplatTileContent`.
+The pinned `ready` flag is never set, which this port preserves.
+
+`scene::gaussian_splat_3d_tile_content` extracts position/rotation/scale/colour
+attributes, detects SH degree and coefficient counts from `_` or
+`KHR_gaussian_splatting:` attribute names, ports the exact
+`float32ToFloat16`, packs half-float SH coefficients into `RG32UI` texels,
+transforms attributes and implements the content contract. The glTF loader is
+expected to provide the primitive attribute payload; the async `fromGltf`
+wrapper is not ported.
+
+`scene::create_billboard_point_callback` returns an RGBA8 billboard image with
+the pinned drawing order: optional outline disk, optional `destination-out`
+punch when `centerAlpha < 1`, then the point disk. It implements WebIDL canvas
+size conversion and CSS colour compositing. Rasterization uses 8x8 coverage;
+browser antialiasing is implementation-defined.
+
+```bash
+TZ=UTC node tools/cesium/generate-scene-vector-gaussian.mjs
+cargo test --test scene_vector_gaussian
+```
+
+`tests/scene_vector_gaussian.rs` replays 12 pinned groups: four canvas drawing
+traces, five `Vector3DTilePrimitive` metric/split cases, two `vctr` parses, seven
+parser errors, twenty half-float values, degree/name cases, degree 1–3 packing,
+content lifecycle/destruction and a native Gaussian splat
+snapshot→texture→sort→command lifecycle. The vector modules' GPU commands,
+shaders and render states are constructed through `SceneCommand` but were not
+executed against CesiumJS in this work; those modules are marked implemented in
+the tracker, not ported.
+
 ## Atmosphere, shadows, environment maps and ground classification
 
 `scene::shadow_map` owns Cesium's directional, spot and point-light shadow
