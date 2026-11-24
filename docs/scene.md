@@ -1570,3 +1570,21 @@ resource indices and version errors. This is partial: the existing content trait
 lacks child readiness and metadata accessors, so updates currently query child
 processing for readiness, and metadata, group and dirty propagation are absent.
 The tileset loader does not yet construct this content automatically.
+
+## Globe, terrain rendering, elevation bands, and megatexture
+
+`scene::globe`, `scene::globe_surface_tile_provider`,
+`scene::globe_surface_shader_set`, `scene::globe_translucency_state`, and
+`scene::terrain_fill_mesh` implement the globe surface quadtree provider,
+cached GLSL shader variants, translucency state/commands, neighbor-stitched
+fill meshes, and globe lifecycle/picking, covered by `tests/scene_globe_terrain.rs`.
+
+`scene::create_elevation_band_material` ports CesiumJS's layered elevation band
+sweep, color blending, float/packed-RGBA height texture synthesis, and material
+construction, replayed against pinned CesiumJS captures in
+`tests/scene_elevation_band.rs`.
+
+`scene::megatexture` implements `get_3d_texture_dimension` (validated against
+pinned CesiumJS captures in `tests/scene_megatexture.rs`) together with 3D
+texture allocation, occupied/empty slot lists, 1D-to-3D tile uploads, sampling
+updates, and destruction.

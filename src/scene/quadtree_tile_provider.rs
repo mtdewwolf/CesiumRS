@@ -28,6 +28,11 @@ pub trait QuadtreeTileProvider {
         0.0
     }
     fn show_tile_this_frame(&mut self, tile: &QuadtreeTileHandle, frame_state: &mut FrameState);
+    fn render_tiles(&mut self, tiles: &[QuadtreeTileHandle], frame_state: &mut FrameState) {
+        for tile in tiles {
+            self.show_tile_this_frame(tile, frame_state);
+        }
+    }
     fn can_refine(&self, _tile: &QuadtreeTile) -> bool {
         true
     }
