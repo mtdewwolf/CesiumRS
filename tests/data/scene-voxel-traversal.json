@@ -1,0 +1,4526 @@
+{
+  "version": "23.0.0",
+  "dimensions": [
+    2,
+    2,
+    2
+  ],
+  "inputDimensions": [
+    4,
+    4,
+    4
+  ],
+  "construction": {
+    "textureMemoryByteLength": 4096,
+    "internalNodeTilesPerRow": 227,
+    "internalNodeTexelSizeUv": [
+      0.00048828125,
+      1
+    ],
+    "megatextures": [
+      {
+        "channelCount": 1,
+        "maximumTileCount": 64,
+        "tileCounts": [
+          1,
+          1,
+          64
+        ],
+        "textureMemoryByteLength": 4096
+      }
+    ]
+  },
+  "steps": [
+    {
+      "frameNumber": 2,
+      "sampleCount": 1,
+      "keyframeLocation": 0,
+      "root": {
+        "level": 0,
+        "coords": [
+          0,
+          0,
+          0
+        ],
+        "screenSpaceError": 139.99839785465105,
+        "visited": 2,
+        "renderable": true,
+        "previous": {
+          "level": 0,
+          "keyframe": 0,
+          "megatextureIndex": 0
+        },
+        "next": {
+          "level": 0,
+          "keyframe": 0,
+          "megatextureIndex": 0
+        },
+        "lerp": 0,
+        "keyframes": [
+          {
+            "keyframe": 0,
+            "state": 3,
+            "priority": 10.929077208307653,
+            "megatextureIndex": 0
+          }
+        ],
+        "children": null
+      },
+      "highPriority": [
+        {
+          "level": 0,
+          "coords": [
+            0,
+            0,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.929077208307653,
+          "highPriorityFrameNumber": 2,
+          "state": 3,
+          "megatextureIndex": 0
+        }
+      ],
+      "writes": [
+        {
+          "texture": "texture",
+          "width": 1,
+          "height": 1,
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "bytes": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "texture": "texture3d",
+          "width": 4,
+          "height": 4,
+          "depth": 4,
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "bytes": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "texture": "texture",
+          "width": 9,
+          "height": 1,
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "bytes": [
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "frameNumber": 3,
+      "sampleCount": 1,
+      "keyframeLocation": 0,
+      "root": {
+        "level": 0,
+        "coords": [
+          0,
+          0,
+          0
+        ],
+        "screenSpaceError": 139.99839785465105,
+        "visited": 3,
+        "renderable": true,
+        "previous": {
+          "level": 0,
+          "keyframe": 0,
+          "megatextureIndex": 0
+        },
+        "next": {
+          "level": 0,
+          "keyframe": 0,
+          "megatextureIndex": 0
+        },
+        "lerp": 0,
+        "keyframes": [
+          {
+            "keyframe": 0,
+            "state": 3,
+            "priority": 10.929077208307653,
+            "megatextureIndex": 0
+          }
+        ],
+        "children": [
+          {
+            "level": 1,
+            "coords": [
+              0,
+              0,
+              0
+            ],
+            "screenSpaceError": 58.53818372864302,
+            "visited": 3,
+            "renderable": true,
+            "previous": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 8
+            },
+            "next": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 8
+            },
+            "lerp": 0,
+            "keyframes": [
+              {
+                "keyframe": 0,
+                "state": 3,
+                "priority": 10.832040559961033,
+                "megatextureIndex": 8
+              }
+            ],
+            "children": null
+          },
+          {
+            "level": 1,
+            "coords": [
+              1,
+              0,
+              0
+            ],
+            "screenSpaceError": 60.131350478305635,
+            "visited": 3,
+            "renderable": true,
+            "previous": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 6
+            },
+            "next": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 6
+            },
+            "lerp": 0,
+            "keyframes": [
+              {
+                "keyframe": 0,
+                "state": 3,
+                "priority": 10.836417813090048,
+                "megatextureIndex": 6
+              }
+            ],
+            "children": null
+          },
+          {
+            "level": 1,
+            "coords": [
+              0,
+              1,
+              0
+            ],
+            "screenSpaceError": 60.131350478305635,
+            "visited": 3,
+            "renderable": true,
+            "previous": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 7
+            },
+            "next": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 7
+            },
+            "lerp": 0,
+            "keyframes": [
+              {
+                "keyframe": 0,
+                "state": 3,
+                "priority": 10.836417813090048,
+                "megatextureIndex": 7
+              }
+            ],
+            "children": null
+          },
+          {
+            "level": 1,
+            "coords": [
+              1,
+              1,
+              0
+            ],
+            "screenSpaceError": 61.86210235701012,
+            "visited": 3,
+            "renderable": true,
+            "previous": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 5
+            },
+            "next": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 5
+            },
+            "lerp": 0,
+            "keyframes": [
+              {
+                "keyframe": 0,
+                "state": 3,
+                "priority": 10.840921642371942,
+                "megatextureIndex": 5
+              }
+            ],
+            "children": null
+          },
+          {
+            "level": 1,
+            "coords": [
+              0,
+              0,
+              1
+            ],
+            "screenSpaceError": 65.28785541768583,
+            "visited": 3,
+            "renderable": true,
+            "previous": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 4
+            },
+            "next": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 4
+            },
+            "lerp": 0,
+            "keyframes": [
+              {
+                "keyframe": 0,
+                "state": 3,
+                "priority": 10.849142803957239,
+                "megatextureIndex": 4
+              }
+            ],
+            "children": null
+          },
+          {
+            "level": 1,
+            "coords": [
+              1,
+              0,
+              1
+            ],
+            "screenSpaceError": 67.52056047572859,
+            "visited": 3,
+            "renderable": true,
+            "previous": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 2
+            },
+            "next": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 2
+            },
+            "lerp": 0,
+            "keyframes": [
+              {
+                "keyframe": 0,
+                "state": 3,
+                "priority": 10.854058403338042,
+                "megatextureIndex": 2
+              }
+            ],
+            "children": null
+          },
+          {
+            "level": 1,
+            "coords": [
+              0,
+              1,
+              1
+            ],
+            "screenSpaceError": 67.52056047572859,
+            "visited": 3,
+            "renderable": true,
+            "previous": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 3
+            },
+            "next": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 3
+            },
+            "lerp": 0,
+            "keyframes": [
+              {
+                "keyframe": 0,
+                "state": 3,
+                "priority": 10.854058403338042,
+                "megatextureIndex": 3
+              }
+            ],
+            "children": null
+          },
+          {
+            "level": 1,
+            "coords": [
+              1,
+              1,
+              1
+            ],
+            "screenSpaceError": 69.99919892732552,
+            "visited": 3,
+            "renderable": true,
+            "previous": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 1
+            },
+            "next": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 1
+            },
+            "lerp": 0,
+            "keyframes": [
+              {
+                "keyframe": 0,
+                "state": 3,
+                "priority": 10.859153340444927,
+                "megatextureIndex": 1
+              }
+            ],
+            "children": null
+          }
+        ]
+      },
+      "highPriority": [
+        {
+          "level": 0,
+          "coords": [
+            0,
+            0,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.929077208307653,
+          "highPriorityFrameNumber": 3,
+          "state": 3,
+          "megatextureIndex": 0
+        },
+        {
+          "level": 1,
+          "coords": [
+            1,
+            1,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.859153340444927,
+          "highPriorityFrameNumber": 3,
+          "state": 3,
+          "megatextureIndex": 1
+        },
+        {
+          "level": 1,
+          "coords": [
+            1,
+            0,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.854058403338042,
+          "highPriorityFrameNumber": 3,
+          "state": 3,
+          "megatextureIndex": 2
+        },
+        {
+          "level": 1,
+          "coords": [
+            0,
+            1,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.854058403338042,
+          "highPriorityFrameNumber": 3,
+          "state": 3,
+          "megatextureIndex": 3
+        },
+        {
+          "level": 1,
+          "coords": [
+            0,
+            0,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.849142803957239,
+          "highPriorityFrameNumber": 3,
+          "state": 3,
+          "megatextureIndex": 4
+        },
+        {
+          "level": 1,
+          "coords": [
+            1,
+            1,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.840921642371942,
+          "highPriorityFrameNumber": 3,
+          "state": 3,
+          "megatextureIndex": 5
+        },
+        {
+          "level": 1,
+          "coords": [
+            1,
+            0,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.836417813090048,
+          "highPriorityFrameNumber": 3,
+          "state": 3,
+          "megatextureIndex": 6
+        },
+        {
+          "level": 1,
+          "coords": [
+            0,
+            1,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.836417813090048,
+          "highPriorityFrameNumber": 3,
+          "state": 3,
+          "megatextureIndex": 7
+        },
+        {
+          "level": 1,
+          "coords": [
+            0,
+            0,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.832040559961033,
+          "highPriorityFrameNumber": 3,
+          "state": 3,
+          "megatextureIndex": 8
+        }
+      ],
+      "writes": [
+        {
+          "texture": "texture",
+          "width": 9,
+          "height": 1,
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "bytes": [
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "texture": "texture3d",
+          "width": 4,
+          "height": 4,
+          "depth": 4,
+          "x": 0,
+          "y": 0,
+          "z": 4,
+          "bytes": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "texture": "texture3d",
+          "width": 4,
+          "height": 4,
+          "depth": 4,
+          "x": 0,
+          "y": 0,
+          "z": 8,
+          "bytes": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "texture": "texture3d",
+          "width": 4,
+          "height": 4,
+          "depth": 4,
+          "x": 0,
+          "y": 0,
+          "z": 12,
+          "bytes": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "texture": "texture3d",
+          "width": 4,
+          "height": 4,
+          "depth": 4,
+          "x": 0,
+          "y": 0,
+          "z": 16,
+          "bytes": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "texture": "texture3d",
+          "width": 4,
+          "height": 4,
+          "depth": 4,
+          "x": 0,
+          "y": 0,
+          "z": 20,
+          "bytes": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "texture": "texture3d",
+          "width": 4,
+          "height": 4,
+          "depth": 4,
+          "x": 0,
+          "y": 0,
+          "z": 24,
+          "bytes": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "texture": "texture3d",
+          "width": 4,
+          "height": 4,
+          "depth": 4,
+          "x": 0,
+          "y": 0,
+          "z": 28,
+          "bytes": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "texture": "texture3d",
+          "width": 4,
+          "height": 4,
+          "depth": 4,
+          "x": 0,
+          "y": 0,
+          "z": 32,
+          "bytes": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "texture": "texture",
+          "width": 9,
+          "height": 1,
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "bytes": [
+            0,
+            0,
+            0,
+            0,
+            8,
+            0,
+            1,
+            0,
+            6,
+            0,
+            1,
+            0,
+            7,
+            0,
+            1,
+            0,
+            5,
+            0,
+            1,
+            0,
+            4,
+            0,
+            1,
+            0,
+            2,
+            0,
+            1,
+            0,
+            3,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "frameNumber": 4,
+      "sampleCount": 1,
+      "keyframeLocation": 0,
+      "root": {
+        "level": 0,
+        "coords": [
+          0,
+          0,
+          0
+        ],
+        "screenSpaceError": 139.99839785465105,
+        "visited": 4,
+        "renderable": true,
+        "previous": {
+          "level": 0,
+          "keyframe": 0,
+          "megatextureIndex": 0
+        },
+        "next": {
+          "level": 0,
+          "keyframe": 0,
+          "megatextureIndex": 0
+        },
+        "lerp": 0,
+        "keyframes": [
+          {
+            "keyframe": 0,
+            "state": 3,
+            "priority": 10.929077208307653,
+            "megatextureIndex": 0
+          }
+        ],
+        "children": [
+          {
+            "level": 1,
+            "coords": [
+              0,
+              0,
+              0
+            ],
+            "screenSpaceError": 58.53818372864302,
+            "visited": 4,
+            "renderable": true,
+            "previous": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 8
+            },
+            "next": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 8
+            },
+            "lerp": 0,
+            "keyframes": [
+              {
+                "keyframe": 0,
+                "state": 3,
+                "priority": 10.832040559961033,
+                "megatextureIndex": 8
+              }
+            ],
+            "children": [
+              {
+                "level": 2,
+                "coords": [
+                  0,
+                  0,
+                  0
+                ],
+                "screenSpaceError": 26.94736842105263,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 8
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 8
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.642184557438794,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  1,
+                  0,
+                  0
+                ],
+                "screenSpaceError": 27.367551171832254,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 8
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 8
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.647484552352564,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  0,
+                  1,
+                  0
+                ],
+                "screenSpaceError": 27.367551171832254,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 8
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 8
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.647484552352564,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  1,
+                  1,
+                  0
+                ],
+                "screenSpaceError": 27.808022865590704,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 8
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 8
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.652874477132398,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  0,
+                  0,
+                  1
+                ],
+                "screenSpaceError": 28.270470675160713,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 8
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 8
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.658358756475817,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  1,
+                  0,
+                  1
+                ],
+                "screenSpaceError": 28.756784962648595,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 8
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 8
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.663942189569463,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  0,
+                  1,
+                  1
+                ],
+                "screenSpaceError": 28.756784962648595,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 8
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 8
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.663942189569463,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  1,
+                  1,
+                  1
+                ],
+                "screenSpaceError": 29.26909186432151,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 8
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 8
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.669629996009656,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              }
+            ]
+          },
+          {
+            "level": 1,
+            "coords": [
+              1,
+              0,
+              0
+            ],
+            "screenSpaceError": 60.131350478305635,
+            "visited": 4,
+            "renderable": true,
+            "previous": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 6
+            },
+            "next": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 6
+            },
+            "lerp": 0,
+            "keyframes": [
+              {
+                "keyframe": 0,
+                "state": 3,
+                "priority": 10.836417813090048,
+                "megatextureIndex": 6
+              }
+            ],
+            "children": [
+              {
+                "level": 2,
+                "coords": [
+                  2,
+                  0,
+                  0
+                ],
+                "screenSpaceError": 27.726354486982775,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 6
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 6
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.651887607091549,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  3,
+                  0,
+                  0
+                ],
+                "screenSpaceError": 28.015393544426637,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 6
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 6
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.655355355263799,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  2,
+                  1,
+                  0
+                ],
+                "screenSpaceError": 28.184672387234833,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 6
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 6
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.657354385640666,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  3,
+                  1,
+                  0
+                ],
+                "screenSpaceError": 28.48844206462245,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 6
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 6
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.660884085429624,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  2,
+                  0,
+                  1
+                ],
+                "screenSpaceError": 29.173907573667314,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 6
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 6
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.66858783617648,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  3,
+                  0,
+                  1
+                ],
+                "screenSpaceError": 29.51118938645683,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 6
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 6
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.672251387078383,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  2,
+                  1,
+                  1
+                ],
+                "screenSpaceError": 29.709253283105763,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 6
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 6
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.674365250505737,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  3,
+                  1,
+                  1
+                ],
+                "screenSpaceError": 30.065675239152817,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 6
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 6
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.678101315261392,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              }
+            ]
+          },
+          {
+            "level": 1,
+            "coords": [
+              0,
+              1,
+              0
+            ],
+            "screenSpaceError": 60.131350478305635,
+            "visited": 4,
+            "renderable": true,
+            "previous": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 7
+            },
+            "next": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 7
+            },
+            "lerp": 0,
+            "keyframes": [
+              {
+                "keyframe": 0,
+                "state": 3,
+                "priority": 10.836417813090048,
+                "megatextureIndex": 7
+              }
+            ],
+            "children": [
+              {
+                "level": 2,
+                "coords": [
+                  0,
+                  2,
+                  0
+                ],
+                "screenSpaceError": 27.726354486982775,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 7
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 7
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.651887607091549,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  1,
+                  2,
+                  0
+                ],
+                "screenSpaceError": 28.184672387234833,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 7
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 7
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.657354385640666,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  0,
+                  3,
+                  0
+                ],
+                "screenSpaceError": 28.015393544426637,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 7
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 7
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.655355355263799,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  1,
+                  3,
+                  0
+                ],
+                "screenSpaceError": 28.48844206462245,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 7
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 7
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.660884085429624,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  0,
+                  2,
+                  1
+                ],
+                "screenSpaceError": 29.173907573667314,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 7
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 7
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.66858783617648,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  1,
+                  2,
+                  1
+                ],
+                "screenSpaceError": 29.709253283105763,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 7
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 7
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.674365250505737,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  0,
+                  3,
+                  1
+                ],
+                "screenSpaceError": 29.51118938645683,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 7
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 7
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.672251387078383,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  1,
+                  3,
+                  1
+                ],
+                "screenSpaceError": 30.065675239152817,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 7
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 7
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.678101315261392,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              }
+            ]
+          },
+          {
+            "level": 1,
+            "coords": [
+              1,
+              1,
+              0
+            ],
+            "screenSpaceError": 61.86210235701012,
+            "visited": 4,
+            "renderable": true,
+            "previous": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 5
+            },
+            "next": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 5
+            },
+            "lerp": 0,
+            "keyframes": [
+              {
+                "keyframe": 0,
+                "state": 3,
+                "priority": 10.840921642371942,
+                "megatextureIndex": 5
+              }
+            ],
+            "children": [
+              {
+                "level": 2,
+                "coords": [
+                  2,
+                  2,
+                  0
+                ],
+                "screenSpaceError": 28.577053295920518,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 5
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 5
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.661900058131238,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  3,
+                  2,
+                  0
+                ],
+                "screenSpaceError": 28.893831576734737,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 5
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 5
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.66548282797637,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  2,
+                  3,
+                  0
+                ],
+                "screenSpaceError": 28.893831576734737,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 5
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 5
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.66548282797637,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  3,
+                  3,
+                  0
+                ],
+                "screenSpaceError": 29.2213834514099,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 5
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 5
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.66910846367844,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  2,
+                  2,
+                  1
+                ],
+                "screenSpaceError": 30.16988933062603,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 5
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 5
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.679177558382458,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  3,
+                  2,
+                  1
+                ],
+                "screenSpaceError": 30.54335929712095,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 5
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 5
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.68297606143323,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  2,
+                  3,
+                  1
+                ],
+                "screenSpaceError": 30.54335929712095,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 5
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 5
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.68297606143323,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  3,
+                  3,
+                  1
+                ],
+                "screenSpaceError": 30.93105117850506,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 5
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 5
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.68682521774505,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              }
+            ]
+          },
+          {
+            "level": 1,
+            "coords": [
+              0,
+              0,
+              1
+            ],
+            "screenSpaceError": 65.28785541768583,
+            "visited": 4,
+            "renderable": true,
+            "previous": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 4
+            },
+            "next": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 4
+            },
+            "lerp": 0,
+            "keyframes": [
+              {
+                "keyframe": 0,
+                "state": 3,
+                "priority": 10.849142803957239,
+                "megatextureIndex": 4
+              }
+            ],
+            "children": [
+              {
+                "level": 2,
+                "coords": [
+                  0,
+                  0,
+                  2
+                ],
+                "screenSpaceError": 29.709253283105763,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 4
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 4
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.674365250505737,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  1,
+                  0,
+                  2
+                ],
+                "screenSpaceError": 30.27519467464103,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 4
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 4
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.68025778563392,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  0,
+                  1,
+                  2
+                ],
+                "screenSpaceError": 30.27519467464103,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 4
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 4
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.68025778563392,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  1,
+                  1,
+                  2
+                ],
+                "screenSpaceError": 30.87476168476299,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 4
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 4
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.686272164200046,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  0,
+                  0,
+                  3
+                ],
+                "screenSpaceError": 31.275377755214137,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 4
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 4
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.690166290977508,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  1,
+                  0,
+                  3
+                ],
+                "screenSpaceError": 31.937682511452433,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 4
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 4
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.69639636921866,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  0,
+                  1,
+                  3
+                ],
+                "screenSpaceError": 31.937682511452433,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 4
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 4
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.69639636921866,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  1,
+                  1,
+                  3
+                ],
+                "screenSpaceError": 32.64392770884292,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 4
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 4
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.702769543242965,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              }
+            ]
+          },
+          {
+            "level": 1,
+            "coords": [
+              1,
+              0,
+              1
+            ],
+            "screenSpaceError": 67.52056047572859,
+            "visited": 4,
+            "renderable": true,
+            "previous": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 2
+            },
+            "next": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 2
+            },
+            "lerp": 0,
+            "keyframes": [
+              {
+                "keyframe": 0,
+                "state": 3,
+                "priority": 10.854058403338042,
+                "megatextureIndex": 2
+              }
+            ],
+            "children": [
+              {
+                "level": 2,
+                "coords": [
+                  2,
+                  0,
+                  2
+                ],
+                "screenSpaceError": 30.763098528056815,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 2
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 2
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.685169254152996,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  3,
+                  0,
+                  2
+                ],
+                "screenSpaceError": 31.15932771584945,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 2
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 2
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.689048226120983,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  2,
+                  1,
+                  2
+                ],
+                "screenSpaceError": 31.39273418163025,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 2
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 2
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.691288795075813,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  3,
+                  1,
+                  2
+                ],
+                "screenSpaceError": 31.814132019261443,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 2
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 2
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.695253252649495,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  2,
+                  0,
+                  3
+                ],
+                "screenSpaceError": 32.51203251204877,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 2
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 2
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.701599716567337,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  3,
+                  0,
+                  3
+                ],
+                "screenSpaceError": 32.98081927172254,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 2
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 2
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.705716336029555,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  2,
+                  1,
+                  3
+                ],
+                "screenSpaceError": 33.2579738860355,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 2
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 2
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.708097156204667,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  3,
+                  1,
+                  3
+                ],
+                "screenSpaceError": 33.76028023786429,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 2
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 2
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.712315322788825,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              }
+            ]
+          },
+          {
+            "level": 1,
+            "coords": [
+              0,
+              1,
+              1
+            ],
+            "screenSpaceError": 67.52056047572859,
+            "visited": 4,
+            "renderable": true,
+            "previous": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 3
+            },
+            "next": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 3
+            },
+            "lerp": 0,
+            "keyframes": [
+              {
+                "keyframe": 0,
+                "state": 3,
+                "priority": 10.854058403338042,
+                "megatextureIndex": 3
+              }
+            ],
+            "children": [
+              {
+                "level": 2,
+                "coords": [
+                  0,
+                  2,
+                  2
+                ],
+                "screenSpaceError": 30.763098528056815,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 3
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 3
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.685169254152996,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  1,
+                  2,
+                  2
+                ],
+                "screenSpaceError": 31.39273418163025,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 3
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 3
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.691288795075813,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  0,
+                  3,
+                  2
+                ],
+                "screenSpaceError": 31.15932771584945,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 3
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 3
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.689048226120983,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  1,
+                  3,
+                  2
+                ],
+                "screenSpaceError": 31.814132019261443,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 3
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 3
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.695253252649495,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  0,
+                  2,
+                  3
+                ],
+                "screenSpaceError": 32.51203251204877,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 3
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 3
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.701599716567337,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  1,
+                  2,
+                  3
+                ],
+                "screenSpaceError": 33.2579738860355,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 3
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 3
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.708097156204667,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  0,
+                  3,
+                  3
+                ],
+                "screenSpaceError": 32.98081927172254,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 3
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 3
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.705716336029555,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  1,
+                  3,
+                  3
+                ],
+                "screenSpaceError": 33.76028023786429,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 3
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 3
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.712315322788825,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              }
+            ]
+          },
+          {
+            "level": 1,
+            "coords": [
+              1,
+              1,
+              1
+            ],
+            "screenSpaceError": 69.99919892732552,
+            "visited": 4,
+            "renderable": true,
+            "previous": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 1
+            },
+            "next": {
+              "level": 1,
+              "keyframe": 0,
+              "megatextureIndex": 1
+            },
+            "lerp": 0,
+            "keyframes": [
+              {
+                "keyframe": 0,
+                "state": 3,
+                "priority": 10.859153340444927,
+                "megatextureIndex": 1
+              }
+            ],
+            "children": [
+              {
+                "level": 2,
+                "coords": [
+                  2,
+                  2,
+                  2
+                ],
+                "screenSpaceError": 31.937682511452433,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 1
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 1
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.69639636921866,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  3,
+                  2,
+                  2
+                ],
+                "screenSpaceError": 32.3817232401242,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 1
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 1
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.70043487785016,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  2,
+                  3,
+                  2
+                ],
+                "screenSpaceError": 32.3817232401242,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 1
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 1
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.70043487785016,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  3,
+                  3,
+                  2
+                ],
+                "screenSpaceError": 32.84481531389871,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 1
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 1
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.704533769581737,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  2,
+                  2,
+                  3
+                ],
+                "screenSpaceError": 33.90802834086512,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 1
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 1
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.713532947138882,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  3,
+                  2,
+                  3
+                ],
+                "screenSpaceError": 34.4408470526112,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 1
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 1
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.71783970103324,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  2,
+                  3,
+                  3
+                ],
+                "screenSpaceError": 34.4408470526112,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 1
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 1
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.71783970103324,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              },
+              {
+                "level": 2,
+                "coords": [
+                  3,
+                  3,
+                  3
+                ],
+                "screenSpaceError": 34.99959946366276,
+                "visited": 4,
+                "renderable": false,
+                "previous": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 1
+                },
+                "next": {
+                  "level": 1,
+                  "keyframe": 0,
+                  "megatextureIndex": 1
+                },
+                "lerp": 0,
+                "keyframes": [
+                  {
+                    "keyframe": 0,
+                    "state": 0,
+                    "priority": 10.722219131629679,
+                    "megatextureIndex": -1
+                  }
+                ],
+                "children": null
+              }
+            ]
+          }
+        ]
+      },
+      "highPriority": [
+        {
+          "level": 0,
+          "coords": [
+            0,
+            0,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.929077208307653,
+          "highPriorityFrameNumber": 4,
+          "state": 3,
+          "megatextureIndex": 0
+        },
+        {
+          "level": 1,
+          "coords": [
+            1,
+            1,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.859153340444927,
+          "highPriorityFrameNumber": 4,
+          "state": 3,
+          "megatextureIndex": 1
+        },
+        {
+          "level": 1,
+          "coords": [
+            0,
+            1,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.854058403338042,
+          "highPriorityFrameNumber": 4,
+          "state": 3,
+          "megatextureIndex": 3
+        },
+        {
+          "level": 1,
+          "coords": [
+            1,
+            0,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.854058403338042,
+          "highPriorityFrameNumber": 4,
+          "state": 3,
+          "megatextureIndex": 2
+        },
+        {
+          "level": 1,
+          "coords": [
+            0,
+            0,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.849142803957239,
+          "highPriorityFrameNumber": 4,
+          "state": 3,
+          "megatextureIndex": 4
+        },
+        {
+          "level": 1,
+          "coords": [
+            1,
+            1,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.840921642371942,
+          "highPriorityFrameNumber": 4,
+          "state": 3,
+          "megatextureIndex": 5
+        },
+        {
+          "level": 1,
+          "coords": [
+            1,
+            0,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.836417813090048,
+          "highPriorityFrameNumber": 4,
+          "state": 3,
+          "megatextureIndex": 6
+        },
+        {
+          "level": 1,
+          "coords": [
+            0,
+            1,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.836417813090048,
+          "highPriorityFrameNumber": 4,
+          "state": 3,
+          "megatextureIndex": 7
+        },
+        {
+          "level": 1,
+          "coords": [
+            0,
+            0,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.832040559961033,
+          "highPriorityFrameNumber": 4,
+          "state": 3,
+          "megatextureIndex": 8
+        },
+        {
+          "level": 2,
+          "coords": [
+            3,
+            3,
+            3
+          ],
+          "keyframe": 0,
+          "priority": 10.722219131629679,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            3,
+            2,
+            3
+          ],
+          "keyframe": 0,
+          "priority": 10.71783970103324,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            2,
+            3,
+            3
+          ],
+          "keyframe": 0,
+          "priority": 10.71783970103324,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            2,
+            2,
+            3
+          ],
+          "keyframe": 0,
+          "priority": 10.713532947138882,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            3,
+            1,
+            3
+          ],
+          "keyframe": 0,
+          "priority": 10.712315322788825,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            1,
+            3,
+            3
+          ],
+          "keyframe": 0,
+          "priority": 10.712315322788825,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            1,
+            2,
+            3
+          ],
+          "keyframe": 0,
+          "priority": 10.708097156204667,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            2,
+            1,
+            3
+          ],
+          "keyframe": 0,
+          "priority": 10.708097156204667,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            3,
+            0,
+            3
+          ],
+          "keyframe": 0,
+          "priority": 10.705716336029555,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            0,
+            3,
+            3
+          ],
+          "keyframe": 0,
+          "priority": 10.705716336029555,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            3,
+            3,
+            2
+          ],
+          "keyframe": 0,
+          "priority": 10.704533769581737,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            1,
+            1,
+            3
+          ],
+          "keyframe": 0,
+          "priority": 10.702769543242965,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            0,
+            2,
+            3
+          ],
+          "keyframe": 0,
+          "priority": 10.701599716567337,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            2,
+            0,
+            3
+          ],
+          "keyframe": 0,
+          "priority": 10.701599716567337,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            3,
+            2,
+            2
+          ],
+          "keyframe": 0,
+          "priority": 10.70043487785016,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            2,
+            3,
+            2
+          ],
+          "keyframe": 0,
+          "priority": 10.70043487785016,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            2,
+            2,
+            2
+          ],
+          "keyframe": 0,
+          "priority": 10.69639636921866,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            1,
+            0,
+            3
+          ],
+          "keyframe": 0,
+          "priority": 10.69639636921866,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            0,
+            1,
+            3
+          ],
+          "keyframe": 0,
+          "priority": 10.69639636921866,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            3,
+            1,
+            2
+          ],
+          "keyframe": 0,
+          "priority": 10.695253252649495,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            1,
+            3,
+            2
+          ],
+          "keyframe": 0,
+          "priority": 10.695253252649495,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            2,
+            1,
+            2
+          ],
+          "keyframe": 0,
+          "priority": 10.691288795075813,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            1,
+            2,
+            2
+          ],
+          "keyframe": 0,
+          "priority": 10.691288795075813,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            0,
+            0,
+            3
+          ],
+          "keyframe": 0,
+          "priority": 10.690166290977508,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            3,
+            0,
+            2
+          ],
+          "keyframe": 0,
+          "priority": 10.689048226120983,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            0,
+            3,
+            2
+          ],
+          "keyframe": 0,
+          "priority": 10.689048226120983,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            3,
+            3,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.68682521774505,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            1,
+            1,
+            2
+          ],
+          "keyframe": 0,
+          "priority": 10.686272164200046,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            0,
+            2,
+            2
+          ],
+          "keyframe": 0,
+          "priority": 10.685169254152996,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            2,
+            0,
+            2
+          ],
+          "keyframe": 0,
+          "priority": 10.685169254152996,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            2,
+            3,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.68297606143323,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            3,
+            2,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.68297606143323,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            0,
+            1,
+            2
+          ],
+          "keyframe": 0,
+          "priority": 10.68025778563392,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            1,
+            0,
+            2
+          ],
+          "keyframe": 0,
+          "priority": 10.68025778563392,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            2,
+            2,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.679177558382458,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            3,
+            1,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.678101315261392,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            1,
+            3,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.678101315261392,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            0,
+            0,
+            2
+          ],
+          "keyframe": 0,
+          "priority": 10.674365250505737,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            1,
+            2,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.674365250505737,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            2,
+            1,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.674365250505737,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            0,
+            3,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.672251387078383,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            3,
+            0,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.672251387078383,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            1,
+            1,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.669629996009656,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            3,
+            3,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.66910846367844,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            0,
+            2,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.66858783617648,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            2,
+            0,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.66858783617648,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            3,
+            2,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.66548282797637,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            2,
+            3,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.66548282797637,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            0,
+            1,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.663942189569463,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            1,
+            0,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.663942189569463,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            2,
+            2,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.661900058131238,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            1,
+            3,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.660884085429624,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            3,
+            1,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.660884085429624,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            0,
+            0,
+            1
+          ],
+          "keyframe": 0,
+          "priority": 10.658358756475817,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        },
+        {
+          "level": 2,
+          "coords": [
+            2,
+            1,
+            0
+          ],
+          "keyframe": 0,
+          "priority": 10.657354385640666,
+          "highPriorityFrameNumber": 4,
+          "state": 0,
+          "megatextureIndex": -1
+        }
+      ],
+      "writes": [
+        {
+          "texture": "texture",
+          "width": 9,
+          "height": 1,
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "bytes": [
+            0,
+            0,
+            0,
+            0,
+            8,
+            0,
+            1,
+            0,
+            6,
+            0,
+            1,
+            0,
+            7,
+            0,
+            1,
+            0,
+            5,
+            0,
+            1,
+            0,
+            4,
+            0,
+            1,
+            0,
+            2,
+            0,
+            1,
+            0,
+            3,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "texture": "texture",
+          "width": 9,
+          "height": 1,
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "bytes": [
+            0,
+            0,
+            0,
+            0,
+            8,
+            0,
+            1,
+            0,
+            6,
+            0,
+            1,
+            0,
+            7,
+            0,
+            1,
+            0,
+            5,
+            0,
+            1,
+            0,
+            4,
+            0,
+            1,
+            0,
+            2,
+            0,
+            1,
+            0,
+            3,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0
+          ]
+        }
+      ]
+    }
+  ]
+}

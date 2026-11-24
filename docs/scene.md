@@ -1357,6 +1357,209 @@ and adds seven native concurrency, ownership and reentrancy checks. The custom
 ellipsoid case deliberately uses an independent map projection, so picking uses
 the scene's configured ellipsoid rather than the projection's ellipsoid.
 
+## Vector 3D Tiles and Gaussian splats
+
+`scene::vector_3d_tile_content` parses `vctr` tiles and composes the vector
+primitives. It validates the magic/version/byte-length header, JSON and binary
+batch sections, `REGION` and `RTC_CENTER`, and the pinned batch-id rules: all
+groups or none, with sequential ids assigned across polygons, then polylines,
+then points. Polygons read plural or legacy singular count properties, support
+per-polygon heights, and pack indices, positions, centre, ellipsoid and rectangle
+for `createVectorTilePolygons`. Polylines read counts and widths (default 2),
+decode through the ported `decode_vector_polyline_positions` for the
+`examineVectorLinesFunction` callback, and select floating or clamped polylines
+from the tileset classification type. Points read `POINTS_LENGTH * 3` quantized
+positions. `TilesetContent` supplies feature metrics, style/debug application,
+processing and destruction. Batch-table JSON arrays become per-feature
+properties for style expressions; binary batch properties and hierarchy are not
+decoded, and the 3D Tiles core port must supply tileset integration and
+`Cesium3DTileBatchTable` behaviour through `Vector3DTileBatchTable`.
+
+`scene::vector_3d_tile_primitive` owns classification meshes. It ports colour
+re-batching exactly: duplicate-`toRgba` detection, the 120-frame grace period,
+stable descending sort, merging equal-coloured batches, CPU index rewrite and
+`updateCommands` range splitting. It builds position/`a_batchId` vertex arrays,
+the pinned stencil-depth, colour and pick render states, `VectorTileVS` /
+`ShadowVolumeFS` programs (including the appended pick `main`), derived
+terrain/3D Tiles commands, wireframe and invert-classification commands. The
+batch table is a trait because its concrete port belongs to the 3D Tiles core
+group.
+
+`Vector3DTileGeometry`, `Vector3DTilePolygons`, `Vector3DTilePolylines` and
+`Vector3DTileClampedPolylines` compose the already-validated vector-tile workers
+behind the pinned two-frame lifecycle: the first update schedules the decode,
+the next installs the primitive or vertex array. Geometry unpacks bounding-size
+fields and batches and forwards sphere bounds. Polygons keep the source quirk
+that the constructor's `center` is overwritten, so the centre is always the
+rectangle centre on WGS84. Floating polylines use the five-attribute layout and
+`getPolylinePositions`. Clamped polylines use seven attributes, bundled
+`ApproximateTerrainHeights`, the pinned ordering that decodes with default
+heights before updating the oriented bounding box, front-face culling,
+pre-multiplied alpha, 3D Tiles stencil state and classification filtering.
+
+`Vector3DTilePoints` decodes points and models billboards, labels and anchor
+lines as CPU records, including the complete `Cesium3DTilePointFeature`
+property surface, defaults, texture-id construction, height-offset cartography
+and style application. It does not drive the billboard/label/polyline
+collections, their atlases or pick ids; `texturesByteLength` reports decoded
+image payload rather than atlas memory. The tracker marks it partial.
+
+`scene::gaussian_splat_primitive` ports both asynchronous state machines:
+snapshot building (aggregate, attribute texture, spherical-harmonics texture,
+sort, atomic commit) and steady re-sorting (frame interval, 0.5° angle and one
+metre position thresholds, request generations, superseded results). It packs
+integer `RGBA32UI`/`RG32UI` textures, aggregates SH data, retires replaced
+textures for one frame, builds the instanced screen-quad vertex array and the
+`GaussianSplats` command with the pinned shader defines/uniforms, and exposes
+command structure for validation. Tileset state arrives as a per-frame
+`GaussianSplatTilesetState`; selected tiles implement `GaussianSplatTileContent`.
+The pinned `ready` flag is never set, which this port preserves.
+
+`scene::gaussian_splat_3d_tile_content` extracts position/rotation/scale/colour
+attributes, detects SH degree and coefficient counts from `_` or
+`KHR_gaussian_splatting:` attribute names, ports the exact
+`float32ToFloat16`, packs half-float SH coefficients into `RG32UI` texels,
+transforms attributes and implements the content contract. The glTF loader is
+expected to provide the primitive attribute payload; the async `fromGltf`
+wrapper is not ported.
+
+`scene::create_billboard_point_callback` returns an RGBA8 billboard image with
+the pinned drawing order: optional outline disk, optional `destination-out`
+punch when `centerAlpha < 1`, then the point disk. It implements WebIDL canvas
+size conversion and CSS colour compositing. Rasterization uses 8x8 coverage;
+browser antialiasing is implementation-defined.
+
+```bash
+TZ=UTC node tools/cesium/generate-scene-vector-gaussian.mjs
+cargo test --test scene_vector_gaussian
+```
+
+`tests/scene_vector_gaussian.rs` replays 12 pinned groups: four canvas drawing
+traces, five `Vector3DTilePrimitive` metric/split cases, two `vctr` parses, seven
+parser errors, twenty half-float values, degree/name cases, degree 1–3 packing,
+content lifecycle/destruction and a native Gaussian splat
+snapshot→texture→sort→command lifecycle. The vector modules' GPU commands,
+shaders and render states are constructed through `SceneCommand` but were not
+executed against CesiumJS in this work; those modules are marked implemented in
+the tracker, not ported.
+
+## Atmosphere, shadows, environment maps and ground classification
+
+`scene::shadow_map` owns Cesium's directional, spot and point-light shadow
+maps: constructor validation, terrain/primitive/point biases, render-state
+creation, viewport-packed textures, framebuffer depth/color/cube layouts,
+`ShadowMapCamera` fitting, log/linear cascade splits and matrices, light-space
+uniforms and cast/receive draw derivation through the validated
+`shadow_map_shader` boundary. `ShadowMapOptions` is the typed constructor;
+`update_pass` clears a pass and the `create_*_command` helpers wrap derived
+draws. Debug camera/point-light primitives are not reproduced. The pinned
+`generate-scene-shadow-map.mjs` captures constructor cases and full CPU
+camera/cascade/visibility updates (with framebuffer resources stubbed, as the
+module performs no GL work for those paths); `tests/scene_shadow_map.rs`
+compares them exactly. GPU shadow rendering and debug overlays are not
+pixel-validated.
+
+`scene::sky_atmosphere`, `scene::sun` and `scene::sun_post_process` cover the
+sky/environment pass. `SkyAtmosphere` packs ellipsoid radii and dynamic
+lighting, selects color-correct/per-fragment/translucent defines, orients the
+unit ellipsoid from the inverse view rotation and supplies the scattering
+uniforms. `Sun` regenerates its procedural glow texture on size/glow/HDR
+changes, emits a compute command and projects its world position and limb into
+window coordinates. `SunPostProcess` builds the six-stage down-sample,
+bright-pass, two-pass blur and additive-blend chain, with a texture cache,
+sun-centered scissor rectangles and copy/clear helpers. Pinned fixtures compare
+constructor/property values, glow clamping, stage scales, sample modes, uniform
+sets and shader sources; GPU texture and flare pixels are not validated.
+
+`scene::specular_environment_cube_map` installs host-decoded KTX2 cube maps
+with padded null mip levels, the Cesium sampler and support/error lifecycle.
+`scene::dynamic_environment_map_manager` implements Cesium's position epsilon,
+dirty flags, command budget, radiance face commands, convolution mip commands
+and float irradiance readback into nine spherical-harmonic coefficients.
+Compute commands are returned through `take_commands` because the portable
+Scene command list carries draws, not compute work. `scene::cube_map_panorama`
+and `scene::google_street_view_cube_map_panorama_provider` build the six-face
+panorama, HDR shader variant, credit and deferred load errors; the provider
+derives Google Street View face URLs, metadata queries and the north-down-east
+transform. URL loading is host-owned through `ResourceClient`.
+
+`scene::classification_primitive` is the shared shadow-volume renderer for
+terrain and 3D Tiles: stencil-depth, color, pick and ignore-show passes,
+per-instance color validation, pick offsets, `ShadowVolumeAppearance`
+color/pick shaders and extent-aware bounds. It reuses `Primitive` for geometry
+combination/upload/batch attributes through read-only accessors.
+`scene::ground_primitive` prepares approximate terrain heights, vertical
+exaggeration, planar/spherical extents, extruded shadow volumes and OBB/2D
+bounds. `scene::ground_polyline_primitive` prepares
+`GroundPolylineGeometry` projection state and renders inverted-winding,
+stencil-masked polyline shadow volumes for 3D/2D/morph. `scene::invert_classification`
+owns the classified/unclassified color targets and stencil-masked composite.
+
+`generate-scene-atmosphere-environment.mjs` writes
+`tests/data/scene-atmosphere-environment.json`;
+`tests/scene_atmosphere_environment.rs` replays constructor/property,
+render-state, URL/transform, terrain-height/OBB, validation-message and
+lifecycle cases, plus a BoxGeometry classification command-structure check and
+cast/receive derivation assertions. GPU classification, terrain clamping and
+full-scene invert rendering remain unvalidated.
+
+## Point clouds and voxels
+
+`PointCloud<G>` parses a pnts payload, builds static position/color/normal/batch
+attributes with Cesium's quantization, RGB565, oct-encoding and translucency
+rules, generates the upstream vertex/fragment shaders (including builtin
+`POSITION`/`COLOR`/`NORMAL` style substitutions and clipping), and owns its
+render states, model matrix and bounding sphere. `PointCloudCallbacks` supplies
+the tileset hooks for shader, uniform-map, batch-table and pick-id injection.
+Per-point binary batch-table styleable attributes and Draco decoding are not
+implemented; styles that reference those properties fail with a clear shader
+error. `tests/scene_point_cloud.rs` replays a pinned CesiumJS capture of the
+shader source, attribute layout, buffer sizes, uniforms and render state.
+
+`TimeDynamicPointCloud<G>` schedules intervals from the clock multiplier and
+average frame-load time, prefetches one interval ahead, keeps a frame while a
+replacement loads, enforces the memory budget by unloading untouched frames,
+and raises `frameFailed`/`frameChanged`. Frames are fetched through
+`ResourceClient`; call `set_resource_client` before the first tick. Native
+tests cover interval construction, clock state, average-load defaults and
+destruction.
+
+`PointCloudEyeDomeLighting<G>` performs the support check, owns the two-color
+plus depth framebuffer, and derives the MRT `EC` shader that writes packed
+fragment depth. Replacing already-built `SceneCommand`s with the offscreen
+derived command is not possible with the owned execution closure, so its
+`update` currently prepares resources without hijacking draws; `TimeDynamicPointCloud`
+therefore does not yet apply EDL to rendered frames.
+
+`VoxelTraversal<G>` also contains the private megatexture allocation helper
+that sizes a 3D texture from tile dimensions, component type, channel count,
+memory budget and the maximum 3D texture size, packs tile data at 1D-to-3D
+tile offsets, and maintains Cesium's occupied/empty allocation lists. It
+mirrors the upstream hierarchy: bounded keyframe
+priority queue, provider requests retained as owned futures, megatexture
+replacement of the lowest-priority node, screen-space-error-driven subdivision,
+temporal ancestor selection, octree/leaf texel packing and statistics/events.
+The pinned capture in `tests/scene_voxel_traversal.rs` compares the node tree,
+keyframe states/priorities/megatexture slots, high-priority order and every
+texel upload byte for three frames.
+
+`VoxelPrimitive<G>` applies Cesium's bounds/model matrix/shape transforms and
+vertical exaggeration, updates clipping planes and per-frame uniforms, computes
+the NDC scissor box, and emits render, pick and pick-voxel commands through the
+typed `SceneCommand` path. `VoxelRenderResources`, `processVoxelProperties` and
+`buildVoxelDrawCommands` reproduce the generated voxel shader line for line;
+`tests/scene_voxel_draw_commands.rs` compares all shape, clipping, depth,
+padding, metadata-order, statistics and sample-count variants against pinned
+CesiumJS. Native lifecycle tests cover default construction, setter clamps,
+two-frame traversal and destruction.
+
+`Cesium3DTilesVoxelProvider` validates the tileset, loads embedded or external
+metadata schemas, derives box/region/cylinder shape transforms and bounds,
+copies attribute statistics, and configures implicit tiling/subtree access.
+`from_url`/`from_json` are complete; `request_data` performs subtree/availability
+checks, but glTF voxel attribute decoding for tile content is still missing, so
+the module is marked partial.
+
 ## Composite 3D tile content
 
 `Composite3DTileContent` owns child contents, derives nested composite indices

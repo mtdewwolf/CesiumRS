@@ -1,0 +1,526 @@
+{
+  "version": "23.0.0",
+  "cases": [
+    {
+      "settings": {
+        "points": 4,
+        "colors": false,
+        "normals": false,
+        "batchIds": false,
+        "translucent": false,
+        "attenuation": false,
+        "backFaceCulling": false,
+        "normalShading": true,
+        "style": null,
+        "clipping": 0,
+        "split": false
+      },
+      "arrayBufferBase64": "cG50cwEAAAB8AAAAMAAAADAAAAAAAAAAAAAAAHsiUE9JTlRTX0xFTkdUSCI6NCwiUE9TSVRJT04iOnsiYnl0ZU9mZnNldCI6MH19IAAAgL8AAAC/AAAAAAAAAD8AAIA/AADAPwAAAEAAACBAAABAQAAAYEAAAIBAAACQQA==",
+      "pointsLength": 4,
+      "geometryByteLength": 48,
+      "ready": true,
+      "isTranslucent": false,
+      "styleTranslucent": false,
+      "renderState": {
+        "pass": 8,
+        "cull": true,
+        "primitiveType": 0,
+        "count": 4,
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "blending": {
+          "enabled": false,
+          "color": {
+            "red": 0,
+            "green": 0,
+            "blue": 0,
+            "alpha": 0
+          },
+          "equationRgb": 32774,
+          "equationAlpha": 32774,
+          "functionSourceRgb": 1,
+          "functionSourceAlpha": 1,
+          "functionDestinationRgb": 0,
+          "functionDestinationAlpha": 0
+        }
+      },
+      "attributes": [
+        {
+          "index": 0,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5126,
+          "normalize": false
+        }
+      ],
+      "buffers": [
+        48
+      ],
+      "shader": {
+        "vertex": "in vec3 a_position; \nout vec4 v_color; \nuniform vec4 u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier; \nuniform vec4 u_constantColor; \nuniform vec4 u_highlightColor; \nfloat u_pointSize; \nfloat tiles3d_tileset_time; \nvoid main() \n{ \n    u_pointSize = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.x; \n    tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n    vec4 color = u_constantColor; \n    vec3 position = a_position; \n    vec3 position_absolute = vec3(czm_model * vec4(position, 1.0)); \n    vec3 normal = vec3(1.0); \n    gl_PointSize = u_pointSize; \n    color = color * u_highlightColor; \n    v_color = color; \n    gl_Position = czm_modelViewProjection * vec4(position, 1.0); \n} \n",
+        "fragment": "in vec4 v_color; \nvoid main() \n{ \n    out_FragColor = czm_gammaCorrect(v_color); \n} \n",
+        "defines": [],
+        "attributes": {
+          "a_position": 0
+        }
+      },
+      "uniformNames": [
+        "czm_splitDirection",
+        "u_clippingPlanes",
+        "u_clippingPlanesEdgeStyle",
+        "u_clippingPlanesMatrix",
+        "u_constantColor",
+        "u_highlightColor",
+        "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier"
+      ]
+    },
+    {
+      "settings": {
+        "points": 4,
+        "colors": true,
+        "normals": true,
+        "batchIds": false,
+        "translucent": false,
+        "attenuation": false,
+        "backFaceCulling": false,
+        "normalShading": true,
+        "style": null,
+        "clipping": 0,
+        "split": false
+      },
+      "arrayBufferBase64": "cG50cwEAAADwAAAAaAAAAGwAAAAAAAAAAAAAAHsiUE9JTlRTX0xFTkdUSCI6NCwiUE9TSVRJT04iOnsiYnl0ZU9mZnNldCI6MH0sIlJHQiI6eyJieXRlT2Zmc2V0Ijo0OH0sIk5PUk1BTCI6eyJieXRlT2Zmc2V0Ijo2MH19ICAgICAgAACAvwAAAL8AAAAAAAAAPwAAgD8AAMA/AAAAQAAAIEAAAEBAAABgQAAAgEAAAJBAAAcOFRwjKjE4P0ZNAACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AACAPwAAgD8AAIA/",
+      "pointsLength": 4,
+      "geometryByteLength": 108,
+      "ready": true,
+      "isTranslucent": false,
+      "styleTranslucent": false,
+      "renderState": {
+        "pass": 8,
+        "cull": true,
+        "primitiveType": 0,
+        "count": 4,
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "blending": {
+          "enabled": false,
+          "color": {
+            "red": 0,
+            "green": 0,
+            "blue": 0,
+            "alpha": 0
+          },
+          "equationRgb": 32774,
+          "equationAlpha": 32774,
+          "functionSourceRgb": 1,
+          "functionSourceAlpha": 1,
+          "functionDestinationRgb": 0,
+          "functionDestinationAlpha": 0
+        }
+      },
+      "attributes": [
+        {
+          "index": 0,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5126,
+          "normalize": false
+        },
+        {
+          "index": 1,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5121,
+          "normalize": true
+        },
+        {
+          "index": 2,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5126,
+          "normalize": false
+        }
+      ],
+      "buffers": [
+        48,
+        12,
+        48
+      ],
+      "shader": {
+        "vertex": "in vec3 a_position; \nout vec4 v_color; \nuniform vec4 u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier; \nuniform vec4 u_constantColor; \nuniform vec4 u_highlightColor; \nfloat u_pointSize; \nfloat tiles3d_tileset_time; \nin vec3 a_color; \nin vec3 a_normal; \nvoid main() \n{ \n    u_pointSize = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.x; \n    tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n    vec4 color = vec4(a_color, 1.0); \n    vec3 position = a_position; \n    vec3 position_absolute = vec3(czm_model * vec4(position, 1.0)); \n    vec3 normal = a_normal; \n    vec3 normalEC = czm_normal * normal; \n    gl_PointSize = u_pointSize; \n    color = color * u_highlightColor; \n    float diffuseStrength = czm_getLambertDiffuse(czm_lightDirectionEC, normalEC); \n    diffuseStrength = max(diffuseStrength, 0.4); \n    color.xyz *= diffuseStrength * czm_lightColor; \n    v_color = color; \n    gl_Position = czm_modelViewProjection * vec4(position, 1.0); \n} \n",
+        "fragment": "in vec4 v_color; \nvoid main() \n{ \n    out_FragColor = czm_gammaCorrect(v_color); \n} \n",
+        "defines": [],
+        "attributes": {
+          "a_position": 0,
+          "a_color": 1,
+          "a_normal": 2
+        }
+      },
+      "uniformNames": [
+        "czm_splitDirection",
+        "u_clippingPlanes",
+        "u_clippingPlanesEdgeStyle",
+        "u_clippingPlanesMatrix",
+        "u_constantColor",
+        "u_highlightColor",
+        "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier"
+      ]
+    },
+    {
+      "settings": {
+        "points": 4,
+        "colors": true,
+        "normals": true,
+        "batchIds": false,
+        "translucent": true,
+        "attenuation": false,
+        "backFaceCulling": false,
+        "normalShading": true,
+        "style": null,
+        "clipping": 0,
+        "split": false
+      },
+      "arrayBufferBase64": "cG50cwEAAAD0AAAAaAAAAHAAAAAAAAAAAAAAAHsiUE9JTlRTX0xFTkdUSCI6NCwiUE9TSVRJT04iOnsiYnl0ZU9mZnNldCI6MH0sIlJHQkEiOnsiYnl0ZU9mZnNldCI6NDh9LCJOT1JNQUwiOnsiYnl0ZU9mZnNldCI6NjR9fSAgICAgAACAvwAAAL8AAAAAAAAAPwAAgD8AAMA/AAAAQAAAIEAAAEBAAABgQAAAgEAAAJBAAAcOFRwjKjE4P0ZNVFtiaQAAgD8AAIA/AACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AACAPw==",
+      "pointsLength": 4,
+      "geometryByteLength": 112,
+      "ready": true,
+      "isTranslucent": true,
+      "styleTranslucent": true,
+      "renderState": {
+        "pass": 9,
+        "cull": true,
+        "primitiveType": 0,
+        "count": 4,
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": false,
+        "blending": {
+          "enabled": true,
+          "color": {
+            "red": 0,
+            "green": 0,
+            "blue": 0,
+            "alpha": 0
+          },
+          "equationRgb": 32774,
+          "equationAlpha": 32774,
+          "functionSourceRgb": 770,
+          "functionSourceAlpha": 1,
+          "functionDestinationRgb": 771,
+          "functionDestinationAlpha": 771
+        }
+      },
+      "attributes": [
+        {
+          "index": 0,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5126,
+          "normalize": false
+        },
+        {
+          "index": 1,
+          "enabled": true,
+          "componentsPerAttribute": 4,
+          "componentDatatype": 5121,
+          "normalize": true
+        },
+        {
+          "index": 2,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5126,
+          "normalize": false
+        }
+      ],
+      "buffers": [
+        48,
+        16,
+        48
+      ],
+      "shader": {
+        "vertex": "in vec3 a_position; \nout vec4 v_color; \nuniform vec4 u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier; \nuniform vec4 u_constantColor; \nuniform vec4 u_highlightColor; \nfloat u_pointSize; \nfloat tiles3d_tileset_time; \nin vec4 a_color; \nin vec3 a_normal; \nvoid main() \n{ \n    u_pointSize = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.x; \n    tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n    vec4 color = a_color; \n    vec3 position = a_position; \n    vec3 position_absolute = vec3(czm_model * vec4(position, 1.0)); \n    vec3 normal = a_normal; \n    vec3 normalEC = czm_normal * normal; \n    gl_PointSize = u_pointSize; \n    color = color * u_highlightColor; \n    float diffuseStrength = czm_getLambertDiffuse(czm_lightDirectionEC, normalEC); \n    diffuseStrength = max(diffuseStrength, 0.4); \n    color.xyz *= diffuseStrength * czm_lightColor; \n    v_color = color; \n    gl_Position = czm_modelViewProjection * vec4(position, 1.0); \n} \n",
+        "fragment": "in vec4 v_color; \nvoid main() \n{ \n    out_FragColor = czm_gammaCorrect(v_color); \n} \n",
+        "defines": [],
+        "attributes": {
+          "a_position": 0,
+          "a_color": 1,
+          "a_normal": 2
+        }
+      },
+      "uniformNames": [
+        "czm_splitDirection",
+        "u_clippingPlanes",
+        "u_clippingPlanesEdgeStyle",
+        "u_clippingPlanesMatrix",
+        "u_constantColor",
+        "u_highlightColor",
+        "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier"
+      ]
+    },
+    {
+      "settings": {
+        "points": 4,
+        "colors": true,
+        "normals": true,
+        "batchIds": true,
+        "translucent": false,
+        "attenuation": true,
+        "backFaceCulling": true,
+        "normalShading": true,
+        "style": null,
+        "clipping": 0,
+        "split": false
+      },
+      "arrayBufferBase64": "cG50cwEAAAA8AQAAmAAAAHAAAAAYAAAAAAAAAHsiUE9JTlRTX0xFTkdUSCI6NCwiUE9TSVRJT04iOnsiYnl0ZU9mZnNldCI6MH0sIlJHQiI6eyJieXRlT2Zmc2V0Ijo0OH0sIk5PUk1BTCI6eyJieXRlT2Zmc2V0Ijo2MH0sIkJBVENIX0lEIjp7ImJ5dGVPZmZzZXQiOjEwOH0sIkJBVENIX0xFTkdUSCI6Mn0gICAgICAgAACAvwAAAL8AAAAAAAAAPwAAgD8AAMA/AAAAQAAAIEAAAEBAAABgQAAAgEAAAJBAAAcOFRwjKjE4P0ZNAACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AAEAAXsibmFtZSI6WyJ6ZXJvIiwib25lIl19IA==",
+      "pointsLength": 4,
+      "geometryByteLength": 116,
+      "ready": true,
+      "isTranslucent": false,
+      "styleTranslucent": false,
+      "renderState": {
+        "pass": 5,
+        "cull": true,
+        "primitiveType": 0,
+        "count": 4,
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "blending": {
+          "enabled": false,
+          "color": {
+            "red": 0,
+            "green": 0,
+            "blue": 0,
+            "alpha": 0
+          },
+          "equationRgb": 32774,
+          "equationAlpha": 32774,
+          "functionSourceRgb": 1,
+          "functionSourceAlpha": 1,
+          "functionDestinationRgb": 0,
+          "functionDestinationAlpha": 0
+        }
+      },
+      "attributes": [
+        {
+          "index": 0,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5126,
+          "normalize": false
+        },
+        {
+          "index": 1,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5121,
+          "normalize": true
+        },
+        {
+          "index": 2,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5126,
+          "normalize": false
+        },
+        {
+          "index": 3,
+          "enabled": true,
+          "componentsPerAttribute": 1,
+          "componentDatatype": 5123,
+          "normalize": false
+        }
+      ],
+      "buffers": [
+        48,
+        12,
+        48,
+        8
+      ],
+      "shader": {
+        "vertex": "in vec3 a_position; \nout vec4 v_color; \nuniform vec4 u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier; \nuniform vec4 u_constantColor; \nuniform vec4 u_highlightColor; \nfloat u_pointSize; \nfloat tiles3d_tileset_time; \nfloat u_geometricError; \nfloat u_depthMultiplier; \nin vec3 a_color; \nin vec3 a_normal; \nin float a_batchId; \nvoid main() \n{ \n    u_pointSize = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.x; \n    tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n    u_geometricError = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.z; \n    u_depthMultiplier = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.w; \n    vec4 color = vec4(a_color, 1.0); \n    vec3 position = a_position; \n    vec3 position_absolute = vec3(czm_model * vec4(position, 1.0)); \n    vec3 normal = a_normal; \n    vec3 normalEC = czm_normal * normal; \n    vec4 positionEC = czm_modelView * vec4(position, 1.0); \n    float depth = -positionEC.z; \n    gl_PointSize = min((u_geometricError / depth) * u_depthMultiplier, u_pointSize); \n    color = color * u_highlightColor; \n    float diffuseStrength = czm_getLambertDiffuse(czm_lightDirectionEC, normalEC); \n    diffuseStrength = max(diffuseStrength, 0.4); \n    color.xyz *= diffuseStrength * czm_lightColor; \n    v_color = color; \n    gl_Position = czm_modelViewProjection * vec4(position, 1.0); \n    float visible = step(-normalEC.z, 0.0); \n    gl_Position *= visible; \n    gl_PointSize *= visible; \n} \n",
+        "fragment": "in vec4 v_color; \nvoid main() \n{ \n    out_FragColor = czm_gammaCorrect(v_color); \n} \n",
+        "defines": [],
+        "attributes": {
+          "a_position": 0,
+          "a_color": 1,
+          "a_normal": 2,
+          "a_batchId": 3
+        }
+      },
+      "uniformNames": [
+        "czm_splitDirection",
+        "u_clippingPlanes",
+        "u_clippingPlanesEdgeStyle",
+        "u_clippingPlanesMatrix",
+        "u_constantColor",
+        "u_highlightColor",
+        "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier"
+      ]
+    },
+    {
+      "settings": {
+        "points": 4,
+        "colors": false,
+        "normals": false,
+        "batchIds": false,
+        "translucent": false,
+        "attenuation": false,
+        "backFaceCulling": false,
+        "normalShading": true,
+        "style": {
+          "color": "color(\"red\")"
+        },
+        "clipping": 0,
+        "split": false
+      },
+      "arrayBufferBase64": "cG50cwEAAAB8AAAAMAAAADAAAAAAAAAAAAAAAHsiUE9JTlRTX0xFTkdUSCI6NCwiUE9TSVRJT04iOnsiYnl0ZU9mZnNldCI6MH19IAAAgL8AAAC/AAAAAAAAAD8AAIA/AADAPwAAAEAAACBAAABAQAAAYEAAAIBAAACQQA==",
+      "pointsLength": 4,
+      "geometryByteLength": 48,
+      "ready": true,
+      "isTranslucent": false,
+      "styleTranslucent": false,
+      "renderState": {
+        "pass": 8,
+        "cull": true,
+        "primitiveType": 0,
+        "count": 4,
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "blending": {
+          "enabled": false,
+          "color": {
+            "red": 0,
+            "green": 0,
+            "blue": 0,
+            "alpha": 0
+          },
+          "equationRgb": 32774,
+          "equationAlpha": 32774,
+          "functionSourceRgb": 1,
+          "functionSourceAlpha": 1,
+          "functionDestinationRgb": 0,
+          "functionDestinationAlpha": 0
+        }
+      },
+      "attributes": [
+        {
+          "index": 0,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5126,
+          "normalize": false
+        }
+      ],
+      "buffers": [
+        48
+      ],
+      "shader": {
+        "vertex": "in vec3 a_position; \nout vec4 v_color; \nuniform vec4 u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier; \nuniform vec4 u_constantColor; \nuniform vec4 u_highlightColor; \nfloat u_pointSize; \nfloat tiles3d_tileset_time; \nvec4 getColorFromStyle(vec3 czm_3dtiles_builtin_property_POSITION, vec3 czm_3dtiles_builtin_property_POSITION_ABSOLUTE, vec4 czm_3dtiles_builtin_property_COLOR, vec3 czm_3dtiles_builtin_property_NORMAL)\n{\n    return vec4(vec3(1.0, 0.0, 0.0), 1.0);\n}\nvoid main() \n{ \n    u_pointSize = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.x; \n    tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n    vec4 color = u_constantColor; \n    vec3 position = a_position; \n    vec3 position_absolute = vec3(czm_model * vec4(position, 1.0)); \n    vec3 normal = vec3(1.0); \n    color = getColorFromStyle(position, position_absolute, color, normal); \n    gl_PointSize = u_pointSize; \n    color = color * u_highlightColor; \n    v_color = color; \n    gl_Position = czm_modelViewProjection * vec4(position, 1.0); \n} \n",
+        "fragment": "in vec4 v_color; \nvoid main() \n{ \n    out_FragColor = czm_gammaCorrect(v_color); \n} \n",
+        "defines": [],
+        "attributes": {
+          "a_position": 0
+        }
+      },
+      "uniformNames": [
+        "czm_splitDirection",
+        "u_clippingPlanes",
+        "u_clippingPlanesEdgeStyle",
+        "u_clippingPlanesMatrix",
+        "u_constantColor",
+        "u_highlightColor",
+        "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier"
+      ]
+    },
+    {
+      "settings": {
+        "points": 4,
+        "colors": false,
+        "normals": false,
+        "batchIds": false,
+        "translucent": false,
+        "attenuation": false,
+        "backFaceCulling": false,
+        "normalShading": true,
+        "style": null,
+        "clipping": 1,
+        "split": false
+      },
+      "arrayBufferBase64": "cG50cwEAAAB8AAAAMAAAADAAAAAAAAAAAAAAAHsiUE9JTlRTX0xFTkdUSCI6NCwiUE9TSVRJT04iOnsiYnl0ZU9mZnNldCI6MH19IAAAgL8AAAC/AAAAAAAAAD8AAIA/AADAPwAAAEAAACBAAABAQAAAYEAAAIBAAACQQA==",
+      "pointsLength": 4,
+      "geometryByteLength": 48,
+      "ready": true,
+      "isTranslucent": false,
+      "styleTranslucent": false,
+      "renderState": {
+        "pass": 8,
+        "cull": true,
+        "primitiveType": 0,
+        "count": 4,
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "blending": {
+          "enabled": false,
+          "color": {
+            "red": 0,
+            "green": 0,
+            "blue": 0,
+            "alpha": 0
+          },
+          "equationRgb": 32774,
+          "equationAlpha": 32774,
+          "functionSourceRgb": 1,
+          "functionSourceAlpha": 1,
+          "functionDestinationRgb": 0,
+          "functionDestinationAlpha": 0
+        }
+      },
+      "attributes": [
+        {
+          "index": 0,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5126,
+          "normalize": false
+        }
+      ],
+      "buffers": [
+        48
+      ],
+      "shader": {
+        "vertex": "in vec3 a_position; \nout vec4 v_color; \nuniform vec4 u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier; \nuniform vec4 u_constantColor; \nuniform vec4 u_highlightColor; \nfloat u_pointSize; \nfloat tiles3d_tileset_time; \nvoid main() \n{ \n    u_pointSize = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.x; \n    tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n    vec4 color = u_constantColor; \n    vec3 position = a_position; \n    vec3 position_absolute = vec3(czm_model * vec4(position, 1.0)); \n    vec3 normal = vec3(1.0); \n    gl_PointSize = u_pointSize; \n    color = color * u_highlightColor; \n    v_color = color; \n    gl_Position = czm_modelViewProjection * vec4(position, 1.0); \n} \n",
+        "fragment": "in vec4 v_color; \nuniform highp sampler2D u_clippingPlanes; \nuniform mat4 u_clippingPlanesMatrix; \nuniform vec4 u_clippingPlanesEdgeStyle; \n\nvec4 getClippingPlane(highp sampler2D packedClippingPlanes, int clippingPlaneNumber, mat4 transform)\n{\n    int pixY = clippingPlaneNumber / 1;\n    int pixX = clippingPlaneNumber - (pixY * 1);\n    // Sample from center of pixel\n    float u = (float(pixX) + 0.5) * 1.0;\n    float v = (float(pixY) + 0.5) * 0.5;\n    vec4 plane = texture(packedClippingPlanes, vec2(u, v));\n    return czm_transformPlane(plane, transform);\n}\n\nfloat clip(vec4 fragCoord, sampler2D clippingPlanes, mat4 clippingPlanesMatrix)\n{\n    bool clipped = true;\n    vec4 position = czm_windowToEyeCoordinates(fragCoord);\n    vec3 clipNormal = vec3(0.0);\n    vec3 clipPosition = vec3(0.0);\n    float clipAmount = 0.0;\n    float pixelWidth = czm_metersPerPixel(position);\n    for (int i = 0; i < 1; ++i)\n    {\n        vec4 clippingPlane = getClippingPlane(clippingPlanes, i, clippingPlanesMatrix);\n        clipNormal = clippingPlane.xyz;\n        clipPosition = -clippingPlane.w * clipNormal;\n        float amount = dot(clipNormal, (position.xyz - clipPosition)) / pixelWidth;\n        clipAmount = max(amount, clipAmount);\n        clipped = clipped && (amount <= 0.0);\n    }\n    if (clipped)\n    {\n        discard;\n    }\n    return clipAmount;\n }\n\nvoid main() \n{ \n    out_FragColor = czm_gammaCorrect(v_color); \n    float clipDistance = clip(gl_FragCoord, u_clippingPlanes, u_clippingPlanesMatrix); \n    vec4 clippingPlanesEdgeColor = vec4(1.0); \n    clippingPlanesEdgeColor.rgb = u_clippingPlanesEdgeStyle.rgb; \n    float clippingPlanesEdgeWidth = u_clippingPlanesEdgeStyle.a; \n    if (clipDistance > 0.0 && clipDistance < clippingPlanesEdgeWidth) \n    { \n        out_FragColor = clippingPlanesEdgeColor;\n    } \n} \n",
+        "defines": [],
+        "attributes": {
+          "a_position": 0
+        }
+      },
+      "uniformNames": [
+        "czm_splitDirection",
+        "u_clippingPlanes",
+        "u_clippingPlanesEdgeStyle",
+        "u_clippingPlanesMatrix",
+        "u_constantColor",
+        "u_highlightColor",
+        "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier"
+      ]
+    }
+  ]
+}
