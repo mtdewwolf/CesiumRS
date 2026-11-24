@@ -111,10 +111,39 @@ fn read_ids(value: &Value, body: Option<&ByteView<'_>>, length: f64) -> Result<I
 }
 
 #[derive(Clone, Debug, PartialEq)]
-struct BinaryColumn {
+pub(super) struct BinaryColumn {
     typed_array: TypedArray,
     /// `undefined` for an unknown `type`, which reads no elements.
     attribute_type: Option<AttributeType>,
+}
+
+impl BinaryColumn {
+    pub(super) fn read(name: &str, property: &Value, body: Option<&ByteView<'_>>, length: f64) -> Result<Self> {
+        if !js::defined(property.get("componentType")) {
+            return Err(MetadataError::Runtime("componentType is required.".into()));
+        }
+        if !js::defined(property.get("type")) {
+            return Err(MetadataError::Runtime("type is required.".into()));
+        }
+        if body.is_none() {
+            return Err(MetadataError::Runtime(format!("Property {name} requires a batch table binary.")));
+        }
+        let datatype = component_datatype(property.get("componentType"))?;
+        let attribute_type = property.get("type").and_then(Value::as_str).and_then(AttributeType::from_str_value);
+        let components = attribute_type.map_or(f64::NAN, |t| t.get_number_of_components() as f64);
+        let (body, offset) = body_offset(body, property)?;
+        let typed_array = typed_array_view(datatype, body.buffer, offset, components * length)?;
+        Ok(Self { typed_array, attribute_type })
+    }
+    pub(super) fn byte_length(&self) -> usize {
+        self.typed_array.len() * self.typed_array.component_datatype().get_size_in_bytes()
+    }
+    pub(super) fn get(&self, id: usize) -> Result<Option<MetadataValue>> {
+        get_binary(self, Some(id as f64))
+    }
+    pub(super) fn set(&mut self, id: usize, value: &MetadataValue) -> Result<()> {
+        set_binary(self, Some(id as f64), value)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -16,7 +16,7 @@ impl<G: Gl> crate::scene::expression::StyleFeature for ModelFeature<G> {
         self.get_property_inherited(name).ok().flatten().map(style_value)
     }
 }
-fn style_value(value: MetadataValue) -> crate::scene::expression::StyleValue {
+pub(crate) fn style_value(value: MetadataValue) -> crate::scene::expression::StyleValue {
     use crate::scene::expression::StyleValue as V;
     match value {
         MetadataValue::Null => V::Null,
@@ -75,11 +75,13 @@ impl<G: Gl> ModelFeature<G> {
         let table = self.table()?;
         let mut properties = table.properties.borrow_mut();
         if properties.has_property_by_semantic(self.id, name) {
-            properties.get_property_by_semantic(self.id, name)
-        } else {
-            properties.get_property(self.id, name)
+            return properties.get_property_by_semantic(self.id, name).map_err(|e| RuntimeError::new(e.to_string()));
         }
-        .map_err(|e| RuntimeError::new(e.to_string()))
+        if properties.has_property(self.id, name).map_err(|e| RuntimeError::new(e.to_string()))? {
+            return properties.get_property(self.id, name).map_err(|e| RuntimeError::new(e.to_string()));
+        }
+        let metadata = table.metadata.borrow();
+        metadata.get_property_inherited(name)
     }
     pub fn get_property_ids(&self) -> Result<Vec<String>> {
         self.table()?.properties.borrow().get_property_ids(self.id).map_err(|e| RuntimeError::new(e.to_string()))
