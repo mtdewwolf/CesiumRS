@@ -1,0 +1,1211 @@
+{
+  "cesium": "23.0.0",
+  "createBillboardPointCallback": [
+    {
+      "args": [
+        1,
+        "#ff0000",
+        "#0000ff",
+        2,
+        8
+      ],
+      "width": 12,
+      "height": 12,
+      "ops": [
+        {
+          "op": "clearRect",
+          "args": [
+            0,
+            0,
+            12,
+            12
+          ]
+        },
+        {
+          "op": "beginPath"
+        },
+        {
+          "op": "arc",
+          "args": [
+            6,
+            6,
+            6,
+            0,
+            6.283185307179586,
+            true
+          ]
+        },
+        {
+          "op": "closePath"
+        },
+        {
+          "op": "set",
+          "key": "fillStyle",
+          "value": "#0000ff"
+        },
+        {
+          "op": "fill"
+        },
+        {
+          "op": "beginPath"
+        },
+        {
+          "op": "arc",
+          "args": [
+            6,
+            6,
+            4,
+            0,
+            6.283185307179586,
+            true
+          ]
+        },
+        {
+          "op": "closePath"
+        },
+        {
+          "op": "set",
+          "key": "fillStyle",
+          "value": "#ff0000"
+        },
+        {
+          "op": "fill"
+        }
+      ]
+    },
+    {
+      "args": [
+        0.5,
+        "rgba(255, 0, 0, 0.5)",
+        "#0000ff",
+        2,
+        8
+      ],
+      "width": 12,
+      "height": 12,
+      "ops": [
+        {
+          "op": "clearRect",
+          "args": [
+            0,
+            0,
+            12,
+            12
+          ]
+        },
+        {
+          "op": "beginPath"
+        },
+        {
+          "op": "arc",
+          "args": [
+            6,
+            6,
+            6,
+            0,
+            6.283185307179586,
+            true
+          ]
+        },
+        {
+          "op": "closePath"
+        },
+        {
+          "op": "set",
+          "key": "fillStyle",
+          "value": "#0000ff"
+        },
+        {
+          "op": "fill"
+        },
+        {
+          "op": "save"
+        },
+        {
+          "op": "set",
+          "key": "globalCompositeOperation",
+          "value": "destination-out"
+        },
+        {
+          "op": "beginPath"
+        },
+        {
+          "op": "arc",
+          "args": [
+            6,
+            6,
+            4,
+            0,
+            6.283185307179586,
+            true
+          ]
+        },
+        {
+          "op": "closePath"
+        },
+        {
+          "op": "set",
+          "key": "fillStyle",
+          "value": "black"
+        },
+        {
+          "op": "fill"
+        },
+        {
+          "op": "restore"
+        },
+        {
+          "op": "beginPath"
+        },
+        {
+          "op": "arc",
+          "args": [
+            6,
+            6,
+            4,
+            0,
+            6.283185307179586,
+            true
+          ]
+        },
+        {
+          "op": "closePath"
+        },
+        {
+          "op": "set",
+          "key": "fillStyle",
+          "value": "rgba(255, 0, 0, 0.5)"
+        },
+        {
+          "op": "fill"
+        }
+      ]
+    },
+    {
+      "args": [
+        1,
+        "red",
+        "black",
+        0,
+        5
+      ],
+      "width": 5,
+      "height": 5,
+      "ops": [
+        {
+          "op": "clearRect",
+          "args": [
+            0,
+            0,
+            5,
+            5
+          ]
+        },
+        {
+          "op": "beginPath"
+        },
+        {
+          "op": "arc",
+          "args": [
+            2.5,
+            2.5,
+            2.5,
+            0,
+            6.283185307179586,
+            true
+          ]
+        },
+        {
+          "op": "closePath"
+        },
+        {
+          "op": "set",
+          "key": "fillStyle",
+          "value": "red"
+        },
+        {
+          "op": "fill"
+        }
+      ]
+    },
+    {
+      "args": [
+        0.75,
+        "#123456",
+        "#abcdef",
+        1.5,
+        6.9
+      ],
+      "width": 9,
+      "height": 9,
+      "ops": [
+        {
+          "op": "clearRect",
+          "args": [
+            0,
+            0,
+            9.9,
+            9.9
+          ]
+        },
+        {
+          "op": "beginPath"
+        },
+        {
+          "op": "arc",
+          "args": [
+            4.95,
+            4.95,
+            4.95,
+            0,
+            6.283185307179586,
+            true
+          ]
+        },
+        {
+          "op": "closePath"
+        },
+        {
+          "op": "set",
+          "key": "fillStyle",
+          "value": "#abcdef"
+        },
+        {
+          "op": "fill"
+        },
+        {
+          "op": "save"
+        },
+        {
+          "op": "set",
+          "key": "globalCompositeOperation",
+          "value": "destination-out"
+        },
+        {
+          "op": "beginPath"
+        },
+        {
+          "op": "arc",
+          "args": [
+            4.95,
+            4.95,
+            3.45,
+            0,
+            6.283185307179586,
+            true
+          ]
+        },
+        {
+          "op": "closePath"
+        },
+        {
+          "op": "set",
+          "key": "fillStyle",
+          "value": "black"
+        },
+        {
+          "op": "fill"
+        },
+        {
+          "op": "restore"
+        },
+        {
+          "op": "beginPath"
+        },
+        {
+          "op": "arc",
+          "args": [
+            4.95,
+            4.95,
+            3.45,
+            0,
+            6.283185307179586,
+            true
+          ]
+        },
+        {
+          "op": "closePath"
+        },
+        {
+          "op": "set",
+          "key": "fillStyle",
+          "value": "#123456"
+        },
+        {
+          "op": "fill"
+        }
+      ]
+    }
+  ],
+  "vector3DTilePrimitive": [
+    {
+      "name": "split-middle",
+      "trianglesLength": 4,
+      "geometryByteLength": 52,
+      "indexCounts": [
+        3,
+        9
+      ],
+      "indexOffsets": [
+        0,
+        3
+      ],
+      "batchIds": [
+        0,
+        1
+      ],
+      "initial": [
+        {
+          "offset": 0,
+          "count": 12,
+          "rgba": 4294967295,
+          "batchIds": [
+            0,
+            1
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "batchId": 1,
+          "color": [
+            1,
+            0,
+            0,
+            1
+          ],
+          "batches": [
+            {
+              "offset": 0,
+              "count": 3,
+              "rgba": 4294967295,
+              "batchIds": [
+                0
+              ]
+            },
+            {
+              "offset": 3,
+              "count": 9,
+              "rgba": 4278190335,
+              "batchIds": [
+                1
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "split-start",
+      "trianglesLength": 4,
+      "geometryByteLength": 66,
+      "indexCounts": [
+        4,
+        4,
+        4
+      ],
+      "indexOffsets": [
+        0,
+        4,
+        8
+      ],
+      "batchIds": [
+        0,
+        1,
+        2
+      ],
+      "initial": [
+        {
+          "offset": 0,
+          "count": 12,
+          "rgba": 4294967295,
+          "batchIds": [
+            0,
+            1,
+            2
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "batchId": 0,
+          "color": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "batches": [
+            {
+              "offset": 0,
+              "count": 4,
+              "rgba": 4278255360,
+              "batchIds": [
+                0
+              ]
+            },
+            {
+              "offset": 4,
+              "count": 8,
+              "rgba": 4294967295,
+              "batchIds": [
+                1,
+                2
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "split-end",
+      "trianglesLength": 4,
+      "geometryByteLength": 66,
+      "indexCounts": [
+        4,
+        4,
+        4
+      ],
+      "indexOffsets": [
+        0,
+        4,
+        8
+      ],
+      "batchIds": [
+        0,
+        1,
+        2
+      ],
+      "initial": [
+        {
+          "offset": 0,
+          "count": 12,
+          "rgba": 4294967295,
+          "batchIds": [
+            0,
+            1,
+            2
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "batchId": 2,
+          "color": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "batches": [
+            {
+              "offset": 0,
+              "count": 8,
+              "rgba": 4294967295,
+              "batchIds": [
+                0,
+                1
+              ]
+            },
+            {
+              "offset": 8,
+              "count": 4,
+              "rgba": 4294901760,
+              "batchIds": [
+                2
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "unknown-batch-id",
+      "trianglesLength": 1,
+      "geometryByteLength": 20,
+      "indexCounts": [
+        3
+      ],
+      "indexOffsets": [
+        0
+      ],
+      "batchIds": [
+        0
+      ],
+      "initial": [
+        {
+          "offset": 0,
+          "count": 3,
+          "rgba": 4294967295,
+          "batchIds": [
+            0
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "batchId": 7,
+          "color": [
+            1,
+            0,
+            0,
+            1
+          ],
+          "batches": [
+            {
+              "offset": 0,
+              "count": 3,
+              "rgba": 4294967295,
+              "batchIds": [
+                0
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fractional-metrics",
+      "trianglesLength": 1.3333333333333333,
+      "geometryByteLength": 22,
+      "indexCounts": [
+        4
+      ],
+      "indexOffsets": [
+        0
+      ],
+      "batchIds": [
+        0
+      ],
+      "initial": [
+        {
+          "offset": 0,
+          "count": 4,
+          "rgba": 4294967295,
+          "batchIds": [
+            0
+          ]
+        }
+      ],
+      "steps": []
+    }
+  ],
+  "vector3DTileContent": [
+    {
+      "name": "floating",
+      "featuresLength": 6,
+      "pointsLength": 0,
+      "trianglesLength": 0,
+      "geometryByteLength": 0,
+      "texturesByteLength": 0,
+      "batchTableByteLength": 0,
+      "ready": false,
+      "url": "https://example.test/tile.vctr",
+      "featurePropertiesDirty": false,
+      "innerContents": null,
+      "metadata": null,
+      "group": null,
+      "hasProperty": true,
+      "getFeatureInvalid": "batchId is required and between zero and featuresLength - 1 (5).",
+      "polygons": {
+        "batchIds": [
+          0,
+          1
+        ],
+        "counts": [
+          4,
+          3
+        ],
+        "positionsLength": 14,
+        "minHeight": 10,
+        "maxHeight": 100,
+        "center": [
+          6378137,
+          0,
+          0
+        ],
+        "classificationType": 2
+      },
+      "polylines": {
+        "batchIds": [
+          2,
+          3
+        ],
+        "counts": [
+          3,
+          2
+        ],
+        "positionsLength": 15,
+        "widths": [
+          2,
+          2
+        ],
+        "minHeight": 10,
+        "maxHeight": 100,
+        "center": [
+          6378192,
+          0,
+          0
+        ]
+      },
+      "points": {
+        "batchIds": [
+          4,
+          5
+        ],
+        "positionsLength": 6
+      },
+      "workerCalls": [
+        {
+          "worker": "createVectorTilePolygons",
+          "transferCount": 7,
+          "packedBuffer": [
+            4,
+            10,
+            100,
+            6378137,
+            0,
+            0,
+            6378137,
+            6378137,
+            6356752.314245179,
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "positions": [
+            100,
+            200,
+            300,
+            400,
+            500,
+            600,
+            700,
+            800,
+            900,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400
+          ],
+          "counts": [
+            4,
+            3
+          ],
+          "widths": null,
+          "batchIds": [
+            0,
+            1
+          ],
+          "indexCounts": [
+            6,
+            3
+          ],
+          "batchTableColors": [
+            4294967295,
+            4294967295
+          ]
+        },
+        {
+          "worker": "createVectorTilePolylines",
+          "transferCount": 5,
+          "packedBuffer": [
+            10,
+            100,
+            -1,
+            -1,
+            1,
+            1,
+            6378137,
+            6378137,
+            6356752.314245179,
+            6378192,
+            0,
+            0
+          ],
+          "positions": [
+            2000,
+            400,
+            400,
+            400,
+            400,
+            4000,
+            400,
+            400,
+            400,
+            400,
+            6000,
+            400,
+            400,
+            400,
+            400
+          ],
+          "counts": [
+            3,
+            2
+          ],
+          "widths": [
+            2,
+            2
+          ],
+          "batchIds": [
+            2,
+            3
+          ],
+          "indexCounts": null,
+          "batchTableColors": null
+        }
+      ]
+    },
+    {
+      "name": "clamped",
+      "featuresLength": 6,
+      "pointsLength": 0,
+      "trianglesLength": 0,
+      "geometryByteLength": 0,
+      "texturesByteLength": 0,
+      "batchTableByteLength": 0,
+      "ready": false,
+      "url": "https://example.test/tile.vctr",
+      "featurePropertiesDirty": false,
+      "innerContents": null,
+      "metadata": null,
+      "group": null,
+      "hasProperty": true,
+      "getFeatureInvalid": "batchId is required and between zero and featuresLength - 1 (5).",
+      "polygons": {
+        "batchIds": [
+          0,
+          1
+        ],
+        "counts": [
+          4,
+          3
+        ],
+        "positionsLength": 14,
+        "minHeight": 10,
+        "maxHeight": 100,
+        "center": [
+          6378137,
+          0,
+          0
+        ],
+        "classificationType": 2
+      },
+      "polylines": {
+        "batchIds": [
+          2,
+          3
+        ],
+        "counts": [
+          3,
+          2
+        ],
+        "positionsLength": 15,
+        "widths": [
+          2,
+          2
+        ],
+        "minHeight": 10,
+        "maxHeight": 100,
+        "center": [
+          6378192,
+          0,
+          0
+        ],
+        "classificationType": 0
+      },
+      "points": {
+        "batchIds": [
+          4,
+          5
+        ],
+        "positionsLength": 6
+      },
+      "workerCalls": [
+        {
+          "worker": "createVectorTilePolygons",
+          "transferCount": 7,
+          "packedBuffer": [
+            4,
+            10,
+            100,
+            6378137,
+            0,
+            0,
+            6378137,
+            6378137,
+            6356752.314245179,
+            -1,
+            -1,
+            1,
+            1
+          ],
+          "positions": [
+            100,
+            200,
+            300,
+            400,
+            500,
+            600,
+            700,
+            800,
+            900,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400
+          ],
+          "counts": [
+            4,
+            3
+          ],
+          "widths": null,
+          "batchIds": [
+            0,
+            1
+          ],
+          "indexCounts": [
+            6,
+            3
+          ],
+          "batchTableColors": [
+            4294967295,
+            4294967295
+          ]
+        },
+        {
+          "worker": "createVectorTileClampedPolylines",
+          "transferCount": 5,
+          "packedBuffer": [
+            10,
+            100,
+            -1,
+            -1,
+            1,
+            1,
+            6378137,
+            6378137,
+            6356752.314245179,
+            6378192,
+            0,
+            0
+          ],
+          "positions": [
+            2000,
+            400,
+            400,
+            400,
+            400,
+            4000,
+            400,
+            400,
+            400,
+            400,
+            6000,
+            400,
+            400,
+            400,
+            400
+          ],
+          "counts": [
+            3,
+            2
+          ],
+          "widths": [
+            2,
+            2
+          ],
+          "batchIds": [
+            2,
+            3
+          ],
+          "indexCounts": null,
+          "batchTableColors": null
+        }
+      ]
+    }
+  ],
+  "vector3DTileContentErrors": [
+    {
+      "name": "bad-version",
+      "error": "Only Vector tile version 1 is supported.  Version 2 is not.",
+      "ready": null,
+      "featuresLength": null
+    },
+    {
+      "name": "zero-byte-length",
+      "error": null,
+      "ready": true,
+      "featuresLength": 0
+    },
+    {
+      "name": "empty-feature-json",
+      "error": "Feature table must have a byte length greater than zero",
+      "ready": null,
+      "featuresLength": null
+    },
+    {
+      "name": "missing-region",
+      "error": "Feature table global property: REGION must be defined",
+      "ready": null,
+      "featuresLength": null
+    },
+    {
+      "name": "missing-polygon-counts",
+      "error": "Feature table property: POLYGON_COUNTS must be defined when POLYGONS_LENGTH is greater than 0",
+      "ready": null,
+      "featuresLength": null
+    },
+    {
+      "name": "missing-index-counts",
+      "error": "Feature table property: POLYGON_INDEX_COUNTS must be defined when POLYGONS_LENGTH is greater than 0",
+      "ready": null,
+      "featuresLength": null
+    },
+    {
+      "name": "missing-polyline-counts",
+      "error": "Feature table property: POLYLINE_COUNTS must be defined when POLYLINES_LENGTH is greater than 0",
+      "ready": null,
+      "featuresLength": null
+    }
+  ],
+  "gaussianSplat3DTileContent": {
+    "halfFloats": [
+      {
+        "value": 0,
+        "bits": 0
+      },
+      {
+        "value": "-0",
+        "bits": 32768
+      },
+      {
+        "value": 1,
+        "bits": 15360
+      },
+      {
+        "value": -1,
+        "bits": 48128
+      },
+      {
+        "value": 0.5,
+        "bits": 14336
+      },
+      {
+        "value": -0.5,
+        "bits": 47104
+      },
+      {
+        "value": 2,
+        "bits": 16384
+      },
+      {
+        "value": 3.140625,
+        "bits": 16968
+      },
+      {
+        "value": 65504,
+        "bits": 31743
+      },
+      {
+        "value": 65520,
+        "bits": 31743
+      },
+      {
+        "value": 65536,
+        "bits": 31744
+      },
+      {
+        "value": 1e-7,
+        "bits": 0
+      },
+      {
+        "value": 6e-8,
+        "bits": 0
+      },
+      {
+        "value": 5.96e-8,
+        "bits": 0
+      },
+      {
+        "value": 1e-8,
+        "bits": 0
+      },
+      {
+        "value": 0.333333,
+        "bits": 13653
+      },
+      {
+        "value": 0.000015,
+        "bits": 0
+      },
+      {
+        "value": "Infinity",
+        "bits": 31744
+      },
+      {
+        "value": "-Infinity",
+        "bits": 64512
+      },
+      {
+        "value": "NaN",
+        "bits": 32256
+      }
+    ],
+    "degreeCases": [
+      {
+        "count": 0,
+        "l": 0,
+        "n": 0
+      },
+      {
+        "count": 1,
+        "l": 0,
+        "n": 0
+      },
+      {
+        "count": 2,
+        "l": 0,
+        "n": 0
+      },
+      {
+        "count": 3,
+        "l": 1,
+        "n": 9
+      },
+      {
+        "count": 8,
+        "l": 2,
+        "n": 24
+      },
+      {
+        "count": 15,
+        "l": 3,
+        "n": 45
+      },
+      {
+        "count": 16,
+        "l": 0,
+        "n": 0
+      }
+    ],
+    "degreeNames": [
+      {
+        "name": "_SH_DEGREE_1_COEF_0",
+        "prefix": "_SH_DEGREE_",
+        "l": 1,
+        "n": 0
+      },
+      {
+        "name": "KHR_gaussian_splatting:SH_DEGREE_2_COEF_3",
+        "prefix": "KHR_gaussian_splatting:SH_DEGREE_",
+        "l": 2,
+        "n": 3
+      },
+      {
+        "name": "_SH_DEGREE_3",
+        "prefix": "_SH_DEGREE_",
+        "l": null,
+        "n": null
+      }
+    ],
+    "packing": [
+      {
+        "degree": 1,
+        "points": 2,
+        "packed": [
+          3306145234,
+          50251,
+          3299198313,
+          50115,
+          3292316928,
+          49904,
+          3282420886,
+          49694,
+          3268592685,
+          49483,
+          3254829959,
+          49272
+        ]
+      },
+      {
+        "degree": 2,
+        "points": 2,
+        "packed": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3304113588,
+          50221,
+          3297232203,
+          50055,
+          3290350817,
+          49844,
+          3278488696,
+          49633,
+          3264660495,
+          49423,
+          3250832203,
+          49212,
+          3237003896,
+          48850,
+          3223241125,
+          48429,
+          3197550802,
+          47887,
+          3169894400,
+          46983,
+          3209412909,
+          48188,
+          3181756506,
+          47405,
+          3154165519,
+          45959
+        ]
+      },
+      {
+        "degree": 3,
+        "points": 1,
+        "packed": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3298215258,
+          50085,
+          3291333872,
+          49874,
+          3280454791,
+          49664,
+          3266626590,
+          49453,
+          3252798313,
+          49242,
+          3239035542,
+          48911,
+          3225207235,
+          48489
+        ]
+      }
+    ]
+  }
+}

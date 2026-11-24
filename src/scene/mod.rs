@@ -177,6 +177,10 @@ pub mod compute_fly_to_location_for_rectangle;
 pub use compute_fly_to_location_for_rectangle::{
     compute_fly_to_location_for_rectangle, rectangle_terrain_sample_points,
 };
+pub mod create_billboard_point_callback;
+pub use create_billboard_point_callback::{
+    create_billboard_point_callback, draw_billboard_point, BillboardPointCanvas,
+};
 pub mod create_google_photorealistic_3d_tileset;
 pub use create_google_photorealistic_3d_tileset::{
     GooglePhotorealistic3DTilesetConfig, GooglePhotorealisticApiOptions, GooglePhotorealisticSource,
@@ -692,6 +696,34 @@ pub mod quadtree_primitive;
 
 pub mod vector_3d_tile_batch;
 pub use vector_3d_tile_batch::Vector3DTileBatch;
+pub mod vector_3d_tile_primitive;
+pub use vector_3d_tile_primitive::{
+    color_render_state, pick_render_state, vector_tile_fragment_shader, vector_tile_vertex_shader,
+    BatchTableRef, FeatureList, SimpleVector3DTileBatchTable, Vector3DTileBatchTable, Vector3DTileCommandRecord,
+    Vector3DTileFeature, Vector3DTilePrimitive, Vector3DTilePrimitiveOptions,
+};
+pub mod vector_3d_tile_points;
+pub use vector_3d_tile_points::{
+    PointBillboard, PointCollections, PointLabel, PointPolyline, Vector3DTilePointFeature,
+    Vector3DTilePoints, Vector3DTilePointsOptions,
+};
+pub mod vector_3d_tile_content;
+pub use vector_3d_tile_content::{
+    ExamineVectorLines, Vector3DTileContent, Vector3DTileContentOptions, VectorTileBatchIds,
+};
+pub mod vector_3d_tile_geometry;
+pub use vector_3d_tile_geometry::{Vector3DTileGeometry, Vector3DTileGeometryOptions};
+pub mod vector_3d_tile_polygons;
+pub use vector_3d_tile_polygons::{Vector3DTilePolygons, Vector3DTilePolygonsOptions};
+pub mod vector_3d_tile_clamped_polylines;
+pub use vector_3d_tile_clamped_polylines::{
+    clamped_attribute_locations, Vector3DTileClampedPolylines, Vector3DTileClampedPolylinesOptions,
+};
+pub mod vector_3d_tile_polylines;
+pub use vector_3d_tile_polylines::{
+    get_polyline_positions, polyline_attribute_locations, Vector3DTilePolylines,
+    Vector3DTilePolylinesOptions, POLYLINE_FS,
+};
 
 pub mod performance_display;
 pub use performance_display::PerformanceDisplay;
@@ -735,6 +767,20 @@ pub mod depth_plane;
 pub use depth_plane::{compute_depth_quad, DepthPlane};
 pub mod empty_3d_tile_content;
 pub use empty_3d_tile_content::Empty3DTileContent;
+pub mod gaussian_splat_3d_tile_content;
+pub use gaussian_splat_3d_tile_content::{
+    degree_and_coef_from_attributes, extract_sh_degree_and_coef, float32_to_float16,
+    pack_spherical_harmonics_data, GaussianSplat3DTileContent, GaussianSplatAttribute,
+    GaussianSplatPrimitiveData,
+};
+pub mod gaussian_splat_primitive;
+pub use gaussian_splat_primitive::{
+    gaussian_splat_cull_face, transform_splat_attributes, GaussianSplatPrimitive,
+    GaussianSplatCommandInfo, GaussianSplatPrimitiveOptions, GaussianSplatSortingState, GaussianSplatTile,
+    GaussianSplatTileContent, GaussianSplatTilesetState, SnapshotState, DEFAULT_MAX_SNAPSHOT_STALL_FRAMES,
+    DEFAULT_SORT_MIN_ANGLE_RADIANS, DEFAULT_SORT_MIN_FRAME_INTERVAL, DEFAULT_SORT_MIN_POSITION_DELTA,
+    DEFAULT_STABLE_FRAMES,
+};
 pub mod gaussian_splat_render_resources;
 pub use gaussian_splat_render_resources::GaussianSplatRenderResources;
 pub mod gaussian_splat_sorter;
