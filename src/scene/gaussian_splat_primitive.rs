@@ -245,6 +245,7 @@ pub struct GaussianSplatPrimitive<G: Gl + 'static> {
     last_texture_height: u32,
     vertex_array: Option<Rc<VertexArray<G>>>,
     vertex_array_len: isize,
+    splat_index_location: u32,
     split_direction: SplitDirection,
     split_direction_cell: Rc<Cell<SplitDirection>>,
     dirty: bool,
@@ -367,6 +368,7 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
             last_texture_height: 0,
             vertex_array: None,
             vertex_array_len: -1,
+            splat_index_location: 1,
             split_direction: SplitDirection::None,
             split_direction_cell: Rc::new(Cell::new(SplitDirection::None)),
             dirty: false,
@@ -458,6 +460,25 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
 
     pub fn is_destroyed(&self) -> bool {
         self.is_destroyed_flag
+    }
+
+    /// Cesium's sorted-order upload: when the vertex array is reused, the new
+    /// `a_splatIndex` order must be copied into its instance buffer.
+    pub(crate) fn sync_splat_index_buffer(&self) -> Result<()> {
+        let Some(vertex_array) = &self.vertex_array else {
+            return Ok(());
+        };
+        let Some(attribute) =
+            vertex_array.attributes().iter().find(|attr| attr.index == self.splat_index_location)
+        else {
+            return Ok(());
+        };
+        let crate::renderer::AttributeSource::Buffer(buffer) = &attribute.source else {
+            return Ok(());
+        };
+        let indexes = self.indexes.as_deref().unwrap_or(&[]);
+        let bytes: Vec<u8> = indexes.iter().flat_map(|value| value.to_le_bytes()).collect();
+        buffer.copy_from_array_view(&bytes, 0)
     }
 
     /// Cesium's `onTileLoad`.
@@ -942,9 +963,6 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
     }
 
     fn build_draw_command(&mut self, context: &Context<G>) -> Result<()> {
-        let Some(texture) = self.gaussian_splat_texture.clone() else {
-            return Ok(());
-        };
         let mut resources = GaussianSplatRenderResources::new(self.use_log_depth);
         resources.alpha_options.pass = Some(crate::renderer::Pass::GaussianSplats);
         let builder = &mut resources.shader_builder;
@@ -1013,6 +1031,9 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
                 },
             )?;
             self.vertex_array = Some(Rc::new(va));
+            self.splat_index_location = splat_location;
+        } else {
+            self.sync_splat_index_buffer()?;
         }
         self.vertex_array_len = index_count as isize;
 
@@ -1062,6 +1083,9 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
             model_matrix: Some(model_matrix),
             debug_show_bounding_volume: self.debug_show_bounding_volume,
             ..Default::default()
+        };
+        let Some(texture) = self.gaussian_splat_texture.clone() else {
+            return Ok(());
         };
         let vertex_array = self.vertex_array.clone().expect("vertex array");
         let mut options = SceneDrawOptions::new(vertex_array, program);
@@ -1316,5 +1340,127 @@ pub fn gaussian_splat_cull_face(matrix: &Matrix4) -> u32 {
         crate::core::webgl_constants::FRONT
     } else {
         crate::core::webgl_constants::BACK
+    }
+}
+
+#[cfg(test)]
+mod regression_tests {
+    use super::*;
+    use crate::renderer::{AttributeSource, BufferData, BufferKind, Gl, GlValue, VertexAttribute};
+    use std::cell::RefCell;
+
+    #[derive(Clone)]
+    struct UploadGl {
+        uploads: Rc<RefCell<Vec<Vec<u8>>>>,
+    }
+
+    impl UploadGl {
+        fn new() -> Self {
+            Self { uploads: Rc::new(RefCell::new(Vec::new())) }
+        }
+        fn last(&self) -> Option<Vec<u8>> {
+            self.uploads.borrow().last().cloned()
+        }
+    }
+
+    impl Gl for UploadGl {
+        type Object = u32;
+        fn drawing_buffer_size(&self) -> Result<[u32; 2]> {
+            Ok([32, 32])
+        }
+        fn invoke(&self, name: &str, args: &[GlValue<u32>]) -> Result<GlValue<u32>> {
+            if name == "bufferSubData" {
+                if let Some(GlValue::Bytes(bytes)) = args.last() {
+                    self.uploads.borrow_mut().push(bytes.clone());
+                }
+                return Ok(GlValue::Null);
+            }
+            if name == "getParameter" {
+                return Ok(match args.first() {
+                    Some(GlValue::Number(value)) if *value == 33901.0 || *value == 33902.0 || *value == 3386.0 => {
+                        GlValue::Numbers(vec![1.0, 4096.0])
+                    }
+                    _ => GlValue::Number(4096.0),
+                });
+            }
+            if name == "getExtension" {
+                return Ok(GlValue::Object(1));
+            }
+            if matches!(name, "getShaderParameter" | "getProgramParameter") {
+                return Ok(GlValue::Bool(true));
+            }
+            if name.starts_with("create") {
+                return Ok(GlValue::Object(1));
+            }
+            Ok(GlValue::Null)
+        }
+    }
+
+    fn vertex_array(context: &Context<UploadGl>) -> VertexArray<UploadGl> {
+        let quad = Buffer::new(
+            context,
+            BufferKind::Vertex,
+            BufferUsage::DynamicDraw,
+            BufferData::Bytes(&[-1.0f32, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0].iter().flat_map(|v| v.to_le_bytes()).collect::<Vec<u8>>()),
+        )
+        .unwrap();
+        let indexes = Buffer::new(
+            context,
+            BufferKind::Vertex,
+            BufferUsage::DynamicDraw,
+            BufferData::Bytes(&[0u32, 1].iter().flat_map(|v| v.to_le_bytes()).collect::<Vec<u8>>()),
+        )
+        .unwrap();
+        VertexArray::new(
+            context,
+            vec![
+                VertexAttribute {
+                    index: 0,
+                    enabled: true,
+                    source: AttributeSource::Buffer(quad),
+                    components: 2,
+                    datatype: ComponentDatatype::Float,
+                    normalize: false,
+                    offset: 0,
+                    stride: 0,
+                    instance_divisor: 0,
+                },
+                VertexAttribute {
+                    index: 1,
+                    enabled: true,
+                    source: AttributeSource::Buffer(indexes),
+                    components: 1,
+                    datatype: ComponentDatatype::UnsignedInt,
+                    normalize: false,
+                    offset: 0,
+                    stride: 0,
+                    instance_divisor: 1,
+                },
+            ],
+            None,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn sorted_index_order_is_uploaded_when_the_vertex_array_is_reused() {
+        let gl = UploadGl::new();
+        let context = Context::new_webgl2(gl.clone());
+        let mut primitive = GaussianSplatPrimitive::<UploadGl>::new(GaussianSplatPrimitiveOptions::default());
+        primitive.num_splats = 2;
+        primitive.indexes = Some(vec![0, 1]);
+        primitive.vertex_array = Some(Rc::new(vertex_array(&context)));
+        primitive.vertex_array_len = 2;
+        primitive.splat_index_location = 1;
+
+        // No texture is needed to exercise the index upload; the command build
+        // stops after reusing the vertex array.
+        primitive.build_draw_command(&context).unwrap();
+        assert_eq!(gl.last().unwrap(), vec![0, 0, 0, 0, 1, 0, 0, 0]);
+
+        // A steady sort replaces the index order while keeping the same array.
+        primitive.indexes = Some(vec![1, 0]);
+        primitive.build_draw_command(&context).unwrap();
+        assert_eq!(gl.last().unwrap(), vec![1, 0, 0, 0, 0, 0, 0, 0]);
     }
 }

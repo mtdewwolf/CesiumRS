@@ -737,6 +737,9 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTilePrimitive<G> {
             self.copy_indices_cpu(&indices, &mut new_indices, 0, &current.batch_ids);
         current.offset = 0;
         current.count = current_offset;
+        // The upstream array stores the same mutable batch object, so its
+        // rewritten range is visible even when the first batch never merges.
+        new_batched[0] = current.clone();
 
         while let Some(mut next) = self.batched_indices.pop() {
             if next.color == current.color {
@@ -1163,6 +1166,9 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTilePrimitive<G> {
         }
 
         let rebatched = self.rebatch_commands();
+        if rebatched {
+            self.sync_index_buffer()?;
+        }
         if rebatched || self.commands_dirty || self.built_debug_wireframe != self.debug_wireframe {
             if let Some(context) = self.context.clone() {
                 self.build_commands(context)?;
@@ -1211,6 +1217,18 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTilePrimitive<G> {
             }
         }
         Ok(())
+    }
+
+    /// Uploads the current index array to the vertex array's index buffer.
+    /// Cesium's CPU rebatch rewrites the index buffer after sorting batches.
+    pub(crate) fn sync_index_buffer(&self) -> Result<()> {
+        let Some(vertex_array) = &self.vertex_array else {
+            return Ok(());
+        };
+        let Some(index_buffer) = vertex_array.index_buffer() else {
+            return Ok(());
+        };
+        index_buffer.copy_from_array_view(&self.indices.to_le_bytes(), 0)
     }
 
     /// Cesium's `isDestroyed`.
@@ -1340,5 +1358,163 @@ mod tests {
         let mut p = primitive();
         p.update_commands(9, Color::RED);
         assert_eq!(p.batched_indices.len(), 2);
+    }
+}
+
+#[cfg(test)]
+mod regression_tests {
+    use super::*;
+    use crate::core::{JulianDate, TimeStandard};
+    use crate::renderer::{Context, Gl, GlValue, UniformFrame, VertexArray};
+    use crate::scene::{Camera, CameraOptions, FrameState};
+    use std::cell::RefCell;
+
+    #[derive(Clone)]
+    struct IndexUploadGl {
+        uploads: Rc<RefCell<Vec<Vec<u8>>>>,
+    }
+
+    impl IndexUploadGl {
+        fn new() -> Self {
+            Self { uploads: Rc::new(RefCell::new(Vec::new())) }
+        }
+        fn last_upload(&self) -> Option<Vec<u8>> {
+            self.uploads.borrow().last().cloned()
+        }
+    }
+
+    impl Gl for IndexUploadGl {
+        type Object = u32;
+        fn drawing_buffer_size(&self) -> Result<[u32; 2]> {
+            Ok([32, 32])
+        }
+        fn invoke(&self, name: &str, args: &[GlValue<u32>]) -> Result<GlValue<u32>> {
+            if name == "bufferSubData" {
+                if let Some(GlValue::Bytes(bytes)) = args.last() {
+                    self.uploads.borrow_mut().push(bytes.clone());
+                }
+                return Ok(GlValue::Null);
+            }
+            if name == "getParameter" {
+                return Ok(GlValue::Number(4096.0));
+            }
+            if matches!(name, "getShaderParameter" | "getProgramParameter") {
+                return Ok(GlValue::Bool(true));
+            }
+            if name.starts_with("create") {
+                return Ok(GlValue::Object(1));
+            }
+            Ok(GlValue::Null)
+        }
+    }
+
+    fn frame_with(gl: IndexUploadGl) -> FrameState {
+        let mut camera = Camera::new(CameraOptions::new(32.0, 32.0));
+        let uniform = camera.uniform_camera();
+        let culling = camera.frustum.compute_culling_volume(uniform.position, uniform.direction, uniform.up);
+        let mut frame =
+            FrameState::new(UniformFrame::new(uniform, JulianDate::new(2451545.0, 0.0, TimeStandard::Tai)), culling, [32, 32]);
+        frame.set_renderer_context(Context::new_webgl2(gl));
+        frame.passes.render = true;
+        frame.passes.pick = true;
+        frame
+    }
+
+    fn upload_primitive() -> (Vector3DTilePrimitive<IndexUploadGl>, FrameState, IndexUploadGl) {
+        let gl = IndexUploadGl::new();
+        let frame = frame_with(gl.clone());
+        // Two equal-coloured batches force a rewrite of the whole index array.
+        let mut primitive = Vector3DTilePrimitive::<IndexUploadGl>::new(Vector3DTilePrimitiveOptions {
+            positions: vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+            vertex_batch_ids: vec![0, 0, 1],
+            indices: TypedArray::Uint16(vec![5, 6, 7, 8, 9, 10, 0, 1, 2, 3, 4, 5]),
+            index_counts: vec![6, 6],
+            index_offsets: vec![0, 6],
+            batched_indices: vec![
+                Vector3DTileBatch { offset: 0, count: 6, color: Color::RED, batch_ids: vec![0] },
+                Vector3DTileBatch { offset: 6, count: 6, color: Color::RED, batch_ids: vec![1] },
+            ],
+            batch_ids: vec![0, 1],
+            bounding_volume: BoundingSphere::new(Cartesian3::ZERO, 1.0),
+            force_rebatch: true,
+            pick_color_expression: Some("vec4(1.0)".into()),
+            ..Default::default()
+        });
+        primitive.force_rebatch = true;
+        (primitive, frame, gl)
+    }
+
+    #[test]
+    fn rebatch_uploads_rewritten_indices_and_pick_ranges() {
+        let (mut primitive, mut frame, gl) = upload_primitive();
+        frame.frame_number = 1;
+        primitive.update(&mut frame).unwrap();
+
+        let upload = gl.last_upload().expect("index buffer must be re-uploaded after rebatching");
+        assert_eq!(upload, primitive.indices.to_le_bytes());
+        assert!(primitive.vertex_array.is_some());
+
+        // Pick commands are rebuilt from the rewritten offsets and counts.
+        let expected: Vec<(usize, usize)> = primitive
+            .index_offsets
+            .iter()
+            .map(|&offset| offset as usize)
+            .zip(primitive.index_counts.iter().map(|&c| c as usize))
+            .flat_map(|pair| [pair, pair])
+            .collect();
+        let actual: Vec<(usize, usize)> = primitive
+            .pick_command_records
+            .iter()
+            .filter(|record| record.pick)
+            .map(|record| (record.offset, record.count))
+            .collect();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn first_batch_keeps_its_rewritten_range_when_it_does_not_merge() {
+        let mut primitive = Vector3DTilePrimitive::<IndexUploadGl>::new(Vector3DTilePrimitiveOptions {
+            positions: vec![0.0; 12],
+            vertex_batch_ids: vec![0, 1, 2],
+            indices: TypedArray::Uint16(vec![0; 18]),
+            index_counts: vec![6, 6, 6],
+            index_offsets: vec![0, 6, 12],
+            batched_indices: vec![
+                Vector3DTileBatch { offset: 0, count: 6, color: Color::BLUE, batch_ids: vec![0] },
+                Vector3DTileBatch { offset: 6, count: 6, color: Color::RED, batch_ids: vec![1] },
+                Vector3DTileBatch { offset: 12, count: 6, color: Color::BLUE, batch_ids: vec![2] },
+            ],
+            batch_ids: vec![0, 1, 2],
+            force_rebatch: true,
+            ..Default::default()
+        });
+        primitive.force_rebatch = true;
+        assert!(primitive.rebatch_commands());
+        // Descending sort puts the two BLUE batches first, so RED is popped
+        // first and becomes the first output batch without merging. Its range
+        // must be rewritten from 6/6 to 0/6.
+        assert_eq!(primitive.batched_indices[0].color, Color::RED);
+        assert_eq!((primitive.batched_indices[0].offset, primitive.batched_indices[0].count), (0, 6));
+        assert_eq!(primitive.batched_indices[1].color, Color::BLUE);
+        assert_eq!((primitive.batched_indices[1].offset, primitive.batched_indices[1].count), (6, 12));
+    }
+
+    #[test]
+    fn sync_index_buffer_uses_the_current_index_array() {
+        let gl = IndexUploadGl::new();
+        let context = Context::new_webgl2(gl.clone());
+        let buffer = crate::renderer::Buffer::new(
+            &context,
+            crate::renderer::BufferKind::Index(crate::core::IndexDatatype::UnsignedShort),
+            crate::renderer::BufferUsage::DynamicDraw,
+            crate::renderer::BufferData::Bytes(&[0, 0, 1, 0, 2, 0]),
+        )
+        .unwrap();
+        let va = VertexArray::new(&context, vec![], Some(buffer)).unwrap();
+        let mut primitive = Vector3DTilePrimitive::<IndexUploadGl>::new(Vector3DTilePrimitiveOptions::default());
+        primitive.vertex_array = Some(Rc::new(va));
+        primitive.indices = TypedArray::Uint16(vec![2, 1, 0]);
+        primitive.sync_index_buffer().unwrap();
+        assert_eq!(gl.last_upload().unwrap(), vec![2, 0, 1, 0, 0, 0]);
     }
 }
