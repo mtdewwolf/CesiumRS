@@ -94,6 +94,7 @@ pub struct SceneCommand {
     pub clipping_planes: Option<super::SceneClippingPlanes>,
     pub tileset_draw: Option<super::TilesetDrawKind>,
     pub stencil_clear: Option<u32>,
+    pub globe_translucency: Option<super::GlobeTranslucencyCommand>,
 }
 impl SceneCommand {
     pub fn with_visibility(mut self, show: Rc<std::cell::Cell<bool>>) -> Self {
@@ -114,6 +115,7 @@ impl SceneCommand {
             clipping_planes: None,
             tileset_draw: None,
             stencil_clear: None,
+            globe_translucency: None,
         }
     }
     /// Own the resources while the command is queued; DrawCommand borrows them
@@ -159,6 +161,7 @@ impl SceneCommand {
             clipping_planes: None,
             tileset_draw: None,
             stencil_clear: None,
+            globe_translucency: None,
             execute: Rc::new(move |submission| {
                 let mode = submission.draw_mode;
                 let clipping = submission.clipping_planes.as_ref().map(|c| c.prepare(&context)).transpose()?.flatten();
@@ -389,6 +392,9 @@ pub trait SceneBackend {
             ..Default::default()
         })
     }
+    fn globe_view_resources(&self) -> Option<super::FrameResource> {
+        None
+    }
     fn frame_context(&self) -> Option<super::FrameResource> {
         None
     }
@@ -422,6 +428,9 @@ pub struct RendererSceneBackend<G: Gl> {
     depth_pass: bool,
     translucent_depth_commands: Vec<(SceneCommand, SceneSubmission)>,
     classification_commands: Vec<(SceneCommand, SceneSubmission)>,
+    globe_classification: bool,
+    globe_opaque_classification: bool,
+    globe_classification_depth: Option<Rc<renderer::Texture<G>>>,
 }
 impl<G: Gl> RendererSceneBackend<G> {
     pub fn new(context: Context<G>) -> Self {
@@ -440,6 +449,9 @@ impl<G: Gl> RendererSceneBackend<G> {
             depth_pass: false,
             translucent_depth_commands: Vec::new(),
             classification_commands: Vec::new(),
+            globe_classification: false,
+            globe_opaque_classification: true,
+            globe_classification_depth: None,
         }
     }
     /// Binds a post-process collection and its resolved-attachment slot so the
@@ -458,7 +470,21 @@ impl<G: Gl> RendererSceneBackend<G> {
     }
 }
 impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
-    fn begin_frustum(&mut self, _frame: &FrameState, _index: usize) -> Result<()> {
+    fn begin_frustum(&mut self, frame: &FrameState, _index: usize) -> Result<()> {
+        self.globe_classification = frame.globe_scene_classification;
+        self.globe_classification_depth = None;
+        self.globe_opaque_classification = frame.globe_translucency_state.as_ref()
+            .and_then(|resource| resource.get::<super::GlobeTranslucencyState>())
+            .is_none_or(|state| !state.back_face_translucent || state.rectangle != crate::core::Rectangle::MAX_VALUE);
+        if let Some(resources) = &self.view_resources {
+            let mut resources = resources.borrow_mut();
+            if let Some(globe) = &mut resources.globe_depth {
+                globe.set_clear_globe_depth(frame.clear_globe_depth && !frame.passes.depth);
+            }
+            if self.globe_classification {
+                resources.globe_translucency_framebuffer.clear_classification(&self.context, &self.pass_state)?;
+            }
+        }
         self.translucent_depth_commands.clear();
         self.classification_commands.clear();
         self.oit_phase = 0;
@@ -558,10 +584,11 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
         }
         Ok(())
     }
-    fn update_tileset_depth(&mut self, _frame: &FrameState) -> Result<()> {
+    fn update_tileset_depth(&mut self, frame: &FrameState) -> Result<()> {
         if self.using_globe_depth {
             if let Some(resources) = &self.view_resources {
                 if let Some(globe) = &mut resources.borrow_mut().globe_depth {
+                    globe.set_clear_globe_depth(frame.clear_globe_depth && !frame.passes.depth);
                     globe.prepare_color_textures(false)?;
                     let depth = globe.depth_stencil_texture().cloned();
                     globe.execute_update_depth(&self.context, &self.pass_state, depth)?;
@@ -709,6 +736,9 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
     fn limits(&self) -> Result<renderer::ContextLimits> {
         self.context.limits()
     }
+    fn globe_view_resources(&self) -> Option<super::FrameResource> {
+        self.view_resources.as_ref().cloned().map(super::FrameResource::new)
+    }
     fn frame_context(&self) -> Option<super::FrameResource> {
         Some(super::FrameResource::new(self.context.clone()))
     }
@@ -829,6 +859,41 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
         let mut submission = submission;
         if self.using_globe_depth {
             submission.framebuffer = self.pass_state.framebuffer.clone().map(super::FrameResource::new);
+        }
+        if let Some(kind) = command.globe_translucency {
+            if kind.is_depth() {
+                if let Some(resources) = self.view_resources.as_ref().filter(|_| self.globe_classification) {
+                    let target = resources.borrow().globe_translucency_framebuffer.classification_framebuffer().cloned();
+                    submission.framebuffer = target.map(super::FrameResource::new);
+                    return (command.execute)(submission);
+                }
+                return Ok(());
+            }
+            if kind.is_translucent() {
+                return if self.oit_phase == 0 { (command.execute)(submission) } else { Ok(()) };
+            }
+        }
+        if command.pass == Pass::TerrainClassification && self.globe_classification {
+            if let Some(resources) = &self.view_resources {
+                if self.globe_opaque_classification {
+                    (command.execute)(submission.clone())?;
+                }
+                let mut resources = resources.borrow_mut();
+                let buffers = &mut resources.globe_translucency_framebuffer;
+                let save = self.context.automatic_texture("czm_globeDepthTexture")?;
+                if buffers.depth_stencil_texture().is_some() {
+                    if self.globe_classification_depth.is_none() {
+                        self.globe_classification_depth = Some(buffers.pack_depth(&self.context, &self.pass_state)?);
+                    }
+                    self.context.set_automatic_texture("czm_globeDepthTexture",
+                        self.globe_classification_depth.clone().map(renderer::TextureBinding::Texture))?;
+                }
+                submission.framebuffer = buffers.classification_framebuffer().cloned().map(super::FrameResource::new);
+                drop(resources);
+                let result = (command.execute)(submission);
+                self.context.set_automatic_texture("czm_globeDepthTexture", save)?;
+                return result;
+            }
         }
         if command.pass == Pass::Cesium3DTileClassification {
             self.classification_commands.push((command.clone(), submission.clone()));
@@ -1713,6 +1778,12 @@ impl<B: SceneBackend> Scene<B> {
         self.frame_state.uniform.fog_minimum_brightness = self.frame_fog.minimum_brightness;
         self.backend.set_render_target(self.framebuffer.as_ref(), self.viewport)?;
         self.backend.set_pass_overrides(self.scissor_test.clone(), self.blending_enabled)?;
+        self.frame_state.globe_view_resources = self.backend.globe_view_resources();
+        self.frame_state.globe_scene_classification = false;
+        self.frame_state.globe_translucency_state = None;
+        self.frame_state.clear_globe_depth = false;
+        self.frame_state.globe_depth_plane = None;
+        self.frame_state.credits.clear();
         self.backend.begin_frame(&self.frame_state)?;
         self.stage(SceneStage::Environment)?;
         if self.primitives_show {
@@ -1827,7 +1898,10 @@ impl<B: SceneBackend> Scene<B> {
         self.view.create_potentially_visible_set(&mut self.frame_state, &self.options)?;
         self.execute_pass(Pass::Compute, usize::MAX, 0., 0.)?;
         let (_, _, range, _) = self.frame_state.uniform.camera.frustum.parameters();
-        if !self.frame_state.passes.pick && !self.frame_state.passes.pick_voxel {
+        let environment_visible = self.frame_state.globe_translucency_state.as_ref()
+            .and_then(|resource| resource.get::<super::GlobeTranslucencyState>())
+            .is_none_or(|state| state.environment_visible);
+        if environment_visible && !self.frame_state.passes.pick && !self.frame_state.passes.pick_voxel {
             self.execute_pass(Pass::Environment, usize::MAX, range[0], range[1])?;
         }
         let ranges: Vec<_> = self.view.frustum_commands_list.iter().map(|f| (f.near, f.far)).collect();
@@ -1847,12 +1921,27 @@ impl<B: SceneBackend> Scene<B> {
                 Pass::Opaque,
                 Pass::GaussianSplats,
             ] {
-                if self.frame_state.passes.depth
-                    && matches!(pass, Pass::TerrainClassification | Pass::Cesium3DTileClassification)
+                if !(self.frame_state.passes.depth
+                    && matches!(pass, Pass::TerrainClassification | Pass::Cesium3DTileClassification))
                 {
-                    continue;
+                    self.execute_pass(pass, index, opaque_near, far)?;
                 }
-                self.execute_pass(pass, index, opaque_near, far)?;
+                if pass == Pass::TerrainClassification
+                    && self.frame_state.clear_globe_depth
+                    && !self.frame_state.passes.depth
+                {
+                    self.backend.clear(self.background_color, Some(1.), None)?;
+                    if let Some(plane) = &self.frame_state.globe_depth_plane {
+                        let submission = SceneSubmission {
+                            pass: Pass::Opaque, frustum: index, near: opaque_near, far,
+                            draw_mode: super::SceneDrawMode::default(), oit: None, metadata_pick: None,
+                            framebuffer: self.framebuffer.clone(), viewport: self.viewport,
+                            scissor_test: self.scissor_test.clone(), blending_enabled: self.blending_enabled,
+                            metadata: plane.metadata.clone(), clipping_planes: None, tileset_draw: None,
+                        };
+                        self.backend.execute(plane, submission)?;
+                    }
+                }
                 if pass == Pass::Cesium3DTile
                     && !self.view.frustum_commands_list[index].commands[pass as usize].is_empty()
                 {

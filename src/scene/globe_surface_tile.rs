@@ -79,6 +79,26 @@ pub trait SurfaceTerrainData: std::fmt::Debug {
     fn can_upsample(&self) -> bool {
         true
     }
+
+    fn create_surface_mesh(
+        &mut self, _request: crate::core::TerrainMeshRequest<'_>,
+    ) -> Option<Result<Arc<TerrainMesh>, RuntimeError>> {
+        None
+    }
+
+    fn upsample_surface(
+        &self, _scheme: &dyn TilingScheme, _source: crate::core::TerrainTile, _destination: crate::core::TerrainTile,
+    ) -> Option<Box<dyn SurfaceTerrainData>> {
+        None
+    }
+
+    fn water_mask(&self) -> Option<&[u8]> {
+        None
+    }
+
+    fn credits(&self) -> Option<&[crate::core::Credit]> {
+        None
+    }
 }
 
 impl SurfaceTerrainData for HeightmapTerrainData {
@@ -98,6 +118,23 @@ impl SurfaceTerrainData for HeightmapTerrainData {
     fn was_created_by_upsampling(&self) -> bool {
         self.was_created_by_upsampling()
     }
+
+    fn create_surface_mesh(
+        &mut self, request: crate::core::TerrainMeshRequest<'_>,
+    ) -> Option<Result<Arc<TerrainMesh>, RuntimeError>> {
+        Some(self.create_mesh_sync(request))
+    }
+
+    fn upsample_surface(
+        &self, scheme: &dyn TilingScheme, source: crate::core::TerrainTile, destination: crate::core::TerrainTile,
+    ) -> Option<Box<dyn SurfaceTerrainData>> {
+        Some(Box::new(self.upsample_sync(scheme, source, destination)?))
+    }
+
+    fn water_mask(&self) -> Option<&[u8]> {
+        self.water_mask()
+    }
+
 }
 
 /// Async future resolving a tile's [`SurfaceTerrainData`].
@@ -326,24 +363,29 @@ impl GlobeSurfaceTile {
     /// Polls any pending terrain-data request once, advancing `terrain_state` to
     /// `Received` on success or `Failed` on error.
     pub fn poll_terrain_data(&mut self) -> TerrainState {
+        let _ = self.poll_terrain_data_with_waker(Waker::noop());
+        self.terrain_state
+    }
+
+    pub(crate) fn poll_terrain_data_with_waker(&mut self, waker: &Waker) -> Result<(), RuntimeError> {
         let Some(mut fut) = self.pending_terrain_future.take() else {
-            return self.terrain_state;
+            return Ok(());
         };
-        let waker = Waker::noop();
         let mut cx = TaskContext::from_waker(waker);
         match fut.as_mut().poll(&mut cx) {
             Poll::Ready(Ok(data)) => {
                 self.terrain_data = Some(data);
                 self.terrain_state = TerrainState::Received;
             }
-            Poll::Ready(Err(_)) => {
+            Poll::Ready(Err(error)) => {
                 self.terrain_state = TerrainState::Failed;
+                return Err(error);
             }
             Poll::Pending => {
                 self.pending_terrain_future = Some(fut);
             }
         }
-        self.terrain_state
+        Ok(())
     }
 
     /// Uploads this tile's CPU [`TerrainMesh`] to a real GPU [`VertexArray<G>`],
@@ -356,6 +398,19 @@ impl GlobeSurfaceTile {
         let mesh = mesh_guard
             .as_ref()
             .ok_or_else(|| RuntimeError::new("GlobeSurfaceTile has no TerrainMesh to upload"))?;
+        let va = Self::upload_mesh(context, mesh)?;
+        let pick_sphere = mesh.bounding_sphere_3d;
+        drop(mesh_guard);
+        self.pick_bounding_sphere = pick_sphere;
+        self.gpu_vertex_array = Some(Box::new(Rc::clone(&va)));
+        self.has_vertex_array = true;
+        self.terrain_state = TerrainState::Ready;
+        Ok(va)
+    }
+
+    pub(crate) fn upload_mesh<G: Gl + 'static>(
+        context: &Context<G>, mesh: &TerrainMesh,
+    ) -> Result<Rc<VertexArray<G>>, RuntimeError> {
         let mut vertex_bytes = Vec::with_capacity(mesh.vertices.len() * 4);
         for v in &mesh.vertices {
             vertex_bytes.extend_from_slice(&v.to_le_bytes());
@@ -409,14 +464,7 @@ impl GlobeSurfaceTile {
                 va
             })
             .collect();
-        let va = Rc::new(VertexArray::new(context, attrs, Some(index_buffer))?);
-        let pick_sphere = mesh.bounding_sphere_3d;
-        drop(mesh_guard);
-        self.pick_bounding_sphere = pick_sphere;
-        self.gpu_vertex_array = Some(Box::new(Rc::clone(&va)));
-        self.has_vertex_array = true;
-        self.terrain_state = TerrainState::Ready;
-        Ok(va)
+        Ok(Rc::new(VertexArray::new(context, attrs, Some(index_buffer))?))
     }
 
     /// Returns the owned GPU [`VertexArray<G>`], if created for this renderer type.

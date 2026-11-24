@@ -211,9 +211,7 @@ impl TilePriority {
 
 impl Cesium3DTileset {
     fn content_available(&self, id: TileId) -> bool {
-        let t = &self.tiles[id];
-        t.content_ready() && self.renderable(id)
-            || t.expired_content.is_some() && t.state != Cesium3DTileContentState::Failed
+        self.tiles[id].content_available()
     }
     fn renderable(&self, id: TileId) -> bool {
         self.tiles[id].has_renderable_content
@@ -307,7 +305,7 @@ impl Cesium3DTileset {
         } else {
             frame.culling_volume.compute_visibility_with_plane_mask(&volume, mask)
         };
-        let in_request_volume = self.tiles[id].viewer_request_volume.as_ref().is_none_or(|v| v.distance(frame) == 0.);
+        let in_request_volume = self.tiles[id].inside_viewer_request_volume(frame);
         let root_error =
             self.root.map_or(0., |r| if r == id { error } else { self.tiles[r].traversal.screen_space_error });
         let use_parent = parent.is_some_and(|p| {

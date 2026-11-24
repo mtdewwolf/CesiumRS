@@ -4474,7 +4474,7 @@
   "Scene/ConeEmitter": {
     "status": "ported",
     "rust": "scene::particle_emitter",
-    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30\u00b0 default. Emitted particles match bit for bit."
+    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30° default. Emitted particles match bit for bit."
   },
   "Scene/SphereEmitter": {
     "status": "ported",
@@ -4594,7 +4594,7 @@
   "Scene/Model/Extensions/Gpm/GltfMeshPrimitiveGpmLoader": {
     "status": "ported",
     "rust": "scene::model::extensions::gpm::gltf_mesh_primitive_gpm_loader",
-    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale \u00d7 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
+    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale × 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
   },
   "DataSources/CompositeEntityCollection": {
     "status": "ported",
@@ -5636,6 +5636,51 @@
     "rust": "scene::billboard_texture",
     "note": "Exact port of the image state machine over the collection's TextureAtlas: the shared billboardTextureCache, loadImage with stale-id guards, unload, addImageSubRegion with Cesium's sync (cached, resolved) versus async (new) split, setImageSubRegion, clone/completeLoad and computeTextureCoordinates. Cesium's promise continuations are polled at the start of each update and after the afterRender atlas update. Validated by the BillboardCollection SwiftShader capture: load states, indices, sizes, dirty flags and atlas rectangles after every frame, including shared ids, sub-regions on image-less billboards (the cached one stays NONE, as in Cesium), rejected loads and superseded loads."
   },
+  "Scene/Cesium3DTile": {
+    "status": "implemented",
+    "rust": "scene::cesium_3d_tile",
+    "note": "Tile state, transform, bounding volumes, geometric error, header/content lifecycle and visibility helpers integrated with Cesium3DTileset."
+  },
+  "Scene/Cesium3DTileBatchTable": {
+    "status": "implemented",
+    "rust": "scene::cesium_3d_tile_batch_table",
+    "note": "Per-feature JSON/binary property access, show/color state, pick color allocation and batch table hierarchy integration."
+  },
+  "Scene/Cesium3DTileContent": {
+    "status": "implemented",
+    "rust": "scene::cesium_3d_tile_content",
+    "note": "Shared tile payload parsing, feature/style/debug/picking content trait and content metrics contract."
+  },
+  "Scene/Cesium3DTileFeature": {
+    "status": "implemented",
+    "rust": "scene::cesium_3d_tile_feature",
+    "note": "Batch-table-backed 3D Tiles feature wrapper exposing show, color, pickId, property ids and get/set property accessors."
+  },
+  "Scene/Cesium3DTilePointFeature": {
+    "status": "implemented",
+    "rust": "scene::cesium_3d_tile_point_feature",
+    "note": "Point feature wrapper with show, color, position, pointSize, label/billboard styling and batch table property access."
+  },
+  "Scene/Implicit3DTileContent": {
+    "status": "implemented",
+    "rust": "scene::implicit_3d_tile_content",
+    "note": "Implicit tiling subtree content wrapper integrating with tileset expansion and traversal."
+  },
+  "Scene/Multiple3DTileContent": {
+    "status": "implemented",
+    "rust": "scene::multiple_3d_tile_content",
+    "note": "Aggregates multiple child tile contents, forwarding readiness, updates, styling, debug settings, picking and destruction."
+  },
+  "Scene/Composite3DTileContent": {
+    "status": "implemented",
+    "rust": "scene::composite_3d_tile_content",
+    "note": "Legacy cmpt envelope unpacking with nested compositeIndex URLs, concurrent child loading/failure cleanup, metadata/group forwarding and pinned CPU replay in tests/scene_composite_content.rs."
+  },
+  "Scene/Geometry3DTileContent": {
+    "status": "implemented",
+    "rust": "scene::geometry_3d_tile_content",
+    "note": "Legacy geom tile parser and box/cylinder/ellipsoid/sphere batch geometry content builder."
+  },
   "Scene/Cesium3DTileContentFactory": {
     "status": "ported",
     "rust": "scene::cesium_3d_tile_content_factory",
@@ -5690,6 +5735,41 @@
     "status": "ported",
     "rust": "scene::voxel_shape::VoxelEllipsoidShape",
     "note": "Complete ellipsoid bounds, tile/sample OBBs, UV/view transforms, render-bound plane collection, shader defines/uniforms, and ray intersection; verified in scene_voxel_utilities and scene_mz_cpu."
+  },
+  "Scene/Globe": {
+    "status": "implemented",
+    "rust": "scene::globe",
+    "note": "Default ellipsoid terrain, surface options and events, scene frame lifecycle, terrain replacement, world and projected picking, height queries, and host-loaded ocean normals. Native tests in tests/scene_globe_terrain.rs; not yet compared against a pinned CesiumJS GPU capture."
+  },
+  "Scene/GlobeSurfaceShaderSet": {
+    "status": "implemented",
+    "rust": "scene::globe_surface_shader_set",
+    "note": "Cached globe GLSL variants keyed by mode, imagery count, feature flags, clipping state and material, with generated imagery sampling and draw-time RTC uniforms. Native tests in tests/scene_globe_terrain.rs."
+  },
+  "Scene/GlobeSurfaceTileProvider": {
+    "status": "implemented",
+    "rust": "scene::globe_surface_tile_provider",
+    "note": "Terrain polling and upsampling, imagery layers and reprojection, LOD visibility, water masks, clipping, fill tiles, and multipass surface draw submission. Native tests in tests/scene_globe_terrain.rs."
+  },
+  "Scene/GlobeTranslucencyState": {
+    "status": "implemented",
+    "rust": "scene::globe_translucency_state",
+    "note": "Face translucency and localized rectangles, depth and classification draws, derived shaders, and underground and projected-mode behavior. Native tests in tests/scene_globe_terrain.rs."
+  },
+  "Scene/TerrainFillMesh": {
+    "status": "implemented",
+    "rust": "scene::terrain_fill_mesh",
+    "note": "Neighbor edge stitching across LOD boundaries, corner heights, skirtless terrain encodings, and height interpolation over fill triangles. Native tests in tests/scene_globe_terrain.rs."
+  },
+  "Scene/Megatexture": {
+    "status": "implemented",
+    "rust": "scene::megatexture",
+    "note": "3D texture atlas sizing (validated against pinned CesiumJS cases in tests/scene_megatexture.rs), occupied/empty slot allocation lists, 1D-to-3D tile uploads, and lifecycle."
+  },
+  "Scene/createElevationBandMaterial": {
+    "status": "ported",
+    "rust": "scene::create_elevation_band_material",
+    "note": "Elevation band layer sweep, stop interpolation, gradient/non-gradient band synthesis, and texture packing; validated against pinned CesiumJS captures in tests/scene_elevation_band.rs."
   },
   "Scene/GlobeSurfaceTile": {
     "status": "ported",
@@ -6025,5 +6105,160 @@
     "status": "ported",
     "rust": "data_sources::get_element",
     "note": "Resolves an element ID with a host callback or returns a supplied element. CesiumJS replay in tests/data_sources_visualizers.rs."
+  },
+  "Scene/Vector3DTilePrimitive": {
+    "status": "implemented",
+    "rust": "scene::vector_3d_tile_primitive",
+    "note": "CPU rebatching (duplicate-colour detection, 120-frame grace, descending toRgba sort, equal-colour merge, index rewrite), constructor metrics, updateCommands splits, features, debug colours and style evaluation match pinned fixtures in tests/scene_vector_gaussian.rs. Builds classification stencil/colour/pick SceneCommands, shaders and render states. The unported Cesium3DTileBatchTable is a typed Vector3DTileBatchTable trait; commands are not GPU-executed or compared with Cesium."
+  },
+  "Scene/Vector3DTileGeometry": {
+    "status": "implemented",
+    "rust": "scene::vector_3d_tile_geometry",
+    "note": "Composes the validated createVectorTileGeometries worker output into Vector3DTilePrimitive with the pinned two-frame lifecycle, packed bounding-sphere/batch unpack and 0/0 metrics before readiness. Worker parameter parity and GPU command execution are not independently validated."
+  },
+  "Scene/Vector3DTilePoints": {
+    "status": "partial",
+    "rust": "scene::vector_3d_tile_points",
+    "note": "Two-phase point decoding, billboard/label/anchor-line records, the full Cesium3DTilePointFeature property surface with upstream defaults and side effects, style/debug application, heightOffset cartography and destruction. Decoded positions and parsed content fields match pinned vctr fixtures. BillboardCollection/LabelCollection/PolylineCollection rendering, texture-atlas accounting and pick IDs are not driven; texturesByteLength reports decoded image payload instead of atlas memory."
+  },
+  "Scene/Vector3DTilePolygons": {
+    "status": "implemented",
+    "rust": "scene::vector_3d_tile_polygons",
+    "note": "Parses counts/index counts/indices/positions and per-polygon heights, packs the pinned worker buffer, unpacks oriented bounding boxes and batches, and composes Vector3DTilePrimitive with the constructor's discarded-centre quirk. Parsed fields and worker parameters match pinned vctr fixtures; GPU execution is not compared."
+  },
+  "Scene/Vector3DTilePolylines": {
+    "status": "implemented",
+    "rust": "scene::vector_3d_tile_polylines",
+    "note": "Worker-backed floating polyline decode, five-attribute vertex layout, PolylineCommon/Vector3DTilePolylinesVS program with VECTOR_TILE and CLIP_POLYLINE, polygon-offset alpha RenderState, u_modifiedModelView/u_highlightColor uniforms, retained decoded positions and getPolylinePositions. Parsed fields/packing match pinned fixtures; commands are not GPU-executed."
+  },
+  "Scene/Vector3DTileClampedPolylines": {
+    "status": "implemented",
+    "rust": "scene::vector_3d_tile_clamped_polylines",
+    "note": "Seven-attribute volume layout, worker decode, bundled ApproximateTerrainHeights bounding-volume update with the pinned default-height worker ordering, front-face cull/pre-multiplied-alpha render states, terrain and 3D Tiles stencil commands, classification filtering, height uniforms and getPositions. Parsed fields match pinned fixtures; commands are not GPU-executed."
+  },
+  "Scene/Vector3DTileContent": {
+    "status": "implemented",
+    "rust": "scene::vector_3d_tile_content",
+    "note": "Header/version/length validation, JSON and binary batch sections, REGION and RTC_CENTER, default and partial batch-id rules, polygon/polyline/point views, floating-vs-clamped selection, feature composition, metrics, style/debug, TilesetContent adapter and destruction. 2 pinned parses and 7 pinned error cases match in tests/scene_vector_gaussian.rs. Batch-table JSON arrays become feature properties; binary properties/hierarchy and feature expansion callbacks are not decoded."
+  },
+  "Scene/GaussianSplatPrimitive": {
+    "status": "implemented",
+    "rust": "scene::gaussian_splat_primitive",
+    "note": "Ported snapshot and steady-sort state machines, aggregation, attribute texture and spherical-harmonics texture generation, integer texture formats, colour sorting interval/angle/position thresholds, texture retirement, atomic commits, shader defines/uniforms, instanced screen-quad VertexArray and GaussianSplats command, plus destruction. Tileset state is a per-frame typed view. Native lifecycle test drives snapshot->texture->sort->command; GPU execution is not compared."
+  },
+  "Scene/GaussianSplat3DTileContent": {
+    "status": "implemented",
+    "rust": "scene::gaussian_splat_3d_tile_content",
+    "note": "Attribute extraction, spherical-harmonic degree/coefficient detection, exact float32ToFloat16, RG32UI half-float packing, transforms, metrics, metadata/group, style/pick no-ops and destruction are ported; half conversion, degree names and degree 1/2/3 packing match instrumented pinned Cesium in tests/scene_vector_gaussian.rs. Construction from GltfLoader attributes is supplied by the caller; the async fromGltf wrapper is not ported."
+  },
+  "Scene/createBillboardPointCallback": {
+    "status": "implemented",
+    "rust": "scene::create_billboard_point_callback",
+    "note": "Callback contract, WebIDL canvas size truncation/modulo, drawing-command order, outline disk, destination-out punch and CSS colour compositing are ported and compared with a command-recording canvas in tests/scene_vector_gaussian.rs. Native RGBA8 output uses 8x8 supersampled coverage; browser Canvas antialiasing is implementation-defined, so only fully covered/transparent pixels are asserted."
+  },
+  "Scene/ClassificationPrimitive": {
+    "status": "implemented",
+    "rust": "scene::classification_primitive",
+    "note": "Stencil-depth, color, pick and ignore-show passes for terrain and 3D Tiles; per-instance color validation, pick offsets, ShadowVolumeAppearance color/pick shaders, ground extents and command queueing. Pinned render states and validation messages compare exactly, and a BoxGeometry case validates command passes; GPU rendering is not pixel-validated."
+  },
+  "Scene/CubeMapPanorama": {
+    "status": "implemented",
+    "rust": "scene::cube_map_panorama",
+    "note": "Six-face URL/image sources, transform, credit, deferred async error, panorama command-list insertion, HDR shader defines, unit-cube VA and evaluate order. Pinned constructor cases compare exactly; URL image loading uses the host ResourceClient."
+  },
+  "Scene/DynamicEnvironmentMapManager": {
+    "status": "implemented",
+    "rust": "scene::dynamic_environment_map_manager",
+    "note": "Constructor defaults, mipmap sizing, position epsilon, dirty-flag state machine, reset, owner assignment, command budgeting, radiance/convolution/irradiance compute commands and SH readback. Pinned default/custom option and update-support cases compare exactly; compute execution and IBL coefficients need a GPU harness."
+  },
+  "Scene/GoogleStreetViewCubeMapPanoramaProvider": {
+    "status": "implemented",
+    "rust": "scene::google_street_view_cube_map_panorama_provider",
+    "note": "API-key fallback, base/metadata resources, tile size, six headed/pitched face URLs with optional signature, metadata status errors, nearest-pano fields, north-down-east transform and panorama construction. Pinned URL/transform/metadata/fromUrl-key cases compare exactly; live network loading needs a ResourceClient."
+  },
+  "Scene/GroundPolylinePrimitive": {
+    "status": "implemented",
+    "rust": "scene::ground_polyline_primitive",
+    "note": "GroundPolylineGeometry projection preparation, automatic width attribute, color-appearance validation, terrain/3D Tiles/morph render states and polyline shadow-volume shaders. Pinned render states and validation compare exactly; GPU clamping is not pixel-validated."
+  },
+  "Scene/GroundPrimitive": {
+    "status": "implemented",
+    "rust": "scene::ground_primitive",
+    "note": "Approximate terrain min/max heights and exaggeration, planar/spherical extent attributes, extruded shadow volumes, OBB and 2D bounds, fragment-culling support test and classification delegation. Pinned height, OBB sphere, 2D sphere and shadow-volume bounds compare exactly; full terrain clamping is not pixel-validated."
+  },
+  "Scene/InvertClassification": {
+    "status": "implemented",
+    "rust": "scene::invert_classification",
+    "note": "Unclassified/classified translucent and opaque viewport commands, stencil states, framebuffer managers, MSAA resolve and lifecycle. Pinned translucency-support and lifecycle cases compare exactly; full-scene inversion rendering is not pixel-validated."
+  },
+  "Scene/ShadowMap": {
+    "status": "implemented",
+    "rust": "scene::shadow_map",
+    "note": "Constructor validation, biases, render states, framebuffer layouts, texture offsets, viewport packing and cast/receive shader derivation. Pinned CesiumJS fixtures compare constructor cases and full CPU camera fitting, cascade splits/matrices, light-space uniforms, visibility/darkness and culling planes exactly (three update cases). GPU shadow-map rendering and debug overlays are not pixel-validated."
+  },
+  "Scene/SkyAtmosphere": {
+    "status": "implemented",
+    "rust": "scene::sky_atmosphere",
+    "note": "Constructor defaults, ellipsoid scaling, dynamic-lighting packing, per-fragment/translucent/color-correct define selection, model-matrix orientation and uniform values. Pinned constructor/property cases compare exactly. Update shader compilation and rendering are not pixel-validated."
+  },
+  "Scene/SpecularEnvironmentCubeMap": {
+    "status": "implemented",
+    "rust": "scene::specular_environment_cube_map",
+    "note": "KTX2 URL/lifecycle, support test, deferred error event, mip count and cube/mip upload with Cesium's null-level padding and sampler. Pinned support/lifecycle cases compare exactly; KTX2 decode is host-provided."
+  },
+  "Scene/Sun": {
+    "status": "implemented",
+    "rust": "scene::sun",
+    "note": "Glow-factor clamping, procedural texture sizing/HDR datatype, compute-command regeneration, sun projection and screen-size math, 2D/CV bounding volumes and lifecycle. Pinned constructor/glow cases compare exactly; GPU texture generation is not pixel-validated."
+  },
+  "Scene/SunPostProcess": {
+    "status": "implemented",
+    "rust": "scene::sun_post_process",
+    "note": "Six-stage down-sample/bright-pass/blur/additive-blend chain, texture cache dependencies, sun center/radius and scissor projection, clear/execute/copy. Pinned stage scales, sample modes, uniform sets and shader sources compare exactly; pixel output is not validated."
+  },
+  "Scene/VoxelTraversal": {
+    "status": "ported",
+    "rust": "scene::voxel_traversal",
+    "note": "Keyframe/node selection, bounded priority queue, provider requests and futures, megatexture replacement, octree/leaf texel generation and statistics/events; exact hierarchy, priorities, state and texel bytes validated against a 3-frame CesiumJS capture in tests/scene_voxel_traversal.rs."
+  },
+  "Scene/VoxelRenderResources": {
+    "status": "ported",
+    "rust": "scene::voxel_render_resources",
+    "note": "Shader assembly, shape/format/clipping/depth defines and uniform lists; exact vertex/fragment source and defines validated by tests/scene_voxel_draw_commands.rs against pinned CesiumJS."
+  },
+  "Scene/processVoxelProperties": {
+    "status": "ported",
+    "rust": "scene::process_voxel_properties",
+    "note": "Metadata statistics/properties structs and functions; exact generated GLSL validated by tests/scene_voxel_draw_commands.rs against pinned CesiumJS."
+  },
+  "Scene/buildVoxelDrawCommands": {
+    "status": "ported",
+    "rust": "scene::build_voxel_draw_commands",
+    "note": "Plane accessor functions, three shader variants and the pre-multiplied-alpha render state; exact sources, defines and state validated by tests/scene_voxel_draw_commands.rs against pinned CesiumJS."
+  },
+  "Scene/VoxelPrimitive": {
+    "status": "implemented",
+    "rust": "scene::voxel_primitive",
+    "note": "Bounds/transform/exaggeration state, clipping, traversal integration, uniforms, NDC scissor culling, render/pick/pick-voxel commands and destroy. Native lifecycle tests cover construction, setters, two-frame traversal and destruction; GPU pixel output is not captured yet."
+  },
+  "Scene/Cesium3DTilesVoxelProvider": {
+    "status": "partial",
+    "rust": "scene::cesium_3d_tiles_voxel_provider",
+    "note": "from_url/from_json validation, schema/metadata attributes, tile count, box/region/cylinder shapes and implicit-tileset/subtree setup. Remaining: asynchronous glTF voxel attribute decoding for requestData and an end-to-end tileset fixture."
+  },
+  "Scene/PointCloud": {
+    "status": "implemented",
+    "rust": "scene::point_cloud",
+    "note": "PNTS parsing, attributes/quantization/colors/normals/batch ids, shader/style generation, uniform map, render states, model/2D transform and destroy; exact shader, attribute layout, buffer sizes and render state validated against pinned CesiumJS in tests/scene_point_cloud.rs. Remaining: per-point binary batch-table styleable properties and Draco decoding."
+  },
+  "Scene/PointCloudEyeDomeLighting": {
+    "status": "partial",
+    "rust": "scene::point_cloud_eye_dome_lighting",
+    "note": "Support check, two-color+depth framebuffer, blend/clear commands, EDL shader source and MRT shader derivation. Remaining: replacing already-built SceneCommand point draws with the EC derived command, which the owned command closure does not permit yet."
+  },
+  "Scene/TimeDynamicPointCloud": {
+    "status": "implemented",
+    "rust": "scene::time_dynamic_point_cloud",
+    "note": "Interval scheduling, prefetch by clock multiplier and average load time, frame readiness/memory budget, events, clipping/style dirtiness and EDL invocation; native scheduling/clock/memory tests in tests/scene_voxel_primitive.rs. Remaining: pinned frame-loading fixture."
   }
 }
