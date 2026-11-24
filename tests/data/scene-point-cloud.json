@@ -521,6 +521,184 @@
         "u_highlightColor",
         "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier"
       ]
+    },
+    {
+      "settings": {
+        "points": 4,
+        "binaryProperty": true,
+        "batchIds": false,
+        "attenuation": false,
+        "backFaceCulling": false,
+        "normalShading": true,
+        "style": {
+          "pointSize": "${value} + 1"
+        },
+        "clipping": 0
+      },
+      "arrayBufferBase64": "cG50cwEAAADUAAAAMAAAADAAAABIAAAAEAAAAHsiUE9JTlRTX0xFTkdUSCI6NCwiUE9TSVRJT04iOnsiYnl0ZU9mZnNldCI6MH19IAAAgL8AAAC/AAAAAAAAAD8AAIA/AADAPwAAAEAAACBAAABAQAAAYEAAAIBAAACQQHsidmFsdWUiOnsiYnl0ZU9mZnNldCI6MCwiY29tcG9uZW50VHlwZSI6IkZMT0FUIiwidHlwZSI6IlNDQUxBUiJ9fSAgICAgIAAAgD4AAABAAACAQAAAIEE=",
+      "pointsLength": 4,
+      "geometryByteLength": 64,
+      "ready": true,
+      "isTranslucent": false,
+      "styleTranslucent": false,
+      "renderState": {
+        "pass": 8,
+        "cull": true,
+        "primitiveType": 0,
+        "count": 4,
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "blending": {
+          "enabled": false,
+          "color": {
+            "red": 0,
+            "green": 0,
+            "blue": 0,
+            "alpha": 0
+          },
+          "equationRgb": 32774,
+          "equationAlpha": 32774,
+          "functionSourceRgb": 1,
+          "functionSourceAlpha": 1,
+          "functionDestinationRgb": 0,
+          "functionDestinationAlpha": 0
+        }
+      },
+      "attributes": [
+        {
+          "index": 0,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5126,
+          "normalize": false
+        },
+        {
+          "index": 4,
+          "enabled": true,
+          "componentsPerAttribute": 1,
+          "componentDatatype": 5126,
+          "normalize": false
+        }
+      ],
+      "buffers": [
+        16,
+        48
+      ],
+      "shader": {
+        "vertex": "in vec3 a_position; \nout vec4 v_color; \nuniform vec4 u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier; \nuniform vec4 u_constantColor; \nuniform vec4 u_highlightColor; \nfloat u_pointSize; \nfloat tiles3d_tileset_time; \nin float czm_3dtiles_property_4; \nfloat getPointSizeFromStyle(vec3 czm_3dtiles_builtin_property_POSITION, vec3 czm_3dtiles_builtin_property_POSITION_ABSOLUTE, vec4 czm_3dtiles_builtin_property_COLOR, vec3 czm_3dtiles_builtin_property_NORMAL)\n{\n    return (czm_3dtiles_property_4 + 1.0);\n}\nvoid main() \n{ \n    u_pointSize = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.x; \n    tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n    vec4 color = u_constantColor; \n    vec3 position = a_position; \n    vec3 position_absolute = vec3(czm_model * vec4(position, 1.0)); \n    vec3 normal = vec3(1.0); \n    gl_PointSize = getPointSizeFromStyle(position, position_absolute, color, normal) * czm_pixelRatio; \n    color = color * u_highlightColor; \n    v_color = color; \n    gl_Position = czm_modelViewProjection * vec4(position, 1.0); \n} \n",
+        "fragment": "in vec4 v_color; \nvoid main() \n{ \n    out_FragColor = czm_gammaCorrect(v_color); \n} \n",
+        "defines": [],
+        "attributes": {
+          "a_position": 0,
+          "czm_3dtiles_property_4": 4
+        }
+      },
+      "uniformNames": [
+        "czm_splitDirection",
+        "u_clippingPlanes",
+        "u_clippingPlanesEdgeStyle",
+        "u_clippingPlanesMatrix",
+        "u_constantColor",
+        "u_highlightColor",
+        "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier"
+      ]
+    },
+    {
+      "settings": {
+        "points": 3,
+        "draco": true,
+        "batchIds": false,
+        "attenuation": false,
+        "backFaceCulling": false,
+        "normalShading": true,
+        "style": {
+          "pointSize": "${extra} + 1"
+        },
+        "clipping": 0
+      },
+      "arrayBufferBase64": "cG50cwEAAADnAQAAkAAAAOsAAABQAAAAAAAAAHsiUE9JTlRTX0xFTkdUSCI6MywiZXh0ZW5zaW9ucyI6eyIzRFRJTEVTX2RyYWNvX3BvaW50X2NvbXByZXNzaW9uIjp7InByb3BlcnRpZXMiOnsiUE9TSVRJT04iOjAsIk5PUk1BTCI6MH0sImJ5dGVPZmZzZXQiOjAsImJ5dGVMZW5ndGgiOjIzNX19fSAgIERSQUNPAgMAAQAAAwAAAAEDAAkDAAABCQMAAQQJAQACBQsAAAADAAAA/wERAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAAQEAIAAAAP8B4P//AQGA/wD4/wAAAMAAAAAQPwAAAAAA/vEAAAAABAAAAAAAAAAEAAAAAAAAgAAAgD8AAABAAABAQAAAwEALAAAAAAAAAAAAAAAAAACAPwoAAOBAAAAAQAh7ImV4dGVuc2lvbnMiOnsiM0RUSUxFU19kcmFjb19wb2ludF9jb21wcmVzc2lvbiI6eyJwcm9wZXJ0aWVzIjp7ImV4dHJhIjoyfX19fSAgIA==",
+      "pointsLength": 3,
+      "geometryByteLength": 48,
+      "ready": true,
+      "isTranslucent": false,
+      "styleTranslucent": false,
+      "renderState": {
+        "pass": 8,
+        "cull": true,
+        "primitiveType": 0,
+        "count": 3,
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "depthMask": true,
+        "blending": {
+          "enabled": false,
+          "color": {
+            "red": 0,
+            "green": 0,
+            "blue": 0,
+            "alpha": 0
+          },
+          "equationRgb": 32774,
+          "equationAlpha": 32774,
+          "functionSourceRgb": 1,
+          "functionSourceAlpha": 1,
+          "functionDestinationRgb": 0,
+          "functionDestinationAlpha": 0
+        }
+      },
+      "attributes": [
+        {
+          "index": 0,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5123,
+          "normalize": false
+        },
+        {
+          "index": 2,
+          "enabled": true,
+          "componentsPerAttribute": 2,
+          "componentDatatype": 5123,
+          "normalize": false
+        },
+        {
+          "index": 4,
+          "enabled": true,
+          "componentsPerAttribute": 1,
+          "componentDatatype": 5126,
+          "normalize": false
+        }
+      ],
+      "buffers": [
+        12,
+        18,
+        18
+      ],
+      "shader": {
+        "vertex": "in vec3 a_position; \nout vec4 v_color; \nuniform vec4 u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier; \nuniform vec4 u_constantColor; \nuniform vec4 u_highlightColor; \nfloat u_pointSize; \nfloat tiles3d_tileset_time; \nin float czm_3dtiles_property_4; \nin vec2 a_normal; \nuniform vec4 u_quantizedVolumeScaleAndOctEncodedRange; \nfloat getPointSizeFromStyle(vec3 czm_3dtiles_builtin_property_POSITION, vec3 czm_3dtiles_builtin_property_POSITION_ABSOLUTE, vec4 czm_3dtiles_builtin_property_COLOR, vec3 czm_3dtiles_builtin_property_NORMAL)\n{\n    return (czm_3dtiles_property_4 + 1.0);\n}\nvoid main() \n{ \n    u_pointSize = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.x; \n    tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n    vec4 color = u_constantColor; \n    vec3 position = a_position * u_quantizedVolumeScaleAndOctEncodedRange.xyz; \n    vec3 position_absolute = vec3(czm_model * vec4(position, 1.0)); \n    vec3 normal = czm_octDecode(a_normal, u_quantizedVolumeScaleAndOctEncodedRange.w).zxy; \n    vec3 normalEC = czm_normal * normal; \n    gl_PointSize = getPointSizeFromStyle(position, position_absolute, color, normal) * czm_pixelRatio; \n    color = color * u_highlightColor; \n    float diffuseStrength = czm_getLambertDiffuse(czm_lightDirectionEC, normalEC); \n    diffuseStrength = max(diffuseStrength, 0.4); \n    color.xyz *= diffuseStrength * czm_lightColor; \n    v_color = color; \n    gl_Position = czm_modelViewProjection * vec4(position, 1.0); \n} \n",
+        "fragment": "in vec4 v_color; \nvoid main() \n{ \n    out_FragColor = czm_gammaCorrect(v_color); \n} \n",
+        "defines": [],
+        "attributes": {
+          "a_position": 0,
+          "a_normal": 2,
+          "czm_3dtiles_property_4": 4
+        }
+      },
+      "uniformNames": [
+        "czm_splitDirection",
+        "u_clippingPlanes",
+        "u_clippingPlanesEdgeStyle",
+        "u_clippingPlanesMatrix",
+        "u_constantColor",
+        "u_highlightColor",
+        "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier",
+        "u_quantizedVolumeScaleAndOctEncodedRange"
+      ]
     }
   ]
 }

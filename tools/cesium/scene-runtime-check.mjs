@@ -68,8 +68,19 @@ try{
     const expected=Array.from(context.readPixels({width:8,height:8})),actual=JSON.parse(wasm.scene_mixed_lod(gl,JSON.stringify(config)));
     const expectedCount=(skip?4:1)+(preserve?2:0);if(JSON.stringify(actual.pixels)!==JSON.stringify(expected)||actual.executed!==expectedCount||gl.getError()!==0){const differences=expected.flatMap((v,i)=>v===actual.pixels[i]?[]:[[i,actual.pixels[i],v]]);throw Error(JSON.stringify({config,differences,executed:actual.executed,expectedCount,frustums:actual.frustums,glError:gl.getError()}));}passed.push({mixed:true,...config});context.destroy();
   }
+  const atmosphere=await (await fetch('/tests/data/scene-atmosphere-gpu.json')).json();
+  for(const reference of atmosphere.sun.cases.filter(c=>c.hash)){
+    window.lastSceneCase={sun:reference.name};
+    const c=document.createElement('canvas');[, ,c.width,c.height]=reference.viewport;
+    const gl=c.getContext('webgl2',attributes);
+    const actual=JSON.parse(wasm.scene_sun_texture(gl,reference.glowFactor,c.width,c.height));
+    if(actual.width!==reference.texture.width||actual.height!==reference.texture.height||actual.hash!==reference.hash||gl.getError()!==0){
+      throw Error(JSON.stringify({actual,expected:{width:reference.texture.width,height:reference.texture.height,hash:reference.hash}}));
+    }
+    passed.push({sun:reference.name});
+  }
   const queries=[[1,1,1,1,1],[3,1,1,1,1],[1,3,1,1,1],[3,3,1,1,1],[2,2,3,3,5],[2,2,4,6,5],[0,0,3,3,5],[3.75,3.75,3,3,5],[2,2,null,null,1],[2,2,3,3,0],[1.75,2.25,5,3,2]];
-  const schedule=()=>new Promise(resolve=>setTimeout(resolve,5));
+  const schedule=()=>new Promise(resolve=>setTimeout(resolve,20));
   for(const webgl1 of [false,true])for(const log of [false,true])for(const hole of [false,true])for(const asynchronous of [false,true]){
     const config={webgl1,log,hole,async:asynchronous,queries};window.lastSceneCase={picking:true,...config};
     const gl=canvas().getContext(webgl1?'webgl':'webgl2',attributes),context=new ref.Context(canvas(),{webgl:attributes,requestWebgl1:webgl1});
@@ -82,7 +93,7 @@ try{
     const framebuffer=new ref.PickFramebuffer(context),expected=[];
     for(const [x,y,w,h,limit]of queries){const width=w??3,height=h??width,rectangle=new ref.BoundingRectangle(x*2-(width-1)*.5,8-y*2-(height-1)*.5,width,height),state=framebuffer.begin(rectangle,new ref.BoundingRectangle(0,0,8,8));
       new ref.ClearCommand({color:ref.Color.TRANSPARENT,depth:1,stencil:0}).execute(context,state);command.execute(context,state);
-      let objects;if(asynchronous&&!webgl1){const request=framebuffer.endAsync(rectangle,{afterRender:{push:next=>setTimeout(next,5)}},limit);/* Cesium's Sync does not flush its fence; WebGL 2 only guarantees a flushed fence signals, so SwiftShader can otherwise time out. */context._gl.flush();context.endFrame();objects=await request;}else{objects=framebuffer.end(rectangle,limit);context.endFrame();}
+      let objects;if(asynchronous&&!webgl1){const request=framebuffer.endAsync(rectangle,{afterRender:{push:next=>setTimeout(next,20)}},limit);/* Cesium's Sync does not flush its fence; WebGL 2 only guarantees a flushed fence signals, so SwiftShader can otherwise time out. */context._gl.flush();context.endFrame();objects=await request;}else{objects=framebuffer.end(rectangle,limit);context.endFrame();}
       expected.push(objects.map(o=>o.name));
     }
     const actual=JSON.parse(await wasm.scene_pick(gl,JSON.stringify(config),schedule));
@@ -90,5 +101,5 @@ try{
     queries.forEach((q,i)=>passed.push({picking:true,webgl1,log,hole,async:asynchronous,query:i}));framebuffer.destroy();ids.forEach(id=>id.destroy());context.destroy();
   }return passed;
  }catch(e){throw Error(JSON.stringify({case:window.lastSceneCase,message:e.message??String(e),stack:e.stack}));}
- });console.log(`Scene GPU: ${result.length} pixel comparisons passed (derived shaders, float/byte clipping, mixed-LOD depth/stencil, classification bits and sync/async object picking).`);
+ });console.log(`Scene GPU: ${result.length} pixel comparisons passed (derived shaders, float/byte clipping, mixed-LOD depth/stencil, classification bits, sun glow and sync/async object picking).`);
 }finally{if(browser)await browser.close();await new Promise(r=>server.close(r));}

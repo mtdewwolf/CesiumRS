@@ -1,0 +1,4093 @@
+{
+  "meta": {
+    "generator": "tools/cesium/generate-scene-globe-terrain.mjs",
+    "cesium_engine_version": "23.0.0",
+    "renderer": "SwiftShader WebGL2 (headless Chromium)",
+    "modules": [
+      "Scene/Globe",
+      "Scene/GlobeSurfaceShaderSet",
+      "Scene/GlobeSurfaceTileProvider",
+      "Scene/GlobeTranslucencyState",
+      "Scene/TerrainFillMesh"
+    ]
+  },
+  "globe": {
+    "defaults": {
+      "wgs84": {
+        "ellipsoidRadii": [
+          6378137,
+          6378137,
+          6356752.314245179
+        ],
+        "show": true,
+        "maximumScreenSpaceError": 2,
+        "tileCacheSize": 100,
+        "loadingDescendantLimit": 20,
+        "preloadAncestors": true,
+        "preloadSiblings": false,
+        "depthTestAgainstTerrain": false,
+        "enableLighting": false,
+        "lambertDiffuseMultiplier": 0.9,
+        "dynamicAtmosphereLighting": true,
+        "dynamicAtmosphereLightingFromSun": false,
+        "showGroundAtmosphere": true,
+        "atmosphereLightIntensity": 10,
+        "atmosphereRayleighCoefficient": [
+          0.0000055,
+          0.000013,
+          0.0000284
+        ],
+        "atmosphereMieCoefficient": [
+          0.000021,
+          0.000021,
+          0.000021
+        ],
+        "atmosphereRayleighScaleHeight": 10000,
+        "atmosphereMieScaleHeight": 3200,
+        "atmosphereMieAnisotropy": 0.9,
+        "lightingFadeOutDistance": 9985163.185561286,
+        "lightingFadeInDistance": 19970326.371122573,
+        "nightFadeOutDistance": 9985163.185561286,
+        "nightFadeInDistance": 49925815.92780643,
+        "showWaterEffect": true,
+        "shadows": 3,
+        "atmosphereHueShift": 0,
+        "atmosphereSaturationShift": 0,
+        "atmosphereBrightnessShift": 0,
+        "showSkirts": true,
+        "backFaceCulling": true,
+        "vertexShadowDarkness": 0.3,
+        "baseColor": [
+          0,
+          0,
+          0.5,
+          1
+        ],
+        "undergroundColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "undergroundColorAlphaByDistance": [
+          6378.137,
+          0,
+          1275627.4,
+          1
+        ],
+        "cartographicLimitRectangle": [
+          -3.141592653589793,
+          -1.5707963267948966,
+          3.141592653589793,
+          1.5707963267948966
+        ],
+        "oceanNormalMapUrlEndsWith": true,
+        "fillHighlightColorDefined": false,
+        "translucencyEnabled": false,
+        "tilesLoaded": true
+      },
+      "unitSphere": {
+        "ellipsoidRadii": [
+          1,
+          1,
+          1
+        ],
+        "show": true,
+        "maximumScreenSpaceError": 2,
+        "tileCacheSize": 100,
+        "loadingDescendantLimit": 20,
+        "preloadAncestors": true,
+        "preloadSiblings": false,
+        "depthTestAgainstTerrain": false,
+        "enableLighting": false,
+        "lambertDiffuseMultiplier": 0.9,
+        "dynamicAtmosphereLighting": true,
+        "dynamicAtmosphereLightingFromSun": false,
+        "showGroundAtmosphere": false,
+        "atmosphereLightIntensity": 10,
+        "atmosphereRayleighCoefficient": [
+          0.0000055,
+          0.000013,
+          0.0000284
+        ],
+        "atmosphereMieCoefficient": [
+          0.000021,
+          0.000021,
+          0.000021
+        ],
+        "atmosphereRayleighScaleHeight": 10000,
+        "atmosphereMieScaleHeight": 3200,
+        "atmosphereMieAnisotropy": 0.9,
+        "lightingFadeOutDistance": 1.5707963267948966,
+        "lightingFadeInDistance": 3.141592653589793,
+        "nightFadeOutDistance": 1.5707963267948966,
+        "nightFadeInDistance": 7.853981633974483,
+        "showWaterEffect": true,
+        "shadows": 3,
+        "atmosphereHueShift": 0,
+        "atmosphereSaturationShift": 0,
+        "atmosphereBrightnessShift": 0,
+        "showSkirts": true,
+        "backFaceCulling": true,
+        "vertexShadowDarkness": 0.3,
+        "baseColor": [
+          0,
+          0,
+          0.5,
+          1
+        ],
+        "undergroundColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "undergroundColorAlphaByDistance": [
+          0.001,
+          0,
+          0.2,
+          1
+        ],
+        "cartographicLimitRectangle": [
+          -3.141592653589793,
+          -1.5707963267948966,
+          3.141592653589793,
+          1.5707963267948966
+        ],
+        "oceanNormalMapUrlEndsWith": true,
+        "fillHighlightColorDefined": false,
+        "translucencyEnabled": false,
+        "tilesLoaded": true
+      }
+    },
+    "heightBeforeLoad": null,
+    "tilesLoadedBefore": true,
+    "tilesLoadedAfter": true,
+    "progressEventsHadNonZero": false,
+    "progressEventsLast": null,
+    "renderedTiles3D": [
+      {
+        "level": 0,
+        "x": 0,
+        "y": 0,
+        "rectangle": [
+          -3.141592653589793,
+          -1.5707963267948966,
+          0,
+          1.5707963267948966
+        ]
+      }
+    ],
+    "commands3DCount": 1,
+    "allCommandsPassGlobe": true,
+    "allCommandsReceiveShadows": true,
+    "anyCommandCastShadows": false,
+    "heightQueries": [
+      {
+        "longitude": 0,
+        "latitude": 0,
+        "height": -34708.00000000093
+      },
+      {
+        "longitude": 0.4,
+        "latitude": 0.2,
+        "height": -45406.805991322755
+      },
+      {
+        "longitude": -1.2,
+        "latitude": -0.5,
+        "height": -36135.03422635688
+      },
+      {
+        "longitude": -2,
+        "latitude": 0.6,
+        "height": -55347.75661302444
+      }
+    ],
+    "pick3DCases": [
+      {
+        "name": "southern_hemi_front",
+        "origin": [
+          884473.1971713615,
+          -12472327.985330984,
+          -2517647.6161402334
+        ],
+        "direction": [
+          -0.06934543095684531,
+          0.9778690433400778,
+          0.19739135057689428
+        ],
+        "worldHit": [
+          438590.8843980575,
+          -6184754.2458984535,
+          -1248446.3046444021
+        ],
+        "pickHit": [
+          438590.8843980575,
+          -6184754.2458984535,
+          -1248446.3046444021
+        ]
+      },
+      {
+        "name": "northern_hemi_front",
+        "origin": [
+          4417176.50794095,
+          -11361647.72011858,
+          3745595.7416230333
+        ],
+        "direction": [
+          -0.3463754691680844,
+          0.8909302248854528,
+          -0.29371307213698533
+        ],
+        "worldHit": [
+          2196583.5948656537,
+          -5649946.056669751,
+          1862618.3817325043
+        ],
+        "pickHit": [
+          2196583.5948656537,
+          -5649946.056669751,
+          1862618.3817325043
+        ]
+      },
+      {
+        "name": "near_equator_front",
+        "origin": [
+          10145.551485973054,
+          -12740434.462884668,
+          633285.2840086883
+        ],
+        "direction": [
+          -0.0007953447650594658,
+          0.9987665893419567,
+          -0.04964541711920548
+        ],
+        "worldHit": [
+          5023.771134028188,
+          -6308678.929687501,
+          313583.7745051428
+        ],
+        "pickHit": [
+          5023.771134028188,
+          -6308678.929687501,
+          313583.7745051428
+        ]
+      },
+      {
+        "name": "miss_tangent",
+        "origin": [
+          0,
+          -25000000,
+          0
+        ],
+        "direction": [
+          1,
+          0,
+          0
+        ],
+        "worldHit": null,
+        "pickHit": null
+      }
+    ],
+    "pick2D": {
+      "mode": "SCENE2D",
+      "origin": [
+        1000000,
+        3189068.5,
+        1594534.25
+      ],
+      "direction": [
+        -1,
+        0,
+        0
+      ],
+      "worldHit": [
+        0.00553537905216217,
+        3189068.5,
+        1594534.25
+      ],
+      "pickHit": [
+        5424445.470700881,
+        2963388.066665763,
+        1567734.0004387684
+      ],
+      "renderedTileCount": 2
+    },
+    "pickCV": {
+      "mode": "COLUMBUS_VIEW",
+      "origin": [
+        1000000,
+        3189068.5,
+        1594534.25
+      ],
+      "direction": [
+        -1,
+        0,
+        0
+      ],
+      "worldHit": [
+        0.00553537905216217,
+        3189068.5,
+        1594534.25
+      ],
+      "pickHit": [
+        5424445.470700881,
+        2963388.066665763,
+        1567734.0004387684
+      ],
+      "renderedTileCount": 2
+    },
+    "commandsWhenHidden": 0,
+    "changesAfterSame": 0,
+    "changesAfterReplacement": 1,
+    "isDestroyedBefore": false,
+    "isDestroyedAfter": true,
+    "glError": 0
+  },
+  "globeSurfaceShaderSet": {
+    "cases": [
+      {
+        "name": "base_3d_0tex",
+        "mode": "SCENE3D",
+        "numberOfDayTextures": 0,
+        "flags": 3,
+        "cacheHitSameTile": true,
+        "cacheHitSecondTile": true,
+        "programId": 2,
+        "vsDefines": [
+          "INCLUDE_WEB_MERCATOR_Y"
+        ],
+        "fsDefines": [
+          "TEXTURE_UNITS 0",
+          "INCLUDE_WEB_MERCATOR_Y"
+        ],
+        "positionModeSource": "vec4 getPosition(vec3 position, float height, vec2 textureCoordinates) { return getPosition3DMode(position, height, textureCoordinates); }",
+        "yFractionSource": "float get2DYPositionFraction(vec2 textureCoordinates) { return get2DGeographicYPositionFraction(textureCoordinates); }",
+        "computeDayColorSource": "    vec4 computeDayColor(vec4 initialColor, vec3 textureCoordinates, float nightBlend)\n    {\n        vec4 color = initialColor;\n        return color;\n    }",
+        "hasClippingPlanesGlsl": false,
+        "hasClippingPolygonsVs": false,
+        "hasClippingPolygonsFs": false,
+        "glError": 0
+      },
+      {
+        "name": "scene2d_mercator_1tex_quantized",
+        "mode": "SCENE2D",
+        "numberOfDayTextures": 1,
+        "flags": 4295622790,
+        "cacheHitSameTile": true,
+        "cacheHitSecondTile": true,
+        "programId": 3,
+        "vsDefines": [
+          "QUANTIZATION_BITS12",
+          "INCLUDE_WEB_MERCATOR_Y"
+        ],
+        "fsDefines": [
+          "TEXTURE_UNITS 1",
+          "APPLY_BRIGHTNESS",
+          "APPLY_ALPHA",
+          "APPLY_DAY_NIGHT_ALPHA",
+          "INCLUDE_WEB_MERCATOR_Y"
+        ],
+        "positionModeSource": "vec4 getPosition(vec3 position, float height, vec2 textureCoordinates) { return getPositionColumbusViewMode(position, height, textureCoordinates); }",
+        "yFractionSource": "float get2DYPositionFraction(vec2 textureCoordinates) { return get2DMercatorYPositionFraction(textureCoordinates); }",
+        "computeDayColorSource": "    vec4 computeDayColor(vec4 initialColor, vec3 textureCoordinates, float nightBlend)\n    {\n        vec4 color = initialColor;\n        color = sampleAndBlend(\n            color,\n            u_dayTextures[0],\n            u_dayTextureUseWebMercatorT[0] ? textureCoordinates.xz : textureCoordinates.xy,\n            u_dayTextureTexCoordsRectangle[0],\n            u_dayTextureTranslationAndScale[0],\n            u_dayTextureAlpha[0],\n            u_dayTextureNightAlpha[0],\n            u_dayTextureDayAlpha[0],\n            u_dayTextureBrightness[0],\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            vec4(0.0),\n            nightBlend);\n        return color;\n    }",
+        "hasClippingPlanesGlsl": false,
+        "hasClippingPolygonsVs": false,
+        "hasClippingPolygonsFs": false,
+        "glError": 0
+      },
+      {
+        "name": "columbus_2tex_adjustments",
+        "mode": "COLUMBUS_VIEW",
+        "numberOfDayTextures": 2,
+        "flags": 160432249,
+        "cacheHitSameTile": true,
+        "cacheHitSecondTile": true,
+        "programId": 4,
+        "vsDefines": [
+          "INCLUDE_WEB_MERCATOR_Y"
+        ],
+        "fsDefines": [
+          "TEXTURE_UNITS 2",
+          "TILE_LIMIT_RECTANGLE",
+          "APPLY_IMAGERY_CUTOUT",
+          "APPLY_CONTRAST",
+          "APPLY_HUE",
+          "APPLY_SATURATION",
+          "APPLY_GAMMA",
+          "APPLY_COLOR_TO_ALPHA",
+          "INCLUDE_WEB_MERCATOR_Y",
+          "APPLY_SPLIT"
+        ],
+        "positionModeSource": "vec4 getPosition(vec3 position, float height, vec2 textureCoordinates) { return getPositionColumbusViewMode(position, height, textureCoordinates); }",
+        "yFractionSource": "float get2DYPositionFraction(vec2 textureCoordinates) { return get2DGeographicYPositionFraction(textureCoordinates); }",
+        "computeDayColorSource": "    vec4 computeDayColor(vec4 initialColor, vec3 textureCoordinates, float nightBlend)\n    {\n        vec4 color = initialColor;\n        vec4 cutoutAndColorResult;\n        bool texelUnclipped;\n        cutoutAndColorResult = u_dayTextureCutoutRectangles[0];\n        texelUnclipped = v_textureCoordinates.x < cutoutAndColorResult.x || cutoutAndColorResult.z < v_textureCoordinates.x || v_textureCoordinates.y < cutoutAndColorResult.y || cutoutAndColorResult.w < v_textureCoordinates.y;\n        cutoutAndColorResult = sampleAndBlend(\n            color,\n            u_dayTextures[0],\n            u_dayTextureUseWebMercatorT[0] ? textureCoordinates.xz : textureCoordinates.xy,\n            u_dayTextureTexCoordsRectangle[0],\n            u_dayTextureTranslationAndScale[0],\n            1.0,\n            1.0,\n            1.0,\n            0.0,\n            u_dayTextureContrast[0],\n            u_dayTextureHue[0],\n            u_dayTextureSaturation[0],\n            u_dayTextureOneOverGamma[0],\n            u_dayTextureSplit[0],\n            u_colorsToAlpha[0],\n            nightBlend);\n        color = czm_branchFreeTernary(texelUnclipped, cutoutAndColorResult, color);\n        cutoutAndColorResult = u_dayTextureCutoutRectangles[1];\n        texelUnclipped = v_textureCoordinates.x < cutoutAndColorResult.x || cutoutAndColorResult.z < v_textureCoordinates.x || v_textureCoordinates.y < cutoutAndColorResult.y || cutoutAndColorResult.w < v_textureCoordinates.y;\n        cutoutAndColorResult = sampleAndBlend(\n            color,\n            u_dayTextures[1],\n            u_dayTextureUseWebMercatorT[1] ? textureCoordinates.xz : textureCoordinates.xy,\n            u_dayTextureTexCoordsRectangle[1],\n            u_dayTextureTranslationAndScale[1],\n            1.0,\n            1.0,\n            1.0,\n            0.0,\n            u_dayTextureContrast[1],\n            u_dayTextureHue[1],\n            u_dayTextureSaturation[1],\n            u_dayTextureOneOverGamma[1],\n            u_dayTextureSplit[1],\n            u_colorsToAlpha[1],\n            nightBlend);\n        color = czm_branchFreeTernary(texelUnclipped, cutoutAndColorResult, color);\n        return color;\n    }",
+        "hasClippingPlanesGlsl": false,
+        "hasClippingPolygonsVs": false,
+        "hasClippingPolygonsFs": false,
+        "glError": 0
+      },
+      {
+        "name": "morphing_lighting_fog_atmosphere",
+        "mode": "MORPHING",
+        "numberOfDayTextures": 1,
+        "flags": 4127586304,
+        "cacheHitSameTile": true,
+        "cacheHitSecondTile": true,
+        "programId": 5,
+        "vsDefines": [
+          "UNDERGROUND_COLOR",
+          "TRANSLUCENT",
+          "ENABLE_VERTEX_LIGHTING",
+          "DYNAMIC_ATMOSPHERE_LIGHTING",
+          "DYNAMIC_ATMOSPHERE_LIGHTING_FROM_SUN",
+          "GROUND_ATMOSPHERE",
+          "PER_FRAGMENT_GROUND_ATMOSPHERE",
+          "INCLUDE_WEB_MERCATOR_Y",
+          "FOG",
+          "GEODETIC_SURFACE_NORMALS",
+          "EXAGGERATION"
+        ],
+        "fsDefines": [
+          "TEXTURE_UNITS 1",
+          "UNDERGROUND_COLOR",
+          "TRANSLUCENT",
+          "ENABLE_VERTEX_LIGHTING",
+          "DYNAMIC_ATMOSPHERE_LIGHTING",
+          "DYNAMIC_ATMOSPHERE_LIGHTING_FROM_SUN",
+          "GROUND_ATMOSPHERE",
+          "PER_FRAGMENT_GROUND_ATMOSPHERE",
+          "INCLUDE_WEB_MERCATOR_Y",
+          "FOG",
+          "COLOR_CORRECT",
+          "HIGHLIGHT_FILL_TILE"
+        ],
+        "positionModeSource": "vec4 getPosition(vec3 position, float height, vec2 textureCoordinates) { return getPositionMorphingMode(position, height, textureCoordinates); }",
+        "yFractionSource": "float get2DYPositionFraction(vec2 textureCoordinates) { return get2DGeographicYPositionFraction(textureCoordinates); }",
+        "computeDayColorSource": "    vec4 computeDayColor(vec4 initialColor, vec3 textureCoordinates, float nightBlend)\n    {\n        vec4 color = initialColor;\n        color = sampleAndBlend(\n            color,\n            u_dayTextures[0],\n            u_dayTextureUseWebMercatorT[0] ? textureCoordinates.xz : textureCoordinates.xy,\n            u_dayTextureTexCoordsRectangle[0],\n            u_dayTextureTranslationAndScale[0],\n            1.0,\n            1.0,\n            1.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            vec4(0.0),\n            nightBlend);\n        return color;\n    }",
+        "hasClippingPlanesGlsl": false,
+        "hasClippingPolygonsVs": false,
+        "hasClippingPolygonsFs": false,
+        "glError": 0
+      },
+      {
+        "name": "lighting_daynight_water_waves",
+        "mode": "SCENE3D",
+        "numberOfDayTextures": 0,
+        "flags": 3843,
+        "cacheHitSameTile": true,
+        "cacheHitSecondTile": true,
+        "programId": 6,
+        "vsDefines": [
+          "SHOW_REFLECTIVE_OCEAN",
+          "ENABLE_DAYNIGHT_SHADING",
+          "INCLUDE_WEB_MERCATOR_Y"
+        ],
+        "fsDefines": [
+          "TEXTURE_UNITS 0",
+          "HAS_WATER_MASK",
+          "SHOW_REFLECTIVE_OCEAN",
+          "SHOW_OCEAN_WAVES",
+          "ENABLE_DAYNIGHT_SHADING",
+          "INCLUDE_WEB_MERCATOR_Y"
+        ],
+        "positionModeSource": "vec4 getPosition(vec3 position, float height, vec2 textureCoordinates) { return getPosition3DMode(position, height, textureCoordinates); }",
+        "yFractionSource": "float get2DYPositionFraction(vec2 textureCoordinates) { return get2DGeographicYPositionFraction(textureCoordinates); }",
+        "computeDayColorSource": "    vec4 computeDayColor(vec4 initialColor, vec3 textureCoordinates, float nightBlend)\n    {\n        vec4 color = initialColor;\n        return color;\n    }",
+        "hasClippingPlanesGlsl": false,
+        "hasClippingPolygonsVs": false,
+        "hasClippingPolygonsFs": false,
+        "glError": 0
+      },
+      {
+        "name": "clipping_planes_1tex",
+        "mode": "SCENE3D",
+        "numberOfDayTextures": 1,
+        "flags": 2097155,
+        "cacheHitSameTile": true,
+        "cacheHitSecondTile": true,
+        "programId": 7,
+        "vsDefines": [
+          "INCLUDE_WEB_MERCATOR_Y"
+        ],
+        "fsDefines": [
+          "TEXTURE_UNITS 1",
+          "INCLUDE_WEB_MERCATOR_Y",
+          "ENABLE_CLIPPING_PLANES"
+        ],
+        "positionModeSource": "vec4 getPosition(vec3 position, float height, vec2 textureCoordinates) { return getPosition3DMode(position, height, textureCoordinates); }",
+        "yFractionSource": "float get2DYPositionFraction(vec2 textureCoordinates) { return get2DGeographicYPositionFraction(textureCoordinates); }",
+        "computeDayColorSource": "    vec4 computeDayColor(vec4 initialColor, vec3 textureCoordinates, float nightBlend)\n    {\n        vec4 color = initialColor;\n        color = sampleAndBlend(\n            color,\n            u_dayTextures[0],\n            u_dayTextureUseWebMercatorT[0] ? textureCoordinates.xz : textureCoordinates.xy,\n            u_dayTextureTexCoordsRectangle[0],\n            u_dayTextureTranslationAndScale[0],\n            1.0,\n            1.0,\n            1.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            vec4(0.0),\n            nightBlend);\n        return color;\n    }",
+        "hasClippingPlanesGlsl": true,
+        "hasClippingPolygonsVs": false,
+        "hasClippingPolygonsFs": false,
+        "glError": 0
+      },
+      {
+        "name": "clipping_polygons_1tex",
+        "mode": "SCENE3D",
+        "numberOfDayTextures": 1,
+        "flags": 4194307,
+        "cacheHitSameTile": true,
+        "cacheHitSecondTile": true,
+        "programId": 8,
+        "vsDefines": [
+          "INCLUDE_WEB_MERCATOR_Y",
+          "ENABLE_CLIPPING_POLYGONS",
+          "CLIPPING_POLYGON_REGIONS_LENGTH 1"
+        ],
+        "fsDefines": [
+          "TEXTURE_UNITS 1",
+          "INCLUDE_WEB_MERCATOR_Y",
+          "ENABLE_CLIPPING_POLYGONS",
+          "CLIPPING_INVERSE",
+          "CLIPPING_POLYGON_REGIONS_LENGTH 1"
+        ],
+        "positionModeSource": "vec4 getPosition(vec3 position, float height, vec2 textureCoordinates) { return getPosition3DMode(position, height, textureCoordinates); }",
+        "yFractionSource": "float get2DYPositionFraction(vec2 textureCoordinates) { return get2DGeographicYPositionFraction(textureCoordinates); }",
+        "computeDayColorSource": "    vec4 computeDayColor(vec4 initialColor, vec3 textureCoordinates, float nightBlend)\n    {\n        vec4 color = initialColor;\n        color = sampleAndBlend(\n            color,\n            u_dayTextures[0],\n            u_dayTextureUseWebMercatorT[0] ? textureCoordinates.xz : textureCoordinates.xy,\n            u_dayTextureTexCoordsRectangle[0],\n            u_dayTextureTranslationAndScale[0],\n            1.0,\n            1.0,\n            1.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            vec4(0.0),\n            nightBlend);\n        return color;\n    }",
+        "hasClippingPlanesGlsl": false,
+        "hasClippingPolygonsVs": true,
+        "hasClippingPolygonsFs": true,
+        "glError": 0
+      }
+    ],
+    "materialCase": {
+      "name": "material_color_1tex",
+      "mode": "SCENE3D",
+      "numberOfDayTextures": 1,
+      "flags": 131,
+      "cacheHitSameTile": true,
+      "cacheHitSecondTile": true,
+      "programId": 9,
+      "vsDefines": [
+        "APPLY_MATERIAL",
+        "INCLUDE_WEB_MERCATOR_Y"
+      ],
+      "fsDefines": [
+        "APPLY_MATERIAL",
+        "TEXTURE_UNITS 1",
+        "APPLY_ALPHA",
+        "INCLUDE_WEB_MERCATOR_Y"
+      ],
+      "positionModeSource": "vec4 getPosition(vec3 position, float height, vec2 textureCoordinates) { return getPosition3DMode(position, height, textureCoordinates); }",
+      "yFractionSource": "float get2DYPositionFraction(vec2 textureCoordinates) { return get2DGeographicYPositionFraction(textureCoordinates); }",
+      "computeDayColorSource": "    vec4 computeDayColor(vec4 initialColor, vec3 textureCoordinates, float nightBlend)\n    {\n        vec4 color = initialColor;\n        color = sampleAndBlend(\n            color,\n            u_dayTextures[0],\n            u_dayTextureUseWebMercatorT[0] ? textureCoordinates.xz : textureCoordinates.xy,\n            u_dayTextureTexCoordsRectangle[0],\n            u_dayTextureTranslationAndScale[0],\n            u_dayTextureAlpha[0],\n            1.0,\n            1.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            vec4(0.0),\n            nightBlend);\n        return color;\n    }",
+      "hasClippingPlanesGlsl": false,
+      "hasClippingPolygonsVs": false,
+      "hasClippingPolygonsFs": false,
+      "glError": 0
+    },
+    "materialChangedProgram": true,
+    "destroyed": true,
+    "glError": 0
+  },
+  "globeTranslucencyState": {
+    "stateCases": [
+      {
+        "name": "disabled",
+        "input": {
+          "enabled": false,
+          "show": true,
+          "baseAlpha": 1,
+          "frontFaceAlpha": 1,
+          "frontFaceAlphaByDistance": null,
+          "backFaceAlpha": 1,
+          "backFaceAlphaByDistance": null,
+          "depthTestAgainstTerrain": false,
+          "depthTexture": true,
+          "mode": "SCENE3D",
+          "cameraUnderground": false,
+          "rectangleDeg": null
+        },
+        "frontFaceAlphaByDistance": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "backFaceAlphaByDistance": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "translucent": false,
+        "sunVisibleThroughGlobe": false,
+        "environmentVisible": true,
+        "useDepthPlane": true,
+        "numberOfTextureUniforms": 0,
+        "rectangle": [
+          -3.141592653589793,
+          -1.5707963267948966,
+          3.141592653589793,
+          1.5707963267948966
+        ],
+        "renderCommands": [],
+        "blendCommands": [],
+        "pickCommands": []
+      },
+      {
+        "name": "globe_hidden",
+        "input": {
+          "enabled": true,
+          "show": false,
+          "baseAlpha": 1,
+          "frontFaceAlpha": 0.5,
+          "frontFaceAlphaByDistance": null,
+          "backFaceAlpha": 1,
+          "backFaceAlphaByDistance": null,
+          "depthTestAgainstTerrain": false,
+          "depthTexture": true,
+          "mode": "SCENE3D",
+          "cameraUnderground": false,
+          "rectangleDeg": null
+        },
+        "frontFaceAlphaByDistance": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "backFaceAlphaByDistance": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "translucent": false,
+        "sunVisibleThroughGlobe": true,
+        "environmentVisible": true,
+        "useDepthPlane": false,
+        "numberOfTextureUniforms": 0,
+        "rectangle": [
+          -3.141592653589793,
+          -1.5707963267948966,
+          3.141592653589793,
+          1.5707963267948966
+        ],
+        "renderCommands": [],
+        "blendCommands": [],
+        "pickCommands": []
+      },
+      {
+        "name": "enabled_opaque_1",
+        "input": {
+          "enabled": true,
+          "show": true,
+          "baseAlpha": 1,
+          "frontFaceAlpha": 1,
+          "frontFaceAlphaByDistance": null,
+          "backFaceAlpha": 1,
+          "backFaceAlphaByDistance": null,
+          "depthTestAgainstTerrain": false,
+          "depthTexture": true,
+          "mode": "SCENE3D",
+          "cameraUnderground": false,
+          "rectangleDeg": null
+        },
+        "frontFaceAlphaByDistance": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "backFaceAlphaByDistance": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "translucent": false,
+        "sunVisibleThroughGlobe": false,
+        "environmentVisible": true,
+        "useDepthPlane": true,
+        "numberOfTextureUniforms": 0,
+        "rectangle": [
+          -3.141592653589793,
+          -1.5707963267948966,
+          3.141592653589793,
+          1.5707963267948966
+        ],
+        "renderCommands": [],
+        "blendCommands": [],
+        "pickCommands": []
+      },
+      {
+        "name": "base_color_translucent",
+        "input": {
+          "enabled": true,
+          "show": true,
+          "baseAlpha": 0.5,
+          "frontFaceAlpha": 1,
+          "frontFaceAlphaByDistance": null,
+          "backFaceAlpha": 1,
+          "backFaceAlphaByDistance": null,
+          "depthTestAgainstTerrain": false,
+          "depthTexture": true,
+          "mode": "SCENE3D",
+          "cameraUnderground": false,
+          "rectangleDeg": null
+        },
+        "frontFaceAlphaByDistance": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "backFaceAlphaByDistance": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "translucent": true,
+        "sunVisibleThroughGlobe": true,
+        "environmentVisible": true,
+        "useDepthPlane": false,
+        "numberOfTextureUniforms": 1,
+        "rectangle": [
+          -3.141592653589793,
+          -1.5707963267948966,
+          3.141592653589793,
+          1.5707963267948966
+        ],
+        "renderCommands": [
+          "DepthBoth",
+          "TranslucentBack",
+          "TranslucentFront"
+        ],
+        "blendCommands": [
+          "TranslucentBack",
+          "TranslucentFront"
+        ],
+        "pickCommands": [
+          "DepthBoth",
+          "PickBack",
+          "PickFront"
+        ]
+      },
+      {
+        "name": "front_only_manual_depth_dateline",
+        "input": {
+          "enabled": true,
+          "show": true,
+          "baseAlpha": 1,
+          "frontFaceAlpha": 0.5,
+          "frontFaceAlphaByDistance": [
+            10,
+            0.2,
+            200,
+            0.8
+          ],
+          "backFaceAlpha": 1,
+          "backFaceAlphaByDistance": null,
+          "depthTestAgainstTerrain": false,
+          "depthTexture": true,
+          "mode": "SCENE3D",
+          "cameraUnderground": false,
+          "rectangleDeg": [
+            175,
+            -30,
+            -175,
+            30
+          ]
+        },
+        "frontFaceAlphaByDistance": [
+          10,
+          0.1,
+          200,
+          0.4
+        ],
+        "backFaceAlphaByDistance": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "translucent": true,
+        "sunVisibleThroughGlobe": false,
+        "environmentVisible": true,
+        "useDepthPlane": false,
+        "numberOfTextureUniforms": 2,
+        "rectangle": [
+          3.0543261909900767,
+          -0.5235987755982988,
+          -3.0543261909900767,
+          0.5235987755982988
+        ],
+        "renderCommands": [
+          "DepthFront",
+          "OpaqueBack",
+          "ManualDepthFront"
+        ],
+        "blendCommands": [
+          "OpaqueBack",
+          "ManualDepthFront"
+        ],
+        "pickCommands": [
+          "DepthFront",
+          "OpaqueBack",
+          "PickFront"
+        ]
+      },
+      {
+        "name": "front_only_depth_test_against_terrain",
+        "input": {
+          "enabled": true,
+          "show": true,
+          "baseAlpha": 1,
+          "frontFaceAlpha": 0.5,
+          "frontFaceAlphaByDistance": null,
+          "backFaceAlpha": 1,
+          "backFaceAlphaByDistance": null,
+          "depthTestAgainstTerrain": true,
+          "depthTexture": true,
+          "mode": "SCENE3D",
+          "cameraUnderground": false,
+          "rectangleDeg": null
+        },
+        "frontFaceAlphaByDistance": [
+          0,
+          0.5,
+          0,
+          0.5
+        ],
+        "backFaceAlphaByDistance": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "translucent": true,
+        "sunVisibleThroughGlobe": false,
+        "environmentVisible": true,
+        "useDepthPlane": false,
+        "numberOfTextureUniforms": 1,
+        "rectangle": [
+          -3.141592653589793,
+          -1.5707963267948966,
+          3.141592653589793,
+          1.5707963267948966
+        ],
+        "renderCommands": [
+          "DepthFront",
+          "OpaqueBack",
+          "TranslucentFront"
+        ],
+        "blendCommands": [
+          "OpaqueBack",
+          "TranslucentFront"
+        ],
+        "pickCommands": [
+          "DepthFront",
+          "OpaqueBack",
+          "PickFront"
+        ]
+      },
+      {
+        "name": "front_only_no_depth_texture",
+        "input": {
+          "enabled": true,
+          "show": true,
+          "baseAlpha": 1,
+          "frontFaceAlpha": 0.5,
+          "frontFaceAlphaByDistance": null,
+          "backFaceAlpha": 1,
+          "backFaceAlphaByDistance": null,
+          "depthTestAgainstTerrain": false,
+          "depthTexture": false,
+          "mode": "SCENE3D",
+          "cameraUnderground": false,
+          "rectangleDeg": null
+        },
+        "frontFaceAlphaByDistance": [
+          0,
+          0.5,
+          0,
+          0.5
+        ],
+        "backFaceAlphaByDistance": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "translucent": true,
+        "sunVisibleThroughGlobe": false,
+        "environmentVisible": true,
+        "useDepthPlane": false,
+        "numberOfTextureUniforms": 1,
+        "rectangle": [
+          -3.141592653589793,
+          -1.5707963267948966,
+          3.141592653589793,
+          1.5707963267948966
+        ],
+        "renderCommands": [
+          "DepthFront",
+          "OpaqueBack",
+          "TranslucentFront"
+        ],
+        "blendCommands": [
+          "OpaqueBack",
+          "TranslucentFront"
+        ],
+        "pickCommands": [
+          "DepthFront",
+          "OpaqueBack",
+          "PickFront"
+        ]
+      },
+      {
+        "name": "front_only_underground",
+        "input": {
+          "enabled": true,
+          "show": true,
+          "baseAlpha": 1,
+          "frontFaceAlpha": 0.5,
+          "frontFaceAlphaByDistance": null,
+          "backFaceAlpha": 1,
+          "backFaceAlphaByDistance": null,
+          "depthTestAgainstTerrain": false,
+          "depthTexture": true,
+          "mode": "SCENE3D",
+          "cameraUnderground": true,
+          "rectangleDeg": null
+        },
+        "frontFaceAlphaByDistance": [
+          0,
+          0.5,
+          0,
+          0.5
+        ],
+        "backFaceAlphaByDistance": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "translucent": true,
+        "sunVisibleThroughGlobe": true,
+        "environmentVisible": true,
+        "useDepthPlane": false,
+        "numberOfTextureUniforms": 2,
+        "rectangle": [
+          -3.141592653589793,
+          -1.5707963267948966,
+          3.141592653589793,
+          1.5707963267948966
+        ],
+        "renderCommands": [
+          "DepthBack",
+          "OpaqueFront",
+          "ManualDepthBack"
+        ],
+        "blendCommands": [
+          "OpaqueFront",
+          "ManualDepthBack"
+        ],
+        "pickCommands": [
+          "DepthBack",
+          "OpaqueFront",
+          "PickBack"
+        ]
+      },
+      {
+        "name": "both_faces_above_ground",
+        "input": {
+          "enabled": true,
+          "show": true,
+          "baseAlpha": 1,
+          "frontFaceAlpha": 0.5,
+          "frontFaceAlphaByDistance": null,
+          "backFaceAlpha": 0.4,
+          "backFaceAlphaByDistance": [
+            50,
+            0.5,
+            500,
+            1
+          ],
+          "depthTestAgainstTerrain": false,
+          "depthTexture": true,
+          "mode": "SCENE3D",
+          "cameraUnderground": false,
+          "rectangleDeg": null
+        },
+        "frontFaceAlphaByDistance": [
+          0,
+          0.5,
+          0,
+          0.5
+        ],
+        "backFaceAlphaByDistance": [
+          50,
+          0.2,
+          500,
+          0.4
+        ],
+        "translucent": true,
+        "sunVisibleThroughGlobe": true,
+        "environmentVisible": true,
+        "useDepthPlane": false,
+        "numberOfTextureUniforms": 1,
+        "rectangle": [
+          -3.141592653589793,
+          -1.5707963267948966,
+          3.141592653589793,
+          1.5707963267948966
+        ],
+        "renderCommands": [
+          "DepthBoth",
+          "TranslucentBack",
+          "TranslucentFront"
+        ],
+        "blendCommands": [
+          "TranslucentBack",
+          "TranslucentFront"
+        ],
+        "pickCommands": [
+          "DepthBoth",
+          "PickBack",
+          "PickFront"
+        ]
+      },
+      {
+        "name": "both_faces_underground",
+        "input": {
+          "enabled": true,
+          "show": true,
+          "baseAlpha": 1,
+          "frontFaceAlpha": 0.5,
+          "frontFaceAlphaByDistance": null,
+          "backFaceAlpha": 0.4,
+          "backFaceAlphaByDistance": null,
+          "depthTestAgainstTerrain": false,
+          "depthTexture": true,
+          "mode": "SCENE3D",
+          "cameraUnderground": true,
+          "rectangleDeg": null
+        },
+        "frontFaceAlphaByDistance": [
+          0,
+          0.5,
+          0,
+          0.5
+        ],
+        "backFaceAlphaByDistance": [
+          0,
+          0.4,
+          0,
+          0.4
+        ],
+        "translucent": true,
+        "sunVisibleThroughGlobe": true,
+        "environmentVisible": true,
+        "useDepthPlane": false,
+        "numberOfTextureUniforms": 1,
+        "rectangle": [
+          -3.141592653589793,
+          -1.5707963267948966,
+          3.141592653589793,
+          1.5707963267948966
+        ],
+        "renderCommands": [
+          "DepthBoth",
+          "TranslucentFront",
+          "TranslucentBack"
+        ],
+        "blendCommands": [
+          "TranslucentFront",
+          "TranslucentBack"
+        ],
+        "pickCommands": [
+          "DepthBoth",
+          "PickFront",
+          "PickBack"
+        ]
+      },
+      {
+        "name": "scene_2d_translucent",
+        "input": {
+          "enabled": true,
+          "show": true,
+          "baseAlpha": 1,
+          "frontFaceAlpha": 0.5,
+          "frontFaceAlphaByDistance": null,
+          "backFaceAlpha": 1,
+          "backFaceAlphaByDistance": null,
+          "depthTestAgainstTerrain": false,
+          "depthTexture": true,
+          "mode": "SCENE2D",
+          "cameraUnderground": false,
+          "rectangleDeg": null
+        },
+        "frontFaceAlphaByDistance": [
+          0,
+          0.5,
+          0,
+          0.5
+        ],
+        "backFaceAlphaByDistance": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "translucent": true,
+        "sunVisibleThroughGlobe": false,
+        "environmentVisible": true,
+        "useDepthPlane": false,
+        "numberOfTextureUniforms": 1,
+        "rectangle": [
+          -3.141592653589793,
+          -1.5707963267948966,
+          3.141592653589793,
+          1.5707963267948966
+        ],
+        "renderCommands": [
+          "DepthFront",
+          "TranslucentFront"
+        ],
+        "blendCommands": [
+          "DepthFront",
+          "TranslucentFront"
+        ],
+        "pickCommands": [
+          "DepthFront",
+          "PickFront"
+        ]
+      },
+      {
+        "name": "columbus_view_front_only",
+        "input": {
+          "enabled": true,
+          "show": true,
+          "baseAlpha": 1,
+          "frontFaceAlpha": 0.5,
+          "frontFaceAlphaByDistance": null,
+          "backFaceAlpha": 1,
+          "backFaceAlphaByDistance": null,
+          "depthTestAgainstTerrain": false,
+          "depthTexture": true,
+          "mode": "COLUMBUS_VIEW",
+          "cameraUnderground": false,
+          "rectangleDeg": null
+        },
+        "frontFaceAlphaByDistance": [
+          0,
+          0.5,
+          0,
+          0.5
+        ],
+        "backFaceAlphaByDistance": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "translucent": true,
+        "sunVisibleThroughGlobe": false,
+        "environmentVisible": true,
+        "useDepthPlane": false,
+        "numberOfTextureUniforms": 2,
+        "rectangle": [
+          -3.141592653589793,
+          -1.5707963267948966,
+          3.141592653589793,
+          1.5707963267948966
+        ],
+        "renderCommands": [
+          "DepthFront",
+          "OpaqueBack",
+          "ManualDepthFront"
+        ],
+        "blendCommands": [
+          "OpaqueBack",
+          "ManualDepthFront"
+        ],
+        "pickCommands": [
+          "DepthFront",
+          "OpaqueBack",
+          "PickFront"
+        ]
+      }
+    ],
+    "derivedCommands": {
+      "OpaqueBack": {
+        "pass": 2,
+        "pickOnly": false,
+        "cullEnabled": true,
+        "cullFace": 1028,
+        "colorMask": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "depthMask": true,
+        "blendingEnabled": false,
+        "vsDefines": [],
+        "fsDefines": [],
+        "hasReplacedMain": false,
+        "hasClassificationUniform": false,
+        "hasManualDepthCheck": false,
+        "isMinimalDepthOnly": false
+      },
+      "DepthFront": {
+        "pass": 2,
+        "pickOnly": false,
+        "cullEnabled": true,
+        "cullFace": 1029,
+        "colorMask": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "depthMask": true,
+        "blendingEnabled": false,
+        "vsDefines": [
+          "TRANSLUCENT",
+          "GROUND_ATMOSPHERE",
+          "FOG"
+        ],
+        "fsDefines": [
+          "TRANSLUCENT",
+          "GROUND_ATMOSPHERE",
+          "FOG"
+        ],
+        "hasReplacedMain": false,
+        "hasClassificationUniform": false,
+        "hasManualDepthCheck": false,
+        "isMinimalDepthOnly": true
+      },
+      "ManualDepthFront": {
+        "pass": 9,
+        "pickOnly": false,
+        "cullEnabled": true,
+        "cullFace": 1029,
+        "colorMask": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "depthMask": false,
+        "blendingEnabled": true,
+        "vsDefines": [
+          "TRANSLUCENT",
+          "GROUND_ATMOSPHERE",
+          "FOG",
+          "GENERATE_POSITION"
+        ],
+        "fsDefines": [
+          "TRANSLUCENT",
+          "GROUND_ATMOSPHERE",
+          "FOG",
+          "MANUAL_DEPTH_TEST"
+        ],
+        "hasReplacedMain": true,
+        "hasClassificationUniform": true,
+        "hasManualDepthCheck": true,
+        "isMinimalDepthOnly": false
+      },
+      "PickFront": {
+        "pass": 9,
+        "pickOnly": true,
+        "cullEnabled": true,
+        "cullFace": 1029,
+        "colorMask": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "depthMask": true,
+        "blendingEnabled": false,
+        "vsDefines": [
+          "TRANSLUCENT",
+          "GROUND_ATMOSPHERE",
+          "FOG"
+        ],
+        "fsDefines": [
+          "TRANSLUCENT",
+          "GROUND_ATMOSPHERE",
+          "FOG"
+        ],
+        "hasReplacedMain": false,
+        "hasClassificationUniform": true,
+        "hasManualDepthCheck": false,
+        "isMinimalDepthOnly": false
+      },
+      "OpaqueFront": {
+        "pass": 2,
+        "pickOnly": false,
+        "cullEnabled": true,
+        "cullFace": 1029,
+        "colorMask": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "depthMask": true,
+        "blendingEnabled": false,
+        "vsDefines": [
+          "GROUND_ATMOSPHERE",
+          "FOG"
+        ],
+        "fsDefines": [
+          "GROUND_ATMOSPHERE",
+          "FOG"
+        ],
+        "hasReplacedMain": false,
+        "hasClassificationUniform": false,
+        "hasManualDepthCheck": false,
+        "isMinimalDepthOnly": false
+      },
+      "DepthBack": {
+        "pass": 2,
+        "pickOnly": false,
+        "cullEnabled": true,
+        "cullFace": 1028,
+        "colorMask": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "depthMask": true,
+        "blendingEnabled": false,
+        "vsDefines": [
+          "TRANSLUCENT",
+          "GROUND_ATMOSPHERE",
+          "FOG"
+        ],
+        "fsDefines": [
+          "TRANSLUCENT",
+          "GROUND_ATMOSPHERE",
+          "FOG"
+        ],
+        "hasReplacedMain": false,
+        "hasClassificationUniform": false,
+        "hasManualDepthCheck": false,
+        "isMinimalDepthOnly": true
+      },
+      "ManualDepthBack": {
+        "pass": 9,
+        "pickOnly": false,
+        "cullEnabled": true,
+        "cullFace": 1028,
+        "colorMask": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "depthMask": false,
+        "blendingEnabled": true,
+        "vsDefines": [
+          "TRANSLUCENT",
+          "GENERATE_POSITION"
+        ],
+        "fsDefines": [
+          "TRANSLUCENT",
+          "MANUAL_DEPTH_TEST"
+        ],
+        "hasReplacedMain": true,
+        "hasClassificationUniform": true,
+        "hasManualDepthCheck": true,
+        "isMinimalDepthOnly": false
+      },
+      "PickBack": {
+        "pass": 9,
+        "pickOnly": true,
+        "cullEnabled": true,
+        "cullFace": 1028,
+        "colorMask": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "depthMask": true,
+        "blendingEnabled": false,
+        "vsDefines": [
+          "TRANSLUCENT",
+          "GROUND_ATMOSPHERE",
+          "FOG"
+        ],
+        "fsDefines": [
+          "TRANSLUCENT",
+          "GROUND_ATMOSPHERE",
+          "FOG"
+        ],
+        "hasReplacedMain": false,
+        "hasClassificationUniform": true,
+        "hasManualDepthCheck": false,
+        "isMinimalDepthOnly": false
+      },
+      "DepthBoth": {
+        "pass": 2,
+        "pickOnly": false,
+        "cullEnabled": false,
+        "cullFace": 1029,
+        "colorMask": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "depthMask": true,
+        "blendingEnabled": false,
+        "vsDefines": [
+          "TRANSLUCENT",
+          "GROUND_ATMOSPHERE",
+          "FOG"
+        ],
+        "fsDefines": [
+          "TRANSLUCENT",
+          "GROUND_ATMOSPHERE",
+          "FOG"
+        ],
+        "hasReplacedMain": false,
+        "hasClassificationUniform": false,
+        "hasManualDepthCheck": false,
+        "isMinimalDepthOnly": true
+      },
+      "TranslucentFront": {
+        "pass": 9,
+        "pickOnly": false,
+        "cullEnabled": true,
+        "cullFace": 1029,
+        "colorMask": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "depthMask": false,
+        "blendingEnabled": true,
+        "vsDefines": [
+          "TRANSLUCENT",
+          "GROUND_ATMOSPHERE",
+          "FOG"
+        ],
+        "fsDefines": [
+          "TRANSLUCENT",
+          "GROUND_ATMOSPHERE",
+          "FOG"
+        ],
+        "hasReplacedMain": true,
+        "hasClassificationUniform": true,
+        "hasManualDepthCheck": true,
+        "isMinimalDepthOnly": false
+      },
+      "TranslucentBack": {
+        "pass": 9,
+        "pickOnly": false,
+        "cullEnabled": true,
+        "cullFace": 1028,
+        "colorMask": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "depthMask": false,
+        "blendingEnabled": true,
+        "vsDefines": [
+          "TRANSLUCENT"
+        ],
+        "fsDefines": [
+          "TRANSLUCENT"
+        ],
+        "hasReplacedMain": true,
+        "hasClassificationUniform": true,
+        "hasManualDepthCheck": true,
+        "isMinimalDepthOnly": false
+      }
+    },
+    "clippedDepthOnly": {
+      "pass": 2,
+      "pickOnly": false,
+      "cullEnabled": true,
+      "cullFace": 1029,
+      "colorMask": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "depthMask": true,
+      "blendingEnabled": false,
+      "vsDefines": [
+        "TRANSLUCENT",
+        "GROUND_ATMOSPHERE",
+        "FOG"
+      ],
+      "fsDefines": [
+        "TRANSLUCENT",
+        "GROUND_ATMOSPHERE",
+        "FOG",
+        "ENABLE_CLIPPING_PLANES"
+      ],
+      "hasReplacedMain": false,
+      "hasClassificationUniform": false,
+      "hasManualDepthCheck": false,
+      "isMinimalDepthOnly": false
+    },
+    "glError": 0
+  },
+  "globeSurfaceTileProvider": {
+    "defaults": {
+      "baseColor": [
+        0,
+        0,
+        0.5,
+        1
+      ],
+      "lightingFadeOutDistance": 6500000,
+      "lightingFadeInDistance": 9000000,
+      "shadows": 3,
+      "showSkirts": true,
+      "backFaceCulling": true,
+      "vertexShadowDarkness": 0.3,
+      "cartographicLimitRectangle": [
+        -3.141592653589793,
+        -1.5707963267948966,
+        3.141592653589793,
+        1.5707963267948966
+      ],
+      "lambertDiffuseMultiplier": 0,
+      "zoomedOutOceanSpecularIntensity": 0.5
+    },
+    "visibilityAndDistance": {
+      "distRoot0": 18621863,
+      "distRoot1": 39959651.92029041,
+      "visRoot0": "FULL",
+      "visRoot1": "NONE",
+      "priorityRoot0": 0,
+      "priorityRoot1": 0,
+      "canRefineRoot0": true,
+      "distChildInherited": 18621863,
+      "visRoot0ExcludedByLimit": "NONE",
+      "visRoot1PartialLimit": "NONE",
+      "root1ClippedByBoundaries": true,
+      "visRoot0DenseFogAbove": "NONE",
+      "visRoot0DenseFogUnderground": "FULL",
+      "visRoot0ClippedOut": "NONE"
+    },
+    "multipassBatches": [
+      {
+        "pass": 2,
+        "count": 1710,
+        "castShadows": false,
+        "receiveShadows": true,
+        "cullEnabled": true,
+        "depthTestEnabled": true,
+        "depthFunc": 513,
+        "blendingEnabled": false,
+        "vsDefines": [
+          "DYNAMIC_ATMOSPHERE_LIGHTING",
+          "GROUND_ATMOSPHERE",
+          "PER_FRAGMENT_GROUND_ATMOSPHERE",
+          "INCLUDE_WEB_MERCATOR_Y"
+        ],
+        "fsDefines": [
+          "TEXTURE_UNITS 2",
+          "APPLY_IMAGERY_CUTOUT",
+          "APPLY_BRIGHTNESS",
+          "APPLY_CONTRAST",
+          "APPLY_HUE",
+          "APPLY_SATURATION",
+          "APPLY_GAMMA",
+          "APPLY_ALPHA",
+          "APPLY_DAY_NIGHT_ALPHA",
+          "APPLY_COLOR_TO_ALPHA",
+          "DYNAMIC_ATMOSPHERE_LIGHTING",
+          "GROUND_ATMOSPHERE",
+          "PER_FRAGMENT_GROUND_ATMOSPHERE",
+          "INCLUDE_WEB_MERCATOR_Y",
+          "APPLY_SPLIT"
+        ],
+        "uniforms": {
+          "initialColor": [
+            0,
+            0,
+            0.5,
+            1
+          ],
+          "zoomedOutOceanSpecularIntensity": 0.4,
+          "atmosphereLightIntensity": 10,
+          "atmosphereRayleighCoefficient": [
+            0.0000055,
+            0.000013,
+            0.0000284
+          ],
+          "atmosphereMieCoefficient": [
+            0.000021,
+            0.000021,
+            0.000021
+          ],
+          "atmosphereRayleighScaleHeight": 10000,
+          "atmosphereMieScaleHeight": 3200,
+          "atmosphereMieAnisotropy": 0.9,
+          "lightingFadeDistance": [
+            9985163.185561286,
+            19970326.371122573
+          ],
+          "nightFadeDistance": [
+            9985163.185561286,
+            49925815.92780643
+          ],
+          "center3D": [
+            3.905482530786651e-10,
+            -6378137,
+            0
+          ],
+          "verticalExaggerationAndRelativeHeight": [
+            1,
+            0
+          ],
+          "tileRectangle": [
+            -10018754.171394622,
+            -10018754.171394622,
+            10018754.171394622,
+            10018754.171394622
+          ],
+          "southAndNorthLatitude": [
+            0,
+            0
+          ],
+          "southMercatorYAndOneOverHeight": [
+            0,
+            0
+          ],
+          "minMaxHeight": [
+            -1000,
+            0
+          ],
+          "cartographicLimitRectangle": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "translucencyRectangle": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "frontFaceAlphaByDistance": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "backFaceAlphaByDistance": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "undergroundColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "undergroundColorAlphaByDistance": [
+            6378.137,
+            0,
+            1275627.4,
+            1
+          ],
+          "lambertDiffuseMultiplier": 0.9,
+          "vertexShadowDarkness": 0.3,
+          "hsbShift": [
+            0,
+            0,
+            0
+          ],
+          "fillHighlightColor": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "dayTextureCount": 2,
+          "dayTextureAlpha": [
+            0.85,
+            1
+          ],
+          "dayTextureDayAlpha": [
+            0.9,
+            1
+          ],
+          "dayTextureNightAlpha": [
+            0.7,
+            1
+          ],
+          "dayTextureBrightness": [
+            1.25,
+            1
+          ],
+          "dayTextureContrast": [
+            1.1,
+            1
+          ],
+          "dayTextureHue": [
+            0.2,
+            0
+          ],
+          "dayTextureSaturation": [
+            1.3,
+            1
+          ],
+          "dayTextureOneOverGamma": [
+            0.5,
+            1
+          ],
+          "dayTextureSplit": [
+            -1,
+            0
+          ],
+          "dayTextureUseWebMercatorT": [
+            false,
+            false
+          ],
+          "dayTextureTranslationAndScale": [
+            [
+              0,
+              0,
+              1,
+              1
+            ],
+            [
+              0,
+              0,
+              1,
+              1
+            ]
+          ],
+          "dayTextureTexCoordsRectangle": [
+            [
+              0,
+              0,
+              1,
+              1
+            ],
+            [
+              0,
+              0,
+              1,
+              1
+            ]
+          ],
+          "dayTextureCutoutRectangles": [
+            [
+              0.5,
+              0.33333333333333337,
+              0.75,
+              0.6666666666666666
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "colorsToAlpha": [
+            [
+              1,
+              0,
+              0,
+              0.05
+            ],
+            [
+              0,
+              0,
+              0,
+              -1
+            ]
+          ]
+        }
+      },
+      {
+        "pass": 2,
+        "count": 1710,
+        "castShadows": false,
+        "receiveShadows": true,
+        "cullEnabled": true,
+        "depthTestEnabled": true,
+        "depthFunc": 515,
+        "blendingEnabled": true,
+        "vsDefines": [
+          "DYNAMIC_ATMOSPHERE_LIGHTING",
+          "GROUND_ATMOSPHERE",
+          "PER_FRAGMENT_GROUND_ATMOSPHERE",
+          "INCLUDE_WEB_MERCATOR_Y"
+        ],
+        "fsDefines": [
+          "TEXTURE_UNITS 1",
+          "APPLY_BRIGHTNESS",
+          "APPLY_CONTRAST",
+          "APPLY_ALPHA",
+          "DYNAMIC_ATMOSPHERE_LIGHTING",
+          "GROUND_ATMOSPHERE",
+          "PER_FRAGMENT_GROUND_ATMOSPHERE",
+          "INCLUDE_WEB_MERCATOR_Y"
+        ],
+        "uniforms": {
+          "initialColor": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "zoomedOutOceanSpecularIntensity": 0.4,
+          "atmosphereLightIntensity": 10,
+          "atmosphereRayleighCoefficient": [
+            0.0000055,
+            0.000013,
+            0.0000284
+          ],
+          "atmosphereMieCoefficient": [
+            0.000021,
+            0.000021,
+            0.000021
+          ],
+          "atmosphereRayleighScaleHeight": 10000,
+          "atmosphereMieScaleHeight": 3200,
+          "atmosphereMieAnisotropy": 0.9,
+          "lightingFadeDistance": [
+            9985163.185561286,
+            19970326.371122573
+          ],
+          "nightFadeDistance": [
+            9985163.185561286,
+            49925815.92780643
+          ],
+          "center3D": [
+            3.905482530786651e-10,
+            -6378137,
+            0
+          ],
+          "verticalExaggerationAndRelativeHeight": [
+            1,
+            0
+          ],
+          "tileRectangle": [
+            -10018754.171394622,
+            -10018754.171394622,
+            10018754.171394622,
+            10018754.171394622
+          ],
+          "southAndNorthLatitude": [
+            0,
+            0
+          ],
+          "southMercatorYAndOneOverHeight": [
+            0,
+            0
+          ],
+          "minMaxHeight": [
+            -1000,
+            0
+          ],
+          "cartographicLimitRectangle": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "translucencyRectangle": [
+            0,
+            0,
+            2,
+            1
+          ],
+          "frontFaceAlphaByDistance": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "backFaceAlphaByDistance": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "undergroundColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "undergroundColorAlphaByDistance": [
+            6378.137,
+            0,
+            1275627.4,
+            1
+          ],
+          "lambertDiffuseMultiplier": 0.9,
+          "vertexShadowDarkness": 0.3,
+          "hsbShift": [
+            0,
+            0,
+            0
+          ],
+          "fillHighlightColor": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "dayTextureCount": 1,
+          "dayTextureAlpha": [
+            0.6
+          ],
+          "dayTextureDayAlpha": [
+            1
+          ],
+          "dayTextureNightAlpha": [
+            1
+          ],
+          "dayTextureBrightness": [
+            1.5
+          ],
+          "dayTextureContrast": [
+            0.8
+          ],
+          "dayTextureHue": [
+            0
+          ],
+          "dayTextureSaturation": [
+            1
+          ],
+          "dayTextureOneOverGamma": [
+            1
+          ],
+          "dayTextureSplit": [
+            0
+          ],
+          "dayTextureUseWebMercatorT": [
+            false
+          ],
+          "dayTextureTranslationAndScale": [
+            [
+              0,
+              0,
+              1,
+              1
+            ]
+          ],
+          "dayTextureTexCoordsRectangle": [
+            [
+              0,
+              0,
+              1,
+              1
+            ]
+          ],
+          "dayTextureCutoutRectangles": [
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "colorsToAlpha": [
+            [
+              0,
+              0,
+              0,
+              -1
+            ]
+          ]
+        }
+      }
+    ],
+    "translucencyAboveGround": {
+      "underground": false,
+      "commandCount": 3,
+      "indexCount": 1350,
+      "indexCountWithoutSkirts": 1350,
+      "indexCountWithSkirts": 1710,
+      "frontFaceAlphaByDistance": [
+        100,
+        0.1,
+        2000,
+        0.2
+      ],
+      "backFaceAlphaByDistance": [
+        50,
+        0.15000000000000002,
+        1000,
+        0.44999999999999996
+      ]
+    },
+    "translucencyUnderground": {
+      "underground": true,
+      "commandCount": 3,
+      "indexCount": 1350,
+      "indexCountWithoutSkirts": 1350,
+      "indexCountWithSkirts": 1710,
+      "frontFaceAlphaByDistance": [
+        50,
+        0.15000000000000002,
+        1000,
+        0.44999999999999996
+      ],
+      "backFaceAlphaByDistance": [
+        100,
+        0.1,
+        2000,
+        0.2
+      ]
+    },
+    "webMercator2DUniforms": {
+      "tileRectangle": [
+        -10018754.171394622,
+        -20037508.342789274,
+        10018754.171394622,
+        20037508.342789274
+      ],
+      "southAndNorthLatitude": [
+        -1.5707963267948966,
+        1.5707963267948966
+      ],
+      "southMercatorYAndOneOverHeight": [
+        -3.141592653589798,
+        0.1591549430918951
+      ],
+      "zoomedOutOceanSpecularIntensity": 0.4,
+      "vsUsesMercator": true
+    },
+    "fillHighlightOpaque": {
+      "hasHighlightFillDefine": true,
+      "hasDayNightShadingDefine": true,
+      "hasVertexLightingDefine": false,
+      "fillMeshDefined": true
+    },
+    "fillHighlightZeroAlpha": {
+      "hasHighlightFillDefine": false,
+      "hasDayNightShadingDefine": true,
+      "hasVertexLightingDefine": false,
+      "fillMeshDefined": true
+    },
+    "glError": 0
+  },
+  "terrainFillMesh": {
+    "lowDetailGrid": {
+      "level": 1,
+      "rectangle": [
+        -3.141592653589793,
+        0,
+        -1.5707963267948966,
+        1.5707963267948966
+      ],
+      "geometricError": 19000,
+      "vertexCountWithoutSkirts": null,
+      "minimumHeight": 150,
+      "maximumHeight": 150,
+      "centerHeight": 150
+    },
+    "highDetailIsolated": {
+      "level": 8,
+      "x": 100,
+      "y": 50,
+      "rectangle": [
+        -1.9144080232812801,
+        0.944932165337555,
+        -1.902136176978195,
+        0.9572040116406401
+      ],
+      "geometricError": 305.748113140705,
+      "vertexCount": 5,
+      "vertexCountWithoutSkirts": 5,
+      "indexCount": 12,
+      "indexCountWithoutSkirts": 12,
+      "indices": [
+        4,
+        0,
+        1,
+        4,
+        1,
+        2,
+        4,
+        2,
+        3,
+        4,
+        3,
+        0
+      ],
+      "minimumHeight": 200,
+      "maximumHeight": 200,
+      "stride": 8,
+      "hasVertexNormals": true,
+      "hasWebMercatorT": true,
+      "hasGeodeticSurfaceNormals": false,
+      "westIndices": [
+        1,
+        0
+      ],
+      "southIndices": [
+        2,
+        1
+      ],
+      "eastIndices": [
+        3,
+        2
+      ],
+      "northIndices": [
+        0,
+        3
+      ],
+      "westEdge": [
+        {
+          "index": 1,
+          "uv": [
+            0,
+            0
+          ],
+          "height": 200,
+          "position": [
+            -1261537.236882869,
+            -3525760.381742829,
+            5146090.653717091
+          ]
+        },
+        {
+          "index": 0,
+          "uv": [
+            0,
+            1
+          ],
+          "height": 200,
+          "position": [
+            -1240072.5015313064,
+            -3465770.463774079,
+            5191550.792388966
+          ]
+        }
+      ],
+      "southEdge": [
+        {
+          "index": 2,
+          "uv": [
+            1,
+            0
+          ],
+          "height": 200,
+          "position": [
+            -1218175.7417656814,
+            -3540975.901274079,
+            5146090.653717091
+          ]
+        },
+        {
+          "index": 1,
+          "uv": [
+            0,
+            0
+          ],
+          "height": 200,
+          "position": [
+            -1261537.236882869,
+            -3525760.381742829,
+            5146090.653717091
+          ]
+        }
+      ],
+      "eastEdge": [
+        {
+          "index": 3,
+          "uv": [
+            1,
+            1
+          ],
+          "height": 200,
+          "position": [
+            -1197448.791570369,
+            -3480727.096586579,
+            5191550.792388966
+          ]
+        },
+        {
+          "index": 2,
+          "uv": [
+            1,
+            0
+          ],
+          "height": 200,
+          "position": [
+            -1218175.7417656814,
+            -3540975.901274079,
+            5146090.653717091
+          ]
+        }
+      ],
+      "northEdge": [
+        {
+          "index": 0,
+          "uv": [
+            0,
+            1
+          ],
+          "height": 200,
+          "position": [
+            -1240072.5015313064,
+            -3465770.463774079,
+            5191550.792388966
+          ]
+        },
+        {
+          "index": 3,
+          "uv": [
+            1,
+            1
+          ],
+          "height": 200,
+          "position": [
+            -1197448.791570369,
+            -3480727.096586579,
+            5191550.792388966
+          ]
+        }
+      ],
+      "vertices": [
+        {
+          "uv": [
+            0,
+            1
+          ],
+          "height": 200,
+          "position": [
+            -1240072.5015313064,
+            -3465770.463774079,
+            5191550.792388966
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0
+          ],
+          "height": 200,
+          "position": [
+            -1261537.236882869,
+            -3525760.381742829,
+            5146090.653717091
+          ]
+        },
+        {
+          "uv": [
+            1,
+            0
+          ],
+          "height": 200,
+          "position": [
+            -1218175.7417656814,
+            -3540975.901274079,
+            5146090.653717091
+          ]
+        },
+        {
+          "uv": [
+            1,
+            1
+          ],
+          "height": 200,
+          "position": [
+            -1197448.791570369,
+            -3480727.096586579,
+            5191550.792388966
+          ]
+        },
+        {
+          "uv": [
+            0.5,
+            0.5
+          ],
+          "height": 200,
+          "position": [
+            -1229331.7162930404,
+            -3503374.430586213,
+            5168869.309303334
+          ]
+        }
+      ]
+    },
+    "sameLodStitch": {
+      "level": 8,
+      "x": 121,
+      "y": 60,
+      "rectangle": [
+        -1.6566992509164924,
+        0.8222137023067037,
+        -1.6444274046134073,
+        0.8344855486097889
+      ],
+      "geometricError": 305.748113140705,
+      "vertexCount": 8,
+      "vertexCountWithoutSkirts": 8,
+      "indexCount": 21,
+      "indexCountWithoutSkirts": 21,
+      "indices": [
+        7,
+        0,
+        1,
+        7,
+        1,
+        2,
+        7,
+        2,
+        3,
+        7,
+        3,
+        4,
+        7,
+        4,
+        5,
+        7,
+        5,
+        6,
+        7,
+        6,
+        0
+      ],
+      "minimumHeight": 300,
+      "maximumHeight": 460,
+      "stride": 8,
+      "hasVertexNormals": true,
+      "hasWebMercatorT": true,
+      "hasGeodeticSurfaceNormals": false,
+      "westIndices": [
+        4,
+        3,
+        2,
+        1,
+        0
+      ],
+      "southIndices": [
+        5,
+        4
+      ],
+      "eastIndices": [
+        6,
+        5
+      ],
+      "northIndices": [
+        0,
+        6
+      ],
+      "westEdge": [
+        {
+          "index": 4,
+          "uv": [
+            0,
+            0
+          ],
+          "height": 300,
+          "position": [
+            -373131.75073514495,
+            -4332954.7215103,
+            4650268.800866338
+          ]
+        },
+        {
+          "index": 3,
+          "uv": [
+            0,
+            0.25
+          ],
+          "height": 340,
+          "position": [
+            -371903.84057889495,
+            -4318695.730299363,
+            4663577.426842901
+          ]
+        },
+        {
+          "index": 2,
+          "uv": [
+            0,
+            0.5
+          ],
+          "height": 380,
+          "position": [
+            -370672.38745389495,
+            -4304395.595533738,
+            4676842.57234995
+          ]
+        },
+        {
+          "index": 1,
+          "uv": [
+            0,
+            0.75
+          ],
+          "height": 420,
+          "position": [
+            -369437.40112576995,
+            -4290054.4480728,
+            4690064.110436651
+          ]
+        },
+        {
+          "index": 0,
+          "uv": [
+            0,
+            1
+          ],
+          "height": 460,
+          "position": [
+            -368198.89526639495,
+            -4275672.422682175,
+            4703241.912194463
+          ]
+        }
+      ],
+      "southEdge": [
+        {
+          "index": 5,
+          "uv": [
+            1,
+            0
+          ],
+          "height": 300,
+          "position": [
+            -319931.63550076995,
+            -4337207.35822905,
+            4650268.800866338
+          ]
+        },
+        {
+          "index": 4,
+          "uv": [
+            0,
+            0
+          ],
+          "height": 300,
+          "position": [
+            -373131.75073514495,
+            -4332954.7215103,
+            4650268.800866338
+          ]
+        }
+      ],
+      "eastEdge": [
+        {
+          "index": 6,
+          "uv": [
+            1,
+            1
+          ],
+          "height": 380,
+          "position": [
+            -315698.13940701995,
+            -4279815.258619675,
+            4703182.636803838
+          ]
+        },
+        {
+          "index": 5,
+          "uv": [
+            1,
+            0
+          ],
+          "height": 300,
+          "position": [
+            -319931.63550076995,
+            -4337207.35822905,
+            4650268.800866338
+          ]
+        }
+      ],
+      "northEdge": [
+        {
+          "index": 0,
+          "uv": [
+            0,
+            1
+          ],
+          "height": 460,
+          "position": [
+            -368198.89526639495,
+            -4275672.422682175,
+            4703241.912194463
+          ]
+        },
+        {
+          "index": 6,
+          "uv": [
+            1,
+            1
+          ],
+          "height": 380,
+          "position": [
+            -315698.13940701995,
+            -4279815.258619675,
+            4703182.636803838
+          ]
+        }
+      ],
+      "vertices": [
+        {
+          "uv": [
+            0,
+            1
+          ],
+          "height": 460,
+          "position": [
+            -368198.89526639495,
+            -4275672.422682175,
+            4703241.912194463
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0.75
+          ],
+          "height": 420,
+          "position": [
+            -369437.40112576995,
+            -4290054.4480728,
+            4690064.110436651
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0.5
+          ],
+          "height": 380,
+          "position": [
+            -370672.38745389495,
+            -4304395.595533738,
+            4676842.57234995
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0.25
+          ],
+          "height": 340,
+          "position": [
+            -371903.84057889495,
+            -4318695.730299363,
+            4663577.426842901
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0
+          ],
+          "height": 300,
+          "position": [
+            -373131.75073514495,
+            -4332954.7215103,
+            4650268.800866338
+          ]
+        },
+        {
+          "uv": [
+            1,
+            0
+          ],
+          "height": 300,
+          "position": [
+            -319931.63550076995,
+            -4337207.35822905,
+            4650268.800866338
+          ]
+        },
+        {
+          "uv": [
+            1,
+            1
+          ],
+          "height": 380,
+          "position": [
+            -315698.13940701995,
+            -4279815.258619675,
+            4703182.636803838
+          ]
+        },
+        {
+          "uv": [
+            0.5,
+            0.5
+          ],
+          "height": 380,
+          "position": [
+            -344247.59440455947,
+            -4306507.165449509,
+            4676798.938515875
+          ]
+        }
+      ]
+    },
+    "sameLodExaggerated": {
+      "level": 8,
+      "x": 121,
+      "y": 61,
+      "rectangle": [
+        -1.6566992509164924,
+        0.8099418560036186,
+        -1.6444274046134073,
+        0.8222137023067037
+      ],
+      "geometricError": 305.748113140705,
+      "vertexCount": 8,
+      "vertexCountWithoutSkirts": 8,
+      "indexCount": 21,
+      "indexCountWithoutSkirts": 21,
+      "indices": [
+        7,
+        0,
+        1,
+        7,
+        1,
+        2,
+        7,
+        2,
+        3,
+        7,
+        3,
+        4,
+        7,
+        4,
+        5,
+        7,
+        5,
+        6,
+        7,
+        6,
+        0
+      ],
+      "minimumHeight": 300,
+      "maximumHeight": 460,
+      "stride": 11,
+      "hasVertexNormals": true,
+      "hasWebMercatorT": true,
+      "hasGeodeticSurfaceNormals": true,
+      "westIndices": [
+        4,
+        3,
+        2,
+        1,
+        0
+      ],
+      "southIndices": [
+        5,
+        4
+      ],
+      "eastIndices": [
+        6,
+        5
+      ],
+      "northIndices": [
+        0,
+        6
+      ],
+      "westEdge": [
+        {
+          "index": 4,
+          "uv": [
+            0,
+            0
+          ],
+          "height": 300,
+          "position": [
+            -378017.2024743251,
+            -4389686.538879715,
+            4596717.965591712
+          ]
+        },
+        {
+          "index": 3,
+          "uv": [
+            0,
+            0.25
+          ],
+          "height": 340,
+          "position": [
+            -376803.5462243251,
+            -4375593.07989534,
+            4610199.555435462
+          ]
+        },
+        {
+          "index": 2,
+          "uv": [
+            0,
+            0.5
+          ],
+          "height": 380,
+          "position": [
+            -375586.3020837001,
+            -4361457.9531863555,
+            4623638.182387502
+          ]
+        },
+        {
+          "index": 1,
+          "uv": [
+            0,
+            0.75
+          ],
+          "height": 420,
+          "position": [
+            -374365.4817712001,
+            -4347281.28692659,
+            4637033.715591712
+          ]
+        },
+        {
+          "index": 0,
+          "uv": [
+            0,
+            1
+          ],
+          "height": 460,
+          "position": [
+            -373141.0930993251,
+            -4333063.214660965,
+            4650386.026138587
+          ]
+        }
+      ],
+      "southEdge": [
+        {
+          "index": 5,
+          "uv": [
+            1,
+            0
+          ],
+          "height": 300,
+          "position": [
+            -324120.5325524501,
+            -4393994.85723909,
+            4596717.965591712
+          ]
+        },
+        {
+          "index": 4,
+          "uv": [
+            0,
+            0
+          ],
+          "height": 300,
+          "position": [
+            -378017.2024743251,
+            -4389686.538879715,
+            4596717.965591712
+          ]
+        }
+      ],
+      "eastEdge": [
+        {
+          "index": 6,
+          "uv": [
+            1,
+            1
+          ],
+          "height": 380,
+          "position": [
+            -319935.6399743251,
+            -4337261.65802034,
+            4650327.414810462
+          ]
+        },
+        {
+          "index": 5,
+          "uv": [
+            1,
+            0
+          ],
+          "height": 300,
+          "position": [
+            -324120.5325524501,
+            -4393994.85723909,
+            4596717.965591712
+          ]
+        }
+      ],
+      "northEdge": [
+        {
+          "index": 0,
+          "uv": [
+            0,
+            1
+          ],
+          "height": 460,
+          "position": [
+            -373141.0930993251,
+            -4333063.214660965,
+            4650386.026138587
+          ]
+        },
+        {
+          "index": 6,
+          "uv": [
+            1,
+            1
+          ],
+          "height": 380,
+          "position": [
+            -319935.6399743251,
+            -4337261.65802034,
+            4650327.414810462
+          ]
+        }
+      ],
+      "vertices": [
+        {
+          "uv": [
+            0,
+            1
+          ],
+          "height": 460,
+          "position": [
+            -373141.0930993251,
+            -4333063.214660965,
+            4650386.026138587
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0.75
+          ],
+          "height": 420,
+          "position": [
+            -374365.4817712001,
+            -4347281.28692659,
+            4637033.715591712
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0.5
+          ],
+          "height": 380,
+          "position": [
+            -375586.3020837001,
+            -4361457.9531863555,
+            4623638.182387502
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0.25
+          ],
+          "height": 340,
+          "position": [
+            -376803.5462243251,
+            -4375593.07989534,
+            4610199.555435462
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0
+          ],
+          "height": 300,
+          "position": [
+            -378017.2024743251,
+            -4389686.538879715,
+            4596717.965591712
+          ]
+        },
+        {
+          "uv": [
+            1,
+            0
+          ],
+          "height": 300,
+          "position": [
+            -324120.5325524501,
+            -4393994.85723909,
+            4596717.965591712
+          ]
+        },
+        {
+          "uv": [
+            1,
+            1
+          ],
+          "height": 380,
+          "position": [
+            -319935.6399743251,
+            -4337261.65802034,
+            4650327.414810462
+          ]
+        },
+        {
+          "uv": [
+            0.5,
+            0.5
+          ],
+          "height": 380,
+          "position": [
+            -348811.20492479124,
+            -4363597.532165848,
+            4623595.069496436
+          ]
+        }
+      ]
+    },
+    "coarserNeighborStitch": {
+      "level": 8,
+      "x": 126,
+      "y": 65,
+      "rectangle": [
+        -1.5953400194010667,
+        0.760854470791278,
+        -1.5830681730979816,
+        0.7731263170943632
+      ],
+      "geometricError": 305.748113140705,
+      "vertexCount": 7,
+      "vertexCountWithoutSkirts": 7,
+      "indexCount": 18,
+      "indexCountWithoutSkirts": 18,
+      "indices": [
+        6,
+        0,
+        1,
+        6,
+        1,
+        2,
+        6,
+        2,
+        3,
+        6,
+        3,
+        4,
+        6,
+        4,
+        5,
+        6,
+        5,
+        0
+      ],
+      "minimumHeight": 200,
+      "maximumHeight": 299.99999701976844,
+      "stride": 8,
+      "hasVertexNormals": true,
+      "hasWebMercatorT": true,
+      "hasGeodeticSurfaceNormals": false,
+      "westIndices": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "southIndices": [
+        4,
+        3
+      ],
+      "eastIndices": [
+        5,
+        4
+      ],
+      "northIndices": [
+        0,
+        5
+      ],
+      "westEdge": [
+        {
+          "index": 3,
+          "uv": [
+            0,
+            0
+          ],
+          "height": 200,
+          "position": [
+            -113548.85572966794,
+            -4625467.617339406,
+            4375649.263269559
+          ]
+        },
+        {
+          "index": 2,
+          "uv": [
+            0,
+            0.4000000059604645
+          ],
+          "height": 240,
+          "position": [
+            -113019.38893279294,
+            -4603899.453765187,
+            4398256.613367215
+          ]
+        },
+        {
+          "index": 1,
+          "uv": [
+            0,
+            0.800000011920929
+          ],
+          "height": 280,
+          "position": [
+            -112487.17408904294,
+            -4582219.400542531,
+            4420759.042566434
+          ]
+        },
+        {
+          "index": 0,
+          "uv": [
+            0,
+            1
+          ],
+          "height": 300,
+          "position": [
+            -112220.03932341794,
+            -4571337.576323781,
+            4431970.735925809
+          ]
+        }
+      ],
+      "southEdge": [
+        {
+          "index": 4,
+          "uv": [
+            1,
+            0
+          ],
+          "height": 200,
+          "position": [
+            -56778.703385917936,
+            -4626512.746245656,
+            4375649.263269559
+          ]
+        },
+        {
+          "index": 3,
+          "uv": [
+            0,
+            0
+          ],
+          "height": 200,
+          "position": [
+            -113548.85572966794,
+            -4625467.617339406,
+            4375649.263269559
+          ]
+        }
+      ],
+      "eastEdge": [
+        {
+          "index": 5,
+          "uv": [
+            1,
+            1
+          ],
+          "height": 250,
+          "position": [
+            -56113.804948417936,
+            -4572334.691558156,
+            4431935.816003934
+          ]
+        },
+        {
+          "index": 4,
+          "uv": [
+            1,
+            0
+          ],
+          "height": 200,
+          "position": [
+            -56778.703385917936,
+            -4626512.746245656,
+            4375649.263269559
+          ]
+        }
+      ],
+      "northEdge": [
+        {
+          "index": 0,
+          "uv": [
+            0,
+            1
+          ],
+          "height": 300,
+          "position": [
+            -112220.03932341794,
+            -4571337.576323781,
+            4431970.735925809
+          ]
+        },
+        {
+          "index": 5,
+          "uv": [
+            1,
+            1
+          ],
+          "height": 250,
+          "position": [
+            -56113.804948417936,
+            -4572334.691558156,
+            4431935.816003934
+          ]
+        }
+      ],
+      "vertices": [
+        {
+          "uv": [
+            0,
+            1
+          ],
+          "height": 300,
+          "position": [
+            -112220.03932341794,
+            -4571337.576323781,
+            4431970.735925809
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0.800000011920929
+          ],
+          "height": 280,
+          "position": [
+            -112487.17408904294,
+            -4582219.400542531,
+            4420759.042566434
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0.4000000059604645
+          ],
+          "height": 240,
+          "position": [
+            -113019.38893279294,
+            -4603899.453765187,
+            4398256.613367215
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0
+          ],
+          "height": 200,
+          "position": [
+            -113548.85572966794,
+            -4625467.617339406,
+            4375649.263269559
+          ]
+        },
+        {
+          "uv": [
+            1,
+            0
+          ],
+          "height": 200,
+          "position": [
+            -56778.703385917936,
+            -4626512.746245656,
+            4375649.263269559
+          ]
+        },
+        {
+          "uv": [
+            1,
+            1
+          ],
+          "height": 250,
+          "position": [
+            -56113.804948417936,
+            -4572334.691558156,
+            4431935.816003934
+          ]
+        },
+        {
+          "uv": [
+            0.5,
+            0.5
+          ],
+          "height": 250,
+          "position": [
+            -84667.05575165013,
+            -4599008.734542165,
+            4403851.110635892
+          ]
+        }
+      ]
+    },
+    "finerNeighborsStitch": {
+      "level": 7,
+      "x": 66,
+      "y": 34,
+      "rectangle": [
+        -1.521708941582556,
+        0.7117670855789375,
+        -1.4971652489763858,
+        0.7363107781851077
+      ],
+      "geometricError": 611.49622628141,
+      "vertexCount": 8,
+      "vertexCountWithoutSkirts": 8,
+      "indexCount": 21,
+      "indexCountWithoutSkirts": 21,
+      "indices": [
+        7,
+        0,
+        1,
+        7,
+        1,
+        2,
+        7,
+        2,
+        3,
+        7,
+        3,
+        4,
+        7,
+        4,
+        5,
+        7,
+        5,
+        6,
+        7,
+        6,
+        0
+      ],
+      "minimumHeight": 220,
+      "maximumHeight": 400,
+      "stride": 8,
+      "hasVertexNormals": true,
+      "hasWebMercatorT": true,
+      "hasGeodeticSurfaceNormals": false,
+      "westIndices": [
+        4,
+        3,
+        2,
+        1,
+        0
+      ],
+      "southIndices": [
+        5,
+        4
+      ],
+      "eastIndices": [
+        6,
+        5
+      ],
+      "northIndices": [
+        0,
+        6
+      ],
+      "westEdge": [
+        {
+          "index": 4,
+          "uv": [
+            0,
+            0
+          ],
+          "height": 220,
+          "position": [
+            237323.6549632232,
+            -4830833.963180555,
+            4144202.6755681457
+          ]
+        },
+        {
+          "index": 3,
+          "uv": [
+            0,
+            0.25
+          ],
+          "height": 280,
+          "position": [
+            236070.1002757232,
+            -4805317.26591493,
+            4173727.7634587707
+          ]
+        },
+        {
+          "index": 2,
+          "uv": [
+            0,
+            0.5
+          ],
+          "height": 340,
+          "position": [
+            234807.5885569732,
+            -4779618.28544618,
+            4203097.610931915
+          ]
+        },
+        {
+          "index": 1,
+          "uv": [
+            0,
+            0.75
+          ],
+          "height": 370,
+          "position": [
+            233535.0729319732,
+            -4753715.63700868,
+            4232291.081818146
+          ]
+        },
+        {
+          "index": 0,
+          "uv": [
+            0,
+            1
+          ],
+          "height": 400,
+          "position": [
+            232253.7096507232,
+            -4727632.838180555,
+            4261326.796661896
+          ]
+        }
+      ],
+      "southEdge": [
+        {
+          "index": 5,
+          "uv": [
+            1,
+            0
+          ],
+          "height": 220,
+          "position": [
+            355806.7760569732,
+            -4823554.791305555,
+            4144202.6755681457
+          ]
+        },
+        {
+          "index": 4,
+          "uv": [
+            0,
+            0
+          ],
+          "height": 220,
+          "position": [
+            237323.6549632232,
+            -4830833.963180555,
+            4144202.6755681457
+          ]
+        }
+      ],
+      "eastEdge": [
+        {
+          "index": 6,
+          "uv": [
+            1,
+            1
+          ],
+          "height": 310,
+          "position": [
+            348200.7682444732,
+            -4720442.666305555,
+            4261266.355255646
+          ]
+        },
+        {
+          "index": 5,
+          "uv": [
+            1,
+            0
+          ],
+          "height": 220,
+          "position": [
+            355806.7760569732,
+            -4823554.791305555,
+            4144202.6755681457
+          ]
+        }
+      ],
+      "northEdge": [
+        {
+          "index": 0,
+          "uv": [
+            0,
+            1
+          ],
+          "height": 400,
+          "position": [
+            232253.7096507232,
+            -4727632.838180555,
+            4261326.796661896
+          ]
+        },
+        {
+          "index": 6,
+          "uv": [
+            1,
+            1
+          ],
+          "height": 310,
+          "position": [
+            348200.7682444732,
+            -4720442.666305555,
+            4261266.355255646
+          ]
+        }
+      ],
+      "vertices": [
+        {
+          "uv": [
+            0,
+            1
+          ],
+          "height": 400,
+          "position": [
+            232253.7096507232,
+            -4727632.838180555,
+            4261326.796661896
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0.75
+          ],
+          "height": 370,
+          "position": [
+            233535.0729319732,
+            -4753715.63700868,
+            4232291.081818146
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0.5
+          ],
+          "height": 340,
+          "position": [
+            234807.5885569732,
+            -4779618.28544618,
+            4203097.610931915
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0.25
+          ],
+          "height": 280,
+          "position": [
+            236070.1002757232,
+            -4805317.26591493,
+            4173727.7634587707
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0
+          ],
+          "height": 220,
+          "position": [
+            237323.6549632232,
+            -4830833.963180555,
+            4144202.6755681457
+          ]
+        },
+        {
+          "uv": [
+            1,
+            0
+          ],
+          "height": 220,
+          "position": [
+            355806.7760569732,
+            -4823554.791305555,
+            4144202.6755681457
+          ]
+        },
+        {
+          "uv": [
+            1,
+            1
+          ],
+          "height": 310,
+          "position": [
+            348200.7682444732,
+            -4720442.666305555,
+            4261266.355255646
+          ]
+        },
+        {
+          "uv": [
+            0.5,
+            0.5
+          ],
+          "height": 310,
+          "position": [
+            293419.53825637506,
+            -4775992.159805311,
+            4202920.702271027
+          ]
+        }
+      ]
+    },
+    "twoEdgeCornerFallback": {
+      "level": 8,
+      "x": 140,
+      "y": 70,
+      "rectangle": [
+        -1.423534171157875,
+        0.6994952392758523,
+        -1.41126232485479,
+        0.7117670855789375
+      ],
+      "geometricError": 305.748113140705,
+      "vertexCount": 7,
+      "vertexCountWithoutSkirts": 7,
+      "indexCount": 18,
+      "indexCountWithoutSkirts": 18,
+      "indices": [
+        6,
+        0,
+        1,
+        6,
+        1,
+        2,
+        6,
+        2,
+        3,
+        6,
+        3,
+        4,
+        6,
+        4,
+        5,
+        6,
+        5,
+        0
+      ],
+      "minimumHeight": 100,
+      "maximumHeight": 400,
+      "stride": 8,
+      "hasVertexNormals": true,
+      "hasWebMercatorT": true,
+      "hasGeodeticSurfaceNormals": false,
+      "westIndices": [
+        2,
+        1,
+        0
+      ],
+      "southIndices": [
+        4,
+        3,
+        2
+      ],
+      "eastIndices": [
+        5,
+        4
+      ],
+      "northIndices": [
+        0,
+        5
+      ],
+      "westEdge": [
+        {
+          "index": 2,
+          "uv": [
+            0,
+            0
+          ],
+          "height": 100,
+          "position": [
+            717101.7084976737,
+            -4834307.0375289805,
+            4084691.3119058777
+          ]
+        },
+        {
+          "index": 1,
+          "uv": [
+            0,
+            0.5
+          ],
+          "height": 150,
+          "position": [
+            713405.9663101737,
+            -4809392.368095387,
+            4114516.995621698
+          ]
+        },
+        {
+          "index": 0,
+          "uv": [
+            0,
+            1
+          ],
+          "height": 200,
+          "position": [
+            709683.1850601737,
+            -4784295.4105758555,
+            4144189.6126871277
+          ]
+        }
+      ],
+      "southEdge": [
+        {
+          "index": 4,
+          "uv": [
+            1,
+            0
+          ],
+          "height": 400,
+          "position": [
+            776408.5600601737,
+            -4825369.7172164805,
+            4084884.4603433777
+          ]
+        },
+        {
+          "index": 3,
+          "uv": [
+            0.5,
+            0
+          ],
+          "height": 250,
+          "position": [
+            746768.4970718925,
+            -4829929.4066696055,
+            4084787.8861246277
+          ]
+        },
+        {
+          "index": 2,
+          "uv": [
+            0,
+            0
+          ],
+          "height": 100,
+          "position": [
+            717101.7084976737,
+            -4834307.0375289805,
+            4084691.3119058777
+          ]
+        }
+      ],
+      "eastEdge": [
+        {
+          "index": 5,
+          "uv": [
+            1,
+            1
+          ],
+          "height": 300,
+          "position": [
+            768352.4389664237,
+            -4775301.0160446055,
+            4144254.9310465027
+          ]
+        },
+        {
+          "index": 4,
+          "uv": [
+            1,
+            0
+          ],
+          "height": 400,
+          "position": [
+            776408.5600601737,
+            -4825369.7172164805,
+            4084884.4603433777
+          ]
+        }
+      ],
+      "northEdge": [
+        {
+          "index": 0,
+          "uv": [
+            0,
+            1
+          ],
+          "height": 200,
+          "position": [
+            709683.1850601737,
+            -4784295.4105758555,
+            4144189.6126871277
+          ]
+        },
+        {
+          "index": 5,
+          "uv": [
+            1,
+            1
+          ],
+          "height": 300,
+          "position": [
+            768352.4389664237,
+            -4775301.0160446055,
+            4144254.9310465027
+          ]
+        }
+      ],
+      "vertices": [
+        {
+          "uv": [
+            0,
+            1
+          ],
+          "height": 200,
+          "position": [
+            709683.1850601737,
+            -4784295.4105758555,
+            4144189.6126871277
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0.5
+          ],
+          "height": 150,
+          "position": [
+            713405.9663101737,
+            -4809392.368095387,
+            4114516.995621698
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0
+          ],
+          "height": 100,
+          "position": [
+            717101.7084976737,
+            -4834307.0375289805,
+            4084691.3119058777
+          ]
+        },
+        {
+          "uv": [
+            0.5,
+            0
+          ],
+          "height": 250,
+          "position": [
+            746768.4970718925,
+            -4829929.4066696055,
+            4084787.8861246277
+          ]
+        },
+        {
+          "uv": [
+            1,
+            0
+          ],
+          "height": 400,
+          "position": [
+            776408.5600601737,
+            -4825369.7172164805,
+            4084884.4603433777
+          ]
+        },
+        {
+          "uv": [
+            1,
+            1
+          ],
+          "height": 300,
+          "position": [
+            768352.4389664237,
+            -4775301.0160446055,
+            4144254.9310465027
+          ]
+        },
+        {
+          "uv": [
+            0.5,
+            0.5
+          ],
+          "height": 250,
+          "position": [
+            742899.9633194511,
+            -4804908.608596791,
+            4114543.6844606567
+          ]
+        }
+      ]
+    },
+    "bfsPropagatedFill": {
+      "level": 8,
+      "x": 151,
+      "y": 75,
+      "rectangle": [
+        -1.2885438618239387,
+        0.6381360077604268,
+        -1.2762720155208536,
+        0.6504078540635119
+      ],
+      "geometricError": 305.748113140705,
+      "vertexCount": 6,
+      "vertexCountWithoutSkirts": 6,
+      "indexCount": 15,
+      "indexCountWithoutSkirts": 15,
+      "indices": [
+        5,
+        0,
+        1,
+        5,
+        1,
+        2,
+        5,
+        2,
+        3,
+        5,
+        3,
+        4,
+        5,
+        4,
+        0
+      ],
+      "minimumHeight": 300,
+      "maximumHeight": 350,
+      "stride": 8,
+      "hasVertexNormals": true,
+      "hasWebMercatorT": true,
+      "hasGeodeticSurfaceNormals": false,
+      "westIndices": [
+        2,
+        1,
+        0
+      ],
+      "southIndices": [
+        3,
+        2
+      ],
+      "eastIndices": [
+        4,
+        3
+      ],
+      "northIndices": [
+        0,
+        4
+      ],
+      "westEdge": [
+        {
+          "index": 2,
+          "uv": [
+            0,
+            0
+          ],
+          "height": 300,
+          "position": [
+            1428612.2790060663,
+            -4926340.526086267,
+            3778686.200055406
+          ]
+        },
+        {
+          "index": 1,
+          "uv": [
+            0,
+            0.5
+          ],
+          "height": 325,
+          "position": [
+            1422117.8590841913,
+            -4903945.560265955,
+            3809967.4149065153
+          ]
+        },
+        {
+          "index": 0,
+          "uv": [
+            0,
+            1
+          ],
+          "height": 350,
+          "position": [
+            1415569.6872091913,
+            -4881365.243859705,
+            3841106.934430406
+          ]
+        }
+      ],
+      "southEdge": [
+        {
+          "index": 3,
+          "uv": [
+            1,
+            0
+          ],
+          "height": 300,
+          "position": [
+            1488958.4840841913,
+            -4908438.311242517,
+            3778686.200055406
+          ]
+        },
+        {
+          "index": 2,
+          "uv": [
+            0,
+            0
+          ],
+          "height": 300,
+          "position": [
+            1428612.2790060663,
+            -4926340.526086267,
+            3778686.200055406
+          ]
+        }
+      ],
+      "eastEdge": [
+        {
+          "index": 4,
+          "uv": [
+            1,
+            1
+          ],
+          "height": 325,
+          "position": [
+            1475359.1833029413,
+            -4863607.428430017,
+            3841091.797711656
+          ]
+        },
+        {
+          "index": 3,
+          "uv": [
+            1,
+            0
+          ],
+          "height": 300,
+          "position": [
+            1488958.4840841913,
+            -4908438.311242517,
+            3778686.200055406
+          ]
+        }
+      ],
+      "northEdge": [
+        {
+          "index": 0,
+          "uv": [
+            0,
+            1
+          ],
+          "height": 350,
+          "position": [
+            1415569.6872091913,
+            -4881365.243859705,
+            3841106.934430406
+          ]
+        },
+        {
+          "index": 4,
+          "uv": [
+            1,
+            1
+          ],
+          "height": 325,
+          "position": [
+            1475359.1833029413,
+            -4863607.428430017,
+            3841091.797711656
+          ]
+        }
+      ],
+      "vertices": [
+        {
+          "uv": [
+            0,
+            1
+          ],
+          "height": 350,
+          "position": [
+            1415569.6872091913,
+            -4881365.243859705,
+            3841106.934430406
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0.5
+          ],
+          "height": 325,
+          "position": [
+            1422117.8590841913,
+            -4903945.560265955,
+            3809967.4149065153
+          ]
+        },
+        {
+          "uv": [
+            0,
+            0
+          ],
+          "height": 300,
+          "position": [
+            1428612.2790060663,
+            -4926340.526086267,
+            3778686.200055406
+          ]
+        },
+        {
+          "uv": [
+            1,
+            0
+          ],
+          "height": 300,
+          "position": [
+            1488958.4840841913,
+            -4908438.311242517,
+            3778686.200055406
+          ]
+        },
+        {
+          "uv": [
+            1,
+            1
+          ],
+          "height": 325,
+          "position": [
+            1475359.1833029413,
+            -4863607.428430017,
+            3841091.797711656
+          ]
+        },
+        {
+          "uv": [
+            0.5,
+            0.5
+          ],
+          "height": 325,
+          "position": [
+            1452153.6399813318,
+            -4895034.619630273,
+            3809932.1823971723
+          ]
+        }
+      ]
+    },
+    "glError": 0
+  }
+}

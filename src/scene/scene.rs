@@ -65,6 +65,24 @@ pub struct SceneDrawOptions<G: Gl> {
     pub framebuffer: Option<Rc<renderer::Framebuffer<G>>>,
     pub pick_metadata: Option<super::PickMetadataShader>,
 }
+impl<G: Gl> Clone for SceneDrawOptions<G> {
+    fn clone(&self) -> Self {
+        Self {
+            vertices: Rc::clone(&self.vertices),
+            program: Rc::clone(&self.program),
+            state: self.state.clone(),
+            primitive_type: self.primitive_type,
+            offset: self.offset,
+            count: self.count,
+            instance_count: self.instance_count,
+            uniforms: self.uniforms.clone(),
+            uniform_map: self.uniform_map.clone(),
+            textures: self.textures.clone(),
+            framebuffer: self.framebuffer.clone(),
+            pick_metadata: self.pick_metadata.clone(),
+        }
+    }
+}
 impl<G: Gl> SceneDrawOptions<G> {
     pub fn new(vertices: Rc<renderer::VertexArray<G>>, program: Rc<renderer::ShaderProgram<G>>) -> Self {
         Self {
@@ -88,6 +106,7 @@ pub struct SceneCommand {
     pub visibility: Vec<Rc<std::cell::Cell<bool>>>,
     pub id: String,
     pub pass: Pass,
+    pub primitive_type: Option<PrimitiveType>,
     pub metadata: renderer::DrawMetadata,
     pub execute: SceneExecute,
     pub is_clear: bool,
@@ -95,6 +114,7 @@ pub struct SceneCommand {
     pub tileset_draw: Option<super::TilesetDrawKind>,
     pub stencil_clear: Option<u32>,
     pub globe_translucency: Option<super::GlobeTranslucencyCommand>,
+    draw_options: Option<super::FrameResource>,
 }
 impl SceneCommand {
     pub fn with_visibility(mut self, show: Rc<std::cell::Cell<bool>>) -> Self {
@@ -104,11 +124,31 @@ impl SceneCommand {
     pub fn shown(&self) -> bool {
         self.visibility.iter().all(|show| show.get())
     }
+    pub fn draw_options<G: Gl + 'static>(&self) -> Option<&SceneDrawOptions<G>> {
+        self.draw_options.as_ref()?.get::<SceneDrawOptions<G>>()
+    }
+    pub fn derive_draw<G: Gl + 'static>(
+        &self,
+        context: Context<G>,
+        mutate: impl FnOnce(&mut SceneDrawOptions<G>, &mut renderer::DrawMetadata),
+    ) -> Option<Self> {
+        let mut options = self.draw_options::<G>()?.clone();
+        let mut metadata = self.metadata.clone();
+        mutate(&mut options, &mut metadata);
+        let mut derived = Self::from_draw(self.id.clone(), context, self.pass, metadata, options);
+        derived.visibility = self.visibility.clone();
+        derived.clipping_planes = self.clipping_planes.clone();
+        derived.tileset_draw = self.tileset_draw;
+        derived.stencil_clear = self.stencil_clear;
+        derived.globe_translucency = self.globe_translucency;
+        Some(derived)
+    }
     pub fn new(id: impl Into<String>, pass: Pass, execute: SceneExecute) -> Self {
         Self {
             visibility: Vec::new(),
             id: id.into(),
             pass,
+            primitive_type: None,
             metadata: renderer::DrawMetadata::default(),
             execute,
             is_clear: false,
@@ -116,6 +156,7 @@ impl SceneCommand {
             tileset_draw: None,
             stencil_clear: None,
             globe_translucency: None,
+            draw_options: None,
         }
     }
     /// Own the resources while the command is queued; DrawCommand borrows them
@@ -141,6 +182,8 @@ impl SceneCommand {
         options: SceneDrawOptions<G>,
     ) -> Self {
         use super::DerivedCommand;
+        let primitive_type = Some(options.primitive_type);
+        let draw_options = Some(super::FrameResource::new(options.clone()));
         let programs = std::cell::RefCell::new(std::collections::HashMap::<
             (
                 super::SceneDrawMode,
@@ -156,12 +199,14 @@ impl SceneCommand {
             visibility: Vec::new(),
             id: id.into(),
             pass,
+            primitive_type,
             metadata,
             is_clear: false,
             clipping_planes: None,
             tileset_draw: None,
             stencil_clear: None,
             globe_translucency: None,
+            draw_options,
             execute: Rc::new(move |submission| {
                 let mode = submission.draw_mode;
                 let clipping = submission.clipping_planes.as_ref().map(|c| c.prepare(&context)).transpose()?.flatten();

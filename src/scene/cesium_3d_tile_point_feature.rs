@@ -23,6 +23,11 @@ impl<G: Gl + 'static> Deref for Cesium3DTilePointFeature<G> {
     }
 }
 impl<G: Gl + 'static> Cesium3DTilePointFeature<G> {
+    pub const DEFAULT_COLOR: Color = Color::WHITE;
+    pub const DEFAULT_POINT_OUTLINE_COLOR: Color = Color::BLACK;
+    pub const DEFAULT_POINT_OUTLINE_WIDTH: f64 = 0.0;
+    pub const DEFAULT_POINT_SIZE: f64 = 8.0;
+
     pub fn new(
         feature: Rc<Cesium3DTileFeature<G>>,
         billboard: Billboard<G>,
@@ -98,10 +103,10 @@ impl<G: Gl + 'static> Cesium3DTilePointFeature<G> {
         if self.image.is_some() {
             return;
         }
-        let color = self.color.unwrap_or(Color::WHITE);
-        let outline = self.outline_color.unwrap_or(Color::BLACK);
-        let width = self.outline_width.unwrap_or(0.);
-        let size = self.point_size.unwrap_or(8.);
+        let color = self.color.unwrap_or(Self::DEFAULT_COLOR);
+        let outline = self.outline_color.unwrap_or(Self::DEFAULT_POINT_OUTLINE_COLOR);
+        let width = self.outline_width.unwrap_or(Self::DEFAULT_POINT_OUTLINE_WIDTH);
+        let size = self.point_size.unwrap_or(Self::DEFAULT_POINT_SIZE);
         let id = format!("point-{:?}-{size}-{:?}-{width}", color.to_bytes(), outline.to_bytes());
         if self.billboard.image().as_ref() != Some(&id) {
             self.billboard.set_image_with_id(id, rasterize_billboard_point(color, outline, width, size));

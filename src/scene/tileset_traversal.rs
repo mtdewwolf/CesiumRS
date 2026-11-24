@@ -253,10 +253,10 @@ impl Cesium3DTileset {
         let t = &self.tiles[id];
         let error = if parent_error {
             t.parent.map_or(self.geometric_error * t.computed_transform.get_maximum_scale(), |p| {
-                self.tiles[p].geometric_error * self.tiles[p].computed_transform.get_maximum_scale()
+                self.tiles[p].scaled_geometric_error()
             })
         } else {
-            t.geometric_error * t.computed_transform.get_maximum_scale()
+            t.scaled_geometric_error()
         };
         if error == 0. {
             return 0.;

@@ -58,11 +58,13 @@ fn block_on<T>(future: impl Future<Output = T>) -> T {
 #[derive(Default)]
 struct EnvGl {
     next: Cell<u32>,
+    size: Cell<Option<[u32; 2]>>,
+    irradiance_pixels: std::cell::RefCell<Vec<u8>>,
 }
 impl Gl for EnvGl {
     type Object = u32;
     fn drawing_buffer_size(&self) -> Result<[u32; 2], RuntimeError> {
-        Ok([64, 64])
+        Ok(self.size.get().unwrap_or([64, 64]))
     }
     fn invoke(&self, method: &str, args: &[GlValue<u32>]) -> Result<GlValue<u32>, RuntimeError> {
         if method.starts_with("create") {
@@ -78,6 +80,7 @@ impl Gl for EnvGl {
                 _ => GlValue::Number(16384.0),
             },
             "getExtension" => GlValue::Object(1),
+            "readPixels" => GlValue::Bytes(self.irradiance_pixels.borrow().clone()),
             "getShaderParameter" | "getProgramParameter" => GlValue::Bool(true),
             "checkFramebufferStatus" => GlValue::Number(f64::from(gl::FRAMEBUFFER_COMPLETE)),
             _ => GlValue::Null,
@@ -681,8 +684,8 @@ fn shadow_map_cast_and_receive_derivation() {
 
 #[test]
 fn truncated_ktx2_specular_chain_uploads_placeholder_mips() {
-    use cesium_rs::core::ktx2_transcoder::{CubeFace, Ktx2Texture};
     use cesium_rs::core::compressed_texture_buffer::{CompressedTextureBuffer, CompressedTextureBufferOptions};
+    use cesium_rs::core::ktx2_transcoder::{CubeFace, Ktx2Texture};
     use std::sync::Arc;
 
     let level: Vec<_> = CubeFace::ALL
@@ -706,4 +709,651 @@ fn truncated_ktx2_specular_chain_uploads_placeholder_mips() {
     assert!(map.ready());
     assert_eq!(map.maximum_mipmap_level(), Some(0));
     assert!(map.texture().is_some());
+}
+
+#[test]
+fn street_view_resolves_metadata_and_panorama_requests_like_cesium() {
+    use cesium_rs::scene::GoogleStreetViewLoadPanoramaOptions;
+    use serde_json::json;
+    use std::{cell::RefCell, collections::VecDeque};
+
+    #[derive(Default)]
+    struct MetadataTransport {
+        urls: RefCell<Vec<String>>,
+        responses: RefCell<VecDeque<Value>>,
+    }
+    impl ResourceTransport for MetadataTransport {
+        fn execute(&self, request: HttpRequest) -> RequestFuture<HttpResponse> {
+            self.urls.borrow_mut().push(request.url);
+            let response = self.responses.borrow_mut().pop_front().expect("Unexpected metadata request");
+            Box::pin(async move {
+                Ok(HttpResponse { status: 200, body: serde_json::to_vec(&response).unwrap(), ..Default::default() })
+            })
+        }
+    }
+
+    let fixture = fixture();
+    let expected = &fixture["googleStreetView"];
+    let metadata = expected["metaOk"].clone();
+    let mut lookup = metadata.clone();
+    lookup["pano_id"] = json!("PANO_LOOKUP");
+    let host = Rc::new(MetadataTransport {
+        responses: RefCell::new(VecDeque::from([
+            metadata.clone(),
+            metadata.clone(),
+            metadata,
+            json!({"status": "ZERO_RESULTS"}),
+            json!({"status": "NOT_FOUND"}),
+            lookup,
+        ])),
+        ..Default::default()
+    });
+    let client = ResourceClient::new(host.clone());
+    let provider =
+        block_on(GoogleStreetViewCubeMapPanoramaProvider::from_url(GoogleStreetViewCubeMapPanoramaProviderOptions {
+            key: Some("TEST_KEY".into()),
+            url: Some("https://maps.googleapis.com/maps/api/streetview".into()),
+            tile_size: Some(512),
+            credit: None,
+        }))
+        .unwrap();
+    let degrees = &expected["cartographicDeg"];
+    let cartographic = Cartographic::from_degrees(n(&degrees[0]), n(&degrees[1]), n(&degrees[2]));
+    for (radius, key) in [(None, "nearestDefault"), (Some(120.0), "nearestCustomRadius")] {
+        let result = block_on(provider.get_nearest_pano_id(&client, cartographic, radius)).unwrap();
+        assert_json_eq(
+            &json!({"panoId": result.pano_id, "latitude": result.latitude, "longitude": result.longitude}),
+            &expected[key],
+        );
+    }
+    assert_json_eq(&block_on(provider.get_pano_id_metadata(&client, "PANO_ABC")).unwrap(), &expected["metaOk"]);
+    assert_eq!(
+        block_on(provider.get_nearest_pano_id(&client, cartographic, None)).unwrap_err().message,
+        expected["nearestErr"]
+    );
+    assert_eq!(block_on(provider.get_pano_id_metadata(&client, "BAD_PANO")).unwrap_err().message, expected["metaErr"]);
+    let base = GoogleStreetViewLoadPanoramaOptions {
+        cartographic,
+        pano_id: None,
+        tile_size: None,
+        signature: None,
+        credit: None,
+    };
+    let explicit = GoogleStreetViewLoadPanoramaOptions {
+        pano_id: Some("PANO_SIGNED".into()),
+        tile_size: Some(256),
+        signature: Some("SIG123".into()),
+        ..base.clone()
+    };
+    for (options, prefix) in [(explicit, "explicit"), (base, "lookup")] {
+        let panorama = block_on(provider.load_panorama_data(&client, options)).unwrap();
+        assert_eq!(json!(panorama.faces), expected[&format!("{prefix}FaceUrls")]);
+        close_slice(&panorama.transform.0, &expected[&format!("{prefix}Transform")]);
+        assert_eq!(panorama.credit.unwrap().html(), expected[&format!("{prefix}Credit")]);
+    }
+    assert_eq!(json!(*host.urls.borrow()), expected["requestedJsonUrls"]);
+    assert!(host.responses.borrow().is_empty());
+    let missing = block_on(GoogleStreetViewCubeMapPanoramaProvider::from_url(Default::default()));
+    assert_eq!(missing.err().unwrap().message, expected["missingKeyErr"]);
+}
+
+fn atmosphere_runtime_reference() -> Value {
+    serde_json::from_str(include_str!("data/scene-atmosphere-gpu.json")).unwrap()
+}
+
+#[test]
+fn sky_atmosphere_draw_variants_match_cesium() {
+    use cesium_rs::scene::{DynamicAtmosphereLightingType, GlobeTranslucency};
+    let reference = atmosphere_runtime_reference();
+    let expected = &reference["skyAtmosphere"];
+    let camera = &expected["camera"];
+    let context = context();
+    let mut sky = SkyAtmosphere::new(context.clone(), None);
+    sky.set_dynamic_lighting(DynamicAtmosphereLightingType::Sunlight);
+    for case in expected["cases"].as_array().unwrap() {
+        let name = case["name"].as_str().unwrap();
+        let mut frame = minimal_frame(&context);
+        frame.uniform.camera.inverse_view = common::m4(&camera["inverseView"]);
+        frame.mode = match name {
+            "morphing" => SceneMode::Morphing,
+            "columbus-view-none" => SceneMode::ColumbusView,
+            _ => SceneMode::Scene3D,
+        };
+        let globe = (name != "no-globe").then_some(true);
+        sky.per_fragment_atmosphere = name == "per-fragment";
+        if name == "translucent-color-correct" {
+            sky.hue_shift = 0.25;
+            sky.brightness_shift = -0.1;
+            let mut translucency = GlobeTranslucency::new();
+            translucency.enabled = true;
+            frame.globe_translucency_state = Some(FrameResource::new(translucency));
+        }
+        frame.passes.render = name != "pick-only-none";
+        sky.show = name != "hidden-none";
+        let command = sky.update(&frame, globe).unwrap();
+        assert_eq!(command.is_some(), case["hasCommand"], "{name}");
+        if let Some(command) = command {
+            assert_eq!(command.pass, renderer::Pass::Environment);
+            close_slice(&sky.model_matrix().0, &case["modelMatrix"]);
+            assert_eq!(serde_json::json!(sky.shader_defines().unwrap()), case["fsDefines"], "{name}");
+            let r = sky.radii_and_dynamic_atmosphere_color();
+            close_slice(&[r.x, r.y, r.z], &case["uniforms"]["u_radiiAndDynamicAtmosphereColor"]);
+        }
+    }
+}
+
+#[test]
+fn panorama_cubemap_and_command_queue_match_cesium() {
+    let reference = atmosphere_runtime_reference();
+    let expected = &reference["cubeMapPanorama"];
+    let context = context();
+    let mut frame = minimal_frame(&context);
+    let sources = || {
+        CubeMapSources::Images(std::array::from_fn(|i| renderer::TextureSource::Pixels {
+            width: 4,
+            height: 4,
+            bytes: [i as u8 * 30, 0, 255, 255].repeat(16),
+        }))
+    };
+    let mut panorama = CubeMapPanorama::new(
+        context.clone(),
+        CubeMapPanoramaOptions {
+            sources: sources(),
+            transform: Some(m3(&expected["transform"])),
+            credit: Some(Credit::new("Test Credit", true)),
+            show: Some(true),
+            return_command: Some(true),
+        },
+    );
+    for hdr in [false, true] {
+        let command = panorama.update(&mut frame, hdr).unwrap().unwrap();
+        assert_eq!(command.pass, renderer::Pass::Environment);
+    }
+    let map = panorama.cube_map().unwrap();
+    let texture = &expected["ldrSnap"]["cubeMap"];
+    assert_eq!(map.width(), texture["width"]);
+    assert_eq!(map.height(), texture["height"]);
+    assert_eq!(map.pixel_format() as u32, texture["pixelFormat"]);
+    assert_eq!(map.pixel_datatype() as u32, texture["pixelDatatype"]);
+
+    let mut panorama = CubeMapPanorama::new(
+        context.clone(),
+        CubeMapPanoramaOptions {
+            sources: sources(),
+            transform: None,
+            credit: Some(Credit::new("Pano Credit", true)),
+            show: Some(true),
+            return_command: Some(false),
+        },
+    );
+    for prefix in ["first", "second"] {
+        let mut frame = minimal_frame(&context);
+        assert!(panorama.update(&mut frame, false).unwrap().is_none());
+        assert_eq!(frame.panorama_command_list.len(), expected["listSnap"][format!("{prefix}ListLen")]);
+        let credits: Vec<_> = frame.credits.iter().map(Credit::html).collect();
+        assert_eq!(serde_json::json!(credits), expected["listSnap"][format!("{prefix}Credits")]);
+    }
+}
+
+#[test]
+fn specular_environment_mip_chains_match_cesium() {
+    use cesium_rs::{
+        core::{
+            compressed_texture_buffer::CompressedTextureBufferOptions,
+            ktx2_transcoder::{CubeFace, Ktx2Texture},
+        },
+        scene::specular_environment_cube_map::SpecularEnvironmentCubeMap,
+    };
+    let reference = atmosphere_runtime_reference();
+    let context = context();
+    for (key, levels) in [("fullChain", vec![4u32, 2, 1]), ("truncatedChain", vec![4])] {
+        let expected = &reference["specularEnvironmentCubeMap"][key];
+        let mut map = SpecularEnvironmentCubeMap::new("capture.ktx2");
+        let mips = levels
+            .into_iter()
+            .map(|size| {
+                CubeFace::ALL
+                    .iter()
+                    .map(|&face| {
+                        (
+                            face,
+                            CompressedTextureBuffer::new(CompressedTextureBufferOptions {
+                                internal_format: PixelFormat::Rgba as u32,
+                                pixel_datatype: Some(PixelDatatype::UnsignedByte as u32),
+                                width: size,
+                                height: size,
+                                buffer: vec![200u8; (size * size * 4) as usize].into(),
+                            }),
+                        )
+                    })
+                    .collect()
+            })
+            .collect();
+        map.upload(&context, Ktx2Texture::Cubemap(mips)).unwrap();
+        assert_eq!(map.ready(), expected["ready"]);
+        assert_eq!(map.maximum_mipmap_level(), expected["maximumMipmapLevel"].as_u64().map(|n| n as u32));
+        let texture = map.texture().unwrap();
+        assert_eq!(texture.width(), expected["texture"]["width"]);
+        assert_eq!(texture.height(), expected["texture"]["height"]);
+        assert_eq!(texture.sampler().minification_filter as u32, expected["texture"]["sampler"]["minificationFilter"]);
+        map.destroy().unwrap();
+        assert_eq!(map.is_destroyed(), expected["destroyed"]);
+    }
+}
+
+fn assert_classification_passes(frame: &FrameState, expected: &Value) {
+    let actual = frame.command_list.iter().map(|c| c.pass as u32).collect::<Vec<_>>();
+    let expected = expected.as_array().unwrap().iter().map(|c| c["pass"].as_u64().unwrap() as u32).collect::<Vec<_>>();
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn classification_box_render_and_pick_match_cesium() {
+    let reference = atmosphere_runtime_reference();
+    let context = context();
+    for case in reference["classificationPrimitive"]["cases"].as_array().unwrap() {
+        let name = case["name"].as_str().unwrap();
+        let mut options = ClassificationPrimitiveOptions {
+            classification_type: if name.starts_with("terrain-only") {
+                ClassificationType::Terrain
+            } else if name.starts_with("tiles-only") {
+                ClassificationType::Cesium3DTile
+            } else {
+                ClassificationType::Both
+            },
+            debug_show_shadow_volume: name == "debug-shadow-volume",
+            ..Default::default()
+        };
+        let geometry =
+            BoxGeometry::from_dimensions(Cartesian3::new(10.0, 10.0, 10.0), VertexFormat::POSITION_ONLY, None).unwrap();
+        let mut instance = dummy_instance();
+        instance.geometry = None;
+        instance.model_matrix = Matrix4::from_translation(Cartesian3::new(6378137.0, 0.0, 0.0));
+        options.primitive.geometry_descriptions.insert(0, GeometryDescription::BoxGeometry(geometry));
+        options.primitive.geometry_instances = vec![instance];
+        options.primitive.asynchronous = Some(false);
+        let mut primitive = ClassificationPrimitive::<EnvGl>::new(options);
+        let mut frame = minimal_frame(&context);
+        frame.passes.pick = name.ends_with("pick");
+        frame.passes.render = !frame.passes.pick;
+        frame.invert_classification = name == "both-invert-classification";
+        primitive.update(&mut frame).unwrap();
+        assert_eq!(primitive.is_ready(), case["ready"], "{name}");
+        assert_classification_passes(&frame, &case["commands"]);
+        primitive.destroy().unwrap();
+    }
+}
+
+#[test]
+fn invert_classification_resize_and_attachment_modes_match_cesium() {
+    let reference = atmosphere_runtime_reference();
+    let context = context();
+    let mut invert = InvertClassification::new().unwrap();
+    for step in reference["invertClassification"]["steps"].as_array().unwrap() {
+        let opaque = step["label"] == "opaque-1x";
+        let size = &step["colorDims"];
+        context.host().size.set(Some([n(&size[0]) as u32, n(&size[1]) as u32]));
+        let samples = n(&step["numSamples"]) as u32;
+        invert.update(&context, samples, opaque, None).unwrap();
+        let dimensions =
+            |texture: Option<Rc<renderer::Texture<EnvGl>>>| serde_json::json!(texture.map(|t| [t.width(), t.height()]));
+        assert_eq!(dimensions(invert.color_texture()), step["colorDims"]);
+        assert_eq!(dimensions(invert.classified_texture()), step["classifiedDims"]);
+        let program = &invert.unclassified_command().unwrap().shader_program;
+        assert_eq!(program.fragment_shader_source().contains("gl_FragDepth"), step["unclassifiedFsHasDepth"]);
+        assert_eq!(invert.translucent_command().is_some(), !step["translucentCmd"].is_null());
+    }
+    invert.destroy().unwrap();
+}
+
+#[test]
+fn ground_classification_commands_match_cesium_in_3d_and_2d() {
+    let reference = atmosphere_runtime_reference();
+    let context = context();
+    for case in reference["groundPrimitive"]["cases"].as_array().unwrap() {
+        let name = case["name"].as_str().unwrap();
+        if name == "spherical-material" {
+            continue;
+        }
+        let d = &case["rectDeg"];
+        let rectangle = Rectangle::from_degrees(n(&d[0]), n(&d[1]), n(&d[2]), n(&d[3]));
+        let description =
+            GeometryDescription::RectangleGeometry(RectangleGeometry::new(RectangleGeometryOptions::new(rectangle)));
+        let mut instance = dummy_instance();
+        instance.geometry = None;
+        instance.id = Some(name.into());
+        let mut options =
+            GroundPrimitiveOptions { debug_show_shadow_volume: name == "debug-shadow-volume", ..Default::default() };
+        options.primitive.geometry_instances = vec![instance];
+        options.primitive.geometry_descriptions.insert(0, description);
+        options.primitive.asynchronous = Some(false);
+        let mut ground = GroundPrimitive::<EnvGl>::new(options);
+        for (mode, key) in [(SceneMode::Scene3D, "commands3D"), (SceneMode::Scene2D, "commands2D")] {
+            let mut frame = minimal_frame(&context);
+            frame.mode = mode;
+            frame.context_capabilities.depth_texture = true;
+            frame.passes.pick = name == "planar-pick";
+            frame.passes.render = !frame.passes.pick;
+            if name == "planar-color-exaggerated" {
+                frame.vertical_exaggeration = 2.0;
+                frame.vertical_exaggeration_relative_height = 100.0;
+            }
+            ground.update(&mut frame).unwrap();
+            assert_classification_passes(&frame, &case[key]);
+            close_slice(&ground.ground_heights().unwrap(), &serde_json::json!([case["minHeight"], case["maxHeight"]]));
+        }
+        ground.destroy().unwrap();
+    }
+}
+
+#[test]
+fn ground_polyline_modes_and_pick_commands_match_cesium() {
+    use cesium_rs::scene::{PolylineColorAppearance, PolylineMaterialAppearance};
+    let reference = atmosphere_runtime_reference();
+    let context = context();
+    for case in reference["groundPolylinePrimitive"]["cases"].as_array().unwrap() {
+        let name = case["name"].as_str().unwrap();
+        let color = name == "color-terrain-debug";
+        let allow_pick = name != "tiles-no-pick";
+        let classification = if color {
+            ClassificationType::Terrain
+        } else if allow_pick {
+            ClassificationType::Both
+        } else {
+            ClassificationType::Cesium3DTile
+        };
+        let positions = [(-112.134, 36.055), (-112.088, 36.098)]
+            .into_iter()
+            .map(|(longitude, latitude)| Cartesian3::from_degrees(longitude, latitude, 0.0, &Ellipsoid::WGS84))
+            .collect();
+        let mut geometry = GroundPolylineGeometry::new(positions).unwrap();
+        geometry.width = 5.0;
+        let mut options = GroundPolylinePrimitiveOptions {
+            classification_type: classification,
+            debug_show_shadow_volume: color,
+            ..Default::default()
+        };
+        let mut instance = dummy_instance();
+        instance.geometry = None;
+        instance.id = Some(name.into());
+        if !color {
+            instance.attributes.clear();
+        }
+        options.primitive.geometry_instances = vec![instance];
+        options.primitive.geometry_descriptions.insert(0, GeometryDescription::GroundPolylineGeometry(geometry));
+        options.primitive.asynchronous = Some(false);
+        options.primitive.allow_picking = Some(allow_pick);
+        options.primitive.appearance = Some(if color {
+            Box::new(PolylineColorAppearance::default())
+        } else {
+            Box::new(PolylineMaterialAppearance::default())
+        });
+        let mut primitive = GroundPolylinePrimitive::<EnvGl>::new(options);
+        for (mode, pick, key) in [
+            (SceneMode::Scene3D, false, "scene3d"),
+            (SceneMode::ColumbusView, false, "columbus"),
+            (SceneMode::Morphing, false, "morphing"),
+            (SceneMode::Scene3D, true, "pick3d"),
+            (SceneMode::Morphing, true, "pickMorph"),
+        ] {
+            let mut frame = minimal_frame(&context);
+            frame.context_capabilities.depth_texture = true;
+            frame.mode = mode;
+            frame.passes.render = !pick;
+            frame.passes.pick = pick;
+            primitive.update(&mut frame).unwrap();
+            assert_classification_passes(&frame, &case["modeResults"][key]);
+        }
+        assert_eq!(primitive.is_ready(), case["ready"]);
+        primitive.destroy().unwrap();
+    }
+}
+
+#[test]
+fn sun_post_process_projection_and_targets_match_cesium() {
+    let reference = atmosphere_runtime_reference();
+    let expected = &reference["sunPostProcess"];
+    let camera = &expected["camera"];
+    let context = context();
+    context.host().size.set(Some([128, 64]));
+    let mut frustum = PerspectiveFrustum::new(n(&camera["fov"]), n(&camera["aspectRatio"]));
+    frustum.near = n(&camera["near"]);
+    frustum.far = n(&camera["far"]);
+    {
+        let mut uniforms = context.uniform_state();
+        uniforms.update_camera(
+            common::m4(&camera["view"]),
+            common::m4(&camera["inverseView"]),
+            common::c3(&camera["position"]),
+        );
+        uniforms.update_frustum(frustum.projection_matrix(), None, frustum.near, frustum.far);
+        let sun = common::c3(&expected["sunPositionWC"]);
+        uniforms
+            .set("czm_sunPositionWC", renderer::UniformValue::Float(vec![sun.x as f32, sun.y as f32, sun.z as f32]));
+    }
+    let mut process = SunPostProcess::new(&context).unwrap();
+    let framebuffer =
+        process.update(&context, renderer::Viewport { x: 0, y: 0, width: 128, height: 64 }).unwrap().unwrap();
+    let color = framebuffer.color_texture(0).unwrap();
+    assert_eq!(serde_json::json!([color.width(), color.height()]), expected["sceneFboColorDims"]);
+    let (center, radius) = process.sun_center_and_radius();
+    let check_pixels = |actual: &[f64], expected: &Value| {
+        for (a, b) in actual.iter().zip(expected.as_array().unwrap()) {
+            assert!((a - n(b)).abs() < 1.0e-5, "{a} != {b}");
+        }
+    };
+    check_pixels(&[center.x, center.y], &expected["uCenter"]);
+    assert!((radius - n(&expected["uRadius"])).abs() < 1.0e-5);
+    for (i, stage) in expected["stages"].as_array().unwrap().iter().enumerate() {
+        let actual = process.get(i).unwrap();
+        let output = actual.output_texture().unwrap();
+        assert_eq!(serde_json::json!([output.width(), output.height()]), stage["outputDims"]);
+        if i < 4 {
+            let scissor = actual.scissor_rectangle().unwrap();
+            check_pixels(&[scissor.x, scissor.y, scissor.width, scissor.height], &stage["scissorRectangle"]);
+        }
+    }
+    process.clear(&context, &renderer::PassState::default(), Color::BLACK).unwrap();
+    process.execute(&context).unwrap();
+}
+
+#[test]
+fn shadow_framebuffer_layout_and_texture_kind_match_cesium() {
+    use cesium_rs::scene::ShadowMapOptions;
+    use renderer::TextureBinding;
+    let reference = atmosphere_runtime_reference();
+    let expected = &reference["shadowMap"];
+    let camera = &expected["sceneCamera"];
+    let context = context();
+    let mut frame = minimal_frame(&context);
+    let mut frustum = PerspectiveFrustum::new(n(&camera["fov"]), n(&camera["aspectRatio"]));
+    frustum.near = n(&camera["near"]);
+    frustum.far = n(&camera["far"]);
+    frame.uniform.camera = UniformCamera {
+        view: common::m4(&camera["view"]),
+        inverse_view: common::m4(&camera["inverseView"]),
+        position: common::c3(&camera["position"]),
+        direction: common::c3(&camera["direction"]),
+        right: common::c3(&camera["right"]),
+        up: common::c3(&camera["up"]),
+        cartographic: None,
+        frustum: renderer::UniformFrustum::Perspective(frustum),
+    };
+    let light = &expected["lightCamera"];
+    frustum.far = n(&light["far"]);
+    for case in expected["cases"].as_array().unwrap() {
+        let point = case["isPointLight"].as_bool().unwrap();
+        let mut shadow = ShadowMap::with_options(
+            context.clone(),
+            ShadowMapOptions {
+                light_camera: ShadowMapLightCamera::new(
+                    common::c3(&light["position"]),
+                    common::c3(&light["direction"]),
+                    common::c3(&light["up"]),
+                    ShadowMapFrustum::Perspective(frustum),
+                )
+                .unwrap(),
+                size: Some(64),
+                is_point_light: Some(point),
+                point_light_radius: point.then_some(250.0),
+                cascades_enabled: Some(!point && case["name"] != "spot-light"),
+                soft_shadows: Some(case["name"] == "cascaded-4-soft"),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        shadow.update(&frame).unwrap();
+        shadow.update_pass(0).unwrap();
+        assert_eq!(shadow.passes().len(), case["passCount"]);
+        let texture = &case["texture"];
+        let (width, height, format, datatype, cube) = match shadow.texture().unwrap() {
+            TextureBinding::Texture(t) => (t.width(), t.height(), t.pixel_format(), t.pixel_datatype(), false),
+            TextureBinding::CubeMap(t) => (t.width(), t.height(), t.pixel_format(), t.pixel_datatype(), true),
+            TextureBinding::Volume(_) => panic!("unexpected shadow volume"),
+        };
+        assert_eq!(width, texture["width"]);
+        assert_eq!(height, texture["height"]);
+        assert_eq!(format as u32, texture["pixelFormat"]);
+        assert_eq!(datatype as u32, texture["pixelDatatype"]);
+        assert_eq!(cube, texture["isCubeMap"]);
+        for (pass, viewport) in shadow.passes().iter().zip(case["viewports"].as_array().unwrap()) {
+            let renderer::Viewport { x, y, width, height } = pass.viewport;
+            assert_eq!(serde_json::json!([x, y, width, height]), *viewport);
+            assert!(pass.framebuffer.is_some());
+        }
+    }
+}
+
+#[test]
+fn environment_map_compute_stages_and_irradiance_readback_match_cesium() {
+    use cesium_rs::scene::{Atmosphere, DynamicAtmosphereLightingType};
+    let reference = atmosphere_runtime_reference();
+    let expected = &reference["dynamicEnvironmentMapManager"];
+    let context = context();
+    *context.host().irradiance_pixels.borrow_mut() = expected["rawIrradianceFloats"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|value| (n(value) as f32).to_le_bytes())
+        .collect();
+    let mut frame = minimal_frame(&context);
+    frame.uniform.time = JulianDate::from_iso8601("2025-06-21T12:00:00Z").unwrap();
+    frame.atmosphere =
+        Some(Atmosphere { dynamic_lighting: DynamicAtmosphereLightingType::Sunlight, ..Default::default() });
+    let mut manager = DynamicEnvironmentMapManager::<EnvGl>::new(DynamicEnvironmentMapManagerOptions {
+        mipmap_levels: Some(3),
+        brightness: Some(1.1),
+        atmosphere_scattering_intensity: Some(2.5),
+        ..Default::default()
+    });
+    manager.set_position(Some(common::c3(&expected["position"])));
+    let mut engine = renderer::ComputeEngine::new(&context);
+    for step in expected["frames"].as_array().unwrap() {
+        manager.update(&frame).unwrap();
+        let mut commands = manager.take_commands();
+        assert_eq!(commands.len(), step["queuedThisFrame"], "frame {}", step["step"]);
+        for (cmd, reference) in commands.iter_mut().zip(step["cmdSummaries"].as_array().unwrap()) {
+            let output = cmd.output_texture.as_ref().unwrap();
+            assert_eq!(serde_json::json!([output.width(), output.height()]), reference["outputDims"]);
+            assert_eq!(output.pixel_datatype() as u32, reference["outputDatatype"]);
+            assert_eq!(cmd.persists, reference["persists"]);
+            cmd.execute(&mut engine).unwrap();
+        }
+        assert_eq!(manager.should_regenerate_shaders(), step["shouldRegenerateShaders"], "frame {}", step["step"]);
+    }
+    close_slice(&manager.radii_and_dynamic_atmosphere_color().to_array(), &expected["radiiAndDynamicAtmosphereColor"]);
+    for (coefficient, expected) in
+        manager.spherical_harmonic_coefficients().iter().zip(expected["shCoefficients"].as_array().unwrap())
+    {
+        close_slice(&[coefficient.x, coefficient.y, coefficient.z], expected);
+    }
+}
+
+#[test]
+fn sun_compute_and_draw_commands_match_cesium() {
+    use cesium_rs::scene::{Camera, CameraOptions};
+    let reference = atmosphere_runtime_reference();
+    let expected = &reference["sun"];
+    let context = context();
+    let mut sun = Sun::new(context.clone());
+    let mut engine = renderer::ComputeEngine::new(&context);
+
+    let mut camera = Camera::new(CameraOptions::new(256.0, 128.0));
+    camera.position = Cartesian3::new(0.0, -25_000_000.0, 0.0);
+    camera.direction = Cartesian3::UNIT_Y;
+    camera.up = Cartesian3::UNIT_Z;
+    camera.right = Cartesian3::UNIT_X;
+
+    let mut frame = minimal_frame(&context);
+    frame.uniform.time = JulianDate::from_iso8601("2025-06-21T12:00:00Z").unwrap();
+    frame.uniform.camera = camera.uniform_camera();
+    let sun_pos = common::c3(&expected["sunPositionWC"]);
+    frame.uniform.celestial_rotation = None;
+    let computed_sun = cesium_rs::scene::sun::sun_position(&frame);
+    // Verify celestial sun position matches the pinned date within a tiny relative tolerance.
+    let diff = (computed_sun - sun_pos).magnitude();
+    assert!(diff / sun_pos.magnitude() < 1.0e-5, "sun position mismatch: {computed_sun:?} vs {sun_pos:?}");
+
+    for case in expected["cases"].as_array().unwrap() {
+        let vp = case["viewport"].as_array().unwrap();
+        let viewport = renderer::Viewport {
+            x: vp[0].as_i64().unwrap() as i32,
+            y: vp[1].as_i64().unwrap() as i32,
+            width: vp[2].as_u64().unwrap() as u32,
+            height: vp[3].as_u64().unwrap() as u32,
+        };
+        let mode = match case["mode"].as_u64().unwrap() {
+            1 => SceneMode::ColumbusView,
+            2 => SceneMode::Scene2D,
+            _ => SceneMode::Scene3D,
+        };
+        let glow = n(&case["glowFactor"]);
+        if (sun.glow_factor() - glow).abs() > 1.0e-12 {
+            sun.set_glow_factor(glow);
+        }
+        frame.mode = mode;
+        frame.passes.render = true;
+        let use_hdr = case["useHdr"].as_bool().unwrap();
+        let out = sun.update(&frame, viewport, use_hdr).unwrap();
+        assert_eq!(out.is_some(), case["hasCommands"].as_bool().unwrap(), "case {}", case["name"]);
+        if let Some(cmds) = out {
+            let mut compute_ran = false;
+            if let Some(mut compute) = cmds.compute_command {
+                let uniforms = (compute.uniform_map.as_ref().unwrap())().unwrap();
+                let radius_ts = match &uniforms[0].1 {
+                    renderer::UniformValue::Float(v) => f64::from(v[0]),
+                    other => panic!("unexpected u_radiusTS: {other:?}"),
+                };
+                assert!(
+                    (radius_ts - n(&case["radiusTS"])).abs() < 1.0e-6,
+                    "{}: radiusTS {radius_ts} != {}",
+                    case["name"],
+                    case["radiusTS"]
+                );
+                compute.execute(&mut engine).unwrap();
+                compute_ran = true;
+            }
+            assert_eq!(compute_ran, case["computeRan"].as_bool().unwrap(), "case {}", case["name"]);
+            assert!((sun.glow_length_ts() - n(&case["glowLengthTS"])).abs() < 1.0e-9);
+            assert!((sun.size() - n(&case["size"])).abs() <= 1.0, "size mismatch for {}", case["name"]);
+            let tex = sun.texture().unwrap();
+            assert_eq!(tex.width(), case["texture"]["width"].as_u64().unwrap() as u32);
+            assert_eq!(tex.height(), case["texture"]["height"].as_u64().unwrap() as u32);
+            assert_eq!(tex.pixel_format() as u32, case["texture"]["pixelFormat"].as_u64().unwrap() as u32);
+            assert_eq!(tex.pixel_datatype() as u32, case["texture"]["pixelDatatype"].as_u64().unwrap() as u32);
+            let sampler = tex.sampler();
+            assert_eq!(
+                sampler.minification_filter as u32,
+                case["texture"]["sampler"]["minificationFilter"].as_u64().unwrap() as u32
+            );
+            assert_eq!(
+                sampler.magnification_filter as u32,
+                case["texture"]["sampler"]["magnificationFilter"].as_u64().unwrap() as u32
+            );
+            let bv = cmds.draw_command.metadata.bounding_volume.unwrap();
+            assert!((bv.radius - n(&case["boundingVolume"]["radius"])).abs() < 1.0e-3);
+        }
+    }
+    sun.destroy();
+    assert!(sun.is_destroyed());
 }

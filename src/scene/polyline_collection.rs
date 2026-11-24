@@ -312,6 +312,17 @@ impl<G: Gl + 'static> PolylineCollection<G> {
         self.shared.model_matrix.set(value);
     }
 
+    /// `_useHighlightColor`: enables `VECTOR_TILE` / `u_highlightColor` shading (used by `Vector3DTilePoints`).
+    pub fn use_highlight_color(&self) -> bool {
+        self.use_highlight_color
+    }
+    pub fn set_use_highlight_color(&mut self, value: bool) {
+        if self.use_highlight_color != value {
+            self.use_highlight_color = value;
+            self.release_shaders();
+        }
+    }
+
     /// `removePolylines`: drop destroyed polylines and renumber. As in
     /// Cesium, every remaining polyline is then queued for update.
     fn compact(&mut self) {

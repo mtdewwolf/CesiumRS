@@ -598,7 +598,9 @@ fn scene_propagates_clear_globe_depth_to_tileset_merge_and_viewport_origin_in_tr
     let derived = GlobeTranslucencyCommand::TranslucentFront.shader(
         cesium_rs::renderer::ShaderProgramOptions {
             vertex_shader_source: cesium_rs::renderer::ShaderSource::new("void main() {}"),
-            fragment_shader_source: cesium_rs::renderer::ShaderSource::new("void main() { out_FragColor = vec4(1.0); }"),
+            fragment_shader_source: cesium_rs::renderer::ShaderSource::new(
+                "void main() { out_FragColor = vec4(1.0); }",
+            ),
             attribute_locations: Default::default(),
         },
         true,
@@ -606,4 +608,296 @@ fn scene_propagates_clear_globe_depth_to_tileset_merge_and_viewport_origin_in_tr
     let fs = derived.fragment_shader_source.sources.join("\n");
     assert!(fs.contains("(gl_FragCoord.xy - czm_viewport.xy) / czm_viewport.zw"));
     scene.destroy().unwrap();
+}
+
+fn terrain_reference() -> serde_json::Value {
+    serde_json::from_str(include_str!("data/scene-globe-terrain.json")).unwrap()
+}
+
+fn reference_tuple<const N: usize>(value: &serde_json::Value) -> [f64; N] {
+    assert_eq!(value.as_array().unwrap().len(), N);
+    std::array::from_fn(|i| value[i].as_f64().unwrap())
+}
+
+fn reference_mode(value: &serde_json::Value) -> SceneMode {
+    match value.as_str().unwrap() {
+        "SCENE3D" => SceneMode::Scene3D,
+        "SCENE2D" => SceneMode::Scene2D,
+        "COLUMBUS_VIEW" => SceneMode::ColumbusView,
+        "MORPHING" => SceneMode::Morphing,
+        mode => panic!("Unexpected Scene mode {mode}"),
+    }
+}
+
+#[test]
+fn globe_selection_and_world_picking_match_cesium() {
+    let fixture = terrain_reference();
+    let expected = &fixture["globe"];
+    let context = Context::new_webgl2(RecordingGl::default());
+    let mut globe = Globe::new(&context, GlobeOptions::default());
+    let mut frame = render_frame();
+    let mut frustum = PerspectiveFrustum::new(std::f64::consts::FRAC_PI_3, 1.0);
+    frustum.far = 100_000_000.0;
+    let camera = &mut frame.uniform.camera;
+    camera.frustum = cesium_rs::renderer::UniformFrustum::Perspective(frustum);
+    frame.culling_volume = frustum.compute_culling_volume(camera.position, camera.direction, camera.up);
+    assert_eq!(globe.tiles_loaded(), expected["tilesLoadedBefore"]);
+    assert_eq!(globe.get_height(&Cartographic::ZERO), expected["heightBeforeLoad"].as_f64());
+    for _ in 0..6 {
+        render_globe(&mut globe, &mut frame);
+    }
+    assert_eq!(globe.tiles_loaded(), expected["tilesLoadedAfter"]);
+    let rendered = globe.rendered_surface_tiles();
+    assert_eq!(rendered.len(), expected["renderedTiles3D"].as_array().unwrap().len());
+    for (tile, reference) in rendered.iter().zip(expected["renderedTiles3D"].as_array().unwrap()) {
+        let tile = tile.borrow();
+        assert_eq!(tile.level, reference["level"]);
+        assert_eq!(tile.x, reference["x"]);
+        assert_eq!(tile.y, reference["y"]);
+    }
+    assert_eq!(frame.command_list.len(), expected["commands3DCount"]);
+    assert!(frame.command_list.iter().all(|command| command.pass == Pass::Globe && command.metadata.receive_shadows));
+    for case in expected["pick3DCases"].as_array().unwrap() {
+        let [x, y, z] = reference_tuple(&case["origin"]);
+        let [dx, dy, dz] = reference_tuple(&case["direction"]);
+        let ray = Ray::new(Cartesian3::new(x, y, z), Cartesian3::new(dx, dy, dz));
+        let actual = globe.pick_world_coordinates(&ray, &frame, true);
+        if case["worldHit"].is_null() {
+            assert!(actual.is_none(), "{}", case["name"]);
+        } else {
+            let [x, y, z] = reference_tuple(&case["worldHit"]);
+            let error = actual.unwrap().distance(Cartesian3::new(x, y, z));
+            assert!(error < 0.25, "{} differed by {error} m", case["name"]);
+        }
+    }
+    globe.show = false;
+    render_globe(&mut globe, &mut frame);
+    assert_eq!(frame.command_list.len(), expected["commandsWhenHidden"]);
+    globe.destroy().unwrap();
+    assert_eq!(globe.is_destroyed(), expected["isDestroyedAfter"]);
+}
+
+#[test]
+fn globe_translucency_state_matches_cesium_across_modes() {
+    use serde_json::json;
+    let fixture = terrain_reference();
+    for case in fixture["globeTranslucencyState"]["stateCases"].as_array().unwrap() {
+        let input = &case["input"];
+        let scalar = |key: &str| {
+            (!input[key].is_null()).then(|| {
+                let [near, near_value, far, far_value] = reference_tuple(&input[key]);
+                NearFarScalar::new(near, near_value, far, far_value)
+            })
+        };
+        let mut config = GlobeTranslucency::new();
+        config.enabled = input["enabled"].as_bool().unwrap();
+        config.set_front_face_alpha(input["frontFaceAlpha"].as_f64().unwrap()).unwrap();
+        config.set_back_face_alpha(input["backFaceAlpha"].as_f64().unwrap()).unwrap();
+        config.set_front_face_alpha_by_distance(scalar("frontFaceAlphaByDistance")).unwrap();
+        config.set_back_face_alpha_by_distance(scalar("backFaceAlphaByDistance")).unwrap();
+        if !input["rectangleDeg"].is_null() {
+            let [west, south, east, north] = reference_tuple(&input["rectangleDeg"]);
+            config.set_rectangle(Some(Rectangle::from_degrees(west, south, east, north)));
+        }
+        let mut state = GlobeTranslucencyState::default();
+        state.update(
+            &config,
+            GlobeTranslucencyFrame {
+                show: input["show"].as_bool().unwrap(),
+                base_alpha: input["baseAlpha"].as_f64().unwrap(),
+                camera_underground: input["cameraUnderground"].as_bool().unwrap(),
+                depth_test_against_terrain: input["depthTestAgainstTerrain"].as_bool().unwrap(),
+                depth_texture: input["depthTexture"].as_bool().unwrap(),
+                mode: reference_mode(&input["mode"]),
+            },
+        );
+        let pack = |value: NearFarScalar| [value.near, value.near_value, value.far, value.far_value];
+        for (key, value) in [
+            ("frontFaceAlphaByDistance", state.front_face_alpha_by_distance),
+            ("backFaceAlphaByDistance", state.back_face_alpha_by_distance),
+        ] {
+            assert_eq!(pack(value), reference_tuple(&case[key]), "{} {key}", case["name"]);
+        }
+        let checks = [
+            ("translucent", json!(state.translucent())),
+            ("sunVisibleThroughGlobe", json!(state.sun_visible_through_globe)),
+            ("environmentVisible", json!(state.environment_visible)),
+            ("useDepthPlane", json!(state.use_depth_plane)),
+            ("numberOfTextureUniforms", json!(state.number_of_texture_uniforms)),
+        ];
+        for (key, actual) in checks {
+            assert_eq!(actual, case[key], "{} {key}", case["name"]);
+        }
+        for (key, blend, pick) in
+            [("renderCommands", false, false), ("blendCommands", true, false), ("pickCommands", false, true)]
+        {
+            let names: Vec<_> = state.command_types(blend, pick).iter().map(|kind| format!("{kind:?}")).collect();
+            assert_eq!(json!(names), case[key], "{} {key}", case["name"]);
+        }
+    }
+}
+
+#[test]
+fn terrain_fill_heights_and_triangles_match_cesium() {
+    let fixture = terrain_reference();
+    for (name, heights) in [("lowDetailGrid", [150.0, 150.0]), ("highDetailIsolated", [100.0, 300.0])] {
+        let case = &fixture["terrainFillMesh"][name];
+        let [west, south, east, north] = reference_tuple(&case["rectangle"]);
+        let rectangle = Rectangle::new(west, south, east, north);
+        let fill = TerrainFillMesh::new(
+            rectangle,
+            &Ellipsoid::WGS84,
+            TerrainFillOptions {
+                minimum_height: heights[0],
+                maximum_height: heights[1],
+                geometric_error: case["geometricError"].as_f64().unwrap(),
+                ..Default::default()
+            },
+            &[],
+        );
+        assert_eq!(fill.mesh.minimum_height, case["minimumHeight"]);
+        assert_eq!(fill.mesh.maximum_height, case["maximumHeight"]);
+        if let Some(vertices) = case["vertices"].as_array() {
+            assert_eq!(fill.mesh.vertex_count_without_skirts, vertices.len());
+            assert_eq!(fill.mesh.indices.len(), case["indexCount"]);
+            for vertex in vertices {
+                let [u, v] = reference_tuple(&vertex["uv"]);
+                let position = Cartographic::new(west + u * (east - west), south + v * (north - south), 0.0);
+                assert_eq!(fill.height_at(&position), vertex["height"].as_f64());
+            }
+        } else {
+            assert_eq!(fill.height_at(&rectangle.center()), case["centerHeight"].as_f64());
+        }
+    }
+}
+
+#[test]
+fn globe_shader_variants_match_cesium() {
+    use GlobeShaderFeature::*;
+    let fixture = terrain_reference();
+    let reference = &fixture["globeSurfaceShaderSet"];
+    let context = Context::new_webgl2(RecordingGl::default());
+    let mut shaders = GlobeSurfaceShaderSet::new(&context);
+    for case in reference["cases"].as_array().unwrap().iter().chain([&reference["materialCase"]]) {
+        let flags = case["flags"].as_u64().unwrap();
+        let mode = reference_mode(&case["mode"]);
+        let texture_count = case["numberOfDayTextures"].as_u64().unwrap() as usize;
+        let mut features = GlobeShaderFeatures::default();
+        for feature in [
+            Brightness,
+            Contrast,
+            Hue,
+            Saturation,
+            Gamma,
+            Alpha,
+            WaterMask,
+            ReflectiveOcean,
+            OceanWaves,
+            Lighting,
+            DynamicLighting,
+            SunLighting,
+            GroundAtmosphere,
+            PerFragmentAtmosphere,
+            VertexNormals,
+            WebMercator,
+            Fog,
+            Quantization,
+            Split,
+            ClippingPlanes,
+            ClippingPolygons,
+            TileLimit,
+            Cutout,
+            ColorCorrect,
+            HighlightFill,
+            ColorToAlpha,
+            GeodeticNormals,
+            Exaggeration,
+            Underground,
+            Translucent,
+            DayNightAlpha,
+        ] {
+            features.set(feature, flags & feature as u64 != 0);
+        }
+        assert_eq!(features.key(mode), flags);
+        let clipping_planes = features.contains(ClippingPlanes).then_some(GlobeClippingPlanesShader {
+            length: 2,
+            union: true,
+            floating_point: true,
+            texture_size: [2, 2],
+        });
+        let clipping_polygons = features
+            .contains(ClippingPolygons)
+            .then_some(GlobeClippingPolygonsShader { extents_count: 1, inverse: true });
+        let options = GlobeSurfaceShaderOptions {
+            mode,
+            texture_count,
+            features,
+            clipping_planes,
+            clipping_polygons,
+            attributes: [
+                ("position3DAndHeight", 0),
+                ("textureCoordAndEncodedNormals", 1),
+                ("geodeticSurfaceNormal", 2),
+            ],
+        };
+        let material = (case["name"] == "material_color_1tex")
+            .then_some("czm_material czm_getMaterial(czm_materialInput i) { return czm_getDefaultMaterial(i); }");
+        let source = options.sources(material);
+        for (key, stage) in [("vsDefines", &source.vertex_shader_source), ("fsDefines", &source.fragment_shader_source)]
+        {
+            let mut actual = stage.defines.iter().map(String::as_str).collect::<Vec<_>>();
+            let mut expected = case[key].as_array().unwrap().iter().map(|v| v.as_str().unwrap()).collect::<Vec<_>>();
+            actual.sort_unstable();
+            expected.sort_unstable();
+            assert_eq!(actual, expected, "{} {key}", case["name"]);
+        }
+        let vertex = source.vertex_shader_source.sources.join("\n");
+        for key in ["positionModeSource", "yFractionSource"] {
+            let helper = case[key].as_str().unwrap().split_once("return ").unwrap().1.split_once('(').unwrap().0;
+            assert!(vertex.contains(&format!("return {helper}(")), "{} {key}", case["name"]);
+        }
+        shaders.set_material(material.map(str::to_owned)).unwrap();
+        let first = shaders.get_shader_program(&options).unwrap();
+        assert!(Rc::ptr_eq(&first, &shaders.get_shader_program(&options).unwrap()));
+    }
+}
+
+#[test]
+fn globe_tile_provider_visibility_and_distance_match_cesium() {
+    let fixture = terrain_reference();
+    let reference = &fixture["globeSurfaceTileProvider"]["visibilityAndDistance"];
+    let context = Context::new_webgl2(RecordingGl::default());
+    let mut globe = Globe::new(&context, GlobeOptions::default());
+    let mut frame = render_frame();
+    let mut frustum = PerspectiveFrustum::new(std::f64::consts::FRAC_PI_3, 1.0);
+    frustum.far = 100_000_000.0;
+    let camera = &mut frame.uniform.camera;
+    camera.frustum = cesium_rs::renderer::UniformFrustum::Perspective(frustum);
+    frame.culling_volume = frustum.compute_culling_volume(camera.position, camera.direction, camera.up);
+    for _ in 0..6 {
+        render_globe(&mut globe, &mut frame);
+    }
+    let root = globe.surface.find_tile((0, 0, 0)).unwrap();
+    let root = root.borrow();
+    let occluders = &globe.surface.occluders;
+    let provider = &mut globe.surface.tile_provider;
+    let visibility = |provider: &GlobeSurfaceTileProvider<_>, frame: &FrameState| match provider
+        .compute_tile_visibility(&root, frame, Some(occluders))
+    {
+        Visibility::None => "NONE",
+        Visibility::Partial => "PARTIAL",
+        Visibility::Full => "FULL",
+    };
+    let distance = provider.compute_distance_to_tile(&root, &frame);
+    assert!((distance - reference["distRoot0"].as_f64().unwrap()).abs() < 0.05);
+    assert_eq!(provider.can_refine(&root), reference["canRefineRoot0"]);
+    assert_eq!(visibility(provider, &frame), reference["visRoot0"]);
+    provider.options.cartographic_limit_rectangle = Rectangle::from_degrees(40.0, -20.0, 70.0, 20.0);
+    assert_eq!(visibility(provider, &frame), reference["visRoot0ExcludedByLimit"]);
+    provider.options.cartographic_limit_rectangle = Rectangle::MAX_VALUE;
+    frame.fog.enabled = true;
+    frame.fog.density = 1.0;
+    assert_eq!(visibility(provider, &frame), reference["visRoot0DenseFogAbove"]);
+    frame.camera_underground = true;
+    assert_eq!(visibility(provider, &frame), reference["visRoot0DenseFogUnderground"]);
 }

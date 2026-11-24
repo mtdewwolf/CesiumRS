@@ -9,14 +9,18 @@
 //! composition follow the pinned source.
 
 use super::{
+    batch_table_hierarchy::{BatchTableHierarchy, BinaryColumn},
     cesium_3d_tile_style::Cesium3DTileStyle,
+    json_metadata_table::JsonColumn,
+    metadata_table_property::ByteView,
+    metadata_value::{json_entries, JsMap, MetadataValue},
     scene::Result,
     vector_3d_tile_clamped_polylines::{Vector3DTileClampedPolylines, Vector3DTileClampedPolylinesOptions},
     vector_3d_tile_points::{Vector3DTilePoints, Vector3DTilePointsOptions},
     vector_3d_tile_polygons::{Vector3DTilePolygons, Vector3DTilePolygonsOptions},
     vector_3d_tile_polylines::{Vector3DTilePolylines, Vector3DTilePolylinesOptions},
     vector_3d_tile_primitive::{
-        BatchTableRef, FeatureList, SimpleVector3DTileBatchTable,
+        BatchTableRef, FeatureList, SimpleVector3DTileBatchTable, Vector3DTileBatchTable,
     },
     Cesium3DTileFeatureTable, ClassificationType, FrameState, HeightReference, TileContentMetrics,
     TilesetContent,
@@ -321,8 +325,8 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTileContent<G> {
         );
         byte_offset += feature_table_binary_byte_length;
 
-        let mut batch_table_byte_length = batch_table_json_byte_length;
         let mut batch_table_json = None;
+        let mut batch_table_binary_copied: Option<Vec<u8>> = None;
         if batch_table_json_byte_length > 0 {
             batch_table_json =
                 Some(get_json_from_typed_array(&buffer, byte_offset, Some(batch_table_json_byte_length))?);
@@ -331,8 +335,7 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTileContent<G> {
                 // Copied so the tile buffer can be released, as upstream does.
                 let start = byte_offset.min(buffer.len());
                 let end = (byte_offset + batch_table_binary_byte_length).min(buffer.len());
-                let _copied = buffer[start..end].to_vec();
-                batch_table_byte_length += batch_table_binary_byte_length;
+                batch_table_binary_copied = Some(buffer[start..end].to_vec());
                 byte_offset += batch_table_binary_byte_length;
             }
         }
@@ -342,20 +345,11 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTileContent<G> {
         let number_of_points = json_count(&feature_table_json, "POINTS_LENGTH");
         let total_primitives = number_of_polygons + number_of_polylines + number_of_points;
 
-        let mut simple = SimpleVector3DTileBatchTable::new(total_primitives);
-        // Cesium counts binary properties and hierarchy bytes, not the JSON.
-        simple.set_batch_table_byte_length(batch_table_binary_byte_length);
-        let _ = batch_table_byte_length;
-        let mut properties = std::collections::BTreeMap::new();
-        if let Some(serde_json::Value::Object(object)) = &batch_table_json {
-            for (name, value) in object {
-                if let serde_json::Value::Array(values) = value {
-                    properties.insert(name.clone(), values.clone());
-                }
-            }
-        }
-        simple.set_properties(properties);
-        let batch_table: BatchTableRef = Rc::new(RefCell::new(simple));
+        let batch_table: BatchTableRef = Rc::new(RefCell::new(VectorBatchTable::new(
+            total_primitives,
+            batch_table_json.as_ref(),
+            batch_table_binary_copied.as_deref(),
+        )?));
 
         if total_primitives == 0 {
             return Ok(Self {
@@ -776,7 +770,7 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTileContent<G> {
             ready &= polylines.ready();
         }
         if let Some(points) = &mut self.points {
-            points.update(frame)?;
+            points.update_with_context::<G>(frame)?;
             ready &= points.ready();
         }
         if ready {
@@ -824,6 +818,147 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTileContent<G> {
         self.features = None;
         self.destroyed = true;
         Ok(())
+    }
+}
+
+enum VectorBatchColumn {
+    Json(JsonColumn),
+    Binary(BinaryColumn),
+}
+
+fn metadata_value_to_json(value: MetadataValue) -> serde_json::Value {
+    match value {
+        MetadataValue::Null => serde_json::Value::Null,
+        MetadataValue::Boolean(b) => serde_json::Value::Bool(b),
+        MetadataValue::Number(n) => serde_json::Number::from_f64(n)
+            .map(serde_json::Value::Number)
+            .unwrap_or(serde_json::Value::Null),
+        MetadataValue::BigInt(i) => serde_json::Value::String(i.to_string()),
+        MetadataValue::String(s) => serde_json::Value::String(s),
+        MetadataValue::Array(items) => {
+            serde_json::Value::Array(items.into_iter().map(metadata_value_to_json).collect())
+        }
+        MetadataValue::Cartesian2(v) => serde_json::json!([v.x, v.y]),
+        MetadataValue::Cartesian3(v) => serde_json::json!([v.x, v.y, v.z]),
+        MetadataValue::Cartesian4(v) => serde_json::json!([v.x, v.y, v.z, v.w]),
+        MetadataValue::Matrix2(m) => serde_json::json!(m.0),
+        MetadataValue::Matrix3(m) => serde_json::json!(m.0),
+        MetadataValue::Matrix4(m) => serde_json::json!(m.0),
+        MetadataValue::Object(v) => v,
+    }
+}
+
+struct VectorBatchTable {
+    colors: Vec<Color>,
+    shows: Vec<bool>,
+    columns: JsMap<VectorBatchColumn>,
+    hierarchy: Option<BatchTableHierarchy>,
+    property_bytes: usize,
+}
+
+impl VectorBatchTable {
+    fn new(count: usize, json: Option<&serde_json::Value>, binary: Option<&[u8]>) -> Result<Self> {
+        let body = binary.map(|buffer| ByteView { buffer, byte_offset: 0 });
+        let hierarchy = json
+            .and_then(|j| {
+                j.get("HIERARCHY")
+                    .filter(|v| !v.is_null())
+                    .or_else(|| j.pointer("/extensions/3DTILES_batch_table_hierarchy"))
+            })
+            .filter(|v| !v.is_null())
+            .map(|v| BatchTableHierarchy::new(v, body))
+            .transpose()
+            .map_err(|e| RuntimeError::new(e.to_string()))?;
+        let mut property_bytes = hierarchy.as_ref().map_or(0, BatchTableHierarchy::byte_length);
+        let mut columns = JsMap::new();
+        for (name, value) in json_entries(json) {
+            if matches!(name.as_str(), "HIERARCHY" | "extensions" | "extras") {
+                continue;
+            }
+            let col = if value.get("byteOffset").is_some_and(|v| !v.is_null()) {
+                let binary = BinaryColumn::read(&name, value, body.as_ref(), count as f64)
+                    .map_err(|e| RuntimeError::new(e.to_string()))?;
+                property_bytes += binary.byte_length();
+                VectorBatchColumn::Binary(binary)
+            } else {
+                VectorBatchColumn::Json(JsonColumn::from_json(value))
+            };
+            columns.insert(name, col);
+        }
+        Ok(Self {
+            colors: vec![Color::WHITE; count],
+            shows: vec![true; count],
+            columns,
+            hierarchy,
+            property_bytes,
+        })
+    }
+}
+
+impl Vector3DTileBatchTable for VectorBatchTable {
+    fn features_length(&self) -> usize {
+        self.colors.len()
+    }
+    fn batch_table_byte_length(&self) -> usize {
+        self.property_bytes
+    }
+    fn get_color(&self, batch_id: usize) -> Color {
+        self.colors.get(batch_id).copied().unwrap_or(Color::WHITE)
+    }
+    fn get_show(&self, batch_id: usize) -> bool {
+        self.shows.get(batch_id).copied().unwrap_or(true)
+    }
+    fn set_color(&mut self, batch_id: usize, color: Color) {
+        if let Some(slot) = self.colors.get_mut(batch_id) {
+            *slot = color;
+        }
+    }
+    fn set_show(&mut self, batch_id: usize, show: bool) {
+        if let Some(slot) = self.shows.get_mut(batch_id) {
+            *slot = show;
+        }
+    }
+    fn has_property(&self, batch_id: usize, name: &str) -> bool {
+        if batch_id >= self.colors.len() {
+            return false;
+        }
+        if self
+            .columns
+            .get(name)
+            .is_some_and(|c| !matches!(c, VectorBatchColumn::Json(JsonColumn::Null)))
+        {
+            return true;
+        }
+        self.hierarchy
+            .as_ref()
+            .and_then(|h| h.has_property(batch_id, name).ok())
+            .unwrap_or(false)
+    }
+    fn property(&self, batch_id: usize, name: &str) -> Option<serde_json::Value> {
+        if batch_id >= self.colors.len() {
+            return None;
+        }
+        let value = match self.columns.get(name) {
+            Some(VectorBatchColumn::Binary(c)) => c.get(batch_id).ok().flatten(),
+            Some(VectorBatchColumn::Json(c)) if c.is_defined() => c.get(batch_id),
+            _ => self.hierarchy.as_ref().and_then(|h| h.get_property(batch_id, name).ok().flatten()),
+        };
+        value.map(metadata_value_to_json)
+    }
+    fn property_names(&self) -> Vec<String> {
+        let mut names: Vec<String> = self.columns.keys().map(str::to_string).collect();
+        if let Some(hierarchy) = &self.hierarchy {
+            for batch_id in 0..self.colors.len() {
+                if let Ok(ids) = hierarchy.get_property_ids(batch_id) {
+                    for id in ids {
+                        if !names.contains(&id) {
+                            names.push(id);
+                        }
+                    }
+                }
+            }
+        }
+        names
     }
 }
 

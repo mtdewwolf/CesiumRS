@@ -539,84 +539,38 @@ impl<G: Gl + 'static> ClassificationPrimitive<G> {
             }
         }
 
-        if passes.pick {
-            if self.use_pick_offsets {
-                let offsets = primitive.pick_offsets().to_vec();
-                for (pick_index, offset) in offsets.iter().enumerate() {
-                    let vertex_array = vertices.get(offset.index).cloned();
-                    let volume = volumes.get(offset.index).copied().flatten();
-                    let Some(vertex_array) = vertex_array else { continue };
-                    if queue_terrain {
-                        self.push_pick_command(
-                            frame,
-                            &context,
-                            primitive,
-                            shaders,
-                            vertex_array.clone(),
-                            pick_state.clone(),
-                            volume,
-                            render_uniforms.clone(),
-                            offset,
-                            pick_index,
-                            false,
-                        );
-                        self.push_pick_command(
-                            frame,
-                            &context,
-                            primitive,
-                            shaders,
-                            vertex_array,
-                            pick_state.clone(),
-                            volume,
-                            render_uniforms.clone(),
-                            offset,
-                            pick_index,
-                            true,
-                        );
-                    }
-                }
-            } else {
-                for (index, vertex_array) in vertices.iter().enumerate() {
-                    let volume = volumes.get(index).copied().flatten();
-                    if queue_terrain {
-                        self.push_pick_plain(
-                            frame,
-                            &context,
-                            primitive,
-                            shaders,
-                            vertex_array.clone(),
-                            pick_state.clone(),
-                            volume,
-                            render_uniforms.clone(),
-                            index,
-                            false,
-                        );
-                        self.push_pick_plain(
-                            frame,
-                            &context,
-                            primitive,
-                            shaders,
-                            vertex_array.clone(),
-                            pick_state.clone(),
-                            volume,
-                            render_uniforms.clone(),
-                            index,
-                            true,
-                        );
-                    }
-                    if queue_tiles {
-                        self.push_pick_plain(
-                            frame,
-                            &context,
-                            primitive,
-                            shaders,
-                            vertex_array.clone(),
-                            pick_state.clone(),
-                            volume,
-                            render_uniforms.clone(),
-                            index,
-                            false,
-                        );
+        if passes.pick && primitive.allow_picking {
+            let offsets = primitive.pick_offsets();
+            let draws = if self.use_pick_offsets { offsets.len() } else { vertices.len() };
+            for index in 0..draws {
+                let offset = if self.use_pick_offsets { offsets.get(index) } else { None };
+                let vertex_index = offset.map_or(index, |offset| offset.index);
+                let Some(vertex_array) = vertices.get(vertex_index) else { continue };
+                let volume = volumes.get(vertex_index).copied().flatten();
+                for color in [false, true] {
+                    for (enabled, pass) in
+                        [(queue_terrain, Pass::TerrainClassification), (queue_tiles, Pass::Cesium3DTileClassification)]
+                    {
+                        if enabled {
+                            self.push_pick_command(
+                                frame,
+                                &context,
+                                primitive,
+                                shaders,
+                                vertex_array.clone(),
+                                if color {
+                                    pick_state.clone()
+                                } else {
+                                    stencil_depth_state(true, pass == Pass::Cesium3DTileClassification)
+                                },
+                                pass,
+                                volume,
+                                render_uniforms.clone(),
+                                offset,
+                                index,
+                                color,
+                            );
+                        }
                     }
                 }
             }
@@ -633,58 +587,22 @@ impl<G: Gl + 'static> ClassificationPrimitive<G> {
         shaders: &ShaderSet<G>,
         vertices: Rc<crate::renderer::VertexArray<G>>,
         state: RenderState,
+        pass: Pass,
         volume: Option<BoundingSphere>,
         uniforms: Vec<(String, UniformValue)>,
-        offset: &super::primitive_pipeline::PickOffset,
-        pick_index: usize,
-        color: bool,
-    ) {
-        let mut options =
-            SceneDrawOptions::new(vertices, if color { shaders.pick.clone() } else { shaders.stencil.clone() });
-        options.primitive_type = primitive.command_primitive_type();
-        options.state = if color { state } else { stencil_depth_state(true, false) };
-        options.uniforms = uniforms;
-        options.offset = offset.offset;
-        options.count = Some(offset.count);
-        if let Some(texture) = primitive.batch_texture() {
-            options.textures.push(("batchTexture".into(), texture));
-        }
-        let metadata = DrawMetadata {
-            bounding_volume: volume,
-            model_matrix: Some(primitive.model_matrix),
-            owner: Some("ClassificationPrimitive".into()),
-            cull: primitive.cull,
-            pick_id: None,
-            ..Default::default()
-        };
-        frame.command_list.push(SceneCommand::from_draw(
-            format!("ClassificationPrimitive-pick-{pick_index}-{color}"),
-            context.clone(),
-            Pass::TerrainClassification,
-            metadata,
-            options,
-        ));
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn push_pick_plain(
-        &self,
-        frame: &mut FrameState,
-        context: &Context<G>,
-        primitive: &Primitive<G>,
-        shaders: &ShaderSet<G>,
-        vertices: Rc<crate::renderer::VertexArray<G>>,
-        state: RenderState,
-        volume: Option<BoundingSphere>,
-        uniforms: Vec<(String, UniformValue)>,
+        offset: Option<&super::primitive_pipeline::PickOffset>,
         index: usize,
         color: bool,
     ) {
         let mut options =
             SceneDrawOptions::new(vertices, if color { shaders.pick.clone() } else { shaders.stencil.clone() });
         options.primitive_type = primitive.command_primitive_type();
-        options.state = if color { state } else { stencil_depth_state(true, false) };
+        options.state = state;
         options.uniforms = uniforms;
+        if let Some(offset) = offset {
+            options.offset = offset.offset;
+            options.count = Some(offset.count);
+        }
         if let Some(texture) = primitive.batch_texture() {
             options.textures.push(("batchTexture".into(), texture));
         }
@@ -693,13 +611,12 @@ impl<G: Gl + 'static> ClassificationPrimitive<G> {
             model_matrix: Some(primitive.model_matrix),
             owner: Some("ClassificationPrimitive".into()),
             cull: primitive.cull,
-            pick_id: None,
             ..Default::default()
         };
         frame.command_list.push(SceneCommand::from_draw(
-            format!("ClassificationPrimitive-pick-plain-{index}-{color}"),
+            format!("ClassificationPrimitive-pick-{pass:?}-{index}-{color}"),
             context.clone(),
-            Pass::TerrainClassification,
+            pass,
             metadata,
             options,
         ));

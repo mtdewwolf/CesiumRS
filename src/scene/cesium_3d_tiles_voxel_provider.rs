@@ -1,16 +1,23 @@
 //! CesiumJS `Cesium3DTilesVoxelProvider`: a voxel provider backed by a 3D
 //! Tiles tileset with implicit tiling and `3DTILES_content_voxels`.
 use super::{
-    has_extension, Cesium3DTilesetMetadata, ImplicitSubtree, ImplicitSubtreeCache, ImplicitTileCoordinates,
-    ImplicitTileset, MetadataEntity, MetadataError, MetadataSemantic, MetadataType, MetadataValue, SubtreeSource,
+    gltf_pipeline::{add_pipeline_extras, js, parse_glb, BufferSource, Gltf},
+    has_extension,
+    preprocess_3d_tile_content::{preprocess_3d_tile_content, TileContentPayload},
+    voxel_content::VoxelAttributeSpec,
+    Cesium3DTilesetMetadata, ImplicitSubtree, ImplicitSubtreeCache, ImplicitTileCoordinates, ImplicitTileset,
+    MetadataComponentType, MetadataEntity, MetadataError, MetadataSemantic, MetadataType, MetadataValue, SubtreeSource,
     VoxelContent, VoxelMetadataOrder, VoxelProvider, VoxelRequest, VoxelShapeType,
 };
 use crate::core::{
-    Cartesian3, Ellipsoid, Matrix3, Matrix4, OrientedBoundingBox, Quaternion, Resource, ResourceClient,
-    RuntimeError,
+    get_string_from_typed_array::get_magic,
+    resource::DerivedResourceOptions,
+    Cartesian3, ComponentDatatype, Ellipsoid, Matrix3, Matrix4, OrientedBoundingBox, Quaternion, Resource,
+    ResourceClient, RuntimeError, TypedArray,
 };
+use base64::Engine;
 use serde_json::Value;
-use std::{collections::BTreeMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 
@@ -20,7 +27,7 @@ pub struct Cesium3DTilesVoxelProviderOptions {
     pub class_name: String,
     pub names: Vec<String>,
     pub types: Vec<MetadataType>,
-    pub component_types: Vec<super::MetadataComponentType>,
+    pub component_types: Vec<MetadataComponentType>,
     pub shape: VoxelShapeType,
     pub dimensions: Cartesian3,
     pub padding_before: Cartesian3,
@@ -68,14 +75,14 @@ pub struct Cesium3DTilesVoxelProvider {
     class_name: String,
     names: Vec<String>,
     types: Vec<MetadataType>,
-    component_types: Vec<super::MetadataComponentType>,
+    component_types: Vec<MetadataComponentType>,
     metadata_order: VoxelMetadataOrder,
     minimum_values: Option<Vec<Vec<f64>>>,
     maximum_values: Option<Vec<Vec<f64>>>,
     maximum_tile_count: Option<usize>,
     available_levels: Option<u32>,
     implicit_tileset: Option<ImplicitTileset>,
-    subtree_cache: ImplicitSubtreeCache<Rc<ImplicitSubtree>>,
+    subtree_cache: Rc<RefCell<ImplicitSubtreeCache<Rc<ImplicitSubtree>>>>,
     client: Option<ResourceClient>,
 }
 
@@ -110,13 +117,22 @@ impl Cesium3DTilesVoxelProvider {
             maximum_tile_count: options.maximum_tile_count,
             available_levels: None,
             implicit_tileset: None,
-            subtree_cache: ImplicitSubtreeCache::new(None),
+            subtree_cache: Rc::new(RefCell::new(ImplicitSubtreeCache::new(None))),
             client: None,
         })
     }
 
     pub fn class_name(&self) -> &str {
         &self.class_name
+    }
+
+    fn attribute_spec(&self) -> VoxelAttributeSpec {
+        VoxelAttributeSpec {
+            class_name: self.class_name.clone(),
+            names: self.names.clone(),
+            types: self.types.clone(),
+            component_types: self.component_types.clone(),
+        }
     }
 
     /// Creates a provider from a tileset JSON URL.
@@ -131,17 +147,21 @@ impl Cesium3DTilesVoxelProvider {
 
     pub async fn from_json(resource: Resource, tileset_json: Value, client: ResourceClient) -> Result<Self> {
         validate(&tileset_json)?;
+        let owned_schema: Option<Value>;
         let schema_json = if let Some(schema) = tileset_json.get("schema").filter(|v| !v.is_null()) {
             schema
         } else if let Some(uri) = tileset_json.get("schemaUri").and_then(Value::as_str) {
             let schema_resource = resource
-                .get_derived_resource(crate::core::resource::DerivedResourceOptions { url: Some(uri.into()), ..Default::default() })
+                .get_derived_resource(DerivedResourceOptions { url: Some(uri.into()), ..Default::default() })
                 .ok_or_else(|| RuntimeError::new("Invalid schema URI"))?;
-            &client
-                .fetch_json(&schema_resource)
-                .ok_or_else(|| RuntimeError::new("Schema request was throttled"))?
-                .await
-                .map_err(|error| RuntimeError::new(error.to_string()))?
+            owned_schema = Some(
+                client
+                    .fetch_json(&schema_resource)
+                    .ok_or_else(|| RuntimeError::new("Schema request was throttled"))?
+                    .await
+                    .map_err(|error| RuntimeError::new(error.to_string()))?,
+            );
+            owned_schema.as_ref().unwrap()
         } else {
             return Err(RuntimeError::new("Tileset must have a metadata schema"));
         };
@@ -195,117 +215,434 @@ impl Cesium3DTilesVoxelProvider {
     }
 
     pub async fn request_data_async(&mut self, options: VoxelRequest) -> Result<VoxelContent> {
-        if options.keyframe != 0 {
-            return Err(RuntimeError::new("3D Tiles currently doesn't support time-dynamic data."));
-        }
-        let Some(implicit_tileset) = &self.implicit_tileset else {
-            return Err(RuntimeError::new("Provider has no implicit tileset"));
-        };
+        let implicit_tileset = self
+            .implicit_tileset
+            .clone()
+            .ok_or_else(|| RuntimeError::new("Provider has no implicit tileset"))?;
         let client = self
             .client
             .clone()
             .ok_or_else(|| RuntimeError::new("Provider has no resource client"))?;
-        let coordinates = ImplicitTileCoordinates::new(
-            implicit_tileset.subdivision_scheme,
-            implicit_tileset.subtree_levels,
-            options.tile_level as i64,
-            options.tile_x as i64,
-            options.tile_y as i64,
-            Some(options.tile_z as i64),
-        )
-        .map_err(|error| RuntimeError::new(error.to_string()))?;
-        let is_subtree_root = coordinates.is_subtree_root() && coordinates.level > 0;
-        let subtree_coord = if is_subtree_root {
-            coordinates
-                .get_parent_subtree_coordinates()
-                .map_err(|error| RuntimeError::new(error.to_string()))?
-        } else {
-            coordinates
-                .get_subtree_coordinates()
-                .map_err(|error| RuntimeError::new(error.to_string()))?
-        };
-        let subtree = self.get_subtree(&subtree_coord, &client).await?;
-        let available = if is_subtree_root {
-            subtree.child_subtree_is_available_at_coordinates(&coordinates)
-        } else {
-            subtree.tile_is_available_at_coordinates(&coordinates)
-        }
-        .map_err(|error| RuntimeError::new(error.to_string()))?;
-        if !available {
-            return Err(RuntimeError::new(format!(
-                "Tile is not available at level {}, x {}, y {}, z {}.",
-                options.tile_level, options.tile_x, options.tile_y, options.tile_z
-            )));
-        }
-        let values = coordinates
-            .get_template_values()
-            .into_iter()
-            .collect::<BTreeMap<_, _>>();
-        let _ = values;
-        // The content loader parses glTF voxel attributes; that GPU-free
-        // extraction is not yet implemented in this port.
-        Err(RuntimeError::new(
-            "Voxel glTF content decoding is not implemented in the Rust port",
-        ))
+        let cache = Rc::clone(&self.subtree_cache);
+        let spec = self.attribute_spec();
+        request_tile_data(implicit_tileset, client, cache, spec, options).await
+    }
+}
+
+async fn request_tile_data(
+    implicit_tileset: ImplicitTileset,
+    client: ResourceClient,
+    subtree_cache: Rc<RefCell<ImplicitSubtreeCache<Rc<ImplicitSubtree>>>>,
+    spec: VoxelAttributeSpec,
+    options: VoxelRequest,
+) -> Result<VoxelContent> {
+    if options.keyframe != 0 {
+        return Err(RuntimeError::new("3D Tiles currently doesn't support time-dynamic data."));
+    }
+    let coordinates = ImplicitTileCoordinates::new(
+        implicit_tileset.subdivision_scheme,
+        implicit_tileset.subtree_levels,
+        options.tile_level as i64,
+        options.tile_x as i64,
+        options.tile_y as i64,
+        Some(options.tile_z as i64),
+    )
+    .map_err(|error| RuntimeError::new(error.to_string()))?;
+    let is_subtree_root = coordinates.is_subtree_root() && coordinates.level > 0;
+    let subtree_coord = if is_subtree_root {
+        coordinates
+            .get_parent_subtree_coordinates()
+            .map_err(|error| RuntimeError::new(error.to_string()))?
+    } else {
+        coordinates
+            .get_subtree_coordinates()
+            .map_err(|error| RuntimeError::new(error.to_string()))?
+    };
+
+    let subtree = fetch_subtree(&implicit_tileset, &subtree_cache, &subtree_coord, &client).await?;
+    let available = if is_subtree_root {
+        subtree.child_subtree_is_available_at_coordinates(&coordinates)
+    } else {
+        subtree.tile_is_available_at_coordinates(&coordinates)
+    }
+    .map_err(|error| RuntimeError::new(error.to_string()))?;
+    if !available {
+        return Err(RuntimeError::new(format!(
+            "Tile is not available at level {}, x {}, y {}, z {}.",
+            options.tile_level, options.tile_x, options.tile_y, options.tile_z
+        )));
     }
 
-    async fn get_subtree(
-        &mut self,
-        coordinates: &ImplicitTileCoordinates,
-        client: &ResourceClient,
-    ) -> Result<Rc<ImplicitSubtree>> {
-        if let Some(subtree) = self.subtree_cache.find(coordinates) {
-            return Ok(subtree.clone());
-        }
-        let implicit_tileset = self
-            .implicit_tileset
-            .as_ref()
-            .ok_or_else(|| RuntimeError::new("Provider has no implicit tileset"))?;
-        let template_values: Vec<(String, String)> = coordinates
-            .get_template_values()
-            .into_iter()
-            .map(|(name, value)| (name.to_string(), value.to_string()))
-            .collect();
-        let subtree_relative = implicit_tileset
-            .subtree_uri_template
-            .get_derived_resource(crate::core::resource::DerivedResourceOptions {
-                template_values,
-                ..Default::default()
-            })
-            .ok_or_else(|| RuntimeError::new("Invalid subtree URI template"))?;
-        let subtree_resource = implicit_tileset
-            .base_resource
-            .get_derived_resource(crate::core::resource::DerivedResourceOptions {
-                url: Some(subtree_relative.url()),
-                ..Default::default()
-            })
-            .ok_or_else(|| RuntimeError::new("Invalid subtree URL"))?;
-        let bytes = client
-            .fetch_array_buffer(&subtree_resource)
-            .ok_or_else(|| RuntimeError::new("Subtree request was throttled"))?
-            .await
-            .map_err(|error| RuntimeError::new(error.to_string()))?;
-        let mut load_buffer = |resource: &Resource| -> std::result::Result<Vec<u8>, MetadataError> {
-            let future = client
-                .fetch_array_buffer(resource)
-                .ok_or_else(|| MetadataError::Runtime("Subtree buffer request was throttled".into()))?;
-            futures_util::FutureExt::now_or_never(future)
-                .ok_or_else(|| MetadataError::Runtime("Subtree buffer was not immediately available".into()))?
-                .map_err(|error| MetadataError::Runtime(error.to_string()))
-        };
-        let subtree = Rc::new(
-            ImplicitSubtree::from_subtree_json(
-                &subtree_resource,
-                SubtreeSource::Binary(&bytes),
-                implicit_tileset,
-                *coordinates,
-                &mut load_buffer,
-            )
-            .map_err(|error| RuntimeError::new(error.to_string()))?,
-        );
-        let _ = self.subtree_cache.add_subtree(subtree.clone());
-        Ok(subtree)
+    let content_template = implicit_tileset
+        .content_uri_templates
+        .first()
+        .ok_or_else(|| RuntimeError::new("Implicit tileset has no content URI template"))?;
+    let template_values: Vec<(String, String)> = coordinates
+        .get_template_values()
+        .into_iter()
+        .map(|(name, value)| (name.to_string(), value.to_string()))
+        .collect();
+    let gltf_relative = content_template
+        .get_derived_resource(DerivedResourceOptions { template_values, ..Default::default() })
+        .ok_or_else(|| RuntimeError::new("Invalid voxel content URI template"))?;
+    let gltf_resource = implicit_tileset
+        .base_resource
+        .get_derived_resource(DerivedResourceOptions { url: Some(gltf_relative.url()), ..Default::default() })
+        .ok_or_else(|| RuntimeError::new("Invalid voxel content URL"))?;
+
+    load_voxel_gltf(&gltf_resource, &client, &spec).await
+}
+
+async fn fetch_subtree(
+    implicit_tileset: &ImplicitTileset,
+    subtree_cache: &Rc<RefCell<ImplicitSubtreeCache<Rc<ImplicitSubtree>>>>,
+    coordinates: &ImplicitTileCoordinates,
+    client: &ResourceClient,
+) -> Result<Rc<ImplicitSubtree>> {
+    if let Some(subtree) = subtree_cache.borrow().find(coordinates) {
+        return Ok(subtree.clone());
     }
+    let template_values: Vec<(String, String)> = coordinates
+        .get_template_values()
+        .into_iter()
+        .map(|(name, value)| (name.to_string(), value.to_string()))
+        .collect();
+    let subtree_relative = implicit_tileset
+        .subtree_uri_template
+        .get_derived_resource(DerivedResourceOptions { template_values, ..Default::default() })
+        .ok_or_else(|| RuntimeError::new("Invalid subtree URI template"))?;
+    let subtree_resource = implicit_tileset
+        .base_resource
+        .get_derived_resource(DerivedResourceOptions { url: Some(subtree_relative.url()), ..Default::default() })
+        .ok_or_else(|| RuntimeError::new("Invalid subtree URL"))?;
+    let bytes = client
+        .fetch_array_buffer(&subtree_resource)
+        .ok_or_else(|| RuntimeError::new("Subtree request was throttled"))?
+        .await
+        .map_err(|error| RuntimeError::new(error.to_string()))?;
+
+    // Check cache again in case a concurrent request populated it while awaiting.
+    if let Some(subtree) = subtree_cache.borrow().find(coordinates) {
+        return Ok(subtree.clone());
+    }
+
+    let preprocessed = preprocess_3d_tile_content(&bytes)?;
+    // Pre-fetch any external buffer URIs referenced by a JSON subtree so the
+    // synchronous `ImplicitSubtree::from_subtree_json` callback always resolves.
+    let mut external_buffers: HashMap<String, Vec<u8>> = HashMap::new();
+    if let TileContentPayload::Json(ref json) = preprocessed.payload {
+        if let Some(buffers) = json.get("buffers").and_then(Value::as_array) {
+            for buffer in buffers {
+                if let Some(uri) = buffer.get("uri").and_then(Value::as_str) {
+                    if let Some(buf_resource) = subtree_resource
+                        .get_derived_resource(DerivedResourceOptions { url: Some(uri.into()), ..Default::default() })
+                    {
+                        let buf_bytes = if let Some(decoded) = decode_data_uri(uri)? {
+                            decoded
+                        } else {
+                            client
+                                .fetch_array_buffer(&buf_resource)
+                                .ok_or_else(|| RuntimeError::new("Subtree buffer request was throttled"))?
+                                .await
+                                .map_err(|error| RuntimeError::new(error.to_string()))?
+                        };
+                        external_buffers.insert(buf_resource.url(), buf_bytes);
+                    }
+                }
+            }
+        }
+    }
+
+    let source = match preprocessed.payload {
+        TileContentPayload::Json(json) => SubtreeSource::Json(json),
+        TileContentPayload::Binary(binary) => SubtreeSource::Binary(binary),
+    };
+    let mut load_buffer = |resource: &Resource| -> std::result::Result<Vec<u8>, MetadataError> {
+        if let Some(bytes) = external_buffers.get(&resource.url()) {
+            return Ok(bytes.clone());
+        }
+        let future = client
+            .fetch_array_buffer(resource)
+            .ok_or_else(|| MetadataError::Runtime("Subtree buffer request was throttled".into()))?;
+        futures_util::FutureExt::now_or_never(future)
+            .ok_or_else(|| MetadataError::Runtime("Subtree buffer was not immediately available".into()))?
+            .map_err(|error| MetadataError::Runtime(error.to_string()))
+    };
+    let subtree = Rc::new(
+        ImplicitSubtree::from_subtree_json(
+            &subtree_resource,
+            source,
+            implicit_tileset,
+            *coordinates,
+            &mut load_buffer,
+        )
+        .map_err(|error| RuntimeError::new(error.to_string()))?,
+    );
+    let _ = subtree_cache.borrow_mut().add_subtree(subtree.clone());
+    Ok(subtree)
+}
+
+fn decode_data_uri(uri: &str) -> Result<Option<Vec<u8>>> {
+    let Some(rest) = uri.strip_prefix("data:") else {
+        return Ok(None);
+    };
+    let Some((header, payload)) = rest.split_once(',') else {
+        return Err(RuntimeError::new("Invalid data URI"));
+    };
+    if header.ends_with(";base64") {
+        let decoded = base64::engine::general_purpose::STANDARD
+            .decode(payload.trim())
+            .map_err(|error| RuntimeError::new(format!("Invalid base64 data URI: {error}")))?;
+        Ok(Some(decoded))
+    } else {
+        Ok(Some(payload.as_bytes().to_vec()))
+    }
+}
+
+/// Loads a glTF/GLB voxel tile and decodes its `EXT_structural_metadata`
+/// property-attribute accessors into typed arrays ordered by `spec`.
+pub async fn load_voxel_gltf(
+    gltf_resource: &Resource,
+    client: &ResourceClient,
+    spec: &VoxelAttributeSpec,
+) -> Result<VoxelContent> {
+    let bytes = client
+        .fetch_array_buffer(gltf_resource)
+        .ok_or_else(|| RuntimeError::new("Voxel glTF request was throttled"))?
+        .await
+        .map_err(|error| RuntimeError::new(error.to_string()))?;
+
+    let mut gltf = if get_magic(&bytes, 0) == "glTF" {
+        parse_glb(&BufferSource::new(bytes))
+            .map_err(|error| RuntimeError::new(error.to_string()))?
+            .ok_or_else(|| RuntimeError::new("Binary glTF is missing a JSON chunk"))?
+    } else {
+        let mut json: Value = serde_json::from_slice(&bytes)
+            .map_err(|error| RuntimeError::new(format!("Invalid voxel glTF JSON: {error}")))?;
+        add_pipeline_extras(&mut json).map_err(|error| RuntimeError::new(error.to_string()))?;
+        Gltf::new(json)
+    };
+
+    // Resolve any external or data-URI buffers not already embedded by GLB.
+    let buffer_uris: Vec<(usize, String)> = gltf
+        .json
+        .get("buffers")
+        .and_then(Value::as_array)
+        .map(|buffers| {
+            buffers
+                .iter()
+                .enumerate()
+                .filter_map(|(index, buffer)| {
+                    let has_source = buffer.pointer("/extras/_pipeline/source").is_some_and(|v| !v.is_null());
+                    if has_source {
+                        return None;
+                    }
+                    buffer.get("uri").and_then(Value::as_str).map(|uri| (index, uri.to_string()))
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+
+    for (index, uri) in buffer_uris {
+        let buffer_bytes = if let Some(decoded) = decode_data_uri(&uri)? {
+            decoded
+        } else {
+            let buffer_resource = gltf_resource
+                .get_derived_resource(DerivedResourceOptions { url: Some(uri), ..Default::default() })
+                .ok_or_else(|| RuntimeError::new("Invalid glTF buffer URI"))?;
+            client
+                .fetch_array_buffer(&buffer_resource)
+                .ok_or_else(|| RuntimeError::new("Voxel glTF buffer request was throttled"))?
+                .await
+                .map_err(|error| RuntimeError::new(error.to_string()))?
+        };
+        let marker = gltf.add_source(BufferSource::new(buffer_bytes));
+        if let Some(buffer) = gltf.json.pointer_mut(&format!("/buffers/{index}")) {
+            let pipeline = js::object_mut(buffer.pointer_mut("/extras/_pipeline"), "source")
+                .map_err(|error| RuntimeError::new(error.to_string()))?;
+            js::set(pipeline, "source", marker).map_err(|error| RuntimeError::new(error.to_string()))?;
+        }
+    }
+
+    decode_voxel_gltf(&gltf, spec)
+}
+
+/// Decodes voxel attribute arrays from a parsed glTF with loaded buffer sources,
+/// matching `VoxelContent.fromGltf` / `processAttributes` in CesiumJS.
+pub fn decode_voxel_gltf(gltf: &Gltf, spec: &VoxelAttributeSpec) -> Result<VoxelContent> {
+    let ext = gltf
+        .json
+        .pointer("/extensions/EXT_structural_metadata")
+        .ok_or_else(|| RuntimeError::new("Voxel glTF is missing EXT_structural_metadata extension"))?;
+    let property_attributes = ext
+        .get("propertyAttributes")
+        .and_then(Value::as_array)
+        .ok_or_else(|| RuntimeError::new("EXT_structural_metadata is missing propertyAttributes"))?;
+    let property_attribute = property_attributes
+        .iter()
+        .find(|entry| entry.get("class").and_then(Value::as_str) == Some(spec.class_name.as_str()))
+        .ok_or_else(|| RuntimeError::new(format!("No property attribute found for class '{}'", spec.class_name)))?;
+    let properties = property_attribute
+        .get("properties")
+        .and_then(Value::as_object)
+        .ok_or_else(|| RuntimeError::new("Property attribute is missing properties"))?;
+
+    let scene_index = gltf.json.get("scene").and_then(Value::as_u64).unwrap_or(0) as usize;
+    let node_index = gltf
+        .json
+        .pointer(&format!("/scenes/{scene_index}/nodes/0"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0) as usize;
+    let mesh_index = gltf
+        .json
+        .pointer(&format!("/nodes/{node_index}/mesh"))
+        .and_then(Value::as_u64)
+        .ok_or_else(|| RuntimeError::new("Voxel glTF node has no mesh"))? as usize;
+    let primitive = gltf
+        .json
+        .pointer(&format!("/meshes/{mesh_index}/primitives/0"))
+        .ok_or_else(|| RuntimeError::new("Voxel glTF mesh has no primitives"))?;
+    let primitive_attributes = primitive
+        .get("attributes")
+        .and_then(Value::as_object)
+        .ok_or_else(|| RuntimeError::new("Voxel glTF primitive has no attributes"))?;
+
+    let mut metadata = Vec::with_capacity(spec.names.len());
+    for i in 0..spec.names.len() {
+        let name = &spec.names[i];
+        let Some(attr_name) = properties
+            .get(name)
+            .and_then(|prop| prop.get("attribute"))
+            .and_then(Value::as_str)
+        else {
+            metadata.push(TypedArray::Uint8(Vec::new()));
+            continue;
+        };
+        let Some(accessor_index) = primitive_attributes.get(attr_name).and_then(Value::as_u64) else {
+            metadata.push(TypedArray::Uint8(Vec::new()));
+            continue;
+        };
+        let accessor = gltf
+            .json
+            .pointer(&format!("/accessors/{accessor_index}"))
+            .ok_or_else(|| RuntimeError::new(format!("Missing accessor {accessor_index} for attribute {attr_name}")))?;
+        let datatype = spec.component_types[i]
+            .to_component_datatype()
+            .ok_or_else(|| RuntimeError::new("Unsupported voxel MetadataComponentType"))?;
+        let component_count = spec.types[i].get_component_count();
+        let array = read_voxel_accessor(gltf, accessor, datatype, component_count)?;
+        metadata.push(array);
+    }
+
+    Ok(VoxelContent::from_metadata_array(metadata))
+}
+
+fn read_voxel_accessor(
+    gltf: &Gltf,
+    accessor: &Value,
+    datatype: ComponentDatatype,
+    component_count: usize,
+) -> Result<TypedArray> {
+    let count = accessor
+        .get("count")
+        .and_then(Value::as_u64)
+        .ok_or_else(|| RuntimeError::new("Accessor is missing count"))? as usize;
+    let total_components = count
+        .checked_mul(component_count)
+        .ok_or_else(|| RuntimeError::new("Accessor component count overflow"))?;
+    let component_size = datatype.get_size_in_bytes();
+    let elem_bytes = component_count
+        .checked_mul(component_size)
+        .ok_or_else(|| RuntimeError::new("Accessor element size overflow"))?;
+
+    let Some(buffer_view_index) = accessor.get("bufferView").and_then(Value::as_u64) else {
+        let zeros = vec![0u8; total_components.checked_mul(component_size).unwrap_or(0)];
+        return bytes_to_typed_array(datatype, &zeros);
+    };
+    let buffer_view = gltf
+        .json
+        .pointer(&format!("/bufferViews/{buffer_view_index}"))
+        .ok_or_else(|| RuntimeError::new(format!("Missing bufferView {buffer_view_index}")))?;
+    let buffer_index = buffer_view
+        .get("buffer")
+        .and_then(Value::as_u64)
+        .ok_or_else(|| RuntimeError::new("bufferView is missing buffer index"))? as usize;
+    let marker = gltf
+        .json
+        .pointer(&format!("/buffers/{buffer_index}/extras/_pipeline/source"))
+        .ok_or_else(|| RuntimeError::new(format!("glTF buffer {buffer_index} has no loaded source")))?;
+    let source = gltf
+        .source(marker)
+        .ok_or_else(|| RuntimeError::new(format!("glTF buffer {buffer_index} source marker is invalid")))?;
+
+    let bv_offset = buffer_view.get("byteOffset").and_then(Value::as_u64).unwrap_or(0) as usize;
+    let acc_offset = accessor.get("byteOffset").and_then(Value::as_u64).unwrap_or(0) as usize;
+    let start = source
+        .byte_offset
+        .checked_add(bv_offset)
+        .and_then(|v| v.checked_add(acc_offset))
+        .ok_or_else(|| RuntimeError::new("Accessor byte offset overflow"))?;
+    let stride = buffer_view
+        .get("byteStride")
+        .and_then(Value::as_u64)
+        .map(|s| s as usize)
+        .filter(|&s| s > 0)
+        .unwrap_or(elem_bytes);
+
+    if stride == elem_bytes {
+        let total_bytes = count
+            .checked_mul(elem_bytes)
+            .ok_or_else(|| RuntimeError::new("Accessor byte length overflow"))?;
+        let end = start
+            .checked_add(total_bytes)
+            .ok_or_else(|| RuntimeError::new("Accessor byte range overflow"))?;
+        let slice = source
+            .buffer
+            .get(start..end)
+            .ok_or_else(|| RuntimeError::new("Voxel accessor byte range out of bounds"))?;
+        bytes_to_typed_array(datatype, slice)
+    } else {
+        let mut packed = Vec::with_capacity(count.saturating_mul(elem_bytes));
+        for i in 0..count {
+            let elem_start = start
+                .checked_add(i.checked_mul(stride).ok_or_else(|| RuntimeError::new("Stride overflow"))?)
+                .ok_or_else(|| RuntimeError::new("Element offset overflow"))?;
+            let elem_end = elem_start
+                .checked_add(elem_bytes)
+                .ok_or_else(|| RuntimeError::new("Element end overflow"))?;
+            let slice = source
+                .buffer
+                .get(elem_start..elem_end)
+                .ok_or_else(|| RuntimeError::new("Strided voxel accessor out of bounds"))?;
+            packed.extend_from_slice(slice);
+        }
+        bytes_to_typed_array(datatype, &packed)
+    }
+}
+
+fn bytes_to_typed_array(datatype: ComponentDatatype, bytes: &[u8]) -> Result<TypedArray> {
+    Ok(match datatype {
+        ComponentDatatype::Byte => TypedArray::Int8(bytes.iter().map(|&b| b as i8).collect()),
+        ComponentDatatype::UnsignedByte => TypedArray::Uint8(bytes.to_vec()),
+        ComponentDatatype::Short => {
+            TypedArray::Int16(bytes.as_chunks::<2>().0.iter().map(|&c| i16::from_le_bytes(c)).collect())
+        }
+        ComponentDatatype::UnsignedShort => {
+            TypedArray::Uint16(bytes.as_chunks::<2>().0.iter().map(|&c| u16::from_le_bytes(c)).collect())
+        }
+        ComponentDatatype::Int => {
+            TypedArray::Int32(bytes.as_chunks::<4>().0.iter().map(|&c| i32::from_le_bytes(c)).collect())
+        }
+        ComponentDatatype::UnsignedInt => {
+            TypedArray::Uint32(bytes.as_chunks::<4>().0.iter().map(|&c| u32::from_le_bytes(c)).collect())
+        }
+        ComponentDatatype::Float => {
+            TypedArray::Float32(bytes.as_chunks::<4>().0.iter().map(|&c| f32::from_le_bytes(c)).collect())
+        }
+        ComponentDatatype::Double => {
+            TypedArray::Float64(bytes.as_chunks::<8>().0.iter().map(|&c| f64::from_le_bytes(c)).collect())
+        }
+    })
 }
 
 impl VoxelProvider for Cesium3DTilesVoxelProvider {
@@ -339,7 +676,7 @@ impl VoxelProvider for Cesium3DTilesVoxelProvider {
     fn types(&self) -> &[MetadataType] {
         &self.types
     }
-    fn component_types(&self) -> &[super::MetadataComponentType] {
+    fn component_types(&self) -> &[MetadataComponentType] {
         &self.component_types
     }
     fn minimum_values(&self) -> Option<&[Vec<f64>]> {
@@ -371,33 +708,9 @@ impl VoxelProvider for Cesium3DTilesVoxelProvider {
         }
         let implicit_tileset = self.implicit_tileset.clone()?;
         let client = self.client.clone()?;
-        let coordinates = ImplicitTileCoordinates::new(
-            implicit_tileset.subdivision_scheme,
-            implicit_tileset.subtree_levels,
-            options.tile_level as i64,
-            options.tile_x as i64,
-            options.tile_y as i64,
-            Some(options.tile_z as i64),
-        )
-        .ok()?;
-        let is_subtree_root = coordinates.is_subtree_root() && coordinates.level > 0;
-        let subtree_coord = if is_subtree_root {
-            coordinates.get_parent_subtree_coordinates().ok()?
-        } else {
-            coordinates.get_subtree_coordinates().ok()?
-        };
-        let template_values = subtree_coord.get_template_values();
-        let base = implicit_tileset.base_resource.clone();
-        let template = implicit_tileset.subtree_uri_template.clone();
-        Some(Box::pin(async move {
-            // Without a cached subtree this request needs the resource client;
-            // the async path is `request_data_async`, so report the deferred
-            // form rather than silently succeeding.
-            let _ = (&client, &base, &template, &template_values);
-            Err(RuntimeError::new(
-                "Cesium3DTilesVoxelProvider::request_data requires request_data_async in the Rust port",
-            ))
-        }))
+        let subtree_cache = Rc::clone(&self.subtree_cache);
+        let spec = self.attribute_spec();
+        Some(Box::pin(request_tile_data(implicit_tileset, client, subtree_cache, spec, options)))
     }
 }
 
@@ -418,9 +731,7 @@ pub fn validate(tileset: &Value) -> Result<()> {
     if !has_extension(&root["content"], "3DTILES_content_voxels") {
         return Err(RuntimeError::new("Root tile content must have 3DTILES_content_voxels extension"));
     }
-    if !has_extension(root, "3DTILES_implicit_tiling")
-        && root.get("implicitTiling").is_none_or(Value::is_null)
-    {
+    if !has_extension(root, "3DTILES_implicit_tiling") && root.get("implicitTiling").is_none_or(Value::is_null) {
         return Err(RuntimeError::new("Root tile must have implicit tiling"));
     }
     if tileset.get("schema").is_none_or(Value::is_null)
@@ -543,7 +854,7 @@ fn get_attribute_info(
     for (id, property) in class.properties.iter() {
         names.push(id.to_string());
         types.push(property.metadata_type());
-        component_types.push(property.component_type().unwrap_or(super::MetadataComponentType::Float32));
+        component_types.push(property.component_type().unwrap_or(MetadataComponentType::Float32));
         let component_count = property.metadata_type().get_component_count();
         let statistics = class_statistics.and_then(|statistics| statistics["properties"].get(id));
         minimum_values.push(copy_array(statistics.and_then(|s| s.get("min")), component_count));

@@ -191,6 +191,82 @@
       0
     ]
   },
+  "googleStreetView": {
+    "cartographicDeg": [
+      -122.4194,
+      37.7749,
+      0
+    ],
+    "requestedJsonUrls": [
+      "https://maps.googleapis.com/maps/api/streetview/metadata?key=TEST_KEY&location=37.7749%2C-122.41939999999998&radius=50",
+      "https://maps.googleapis.com/maps/api/streetview/metadata?key=TEST_KEY&location=37.7749%2C-122.41939999999998&radius=120",
+      "https://maps.googleapis.com/maps/api/streetview/metadata?key=TEST_KEY&pano=PANO_ABC",
+      "https://maps.googleapis.com/maps/api/streetview/metadata?key=TEST_KEY&location=37.7749%2C-122.41939999999998&radius=50",
+      "https://maps.googleapis.com/maps/api/streetview/metadata?key=TEST_KEY&pano=BAD_PANO",
+      "https://maps.googleapis.com/maps/api/streetview/metadata?key=TEST_KEY&location=37.7749%2C-122.41939999999998&radius=50"
+    ],
+    "nearestDefault": {
+      "panoId": "PANO_ABC",
+      "latitude": 37.7749,
+      "longitude": -122.4194
+    },
+    "nearestCustomRadius": {
+      "panoId": "PANO_ABC",
+      "latitude": 37.7749,
+      "longitude": -122.4194
+    },
+    "metaOk": {
+      "status": "OK",
+      "pano_id": "PANO_ABC",
+      "location": {
+        "lat": 37.7749,
+        "lng": -122.4194
+      }
+    },
+    "nearestErr": "GoogleStreetViewCubeMapPanoramaProvider metadata error: ZERO_RESULTS",
+    "metaErr": "GoogleStreetViewCubeMapPanoramaProvider metadata error: NOT_FOUND",
+    "missingKeyErr": "options.key, GoogleMaps.defaultStreetViewStaticApiKey or GoogleMaps.defaultApiKey is required.",
+    "explicitFaceUrls": [
+      "https://maps.googleapis.com/maps/api/streetview?size=256x256&pano=PANO_SIGNED&heading=0&pitch=0&key=TEST_KEY&signature=SIG123",
+      "https://maps.googleapis.com/maps/api/streetview?size=256x256&pano=PANO_SIGNED&heading=180&pitch=0&key=TEST_KEY&signature=SIG123",
+      "https://maps.googleapis.com/maps/api/streetview?size=256x256&pano=PANO_SIGNED&heading=-90&pitch=-90&key=TEST_KEY&signature=SIG123",
+      "https://maps.googleapis.com/maps/api/streetview?size=256x256&pano=PANO_SIGNED&heading=-90&pitch=90&key=TEST_KEY&signature=SIG123",
+      "https://maps.googleapis.com/maps/api/streetview?size=256x256&pano=PANO_SIGNED&heading=270&pitch=0&key=TEST_KEY&signature=SIG123",
+      "https://maps.googleapis.com/maps/api/streetview?size=256x256&pano=PANO_SIGNED&heading=90&pitch=0&key=TEST_KEY&signature=SIG123"
+    ],
+    "explicitTransform": [
+      0.3284016173195161,
+      0.5170910628823621,
+      0.7904234374239641,
+      0.4237560024915061,
+      0.6672331382519411,
+      -0.6125608456070994,
+      -0.8441464494353719,
+      0.5361126485223561,
+      "-0"
+    ],
+    "explicitCredit": "<img alt=\"Google\" src=\"https://assets.ion.cesium.com/google-credit.png\" style=\"vertical-align:-6px\">",
+    "lookupFaceUrls": [
+      "https://maps.googleapis.com/maps/api/streetview?size=512x512&pano=PANO_LOOKUP&heading=0&pitch=0&key=TEST_KEY",
+      "https://maps.googleapis.com/maps/api/streetview?size=512x512&pano=PANO_LOOKUP&heading=180&pitch=0&key=TEST_KEY",
+      "https://maps.googleapis.com/maps/api/streetview?size=512x512&pano=PANO_LOOKUP&heading=-90&pitch=-90&key=TEST_KEY",
+      "https://maps.googleapis.com/maps/api/streetview?size=512x512&pano=PANO_LOOKUP&heading=-90&pitch=90&key=TEST_KEY",
+      "https://maps.googleapis.com/maps/api/streetview?size=512x512&pano=PANO_LOOKUP&heading=270&pitch=0&key=TEST_KEY",
+      "https://maps.googleapis.com/maps/api/streetview?size=512x512&pano=PANO_LOOKUP&heading=90&pitch=0&key=TEST_KEY"
+    ],
+    "lookupTransform": [
+      0.3284016173195161,
+      0.5170910628823621,
+      0.7904234374239641,
+      0.4237560024915061,
+      0.6672331382519411,
+      -0.6125608456070994,
+      -0.8441464494353719,
+      0.5361126485223561,
+      "-0"
+    ],
+    "lookupCredit": "<img alt=\"Google\" src=\"https://assets.ion.cesium.com/google-credit.png\" style=\"vertical-align:-6px\">"
+  },
   "specular": {
     "url": "specular.ktx2",
     "ready": false,

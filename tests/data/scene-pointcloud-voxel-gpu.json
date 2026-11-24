@@ -1,0 +1,1857 @@
+{
+  "version": "23.0.0",
+  "megatexture": {
+    "max3D": 2048,
+    "m1Info": {
+      "channelCount": 1,
+      "textureMemoryByteLength": 1024,
+      "tileCounts": [
+        1,
+        1,
+        4
+      ],
+      "voxelCountPerTile": [
+        4,
+        4,
+        4
+      ],
+      "maximumTileCount": 4,
+      "textureDims": [
+        4,
+        4,
+        16
+      ],
+      "pixelFormat": 6403,
+      "pixelDatatype": 5126,
+      "samplerLinear": {
+        "min": 9729,
+        "mag": 9729
+      },
+      "samplerNearest": {
+        "min": 9728,
+        "mag": 9728
+      }
+    },
+    "m2Info": {
+      "tileCounts": [
+        1,
+        1,
+        6
+      ],
+      "maximumTileCount": 6,
+      "textureDims": [
+        2,
+        3,
+        12
+      ],
+      "textureMemoryByteLength": 288,
+      "pixelFormat": 6408,
+      "pixelDatatype": 5121,
+      "seq": [
+        {
+          "op": "add",
+          "slot": 0,
+          "occupied": 1,
+          "full": false
+        },
+        {
+          "op": "add",
+          "slot": 1,
+          "occupied": 2,
+          "full": false
+        },
+        {
+          "op": "add",
+          "slot": 2,
+          "occupied": 3,
+          "full": false
+        },
+        {
+          "op": "add",
+          "slot": 3,
+          "occupied": 4,
+          "full": false
+        },
+        {
+          "op": "remove",
+          "slot": 1,
+          "occupied": 3,
+          "full": false
+        },
+        {
+          "op": "remove",
+          "slot": 3,
+          "occupied": 2,
+          "full": false
+        },
+        {
+          "op": "add",
+          "slot": 3,
+          "occupied": 3,
+          "full": false
+        },
+        {
+          "op": "add",
+          "slot": 1,
+          "occupied": 4,
+          "full": false
+        },
+        {
+          "op": "add",
+          "slot": 4,
+          "occupied": 5,
+          "full": false
+        },
+        {
+          "op": "add",
+          "slot": 5,
+          "occupied": 6,
+          "full": true
+        }
+      ],
+      "uploads": [
+        {
+          "xOffset": 0,
+          "yOffset": 0,
+          "zOffset": 0,
+          "width": 2,
+          "height": 3,
+          "depth": 2,
+          "format": 6408,
+          "type": 5121,
+          "byteLength": 48,
+          "hash": "d892e699f0e3fd15"
+        },
+        {
+          "xOffset": 0,
+          "yOffset": 0,
+          "zOffset": 2,
+          "width": 2,
+          "height": 3,
+          "depth": 2,
+          "format": 6408,
+          "type": 5121,
+          "byteLength": 48,
+          "hash": "95f7e55f07310ec5"
+        },
+        {
+          "xOffset": 0,
+          "yOffset": 0,
+          "zOffset": 4,
+          "width": 2,
+          "height": 3,
+          "depth": 2,
+          "format": 6408,
+          "type": 5121,
+          "byteLength": 48,
+          "hash": "a941c7cd94e3f4b5"
+        },
+        {
+          "xOffset": 0,
+          "yOffset": 0,
+          "zOffset": 6,
+          "width": 2,
+          "height": 3,
+          "depth": 2,
+          "format": 6408,
+          "type": 5121,
+          "byteLength": 48,
+          "hash": "72dc12e789215ff5"
+        },
+        {
+          "xOffset": 0,
+          "yOffset": 0,
+          "zOffset": 6,
+          "width": 2,
+          "height": 3,
+          "depth": 2,
+          "format": 6408,
+          "type": 5121,
+          "byteLength": 48,
+          "hash": "1c46124bdf242335"
+        },
+        {
+          "xOffset": 0,
+          "yOffset": 0,
+          "zOffset": 2,
+          "width": 2,
+          "height": 3,
+          "depth": 2,
+          "format": 6408,
+          "type": 5121,
+          "byteLength": 48,
+          "hash": "3dd4ceb49ed33525"
+        },
+        {
+          "xOffset": 0,
+          "yOffset": 0,
+          "zOffset": 8,
+          "width": 2,
+          "height": 3,
+          "depth": 2,
+          "format": 6408,
+          "type": 5121,
+          "byteLength": 48,
+          "hash": "b35aeebf713976f5"
+        },
+        {
+          "xOffset": 0,
+          "yOffset": 0,
+          "zOffset": 10,
+          "width": 2,
+          "height": 3,
+          "depth": 2,
+          "format": 6408,
+          "type": 5121,
+          "byteLength": 48,
+          "hash": "dc9e4601d14ee7d5"
+        }
+      ],
+      "fullError": "Trying to add when there are no empty spots",
+      "oobError": "Megatexture index out of bounds"
+    },
+    "m2Destroyed": true,
+    "m3Info": {
+      "textureDims": [
+        2,
+        2,
+        4
+      ],
+      "pixelFormat": 33319,
+      "pixelDatatype": 5126,
+      "maximumTileCount": 2
+    },
+    "glError": 0
+  },
+  "cesium3DTilesVoxelProvider": {
+    "box": {
+      "className": "voxel",
+      "names": [
+        "temperature",
+        "rgb"
+      ],
+      "types": [
+        "SCALAR",
+        "VEC3"
+      ],
+      "componentTypes": [
+        "FLOAT32",
+        "UINT8"
+      ],
+      "shape": "BOX",
+      "dimensions": [
+        2,
+        2,
+        2
+      ],
+      "paddingBefore": [
+        1,
+        0,
+        0
+      ],
+      "paddingAfter": [
+        0,
+        1,
+        0
+      ],
+      "globalTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        100,
+        200,
+        300,
+        1
+      ],
+      "shapeTransform": [
+        0,
+        1,
+        0,
+        0,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        10,
+        20,
+        30,
+        1
+      ],
+      "minBounds": [
+        -4,
+        -2,
+        -6
+      ],
+      "maxBounds": [
+        4,
+        2,
+        6
+      ],
+      "minimumValues": [
+        [
+          -10.5
+        ],
+        [
+          0,
+          10,
+          20
+        ]
+      ],
+      "maximumValues": [
+        [
+          42.5
+        ],
+        [
+          255,
+          240,
+          230
+        ]
+      ],
+      "maximumTileCount": 9,
+      "availableLevels": 2,
+      "metadataOrder": 1
+    },
+    "region": {
+      "className": "voxel",
+      "names": [
+        "temperature",
+        "rgb"
+      ],
+      "types": [
+        "SCALAR",
+        "VEC3"
+      ],
+      "componentTypes": [
+        "FLOAT32",
+        "UINT8"
+      ],
+      "shape": "ELLIPSOID",
+      "dimensions": [
+        2,
+        2,
+        2
+      ],
+      "paddingBefore": [
+        0,
+        0,
+        0
+      ],
+      "paddingAfter": [
+        0,
+        0,
+        0
+      ],
+      "globalTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "shapeTransform": [
+        6378137,
+        0,
+        0,
+        0,
+        0,
+        6378137,
+        0,
+        0,
+        0,
+        0,
+        6356752.314245179,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "minBounds": [
+        -0.5,
+        -0.25,
+        0
+      ],
+      "maxBounds": [
+        0.5,
+        0.25,
+        500
+      ],
+      "minimumValues": null,
+      "maximumValues": null,
+      "maximumTileCount": null,
+      "availableLevels": 1,
+      "metadataOrder": 0
+    },
+    "cylinder": {
+      "className": "voxel",
+      "names": [
+        "temperature",
+        "rgb"
+      ],
+      "types": [
+        "SCALAR",
+        "VEC3"
+      ],
+      "componentTypes": [
+        "FLOAT32",
+        "UINT8"
+      ],
+      "shape": "CYLINDER",
+      "dimensions": [
+        2,
+        2,
+        2
+      ],
+      "paddingBefore": [
+        0,
+        0,
+        0
+      ],
+      "paddingAfter": [
+        0,
+        0,
+        0
+      ],
+      "globalTransform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "shapeTransform": [
+        2.220446049250313e-16,
+        1,
+        0,
+        0,
+        -1,
+        2.220446049250313e-16,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        2,
+        -3,
+        4,
+        1
+      ],
+      "minBounds": [
+        1,
+        -1.5,
+        -6
+      ],
+      "maxBounds": [
+        12,
+        1.5,
+        14
+      ],
+      "minimumValues": null,
+      "maximumValues": null,
+      "maximumTileCount": null,
+      "availableLevels": 1,
+      "metadataOrder": 1
+    },
+    "tile0": [
+      {
+        "type": "Float32Array",
+        "values": [
+          -5.5,
+          0,
+          12.25,
+          20.5,
+          31,
+          -1.25,
+          42.5,
+          10
+        ]
+      },
+      {
+        "type": "Uint8Array",
+        "values": [
+          10,
+          20,
+          30,
+          40,
+          50,
+          60,
+          70,
+          80,
+          90,
+          100,
+          110,
+          120,
+          130,
+          140,
+          150,
+          160,
+          170,
+          180,
+          190,
+          200,
+          210,
+          220,
+          230,
+          240
+        ]
+      }
+    ],
+    "tile1": [
+      {
+        "type": "Float32Array",
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      },
+      {
+        "type": "Uint8Array",
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24
+        ]
+      }
+    ],
+    "unavailableError": "Tile is not available at level 1, x 1, y 1, z 1.",
+    "keyframeError": "3D Tiles currently doesn't support time-dynamic data."
+  },
+  "voxelPrimitive": {
+    "caseA": {
+      "ready": true,
+      "dimensions": [
+        2,
+        2,
+        2
+      ],
+      "inputDimensions": [
+        3,
+        2,
+        3
+      ],
+      "paddingBefore": [
+        1,
+        0,
+        0
+      ],
+      "paddingAfter": [
+        0,
+        1,
+        0
+      ],
+      "boundingSphere": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "radius": 1.7320508075688772
+      },
+      "texturesByteLength": 1134,
+      "renderSnap": {
+        "pass": 10,
+        "cull": true,
+        "occlude": true,
+        "pickOnly": false,
+        "executeInClosestFrustum": true,
+        "boundingVolume": {
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "radius": 1.7320508075688772
+        },
+        "renderState": {
+          "cullEnabled": true,
+          "cullFace": 1029,
+          "depthTestEnabled": false,
+          "depthMask": false,
+          "blendingEnabled": true,
+          "blendingSrcRgb": 1,
+          "blendingDstRgb": 771
+        },
+        "fragmentDefines": [
+          "BOX_INTERSECTION_INDEX 0",
+          "DEPTH_INTERSECTION_INDEX 1",
+          "DEPTH_TEST",
+          "INTERSECTION_COUNT 2",
+          "METADATA_COUNT 2",
+          "PADDING",
+          "SAMPLE_COUNT 1",
+          "SHAPE_BOX",
+          "STATISTICS",
+          "Y_UP_METADATA_ORDER"
+        ]
+      },
+      "pickSnap": {
+        "pass": 10,
+        "cull": true,
+        "occlude": true,
+        "pickOnly": true,
+        "executeInClosestFrustum": true,
+        "boundingVolume": {
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "radius": 1.7320508075688772
+        },
+        "renderState": {
+          "cullEnabled": true,
+          "cullFace": 1029,
+          "depthTestEnabled": false,
+          "depthMask": false,
+          "blendingEnabled": true,
+          "blendingSrcRgb": 1,
+          "blendingDstRgb": 771
+        },
+        "fragmentDefines": [
+          "BOX_INTERSECTION_INDEX 0",
+          "DEPTH_INTERSECTION_INDEX 1",
+          "DEPTH_TEST",
+          "INTERSECTION_COUNT 2",
+          "METADATA_COUNT 2",
+          "PADDING",
+          "PICKING",
+          "SAMPLE_COUNT 1",
+          "SHAPE_BOX",
+          "STATISTICS",
+          "Y_UP_METADATA_ORDER"
+        ]
+      },
+      "pickVoxelSnap": {
+        "pass": 10,
+        "cull": true,
+        "occlude": true,
+        "pickOnly": true,
+        "executeInClosestFrustum": true,
+        "boundingVolume": {
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "radius": 1.7320508075688772
+        },
+        "renderState": {
+          "cullEnabled": true,
+          "cullFace": 1029,
+          "depthTestEnabled": false,
+          "depthMask": false,
+          "blendingEnabled": true,
+          "blendingSrcRgb": 1,
+          "blendingDstRgb": 771
+        },
+        "fragmentDefines": [
+          "BOX_INTERSECTION_INDEX 0",
+          "DEPTH_INTERSECTION_INDEX 1",
+          "DEPTH_TEST",
+          "INTERSECTION_COUNT 2",
+          "METADATA_COUNT 2",
+          "PADDING",
+          "PICKING_VOXEL",
+          "SAMPLE_COUNT 1",
+          "SHAPE_BOX",
+          "STATISTICS",
+          "Y_UP_METADATA_ORDER"
+        ]
+      },
+      "uniforms": {
+        "u_dimensions": [
+          2,
+          2,
+          2
+        ],
+        "u_inputDimensions": [
+          3,
+          2,
+          3
+        ],
+        "u_paddingBefore": [
+          1,
+          0,
+          0
+        ],
+        "u_paddingAfter": [
+          0,
+          1,
+          0
+        ],
+        "u_megatextureTileCounts": [
+          1,
+          9,
+          1
+        ],
+        "u_octreeInternalNodeTilesPerRow": 227,
+        "u_octreeInternalNodeTexelSizeUv": [
+          0.00048828125,
+          1
+        ],
+        "u_ndcSpaceAxisAlignedBoundingBox": [
+          -0.43301270189221935,
+          -0.43301270189221935,
+          0.43301270189221935,
+          0.43301270189221935
+        ],
+        "u_transformPositionViewToLocal": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          5,
+          1
+        ],
+        "u_transformDirectionViewToLocal": [
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "u_cameraPositionLocal": [
+          0,
+          0,
+          5
+        ],
+        "u_cameraDirectionLocal": [
+          0,
+          0,
+          -1
+        ],
+        "u_cameraTileCoordinates": [
+          1,
+          1,
+          6,
+          1
+        ],
+        "u_cameraTileUv": [
+          0,
+          0,
+          0
+        ],
+        "u_stepSize": 1
+      },
+      "offscreenCommands": 0,
+      "hiddenCommands": 0,
+      "noDepthDefines": [
+        "BOX_INTERSECTION_INDEX 0",
+        "INTERSECTION_COUNT 1",
+        "METADATA_COUNT 2",
+        "PADDING",
+        "SAMPLE_COUNT 1",
+        "SHAPE_BOX",
+        "STATISTICS",
+        "Y_UP_METADATA_ORDER"
+      ],
+      "nearestAfter": true
+    },
+    "caseB": {
+      "inputDimensions": [
+        2,
+        2,
+        2
+      ],
+      "fragmentDefines": [
+        "CLIPPING_PLANES",
+        "CLIPPING_PLANES_COUNT 1",
+        "CLIPPING_PLANES_INTERSECTION_INDEX 2",
+        "DEPTH_INTERSECTION_INDEX 3",
+        "DEPTH_TEST",
+        "ELLIPSOID_INTERSECTION_INDEX_HEIGHT_MAX 0",
+        "ELLIPSOID_INTERSECTION_INDEX_HEIGHT_MIN 1",
+        "INTERSECTION_COUNT 4",
+        "LOG_DEPTH_READ_ONLY",
+        "METADATA_COUNT 1",
+        "SAMPLE_COUNT 1",
+        "SHAPE_ELLIPSOID"
+      ],
+      "clippingPlanesMatrix": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "u_scale": 2.5
+    },
+    "glError": 0
+  },
+  "pointCloud": [
+    {
+      "name": "basic-rtc",
+      "b64": "cG50cwEAAAC8AAAAYAAAAEAAAAAAAAAAAAAAAHsiUE9JTlRTX0xFTkdUSCI6NCwiUE9TSVRJT04iOnsiYnl0ZU9mZnNldCI6MH0sIlJUQ19DRU5URVIiOlsxMCwyMCwzMF0sIlJHQiI6eyJieXRlT2Zmc2V0Ijo0OH19IAAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAAAAAAAAACAP/8AAAD/AAAA/4CAgAAAAAA=",
+      "pointsLength": 4,
+      "geometryByteLength": 60,
+      "ready": true,
+      "isTranslucent": false,
+      "styleTranslucent": false,
+      "isQuantizedDraco": false,
+      "isOctEncodedDraco": false,
+      "octEncodedRange": 0,
+      "modelMatrix": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        110,
+        220,
+        330,
+        1
+      ],
+      "boundingSphere": {
+        "center": [
+          110,
+          220.5,
+          330.5
+        ],
+        "radius": 0.7171067811865476
+      },
+      "pass": 8,
+      "attributes": [
+        {
+          "index": 0,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5126,
+          "normalize": false
+        },
+        {
+          "index": 1,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5121,
+          "normalize": true
+        }
+      ],
+      "vertexShader": "in vec3 a_position; \nout vec4 v_color; \nuniform vec4 u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier; \nuniform vec4 u_constantColor; \nuniform vec4 u_highlightColor; \nfloat u_pointSize; \nfloat tiles3d_tileset_time; \nin vec3 a_color; \nvoid main() \n{ \n    u_pointSize = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.x; \n    tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n    vec4 color = vec4(a_color, 1.0); \n    vec3 position = a_position; \n    vec3 position_absolute = vec3(czm_model * vec4(position, 1.0)); \n    vec3 normal = vec3(1.0); \n    gl_PointSize = u_pointSize; \n    color = color * u_highlightColor; \n    v_color = color; \n    gl_Position = czm_modelViewProjection * vec4(position, 1.0); \n} \n",
+      "fragmentShader": "in vec4 v_color; \nvoid main() \n{ \n    out_FragColor = czm_gammaCorrect(v_color); \n} \n",
+      "uniformNames": [
+        "czm_splitDirection",
+        "u_clippingPlanes",
+        "u_clippingPlanesEdgeStyle",
+        "u_clippingPlanesMatrix",
+        "u_constantColor",
+        "u_highlightColor",
+        "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier"
+      ],
+      "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier": [
+        2,
+        0,
+        0,
+        0
+      ],
+      "u_quantizedVolumeScaleAndOctEncodedRange": null,
+      "batchTableCb": null,
+      "glError": 0
+    },
+    {
+      "name": "quantized-rgb565-oct16p",
+      "b64": "cG50cwEAAAAMAQAAyAAAACgAAAAAAAAAAAAAAHsiUE9JTlRTX0xFTkdUSCI6NCwiUVVBTlRJWkVEX1ZPTFVNRV9PRkZTRVQiOlstNSwtMTAsLTE1XSwiUVVBTlRJWkVEX1ZPTFVNRV9TQ0FMRSI6WzEwLDIwLDMwXSwiUE9TSVRJT05fUVVBTlRJWkVEIjp7ImJ5dGVPZmZzZXQiOjB9LCJSR0I1NjUiOnsiYnl0ZU9mZnNldCI6MjR9LCJOT1JNQUxfT0NUMTZQIjp7ImJ5dGVPZmZzZXQiOjMyfX0gICAgICAgAAAAAAAA//8AgABA6APQB7gL////////APjgBx8A//+AgP+AAICA/w==",
+      "pointsLength": 4,
+      "geometryByteLength": 40,
+      "ready": true,
+      "isTranslucent": false,
+      "styleTranslucent": false,
+      "isQuantizedDraco": false,
+      "isOctEncodedDraco": false,
+      "quantizedRange": 65535,
+      "octEncodedRange": 0,
+      "modelMatrix": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -5,
+        -10,
+        -15,
+        1
+      ],
+      "boundingSphere": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "radius": 18.708286933869708
+      },
+      "pass": 8,
+      "attributes": [
+        {
+          "index": 0,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5123,
+          "normalize": false
+        },
+        {
+          "index": 1,
+          "enabled": true,
+          "componentsPerAttribute": 1,
+          "componentDatatype": 5123,
+          "normalize": false
+        },
+        {
+          "index": 2,
+          "enabled": true,
+          "componentsPerAttribute": 2,
+          "componentDatatype": 5121,
+          "normalize": false
+        }
+      ],
+      "vertexShader": "in vec3 a_position; \nout vec4 v_color; \nuniform vec4 u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier; \nuniform vec4 u_constantColor; \nuniform vec4 u_highlightColor; \nfloat u_pointSize; \nfloat tiles3d_tileset_time; \nfloat u_geometricError; \nfloat u_depthMultiplier; \nin float a_color; \nconst float SHIFT_RIGHT_11 = 1.0 / 2048.0; \nconst float SHIFT_RIGHT_5 = 1.0 / 32.0; \nconst float SHIFT_LEFT_11 = 2048.0; \nconst float SHIFT_LEFT_5 = 32.0; \nconst float NORMALIZE_6 = 1.0 / 64.0; \nconst float NORMALIZE_5 = 1.0 / 32.0; \nin vec2 a_normal; \nuniform vec4 u_quantizedVolumeScaleAndOctEncodedRange; \nvoid main() \n{ \n    u_pointSize = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.x; \n    tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n    u_geometricError = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.z; \n    u_depthMultiplier = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.w; \n    float compressed = a_color; \n    float r = floor(compressed * SHIFT_RIGHT_11); \n    compressed -= r * SHIFT_LEFT_11; \n    float g = floor(compressed * SHIFT_RIGHT_5); \n    compressed -= g * SHIFT_LEFT_5; \n    float b = compressed; \n    vec3 rgb = vec3(r * NORMALIZE_5, g * NORMALIZE_6, b * NORMALIZE_5); \n    vec4 color = vec4(rgb, 1.0); \n    vec3 position = a_position * u_quantizedVolumeScaleAndOctEncodedRange.xyz; \n    vec3 position_absolute = vec3(czm_model * vec4(position, 1.0)); \n    vec3 normal = czm_octDecode(a_normal); \n    vec3 normalEC = czm_normal * normal; \n    vec4 positionEC = czm_modelView * vec4(position, 1.0); \n    float depth = -positionEC.z; \n    gl_PointSize = min((u_geometricError / depth) * u_depthMultiplier, u_pointSize); \n    color = color * u_highlightColor; \n    float diffuseStrength = czm_getLambertDiffuse(czm_lightDirectionEC, normalEC); \n    diffuseStrength = max(diffuseStrength, 0.4); \n    color.xyz *= diffuseStrength * czm_lightColor; \n    v_color = color; \n    gl_Position = czm_modelViewProjection * vec4(position, 1.0); \n    float visible = step(-normalEC.z, 0.0); \n    gl_Position *= visible; \n    gl_PointSize *= visible; \n} \n",
+      "fragmentShader": "in vec4 v_color; \nvoid main() \n{ \n    out_FragColor = czm_gammaCorrect(v_color); \n} \n",
+      "uniformNames": [
+        "czm_splitDirection",
+        "u_clippingPlanes",
+        "u_clippingPlanesEdgeStyle",
+        "u_clippingPlanesMatrix",
+        "u_constantColor",
+        "u_highlightColor",
+        "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier",
+        "u_quantizedVolumeScaleAndOctEncodedRange"
+      ],
+      "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier": [
+        16,
+        0,
+        3.75,
+        55.42562584220408
+      ],
+      "u_quantizedVolumeScaleAndOctEncodedRange": [
+        0.00015259021896696422,
+        0.00030518043793392844,
+        0.00045777065690089265,
+        0
+      ],
+      "batchTableCb": null,
+      "glError": 0
+    },
+    {
+      "name": "rgba-translucent",
+      "b64": "cG50cwEAAACUAAAASAAAADAAAAAAAAAAAAAAAHsiUE9JTlRTX0xFTkdUSCI6MywiUE9TSVRJT04iOnsiYnl0ZU9mZnNldCI6MH0sIlJHQkEiOnsiYnl0ZU9mZnNldCI6MzZ9fQAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAP8AAIAA/wDIAAD//w==",
+      "pointsLength": 3,
+      "geometryByteLength": 48,
+      "ready": true,
+      "isTranslucent": true,
+      "styleTranslucent": true,
+      "isQuantizedDraco": false,
+      "isOctEncodedDraco": false,
+      "octEncodedRange": 0,
+      "modelMatrix": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "boundingSphere": {
+        "center": [
+          1,
+          1,
+          0
+        ],
+        "radius": 1.4242135623730952
+      },
+      "pass": 9,
+      "attributes": [
+        {
+          "index": 0,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5126,
+          "normalize": false
+        },
+        {
+          "index": 1,
+          "enabled": true,
+          "componentsPerAttribute": 4,
+          "componentDatatype": 5121,
+          "normalize": true
+        }
+      ],
+      "vertexShader": "in vec3 a_position; \nout vec4 v_color; \nuniform vec4 u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier; \nuniform vec4 u_constantColor; \nuniform vec4 u_highlightColor; \nfloat u_pointSize; \nfloat tiles3d_tileset_time; \nin vec4 a_color; \nvoid main() \n{ \n    u_pointSize = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.x; \n    tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n    vec4 color = a_color; \n    vec3 position = a_position; \n    vec3 position_absolute = vec3(czm_model * vec4(position, 1.0)); \n    vec3 normal = vec3(1.0); \n    gl_PointSize = u_pointSize; \n    color = color * u_highlightColor; \n    v_color = color; \n    gl_Position = czm_modelViewProjection * vec4(position, 1.0); \n} \n",
+      "fragmentShader": "in vec4 v_color; \nvoid main() \n{ \n    out_FragColor = czm_gammaCorrect(v_color); \n} \n",
+      "uniformNames": [
+        "czm_splitDirection",
+        "u_clippingPlanes",
+        "u_clippingPlanesEdgeStyle",
+        "u_clippingPlanesMatrix",
+        "u_constantColor",
+        "u_highlightColor",
+        "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier"
+      ],
+      "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier": [
+        2,
+        0,
+        3.75,
+        55.42562584220408
+      ],
+      "u_quantizedVolumeScaleAndOctEncodedRange": null,
+      "batchTableCb": null,
+      "glError": 0
+    },
+    {
+      "name": "batch-ids",
+      "b64": "cG50cwEAAAA8AQAAmAAAAHAAAAAYAAAAAAAAAHsiUE9JTlRTX0xFTkdUSCI6NCwiUE9TSVRJT04iOnsiYnl0ZU9mZnNldCI6MH0sIlJHQiI6eyJieXRlT2Zmc2V0Ijo0OH0sIk5PUk1BTCI6eyJieXRlT2Zmc2V0Ijo2MH0sIkJBVENIX0lEIjp7ImJ5dGVPZmZzZXQiOjEwOH0sIkJBVENIX0xFTkdUSCI6Mn0gICAgICAgAAAAAAAAAAAAAAAAAACAPwAAAEAAAEBAAACAvwAAAMAAAEDAAACAQAAAoEAAAMBAyGQyMmTIChQe+vDmAAAAAAAAAAAAAIA/AAAAAAAAgD8AAAAAAACAPwAAAAAAAAAAAAAAAAAAAAAAAIC/AAEAAXsibmFtZSI6WyJ6ZXJvIiwib25lIl19IA==",
+      "pointsLength": 4,
+      "geometryByteLength": 116,
+      "ready": true,
+      "isTranslucent": false,
+      "styleTranslucent": false,
+      "isQuantizedDraco": false,
+      "isOctEncodedDraco": false,
+      "octEncodedRange": 0,
+      "modelMatrix": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "boundingSphere": {
+        "center": [
+          1.5,
+          1.5,
+          1.5
+        ],
+        "radius": 6.234949798994366
+      },
+      "pass": 5,
+      "attributes": [
+        {
+          "index": 0,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5126,
+          "normalize": false
+        },
+        {
+          "index": 1,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5121,
+          "normalize": true
+        },
+        {
+          "index": 2,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5126,
+          "normalize": false
+        },
+        {
+          "index": 3,
+          "enabled": true,
+          "componentsPerAttribute": 1,
+          "componentDatatype": 5123,
+          "normalize": false
+        }
+      ],
+      "vertexShader": "in vec3 a_position; \nout vec4 v_color; \nuniform vec4 u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier; \nuniform vec4 u_constantColor; \nuniform vec4 u_highlightColor; \nfloat u_pointSize; \nfloat tiles3d_tileset_time; \nin vec3 a_color; \nin vec3 a_normal; \nin float a_batchId; \nvoid main() \n{ \n    u_pointSize = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.x; \n    tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n    vec4 color = vec4(a_color, 1.0); \n    vec3 position = a_position; \n    vec3 position_absolute = vec3(czm_model * vec4(position, 1.0)); \n    vec3 normal = a_normal; \n    vec3 normalEC = czm_normal * normal; \n    gl_PointSize = u_pointSize; \n    color = color * u_highlightColor; \n    float diffuseStrength = czm_getLambertDiffuse(czm_lightDirectionEC, normalEC); \n    diffuseStrength = max(diffuseStrength, 0.4); \n    color.xyz *= diffuseStrength * czm_lightColor; \n    v_color = color; \n    gl_Position = czm_modelViewProjection * vec4(position, 1.0); \n} \n",
+      "fragmentShader": "in vec4 v_color; \nvoid main() \n{ \n    out_FragColor = czm_gammaCorrect(v_color); \n} \n",
+      "uniformNames": [
+        "czm_splitDirection",
+        "u_clippingPlanes",
+        "u_clippingPlanesEdgeStyle",
+        "u_clippingPlanesMatrix",
+        "u_constantColor",
+        "u_highlightColor",
+        "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier"
+      ],
+      "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier": [
+        2,
+        0,
+        3.75,
+        55.42562584220408
+      ],
+      "u_quantizedVolumeScaleAndOctEncodedRange": null,
+      "batchTableCb": {
+        "len": 2,
+        "hasJson": true,
+        "hasBin": false
+      },
+      "glError": 0
+    },
+    {
+      "name": "binary-batch-table-styleable",
+      "b64": "cG50cwEAAADMAQAASAAAAEAAAADgAAAASAAAAHsiUE9JTlRTX0xFTkdUSCI6NCwiUE9TSVRJT04iOnsiYnl0ZU9mZnNldCI6MH0sIlJHQiI6eyJieXRlT2Zmc2V0Ijo0OH19IAAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAAAAAAIA/AAAAAAAAgD8AAIA/AACAP/8AAAD/AAAA////AAAAAAB7InRlbXBlcmF0dXJlIjp7ImJ5dGVPZmZzZXQiOjAsImNvbXBvbmVudFR5cGUiOiJGTE9BVCIsInR5cGUiOiJTQ0FMQVIifSwidmVsb2NpdHkiOnsiYnl0ZU9mZnNldCI6MTYsImNvbXBvbmVudFR5cGUiOiJGTE9BVCIsInR5cGUiOiJWRUMzIn0sInVudXNlZEZsYWciOnsiYnl0ZU9mZnNldCI6NjQsImNvbXBvbmVudFR5cGUiOiJVTlNJR05FRF9CWVRFIiwidHlwZSI6IlNDQUxBUiJ9fSAgICAgIAAAIEEAAMxBAAAgQgAAoEAAAIA/AAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAAAAgD8AAAA/AAAAPwAAAD8BAgMEAAAAAA==",
+      "pointsLength": 4,
+      "geometryByteLength": 128,
+      "ready": true,
+      "isTranslucent": false,
+      "styleTranslucent": false,
+      "isQuantizedDraco": false,
+      "isOctEncodedDraco": false,
+      "octEncodedRange": 0,
+      "modelMatrix": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "boundingSphere": {
+        "center": [
+          0.5,
+          1,
+          0.5
+        ],
+        "radius": 0.7171067811865476
+      },
+      "pass": 8,
+      "attributes": [
+        {
+          "index": 0,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5126,
+          "normalize": false
+        },
+        {
+          "index": 1,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5121,
+          "normalize": true
+        },
+        {
+          "index": 4,
+          "enabled": true,
+          "componentsPerAttribute": 1,
+          "componentDatatype": 5126,
+          "normalize": false
+        },
+        {
+          "index": 5,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5126,
+          "normalize": false
+        },
+        {
+          "index": 6,
+          "enabled": false,
+          "componentsPerAttribute": 1,
+          "componentDatatype": 5121,
+          "normalize": false
+        }
+      ],
+      "vertexShader": "in vec3 a_position; \nout vec4 v_color; \nuniform vec4 u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier; \nuniform vec4 u_constantColor; \nuniform vec4 u_highlightColor; \nfloat u_pointSize; \nfloat tiles3d_tileset_time; \nin float czm_3dtiles_property_4; \nin vec3 czm_3dtiles_property_5; \nin vec3 a_color; \nvec4 getColorFromStyle(vec3 czm_3dtiles_builtin_property_POSITION, vec3 czm_3dtiles_builtin_property_POSITION_ABSOLUTE, vec4 czm_3dtiles_builtin_property_COLOR, vec3 czm_3dtiles_builtin_property_NORMAL)\n{\n    return vec4((czm_3dtiles_property_4 / 50.0), czm_3dtiles_property_5[0], czm_3dtiles_builtin_property_COLOR[2], 1.0);\n}\nbool getShowFromStyle(vec3 czm_3dtiles_builtin_property_POSITION, vec3 czm_3dtiles_builtin_property_POSITION_ABSOLUTE, vec4 czm_3dtiles_builtin_property_COLOR, vec3 czm_3dtiles_builtin_property_NORMAL)\n{\n    return (czm_3dtiles_property_4 > 8.0);\n}\nfloat getPointSizeFromStyle(vec3 czm_3dtiles_builtin_property_POSITION, vec3 czm_3dtiles_builtin_property_POSITION_ABSOLUTE, vec4 czm_3dtiles_builtin_property_COLOR, vec3 czm_3dtiles_builtin_property_NORMAL)\n{\n    return (4.0 + (czm_3dtiles_property_5[1] * 2.0));\n}\nvoid main() \n{ \n    u_pointSize = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.x; \n    tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n    vec4 color = vec4(a_color, 1.0); \n    vec3 position = a_position; \n    vec3 position_absolute = vec3(czm_model * vec4(position, 1.0)); \n    vec3 normal = vec3(1.0); \n    color = getColorFromStyle(position, position_absolute, color, normal); \n    float show = float(getShowFromStyle(position, position_absolute, color, normal)); \n    gl_PointSize = getPointSizeFromStyle(position, position_absolute, color, normal) * czm_pixelRatio; \n    color = color * u_highlightColor; \n    v_color = color; \n    gl_Position = czm_modelViewProjection * vec4(position, 1.0); \n    gl_Position.w *= float(show); \n    gl_PointSize *= float(show); \n} \n",
+      "fragmentShader": "in vec4 v_color; \nvoid main() \n{ \n    out_FragColor = czm_gammaCorrect(v_color); \n} \n",
+      "uniformNames": [
+        "czm_splitDirection",
+        "u_clippingPlanes",
+        "u_clippingPlanesEdgeStyle",
+        "u_clippingPlanesMatrix",
+        "u_constantColor",
+        "u_highlightColor",
+        "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier"
+      ],
+      "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier": [
+        2,
+        0,
+        3.75,
+        55.42562584220408
+      ],
+      "u_quantizedVolumeScaleAndOctEncodedRange": null,
+      "batchTableCb": null,
+      "glError": 0
+    },
+    {
+      "name": "draco-quantized-oct-normal",
+      "b64": "cG50cwEAAABMAgAAmAAAAJgBAAAAAAAAAAAAAHsiUE9JTlRTX0xFTkdUSCI6NDAsImV4dGVuc2lvbnMiOnsiM0RUSUxFU19kcmFjb19wb2ludF9jb21wcmVzc2lvbiI6eyJwcm9wZXJ0aWVzIjp7IlBPU0lUSU9OIjowLCJOT1JNQUwiOjEsIlJHQiI6Mn0sImJ5dGVPZmZzZXQiOjAsImJ5dGVMZW5ndGgiOjQwMn19fSAgRFJBQ08CAwAAAAAoAAAAAQMACQMAAAEJAwABAgIDAAICAwEAAQEADS8BQAEA+B8C3vvs9RfynkPj+DDnfeX9pmnaKf2jzu9imh4bKX4u6u50Np+zT0zmmij2UTTkPWDlzBT5B5nhqmytdb9txa4mKO4itT5qkW+q1lzfO5n6COXle/DjF8T0ZqjoI3y2FG94+h4yKz4XjE5f6t+gUe3X2In/t9XnNAHjYtPwvxfvmku/rb6CNY89OM4LaT5UxE+XzP3PcSr7Zobq7XHiq4LtFmf1CbvHQA6Net9ITR4ATi5JAAAAAP8PAAAAAwEAChOZAc0ENQOZAdE0BxLs9S1rIrS2//3FuE6OGiamM0POwj79+a/JC96pg7T+rpzUIC8H+AK9/BE43882HfAWuDU8X51Efhnw2jvbQvgIV2sNt1J+v+v0bvyLsS/etPji1zfNWAf1D8C3Dv8BAAD/AAAAAAEBAQHfAYj/I4j/I4j/I2k+BhhKPhBAgAAAAAD/AAAAmKBHwrf+K8Iobw/C5vDHQgwJAAAAAAAA",
+      "pointsLength": 40,
+      "geometryByteLength": 520,
+      "ready": true,
+      "isTranslucent": false,
+      "styleTranslucent": false,
+      "isQuantizedDraco": true,
+      "isOctEncodedDraco": true,
+      "quantizedRange": 4095,
+      "octEncodedRange": 511,
+      "modelMatrix": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -49.906829833984375,
+        -42.99874496459961,
+        -35.858551025390625,
+        1
+      ],
+      "boundingSphere": {
+        "center": [
+          0.07842254638671875,
+          6.986507415771484,
+          14.126701354980469
+        ],
+        "radius": 86.5769967519559
+      },
+      "pass": 8,
+      "attributes": [
+        {
+          "index": 0,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5123,
+          "normalize": false
+        },
+        {
+          "index": 1,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5121,
+          "normalize": true
+        },
+        {
+          "index": 2,
+          "enabled": true,
+          "componentsPerAttribute": 2,
+          "componentDatatype": 5123,
+          "normalize": false
+        }
+      ],
+      "vertexShader": "in vec3 a_position; \nout vec4 v_color; \nuniform vec4 u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier; \nuniform vec4 u_constantColor; \nuniform vec4 u_highlightColor; \nfloat u_pointSize; \nfloat tiles3d_tileset_time; \nin vec3 a_color; \nin vec2 a_normal; \nuniform vec4 u_quantizedVolumeScaleAndOctEncodedRange; \nvoid main() \n{ \n    u_pointSize = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.x; \n    tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n    vec4 color = vec4(a_color, 1.0); \n    vec3 position = a_position * u_quantizedVolumeScaleAndOctEncodedRange.xyz; \n    vec3 position_absolute = vec3(czm_model * vec4(position, 1.0)); \n    vec3 normal = czm_octDecode(a_normal, u_quantizedVolumeScaleAndOctEncodedRange.w).zxy; \n    vec3 normalEC = czm_normal * normal; \n    gl_PointSize = u_pointSize; \n    color = color * u_highlightColor; \n    float diffuseStrength = czm_getLambertDiffuse(czm_lightDirectionEC, normalEC); \n    diffuseStrength = max(diffuseStrength, 0.4); \n    color.xyz *= diffuseStrength * czm_lightColor; \n    v_color = color; \n    gl_Position = czm_modelViewProjection * vec4(position, 1.0); \n    float visible = step(-normalEC.z, 0.0); \n    gl_Position *= visible; \n    gl_PointSize *= visible; \n} \n",
+      "fragmentShader": "in vec4 v_color; \nvoid main() \n{ \n    out_FragColor = czm_gammaCorrect(v_color); \n} \n",
+      "uniformNames": [
+        "czm_splitDirection",
+        "u_clippingPlanes",
+        "u_clippingPlanesEdgeStyle",
+        "u_clippingPlanesMatrix",
+        "u_constantColor",
+        "u_highlightColor",
+        "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier",
+        "u_quantizedVolumeScaleAndOctEncodedRange"
+      ],
+      "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier": [
+        2,
+        0,
+        3.75,
+        55.42562584220408
+      ],
+      "u_quantizedVolumeScaleAndOctEncodedRange": [
+        0.02441282167539492,
+        0.02441282167539492,
+        0.02441282167539492,
+        511
+      ],
+      "batchTableCb": null,
+      "glError": 0
+    },
+    {
+      "name": "draco-batch-table-styleable",
+      "b64": "cG50cwEAAADkAQAAiAAAAPAAAABQAAAAAAAAAHsiUE9JTlRTX0xFTkdUSCI6MywiZXh0ZW5zaW9ucyI6eyIzRFRJTEVTX2RyYWNvX3BvaW50X2NvbXByZXNzaW9uIjp7InByb3BlcnRpZXMiOnsiUE9TSVRJT04iOjB9LCJieXRlT2Zmc2V0IjowLCJieXRlTGVuZ3RoIjoyMzV9fX0gICAgICBEUkFDTwIDAAEAAAMAAAABAwAJAwAAAQkDAAEECQEAAgULAAAAAwAAAP8BEQEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBAAEBACAAAAD/AeD//wEBgP8A+P8AAADAAAAAED8AAAAAAP7xAAAAAAQAAAAAAAAABAAAAAAAAIAAAIA/AAAAQAAAQEAAAMBACwAAAAAAAAAAAAAAAAAAgD8KAADgQAAAAEAIAAAAAAB7ImV4dGVuc2lvbnMiOnsiM0RUSUxFU19kcmFjb19wb2ludF9jb21wcmVzc2lvbiI6eyJwcm9wZXJ0aWVzIjp7ImV4dHJhIjoyfX19fSAgIA==",
+      "pointsLength": 3,
+      "geometryByteLength": 30,
+      "ready": true,
+      "isTranslucent": false,
+      "styleTranslucent": false,
+      "isQuantizedDraco": true,
+      "isOctEncodedDraco": false,
+      "quantizedRange": 2047,
+      "octEncodedRange": 0,
+      "modelMatrix": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        2,
+        3,
+        1
+      ],
+      "boundingSphere": {
+        "center": [
+          4,
+          5,
+          6
+        ],
+        "radius": 5.196152422706632
+      },
+      "pass": 8,
+      "attributes": [
+        {
+          "index": 0,
+          "enabled": true,
+          "componentsPerAttribute": 3,
+          "componentDatatype": 5123,
+          "normalize": false
+        },
+        {
+          "index": 4,
+          "enabled": true,
+          "componentsPerAttribute": 1,
+          "componentDatatype": 5126,
+          "normalize": false
+        }
+      ],
+      "vertexShader": "in vec3 a_position; \nout vec4 v_color; \nuniform vec4 u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier; \nuniform vec4 u_constantColor; \nuniform vec4 u_highlightColor; \nfloat u_pointSize; \nfloat tiles3d_tileset_time; \nin float czm_3dtiles_property_4; \nuniform vec4 u_quantizedVolumeScaleAndOctEncodedRange; \nvec4 getColorFromStyle(vec3 czm_3dtiles_builtin_property_POSITION, vec3 czm_3dtiles_builtin_property_POSITION_ABSOLUTE, vec4 czm_3dtiles_builtin_property_COLOR, vec3 czm_3dtiles_builtin_property_NORMAL)\n{\n    return ((czm_3dtiles_property_4 > 0.5) ? vec4(vec3(1.0, 0.0, 0.0), 1.0) : vec4(vec3(0.0, 0.0, 1.0), 1.0));\n}\nvoid main() \n{ \n    u_pointSize = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.x; \n    tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n    vec4 color = u_constantColor; \n    vec3 position = a_position * u_quantizedVolumeScaleAndOctEncodedRange.xyz; \n    vec3 position_absolute = vec3(czm_model * vec4(position, 1.0)); \n    vec3 normal = vec3(1.0); \n    color = getColorFromStyle(position, position_absolute, color, normal); \n    gl_PointSize = u_pointSize; \n    color = color * u_highlightColor; \n    v_color = color; \n    gl_Position = czm_modelViewProjection * vec4(position, 1.0); \n} \n",
+      "fragmentShader": "in vec4 v_color; \nvoid main() \n{ \n    out_FragColor = czm_gammaCorrect(v_color); \n} \n",
+      "uniformNames": [
+        "czm_splitDirection",
+        "u_clippingPlanes",
+        "u_clippingPlanesEdgeStyle",
+        "u_clippingPlanesMatrix",
+        "u_constantColor",
+        "u_highlightColor",
+        "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier",
+        "u_quantizedVolumeScaleAndOctEncodedRange"
+      ],
+      "u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier": [
+        2,
+        0,
+        3.75,
+        55.42562584220408
+      ],
+      "u_quantizedVolumeScaleAndOctEncodedRange": [
+        0.0029311187103077674,
+        0.0029311187103077674,
+        0.0029311187103077674,
+        0
+      ],
+      "batchTableCb": null,
+      "glError": 0
+    }
+  ],
+  "pointCloudEyeDomeLighting": {
+    "supported": true,
+    "framebufferDims": [
+      32,
+      24
+    ],
+    "colorAttachmentCount": 2,
+    "commandListLength": 6,
+    "preUntouched": true,
+    "opaqueReplaced": true,
+    "opaqueTargetsEdlFb": true,
+    "opaqueCastShadows": false,
+    "opaqueReceiveShadows": false,
+    "derivedFragmentSources": [
+      "layout (location = 0) out vec4 out_FragData_0;\nlayout (location = 1) out vec4 out_FragData_1;",
+      "in vec4 v_color; \nvoid czm_point_cloud_post_process_main() \n{ \n    out_FragData_0 = czm_gammaCorrect(v_color); \n} \n",
+      "void main() \n{ \n    czm_point_cloud_post_process_main(); \n#ifdef LOG_DEPTH\n    czm_writeLogDepth();\n    out_FragData_1 = czm_packDepth(gl_FragDepth); \n#else\n    out_FragData_1 = czm_packDepth(gl_FragCoord.z);\n#endif\n}"
+    ],
+    "translucentUntouched": true,
+    "triangleUntouched": true,
+    "blendPass": 5,
+    "blendBoundingVolume": {
+      "center": [
+        1,
+        2,
+        3
+      ],
+      "radius": 15
+    },
+    "blendDefines": [
+      "LOG_DEPTH_WRITE"
+    ],
+    "blendDistanceAndStrength": [
+      5,
+      1.75
+    ],
+    "blendRenderState": {
+      "blendingEnabled": true,
+      "depthMask": true,
+      "depthTestEnabled": true,
+      "stencilTestEnabled": true,
+      "stencilMask": 128
+    },
+    "clearTargetsEdlFb": true,
+    "clearPass": 5,
+    "clearColor": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "clearDepth": 1,
+    "glError": 0,
+    "destroyed": true
+  },
+  "timeDynamicPointCloud": {
+    "afterFrame0": {
+      "commandListLength": 3,
+      "totalMemoryUsageInBytes": 150,
+      "boundingSphere": {
+        "center": [
+          10,
+          0.5,
+          0.5
+        ],
+        "radius": 0.7171067811865476
+      },
+      "frameChangedCount": 1,
+      "edlUsed": true
+    },
+    "afterFrame1": {
+      "commandListLength": 3,
+      "totalMemoryUsageInBytes": 195,
+      "boundingSphere": {
+        "center": [
+          66.5,
+          1,
+          1.5
+        ],
+        "radius": 1.8808286933869707
+      },
+      "frameChangedCount": 2
+    },
+    "afterEviction": {
+      "commandListLength": 3,
+      "totalMemoryUsageInBytes": 45,
+      "boundingSphere": {
+        "center": [
+          5.5,
+          1,
+          0
+        ],
+        "radius": 1.128033988749895
+      },
+      "frameChangedCount": 3
+    },
+    "hiddenCmds": 0,
+    "morphingCmds": 0,
+    "failuresCount": 1,
+    "destroyed": true,
+    "glError": 0
+  },
+  "assets": {
+    "voxelBoxTileset": {
+      "asset": {
+        "version": "1.1"
+      },
+      "schema": {
+        "id": "voxel-schema",
+        "classes": {
+          "voxel": {
+            "properties": {
+              "temperature": {
+                "type": "SCALAR",
+                "componentType": "FLOAT32"
+              },
+              "rgb": {
+                "type": "VEC3",
+                "componentType": "UINT8"
+              }
+            }
+          },
+          "tilesetMeta": {
+            "properties": {
+              "tileCount": {
+                "type": "SCALAR",
+                "componentType": "UINT32",
+                "semantic": "TILESET_TILE_COUNT"
+              }
+            }
+          }
+        }
+      },
+      "metadata": {
+        "class": "tilesetMeta",
+        "properties": {
+          "tileCount": 9
+        }
+      },
+      "statistics": {
+        "classes": {
+          "voxel": {
+            "properties": {
+              "temperature": {
+                "min": -10.5,
+                "max": 42.5
+              },
+              "rgb": {
+                "min": [
+                  0,
+                  10,
+                  20
+                ],
+                "max": [
+                  255,
+                  240,
+                  230
+                ]
+              }
+            }
+          }
+        }
+      },
+      "geometricError": 100,
+      "root": {
+        "boundingVolume": {
+          "box": [
+            10,
+            20,
+            30,
+            0,
+            4,
+            0,
+            -2,
+            0,
+            0,
+            0,
+            0,
+            6
+          ]
+        },
+        "transform": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          100,
+          200,
+          300,
+          1
+        ],
+        "geometricError": 10,
+        "refine": "REPLACE",
+        "content": {
+          "uri": "content/{level}_{x}_{y}_{z}.glb",
+          "extensions": {
+            "3DTILES_content_voxels": {
+              "dimensions": [
+                2,
+                2,
+                2
+              ],
+              "padding": {
+                "before": [
+                  1,
+                  0,
+                  0
+                ],
+                "after": [
+                  0,
+                  1,
+                  0
+                ]
+              },
+              "class": "voxel"
+            }
+          }
+        },
+        "implicitTiling": {
+          "subdivisionScheme": "OCTREE",
+          "subtreeLevels": 2,
+          "availableLevels": 2,
+          "subtrees": {
+            "uri": "subtrees/{level}.{x}.{y}.{z}.subtree"
+          }
+        }
+      }
+    },
+    "voxelRegionTileset": {
+      "asset": {
+        "version": "1.1"
+      },
+      "schema": {
+        "id": "voxel-schema",
+        "classes": {
+          "voxel": {
+            "properties": {
+              "temperature": {
+                "type": "SCALAR",
+                "componentType": "FLOAT32"
+              },
+              "rgb": {
+                "type": "VEC3",
+                "componentType": "UINT8"
+              }
+            }
+          },
+          "tilesetMeta": {
+            "properties": {
+              "tileCount": {
+                "type": "SCALAR",
+                "componentType": "UINT32",
+                "semantic": "TILESET_TILE_COUNT"
+              }
+            }
+          }
+        }
+      },
+      "geometricError": 100,
+      "root": {
+        "boundingVolume": {
+          "region": [
+            -0.5,
+            -0.25,
+            0.5,
+            0.25,
+            0,
+            500
+          ]
+        },
+        "geometricError": 10,
+        "content": {
+          "uri": "content/{level}_{x}_{y}_{z}.glb",
+          "extensions": {
+            "3DTILES_content_voxels": {
+              "dimensions": [
+                2,
+                2,
+                2
+              ],
+              "class": "voxel"
+            }
+          }
+        },
+        "implicitTiling": {
+          "subdivisionScheme": "OCTREE",
+          "subtreeLevels": 1,
+          "availableLevels": 1,
+          "subtrees": {
+            "uri": "subtrees/{level}.{x}.{y}.{z}.subtree"
+          }
+        }
+      }
+    },
+    "voxelCylinderTileset": {
+      "asset": {
+        "version": "1.1"
+      },
+      "schema": {
+        "id": "voxel-schema",
+        "classes": {
+          "voxel": {
+            "properties": {
+              "temperature": {
+                "type": "SCALAR",
+                "componentType": "FLOAT32"
+              },
+              "rgb": {
+                "type": "VEC3",
+                "componentType": "UINT8"
+              }
+            }
+          },
+          "tilesetMeta": {
+            "properties": {
+              "tileCount": {
+                "type": "SCALAR",
+                "componentType": "UINT32",
+                "semantic": "TILESET_TILE_COUNT"
+              }
+            }
+          }
+        }
+      },
+      "geometricError": 100,
+      "root": {
+        "boundingVolume": {
+          "extensions": {
+            "3DTILES_bounding_volume_cylinder": {
+              "minRadius": 1,
+              "maxRadius": 12,
+              "height": 20,
+              "minAngle": -1.5,
+              "maxAngle": 1.5,
+              "translation": [
+                2,
+                -3,
+                4
+              ],
+              "rotation": [
+                0,
+                0,
+                0.7071067811865475,
+                0.7071067811865476
+              ]
+            }
+          }
+        },
+        "geometricError": 10,
+        "content": {
+          "uri": "content/{level}_{x}_{y}_{z}.glb",
+          "extensions": {
+            "3DTILES_content_voxels": {
+              "dimensions": [
+                2,
+                2,
+                2
+              ],
+              "class": "voxel"
+            }
+          }
+        },
+        "implicitTiling": {
+          "subdivisionScheme": "OCTREE",
+          "subtreeLevels": 1,
+          "availableLevels": 1,
+          "subtrees": {
+            "uri": "subtrees/{level}.{x}.{y}.{z}.subtree"
+          }
+        }
+      }
+    },
+    "subtree0Base64": "c3VidAEAAAAgAQAAAAAAAAgAAAAAAAAAeyJidWZmZXJzIjpbeyJieXRlTGVuZ3RoIjo0fV0sImJ1ZmZlclZpZXdzIjpbeyJidWZmZXIiOjAsImJ5dGVPZmZzZXQiOjAsImJ5dGVMZW5ndGgiOjJ9LHsiYnVmZmVyIjowLCJieXRlT2Zmc2V0IjoyLCJieXRlTGVuZ3RoIjoyfV0sInRpbGVBdmFpbGFiaWxpdHkiOnsiYml0c3RyZWFtIjowLCJhdmFpbGFibGVDb3VudCI6Mn0sImNvbnRlbnRBdmFpbGFiaWxpdHkiOlt7ImJpdHN0cmVhbSI6MSwiYXZhaWxhYmxlQ291bnQiOjJ9XSwiY2hpbGRTdWJ0cmVlQXZhaWxhYmlsaXR5Ijp7ImNvbnN0YW50IjowfX0gAwADAAAAAAA=",
+    "glb0Base64": "Z2xURgIAAADIAwAAdAMAAEpTT057ImFzc2V0Ijp7InZlcnNpb24iOiIyLjAifSwiZXh0ZW5zaW9uc1VzZWQiOlsiRVhUX3N0cnVjdHVyYWxfbWV0YWRhdGEiXSwiZXh0ZW5zaW9ucyI6eyJFWFRfc3RydWN0dXJhbF9tZXRhZGF0YSI6eyJzY2hlbWEiOnsiaWQiOiJ2b3hlbC1zY2hlbWEiLCJjbGFzc2VzIjp7InZveGVsIjp7InByb3BlcnRpZXMiOnsidGVtcGVyYXR1cmUiOnsidHlwZSI6IlNDQUxBUiIsImNvbXBvbmVudFR5cGUiOiJGTE9BVDMyIn0sInJnYiI6eyJ0eXBlIjoiVkVDMyIsImNvbXBvbmVudFR5cGUiOiJVSU5UOCJ9fX19fSwicHJvcGVydHlBdHRyaWJ1dGVzIjpbeyJjbGFzcyI6InZveGVsIiwicHJvcGVydGllcyI6eyJ0ZW1wZXJhdHVyZSI6eyJhdHRyaWJ1dGUiOiJfVEVNUEVSQVRVUkUifSwicmdiIjp7ImF0dHJpYnV0ZSI6Il9SR0IifX19XX19LCJzY2VuZSI6MCwic2NlbmVzIjpbeyJub2RlcyI6WzBdfV0sIm5vZGVzIjpbeyJtZXNoIjowfV0sIm1lc2hlcyI6W3sicHJpbWl0aXZlcyI6W3siYXR0cmlidXRlcyI6eyJfVEVNUEVSQVRVUkUiOjAsIl9SR0IiOjF9LCJleHRlbnNpb25zIjp7IkVYVF9zdHJ1Y3R1cmFsX21ldGFkYXRhIjp7InByb3BlcnR5QXR0cmlidXRlcyI6WzBdfX19XX1dLCJidWZmZXJzIjpbeyJieXRlTGVuZ3RoIjo1Nn1dLCJidWZmZXJWaWV3cyI6W3siYnVmZmVyIjowLCJieXRlT2Zmc2V0IjowLCJieXRlTGVuZ3RoIjozMn0seyJidWZmZXIiOjAsImJ5dGVPZmZzZXQiOjMyLCJieXRlTGVuZ3RoIjoyNH1dLCJhY2Nlc3NvcnMiOlt7ImJ1ZmZlclZpZXciOjAsImNvbXBvbmVudFR5cGUiOjUxMjYsImNvdW50Ijo4LCJ0eXBlIjoiU0NBTEFSIn0seyJidWZmZXJWaWV3IjoxLCJjb21wb25lbnRUeXBlIjo1MTIxLCJjb3VudCI6OCwidHlwZSI6IlZFQzMifV19IDgAAABCSU4AAACwwAAAAAAAAERBAACkQQAA+EEAAKC/AAAqQgAAIEEKFB4oMjxGUFpkbniCjJagqrS+yNLc5vA=",
+    "glb1Base64": "Z2xURgIAAADIAwAAdAMAAEpTT057ImFzc2V0Ijp7InZlcnNpb24iOiIyLjAifSwiZXh0ZW5zaW9uc1VzZWQiOlsiRVhUX3N0cnVjdHVyYWxfbWV0YWRhdGEiXSwiZXh0ZW5zaW9ucyI6eyJFWFRfc3RydWN0dXJhbF9tZXRhZGF0YSI6eyJzY2hlbWEiOnsiaWQiOiJ2b3hlbC1zY2hlbWEiLCJjbGFzc2VzIjp7InZveGVsIjp7InByb3BlcnRpZXMiOnsidGVtcGVyYXR1cmUiOnsidHlwZSI6IlNDQUxBUiIsImNvbXBvbmVudFR5cGUiOiJGTE9BVDMyIn0sInJnYiI6eyJ0eXBlIjoiVkVDMyIsImNvbXBvbmVudFR5cGUiOiJVSU5UOCJ9fX19fSwicHJvcGVydHlBdHRyaWJ1dGVzIjpbeyJjbGFzcyI6InZveGVsIiwicHJvcGVydGllcyI6eyJ0ZW1wZXJhdHVyZSI6eyJhdHRyaWJ1dGUiOiJfVEVNUEVSQVRVUkUifSwicmdiIjp7ImF0dHJpYnV0ZSI6Il9SR0IifX19XX19LCJzY2VuZSI6MCwic2NlbmVzIjpbeyJub2RlcyI6WzBdfV0sIm5vZGVzIjpbeyJtZXNoIjowfV0sIm1lc2hlcyI6W3sicHJpbWl0aXZlcyI6W3siYXR0cmlidXRlcyI6eyJfVEVNUEVSQVRVUkUiOjAsIl9SR0IiOjF9LCJleHRlbnNpb25zIjp7IkVYVF9zdHJ1Y3R1cmFsX21ldGFkYXRhIjp7InByb3BlcnR5QXR0cmlidXRlcyI6WzBdfX19XX1dLCJidWZmZXJzIjpbeyJieXRlTGVuZ3RoIjo1Nn1dLCJidWZmZXJWaWV3cyI6W3siYnVmZmVyIjowLCJieXRlT2Zmc2V0IjowLCJieXRlTGVuZ3RoIjozMn0seyJidWZmZXIiOjAsImJ5dGVPZmZzZXQiOjMyLCJieXRlTGVuZ3RoIjoyNH1dLCJhY2Nlc3NvcnMiOlt7ImJ1ZmZlclZpZXciOjAsImNvbXBvbmVudFR5cGUiOjUxMjYsImNvdW50Ijo4LCJ0eXBlIjoiU0NBTEFSIn0seyJidWZmZXJWaWV3IjoxLCJjb21wb25lbnRUeXBlIjo1MTIxLCJjb3VudCI6OCwidHlwZSI6IlZFQzMifV19IDgAAABCSU4AAACAPwAAAEAAAEBAAACAQAAAoEAAAMBAAADgQAAAAEEBAgMEBQYHCAkKCwwNDg8QERITFBUWFxg=",
+    "tdFrame0Base64": "cG50cwEAAACkAAAASAAAAEAAAAAAAAAAAAAAAHsiUE9JTlRTX0xFTkdUSCI6NCwiUE9TSVRJT04iOnsiYnl0ZU9mZnNldCI6MH0sIlJHQiI6eyJieXRlT2Zmc2V0Ijo0OH19IAAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAAAAAAAAACAP/8AAAD/AAAA/////wAAAAA=",
+    "tdFrame1Base64": "cG50cwEAAADEAAAASAAAAGAAAAAAAAAAAAAAAHsiUE9JTlRTX0xFTkdUSCI6NiwiUE9TSVRJT04iOnsiYnl0ZU9mZnNldCI6MH0sIlJHQiI6eyJieXRlT2Zmc2V0Ijo3Mn19IAAAoEAAAAAAAAAAAAAAwEAAAAAAAAAAAAAAoEAAAIA/AAAAAAAAoEAAAAAAAACAPwAA4EAAAIA/AACAPwAAAEEAAABAAAAAQAoUHigyPEZQWmRueIKMlqCqtAAAAAAAAA==",
+    "tdFrame2Base64": "cG50cwEAAACUAAAASAAAADAAAAAAAAAAAAAAAHsiUE9JTlRTX0xFTkdUSCI6MywiUE9TSVRJT04iOnsiYnl0ZU9mZnNldCI6MH0sIlJHQiI6eyJieXRlT2Zmc2V0IjozNn19IAAAoMAAAAAAAAAAAAAAgMAAAAAAAAAAAAAAoMAAAABAAAAAAMjIAADIyMgAyAAAAA=="
+  }
+}

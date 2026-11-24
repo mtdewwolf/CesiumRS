@@ -20,9 +20,10 @@ use super::{
 use crate::{
     core::{
         math, terrain_mesh::TerrainMesh, webgl_constants as gl, BoundingSphere, Cartesian2, Cartesian3, Cartesian4,
-        Cartographic, Color, Credit, Ellipsoid, Event, Intersect, MapProjection, NearFarScalar, NetworkTerrainData,
-        PixelDatatype, PixelFormat, Rectangle, RuntimeError, TerrainData, TerrainMeshRequest, TerrainProvider,
-        TerrainQuantization, TerrainTile, TileProviderError, TilingScheme, Visibility, WebMercatorProjection,
+        Cartographic, Color, Credit, Ellipsoid, EllipsoidalOccluder, Event, Intersect, MapProjection, NearFarScalar,
+        NetworkTerrainData, PixelDatatype, PixelFormat, Rectangle, RuntimeError, TerrainData, TerrainMeshRequest,
+        TerrainProvider, TerrainQuantization, TerrainTile, TileProviderError, TilingScheme, Visibility,
+        WebMercatorProjection,
     },
     renderer::{
         ComputeCommand, ComputeEngine, Context, DrawMetadata, Gl, Pass, RenderState, SampledTexture, Sampler,
@@ -658,8 +659,25 @@ impl<G: Gl + 'static> GlobeSurfaceTileProvider<G> {
                 let (min, max) = mesh_heights(mesh, frame);
                 surface.tile_bounding_region = Some(region(tile, min, max));
                 surface.bounding_volume_is_from_mesh = true;
-                surface.occludee_point_in_scaled_space =
-                    mesh.occludee_point_in_scaled_space.unwrap_or(Cartesian3::ZERO);
+                surface.occludee_point_in_scaled_space = mesh
+                    .occludee_point_in_scaled_space
+                    .or_else(|| {
+                        let center = mesh.oriented_bounding_box?.center;
+                        let ellipsoid = tile.tiling_scheme.ellipsoid();
+                        let rectangle = tile.rectangle;
+                        let corners = [
+                            (rectangle.west, rectangle.south),
+                            (rectangle.east, rectangle.south),
+                            (rectangle.west, rectangle.north),
+                            (rectangle.east, rectangle.north),
+                        ]
+                        .map(|(longitude, latitude)| {
+                            ellipsoid.cartographic_to_cartesian(&Cartographic::new(longitude, latitude, max))
+                        });
+                        EllipsoidalOccluder::new(ellipsoid, None)
+                            .compute_horizon_culling_point_possibly_under_ellipsoid(center, &corners, Some(min))
+                    })
+                    .unwrap_or(Cartesian3::ZERO);
             }
         }
         if surface.terrain_state == TerrainState::Ready {

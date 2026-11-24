@@ -39,6 +39,11 @@ impl TilesetTile {
     pub fn extras(&self) -> Option<&Value> {
         self.header.get("extras")
     }
+    /// Geometric error scaled by the maximum scale component of `computed_transform`,
+    /// matching CesiumJS `Cesium3DTile.prototype.updateGeometricErrorScale`.
+    pub fn scaled_geometric_error(&self) -> f64 {
+        self.geometric_error * self.computed_transform.get_maximum_scale()
+    }
     /// Updates the computed transform and every bounding volume. Cesium skips
     /// the work unless the transform or vertical exaggeration changed.
     pub fn update_transform(&mut self, parent: Matrix4, exaggeration: [f64; 2]) -> Result<()> {

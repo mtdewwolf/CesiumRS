@@ -12,8 +12,9 @@ use crate::{
     core::{math::EPSILON6, Cartesian2, Cartesian3, Cartesian4, Color, JulianDate, RuntimeError, Transforms},
     renderer::{
         Attachment, ComputeCommand, Context, ContextCapabilities, CubeFace, CubeMap, Framebuffer, FramebufferOptions,
-        Gl, MipmapHint, PixelDatatype, ReadState, ShaderProgram, ShaderProgramOptions, ShaderSource, Texture,
-        TextureBinding, TextureOptions, TextureRegion, UniformMap, UniformValue, VertexArray,
+        Gl, MipmapHint, PixelDatatype, ReadState, Sampler, ShaderProgram, ShaderProgramOptions, ShaderSource, Texture,
+        TextureBinding, TextureMinificationFilter, TextureOptions, TextureRegion, UniformMap, UniformValue,
+        VertexArray,
     },
     shaders::root::{
         ATMOSPHERE_COMMON, COMPUTE_IRRADIANCE_FS, COMPUTE_RADIANCE_MAP_FS, CONVOLVE_SPECULAR_MAP_FS,
@@ -65,7 +66,6 @@ pub struct DynamicEnvironmentMapManager<G: Gl> {
     convolution_completion: Option<Rc<Cell<bool>>>,
     queued_commands: Vec<ComputeCommand<G>>,
 
-    radiance_map_fs: Option<ShaderSource>,
     irradiance_map_fs: Option<ShaderSource>,
     convolve_sp: Option<Rc<ShaderProgram<G>>>,
     va: Option<Rc<VertexArray<G>>>,
@@ -155,7 +155,6 @@ impl<G: Gl + 'static> DynamicEnvironmentMapManager<G> {
             convolution_pending: Rc::new(Cell::new(0)),
             convolution_completion: None,
             queued_commands: Vec::new(),
-            radiance_map_fs: None,
             irradiance_map_fs: None,
             convolve_sp: None,
             va: None,
@@ -321,17 +320,16 @@ impl<G: Gl + 'static> DynamicEnvironmentMapManager<G> {
             return Ok(());
         }
         let atmosphere = frame.atmosphere.unwrap_or_default();
-        let mut fragment = self.radiance_map_fs.clone().unwrap_or_else(|| ShaderSource {
+        let mut fragment = ShaderSource {
             sources: vec![ATMOSPHERE_COMMON.source.to_string(), COMPUTE_RADIANCE_MAP_FS.source.to_string()],
             ..Default::default()
-        });
+        };
         if atmosphere.requires_color_correct() {
             fragment.defines.push("ATMOSPHERE_COLOR_CORRECT".into());
         }
         if self.brightness != 1.0 || self.saturation != 1.0 || self.gamma != 1.0 {
             fragment.defines.push("ENVIRONMENT_COLOR_CORRECT".into());
         }
-        self.radiance_map_fs = Some(fragment.clone());
 
         let position = self.position.expect("radiance map requires a position");
         let ellipsoid = frame.uniform.map_projection.ellipsoid();
@@ -433,6 +431,7 @@ impl<G: Gl + 'static> DynamicEnvironmentMapManager<G> {
         let mut index = 0usize;
         let pending = self.convolution_pending.clone();
         let irradiance_dirty = Rc::new(Cell::new(false));
+        let shaders_dirty = self.should_regenerate_shaders.clone();
         pending.set((mipmap_levels.saturating_sub(1)) * 6);
         for level in 1..mipmap_levels {
             for face in CubeFace::ALL {
@@ -480,6 +479,7 @@ impl<G: Gl + 'static> DynamicEnvironmentMapManager<G> {
                 let radiance = radiance_cube_map.clone();
                 let pending = pending.clone();
                 let irradiance_dirty = irradiance_dirty.clone();
+                let shaders_dirty = shaders_dirty.clone();
                 let command = ComputeCommand {
                     vertex_array: Some(vertex_array),
                     shader_program: Some(shader_program),
@@ -494,6 +494,11 @@ impl<G: Gl + 'static> DynamicEnvironmentMapManager<G> {
                         pending.set(pending.get().saturating_sub(1));
                         if pending.get() == 0 {
                             irradiance_dirty.set(true);
+                            radiance.set_sampler(Sampler {
+                                minification_filter: TextureMinificationFilter::LinearMipmapLinear,
+                                ..Default::default()
+                            })?;
+                            shaders_dirty.set(true);
                         }
                         Ok(())
                     })),
@@ -607,6 +612,7 @@ impl<G: Gl + 'static> DynamicEnvironmentMapManager<G> {
         }
         if self.spherical_harmonic_coefficients_dirty.get() {
             self.update_spherical_harmonic_coefficients(&context)?;
+            return Ok(());
         }
         self.should_regenerate_shaders.set(false);
         Ok(())

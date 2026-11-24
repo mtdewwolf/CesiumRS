@@ -26,8 +26,8 @@ use crate::{
     },
     renderer::{
         render_state::{Cull, DepthTest},
-        Buffer, BufferData, BufferKind, BufferUsage, Context, Gl, PixelDatatype, Sampler, ShaderDestination, ShaderProgramOptions, Texture, TextureOptions, TextureRegion,
-        UniformValue, VertexAttribute, VertexArray,
+        Buffer, BufferData, BufferKind, BufferUsage, Context, Gl, PixelDatatype, Sampler, ShaderDestination,
+        ShaderProgramOptions, Texture, TextureOptions, TextureRegion, UniformValue, VertexArray, VertexAttribute,
     },
     shaders::root::{PRIMITIVE_GAUSSIAN_SPLAT_FS, PRIMITIVE_GAUSSIAN_SPLAT_VS},
     workers::gaussian_splats::SplatTextureData,
@@ -288,32 +288,30 @@ pub struct GaussianSplatPrimitive<G: Gl + 'static> {
 }
 
 /// The pinned `GaussianSplatPrimitive.transformTile` attribute transform, for a
-/// caller that owns the content buffers.
+/// caller that owns the content buffers. Cesium writes the rotation matrix into
+/// numeric indices on a scratch quaternion, leaving its x/y/z/w fields intact.
 #[allow(clippy::too_many_arguments)]
 pub fn transform_splat_attributes(
     positions: &mut [f32],
-    rotations: &mut [f32],
+    rotations: &[f32],
     scales: &mut [f32],
     computed_transform: &Matrix4,
     world_transform: &Matrix4,
     tileset_model_matrix: &Matrix4,
     root_transform: &Matrix4,
     axis_correction: &Matrix4,
-) {
+) -> bool {
     let computed_model_matrix = computed_transform.multiply_transformation(axis_correction);
     let computed_model_matrix = computed_model_matrix.multiply_transformation(world_transform);
     let to_global = tileset_model_matrix.multiply(root_transform);
     let Ok(to_local) = to_global.inverse() else {
-        return;
+        return false;
     };
     let transform = to_local.multiply_transformation(&computed_model_matrix);
     let count = positions.len() / 3;
     for i in 0..count {
-        let position = Cartesian3::new(
-            positions[i * 3] as f64,
-            positions[i * 3 + 1] as f64,
-            positions[i * 3 + 2] as f64,
-        );
+        let position =
+            Cartesian3::new(positions[i * 3] as f64, positions[i * 3 + 1] as f64, positions[i * 3 + 2] as f64);
         let rotation = Quaternion::new(
             rotations[i * 4] as f64,
             rotations[i * 4 + 1] as f64,
@@ -324,29 +322,24 @@ pub fn transform_splat_attributes(
         let local = Matrix4::from_translation_quaternion_rotation_scale(position, &rotation, scale);
         let transformed = transform.multiply_transformation(&local);
         let position = transformed.get_translation();
-        let rotation = Quaternion::from_rotation_matrix(&transformed.get_rotation());
         let scale = transformed.get_scale();
         positions[i * 3] = position.x as f32;
         positions[i * 3 + 1] = position.y as f32;
         positions[i * 3 + 2] = position.z as f32;
-        rotations[i * 4] = rotation.x as f32;
-        rotations[i * 4 + 1] = rotation.y as f32;
-        rotations[i * 4 + 2] = rotation.z as f32;
-        rotations[i * 4 + 3] = rotation.w as f32;
         scales[i * 3] = scale.x as f32;
         scales[i * 3 + 1] = scale.y as f32;
         scales[i * 3 + 2] = scale.z as f32;
     }
+    true
 }
 
 impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
     pub fn new(options: GaussianSplatPrimitiveOptions) -> Self {
-        let sorter = options
-            .sorter
-            .unwrap_or_else(|| Rc::new(GaussianSplatSorter::native(options.hardware_concurrency)));
-        let texture_generator = options.texture_generator.unwrap_or_else(|| {
-            Rc::new(GaussianSplatTextureGenerator::native(options.hardware_concurrency))
-        });
+        let sorter =
+            options.sorter.unwrap_or_else(|| Rc::new(GaussianSplatSorter::native(options.hardware_concurrency)));
+        let texture_generator = options
+            .texture_generator
+            .unwrap_or_else(|| Rc::new(GaussianSplatTextureGenerator::native(options.hardware_concurrency)));
         Self {
             positions: None,
             rotations: None,
@@ -468,8 +461,7 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
         let Some(vertex_array) = &self.vertex_array else {
             return Ok(());
         };
-        let Some(attribute) =
-            vertex_array.attributes().iter().find(|attr| attr.index == self.splat_index_location)
+        let Some(attribute) = vertex_array.attributes().iter().find(|attr| attr.index == self.splat_index_location)
         else {
             return Ok(());
         };
@@ -495,8 +487,10 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
 
     fn ensure_root_transform(&mut self, state: &GaussianSplatTilesetState<'_>) {
         if self.root_transform.is_none() {
-            self.root_transform =
-                Some(crate::core::Transforms::east_north_up_to_fixed_frame(state.bounding_sphere.center, &crate::core::Ellipsoid::WGS84));
+            self.root_transform = Some(crate::core::Transforms::east_north_up_to_fixed_frame(
+                state.bounding_sphere.center,
+                &crate::core::Ellipsoid::WGS84,
+            ));
         }
     }
 
@@ -516,7 +510,8 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
         if position_delta >= DEFAULT_SORT_MIN_POSITION_DELTA {
             return true;
         }
-        let angle_delta = crate::core::Cartesian3::angle_between(&camera.direction, self.last_steady_sort_camera_direction);
+        let angle_delta =
+            crate::core::Cartesian3::angle_between(&camera.direction, self.last_steady_sort_camera_direction);
         angle_delta >= DEFAULT_SORT_MIN_ANGLE_RADIANS
     }
 
@@ -571,12 +566,10 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
             .as_ref()
             .and_then(|current| current.gaussian_splat_texture.clone())
             .or_else(|| self.gaussian_splat_texture.clone());
-        if old_splat.as_ref().is_some_and(|old| {
-            snapshot
-                .gaussian_splat_texture
-                .as_ref()
-                .is_none_or(|new| !Rc::ptr_eq(old, new))
-        }) {
+        if old_splat
+            .as_ref()
+            .is_some_and(|old| snapshot.gaussian_splat_texture.as_ref().is_none_or(|new| !Rc::ptr_eq(old, new)))
+        {
             self.retire_texture(old_splat.as_ref(), frame_number);
         }
         let old_sh = self
@@ -584,12 +577,10 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
             .as_ref()
             .and_then(|current| current.spherical_harmonics_texture.clone())
             .or_else(|| self.spherical_harmonics_texture.clone());
-        if old_sh.as_ref().is_some_and(|old| {
-            snapshot
-                .spherical_harmonics_texture
-                .as_ref()
-                .is_none_or(|new| !Rc::ptr_eq(old, new))
-        }) {
+        if old_sh
+            .as_ref()
+            .is_some_and(|old| snapshot.spherical_harmonics_texture.as_ref().is_none_or(|new| !Rc::ptr_eq(old, new)))
+        {
             self.retire_texture(old_sh.as_ref(), frame_number);
         }
 
@@ -644,13 +635,9 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
 
         // The pinned content takes the degree from the first selected tile, but
         // sizes the packed buffer from the first tile that has SH data.
-        let degree = tiles
-            .first()
-            .map_or(0, |tile| tile.content.spherical_harmonics_degree());
+        let degree = tiles.first().map_or(0, |tile| tile.content.spherical_harmonics_degree());
         let coefficient_count = if degree > 0 {
-            tiles
-                .first()
-                .map_or(0, |tile| tile.content.spherical_harmonics_coefficient_count())
+            tiles.first().map_or(0, |tile| tile.content.spherical_harmonics_coefficient_count())
         } else {
             0
         };
@@ -766,10 +753,7 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
                 } else {
                     let texture = snapshot.gaussian_splat_texture.as_ref().expect("texture");
                     texture
-                        .copy_from(
-                            &texture_bytes(&texture_data.data),
-                            TextureRegion { x: 0, y: 0, width, height },
-                        )
+                        .copy_from(&texture_bytes(&texture_data.data), TextureRegion { x: 0, y: 0, width, height })
                         .map(|_| texture.clone())
                 };
                 let Ok(texture) = result else {
@@ -782,10 +766,11 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
 
                 if let Some(sh) = snapshot.sh_data.clone().filter(|_| snapshot.spherical_harmonics_degree > 0) {
                     let old = snapshot.spherical_harmonics_texture.take();
-                    let width = match context.call("getParameter", &[crate::core::webgl_constants::MAX_TEXTURE_SIZE.into()]) {
-                        Ok(crate::renderer::GlValue::Number(number)) => (number as u32).min(4096),
-                        _ => 4096,
-                    };
+                    let width =
+                        match context.call("getParameter", &[crate::core::webgl_constants::MAX_TEXTURE_SIZE.into()]) {
+                            Ok(crate::renderer::GlValue::Number(number)) => (number as u32).min(4096),
+                            _ => 4096,
+                        };
                     let dims = snapshot.sh_coefficient_count as f64 / 3.0;
                     let splats_per_row = if dims > 0.0 { (width as f64 / dims).floor() as usize } else { 0 };
                     if splats_per_row > 0 {
@@ -804,7 +789,8 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
                             data_index += floats_per_row;
                             i += width as usize * 2;
                         }
-                        if let Ok(texture) = create_spherical_harmonics_texture(context, width, height as u32, &tex_buf) {
+                        if let Ok(texture) = create_spherical_harmonics_texture(context, width, height as u32, &tex_buf)
+                        {
                             snapshot.spherical_harmonics_texture = Some(texture);
                         }
                     }
@@ -879,17 +865,18 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
                 let Some((request_id, generation, expected)) = pending_sort else {
                     return Ok(());
                 };
-                let pending_matches = self.pending_snapshot.as_ref().is_some_and(|s| {
-                    s.generation == generation && s.state == SnapshotState::Sorting
-                });
+                let pending_matches = self
+                    .pending_snapshot
+                    .as_ref()
+                    .is_some_and(|s| s.generation == generation && s.state == SnapshotState::Sorting);
                 if !pending_matches {
                     return Ok(());
                 }
                 match result {
                     Ok(value) => {
-                        let sorted: Option<Vec<u32>> = value.as_array().map(|values| {
-                            values.iter().filter_map(Value::as_u64).map(|v| v as u32).collect()
-                        });
+                        let sorted: Option<Vec<u32>> = value
+                            .as_array()
+                            .map(|values| values.iter().filter_map(Value::as_u64).map(|v| v as u32).collect());
                         let matches = request_id == self.sort_request_id
                             && sorted.as_ref().is_some_and(|sorted| sorted.len() == expected);
                         if !matches {
@@ -942,9 +929,9 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
                 }
                 match result {
                     Ok(value) => {
-                        let sorted: Option<Vec<u32>> = value.as_array().map(|values| {
-                            values.iter().filter_map(Value::as_u64).map(|v| v as u32).collect()
-                        });
+                        let sorted: Option<Vec<u32>> = value
+                            .as_array()
+                            .map(|values| values.iter().filter_map(Value::as_u64).map(|v| v as u32).collect());
                         let expected = active.map_or(0, |(_, _, expected)| expected);
                         if sorted.as_ref().is_some_and(|sorted| sorted.len() == expected) {
                             self.indexes = sorted;
@@ -994,10 +981,7 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
 
         let index_count = self.indexes.as_ref().map_or(self.num_splats, Vec::len);
         let instance_count = index_count as u32;
-        let needs_rebuild = self
-            .vertex_array
-            .as_ref()
-            .is_none_or(|_| index_count as isize > self.vertex_array_len);
+        let needs_rebuild = self.vertex_array.as_ref().is_none_or(|_| index_count as isize > self.vertex_array_len);
         if needs_rebuild {
             let index_data = self.indexes.clone().unwrap_or_default();
             let bytes = texture_bytes(&index_data);
@@ -1069,10 +1053,7 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
                     UniformValue::Matrix { dimension: 3, values: inverse_values.clone() },
                 ),
                 ("u_sphericalHarmonicsDegree".into(), UniformValue::Float(vec![degrees as f32])),
-                (
-                    "u_splitDirection".into(),
-                    UniformValue::Float(vec![split.get().value() as f32]),
-                ),
+                ("u_splitDirection".into(), UniformValue::Float(vec![split.get().value() as f32])),
             ];
             uniforms.push(("u_splatScale".into(), UniformValue::Float(vec![1.0])));
             Ok(uniforms)
@@ -1182,15 +1163,15 @@ impl<G: Gl + 'static> GaussianSplatPrimitive<G> {
                 self.needs_snapshot_rebuild = true;
             }
             let is_stable = self.selected_tiles_stable_frames >= DEFAULT_STABLE_FRAMES;
-            let is_bootstrap = self.snapshot.is_none() && self.pending_snapshot.is_none() && self.draw_command.is_none();
+            let is_bootstrap =
+                self.snapshot.is_none() && self.pending_snapshot.is_none() && self.draw_command.is_none();
             if self.needs_snapshot_rebuild && !tileset.selected_tiles.is_empty() {
                 self.snapshot_rebuild_stall_frames += 1;
             } else {
                 self.snapshot_rebuild_stall_frames = 0;
             }
-            let allow_rebuild = is_stable
-                || is_bootstrap
-                || self.snapshot_rebuild_stall_frames >= DEFAULT_MAX_SNAPSHOT_STALL_FRAMES;
+            let allow_rebuild =
+                is_stable || is_bootstrap || self.snapshot_rebuild_stall_frames >= DEFAULT_MAX_SNAPSHOT_STALL_FRAMES;
             let has_pending_work = self.dirty
                 || self.needs_snapshot_rebuild
                 || selected_tiles_changed
@@ -1401,7 +1382,12 @@ mod regression_tests {
             context,
             BufferKind::Vertex,
             BufferUsage::DynamicDraw,
-            BufferData::Bytes(&[-1.0f32, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0].iter().flat_map(|v| v.to_le_bytes()).collect::<Vec<u8>>()),
+            BufferData::Bytes(
+                &[-1.0f32, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0]
+                    .iter()
+                    .flat_map(|v| v.to_le_bytes())
+                    .collect::<Vec<u8>>(),
+            ),
         )
         .unwrap();
         let indexes = Buffer::new(

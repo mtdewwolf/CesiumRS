@@ -2,7 +2,7 @@
 // parsed by the real PntsParser; Buffer.createVertexBuffer, VertexArray and
 // ShaderProgram.fromCache are stubbed so the generated shader and attribute
 // layout come from upstream without a WebGL context.
-import {writeFileSync} from 'node:fs';
+import {readFileSync, writeFileSync} from 'node:fs';
 import Cartesian3 from '@cesium/engine/Source/Core/Cartesian3.js';
 import Color from '@cesium/engine/Source/Core/Color.js';
 import Matrix4 from '@cesium/engine/Source/Core/Matrix4.js';
@@ -13,6 +13,7 @@ import ContextLimits from '@cesium/engine/Source/Renderer/ContextLimits.js';
 import RendererBuffer from '@cesium/engine/Source/Renderer/Buffer.js';
 import ShaderProgram from '@cesium/engine/Source/Renderer/ShaderProgram.js';
 import Pass from '@cesium/engine/Source/Renderer/Pass.js';
+import DracoLoader from '@cesium/engine/Source/Scene/DracoLoader.js';
 import PointCloud from '@cesium/engine/Source/Scene/PointCloud.js';
 import SceneMode from '@cesium/engine/Source/Scene/SceneMode.js';
 
@@ -20,7 +21,10 @@ ContextLimits._maximumTextureSize = 4096;
 ContextLimits._minimumAliasedLineWidth = 1;
 ContextLimits._maximumAliasedLineWidth = 1;
 
-function pnts({points, colors = false, normals = false, batchIds = false, translucent = false}) {
+const dracoFixture = JSON.parse(readFileSync(new URL('../../tests/fixtures/workers/decodeDraco.json', import.meta.url)));
+const dracoCase = dracoFixture.cases.find(({a}) => a[0].dequantizeInShader && a[0].properties?.extra === 2 && a[0].properties?.POSITION === 0);
+
+function pnts({points, colors = false, normals = false, batchIds = false, translucent = false, binaryProperty, draco}) {
   const position = new Float32Array(points * 3);
   for (let i = 0; i < position.length; i++) position[i] = i * 0.5 - 1;
   const featureParts = [new Uint8Array(position.buffer)];
@@ -52,17 +56,31 @@ function pnts({points, colors = false, normals = false, batchIds = false, transl
     featureParts.push(ids);
     offset += ids.byteLength;
   }
+  let batchJson = batchIds ? {name: ['zero', 'one']} : null;
+  let batchBinary = Buffer.alloc(0);
+  if (binaryProperty) {
+    batchJson = {value: {byteOffset: 0, componentType: 'FLOAT', type: 'SCALAR'}};
+    batchBinary = Buffer.from(Float32Array.from([0.25, 2, 4, 10]).buffer);
+  }
+  if (draco) {
+    const buffer = Uint8Array.from(dracoCase.a[0].buffer);
+    delete featureTable.POSITION;
+    featureParts.splice(0, featureParts.length, buffer);
+    featureTable.extensions = {'3DTILES_draco_point_compression': {
+      properties: {POSITION: 0, NORMAL: 0}, byteOffset: 0, byteLength: buffer.length,
+    }};
+    batchJson = {extensions: {'3DTILES_draco_point_compression': {properties: {extra: 2}}}};
+  }
   const featureJson = Buffer.from(JSON.stringify(featureTable));
   const featureJsonLength = Math.ceil(featureJson.length / 8) * 8;
   const featureJsonPadded = Buffer.alloc(featureJsonLength, 0x20);
   featureJson.copy(featureJsonPadded);
   const featureBinary = Buffer.concat(featureParts);
-  const batchJson = batchIds ? {name: ['zero', 'one']} : null;
   const batchJsonBuffer = batchJson ? Buffer.from(JSON.stringify(batchJson)) : Buffer.alloc(0);
   const batchJsonLength = Math.ceil(batchJsonBuffer.length / 8) * 8;
   const batchJsonPadded = Buffer.alloc(batchJsonLength, 0x20);
   batchJsonBuffer.copy(batchJsonPadded);
-  const byteLength = 28 + featureJsonLength + featureBinary.length + batchJsonLength;
+  const byteLength = 28 + featureJsonLength + featureBinary.length + batchJsonLength + batchBinary.length;
   const header = Buffer.alloc(28);
   header.write('pnts', 0, 'ascii');
   header.writeUInt32LE(1, 4);
@@ -70,8 +88,8 @@ function pnts({points, colors = false, normals = false, batchIds = false, transl
   header.writeUInt32LE(featureJsonLength, 12);
   header.writeUInt32LE(featureBinary.length, 16);
   header.writeUInt32LE(batchJsonLength, 20);
-  header.writeUInt32LE(0, 24);
-  return Buffer.concat([header, featureJsonPadded, featureBinary, batchJsonPadded]);
+  header.writeUInt32LE(batchBinary.length, 24);
+  return Buffer.concat([header, featureJsonPadded, featureBinary, batchJsonPadded, batchBinary]);
 }
 
 const captures = [];
@@ -140,7 +158,17 @@ const settingsList = [
   {points: 4, colors: true, normals: true, batchIds: true, translucent: false, attenuation: true, backFaceCulling: true, normalShading: true, style: null, clipping: 0, split: false},
   {points: 4, colors: false, normals: false, batchIds: false, translucent: false, attenuation: false, backFaceCulling: false, normalShading: true, style: {color: 'color("red")'}, clipping: 0, split: false},
   {points: 4, colors: false, normals: false, batchIds: false, translucent: false, attenuation: false, backFaceCulling: false, normalShading: true, style: null, clipping: 1, split: false},
+  {points: 4, binaryProperty: true, batchIds: false, attenuation: false, backFaceCulling: false, normalShading: true, style: {pointSize: '${value} + 1'}, clipping: 0},
+  {points: 3, draco: true, batchIds: false, attenuation: false, backFaceCulling: false, normalShading: true, style: {pointSize: '${extra} + 1'}, clipping: 0},
 ];
+
+// Replay the pinned worker result here to capture PointCloud's side of the worker boundary.
+DracoLoader.decodePointCloud = () => Promise.resolve(Object.fromEntries(
+  Object.entries(dracoCase.r).map(([name, attribute]) => [name, {
+    ...attribute,
+    array: ComponentDatatype.createTypedArray(attribute.data.componentDatatype, attribute.array),
+  }]),
+));
 
 for (const settings of settingsList) {
   const arrayBuffer = pnts(settings);
@@ -172,6 +200,10 @@ for (const settings of settingsList) {
   vertexBuffers.length = 0;
   const frame = frameState();
   cloud.update(frame);
+  if (settings.draco) {
+    await Promise.resolve();
+    cloud.update(frame);
+  }
   const command = cloud._drawCommand;
   const attributeStates = [];
   for (let i = 0; i < command.vertexArray.numberOfAttributes; i++) {

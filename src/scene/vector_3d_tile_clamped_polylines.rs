@@ -30,10 +30,7 @@ use crate::{
         VectorTilePolylinesParameters,
     },
 };
-use std::{
-    cell::Cell,
-    rc::Rc,
-};
+use std::{cell::Cell, rc::Rc};
 
 /// Constructor options for [`Vector3DTileClampedPolylines`].
 #[derive(Clone)]
@@ -135,8 +132,12 @@ struct PendingClampedArrays {
 impl<G: crate::renderer::Gl + 'static> Vector3DTileClampedPolylines<G> {
     pub fn new(options: Vector3DTileClampedPolylinesOptions) -> Self {
         let ellipsoid = options.ellipsoid.unwrap_or(Ellipsoid::WGS84);
-        let bounding_volume =
-            OrientedBoundingBox::from_rectangle(&options.rectangle, DEFAULT_MIN_TERRAIN_HEIGHT, DEFAULT_MAX_TERRAIN_HEIGHT, &ellipsoid);
+        let bounding_volume = OrientedBoundingBox::from_rectangle(
+            &options.rectangle,
+            DEFAULT_MIN_TERRAIN_HEIGHT,
+            DEFAULT_MAX_TERRAIN_HEIGHT,
+            &ellipsoid,
+        );
         Self {
             positions: options.positions,
             widths: options.widths,
@@ -246,7 +247,8 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTileClampedPolylines<G> {
     }
 
     fn create_vertex_array(&mut self) -> Result<()> {
-        let packed = Self::pack_buffer(&self.rectangle, self.minimum_height, self.maximum_height, &self.ellipsoid, self.center);
+        let packed =
+            Self::pack_buffer(&self.rectangle, self.minimum_height, self.maximum_height, &self.ellipsoid, self.center);
         let result = create_vector_tile_clamped_polylines(VectorTilePolylinesParameters {
             positions: &self.positions,
             widths: &self.widths,
@@ -309,18 +311,14 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTileClampedPolylines<G> {
             return Ok(());
         };
         let floats = |values: &[f32]| values.iter().map(|&v| f64::from(v)).collect::<Vec<_>>();
-        let mut attributes = GeometryAttributes {
-            position: Some(GeometryAttribute::floats(3, &floats(&arrays.start_ellipsoid_normals))),
-            ..Default::default()
-        };
+        let mut attributes = GeometryAttributes::default();
         attributes.others.push((
             "startEllipsoidNormal".into(),
             GeometryAttribute::floats(3, &floats(&arrays.start_ellipsoid_normals)),
         ));
-        attributes.others.push((
-            "endEllipsoidNormal".into(),
-            GeometryAttribute::floats(3, &floats(&arrays.end_ellipsoid_normals)),
-        ));
+        attributes
+            .others
+            .push(("endEllipsoidNormal".into(), GeometryAttribute::floats(3, &floats(&arrays.end_ellipsoid_normals))));
         attributes.others.push((
             "startPositionAndHeight".into(),
             GeometryAttribute::floats(4, &floats(&arrays.start_position_and_heights)),
@@ -339,11 +337,7 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTileClampedPolylines<G> {
         ));
         attributes.others.push((
             "a_batchId".into(),
-            GeometryAttribute::new(
-                ComponentDatatype::UnsignedShort,
-                1,
-                TypedArray::Uint16(arrays.vertex_batch_ids),
-            ),
+            GeometryAttribute::new(ComponentDatatype::UnsignedShort, 1, TypedArray::Uint16(arrays.vertex_batch_ids)),
         ));
         let geometry = Geometry::new(attributes, Some(indices), PrimitiveType::Triangles);
         let va = VertexArray::from_geometry(

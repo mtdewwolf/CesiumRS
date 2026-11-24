@@ -221,7 +221,7 @@ impl<G: Gl + 'static> GroundPolylinePrimitive<G> {
     fn queue_commands_with(&mut self, frame: &mut FrameState, primitive: &mut Primitive<G>) -> Result<()> {
         if primitive.state() != PrimitiveState::Complete
             || !primitive.show
-            || (!frame.passes.render && !frame.passes.pick)
+            || (!frame.passes.render && !(frame.passes.pick && primitive.allow_picking))
         {
             return Ok(());
         }
@@ -240,51 +240,25 @@ impl<G: Gl + 'static> GroundPolylinePrimitive<G> {
         let uniforms = polyline_uniforms(primitive);
         for (index, vertex_array) in vertices.iter().enumerate() {
             let volume = spheres.get(index).copied().flatten().map(|sphere| sphere.transform(&primitive.model_matrix));
-            if frame.passes.render {
-                if queue_terrain {
+            for (enabled, state, pass) in [
+                (queue_terrain, &render_state, Pass::TerrainClassification),
+                (queue_tiles, &render_state_tiles, Pass::Cesium3DTileClassification),
+            ] {
+                if enabled {
                     self.push_command(
                         frame,
                         &context,
                         primitive,
                         shaders,
                         vertex_array.clone(),
-                        render_state.clone(),
-                        Pass::TerrainClassification,
+                        state.clone(),
+                        pass,
                         volume,
                         uniforms.clone(),
                         index,
-                        frame.passes.pick,
+                        primitive.allow_picking,
                     );
                 }
-                if queue_tiles {
-                    self.push_command(
-                        frame,
-                        &context,
-                        primitive,
-                        shaders,
-                        vertex_array.clone(),
-                        render_state_tiles.clone(),
-                        Pass::Cesium3DTileClassification,
-                        volume,
-                        uniforms.clone(),
-                        index,
-                        frame.passes.pick,
-                    );
-                }
-            } else if frame.passes.pick {
-                self.push_command(
-                    frame,
-                    &context,
-                    primitive,
-                    shaders,
-                    vertex_array.clone(),
-                    render_state.clone(),
-                    Pass::TerrainClassification,
-                    volume,
-                    uniforms.clone(),
-                    index,
-                    true,
-                );
             }
         }
         Ok(())

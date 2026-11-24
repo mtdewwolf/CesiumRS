@@ -456,6 +456,21 @@ impl<G: Gl> VoxelPrimitive<G> {
     pub fn traversal(&self) -> Option<&VoxelTraversal<G>> {
         self.traversal.as_ref()
     }
+    pub fn draw_command(&self) -> Option<&SceneCommand> {
+        self.draw_command.as_ref()
+    }
+    pub fn draw_command_pick(&self) -> Option<&SceneCommand> {
+        self.draw_command_pick.as_ref()
+    }
+    pub fn draw_command_pick_voxel(&self) -> Option<&SceneCommand> {
+        self.draw_command_pick_voxel.as_ref()
+    }
+    pub fn uniform_values(&self) -> BTreeMap<String, UniformValue> {
+        self.uniforms.borrow().values.clone()
+    }
+    pub fn is_destroyed(&self) -> bool {
+        self.destroyed
+    }
 
     fn check_transform_and_bounds(&mut self) -> bool {
         let mut changes = 0;
@@ -578,10 +593,17 @@ impl<G: Gl> VoxelPrimitive<G> {
         )?;
         self.statistics.textures_byte_length = traversal.texture_memory_byte_length;
         let mut uniforms = self.uniforms.borrow_mut();
-        uniforms.values.insert(
-            "u_octreeInternalNodeTexture".into(),
-            UniformValue::Float(vec![]),
-        );
+        if let Some(pick_id) = &self.pick_id {
+            uniforms.values.insert(
+                "u_pickColor".into(),
+                UniformValue::Float(vec![
+                    pick_id.color.red as f32,
+                    pick_id.color.green as f32,
+                    pick_id.color.blue as f32,
+                    pick_id.color.alpha as f32,
+                ]),
+            );
+        }
         uniforms.values.insert(
             "u_octreeInternalNodeTilesPerRow".into(),
             UniformValue::Float(vec![traversal.internal_node_tiles_per_row as f32]),
@@ -649,20 +671,20 @@ impl<G: Gl> VoxelPrimitive<G> {
     fn rebuild_draw_commands(&mut self, context: &Context<G>) -> Result<()> {
         let Some(traversal) = &self.traversal else { return Ok(()) };
         let Some(shape) = &self.shape else { return Ok(()) };
+        let max_tex_size = context.limits().map_or(2048, |l| l.maximum_texture_size);
         let clipping_resolution = self
             .clipping_planes
             .as_ref()
             .filter(|planes| planes.borrow().enabled)
-            .map_or([0, 0], |planes| {
-                planes
-                    .borrow()
-                    .texture_resolution(false, context.limits().map_or(2048, |l| l.maximum_texture_size))
-            });
-        let render_bound_resolution = shape
-            .render_bound_plane_handles()
-            .first()
-            .map(|_| [0, 0])
-            .unwrap_or([0, 0]);
+            .map_or([0, 0], |planes| planes.borrow().texture_resolution(false, max_tex_size));
+        let render_bound_length = shape.render_bound_plane_handles().len();
+        let render_bound_resolution = if render_bound_length == 0 {
+            [0, 0]
+        } else {
+            let x = render_bound_length.min(max_tex_size as usize);
+            let y = render_bound_length.div_ceil(x) * 2;
+            [x as u32, y as u32]
+        };
         let custom_uniforms: Vec<(String, UniformType)> = self
             .custom_shader
             .uniforms
@@ -762,11 +784,21 @@ impl<G: Gl> VoxelPrimitive<G> {
             (planes.state(), planes.enabled)
         };
         if enabled {
-            let Some(shape) = &self.shape else { return Ok(false) };
             let model_inverse = planes.borrow().model_matrix.inverse()?;
-            self.transform_plane_local_to_view = model_inverse
-                .multiply_transformation(shape.shape_transform())
+            let clipping_matrix = model_inverse
+                .multiply_transformation(&self.transform_position_local_to_world)
                 .transpose();
+            self.uniforms.borrow_mut().values.insert(
+                "u_clippingPlanesMatrix".into(),
+                UniformValue::Matrix {
+                    dimension: 4,
+                    values: clipping_matrix.0.iter().map(|v| *v as f32).collect(),
+                },
+            );
+            if let Some(tex) = planes.borrow().texture::<G>() {
+                self.textures.retain(|(name, _)| name != "u_clippingPlanesTexture");
+                self.textures.push(("u_clippingPlanesTexture".into(), tex as Rc<dyn SampledTexture<G>>));
+            }
         }
         if self.clipping_planes_state == state && self.clipping_planes_enabled == enabled {
             return Ok(false);
@@ -1047,10 +1079,11 @@ impl<G: Gl> ScenePrimitive for VoxelPrimitive<G> {
         self.update_uniforms(frame, &context)?;
         self.update_nearest_sampling();
 
-        let view_projection = context
-            .uniform_state()
-            .projection
-            .multiply_transformation(&context.uniform_state().view);
+        let (projection, view) = {
+            let u = context.uniform_state();
+            (u.projection, u.view)
+        };
+        let view_projection = projection.multiply_transformation(&view);
         let ndc = self
             .shape
             .as_ref()

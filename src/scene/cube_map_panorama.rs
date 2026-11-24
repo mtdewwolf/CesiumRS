@@ -130,19 +130,17 @@ impl<G: Gl + 'static> CubeMapPanorama<G> {
     /// Builds the cube map from decoded images. URL sources stay pending until
     /// the host installs a loaded cube map.
     fn build_cube_map(&mut self) -> Result<(), RuntimeError> {
-        if let Some(old) = self.cube_map.take() {
-            let _ = old.destroy();
-        }
         let sources = std::mem::replace(&mut self.sources, CubeMapSources::Urls(Default::default()));
         match sources {
             CubeMapSources::Images(images) => {
                 let [width, height] = images[0].dimensions();
-                let mut options = crate::renderer::TextureOptions::rgba(width, height);
-                options.flip_y = false;
-                self.cube_map = Some(Rc::new(CubeMap::new(&self.context, options, Some(images))?));
+                let options = crate::renderer::TextureOptions::rgba(width, height);
+                let map = Rc::new(CubeMap::new(&self.context, options, Some(images))?);
+                self.set_cube_map(Some(map));
             }
             CubeMapSources::Urls(urls) => self.sources = CubeMapSources::Urls(urls),
         }
+        self.sources_dirty = false;
         self.add_to_panorama_command_list = true;
         Ok(())
     }

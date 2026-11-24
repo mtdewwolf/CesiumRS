@@ -1,15 +1,20 @@
 //! CesiumJS `PointCloud`: the contents of one 3D Tiles point-cloud (pnts) tile,
-//! including decoding, styling, rendering resources and picking.
+//! including decoding (uncompressed, quantized, oct-encoded, RGB565, and Draco),
+//! per-point binary batch-table styleable properties, styling, rendering
+//! resources and picking.
 use super::{
+    batch_table_hierarchy::BinaryColumn,
     blending_state,
     cesium_3d_tile_style::Cesium3DTileStyle,
     get_clip_and_style_code::get_clip_and_style_code,
     get_clipping_function::get_clipping_function,
-    pnts_parser::{self, ParsedPnts},
+    gltf_pipeline::js,
+    metadata_table_property::ByteView,
+    pnts_parser::{self, ParsedPnts, PntsAttribute},
     scene_mode::SceneMode,
     shadow_mode::ShadowMode,
-    stencil_constants,
-    ClippingPlaneCollection, FrameState, SceneCommand, SceneDrawOptions, SplitDirection,
+    stencil_constants, AttributeType, ClippingPlaneCollection, FrameState, SceneCommand, SceneDrawOptions,
+    SplitDirection, VertexAttributeSemantic,
 };
 use crate::{
     core::{
@@ -17,12 +22,16 @@ use crate::{
         PrimitiveType, RuntimeError, TypedArray,
     },
     renderer::{
-        render_state::DepthTest,
-        Buffer, BufferData, BufferKind, BufferUsage, Context, DrawMetadata, Gl, Pass, RenderState,
-        SampledTexture, ShaderProgram, ShaderProgramOptions, ShaderSource, UniformValue, VertexArray,
+        render_state::DepthTest, Buffer, BufferData, BufferKind, BufferUsage, Context, DrawMetadata, Gl, Pass,
+        RenderState, SampledTexture, ShaderProgram, ShaderProgramOptions, ShaderSource, UniformValue, VertexArray,
         VertexAttribute,
     },
+    workers::draco::{
+        self, AttributeValues, DracoAttribute, DracoDecodeError, GeometryAttributeType, SkipAttributeTransforms,
+        SkippedTransform,
+    },
 };
+use draco_core::DataType;
 use serde_json::Value;
 use std::{
     cell::RefCell,
@@ -37,8 +46,7 @@ pub type PointCloudVertexShaderLoaded = Rc<dyn Fn(&str) -> String>;
 /// Creates a modified fragment shader.
 pub type PointCloudFragmentShaderLoaded = Rc<dyn Fn(&str) -> String>;
 /// Adds uniforms to the generated map.
-pub type PointCloudUniformMapLoaded =
-    Rc<dyn Fn(Vec<(String, UniformValue)>) -> Vec<(String, UniformValue)>>;
+pub type PointCloudUniformMapLoaded = Rc<dyn Fn(Vec<(String, UniformValue)>) -> Vec<(String, UniformValue)>>;
 /// Receives the parsed batch table.
 pub type PointCloudBatchTableLoaded = Rc<dyn Fn(usize, Option<Value>, Option<Vec<u8>>)>;
 /// Returns the GLSL pick uniform name.
@@ -101,13 +109,23 @@ struct PointCloudUniforms {
     values: Vec<(String, UniformValue)>,
 }
 
-struct VertexAttributeState {
-    enabled: bool,
+#[derive(Clone, Debug)]
+struct StyleablePropertyData {
+    name: String,
+    typed_array: TypedArray,
+    component_count: usize,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct StyleableShaderAttribute {
+    location: u32,
+    component_count: u32,
 }
 
 /// Geometry and shading state for a point cloud tile.
 pub struct PointCloud<G: Gl + 'static> {
     parsed_content: Option<ParsedPnts>,
+    styleable_properties: Vec<StyleablePropertyData>,
     draw_command: Option<SceneCommand>,
     is_translucent: bool,
     style_translucent: bool,
@@ -117,7 +135,7 @@ pub struct PointCloud<G: Gl + 'static> {
     rtc_center: Option<Cartesian3>,
     quantized_volume_scale: Option<Cartesian3>,
     quantized_volume_offset: Option<Cartesian3>,
-    styleable_shader_attributes: BTreeMap<String, (u32, u32)>,
+    styleable_shader_attributes: Vec<(String, StyleableShaderAttribute)>,
     is_quantized: bool,
     is_oct_encoded16p: bool,
     is_rgb565: bool,
@@ -125,6 +143,7 @@ pub struct PointCloud<G: Gl + 'static> {
     has_normals: bool,
     has_batch_ids: bool,
     decoding_state: DecodingState,
+    pub dequantize_in_shader: bool,
     is_quantized_draco: bool,
     is_oct_encoded_draco: bool,
     quantized_range: f64,
@@ -168,7 +187,6 @@ pub struct PointCloud<G: Gl + 'static> {
     vertex_array: Option<Rc<VertexArray<G>>>,
     shader_program: Option<Rc<ShaderProgram<G>>>,
     draw_command_translucent: bool,
-    style_attributes: Vec<VertexAttributeState>,
     textures: Vec<(String, Rc<dyn SampledTexture<G>>)>,
     shader_dirty: bool,
     shader_source: Option<(String, String)>,
@@ -223,6 +241,204 @@ pub fn prepare_vertex_attribute(typed_array: &TypedArray) -> TypedArray {
     }
 }
 
+fn get_styleable_property_ids(source: &str, property_ids: &mut Vec<u32>) {
+    const PREFIX: &str = "czm_3dtiles_property_";
+    let mut rest = source;
+    while let Some(pos) = rest.find(PREFIX) {
+        let after = &rest[pos + PREFIX.len()..];
+        let digits_len = after.bytes().take_while(u8::is_ascii_digit).count();
+        if digits_len > 0 {
+            if let Ok(id) = after[..digits_len].parse::<u32>() {
+                if !property_ids.contains(&id) {
+                    property_ids.push(id);
+                }
+            }
+            rest = &after[digits_len..];
+        } else {
+            rest = after;
+        }
+    }
+}
+
+fn get_builtin_property_names(source: &str, property_names: &mut Vec<String>) {
+    // Ignore the function signature line, matching CesiumJS `source.slice(source.indexOf("\n"))`.
+    let body = match source.find('\n') {
+        Some(idx) => &source[idx..],
+        None => source,
+    };
+    const PREFIX: &str = "czm_3dtiles_builtin_property_";
+    let mut rest = body;
+    while let Some(pos) = rest.find(PREFIX) {
+        let after = &rest[pos + PREFIX.len()..];
+        let name_len = after.bytes().take_while(|b| b.is_ascii_alphanumeric() || *b == b'_').count();
+        if name_len > 0 {
+            let name = &after[..name_len];
+            if !property_names.iter().any(|existing| existing == name) {
+                property_names.push(name.to_string());
+            }
+            rest = &after[name_len..];
+        } else {
+            rest = after;
+        }
+    }
+}
+
+fn read_binary_batch_table_properties(
+    points_length: usize,
+    batch_table_json: Option<&Value>,
+    batch_table_binary: Option<&[u8]>,
+) -> Result<Vec<StyleablePropertyData>> {
+    let (Some(json), Some(binary)) = (batch_table_json, batch_table_binary) else {
+        return Ok(Vec::new());
+    };
+    let body = ByteView { buffer: binary, byte_offset: 0 };
+    let mut out = Vec::new();
+    for name in js::for_in(Some(json)) {
+        let Some(property) = js::get(Some(json), &name) else {
+            continue;
+        };
+        if !js::defined(property.get("byteOffset")) {
+            continue;
+        }
+        let column = BinaryColumn::read(&name, property, Some(&body), points_length as f64)
+            .map_err(|error| RuntimeError::new(error.to_string()))?;
+        out.push(StyleablePropertyData {
+            name,
+            typed_array: column.typed_array().clone(),
+            component_count: column.component_count(),
+        });
+    }
+    Ok(out)
+}
+
+fn draco_attribute_to_typed_array(attribute: &DracoAttribute, num_points: usize) -> Result<TypedArray> {
+    if attribute.short_value {
+        return Err(RuntimeError::new("Draco attribute is shorter than its values"));
+    }
+    let components = attribute.components as usize;
+    if let Some(transform) = &attribute.transform {
+        let portable: Vec<i64> = match &attribute.values {
+            AttributeValues::I32(values) => values.iter().map(|&v| i64::from(v)).collect(),
+            AttributeValues::U32(values) => values.iter().map(|&v| i64::from(v)).collect(),
+            _ => return Err(RuntimeError::new("Skipped Draco transforms keep 32-bit integer values")),
+        };
+        let bits = match transform {
+            SkippedTransform::Quantization { quantization_bits, .. }
+            | SkippedTransform::Octahedron { quantization_bits } => *quantization_bits,
+        };
+        let length = num_points.saturating_mul(components).min(portable.len());
+        let slice = &portable[..length];
+        return Ok(if bits <= 8 {
+            let mut failed = false;
+            TypedArray::Uint8(
+                slice
+                    .iter()
+                    .map(|&v| {
+                        failed |= !(0..=i64::from(u8::MAX)).contains(&v);
+                        if failed {
+                            0
+                        } else {
+                            v as u8
+                        }
+                    })
+                    .collect(),
+            )
+        } else if bits <= 16 {
+            let mut failed = false;
+            TypedArray::Uint16(
+                slice
+                    .iter()
+                    .map(|&v| {
+                        failed |= !(0..=i64::from(u16::MAX)).contains(&v);
+                        if failed {
+                            0
+                        } else {
+                            v as u16
+                        }
+                    })
+                    .collect(),
+            )
+        } else {
+            TypedArray::Float32(slice.iter().map(|&v| v as f32).collect())
+        });
+    }
+
+    Ok(match &attribute.values {
+        AttributeValues::F32(v) => TypedArray::Float32(v.clone()),
+        AttributeValues::I8(v) => TypedArray::Int8(v.clone()),
+        AttributeValues::U8(v) if attribute.data_type == DataType::Bool => {
+            TypedArray::Int8(v.iter().map(|&b| b as i8).collect())
+        }
+        AttributeValues::U8(v) => TypedArray::Uint8(v.clone()),
+        AttributeValues::I16(v) => TypedArray::Int16(v.clone()),
+        AttributeValues::U16(v) => TypedArray::Uint16(v.clone()),
+        AttributeValues::I32(v) => TypedArray::Int32(v.clone()),
+        AttributeValues::U32(v) => TypedArray::Uint32(v.clone()),
+        AttributeValues::I64(v) => {
+            let mut failed = false;
+            TypedArray::Int32(
+                v.iter()
+                    .map(|&x| match (failed, i32::try_from(x)) {
+                        (false, Ok(n)) => n,
+                        _ => {
+                            failed = true;
+                            0
+                        }
+                    })
+                    .collect(),
+            )
+        }
+        AttributeValues::U64(v) => {
+            let mut failed = false;
+            TypedArray::Uint32(
+                v.iter()
+                    .map(|&x| match (failed, u32::try_from(x)) {
+                        (false, Ok(n)) => n,
+                        _ => {
+                            failed = true;
+                            0
+                        }
+                    })
+                    .collect(),
+            )
+        }
+        AttributeValues::F64(v) => TypedArray::Float32(v.iter().map(|&x| x as f32).collect()),
+        AttributeValues::Invalid => TypedArray::Float32(vec![0.0; num_points.saturating_mul(components)]),
+        AttributeValues::Unreadable => {
+            return Err(RuntimeError::new("Draco attribute is shorter than its values"));
+        }
+    })
+}
+
+fn make_decoded_attribute(
+    name: &'static str,
+    semantic: VertexAttributeSemantic,
+    typed_array: TypedArray,
+    attribute_type: AttributeType,
+) -> PntsAttribute {
+    let component_datatype = typed_array.component_datatype();
+    PntsAttribute {
+        name,
+        semantic,
+        set_index: None,
+        typed_array: Some(Rc::new(typed_array)),
+        constant_color: None,
+        component_datatype,
+        attribute_type,
+        normalized: None,
+        is_quantized: None,
+        is_rgb565: None,
+        is_translucent: None,
+        oct_encoded: None,
+        oct_encoded_zxy: None,
+        quantized_range: None,
+        quantized_volume_offset: None,
+        quantized_volume_scale: None,
+        quantized_component_datatype: None,
+        quantized_type: None,
+    }
+}
+
 impl<G: Gl> PointCloud<G> {
     pub fn new(options: PointCloudOptions<G>) -> Result<Self> {
         if options.array_buffer.is_empty() && options.byte_offset == 0 {
@@ -230,6 +446,7 @@ impl<G: Gl> PointCloud<G> {
         }
         let mut cloud = Self {
             parsed_content: None,
+            styleable_properties: Vec::new(),
             draw_command: None,
             is_translucent: false,
             style_translucent: false,
@@ -239,7 +456,7 @@ impl<G: Gl> PointCloud<G> {
             rtc_center: None,
             quantized_volume_scale: None,
             quantized_volume_offset: None,
-            styleable_shader_attributes: BTreeMap::new(),
+            styleable_shader_attributes: Vec::new(),
             is_quantized: false,
             is_oct_encoded16p: false,
             is_rgb565: false,
@@ -247,6 +464,7 @@ impl<G: Gl> PointCloud<G> {
             has_normals: false,
             has_batch_ids: false,
             decoding_state: DecodingState::Ready,
+            dequantize_in_shader: true,
             is_quantized_draco: false,
             is_oct_encoded_draco: false,
             quantized_range: 0.0,
@@ -290,7 +508,6 @@ impl<G: Gl> PointCloud<G> {
             vertex_array: None,
             shader_program: None,
             draw_command_translucent: false,
-            style_attributes: Vec::new(),
             textures: Vec::new(),
             shader_dirty: true,
             shader_source: None,
@@ -308,9 +525,14 @@ impl<G: Gl> PointCloud<G> {
         self.has_colors = parsed.has_colors;
         self.has_batch_ids = parsed.has_batch_ids;
         self.is_translucent = parsed.is_translucent;
-        if !parsed.has_batch_ids {
-            // Per-point batch table properties become styleable attributes in
-            // Cesium; the binary property reader is not ported here.
+        self.points_length = parsed.points_length.to_number() as usize;
+
+        if !parsed.has_batch_ids && parsed.batch_table_binary.is_some() {
+            self.styleable_properties = read_binary_batch_table_properties(
+                self.points_length,
+                parsed.batch_table_json.as_ref(),
+                parsed.batch_table_binary.as_deref(),
+            )?;
         }
         if parsed.draco.is_some() {
             self.decoding_state = DecodingState::NeedsDecode;
@@ -333,15 +555,139 @@ impl<G: Gl> PointCloud<G> {
         }
         if parsed.has_batch_ids {
             if let Some(callback) = &self.callbacks.batch_table_loaded {
-                let length = parsed
-                    .batch_length
-                    .as_ref()
-                    .map_or(0, |length| length.to_number() as usize);
+                let length = parsed.batch_length.as_ref().map_or(0, |length| length.to_number() as usize);
                 callback(length, parsed.batch_table_json.clone(), parsed.batch_table_binary.clone());
             }
         }
-        self.points_length = parsed.points_length.to_number() as usize;
         self.parsed_content = Some(parsed);
+        Ok(())
+    }
+
+    fn decode_draco(&mut self) -> Result<()> {
+        if self.decoding_state != DecodingState::NeedsDecode {
+            return Ok(());
+        }
+        let Some(parsed) = self.parsed_content.as_mut() else {
+            return Err(RuntimeError::new("Point cloud content is unavailable for Draco decode"));
+        };
+        let Some(draco_info) = parsed.draco.clone() else {
+            self.decoding_state = DecodingState::Ready;
+            return Ok(());
+        };
+        let dequantize_in_shader = self.dequantize_in_shader && draco_info.dequantize_in_shader;
+        let mut skip = SkipAttributeTransforms::default();
+        if dequantize_in_shader {
+            skip.insert(GeometryAttributeType::Position);
+            skip.insert(GeometryAttributeType::Normal);
+        }
+        let cloud = match draco::decode_point_cloud_skipping(&draco_info.buffer, skip) {
+            Ok(geometry) => geometry,
+            Err(DracoDecodeError::WrongGeometry) => {
+                self.decoding_state = DecodingState::Failed;
+                return Err(RuntimeError::new("Draco geometry type must be POINT_CLOUD."));
+            }
+            Err(DracoDecodeError::Failed(message)) => {
+                self.decoding_state = DecodingState::Failed;
+                return Err(RuntimeError::new(format!("Error decoding draco point cloud: {message}")));
+            }
+        };
+
+        let properties =
+            draco_info.properties.as_object().ok_or_else(|| RuntimeError::new("Draco properties must be an object"))?;
+
+        let mut decoded_by_name: HashMap<String, (TypedArray, &DracoAttribute)> = HashMap::new();
+        for (name, id) in properties {
+            let attribute = if name == "POSITION" || name == "NORMAL" {
+                let kind =
+                    if name == "POSITION" { GeometryAttributeType::Position } else { GeometryAttributeType::Normal };
+                cloud
+                    .named_attribute(kind)
+                    .ok_or_else(|| RuntimeError::new(format!("Missing Draco attribute {name}")))?
+            } else {
+                let unique_id = id
+                    .as_u64()
+                    .and_then(|v| u32::try_from(v).ok())
+                    .ok_or_else(|| RuntimeError::new(format!("Draco attribute id for {name} must be an integer")))?;
+                cloud
+                    .attribute_by_unique_id(unique_id)
+                    .ok_or_else(|| RuntimeError::new(format!("Missing Draco attribute {name} (id {unique_id})")))?
+            };
+            let array = draco_attribute_to_typed_array(attribute, cloud.num_points)?;
+            decoded_by_name.insert(name.clone(), (array, attribute));
+        }
+
+        if let Some((positions_array, attr)) = decoded_by_name.remove("POSITION") {
+            if let Some(SkippedTransform::Quantization { quantization_bits, min_values, range }) = &attr.transform {
+                let r = f64::from(*range);
+                self.quantized_volume_scale = Some(Cartesian3::new(r, r, r));
+                self.quantized_volume_offset = Some(Cartesian3::new(
+                    f64::from(*min_values.first().unwrap_or(&0.0)),
+                    f64::from(*min_values.get(1).unwrap_or(&0.0)),
+                    f64::from(*min_values.get(2).unwrap_or(&0.0)),
+                ));
+                self.quantized_range = ((1u32 << *quantization_bits) - 1) as f64;
+                self.is_quantized_draco = true;
+            }
+            parsed.positions = Some(make_decoded_attribute(
+                "POSITION",
+                VertexAttributeSemantic::Position,
+                positions_array,
+                AttributeType::Vec3,
+            ));
+        }
+
+        let decoded_rgba = decoded_by_name.remove("RGBA").map(|(arr, _)| arr);
+        let decoded_rgb = decoded_by_name.remove("RGB").map(|(arr, _)| arr);
+        if let Some(colors_array) = decoded_rgba.or(decoded_rgb) {
+            let attr_type = if self.is_translucent { AttributeType::Vec4 } else { AttributeType::Vec3 };
+            parsed.colors =
+                Some(make_decoded_attribute("COLOR", VertexAttributeSemantic::Color, colors_array, attr_type));
+        }
+
+        if let Some((normals_array, attr)) = decoded_by_name.remove("NORMAL") {
+            if let Some(
+                SkippedTransform::Octahedron { quantization_bits }
+                | SkippedTransform::Quantization { quantization_bits, .. },
+            ) = &attr.transform
+            {
+                self.oct_encoded_range = ((1u32 << *quantization_bits) - 1) as f64;
+                self.is_oct_encoded_draco = true;
+            }
+            parsed.normals = Some(make_decoded_attribute(
+                "NORMAL",
+                VertexAttributeSemantic::Normal,
+                normals_array,
+                AttributeType::Vec3,
+            ));
+        }
+
+        if let Some((batch_ids_array, _)) = decoded_by_name.remove("BATCH_ID") {
+            parsed.batch_ids = Some(make_decoded_attribute(
+                "BATCH_ID",
+                VertexAttributeSemantic::FeatureId,
+                batch_ids_array,
+                AttributeType::Scalar,
+            ));
+        }
+
+        if let Some(batch_props) = draco_info.batch_table_properties.as_ref() {
+            for name in js::for_in(Some(batch_props)) {
+                if let Some((typed_array, attr)) = decoded_by_name.remove(&name) {
+                    if let Some(existing) = self.styleable_properties.iter_mut().find(|p| p.name == name) {
+                        existing.typed_array = typed_array;
+                        existing.component_count = attr.components as usize;
+                    } else {
+                        self.styleable_properties.push(StyleablePropertyData {
+                            name,
+                            typed_array,
+                            component_count: attr.components as usize,
+                        });
+                    }
+                }
+            }
+        }
+
+        self.decoding_state = DecodingState::Ready;
         Ok(())
     }
 
@@ -379,17 +725,35 @@ impl<G: Gl> PointCloud<G> {
     pub fn style_translucent(&self) -> bool {
         self.style_translucent
     }
+    pub fn is_quantized_draco(&self) -> bool {
+        self.is_quantized_draco
+    }
+    pub fn is_oct_encoded_draco(&self) -> bool {
+        self.is_oct_encoded_draco
+    }
+    pub fn quantized_range(&self) -> f64 {
+        self.quantized_range
+    }
+    pub fn oct_encoded_range(&self) -> f64 {
+        self.oct_encoded_range
+    }
     pub fn draw_command(&self) -> Option<&SceneCommand> {
         self.draw_command.as_ref()
     }
     pub fn vertex_array(&self) -> Option<&Rc<VertexArray<G>>> {
         self.vertex_array.as_ref()
     }
+    pub fn shader_program(&self) -> Option<&Rc<ShaderProgram<G>>> {
+        self.shader_program.as_ref()
+    }
     pub fn shader_source(&self) -> Option<(&str, &str)> {
         self.shader_source.as_ref().map(|(vs, fs)| (vs.as_str(), fs.as_str()))
     }
     pub fn uniform_names(&self) -> &[String] {
         &self.uniform_names
+    }
+    pub fn uniform_values(&self) -> Vec<(String, UniformValue)> {
+        self.uniforms.borrow().values.clone()
     }
     fn effective_translucent(&self) -> bool {
         self.is_translucent
@@ -406,11 +770,7 @@ impl<G: Gl> PointCloud<G> {
         }
     }
 
-    fn create_vertex_buffer(
-        &mut self,
-        context: &Context<G>,
-        typed_array: &TypedArray,
-    ) -> Result<Buffer<G>> {
+    fn create_vertex_buffer(&mut self, context: &Context<G>, typed_array: &TypedArray) -> Result<Buffer<G>> {
         let bytes = typed_array.to_le_bytes();
         let buffer = Buffer::new(context, BufferKind::Vertex, BufferUsage::StaticDraw, BufferData::Bytes(&bytes))?;
         self.geometry_byte_length += bytes.len();
@@ -418,21 +778,34 @@ impl<G: Gl> PointCloud<G> {
     }
 
     fn create_resources(&mut self, context: &Context<G>) -> Result<()> {
-        let parsed = self
-            .parsed_content
-            .take()
-            .ok_or_else(|| RuntimeError::new("Point cloud content is unavailable"))?;
-        let positions = parsed
-            .positions
-            .as_ref()
-            .ok_or_else(|| RuntimeError::new("Point cloud requires POSITION"))?;
-        let position_data = positions
-            .typed_array
-            .clone()
-            .ok_or_else(|| RuntimeError::new("Point cloud POSITION has no data"))?;
+        let parsed =
+            self.parsed_content.take().ok_or_else(|| RuntimeError::new("Point cloud content is unavailable"))?;
+        let positions = parsed.positions.as_ref().ok_or_else(|| RuntimeError::new("Point cloud requires POSITION"))?;
+        let position_data =
+            positions.typed_array.clone().ok_or_else(|| RuntimeError::new("Point cloud POSITION has no data"))?;
+
+        let mut styleable_vertex_attributes = Vec::new();
+        let mut styleable_shader_attributes = Vec::new();
+        let styleable_props = std::mem::take(&mut self.styleable_properties);
+        if !styleable_props.is_empty() {
+            for (attribute_location, prop) in (NUMBER_OF_ATTRIBUTES..).zip(styleable_props) {
+                let typed_array = prepare_vertex_attribute(&prop.typed_array);
+                let components = prop.component_count as u32;
+                let datatype = typed_array.component_datatype();
+                let buffer = self.create_vertex_buffer(context, &typed_array)?;
+                let mut attribute = VertexAttribute::buffer(attribute_location, buffer, components);
+                attribute.datatype = datatype;
+                attribute.normalize = false;
+                styleable_vertex_attributes.push(attribute);
+                styleable_shader_attributes.push((
+                    prop.name,
+                    StyleableShaderAttribute { location: attribute_location, component_count: components },
+                ));
+            }
+        }
+        self.styleable_shader_attributes = styleable_shader_attributes;
 
         let mut attributes = Vec::new();
-        let styleable: BTreeMap<String, (u32, u32)> = BTreeMap::new();
 
         let positions_buffer = self.create_vertex_buffer(context, &position_data)?;
         let position_datatype = if self.is_quantized {
@@ -466,10 +839,7 @@ impl<G: Gl> PointCloud<G> {
 
         if self.has_colors {
             let colors = parsed.colors.as_ref().unwrap();
-            let data = colors
-                .typed_array
-                .clone()
-                .ok_or_else(|| RuntimeError::new("Point cloud COLOR has no data"))?;
+            let data = colors.typed_array.clone().ok_or_else(|| RuntimeError::new("Point cloud COLOR has no data"))?;
             let buffer = self.create_vertex_buffer(context, &data)?;
             let mut attribute = if self.is_rgb565 {
                 VertexAttribute::buffer(COLOR_LOCATION, buffer, 1)
@@ -477,21 +847,16 @@ impl<G: Gl> PointCloud<G> {
                 let components = if self.is_translucent { 4 } else { 3 };
                 VertexAttribute::buffer(COLOR_LOCATION, buffer, components)
             };
-            attribute.datatype = if self.is_rgb565 {
-                ComponentDatatype::UnsignedShort
-            } else {
-                ComponentDatatype::UnsignedByte
-            };
+            attribute.datatype =
+                if self.is_rgb565 { ComponentDatatype::UnsignedShort } else { ComponentDatatype::UnsignedByte };
             attribute.normalize = !self.is_rgb565;
             attributes.push(attribute);
         }
 
         if self.has_normals {
             let normals = parsed.normals.as_ref().unwrap();
-            let data = normals
-                .typed_array
-                .clone()
-                .ok_or_else(|| RuntimeError::new("Point cloud NORMAL has no data"))?;
+            let data =
+                normals.typed_array.clone().ok_or_else(|| RuntimeError::new("Point cloud NORMAL has no data"))?;
             let buffer = self.create_vertex_buffer(context, &data)?;
             let (components, datatype) = if self.is_oct_encoded16p {
                 (2, ComponentDatatype::UnsignedByte)
@@ -525,20 +890,11 @@ impl<G: Gl> PointCloud<G> {
             attribute.datatype = data.component_datatype();
             attributes.push(attribute);
         }
-        for (name, (location, components)) in &styleable {
-            let _ = (name, location, components);
-        }
-        self.styleable_shader_attributes = styleable;
-        self.style_attributes = attributes
-            .iter()
-            .skip(NUMBER_OF_ATTRIBUTES as usize)
-            .map(|attribute| VertexAttributeState { enabled: attribute.enabled })
-            .collect();
 
-        self.opaque_render_state = RenderState {
-            depth_test: DepthTest { enabled: true, ..DepthTest::default() },
-            ..RenderState::default()
-        };
+        attributes.extend(styleable_vertex_attributes);
+
+        self.opaque_render_state =
+            RenderState { depth_test: DepthTest { enabled: true, ..DepthTest::default() }, ..RenderState::default() };
         self.translucent_render_state = RenderState {
             depth_test: DepthTest { enabled: true, ..DepthTest::default() },
             depth_mask: false,
@@ -557,30 +913,34 @@ impl<G: Gl> PointCloud<G> {
         Ok(())
     }
 
-    /// Rebuilds the VAO with current attribute-enabled flags.
-    fn rebuild_vertex_array(&mut self, context: &Context<G>) -> Result<()> {
+    /// Rebuilds the VAO with updated per-attribute enabled flags.
+    fn rebuild_vertex_array_enabled(
+        &mut self,
+        context: &Context<G>,
+        enabled_by_location: &HashMap<u32, bool>,
+    ) -> Result<()> {
         let Some(vertex_array) = &self.vertex_array else { return Ok(()) };
-        let mut attributes = Vec::new();
-        for (index, attribute) in vertex_array.attributes().iter().enumerate() {
+        let mut changed = false;
+        let mut attributes = Vec::with_capacity(vertex_array.attributes().len());
+        for attribute in vertex_array.attributes() {
             let mut attribute = attribute.clone();
-            if index >= NUMBER_OF_ATTRIBUTES as usize {
-                if let Some(state) = self.style_attributes.get(index - NUMBER_OF_ATTRIBUTES as usize) {
-                    attribute.enabled = state.enabled;
+            if let Some(&enabled) = enabled_by_location.get(&attribute.index) {
+                if attribute.enabled != enabled {
+                    attribute.enabled = enabled;
+                    changed = true;
                 }
             }
             attributes.push(attribute);
         }
-        self.vertex_array = Some(Rc::new(VertexArray::new(context, attributes, None)?));
+        if changed {
+            self.vertex_array = Some(Rc::new(VertexArray::new(context, attributes, None)?));
+        }
         Ok(())
     }
 
     fn create_uniform_map(&mut self, frame: &FrameState, context: &Context<G>) {
         let mut values = Vec::new();
-        let point_size = if self.attenuation {
-            self.maximum_attenuation
-        } else {
-            self.point_size
-        } * frame.pixel_ratio;
+        let point_size = if self.attenuation { self.maximum_attenuation } else { self.point_size } * frame.pixel_ratio;
         let depth_multiplier = if self.attenuation {
             if frame.mode == SceneMode::Scene2D
                 || matches!(
@@ -629,18 +989,28 @@ impl<G: Gl> PointCloud<G> {
             ]),
         ));
         let clipping = self.clipping_planes.clone();
-        let edge_style = clipping
-            .as_ref()
-            .map(|planes| planes.borrow().edge_color)
-            .unwrap_or(Color::TRANSPARENT);
+        let edge_style = clipping.as_ref().map(|planes| planes.borrow().edge_color).unwrap_or(Color::TRANSPARENT);
         let edge_width = clipping.as_ref().map_or(0.0, |planes| planes.borrow().edge_width);
-        values.push((
-            "u_clippingPlanes".into(),
-            UniformValue::Int(vec![0]),
-        ));
+        let clipping_matrix = if let Some(planes) = &clipping {
+            let origin = self.clipping_planes_origin_matrix.unwrap_or(self.model_matrix_old);
+            let view3d = context.uniform_state().view_3d;
+            let transform = view3d.multiply(&origin).multiply(&planes.borrow().model_matrix);
+            transform.inverse_transpose().unwrap_or(Matrix4::IDENTITY)
+        } else {
+            Matrix4::IDENTITY
+        };
+        self.textures.clear();
+        if self.is_clipped {
+            if let Some(tex) = clipping.as_ref().and_then(|planes| planes.borrow().texture::<G>()) {
+                self.textures.push(("u_clippingPlanes".into(), tex as Rc<dyn SampledTexture<G>>));
+            } else if let Ok(default_tex) = context.default_texture() {
+                self.textures.push(("u_clippingPlanes".into(), default_tex as Rc<dyn SampledTexture<G>>));
+            }
+        }
+        values.push(("u_clippingPlanes".into(), UniformValue::Int(vec![0])));
         values.push((
             "u_clippingPlanesMatrix".into(),
-            UniformValue::Matrix { dimension: 4, values: Matrix4::IDENTITY.0.iter().map(|v| *v as f32).collect() },
+            UniformValue::Matrix { dimension: 4, values: clipping_matrix.0.iter().map(|v| *v as f32).collect() },
         ));
         values.push((
             "u_clippingPlanesEdgeStyle".into(),
@@ -672,15 +1042,11 @@ impl<G: Gl> PointCloud<G> {
                 ]),
             ));
         }
-        values.push((
-            "czm_splitDirection".into(),
-            UniformValue::Float(vec![self.split_direction.value() as f32]),
-        ));
+        values.push(("czm_splitDirection".into(), UniformValue::Float(vec![self.split_direction.value() as f32])));
         if let Some(callback) = &self.callbacks.uniform_map_loaded {
             values = callback(values);
         }
         self.uniforms.borrow_mut().values = values;
-        let _ = context;
     }
 
     fn create_shaders(&mut self, frame: &FrameState, context: &Context<G>) -> Result<()> {
@@ -702,14 +1068,14 @@ impl<G: Gl> PointCloud<G> {
 
         let mut variable_substitution_map = BTreeMap::new();
         variable_substitution_map.insert("POSITION".into(), "czm_3dtiles_builtin_property_POSITION".into());
-        variable_substitution_map.insert(
-            "POSITION_ABSOLUTE".into(),
-            "czm_3dtiles_builtin_property_POSITION_ABSOLUTE".into(),
-        );
+        variable_substitution_map
+            .insert("POSITION_ABSOLUTE".into(), "czm_3dtiles_builtin_property_POSITION_ABSOLUTE".into());
         variable_substitution_map.insert("COLOR".into(), "czm_3dtiles_builtin_property_COLOR".into());
         variable_substitution_map.insert("NORMAL".into(), "czm_3dtiles_builtin_property_NORMAL".into());
-        for (name, (location, _)) in &self.styleable_shader_attributes {
-            variable_substitution_map.insert(name.clone(), format!("czm_3dtiles_property_{location}"));
+        let mut property_id_to_attribute: HashMap<u32, StyleableShaderAttribute> = HashMap::new();
+        for (name, attr) in &self.styleable_shader_attributes {
+            variable_substitution_map.insert(name.clone(), format!("czm_3dtiles_property_{}", attr.location));
+            property_id_to_attribute.insert(attr.location, *attr);
         }
 
         let mut color_style_function = None;
@@ -746,8 +1112,21 @@ impl<G: Gl> PointCloud<G> {
         let has_show_style = show_style_function.is_some();
         let has_point_size_style = point_size_style_function.is_some();
 
-        let styleable_property_ids: Vec<u32> = Vec::new();
-        let builtin_property_names: Vec<String> = Vec::new();
+        let mut styleable_property_ids: Vec<u32> = Vec::new();
+        let mut builtin_property_names: Vec<String> = Vec::new();
+        if let Some(source) = &color_style_function {
+            get_styleable_property_ids(source, &mut styleable_property_ids);
+            get_builtin_property_names(source, &mut builtin_property_names);
+        }
+        if let Some(source) = &show_style_function {
+            get_styleable_property_ids(source, &mut styleable_property_ids);
+            get_builtin_property_names(source, &mut builtin_property_names);
+        }
+        if let Some(source) = &point_size_style_function {
+            get_styleable_property_ids(source, &mut styleable_property_ids);
+            get_builtin_property_names(source, &mut builtin_property_names);
+        }
+
         let uses_color_semantic = builtin_property_names.iter().any(|name| name == "COLOR");
         let uses_normal_semantic = builtin_property_names.iter().any(|name| name == "NORMAL");
         if uses_normal_semantic && !has_normals {
@@ -755,16 +1134,21 @@ impl<G: Gl> PointCloud<G> {
                 "Style references the NORMAL semantic but the point cloud does not have normals",
             ));
         }
-        for (location, _) in self.styleable_shader_attributes.values() {
-            if let Some(state) = self
-                .style_attributes
-                .get(*location as usize - NUMBER_OF_ATTRIBUTES as usize)
-            {
-                let _ = state;
-            }
-        }
+
         let uses_colors = has_colors && (!has_color_style || uses_color_semantic);
         let uses_normals = has_normals && (normal_shading || back_face_culling || uses_normal_semantic);
+
+        let mut enabled_by_location: HashMap<u32, bool> = HashMap::new();
+        for (_, attr) in &self.styleable_shader_attributes {
+            enabled_by_location.insert(attr.location, styleable_property_ids.contains(&attr.location));
+        }
+        if has_colors {
+            enabled_by_location.insert(COLOR_LOCATION, uses_colors);
+        }
+        if has_normals {
+            enabled_by_location.insert(NORMAL_LOCATION, uses_normals);
+        }
+        self.rebuild_vertex_array_enabled(context, &enabled_by_location)?;
 
         let mut attribute_locations = BTreeMap::new();
         attribute_locations.insert("a_position".into(), POSITION_LOCATION);
@@ -779,11 +1163,16 @@ impl<G: Gl> PointCloud<G> {
         }
         let mut attribute_declarations = String::new();
         for property_id in &styleable_property_ids {
-            let attribute_name = format!("czm_3dtiles_property_{property_id}");
-            let components = 1;
-            let datatype = if components == 1 { "float".to_string() } else { format!("vec{components}") };
-            attribute_declarations.push_str(&format!("in {datatype} {attribute_name}; \n"));
-            attribute_locations.insert(attribute_name, *property_id);
+            if let Some(attr) = property_id_to_attribute.get(property_id) {
+                let attribute_name = format!("czm_3dtiles_property_{property_id}");
+                let datatype = if attr.component_count == 1 {
+                    "float".to_string()
+                } else {
+                    format!("vec{}", attr.component_count)
+                };
+                attribute_declarations.push_str(&format!("in {datatype} {attribute_name}; \n"));
+                attribute_locations.insert(attribute_name, attr.location);
+            }
         }
 
         let mut vs = String::from(
@@ -842,7 +1231,7 @@ impl<G: Gl> PointCloud<G> {
             "void main() \n\
              { \n\
                  u_pointSize = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.x; \n\
-                     tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n",
+                 tiles3d_tileset_time = u_pointSizeAndTimeAndGeometricErrorAndDepthMultiplier.y; \n",
         );
         if attenuation {
             vs.push_str(
@@ -948,11 +1337,7 @@ impl<G: Gl> PointCloud<G> {
             }
             fs.push('\n');
         }
-        fs.push_str(
-            "void main() \n\
-             { \n\
-                 out_FragColor = czm_gammaCorrect(v_color); \n",
-        );
+        fs.push_str("void main() \n{ \n    out_FragColor = czm_gammaCorrect(v_color); \n");
         if has_clipped_content {
             fs.push_str(&get_clip_and_style_code(
                 "u_clippingPlanes",
@@ -972,17 +1357,18 @@ impl<G: Gl> PointCloud<G> {
         }
 
         self.shader_source = Some((vs.clone(), fs.clone()));
-        self.uniform_names = self.uniforms.borrow().values.iter().map(|(name, _)| name.clone()).collect();
         let options = ShaderProgramOptions {
             vertex_shader_source: ShaderSource { sources: vec![vs], ..Default::default() },
             fragment_shader_source: ShaderSource { sources: vec![fs], ..Default::default() },
             attribute_locations,
         };
-        let program = Rc::new(ShaderProgram::from_sources(context, &options).map_err(|_| {
-            RuntimeError::new(
-                "Error generating style shader: this may be caused by a type mismatch, index out-of-bounds, or other syntax error.",
-            )
-        })?);
+        let program = context
+            .with_shader_cache(|cache| cache.get_shader_program(&options))
+            .map_err(|_| {
+                RuntimeError::new(
+                    "Error generating style shader: this may be caused by a type mismatch, index out-of-bounds, or other syntax error.",
+                )
+            })?;
         self.shader_program = Some(program);
         self.create_uniform_map(frame, context);
         self.uniform_names = self.uniforms.borrow().values.iter().map(|(name, _)| name.clone()).collect();
@@ -992,20 +1378,13 @@ impl<G: Gl> PointCloud<G> {
     }
 
     fn build_draw_command(&mut self, context: &Context<G>, is_translucent: bool) -> Result<()> {
-        let vertex_array = self
-            .vertex_array
-            .clone()
-            .ok_or_else(|| RuntimeError::new("Point cloud vertex array is missing"))?;
-        let program = self
-            .shader_program
-            .clone()
-            .ok_or_else(|| RuntimeError::new("Point cloud shader program is missing"))?;
+        let vertex_array =
+            self.vertex_array.clone().ok_or_else(|| RuntimeError::new("Point cloud vertex array is missing"))?;
+        let program =
+            self.shader_program.clone().ok_or_else(|| RuntimeError::new("Point cloud shader program is missing"))?;
         let mut draw = SceneDrawOptions::new(vertex_array, program);
-        draw.state = if is_translucent {
-            self.translucent_render_state.clone()
-        } else {
-            self.opaque_render_state.clone()
-        };
+        draw.state =
+            if is_translucent { self.translucent_render_state.clone() } else { self.opaque_render_state.clone() };
         draw.primitive_type = PrimitiveType::Points;
         draw.count = Some(self.points_length);
         draw.uniform_map = Some(Rc::new({
@@ -1019,6 +1398,7 @@ impl<G: Gl> PointCloud<G> {
             cull: self.cull,
             cast_shadows: self.shadows.cast_shadows(),
             receive_shadows: self.shadows.receive_shadows(),
+            pick_id: self.callbacks.pick_id_loaded.as_ref().map(|cb| cb()),
             owner: Some("PointCloud".into()),
             ..Default::default()
         };
@@ -1044,7 +1424,7 @@ impl<G: Gl> PointCloud<G> {
             return Err(error);
         }
         if self.decoding_state == DecodingState::NeedsDecode {
-            return Err(RuntimeError::new("Point cloud Draco decoding is not available in this port"));
+            self.decode_draco()?;
         }
         if self.decoding_state == DecodingState::Decoding {
             return Ok(());
@@ -1074,10 +1454,7 @@ impl<G: Gl> PointCloud<G> {
             if frame.mode != SceneMode::Scene3D {
                 let translation = computed.get_column(3);
                 if translation != Cartesian4::UNIT_W {
-                    computed = crate::core::Transforms::basis_to_2d(
-                        frame.uniform.map_projection.as_ref(),
-                        &computed,
-                    );
+                    computed = crate::core::Transforms::basis_to_2d(frame.uniform.map_projection.as_ref(), &computed);
                 }
             }
             self.computed_model_matrix = computed;
@@ -1121,7 +1498,6 @@ impl<G: Gl> PointCloud<G> {
             shaders_dirty = true;
         }
         if shaders_dirty || self.shader_dirty {
-            self.rebuild_vertex_array(&context)?;
             self.create_shaders(frame, &context)?;
             self.shader_dirty = false;
         } else {
@@ -1152,10 +1528,8 @@ impl<G: Gl> PointCloud<G> {
         self.shader_program = None;
         self.vertex_array = None;
         self.textures.clear();
+        self.styleable_properties.clear();
         self.destroyed = true;
         Ok(())
     }
 }
-
-#[allow(dead_code)]
-fn unused(_: &HashMap<String, f64>) {}

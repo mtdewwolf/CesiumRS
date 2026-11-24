@@ -207,7 +207,7 @@ impl<G: Gl + 'static> SunPostProcess<G> {
             size.x.min(f64::from(drawing_width)),
             size.y.min(f64::from(drawing_height)),
         );
-        for stage in self.stages.iter_mut().skip(1).take(3) {
+        for stage in self.stages.iter_mut().take(4) {
             stage.set_scissor_rectangle(Some(scissor));
         }
         Ok(())

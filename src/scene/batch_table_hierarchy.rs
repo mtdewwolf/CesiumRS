@@ -138,6 +138,12 @@ impl BinaryColumn {
     pub(super) fn byte_length(&self) -> usize {
         self.typed_array.len() * self.typed_array.component_datatype().get_size_in_bytes()
     }
+    pub(super) fn typed_array(&self) -> &TypedArray {
+        &self.typed_array
+    }
+    pub(super) fn component_count(&self) -> usize {
+        self.attribute_type.map_or(0, AttributeType::get_number_of_components)
+    }
     pub(super) fn get(&self, id: usize) -> Result<Option<MetadataValue>> {
         get_binary(self, Some(id as f64))
     }
