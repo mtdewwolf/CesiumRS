@@ -827,6 +827,27 @@ pub use viewport_quad::ViewportQuad;
 pub use voxel_bounds_collection::{VoxelBoundsCollection, VoxelBoundsCollectionOptions};
 pub use voxel_provider::{VoxelProvider, VoxelRequest};
 pub use voxel_shape::VoxelShape;
+mod voxel_megatexture;
+pub mod voxel_traversal;
+pub use voxel_traversal::{VoxelTraversal, VoxelTraversalEvents, VoxelTraversalSettings};
+pub mod process_voxel_properties;
+pub use process_voxel_properties::{process_voxel_properties, VoxelPropertyInfo};
+pub mod voxel_render_resources;
+pub use voxel_render_resources::{VoxelRenderResources, VoxelRenderResourcesOptions};
+pub mod build_voxel_draw_commands;
+pub use build_voxel_draw_commands::{build_voxel_draw_commands, VoxelDrawCommandResources};
+pub mod voxel_primitive;
+pub use voxel_primitive::{oriented_bounding_box_to_ndc_aabb, VoxelPrimitive, VoxelPrimitiveOptions};
+pub mod cesium_3d_tiles_voxel_provider;
+pub use cesium_3d_tiles_voxel_provider::{
+    Cesium3DTilesVoxelProvider, Cesium3DTilesVoxelProviderOptions,
+};
+pub mod point_cloud;
+pub use point_cloud::{PointCloud, PointCloudCallbacks, PointCloudOptions};
+pub mod point_cloud_eye_dome_lighting;
+pub use point_cloud_eye_dome_lighting::PointCloudEyeDomeLighting;
+pub mod time_dynamic_point_cloud;
+pub use time_dynamic_point_cloud::{TimeDynamicPointCloud, TimeDynamicPointCloudInterval, TimeDynamicPointCloudOptions};
 
 pub mod billboard_texture;
 pub use billboard_texture::BillboardTexture;
