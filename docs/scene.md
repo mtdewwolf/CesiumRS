@@ -1502,3 +1502,60 @@ render-state, URL/transform, terrain-height/OBB, validation-message and
 lifecycle cases, plus a BoxGeometry classification command-structure check and
 cast/receive derivation assertions. GPU classification, terrain clamping and
 full-scene invert rendering remain unvalidated.
+
+## Point clouds and voxels
+
+`PointCloud<G>` parses a pnts payload, builds static position/color/normal/batch
+attributes with Cesium's quantization, RGB565, oct-encoding and translucency
+rules, generates the upstream vertex/fragment shaders (including builtin
+`POSITION`/`COLOR`/`NORMAL` style substitutions and clipping), and owns its
+render states, model matrix and bounding sphere. `PointCloudCallbacks` supplies
+the tileset hooks for shader, uniform-map, batch-table and pick-id injection.
+Per-point binary batch-table styleable attributes and Draco decoding are not
+implemented; styles that reference those properties fail with a clear shader
+error. `tests/scene_point_cloud.rs` replays a pinned CesiumJS capture of the
+shader source, attribute layout, buffer sizes, uniforms and render state.
+
+`TimeDynamicPointCloud<G>` schedules intervals from the clock multiplier and
+average frame-load time, prefetches one interval ahead, keeps a frame while a
+replacement loads, enforces the memory budget by unloading untouched frames,
+and raises `frameFailed`/`frameChanged`. Frames are fetched through
+`ResourceClient`; call `set_resource_client` before the first tick. Native
+tests cover interval construction, clock state, average-load defaults and
+destruction.
+
+`PointCloudEyeDomeLighting<G>` performs the support check, owns the two-color
+plus depth framebuffer, and derives the MRT `EC` shader that writes packed
+fragment depth. Replacing already-built `SceneCommand`s with the offscreen
+derived command is not possible with the owned execution closure, so its
+`update` currently prepares resources without hijacking draws; `TimeDynamicPointCloud`
+therefore does not yet apply EDL to rendered frames.
+
+`VoxelTraversal<G>` also contains the private megatexture allocation helper
+that sizes a 3D texture from tile dimensions, component type, channel count,
+memory budget and the maximum 3D texture size, packs tile data at 1D-to-3D
+tile offsets, and maintains Cesium's occupied/empty allocation lists. It
+mirrors the upstream hierarchy: bounded keyframe
+priority queue, provider requests retained as owned futures, megatexture
+replacement of the lowest-priority node, screen-space-error-driven subdivision,
+temporal ancestor selection, octree/leaf texel packing and statistics/events.
+The pinned capture in `tests/scene_voxel_traversal.rs` compares the node tree,
+keyframe states/priorities/megatexture slots, high-priority order and every
+texel upload byte for three frames.
+
+`VoxelPrimitive<G>` applies Cesium's bounds/model matrix/shape transforms and
+vertical exaggeration, updates clipping planes and per-frame uniforms, computes
+the NDC scissor box, and emits render, pick and pick-voxel commands through the
+typed `SceneCommand` path. `VoxelRenderResources`, `processVoxelProperties` and
+`buildVoxelDrawCommands` reproduce the generated voxel shader line for line;
+`tests/scene_voxel_draw_commands.rs` compares all shape, clipping, depth,
+padding, metadata-order, statistics and sample-count variants against pinned
+CesiumJS. Native lifecycle tests cover default construction, setter clamps,
+two-frame traversal and destruction.
+
+`Cesium3DTilesVoxelProvider` validates the tileset, loads embedded or external
+metadata schemas, derives box/region/cylinder shape transforms and bounds,
+copies attribute statistics, and configures implicit tiling/subtree access.
+`from_url`/`from_json` are complete; `request_data` performs subtree/availability
+checks, but glTF voxel attribute decoding for tile content is still missing, so
+the module is marked partial.

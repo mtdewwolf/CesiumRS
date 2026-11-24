@@ -10,7 +10,9 @@ pub struct VoxelRequest {
     pub tile_z: u32,
     pub keyframe: u32,
 }
-pub type VoxelFuture<'a> = Pin<Box<dyn Future<Output = Result<VoxelContent, RuntimeError>> + 'a>>;
+/// Provider requests are owned futures so tessellation and megatexture
+/// allocation can retain them across frames.
+pub type VoxelFuture = Pin<Box<dyn Future<Output = Result<VoxelContent, RuntimeError>> + 'static>>;
 pub trait VoxelProvider {
     fn global_transform(&self) -> &Matrix4;
     fn shape_transform(&self) -> &Matrix4;
@@ -29,5 +31,8 @@ pub trait VoxelProvider {
     fn available_levels(&self) -> Option<u32>;
     fn keyframe_count(&self) -> Option<u32>;
     fn time_interval_collection(&self) -> Option<&TimeIntervalCollection<u32>>;
-    fn request_data(&mut self, options: VoxelRequest) -> Option<VoxelFuture<'_>>;
+    fn metadata_order(&self) -> super::VoxelMetadataOrder {
+        super::VoxelMetadataOrder::YUp
+    }
+    fn request_data(&mut self, options: VoxelRequest) -> Option<VoxelFuture>;
 }
