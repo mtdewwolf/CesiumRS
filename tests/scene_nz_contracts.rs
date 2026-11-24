@@ -390,7 +390,7 @@ impl scene::voxel_provider::VoxelProvider for Voxels {
     fn request_data(
         &mut self,
         request: scene::voxel_provider::VoxelRequest,
-    ) -> Option<scene::voxel_provider::VoxelFuture<'_>> {
+    ) -> Option<scene::voxel_provider::VoxelFuture> {
         if self.defer {
             return None;
         }
