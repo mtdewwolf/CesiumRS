@@ -15,6 +15,7 @@ struct MegatextureNode {
     index: usize,
     next: Option<usize>,
     previous: Option<usize>,
+    occupied: bool,
 }
 
 /// `getPixelDataType`: only float32/float64 and uint8 have a texture type.
@@ -158,6 +159,7 @@ impl<G: Gl> Megatexture<G> {
                 index,
                 next: (index + 1 < maximum_tile_count).then_some(index + 1),
                 previous: index.checked_sub(1),
+                occupied: false,
             })
             .collect();
 
@@ -215,10 +217,10 @@ impl<G: Gl> Megatexture<G> {
     /// `Megatexture#add`: uploads the tile at the head of the empty list.
     pub fn add(&mut self, data: &TypedArray) -> Result<usize> {
         self.ensure_alive()?;
-        if self.is_full() {
+        let Some(index) = self.empty_list else {
             return Err(RuntimeError::new("Trying to add when there are no empty spots"));
-        }
-        let index = self.empty_list.unwrap();
+        };
+        self.write_data_to_texture(index, data)?;
         let next_empty = self.nodes[index].next;
         self.empty_list = next_empty;
         if let Some(next) = self.empty_list {
@@ -229,8 +231,8 @@ impl<G: Gl> Megatexture<G> {
             self.nodes[occupied].previous = Some(index);
         }
         self.nodes[index].previous = None;
+        self.nodes[index].occupied = true;
         self.occupied_list = Some(index);
-        self.write_data_to_texture(index, data)?;
         self.occupied_count += 1;
         Ok(index)
     }
@@ -240,6 +242,9 @@ impl<G: Gl> Megatexture<G> {
         self.ensure_alive()?;
         if index >= self.maximum_tile_count {
             return Err(RuntimeError::new("Megatexture index out of bounds"));
+        }
+        if !self.nodes[index].occupied {
+            return Err(RuntimeError::new("Megatexture slot is not occupied"));
         }
         if let Some(previous) = self.nodes[index].previous {
             self.nodes[previous].next = self.nodes[index].next;
@@ -254,6 +259,7 @@ impl<G: Gl> Megatexture<G> {
             self.nodes[empty].previous = Some(index);
         }
         self.nodes[index].previous = None;
+        self.nodes[index].occupied = false;
         self.empty_list = Some(index);
         self.occupied_count -= 1;
         Ok(())
@@ -265,6 +271,23 @@ impl<G: Gl> Megatexture<G> {
 
     pub fn is_destroyed(&self) -> bool {
         self.destroyed
+    }
+
+    fn serialize_tile_data(&self, tile_data: &TypedArray) -> Vec<u8> {
+        match tile_data {
+            // `pixel_datatype` allocates a 32-bit float texture for Float64 properties,
+            // so downcast Float64 values to Float32 before uploading.
+            TypedArray::Float64(values)
+                if matches!(self.component_type, MetadataComponentType::Float32 | MetadataComponentType::Float64) =>
+            {
+                let mut bytes = Vec::with_capacity(values.len() * 4);
+                for &value in values {
+                    bytes.extend_from_slice(&(value as f32).to_le_bytes());
+                }
+                bytes
+            }
+            _ => tile_data.to_le_bytes(),
+        }
     }
 
     /// `Megatexture#writeDataToTexture`: copies one tile's metadata into the
@@ -287,7 +310,7 @@ impl<G: Gl> Megatexture<G> {
             height: self.voxel_count_per_tile.y as u32,
             depth: self.voxel_count_per_tile.z as u32,
         };
-        self.texture.copy_from(region, &tile_data.to_le_bytes())
+        self.texture.copy_from(region, &self.serialize_tile_data(tile_data))
     }
 
     /// Occupied tile indices, most recently added first.

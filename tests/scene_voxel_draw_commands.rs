@@ -219,3 +219,33 @@ fn voxel_property_functions_are_present_in_the_shader() {
     assert!(source.contains("metadataStatistics.density.min = 0.0;"));
     assert!(source.contains("properties.density = texture(u_megatextureTextures[0], texcoord).r;"));
 }
+
+#[test]
+fn vec2_voxel_property_samples_rg_channels() {
+    let shape = shape_for("BOX");
+    let mut resources = VoxelRenderResources::new(VoxelRenderResourcesOptions {
+        custom_fragment_shader_text: None,
+        custom_uniforms: &[],
+        uniform_names: &[],
+        clipping_planes: None,
+        shape: shape.as_ref(),
+        shape_type: VoxelShapeType::Box,
+        metadata_order: VoxelMetadataOrder::YUp,
+        depth_test: true,
+        padding_before: Cartesian3::ZERO,
+        padding_after: Cartesian3::ZERO,
+        use_log_depth: false,
+        sample_count: 1,
+    });
+    let info = VoxelPropertyInfo {
+        names: vec!["uv".into()],
+        types: vec![MetadataType::Vec2],
+        component_types: vec![MetadataComponentType::Float32],
+        minimum_values: None,
+        maximum_values: None,
+    };
+    process_voxel_properties(&mut resources, &info).unwrap();
+    let (_, fragment) = resources.sources();
+    let source = fragment.sources.join("\n");
+    assert!(source.contains("properties.uv = texture(u_megatextureTextures[0], texcoord).rg;"));
+}

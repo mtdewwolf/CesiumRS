@@ -113,6 +113,9 @@ impl<G: Gl> GlobeDepth<G> {
         self.initialized = true;
         Ok(())
     }
+    pub fn set_clear_globe_depth(&mut self, clear_globe_depth: bool) {
+        self.clear_globe_depth = clear_globe_depth;
+    }
     pub fn prepare_color_textures(&self, blit_stencil: bool) -> Result<()> {
         alive(self.destroyed)?;
         if !self.picking && self.num_samples > 1 {

@@ -476,8 +476,14 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
         self.globe_opaque_classification = frame.globe_translucency_state.as_ref()
             .and_then(|resource| resource.get::<super::GlobeTranslucencyState>())
             .is_none_or(|state| !state.back_face_translucent || state.rectangle != crate::core::Rectangle::MAX_VALUE);
-        if let Some(resources) = self.view_resources.as_ref().filter(|_| self.globe_classification) {
-            resources.borrow().globe_translucency_framebuffer.clear_classification(&self.context, &self.pass_state)?;
+        if let Some(resources) = &self.view_resources {
+            let mut resources = resources.borrow_mut();
+            if let Some(globe) = &mut resources.globe_depth {
+                globe.set_clear_globe_depth(frame.clear_globe_depth && !frame.passes.depth);
+            }
+            if self.globe_classification {
+                resources.globe_translucency_framebuffer.clear_classification(&self.context, &self.pass_state)?;
+            }
         }
         self.translucent_depth_commands.clear();
         self.classification_commands.clear();
@@ -578,10 +584,11 @@ impl<G: Gl + 'static> SceneBackend for RendererSceneBackend<G> {
         }
         Ok(())
     }
-    fn update_tileset_depth(&mut self, _frame: &FrameState) -> Result<()> {
+    fn update_tileset_depth(&mut self, frame: &FrameState) -> Result<()> {
         if self.using_globe_depth {
             if let Some(resources) = &self.view_resources {
                 if let Some(globe) = &mut resources.borrow_mut().globe_depth {
+                    globe.set_clear_globe_depth(frame.clear_globe_depth && !frame.passes.depth);
                     globe.prepare_color_textures(false)?;
                     let depth = globe.depth_stencil_texture().cloned();
                     globe.execute_update_depth(&self.context, &self.pass_state, depth)?;
@@ -1919,7 +1926,10 @@ impl<B: SceneBackend> Scene<B> {
                 {
                     self.execute_pass(pass, index, opaque_near, far)?;
                 }
-                if pass == Pass::TerrainClassification && self.frame_state.clear_globe_depth {
+                if pass == Pass::TerrainClassification
+                    && self.frame_state.clear_globe_depth
+                    && !self.frame_state.passes.depth
+                {
                     self.backend.clear(self.background_color, Some(1.), None)?;
                     if let Some(plane) = &self.frame_state.globe_depth_plane {
                         let submission = SceneSubmission {

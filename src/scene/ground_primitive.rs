@@ -112,7 +112,9 @@ impl<G: Gl + 'static> GroundPrimitive<G> {
 
     pub fn set_appearance(&mut self, appearance: Box<dyn super::Appearance>) {
         self.appearance_present = true;
-        if let Some(inner) = &mut self.inner {
+        if let Some(options) = &mut self.pending {
+            options.primitive.appearance = Some(appearance);
+        } else if let Some(inner) = &mut self.inner {
             inner.set_appearance(appearance);
         }
     }
@@ -145,15 +147,15 @@ impl<G: Gl + 'static> GroundPrimitive<G> {
     }
 
     fn initialize(&mut self, frame: &FrameState) -> Result<(), RuntimeError> {
-        let mut options = self.pending.take().expect("pending ground options");
         if !ApproximateTerrainHeights::bundled().initialized() {
-            if options.primitive.asynchronous == Some(false) {
+            if self.pending.as_ref().is_some_and(|options| options.primitive.asynchronous == Some(false)) {
                 return Err(RuntimeError::new(
                     "For synchronous GroundPrimitives, you must call GroundPrimitive.initializeTerrainHeights() and wait for the returned promise to resolve.",
                 ));
             }
             return Ok(());
         }
+        let mut options = self.pending.take().expect("pending ground options");
         if options.primitive.appearance.is_none() && self.appearance_present {
             // Preserve a caller-provided empty marker; nothing to install.
         }
@@ -379,4 +381,29 @@ pub(crate) fn prepare_ground(
     options.model_matrix = Some(Matrix4::IDENTITY);
     options.cull = Some(true);
     Ok(GroundBounds { heights: [minimum, maximum], spheres, spheres_2d })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::renderer::GlValue;
+
+    struct DummyGl;
+    impl Gl for DummyGl {
+        type Object = u32;
+        fn drawing_buffer_size(&self) -> Result<[u32; 2], RuntimeError> {
+            Ok([1, 1])
+        }
+        fn invoke(&self, _: &str, _: &[GlValue<u32>]) -> Result<GlValue<u32>, RuntimeError> {
+            Ok(GlValue::Null)
+        }
+    }
+
+    #[test]
+    fn set_appearance_before_update_updates_pending_options() {
+        let mut primitive = GroundPrimitive::<DummyGl>::default();
+        assert!(primitive.pending.as_ref().unwrap().primitive.appearance.is_none());
+        primitive.set_appearance(Box::new(super::super::PerInstanceColorAppearance::default()));
+        assert!(primitive.pending.as_ref().unwrap().primitive.appearance.is_some());
+    }
 }

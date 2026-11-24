@@ -531,3 +531,79 @@ fn scene_routes_translucent_globe_depth_and_terrain_classification() {
     assert!(context.host().count("drawElements") > 0);
     scene.destroy().unwrap();
 }
+
+struct TilesetCommandStub;
+
+impl ScenePrimitive for TilesetCommandStub {
+    fn pre_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+    fn post_passes_update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+    fn update_for_pass(&mut self, _: &mut FrameState, _: Cesium3DTilePass) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+    fn update(&mut self, frame: &mut FrameState) -> Result<(), RuntimeError> {
+        let mut command = SceneCommand::new("tileset-stub", Pass::Cesium3DTile, Rc::new(|_| Ok(())));
+        command.metadata.bounding_volume = Some(BoundingSphere::new(Cartesian3::ZERO, Ellipsoid::WGS84.maximum_radius));
+        command.metadata.cull = false;
+        frame.command_list.push(command);
+        Ok(())
+    }
+    fn destroy(&mut self) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+}
+
+#[test]
+fn scene_propagates_clear_globe_depth_to_tileset_merge_and_viewport_origin_in_translucency() {
+    let context = Context::new_webgl2(RecordingGl { texture_units: 8, ..Default::default() });
+    let mut scene = Scene::new(
+        RendererSceneBackend::new(context.clone()),
+        CameraOptions::new(64.0, 64.0),
+        SceneOptions { order_independent_translucency: false, logarithmic_depth_buffer: false, ..Default::default() },
+        epoch(),
+    )
+    .unwrap();
+    scene.rethrow_render_errors = true;
+    scene.fog.enabled = false;
+    scene.camera.position = Cartesian3::new(0.0, -25_000_000.0, 0.0);
+    scene.camera.direction = Cartesian3::UNIT_Y;
+    scene.camera.up = Cartesian3::UNIT_Z;
+    scene.camera.right = Cartesian3::UNIT_X;
+
+    let globe = Globe::new(&context, GlobeOptions::default());
+    assert!(!globe.depth_test_against_terrain);
+    scene.globe = Some(Box::new(globe));
+    scene.primitives.push(Box::new(TilesetCommandStub));
+    for _ in 0..3 {
+        scene.render(epoch()).unwrap();
+    }
+
+    // With depth_test_against_terrain = false and a Cesium3DTile pass, GlobeDepth must
+    // take the stencil-masked merge path (stencilFunc with EQUAL, 0x80, 0x80) instead of
+    // overwriting packed terrain depth via the unmasked full-copy shortcut.
+    let calls = context.host().calls.borrow();
+    assert!(calls.iter().any(|(name, args)| {
+        name == "stencilFunc"
+            && matches!(
+                args.as_slice(),
+                [GlValue::Number(func), GlValue::Number(ref_val), GlValue::Number(mask)]
+                    if *func as u32 == gl::EQUAL && *ref_val as u32 == 0x80 && *mask as u32 == 0x80
+            )
+    }));
+    drop(calls);
+
+    let derived = GlobeTranslucencyCommand::TranslucentFront.shader(
+        cesium_rs::renderer::ShaderProgramOptions {
+            vertex_shader_source: cesium_rs::renderer::ShaderSource::new("void main() {}"),
+            fragment_shader_source: cesium_rs::renderer::ShaderSource::new("void main() { out_FragColor = vec4(1.0); }"),
+            attribute_locations: Default::default(),
+        },
+        true,
+    );
+    let fs = derived.fragment_shader_source.sources.join("\n");
+    assert!(fs.contains("(gl_FragCoord.xy - czm_viewport.xy) / czm_viewport.zw"));
+    scene.destroy().unwrap();
+}

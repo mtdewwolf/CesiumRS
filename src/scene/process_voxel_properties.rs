@@ -33,7 +33,7 @@ pub fn glsl_type(metadata_type: MetadataType) -> &'static str {
 fn glsl_texture_swizzle(metadata_type: MetadataType) -> &'static str {
     match metadata_type {
         MetadataType::Scalar => ".r",
-        MetadataType::Vec2 => ".ra",
+        MetadataType::Vec2 => ".rg",
         MetadataType::Vec3 => ".rgb",
         MetadataType::Vec4 => "",
         _ => "",

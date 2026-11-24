@@ -103,7 +103,7 @@ const TRANSLUCENT_MAIN: &str = r#"
 uniform sampler2D u_classificationTexture;
 #endif
 void main() {
-    vec2 st = gl_FragCoord.xy / czm_viewport.zw;
+    vec2 st = (gl_FragCoord.xy - czm_viewport.xy) / czm_viewport.zw;
 #ifdef MANUAL_DEPTH_TEST
     float depth = czm_unpackDepth(texture(czm_globeDepthTexture, st));
     if (depth != 0.0) {
@@ -123,7 +123,7 @@ void main() {
 const PICK_MAIN: &str = r#"
 uniform sampler2D u_classificationTexture;
 void main() {
-    vec4 c = texture(u_classificationTexture, gl_FragCoord.xy / czm_viewport.zw);
+    vec4 c = texture(u_classificationTexture, (gl_FragCoord.xy - czm_viewport.xy) / czm_viewport.zw);
     if (c == vec4(0.0)) { discard; }
     out_FragColor = c;
 }
