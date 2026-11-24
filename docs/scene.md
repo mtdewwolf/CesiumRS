@@ -1357,11 +1357,20 @@ and adds seven native concurrency, ownership and reentrancy checks. The custom
 ellipsoid case deliberately uses an independent map projection, so picking uses
 the scene's configured ellipsoid rather than the projection's ellipsoid.
 
-## Megatexture atlas sizing
+## Globe, terrain rendering, elevation bands, and megatexture
 
-`scene::megatexture::get_3d_texture_dimension` computes atlas dimensions from
-positive tile dimensions, memory capacity, requested tile count, and the host's
-3D texture limit. `generate-scene-megatexture.mjs` records pinned CesiumJS
-results for the replay suite. Texture allocation, uploads, slot management,
-sampling, and destruction are not implemented. The Rust replay has not run on
-this host because a C linker is unavailable.
+`scene::globe`, `scene::globe_surface_tile_provider`,
+`scene::globe_surface_shader_set`, `scene::globe_translucency_state`, and
+`scene::terrain_fill_mesh` implement the globe surface quadtree provider,
+cached GLSL shader variants, translucency state/commands, neighbor-stitched
+fill meshes, and globe lifecycle/picking, covered by `tests/scene_globe_terrain.rs`.
+
+`scene::create_elevation_band_material` ports CesiumJS's layered elevation band
+sweep, color blending, float/packed-RGBA height texture synthesis, and material
+construction, replayed against pinned CesiumJS captures in
+`tests/scene_elevation_band.rs`.
+
+`scene::megatexture` implements `get_3d_texture_dimension` (validated against
+pinned CesiumJS captures in `tests/scene_megatexture.rs`) together with 3D
+texture allocation, occupied/empty slot lists, 1D-to-3D tile uploads, sampling
+updates, and destruction.

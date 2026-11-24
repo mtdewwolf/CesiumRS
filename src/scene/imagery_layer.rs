@@ -376,6 +376,10 @@ impl ImageryLayer {
 
     /// Attaches this layer's renderer pipeline. Keep the typed pipeline handle
     /// to drain commands into the renderer's compute pass each frame.
+    pub(crate) fn has_texture_host(&self) -> bool {
+        self.texture_host.is_some()
+    }
+
     pub fn set_texture_host(&mut self, host: Rc<dyn super::ImageryTextureHost>) {
         self.cancel_reprojections();
         self.texture_host = Some(host);
@@ -620,6 +624,10 @@ impl ImageryLayer {
     /// or `Failed` on error (handling error events and retries). A no-op waker
     /// is used; callers must poll again on later frames while the request is pending.
     pub fn poll_imagery(&mut self, imagery_cell: &Rc<RefCell<Imagery>>) -> bool {
+        self.poll_imagery_with_waker(imagery_cell, Waker::noop())
+    }
+
+    fn poll_imagery_with_waker(&mut self, imagery_cell: &Rc<RefCell<Imagery>>, waker: &Waker) -> bool {
         let mut future = {
             let mut img = imagery_cell.borrow_mut();
             if img.state != ImageryState::Transitioning {
@@ -636,7 +644,6 @@ impl ImageryLayer {
             (img.x, img.y, img.level)
         };
 
-        let waker = Waker::noop();
         let mut cx = Context::from_waker(waker);
         match future.as_mut().poll(&mut cx) {
             Poll::Pending => {
@@ -706,19 +713,27 @@ impl ImageryLayer {
     pub fn process_imagery_state_machine(
         &mut self,
         imagery_cell: &Rc<RefCell<Imagery>>,
-        _frame_state: Option<&FrameState>,
+        frame_state: Option<&FrameState>,
         need_geographic_projection: bool,
         skip_loading: bool,
     ) {
         let state = imagery_cell.borrow().state;
+        let render_request = frame_state.and_then(|frame| frame.render_request.as_ref());
+        let waker = render_request.map(super::SceneRenderRequest::waker);
+        let waker = waker.as_ref().unwrap_or(Waker::noop());
 
         // 1. UNLOADED: initiate request
         if state == ImageryState::Unloaded && !skip_loading {
             self.request_imagery(imagery_cell);
-            self.poll_imagery(imagery_cell);
+            self.poll_imagery_with_waker(imagery_cell, waker);
+            if imagery_cell.borrow().state == ImageryState::Unloaded {
+                if let Some(request) = render_request {
+                    request.request_render();
+                }
+            }
         } else if state == ImageryState::Transitioning {
             // 2. TRANSITIONING: poll in-flight request
-            self.poll_imagery(imagery_cell);
+            self.poll_imagery_with_waker(imagery_cell, waker);
         }
 
         let state = imagery_cell.borrow().state;
@@ -795,6 +810,8 @@ impl ImageryLayer {
             if let Some(host) = &self.texture_host {
                 if let Err(error) = host.reproject(imagery_cell, need_geographic_projection, self.texture_settings()) {
                     self.report_texture_error(imagery_cell, error);
+                } else if let Some(request) = render_request {
+                    request.request_render();
                 }
             } else if need_geographic_projection && !is_geographic {
                 // Wait until a renderer pipeline is attached.

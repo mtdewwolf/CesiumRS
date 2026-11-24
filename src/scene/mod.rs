@@ -799,3 +799,28 @@ pub use imagery_texture_pipeline::{ImageryPixels, ImageryTextureHost, ImageryTex
 
 pub mod globe_surface_tile;
 pub use globe_surface_tile::{GlobeSurfaceTile, SurfaceTerrainData};
+
+pub mod globe_surface_shader_set;
+pub use globe_surface_shader_set::{
+    GlobeClippingPlanesShader, GlobeClippingPolygonsShader, GlobeShaderFeature, GlobeShaderFeatures,
+    GlobeSurfaceShaderOptions, GlobeSurfaceShaderSet,
+};
+pub mod globe_translucency_state;
+pub use globe_translucency_state::{GlobeTranslucencyCommand, GlobeTranslucencyFrame, GlobeTranslucencyState};
+pub mod terrain_fill_mesh;
+pub use terrain_fill_mesh::{TerrainFillMesh, TerrainFillOptions};
+
+pub mod globe_surface_tile_provider;
+pub use globe_surface_tile_provider::{
+    GlobeSurfaceOptions, GlobeSurfaceTileProvider, GlobeTerrainProviderAdapter, GlobeTerrainSource,
+};
+
+pub mod globe;
+pub use globe::{Globe, GlobeOptions, OceanNormalMapFuture, OceanNormalMapLoader, DEFAULT_OCEAN_NORMAL_MAP_URL};
+
+pub mod create_elevation_band_material;
+pub use create_elevation_band_material::{
+    create_elevation_band_material, elevation_band_texture_data, ElevationBandEntry, ElevationBandLayer,
+    ElevationBandTextureData, MAXIMUM_HEIGHT as ELEVATION_BAND_MAXIMUM_HEIGHT,
+    MINIMUM_HEIGHT as ELEVATION_BAND_MINIMUM_HEIGHT,
+};

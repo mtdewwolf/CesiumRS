@@ -1028,10 +1028,7 @@ impl<P: QuadtreeTileProvider> QuadtreePrimitive<P> {
     }
 
     fn create_render_commands_for_selected_tiles(&mut self, frame_state: &mut FrameState) {
-        let tiles = self.tiles_to_render.clone();
-        for tile in &tiles {
-            self.tile_provider.show_tile_this_frame(tile, frame_state);
-        }
+        self.tile_provider.render_tiles(&self.tiles_to_render, frame_state);
     }
 
     /// Finds a tile in a level-zero tile slice hierarchy by coordinate `(level, x, y)`.
@@ -1435,7 +1432,7 @@ impl<P: QuadtreeTileProvider> QuadtreePrimitive<P> {
         deepest_height
     }
 
-    fn camera_from_frame_state(frame_state: &FrameState) -> Camera {
+    pub(crate) fn camera_from_frame_state(frame_state: &FrameState) -> Camera {
         let mut opts = CameraOptions::new(
             frame_state.drawing_buffer_width.max(1) as f64,
             frame_state.drawing_buffer_height.max(1) as f64,
@@ -1465,6 +1462,16 @@ impl<P: QuadtreeTileProvider> QuadtreePrimitive<P> {
             }
         };
         camera
+    }
+
+    pub(crate) fn release_tiles(&mut self) {
+        self.invalidate_all_tiles_now();
+        self.tiles_to_render.clear();
+        self.tiles_rendered_this_frame.clear();
+        self.tile_to_update_heights.clear();
+        self.active_height_callbacks.clear();
+        self.add_height_callbacks.clear();
+        self.remove_height_callbacks.clear();
     }
 
     /// Destroys the quadtree primitive and associated tile provider resources.
