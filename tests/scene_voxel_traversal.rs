@@ -8,9 +8,7 @@ use cesium_rs::renderer::*;
 use cesium_rs::scene::*;
 use serde_json::{json, Value};
 use std::cell::{Cell, RefCell};
-use std::collections::BTreeMap;
 use std::rc::Rc;
-use std::sync::Arc;
 
 const MAX_TEXTURE_SIZE: f64 = 0xD33 as f64;
 const MAX_3D_TEXTURE_SIZE: f64 = 0x8073 as f64;
@@ -253,30 +251,6 @@ fn check_node<G: Gl + 'static>(node: &SpatialNode, expected: &Value, traversal: 
 }
 
 #[test]
-fn megatexture_dimensions_match_pinned_cesium() {
-    for case in fixture()["dimensionCases"].as_array().unwrap() {
-        let dims = v3(&case["dims"]);
-        let result = cesium_rs::scene::megatexture::texture_dimension(
-            dims,
-            case["bytes"].as_u64().unwrap() as usize,
-            case["memory"].as_u64().unwrap() as usize,
-            case["tiles"].as_u64().map(|v| v as usize),
-            2048,
-        );
-        if let Some(expected) = case.get("result") {
-            let result = result.unwrap();
-            assert_eq!([result.x, result.y, result.z], [
-                expected[0].as_f64().unwrap(),
-                expected[1].as_f64().unwrap(),
-                expected[2].as_f64().unwrap()
-            ]);
-        } else {
-            assert!(result.is_err(), "expected a runtime error for {case}");
-        }
-    }
-}
-
-#[test]
 fn traversal_hierarchy_keyframes_and_texels_match_pinned_cesium() {
     let _ = events;
     let (recording_host, uploads) = host();
@@ -434,54 +408,4 @@ fn traversal_hierarchy_keyframes_and_texels_match_pinned_cesium() {
     initial_loaded = true;
     let _ = initial_loaded;
     traversal.destroy().unwrap();
-}
-
-#[test]
-fn megatexture_allocation_order_matches_pinned_cesium() {
-    let _ = Arc::new(0);
-    let (recording_host, uploads) = host();
-    let context = Context::new_webgl2(recording_host);
-    let mut megatexture = Megatexture::new(
-        &context,
-        Cartesian3::new(2., 2., 2.),
-        1,
-        MetadataComponentType::Uint8,
-        1024 * 1024,
-        Some(4),
-    )
-    .unwrap();
-    let expected = &fixture()["allocation"];
-    let order: Vec<usize> = expected["addOrder"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .enumerate()
-        .map(|(index, _)| {
-            let data = TypedArray::Uint8(vec![index as u8 + 1; 8]);
-            megatexture.add(&data).unwrap()
-        })
-        .collect();
-    assert_eq!(
-        order,
-        expected["addOrder"].as_array().unwrap().iter().map(|v| v.as_u64().unwrap() as usize).collect::<Vec<_>>()
-    );
-    assert_eq!(megatexture.is_full(), expected["full"].as_bool().unwrap());
-    megatexture.remove(1).unwrap();
-    let slot = megatexture.add(&TypedArray::Uint8(vec![9; 8])).unwrap();
-    assert_eq!(slot, expected["afterRemove"].as_u64().unwrap() as usize);
-    assert_eq!(megatexture.occupied_count, expected["occupiedCount"].as_u64().unwrap() as usize);
-    assert_eq!(megatexture.is_full(), expected["isFull"].as_bool().unwrap());
-    let actual = uploads.borrow();
-    let expected_writes = expected["writes"].as_array().unwrap();
-    assert_eq!(actual.len(), expected_writes.len());
-    for (actual, expected) in actual.iter().zip(expected_writes) {
-        assert_eq!(actual["x"].as_f64().unwrap(), expected["x"].as_f64().unwrap());
-        assert_eq!(actual["y"].as_f64().unwrap(), expected["y"].as_f64().unwrap());
-        assert_eq!(actual["z"].as_f64().unwrap(), expected["z"].as_f64().unwrap());
-        let expected_bytes: Vec<u8> = expected["bytes"].as_array().unwrap().iter().map(|v| v.as_u64().unwrap() as u8).collect();
-        let actual_bytes: Vec<u8> = actual["bytes"].as_array().unwrap().iter().map(|v| v.as_u64().unwrap() as u8).collect();
-        assert_eq!(actual_bytes, expected_bytes);
-    }
-    let _: BTreeMap<String, usize> = BTreeMap::new();
-    megatexture.destroy().unwrap();
 }

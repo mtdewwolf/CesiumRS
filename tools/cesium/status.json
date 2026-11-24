@@ -6026,11 +6026,6 @@
     "rust": "data_sources::get_element",
     "note": "Resolves an element ID with a host callback or returns a supplied element. CesiumJS replay in tests/data_sources_visualizers.rs."
   },
-  "Scene/Megatexture": {
-    "status": "ported",
-    "rust": "scene::megatexture",
-    "note": "3D tile allocation lists, texture-memory sizing, add/remove and tile-offset uploads; validated against pinned CesiumJS scene-voxel-traversal fixtures in tests/scene_voxel_traversal.rs."
-  },
   "Scene/VoxelTraversal": {
     "status": "ported",
     "rust": "scene::voxel_traversal",

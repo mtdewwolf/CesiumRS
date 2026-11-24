@@ -1385,10 +1385,11 @@ derived command is not possible with the owned execution closure, so its
 `update` currently prepares resources without hijacking draws; `TimeDynamicPointCloud`
 therefore does not yet apply EDL to rendered frames.
 
-`Megatexture<G>` sizes a 3D texture from tile dimensions, component type,
-channel count, memory budget and the maximum 3D texture size, packs tile data
-at 1D-to-3D tile offsets, and maintains Cesium's occupied/empty allocation
-lists. `VoxelTraversal<G>` mirrors the upstream hierarchy: bounded keyframe
+`VoxelTraversal<G>` also contains the private megatexture allocation helper
+that sizes a 3D texture from tile dimensions, component type, channel count,
+memory budget and the maximum 3D texture size, packs tile data at 1D-to-3D
+tile offsets, and maintains Cesium's occupied/empty allocation lists. It
+mirrors the upstream hierarchy: bounded keyframe
 priority queue, provider requests retained as owned futures, megatexture
 replacement of the lowest-priority node, screen-space-error-driven subdivision,
 temporal ancestor selection, octree/leaf texel packing and statistics/events.

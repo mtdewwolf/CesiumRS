@@ -1,7 +1,7 @@
 //! CesiumJS `VoxelTraversal`: tile selection, provider requests, megatexture
 //! allocation and the GPU octree texture generation for a voxel primitive.
 use super::{
-    megatexture::Megatexture,
+    voxel_megatexture::Megatexture,
     spatial_node::{KeyframeLoadState, SpatialNode},
     voxel_provider::{VoxelFuture, VoxelProvider, VoxelRequest},
     voxel_shape::VoxelShape,

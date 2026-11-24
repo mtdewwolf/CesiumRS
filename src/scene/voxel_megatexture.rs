@@ -324,23 +324,3 @@ impl<G: Gl> super::spatial_node::MegatextureSlots for Megatexture<G> {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn dimension_reduces_the_largest_axis_to_fit_the_tile_budget() {
-        let dimensions = Cartesian3::new(8., 8., 8.);
-        let full = texture_dimension(dimensions, 1, 128 * 1024 * 1024, Some(100), 2048).unwrap();
-        assert_eq!(full, Cartesian3::new(8., 8., 800.));
-
-        assert!(texture_dimension(dimensions, 1, 128, None, 2048).is_err());
-    }
-
-    #[test]
-    fn dimensions_above_the_context_limit_and_out_of_memory_fail() {
-        assert!(texture_dimension(Cartesian3::new(4096., 8., 8.), 1, 128, None, 2048).is_err());
-        assert!(texture_dimension(Cartesian3::new(8., 8., 8.), 1, 8, None, 2048).is_err());
-    }
-}

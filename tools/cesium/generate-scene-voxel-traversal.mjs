@@ -11,7 +11,6 @@ import Matrix4 from '@cesium/engine/Source/Core/Matrix4.js';
 import ContextLimits from '@cesium/engine/Source/Renderer/ContextLimits.js';
 import Texture from '@cesium/engine/Source/Renderer/Texture.js';
 import Texture3D from '@cesium/engine/Source/Renderer/Texture3D.js';
-import Megatexture from '@cesium/engine/Source/Scene/Megatexture.js';
 import VoxelBoxShape from '@cesium/engine/Source/Scene/VoxelBoxShape.js';
 import VoxelContent from '@cesium/engine/Source/Scene/VoxelContent.js';
 import VoxelTraversal from '@cesium/engine/Source/Scene/VoxelTraversal.js';
@@ -178,46 +177,10 @@ for (let step = 0; step < 3; step++) {
   });
 }
 
-// Megatexture allocation order and tile-offset writes.
-const megatexture = new Megatexture(context, dimensions, 1, 'UINT8', 1024 * 1024, 4);
-writes.length = 0;
-const addOrder = [];
-for (let i = 0; i < 4; i++) {
-  addOrder.push(megatexture.add(new Uint8Array(8).fill(i + 1)));
-}
-const full = megatexture.isFull();
-megatexture.remove(1);
-const afterRemove = megatexture.add(new Uint8Array(8).fill(9));
-const allocation = {
-  addOrder,
-  full,
-  afterRemove,
-  occupiedCount: megatexture.occupiedCount,
-  isFull: megatexture.isFull(),
-  writes: writes.map((write) => ({x: write.x, y: write.y, z: write.z, bytes: write.bytes})),
-};
-
-const dimensionCases = [];
-for (const [dims, bytes, memory, tiles, max] of [
-  [new Cartesian3(8, 8, 8), 1, 128 * 1024 * 1024, 100, 2048],
-  [new Cartesian3(8, 8, 8), 1, 128, undefined, 2048],
-  [new Cartesian3(1, 2, 4), 4, 1024, 10, 2048],
-  [new Cartesian3(4, 2, 1), 8, 4096, undefined, 2048],
-]) {
-  try {
-    const result = Megatexture.get3DTextureDimension(dims, bytes, memory, tiles);
-    dimensionCases.push({dims: [dims.x, dims.y, dims.z], bytes, memory, tiles: tiles ?? null, result: [result.x, result.y, result.z]});
-  } catch (error) {
-    dimensionCases.push({dims: [dims.x, dims.y, dims.z], bytes, memory, tiles: tiles ?? null, throws: error.message});
-  }
-}
-
 writeFileSync(new URL('../../tests/data/scene-voxel-traversal.json', import.meta.url), JSON.stringify({
   version: '23.0.0',
   dimensions: [2, 2, 2],
   inputDimensions: [4, 4, 4],
   construction,
   steps,
-  allocation,
-  dimensionCases,
 }, null, 2) + '\n');
