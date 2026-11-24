@@ -4474,7 +4474,7 @@
   "Scene/ConeEmitter": {
     "status": "ported",
     "rust": "scene::particle_emitter",
-    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30\u00b0 default. Emitted particles match bit for bit."
+    "note": "Random directions within the cone (tan of the half angle) from the origin; angle getter and setter, 30° default. Emitted particles match bit for bit."
   },
   "Scene/SphereEmitter": {
     "status": "ported",
@@ -4594,7 +4594,7 @@
   "Scene/Model/Extensions/Gpm/GltfMeshPrimitiveGpmLoader": {
     "status": "ported",
     "rust": "scene::model::extensions::gpm::gltf_mesh_primitive_gpm_loader",
-    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale \u00d7 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
+    "note": "PPE texture leases deduplicated by index, MeshPrimitiveGpmLocal, and the property-texture StructuralMetadata with one normalized UINT8 class per texture (offset, scale × 255, min/max); schemas cached per thread by their class JSON, with upstream's PPE_TEXTURE_SCHEMA_n ids. 7 pinned lifecycles in tests/scene_metadata_loaders.rs."
   },
   "DataSources/CompositeEntityCollection": {
     "status": "ported",
@@ -6075,5 +6075,65 @@
     "status": "implemented",
     "rust": "scene::create_billboard_point_callback",
     "note": "Callback contract, WebIDL canvas size truncation/modulo, drawing-command order, outline disk, destination-out punch and CSS colour compositing are ported and compared with a command-recording canvas in tests/scene_vector_gaussian.rs. Native RGBA8 output uses 8x8 supersampled coverage; browser Canvas antialiasing is implementation-defined, so only fully covered/transparent pixels are asserted."
+  },
+  "Scene/ClassificationPrimitive": {
+    "status": "implemented",
+    "rust": "scene::classification_primitive",
+    "note": "Stencil-depth, color, pick and ignore-show passes for terrain and 3D Tiles; per-instance color validation, pick offsets, ShadowVolumeAppearance color/pick shaders, ground extents and command queueing. Pinned render states and validation messages compare exactly, and a BoxGeometry case validates command passes; GPU rendering is not pixel-validated."
+  },
+  "Scene/CubeMapPanorama": {
+    "status": "implemented",
+    "rust": "scene::cube_map_panorama",
+    "note": "Six-face URL/image sources, transform, credit, deferred async error, panorama command-list insertion, HDR shader defines, unit-cube VA and evaluate order. Pinned constructor cases compare exactly; URL image loading uses the host ResourceClient."
+  },
+  "Scene/DynamicEnvironmentMapManager": {
+    "status": "implemented",
+    "rust": "scene::dynamic_environment_map_manager",
+    "note": "Constructor defaults, mipmap sizing, position epsilon, dirty-flag state machine, reset, owner assignment, command budgeting, radiance/convolution/irradiance compute commands and SH readback. Pinned default/custom option and update-support cases compare exactly; compute execution and IBL coefficients need a GPU harness."
+  },
+  "Scene/GoogleStreetViewCubeMapPanoramaProvider": {
+    "status": "implemented",
+    "rust": "scene::google_street_view_cube_map_panorama_provider",
+    "note": "API-key fallback, base/metadata resources, tile size, six headed/pitched face URLs with optional signature, metadata status errors, nearest-pano fields, north-down-east transform and panorama construction. Pinned URL/transform/metadata/fromUrl-key cases compare exactly; live network loading needs a ResourceClient."
+  },
+  "Scene/GroundPolylinePrimitive": {
+    "status": "implemented",
+    "rust": "scene::ground_polyline_primitive",
+    "note": "GroundPolylineGeometry projection preparation, automatic width attribute, color-appearance validation, terrain/3D Tiles/morph render states and polyline shadow-volume shaders. Pinned render states and validation compare exactly; GPU clamping is not pixel-validated."
+  },
+  "Scene/GroundPrimitive": {
+    "status": "implemented",
+    "rust": "scene::ground_primitive",
+    "note": "Approximate terrain min/max heights and exaggeration, planar/spherical extent attributes, extruded shadow volumes, OBB and 2D bounds, fragment-culling support test and classification delegation. Pinned height, OBB sphere, 2D sphere and shadow-volume bounds compare exactly; full terrain clamping is not pixel-validated."
+  },
+  "Scene/InvertClassification": {
+    "status": "implemented",
+    "rust": "scene::invert_classification",
+    "note": "Unclassified/classified translucent and opaque viewport commands, stencil states, framebuffer managers, MSAA resolve and lifecycle. Pinned translucency-support and lifecycle cases compare exactly; full-scene inversion rendering is not pixel-validated."
+  },
+  "Scene/ShadowMap": {
+    "status": "implemented",
+    "rust": "scene::shadow_map",
+    "note": "Constructor validation, biases, render states, framebuffer layouts, texture offsets, viewport packing and cast/receive shader derivation. Pinned CesiumJS fixtures compare constructor cases and full CPU camera fitting, cascade splits/matrices, light-space uniforms, visibility/darkness and culling planes exactly (three update cases). GPU shadow-map rendering and debug overlays are not pixel-validated."
+  },
+  "Scene/SkyAtmosphere": {
+    "status": "implemented",
+    "rust": "scene::sky_atmosphere",
+    "note": "Constructor defaults, ellipsoid scaling, dynamic-lighting packing, per-fragment/translucent/color-correct define selection, model-matrix orientation and uniform values. Pinned constructor/property cases compare exactly. Update shader compilation and rendering are not pixel-validated."
+  },
+  "Scene/SpecularEnvironmentCubeMap": {
+    "status": "implemented",
+    "rust": "scene::specular_environment_cube_map",
+    "note": "KTX2 URL/lifecycle, support test, deferred error event, mip count and cube/mip upload with Cesium's null-level padding and sampler. Pinned support/lifecycle cases compare exactly; KTX2 decode is host-provided."
+  },
+  "Scene/Sun": {
+    "status": "implemented",
+    "rust": "scene::sun",
+    "note": "Glow-factor clamping, procedural texture sizing/HDR datatype, compute-command regeneration, sun projection and screen-size math, 2D/CV bounding volumes and lifecycle. Pinned constructor/glow cases compare exactly; GPU texture generation is not pixel-validated."
+  },
+  "Scene/SunPostProcess": {
+    "status": "implemented",
+    "rust": "scene::sun_post_process",
+    "note": "Six-stage down-sample/bright-pass/blur/additive-blend chain, texture cache dependencies, sun center/radius and scissor projection, clear/execute/copy. Pinned stage scales, sample modes, uniform sets and shader sources compare exactly; pixel output is not validated."
   }
 }

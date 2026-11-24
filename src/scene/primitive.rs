@@ -309,6 +309,45 @@ impl<G: Gl + 'static> Primitive<G> {
         shader.as_ref().map(|shader| shader.program.as_ref())
     }
 
+    /// The renderer context used by the last upload.
+    pub(crate) fn upload_context(&self) -> Option<&Context<G>> {
+        self.context.as_ref()
+    }
+
+    /// Uploaded vertex arrays, one per combined geometry.
+    pub(crate) fn uploaded_vertex_arrays(&self) -> &[Rc<VertexArray<G>>] {
+        &self.vertex_arrays
+    }
+
+    /// Attribute locations used for shader compilation.
+    pub(crate) fn uploaded_attribute_locations(&self) -> &BTreeMap<String, u32> {
+        &self.attribute_locations
+    }
+
+    pub(crate) fn command_primitive_type(&self) -> PrimitiveType {
+        self.primitive_type
+    }
+
+    /// The batch table's uniform values, for wrapper primitives that build
+    /// their own shaders (classification and ground polylines).
+    pub(crate) fn batch_uniform_values(&self) -> Vec<(String, UniformValue)> {
+        self.batch.as_ref().map_or_else(Vec::new, |batch| batch.table.uniform_values())
+    }
+
+    /// The batch texture sampled by `czm_batchTable_*`.
+    pub(crate) fn batch_texture(&self) -> Option<Rc<dyn SampledTexture<G>>> {
+        self.batch.as_ref().and_then(|batch| batch.table.texture().cloned()).map(|texture| texture as Rc<dyn SampledTexture<G>>)
+    }
+
+    /// Prepends the batch-table shader callback to a vertex shader.
+    pub(crate) fn batch_vertex_shader(&self, source: &str) -> String {
+        self.batch.as_ref().map_or_else(|| source.to_string(), |batch| batch.table.vertex_shader_callback()(source))
+    }
+
+    pub(crate) fn has_batch_attribute(&self, name: &str) -> bool {
+        self.batch.as_ref().is_some_and(|batch| batch.indices.contains_key(name))
+    }
+
     /// Replace a per-vertex pickColor input with the batched instance color.
     pub fn update_pick_color_attribute(source: &str) -> String {
         primitive_shader::update_pick_color_attribute(source)
