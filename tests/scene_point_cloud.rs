@@ -210,3 +210,173 @@ fn point_cloud_resources_and_shaders_match_pinned_cesium() {
         cloud.destroy().unwrap();
     }
 }
+
+fn minimal_pnts(rtc_center: Option<[f64; 3]>) -> Vec<u8> {
+    let mut ft_json = serde_json::json!({
+        "POINTS_LENGTH": 1,
+        "POSITION": { "byteOffset": 0 }
+    });
+    if let Some(rtc) = rtc_center {
+        ft_json["RTC_CENTER"] = serde_json::json!(rtc);
+    }
+    let mut json_bytes = serde_json::to_vec(&ft_json).unwrap();
+    while !(28 + json_bytes.len()).is_multiple_of(8) {
+        json_bytes.push(b' ');
+    }
+    let mut bin_bytes = Vec::new();
+    for coord in [1.0f32, 2.0, 3.0] {
+        bin_bytes.extend_from_slice(&coord.to_le_bytes());
+    }
+    while !bin_bytes.len().is_multiple_of(8) {
+        bin_bytes.push(0);
+    }
+    let total_len = (28 + json_bytes.len() + bin_bytes.len()) as u32;
+    let mut out = Vec::with_capacity(total_len as usize);
+    out.extend_from_slice(b"pnts");
+    out.extend_from_slice(&1u32.to_le_bytes());
+    out.extend_from_slice(&total_len.to_le_bytes());
+    out.extend_from_slice(&(json_bytes.len() as u32).to_le_bytes());
+    out.extend_from_slice(&(bin_bytes.len() as u32).to_le_bytes());
+    out.extend_from_slice(&0u32.to_le_bytes());
+    out.extend_from_slice(&0u32.to_le_bytes());
+    out.extend_from_slice(&json_bytes);
+    out.extend_from_slice(&bin_bytes);
+    out
+}
+
+#[test]
+fn rtc_center_offset_does_not_drift_across_updates() {
+    let context = Context::new_webgl2(Host::default());
+    let bytes = minimal_pnts(Some([10.0, 20.0, 30.0]));
+    let mut cloud = PointCloud::<Host>::new(PointCloudOptions {
+        array_buffer: Arc::new(bytes),
+        ..Default::default()
+    })
+    .unwrap();
+    let base_matrix = Matrix4::from_translation(Cartesian3::new(100.0, 200.0, 300.0));
+    cloud.model_matrix = base_matrix;
+
+    let mut camera = Camera::new(CameraOptions::new(64., 64.));
+    camera.position = Cartesian3::new(0., 0., 10.);
+    let uniform = camera.uniform_camera();
+    let culling = CullingVolume::from_bounding_sphere(&BoundingSphere::new(Cartesian3::ZERO, 100.));
+    let mut frame = FrameState::new(
+        UniformFrame::new(uniform, JulianDate::new(2451545., 0., TimeStandard::Tai)),
+        culling,
+        [64, 64],
+    );
+    frame.context = Some(FrameResource::new(context));
+    frame.passes.render = true;
+
+    cloud.update(&mut frame).unwrap();
+    let expected = base_matrix.multiply_by_translation(Cartesian3::new(10.0, 20.0, 30.0));
+    assert_eq!(cloud.model_matrix, base_matrix);
+    assert_eq!(cloud.computed_model_matrix(), expected);
+    assert_eq!(cloud.draw_command().unwrap().metadata.model_matrix, Some(expected));
+    let first_sphere = cloud.bounding_sphere().unwrap();
+
+    // Repeated updates without changing model_matrix must not re-apply RTC_CENTER.
+    cloud.update(&mut frame).unwrap();
+    cloud.update(&mut frame).unwrap();
+    assert_eq!(cloud.model_matrix, base_matrix);
+    assert_eq!(cloud.computed_model_matrix(), expected);
+    assert_eq!(cloud.draw_command().unwrap().metadata.model_matrix, Some(expected));
+    assert_eq!(cloud.bounding_sphere().unwrap(), first_sphere);
+    cloud.destroy().unwrap();
+}
+
+#[test]
+fn highlight_alpha_change_updates_executed_render_state() {
+    type CallLog = Rc<RefCell<Vec<(String, Vec<f64>)>>>;
+    #[derive(Clone, Default)]
+    struct StateRecordingGl {
+        next: Rc<Cell<u32>>,
+        calls: CallLog,
+    }
+    impl Gl for StateRecordingGl {
+        type Object = u32;
+        fn drawing_buffer_size(&self) -> Result<[u32; 2], RuntimeError> {
+            Ok([64, 64])
+        }
+        fn invoke(&self, name: &str, args: &[GlValue<u32>]) -> Result<GlValue<u32>, RuntimeError> {
+            let nums: Vec<f64> = args
+                .iter()
+                .filter_map(|arg| match arg {
+                    GlValue::Number(v) => Some(*v),
+                    GlValue::Bool(b) => Some(if *b { 1.0 } else { 0.0 }),
+                    _ => None,
+                })
+                .collect();
+            self.calls.borrow_mut().push((name.to_string(), nums));
+            Ok(if name.starts_with("create") {
+                self.next.set(self.next.get() + 1);
+                GlValue::Object(self.next.get())
+            } else {
+                match name {
+                    "getParameter" => match args.first() {
+                        Some(GlValue::Number(v)) if *v == 0x846D as f64 || *v == 0x846E as f64 || *v == 0xD3A as f64 => {
+                            GlValue::Numbers(vec![1., 4096.])
+                        }
+                        _ => GlValue::Number(4096.),
+                    },
+                    "getExtension" => GlValue::Object(0),
+                    "getShaderParameter" | "getProgramParameter" => GlValue::Bool(true),
+                    "checkFramebufferStatus" => GlValue::Number(36053.),
+                    _ => GlValue::Null,
+                }
+            })
+        }
+    }
+
+    let gl = StateRecordingGl::default();
+    let context = Context::new_webgl2(gl.clone());
+    let mut cloud = PointCloud::<StateRecordingGl>::new(PointCloudOptions {
+        array_buffer: Arc::new(minimal_pnts(None)),
+        ..Default::default()
+    })
+    .unwrap();
+
+    let mut camera = Camera::new(CameraOptions::new(64., 64.));
+    camera.position = Cartesian3::new(0., 0., 10.);
+    let uniform = camera.uniform_camera();
+    let culling = CullingVolume::from_bounding_sphere(&BoundingSphere::new(Cartesian3::ZERO, 100.));
+    let mut frame = FrameState::new(
+        UniformFrame::new(uniform, JulianDate::new(2451545., 0., TimeStandard::Tai)),
+        culling,
+        [64, 64],
+    );
+    frame.context = Some(FrameResource::new(context));
+    frame.passes.render = true;
+
+    cloud.update(&mut frame).unwrap();
+    assert_eq!(cloud.draw_command().unwrap().pass, Pass::Opaque);
+
+    // Switching highlight alpha below 1.0 without rebuilding shaders must update both
+    // the command pass and its executed GL render state (blending on, depthMask false).
+    cloud.set_color(Color::new(1.0, 1.0, 1.0, 0.5));
+    cloud.update(&mut frame).unwrap();
+    let command = cloud.draw_command().unwrap().clone();
+    assert_eq!(command.pass, Pass::Translucent);
+    gl.calls.borrow_mut().clear();
+    let submission = SceneSubmission {
+        pass: command.pass,
+        frustum: 0,
+        near: 0.1,
+        far: 1000.0,
+        draw_mode: SceneDrawMode::default(),
+        oit: None,
+        metadata_pick: None,
+        framebuffer: None,
+        viewport: None,
+        scissor_test: None,
+        blending_enabled: None,
+        metadata: command.metadata.clone(),
+        clipping_planes: None,
+        tileset_draw: None,
+    };
+    (command.execute)(submission).unwrap();
+    let calls = gl.calls.borrow();
+    assert!(calls.iter().any(|(name, args)| name == "enable" && args.first() == Some(&(0x0BE2 as f64))));
+    assert!(calls.iter().any(|(name, args)| name == "depthMask" && args.first() == Some(&0.0)));
+    cloud.destroy().unwrap();
+}

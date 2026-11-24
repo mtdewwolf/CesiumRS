@@ -63,7 +63,7 @@ pub struct TimeDynamicPointCloud<G: Gl + 'static> {
     pub style: Option<Rc<RefCell<super::Cesium3DTileStyle>>>,
     pub frame_failed: Event<(String, String)>,
     pub frame_changed: Event<()>,
-    clock: Clock,
+    pub clock: Clock,
     intervals: TimeIntervalCollection<TimeDynamicPointCloudInterval>,
     clipping_planes: Option<Rc<RefCell<ClippingPlaneCollection>>>,
     eye_dome_lighting: PointCloudEyeDomeLighting<G>,
@@ -121,6 +121,18 @@ impl<G: Gl> TimeDynamicPointCloud<G> {
 
     pub fn set_resource_client(&mut self, client: ResourceClient) {
         self.client = Some(client);
+    }
+
+    pub fn clock(&self) -> &Clock {
+        &self.clock
+    }
+
+    pub fn clock_mut(&mut self) -> &mut Clock {
+        &mut self.clock
+    }
+
+    pub fn set_clock(&mut self, clock: Clock) {
+        self.clock = clock;
     }
 
     pub fn total_memory_usage_in_bytes(&self) -> usize {

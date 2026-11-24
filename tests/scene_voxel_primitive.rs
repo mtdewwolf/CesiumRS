@@ -154,6 +154,13 @@ fn time_dynamic_point_cloud_interval_scheduling_and_memory() {
     let mut frame = frame_state(&context);
     cloud.update(&mut frame).unwrap();
     assert!(cloud.bounding_sphere().is_none());
+
+    // Advance the exposed clock into the second interval and confirm it updates.
+    assert_eq!(cloud.clock().current_time(), start.add_seconds(5.));
+    cloud.clock_mut().set_current_time(start.add_seconds(15.));
+    assert_eq!(cloud.clock().current_time(), start.add_seconds(15.));
+    frame.frame_number += 1;
+    cloud.update(&mut frame).unwrap();
     cloud.destroy().unwrap();
 }
 

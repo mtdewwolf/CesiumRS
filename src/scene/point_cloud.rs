@@ -147,8 +147,10 @@ pub struct PointCloud<G: Gl + 'static> {
     pub style_dirty: bool,
     pub model_matrix: Matrix4,
     model_matrix_old: Matrix4,
+    computed_model_matrix: Matrix4,
     pub time: f64,
     pub shadows: ShadowMode,
+    local_bounding_sphere: Option<BoundingSphere>,
     bounding_sphere: Option<BoundingSphere>,
     pub clipping_planes: Option<Rc<RefCell<ClippingPlaneCollection>>>,
     pub is_clipped: bool,
@@ -164,6 +166,8 @@ pub struct PointCloud<G: Gl + 'static> {
     error: Option<RuntimeError>,
     uniforms: Rc<RefCell<PointCloudUniforms>>,
     vertex_array: Option<Rc<VertexArray<G>>>,
+    shader_program: Option<Rc<ShaderProgram<G>>>,
+    draw_command_translucent: bool,
     style_attributes: Vec<VertexAttributeState>,
     textures: Vec<(String, Rc<dyn SampledTexture<G>>)>,
     shader_dirty: bool,
@@ -265,8 +269,10 @@ impl<G: Gl> PointCloud<G> {
             style_dirty: false,
             model_matrix: Matrix4::IDENTITY,
             model_matrix_old: Matrix4::IDENTITY,
+            computed_model_matrix: Matrix4::IDENTITY,
             time: 0.0,
             shadows: ShadowMode::Enabled,
+            local_bounding_sphere: None,
             bounding_sphere: None,
             clipping_planes: None,
             is_clipped: false,
@@ -282,6 +288,8 @@ impl<G: Gl> PointCloud<G> {
             error: None,
             uniforms: Rc::new(RefCell::new(PointCloudUniforms { values: Vec::new() })),
             vertex_array: None,
+            shader_program: None,
+            draw_command_translucent: false,
             style_attributes: Vec::new(),
             textures: Vec::new(),
             shader_dirty: true,
@@ -356,7 +364,11 @@ impl<G: Gl> PointCloud<G> {
         self.bounding_sphere
     }
     pub fn set_bounding_sphere(&mut self, value: Option<BoundingSphere>) {
+        self.local_bounding_sphere = value;
         self.bounding_sphere = value;
+    }
+    pub fn computed_model_matrix(&self) -> Matrix4 {
+        self.computed_model_matrix
     }
     pub fn is_destroyed(&self) -> bool {
         self.destroyed
@@ -379,8 +391,15 @@ impl<G: Gl> PointCloud<G> {
     pub fn uniform_names(&self) -> &[String] {
         &self.uniform_names
     }
+    fn effective_translucent(&self) -> bool {
+        self.is_translucent
+            || self.highlight_color.alpha < 1.0
+            || self.constant_color.alpha < 1.0
+            || self.style_translucent
+    }
+
     pub fn render_state(&self) -> &RenderState {
-        if self.highlight_color.alpha < 1.0 || self.constant_color.alpha < 1.0 || self.style_translucent {
+        if self.effective_translucent() {
             &self.translucent_render_state
         } else {
             &self.opaque_render_state
@@ -433,7 +452,7 @@ impl<G: Gl> PointCloud<G> {
             attribute
         });
         if self.cull {
-            self.bounding_sphere = Some(if self.is_quantized || self.is_quantized_draco {
+            let local = Some(if self.is_quantized || self.is_quantized_draco {
                 BoundingSphere::from_corner_points(
                     Cartesian3::ZERO,
                     self.quantized_volume_scale.unwrap_or(Cartesian3::ONE),
@@ -441,6 +460,8 @@ impl<G: Gl> PointCloud<G> {
             } else {
                 approximate_bounding_sphere_from_positions(&position_data)
             });
+            self.local_bounding_sphere = local;
+            self.bounding_sphere = local;
         }
 
         if self.has_colors {
@@ -962,15 +983,25 @@ impl<G: Gl> PointCloud<G> {
                 "Error generating style shader: this may be caused by a type mismatch, index out-of-bounds, or other syntax error.",
             )
         })?);
+        self.shader_program = Some(program);
         self.create_uniform_map(frame, context);
         self.uniform_names = self.uniforms.borrow().values.iter().map(|(name, _)| name.clone()).collect();
-        let mut draw = SceneDrawOptions::new(
-            self.vertex_array
-                .clone()
-                .ok_or_else(|| RuntimeError::new("Point cloud vertex array is missing"))?,
-            program,
-        );
-        draw.state = if self.is_translucent {
+        let is_translucent = self.effective_translucent();
+        self.build_draw_command(context, is_translucent)?;
+        Ok(())
+    }
+
+    fn build_draw_command(&mut self, context: &Context<G>, is_translucent: bool) -> Result<()> {
+        let vertex_array = self
+            .vertex_array
+            .clone()
+            .ok_or_else(|| RuntimeError::new("Point cloud vertex array is missing"))?;
+        let program = self
+            .shader_program
+            .clone()
+            .ok_or_else(|| RuntimeError::new("Point cloud shader program is missing"))?;
+        let mut draw = SceneDrawOptions::new(vertex_array, program);
+        draw.state = if is_translucent {
             self.translucent_render_state.clone()
         } else {
             self.opaque_render_state.clone()
@@ -984,18 +1015,21 @@ impl<G: Gl> PointCloud<G> {
         draw.textures = self.textures.clone();
         let metadata = DrawMetadata {
             bounding_volume: self.bounding_sphere,
-            model_matrix: Some(self.model_matrix),
+            model_matrix: Some(self.computed_model_matrix),
             cull: self.cull,
+            cast_shadows: self.shadows.cast_shadows(),
+            receive_shadows: self.shadows.receive_shadows(),
             owner: Some("PointCloud".into()),
             ..Default::default()
         };
         self.draw_command = Some(SceneCommand::from_draw(
             "PointCloud",
             context.clone(),
-            if self.is_translucent { Pass::Translucent } else { self.opaque_pass },
+            if is_translucent { Pass::Translucent } else { self.opaque_pass },
             metadata,
             draw,
         ));
+        self.draw_command_translucent = is_translucent;
         Ok(())
     }
 
@@ -1030,27 +1064,30 @@ impl<G: Gl> PointCloud<G> {
         }
         if model_matrix_dirty {
             self.model_matrix_old = self.model_matrix;
+            let mut computed = self.model_matrix;
             if let Some(rtc) = self.rtc_center {
-                self.model_matrix = self.model_matrix.multiply_by_translation(rtc);
+                computed = computed.multiply_by_translation(rtc);
             }
             if let Some(offset) = self.quantized_volume_offset {
-                self.model_matrix = self.model_matrix.multiply_by_translation(offset);
+                computed = computed.multiply_by_translation(offset);
             }
             if frame.mode != SceneMode::Scene3D {
-                let translation = self.model_matrix.get_column(3);
+                let translation = computed.get_column(3);
                 if translation != Cartesian4::UNIT_W {
-                    self.model_matrix = crate::core::Transforms::basis_to_2d(
+                    computed = crate::core::Transforms::basis_to_2d(
                         frame.uniform.map_projection.as_ref(),
-                        &self.model_matrix,
+                        &computed,
                     );
                 }
             }
-            if let Some(sphere) = &mut self.bounding_sphere {
+            self.computed_model_matrix = computed;
+            self.bounding_sphere = self.local_bounding_sphere.map(|mut sphere| {
                 if self.cull {
-                    sphere.center = self.model_matrix.multiply_by_point(sphere.center);
-                    sphere.radius *= self.model_matrix.get_scale().maximum_component();
+                    sphere.center = computed.multiply_by_point(sphere.center);
+                    sphere.radius *= computed.get_scale().maximum_component();
                 }
-            }
+                sphere
+            });
         }
         if self.clipping_planes_dirty {
             self.clipping_planes_dirty = false;
@@ -1091,14 +1128,16 @@ impl<G: Gl> PointCloud<G> {
             self.create_uniform_map(frame, &context);
         }
 
-        let is_translucent = self.highlight_color.alpha < 1.0
-            || self.constant_color.alpha < 1.0
-            || self.style_translucent;
+        let is_translucent = self.effective_translucent();
+        if self.draw_command.is_none() || self.draw_command_translucent != is_translucent {
+            self.build_draw_command(&context, is_translucent)?;
+        }
         if let Some(draw) = &mut self.draw_command {
             draw.pass = if is_translucent { Pass::Translucent } else { self.opaque_pass };
             draw.metadata.cast_shadows = self.shadows.cast_shadows();
             draw.metadata.receive_shadows = self.shadows.receive_shadows();
-            draw.metadata.model_matrix = Some(self.model_matrix);
+            draw.metadata.model_matrix = Some(self.computed_model_matrix);
+            draw.metadata.bounding_volume = self.bounding_sphere;
         }
         if frame.passes.render || frame.passes.pick {
             if let Some(draw) = &self.draw_command {
@@ -1110,6 +1149,7 @@ impl<G: Gl> PointCloud<G> {
 
     pub fn destroy(&mut self) -> Result<()> {
         self.draw_command = None;
+        self.shader_program = None;
         self.vertex_array = None;
         self.textures.clear();
         self.destroyed = true;
