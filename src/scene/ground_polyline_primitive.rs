@@ -9,6 +9,7 @@
 use super::{
     blending_state,
     classification_primitive::ClassificationPrimitiveOptions,
+    material::material_uniform_values,
     primitive::{Primitive, PrimitiveOptions},
     primitive_shader::ShaderRewrites,
     primitive_state::PrimitiveState,
@@ -236,7 +237,7 @@ impl<G: Gl + 'static> GroundPolylinePrimitive<G> {
         let render_state_tiles = polyline_render_state(frame.mode, true);
         let queue_terrain = self.classification_type != ClassificationType::Cesium3DTile;
         let queue_tiles = self.classification_type != ClassificationType::Terrain && frame.mode != SceneMode::Morphing;
-        let uniforms = primitive.batch_uniform_values();
+        let uniforms = polyline_uniforms(primitive);
         for (index, vertex_array) in vertices.iter().enumerate() {
             let volume = spheres.get(index).copied().flatten().map(|sphere| sphere.transform(&primitive.model_matrix));
             if frame.passes.render {
@@ -400,6 +401,18 @@ impl<G: Gl + 'static> ScenePrimitive for GroundPolylinePrimitive<G> {
     }
 }
 
+fn polyline_uniforms(primitive: &Primitive<impl Gl>) -> Vec<(String, UniformValue)> {
+    let mut uniforms = Vec::new();
+    if let Some(appearance) = primitive.appearance.as_deref() {
+        uniforms.extend(appearance.uniforms());
+        if let Some(material) = appearance.material() {
+            uniforms.extend(material_uniform_values(material));
+        }
+    }
+    uniforms.extend(primitive.batch_uniform_values());
+    uniforms
+}
+
 pub(crate) fn prepare_polylines(options: &mut PrimitiveOptions, frame: &FrameState) -> Result<()> {
     let projection = frame.uniform.map_projection.as_ref();
     let mut has_colors = true;
@@ -461,5 +474,33 @@ pub fn polyline_render_state(mode: SceneMode, tiles: bool) -> RenderState {
             }
         },
         ..Default::default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::renderer::GlValue;
+
+    struct TestGl;
+    impl Gl for TestGl {
+        type Object = u32;
+        fn drawing_buffer_size(&self) -> Result<[u32; 2]> {
+            Ok([1, 1])
+        }
+        fn invoke(&self, _: &str, _: &[GlValue<u32>]) -> Result<GlValue<u32>> {
+            Ok(GlValue::Null)
+        }
+    }
+
+    #[test]
+    fn replacement_commands_include_material_uniforms() {
+        let options = PrimitiveOptions {
+            appearance: Some(Box::new(super::super::PolylineMaterialAppearance::new(Default::default()))),
+            ..Default::default()
+        };
+        let primitive = Primitive::<TestGl>::new(options);
+        let uniforms = polyline_uniforms(&primitive);
+        assert!(uniforms.iter().any(|(name, _)| name.starts_with("color")), "{uniforms:?}");
     }
 }

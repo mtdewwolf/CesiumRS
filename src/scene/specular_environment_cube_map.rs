@@ -145,15 +145,6 @@ impl<G: Gl + 'static> SpecularEnvironmentCubeMap<G> {
 
         let face_size = buffer.width;
         let expected_mip_levels = face_size.ilog2() + 1;
-        let mut levels = levels;
-        if mip_levels != expected_mip_levels {
-            // Fill remaining levels with null faces so the cube map has a full
-            // chain; Cesium treats the last supplied level as roughness 1.0.
-            let empty: Vec<(CubeFace, crate::core::CompressedTextureBuffer)> = vec![];
-            for _ in mip_levels..expected_mip_levels {
-                levels.push(empty.clone());
-            }
-        }
 
         let to_source = |buffer: &crate::core::CompressedTextureBuffer| TextureSource::Pixels {
             width: buffer.width,
@@ -183,23 +174,37 @@ impl<G: Gl + 'static> SpecularEnvironmentCubeMap<G> {
         options.sampler =
             Sampler { minification_filter: TextureMinificationFilter::LinearMipmapLinear, ..Default::default() };
         let cube_map = CubeMap::new(context, options, Some(sources))?;
-        if levels.len() > 1 {
-            let mip_sources: Vec<[TextureSource<G>; 6]> = levels
-                .iter()
-                .skip(1)
-                .map(|level| {
-                    let mut ordered: [Option<TextureSource<G>>; 6] = [None, None, None, None, None, None];
-                    for (face, buffer) in level {
-                        ordered[*face as usize] = Some(to_source(buffer));
+        if expected_mip_levels > 1 {
+            let bytes_per_texel = pixel_datatype.size_in_bytes() * 4;
+            let placeholder = |level: u32| {
+                let dimension = (face_size >> level).max(1);
+                let bytes = (dimension as usize)
+                    .checked_mul(dimension as usize)
+                    .and_then(|pixels| pixels.checked_mul(bytes_per_texel))
+                    .ok_or_else(|| RuntimeError::new("KTX2 cube map mip dimensions overflow."))?;
+                Ok::<_, RuntimeError>([(); 6].map(|()| TextureSource::Pixels {
+                    width: dimension,
+                    height: dimension,
+                    bytes: vec![0; bytes],
+                }))
+            };
+            let mip_sources = (1..expected_mip_levels)
+                .map(|level| match levels.get(level as usize) {
+                    Some(supplied) => {
+                        let mut ordered: [Option<TextureSource<G>>; 6] = [None, None, None, None, None, None];
+                        for (face, buffer) in supplied {
+                            ordered[*face as usize] = Some(to_source(buffer));
+                        }
+                        Ok([
+                            ordered[0].take().ok_or_else(|| RuntimeError::new("KTX2 mip level is missing a face."))?,
+                            ordered[1].take().ok_or_else(|| RuntimeError::new("KTX2 mip level is missing a face."))?,
+                            ordered[2].take().ok_or_else(|| RuntimeError::new("KTX2 mip level is missing a face."))?,
+                            ordered[3].take().ok_or_else(|| RuntimeError::new("KTX2 mip level is missing a face."))?,
+                            ordered[4].take().ok_or_else(|| RuntimeError::new("KTX2 mip level is missing a face."))?,
+                            ordered[5].take().ok_or_else(|| RuntimeError::new("KTX2 mip level is missing a face."))?,
+                        ])
                     }
-                    Ok([
-                        ordered[0].take().ok_or_else(|| RuntimeError::new("KTX2 mip level is missing a face."))?,
-                        ordered[1].take().ok_or_else(|| RuntimeError::new("KTX2 mip level is missing a face."))?,
-                        ordered[2].take().ok_or_else(|| RuntimeError::new("KTX2 mip level is missing a face."))?,
-                        ordered[3].take().ok_or_else(|| RuntimeError::new("KTX2 mip level is missing a face."))?,
-                        ordered[4].take().ok_or_else(|| RuntimeError::new("KTX2 mip level is missing a face."))?,
-                        ordered[5].take().ok_or_else(|| RuntimeError::new("KTX2 mip level is missing a face."))?,
-                    ])
+                    None => placeholder(level),
                 })
                 .collect::<Result<Vec<_>, RuntimeError>>()?;
             cube_map.load_mipmaps(&mip_sources, false)?;

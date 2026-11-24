@@ -1055,13 +1055,19 @@ impl<G: Gl + 'static> ShadowMap<G> {
             cascade_distances[i] = split - splits[i];
         }
         if clamp_cascade_distances {
-            for i in 0..number_of_cascades {
-                cascade_distances[i] = cascade_distances[i].min(self.maximum_cascade_distances[i]);
+            let maximum = self.maximum_cascade_distances;
+            for (distance, limit) in cascade_distances.iter_mut().take(number_of_cascades).zip(maximum.iter()) {
+                *distance = distance.min(*limit);
             }
             let mut distance = splits[0];
-            for i in 0..number_of_cascades - 1 {
-                distance += cascade_distances[i];
-                splits[i + 1] = distance;
+            for (next_split, cascade_distance) in splits
+                .iter_mut()
+                .skip(1)
+                .take(number_of_cascades - 1)
+                .zip(cascade_distances.iter())
+            {
+                distance += *cascade_distance;
+                *next_split = distance;
             }
         }
         self.cascade_splits[0] = Cartesian4::new(splits[0], splits[1], splits[2], splits[3]);

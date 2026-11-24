@@ -678,3 +678,32 @@ fn shadow_map_cast_and_receive_derivation() {
     assert!(receive.textures.iter().any(|(name, _)| name == "shadowMap_texture"));
     assert!(receive.uniforms.iter().any(|(name, _)| name == "shadowMap_matrix"));
 }
+
+#[test]
+fn truncated_ktx2_specular_chain_uploads_placeholder_mips() {
+    use cesium_rs::core::ktx2_transcoder::{CubeFace, Ktx2Texture};
+    use cesium_rs::core::compressed_texture_buffer::{CompressedTextureBuffer, CompressedTextureBufferOptions};
+    use std::sync::Arc;
+
+    let level: Vec<_> = CubeFace::ALL
+        .into_iter()
+        .map(|face| {
+            (
+                face,
+                CompressedTextureBuffer::new(CompressedTextureBufferOptions {
+                    internal_format: PixelFormat::Rgba as u32,
+                    pixel_datatype: Some(PixelDatatype::UnsignedByte as u32),
+                    width: 4,
+                    height: 4,
+                    buffer: Arc::from(vec![0u8; 4 * 4 * 4].into_boxed_slice()),
+                }),
+            )
+        })
+        .collect();
+    let mut map =
+        cesium_rs::scene::specular_environment_cube_map::SpecularEnvironmentCubeMap::<EnvGl>::new("truncated.ktx2");
+    map.upload(&context(), Ktx2Texture::Cubemap(vec![level])).unwrap();
+    assert!(map.ready());
+    assert_eq!(map.maximum_mipmap_level(), Some(0));
+    assert!(map.texture().is_some());
+}

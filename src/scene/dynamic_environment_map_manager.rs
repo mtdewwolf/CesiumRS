@@ -54,7 +54,7 @@ pub struct DynamicEnvironmentMapManager<G: Gl> {
     radiance_commands_dirty: bool,
     convolution_commands_dirty: Rc<Cell<bool>>,
     irradiance_command_dirty: bool,
-    irradiance_texture_dirty: bool,
+    irradiance_texture_dirty: Rc<Cell<bool>>,
     spherical_harmonic_coefficients_dirty: Rc<Cell<bool>>,
     should_regenerate_shaders: Rc<Cell<bool>>,
     should_reset: bool,
@@ -146,7 +146,7 @@ impl<G: Gl + 'static> DynamicEnvironmentMapManager<G> {
             radiance_commands_dirty: false,
             convolution_commands_dirty: Rc::new(Cell::new(false)),
             irradiance_command_dirty: false,
-            irradiance_texture_dirty: false,
+            irradiance_texture_dirty: Rc::new(Cell::new(false)),
             spherical_harmonic_coefficients_dirty: Rc::new(Cell::new(false)),
             should_regenerate_shaders: Rc::new(Cell::new(false)),
             should_reset: false,
@@ -233,7 +233,7 @@ impl<G: Gl + 'static> DynamicEnvironmentMapManager<G> {
     }
 
     pub fn irradiance_texture_dirty(&self) -> bool {
-        self.irradiance_texture_dirty
+        self.irradiance_texture_dirty.get()
     }
 
     pub fn queued_commands(&self) -> &[ComputeCommand<G>] {
@@ -528,6 +528,7 @@ impl<G: Gl + 'static> DynamicEnvironmentMapManager<G> {
         self.irradiance_map_fs = Some(fragment.clone());
         let radiance = self.radiance_cube_map.clone();
         let spherical_dirty = self.spherical_harmonic_coefficients_dirty.clone();
+        let irradiance_texture_dirty = self.irradiance_texture_dirty.clone();
         let command = ComputeCommand {
             fragment_shader_source: Some(fragment),
             output_texture: Some(texture),
@@ -537,13 +538,14 @@ impl<G: Gl + 'static> DynamicEnvironmentMapManager<G> {
                 .unwrap_or_default(),
             post_execute: Some(Box::new(move |_| {
                 ACTIVE_COMPUTE_COMMAND_COUNT.fetch_sub(1, Ordering::Relaxed);
+                irradiance_texture_dirty.set(false);
                 spherical_dirty.set(true);
                 Ok(())
             })),
             ..Default::default()
         };
         self.queue_command(command);
-        self.irradiance_texture_dirty = true;
+        self.irradiance_texture_dirty.set(true);
         self.irradiance_command_dirty = false;
         Ok(())
     }
@@ -599,7 +601,7 @@ impl<G: Gl + 'static> DynamicEnvironmentMapManager<G> {
         if self.irradiance_command_dirty {
             self.update_irradiance_resources(&context)?;
         }
-        if self.irradiance_texture_dirty {
+        if self.irradiance_texture_dirty.get() {
             self.should_regenerate_shaders.set(false);
             return Ok(());
         }
@@ -681,5 +683,43 @@ impl<G: Gl + 'static> DynamicEnvironmentMapManager<G> {
         self.convolve_sp = None;
         self.destroyed = true;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::renderer::GlValue;
+
+    struct TestGl;
+    impl Gl for TestGl {
+        type Object = u32;
+        fn drawing_buffer_size(&self) -> Result<[u32; 2], RuntimeError> {
+            Ok([1, 1])
+        }
+        fn invoke(&self, method: &str, _: &[GlValue<u32>]) -> Result<GlValue<u32>, RuntimeError> {
+            Ok(match method {
+                "getParameter" => GlValue::Number(16384.0),
+                "getExtension" => GlValue::Object(1),
+                "getShaderParameter" | "getProgramParameter" => GlValue::Bool(true),
+                "checkFramebufferStatus" => GlValue::Number(36053.0),
+                _ if method.starts_with("create") => GlValue::Object(1),
+                _ => GlValue::Null,
+            })
+        }
+    }
+
+    #[test]
+    fn irradiance_completion_clears_pending_readback_gate() {
+        let context = Context::new_webgl2(TestGl);
+        let mut manager = DynamicEnvironmentMapManager::<TestGl>::new(DynamicEnvironmentMapManagerOptions::default());
+        manager.update_irradiance_resources(&context).unwrap();
+        assert!(manager.irradiance_texture_dirty());
+        let mut command = manager.take_commands().remove(0);
+        let output = command.output_texture.clone().unwrap();
+        let mut post = command.post_execute.take().unwrap();
+        post(&output).unwrap();
+        assert!(!manager.irradiance_texture_dirty());
+        assert!(manager.spherical_harmonic_coefficients_dirty.get());
     }
 }
