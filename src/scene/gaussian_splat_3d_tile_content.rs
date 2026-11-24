@@ -8,11 +8,9 @@
 //! content contract are ported. `isDestroyed` returns the boolean property, as
 //! the interface intends, rather than the pinned typo that returns the function.
 
-use super::{
-    gaussian_splat_primitive::GaussianSplatTileContent,
-};
+use super::gaussian_splat_primitive::{transform_splat_attributes, GaussianSplatTileContent};
 use crate::{
-    core::{Cartesian3, Matrix4, Quaternion, RuntimeError},
+    core::{Cartesian3, Matrix4, RuntimeError},
     scene::{Axis, VertexAttributeSemantic},
 };
 use std::rc::Rc;
@@ -48,11 +46,7 @@ pub struct GaussianSplatPrimitiveData {
 
 impl Default for GaussianSplatPrimitiveData {
     fn default() -> Self {
-        Self {
-            attributes: Vec::new(),
-            world_transform: Matrix4::IDENTITY,
-            node_matrix: Matrix4::IDENTITY,
-        }
+        Self { attributes: Vec::new(), world_transform: Matrix4::IDENTITY, node_matrix: Matrix4::IDENTITY }
     }
 }
 
@@ -224,29 +218,61 @@ pub struct GaussianSplat3DTileContent {
 }
 
 impl GaussianSplat3DTileContent {
+    /// Builds content from a loaded glTF `ModelComponents::Components` object
+    /// (matching `GaussianSplat3DTileContent.fromGltf`'s attribute extraction).
+    pub fn from_gltf_components<G: crate::renderer::Gl>(
+        url: impl Into<String>,
+        components: &super::model_components::Components<G>,
+    ) -> Result<Self, RuntimeError> {
+        let node = components
+            .scene
+            .as_ref()
+            .and_then(|scene| scene.nodes.first().copied())
+            .and_then(|idx| components.nodes.get(idx))
+            .or_else(|| components.nodes.first())
+            .ok_or_else(|| RuntimeError::new("glTF Gaussian splat document has no nodes"))?;
+        let primitive = node
+            .primitives
+            .first()
+            .ok_or_else(|| RuntimeError::new("glTF Gaussian splat node has no primitives"))?;
+        let mut attributes = Vec::with_capacity(primitive.attributes.len());
+        for attr in &primitive.attributes {
+            let name = attr
+                .name
+                .clone()
+                .or_else(|| attr.semantic.map(|s| s.as_str().to_string()))
+                .unwrap_or_default();
+            let Some(typed) = &attr.typed_array else {
+                continue;
+            };
+            let values: Vec<f32> = typed.to_f64_vec().into_iter().map(|v| v as f32).collect();
+            let count = attr.count.unwrap_or(0);
+            let mut gs_attr = GaussianSplatAttribute::new(name, values, count);
+            gs_attr.byte_length = typed.len() * typed.component_datatype().get_size_in_bytes();
+            attributes.push(gs_attr);
+        }
+        let node_matrix = node.matrix.unwrap_or(Matrix4::IDENTITY);
+        Self::from_primitive(
+            url,
+            GaussianSplatPrimitiveData {
+                attributes,
+                world_transform: components.transform,
+                node_matrix,
+            },
+        )
+    }
+
     /// Builds content from a loaded glTF primitive's attributes.
     pub fn from_primitive(url: impl Into<String>, primitive: GaussianSplatPrimitiveData) -> Result<Self, RuntimeError> {
         let attributes = primitive.attributes.clone();
-        let positions = attribute_by_semantic(&attributes, VertexAttributeSemantic::Position)?
-            .values
-            .clone();
-        let rotations = attribute_by_semantic(&attributes, VertexAttributeSemantic::Rotation)?
-            .values
-            .clone();
-        let scales = attribute_by_semantic(&attributes, VertexAttributeSemantic::Scale)?
-            .values
-            .clone();
+        let positions = attribute_by_semantic(&attributes, VertexAttributeSemantic::Position)?.values.clone();
+        let rotations = attribute_by_semantic(&attributes, VertexAttributeSemantic::Rotation)?.values.clone();
+        let scales = attribute_by_semantic(&attributes, VertexAttributeSemantic::Scale)?.values.clone();
         let colors_attribute = attribute(&attributes, "COLOR_0")
             .or_else(|| attribute(&attributes, "_COLOR_0"))
             .or_else(|| attribute(&attributes, "KHR_gaussian_splatting:COLOR_0"));
         let colors = colors_attribute
-            .map(|attribute| {
-                attribute
-                    .values
-                    .iter()
-                    .map(|&value| value.clamp(0.0, 255.0).round() as u8)
-                    .collect()
-            })
+            .map(|attribute| attribute.values.iter().map(|&value| value.clamp(0.0, 255.0).round() as u8).collect())
             .unwrap_or_default();
         let (degree, coefficient_count) = degree_and_coef_from_attributes(&attributes);
         let mut content = Self {
@@ -288,10 +314,7 @@ impl GaussianSplat3DTileContent {
         0
     }
     pub fn points_length(&self) -> usize {
-        self.primitive
-            .attributes
-            .first()
-            .map_or(0, |attribute| attribute.count)
+        self.primitive.attributes.first().map_or(0, |attribute| attribute.count)
     }
     pub fn triangles_length(&self) -> usize {
         0
@@ -410,48 +433,31 @@ impl GaussianSplat3DTileContent {
         root_transform: &Matrix4,
         axis_correction: &Matrix4,
     ) {
-        let computed_model_matrix = computed_transform.multiply_transformation(axis_correction);
-        let computed_model_matrix = computed_model_matrix.multiply_transformation(world_transform);
-        let to_global = tileset_model_matrix.multiply(&root_transform.clone());
-        let Ok(to_local) = to_global.inverse() else {
+        if self.destroyed {
             return;
-        };
-        let transform = to_local.multiply_transformation(&computed_model_matrix);
-        for i in 0..self.positions.len() / 3 {
-            let position = Cartesian3::new(
-                self.positions[i * 3] as f64,
-                self.positions[i * 3 + 1] as f64,
-                self.positions[i * 3 + 2] as f64,
-            );
-            let rotation = Quaternion::new(
-                self.rotations[i * 4] as f64,
-                self.rotations[i * 4 + 1] as f64,
-                self.rotations[i * 4 + 2] as f64,
-                self.rotations[i * 4 + 3] as f64,
-            );
-            let scale = Cartesian3::new(
-                self.scales[i * 3] as f64,
-                self.scales[i * 3 + 1] as f64,
-                self.scales[i * 3 + 2] as f64,
-            );
-            let local = Matrix4::from_translation_quaternion_rotation_scale(position, &rotation, scale);
-            let transformed = transform.multiply_transformation(&local);
-            let position = transformed.get_translation();
-            let rotation = transformed.get_rotation();
-            let scale = transformed.get_scale();
-            self.positions[i * 3] = position.x as f32;
-            self.positions[i * 3 + 1] = position.y as f32;
-            self.positions[i * 3 + 2] = position.z as f32;
-            let quaternion = Quaternion::from_rotation_matrix(&rotation);
-            self.rotations[i * 4] = quaternion.x as f32;
-            self.rotations[i * 4 + 1] = quaternion.y as f32;
-            self.rotations[i * 4 + 2] = quaternion.z as f32;
-            self.rotations[i * 4 + 3] = quaternion.w as f32;
-            self.scales[i * 3] = scale.x as f32;
-            self.scales[i * 3 + 1] = scale.y as f32;
-            self.scales[i * 3 + 2] = scale.z as f32;
         }
-        self.transformed = true;
+        let mut positions = attribute_by_semantic(&self.attributes, VertexAttributeSemantic::Position)
+            .expect("validated splat positions")
+            .values
+            .clone();
+        let mut scales = attribute_by_semantic(&self.attributes, VertexAttributeSemantic::Scale)
+            .expect("validated splat scales")
+            .values
+            .clone();
+        if transform_splat_attributes(
+            &mut positions,
+            &self.rotations,
+            &mut scales,
+            computed_transform,
+            world_transform,
+            tileset_model_matrix,
+            root_transform,
+            axis_correction,
+        ) {
+            self.positions = positions;
+            self.scales = scales;
+            self.transformed = true;
+        }
     }
 }
 

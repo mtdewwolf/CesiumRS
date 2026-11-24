@@ -6,7 +6,7 @@ A port of **CesiumJS** (`@cesium/engine` 23.0.0, CesiumJS 1.139) to Rust. It is 
 
 ![Overall progress over time](docs/progress-history.svg)
 
-**Status: 99.8% implemented; 90.0% validated** (1,223 validated modules, 39 implemented awaiting validation, and 3 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
+**Status: 100.0% implemented; 100.0% validated** (1,265 validated modules, 0 implemented awaiting validation, and 0 partial of 1,265 applicable modules, weighted by JavaScript lines). **Core: 100.0% implemented; 100.0% validated** (270 validated applicable modules; no remaining partial or todo modules). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).
 
 ## What is ported
 
@@ -196,11 +196,11 @@ Near-antipodal routes use a deterministic great-circle approximation when Vincen
 ## Roadmap
 
 1. ✅ **Core at 100%:** all 270 applicable modules implemented and validated; 18 JavaScript idioms have documented Rust replacements.
-2. **Renderer complete:** all 46 modules, including Context, complete Scene-frame uniforms, cube/volume textures, atlases and shared contexts. Next: Scene and viewer integration; see [Renderer validation](docs/renderer-foundation.md).
+2. ✅ **Renderer complete:** all 46 modules implemented and validated, including Context, complete Scene-frame uniforms, cube/volume textures, atlases and shared contexts; see [Renderer validation](docs/renderer-foundation.md).
 3. ✅ **Shaders complete:** all 307 `Source/Shaders` modules match their CesiumJS exports byte for byte; see [Shaders](docs/shaders.md).
-4. ✅ **Workers complete:** all 52 applicable modules, including `decodeDraco` with `dequantizeInShader`; see [Workers](docs/workers.md).
-5. **Scene:** See [the tracker](PORTING.md#scene) for current validated, partial and unchecked module counts. The model resource loaders (ResourceCache, Draco, SPZ, vertex/index, image/texture), the b3dm/i3dm/pnts parsers, 3D Metadata parsing and the structural metadata and GPM loaders are validated. GltfLoader now builds model components; ModelUtility, render resources and the alpha, color, splitter, skinning and morph stages are validated. Next: the remaining Model rendering stages/runtime and the 3D Tiles content loaders; see [Scene](docs/scene.md).
-6. **DataSources.** The tracker lists 101 validated modules and seven partial modules. The remaining ground paths depend on Scene terrain classification and ground polyline rendering. See [DataSources](docs/data-sources.md).
+4. ✅ **Workers complete:** all 52 applicable modules validated, including `decodeDraco` with `dequantizeInShader`; `transferTypedArrayTest` is n/a; see [Workers](docs/workers.md).
+5. ✅ **Scene at 100%:** all 482 modules implemented and reference-validated against `@cesium/engine` 23.0.0 across CPU fixtures, recording GL, and SwiftShader WebGL2 captures (including Globe/Terrain, 3D Tiles Core & Content, Vector 3D Tiles, Gaussian Splats, Point Clouds, EDL, Voxels, Atmosphere, Shadows, Environment Maps, Panoramas, and Ground Classification); see [Scene](docs/scene.md).
+6. ✅ **DataSources at 100%:** all 108 modules implemented and validated, including CZML, KML/KMZ, GeoJSON, GPX, entity visualizers, clustering, and ground/classification geometry updaters; see [DataSources](docs/data-sources.md).
 
 ## Examples and benchmarks
 

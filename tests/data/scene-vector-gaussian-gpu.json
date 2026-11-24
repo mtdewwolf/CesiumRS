@@ -1,0 +1,5876 @@
+{
+  "cesium": "23.0.0",
+  "createBillboardPointCallback": {
+    "cases": [
+      {
+        "args": [
+          1,
+          "#ff0000",
+          "#0000ff",
+          2,
+          8
+        ],
+        "width": 12,
+        "height": 12,
+        "centerPixel": [
+          255,
+          0,
+          0,
+          255
+        ],
+        "cornerPixel": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "leftMidPixel": [
+          0,
+          0,
+          255,
+          245
+        ]
+      },
+      {
+        "args": [
+          0.5,
+          "rgba(255, 0, 0, 0.5)",
+          "#0000ff",
+          2,
+          8
+        ],
+        "width": 12,
+        "height": 12,
+        "centerPixel": [
+          255,
+          0,
+          0,
+          128
+        ],
+        "cornerPixel": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "leftMidPixel": [
+          0,
+          0,
+          255,
+          245
+        ]
+      },
+      {
+        "args": [
+          1,
+          "red",
+          "black",
+          0,
+          5
+        ],
+        "width": 5,
+        "height": 5,
+        "centerPixel": [
+          255,
+          0,
+          0,
+          255
+        ],
+        "cornerPixel": [
+          255,
+          0,
+          0,
+          54
+        ],
+        "leftMidPixel": [
+          255,
+          0,
+          0,
+          255
+        ]
+      },
+      {
+        "args": [
+          0.75,
+          "#123456",
+          "#abcdef",
+          1.5,
+          6.9
+        ],
+        "width": 9,
+        "height": 9,
+        "centerPixel": [
+          18,
+          52,
+          86,
+          255
+        ],
+        "cornerPixel": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "leftMidPixel": [
+          171,
+          205,
+          239,
+          255
+        ]
+      }
+    ],
+    "atlasBytes": 1024,
+    "glError": 0
+  },
+  "vector3DTilePrimitive": {
+    "trianglesLength": 3,
+    "geometryByteLength": 72,
+    "renderBothCommands": [
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 519,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 519,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 514,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 514,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": true,
+            "srcRgb": 1,
+            "dstRgb": 771,
+            "srcAlpha": 1,
+            "dstAlpha": 771
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": true,
+            "srcRgb": 1,
+            "dstRgb": 771,
+            "srcAlpha": 1,
+            "dstAlpha": 771
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 3,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 519,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 519,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 3,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 514,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 514,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 3,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": true,
+            "srcRgb": 1,
+            "dstRgb": 771,
+            "srcAlpha": 1,
+            "dstAlpha": 771
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 3,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": true,
+            "srcRgb": 1,
+            "dstRgb": 771,
+            "srcAlpha": 1,
+            "dstAlpha": 771
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 6,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 519,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 519,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 6,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 514,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 514,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 6,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": true,
+            "srcRgb": 1,
+            "dstRgb": 771,
+            "srcAlpha": 1,
+            "dstAlpha": 771
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 6,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": true,
+            "srcRgb": 1,
+            "dstRgb": 771,
+            "srcAlpha": 1,
+            "dstAlpha": 771
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      }
+    ],
+    "mvp1": [
+      -8.539669799672307e-32,
+      3.845925372767128e-16,
+      -1.000000004,
+      -1,
+      1.7320508075688774,
+      3.845925372767128e-16,
+      0,
+      0,
+      -3.845925372767128e-16,
+      1.7320508075688774,
+      2.2204460581320975e-16,
+      2.220446049250313e-16,
+      34.641016151377535,
+      51.961524224612965,
+      6379125.025516505,
+      6379127
+    ],
+    "hl1": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "hlDebug": [
+      0,
+      1,
+      1,
+      1
+    ],
+    "hlReset": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "renderTerrainPasses": [
+      3,
+      3,
+      3,
+      3,
+      3,
+      3
+    ],
+    "renderInvertCommands": [
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 514,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 514,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": true,
+            "srcRgb": 1,
+            "dstRgb": 771,
+            "srcAlpha": 1,
+            "dstAlpha": 771
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 3,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 514,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 514,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 3,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": true,
+            "srcRgb": 1,
+            "dstRgb": 771,
+            "srcAlpha": 1,
+            "dstAlpha": 771
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 6,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 514,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 514,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 6,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": true,
+            "srcRgb": 1,
+            "dstRgb": 771,
+            "srcAlpha": 1,
+            "dstAlpha": 771
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 7,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 519,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 519,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 7,
+        "primitiveType": 4,
+        "offset": 3,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 519,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 519,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 7,
+        "primitiveType": 4,
+        "offset": 6,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 519,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 519,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      }
+    ],
+    "wireframeCommands": [
+      {
+        "pass": 8,
+        "primitiveType": 1,
+        "offset": 0,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": true,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": -1,
+          "stencilTest": {
+            "enabled": false,
+            "frontFunction": 519,
+            "frontOp": [
+              7680,
+              7680,
+              7680
+            ],
+            "backFunction": 519,
+            "backOp": [
+              7680,
+              7680,
+              7680
+            ],
+            "reference": 0,
+            "mask": -1
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 8,
+        "primitiveType": 1,
+        "offset": 3,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": true,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": -1,
+          "stencilTest": {
+            "enabled": false,
+            "frontFunction": 519,
+            "frontOp": [
+              7680,
+              7680,
+              7680
+            ],
+            "backFunction": 519,
+            "backOp": [
+              7680,
+              7680,
+              7680
+            ],
+            "reference": 0,
+            "mask": -1
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 8,
+        "primitiveType": 1,
+        "offset": 6,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": true,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": -1,
+          "stencilTest": {
+            "enabled": false,
+            "frontFunction": 519,
+            "frontOp": [
+              7680,
+              7680,
+              7680
+            ],
+            "backFunction": 519,
+            "backOp": [
+              7680,
+              7680,
+              7680
+            ],
+            "reference": 0,
+            "mask": -1
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      }
+    ],
+    "pickCommands": [
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": true,
+        "pickOnly": true,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 519,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 519,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": true,
+        "pickOnly": true,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 514,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 514,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": true,
+        "pickOnly": true,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": true,
+        "pickOnly": true,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 3,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": true,
+        "pickOnly": true,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 519,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 519,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 3,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": true,
+        "pickOnly": true,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 514,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 514,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 3,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": true,
+        "pickOnly": true,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 3,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": true,
+        "pickOnly": true,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 6,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": true,
+        "pickOnly": true,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 519,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 519,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 6,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": true,
+        "pickOnly": true,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 514,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 514,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 6,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": true,
+        "pickOnly": true,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 6,
+        "count": 3,
+        "instanceCount": 0,
+        "cull": true,
+        "pickOnly": true,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 108,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 18,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 18,
+          "indexUsage": 35048
+        }
+      }
+    ],
+    "afterRebatch": {
+      "batchedIndices": [
+        {
+          "offset": 0,
+          "count": 6,
+          "rgba": 4278190335,
+          "batchIds": [
+            2,
+            0
+          ]
+        },
+        {
+          "offset": 6,
+          "count": 3,
+          "rgba": 4294901760,
+          "batchIds": [
+            1
+          ]
+        }
+      ],
+      "indexOffsets": [
+        3,
+        6,
+        0
+      ],
+      "commandCount": 8,
+      "commandRanges": [
+        [
+          3,
+          0,
+          6
+        ],
+        [
+          6,
+          0,
+          6
+        ],
+        [
+          3,
+          0,
+          6
+        ],
+        [
+          6,
+          0,
+          6
+        ],
+        [
+          3,
+          6,
+          3
+        ],
+        [
+          6,
+          6,
+          3
+        ],
+        [
+          3,
+          6,
+          3
+        ],
+        [
+          6,
+          6,
+          3
+        ]
+      ]
+    },
+    "destroyed": true,
+    "glError": 0
+  },
+  "vector3DTileGeometry": {
+    "preReady": {
+      "ready": false,
+      "trianglesLength": 0,
+      "geometryByteLength": 0
+    },
+    "postDecode": {
+      "ready": true,
+      "trianglesLength": 16904,
+      "geometryByteLength": 234396,
+      "packedLengths": {
+        "box": 19,
+        "cylinder": 18,
+        "ellipsoid": 19,
+        "sphere": 4
+      },
+      "workerCall": {
+        "worker": "createVectorTileGeometries",
+        "transferCount": 10,
+        "packedBuffer": [
+          6378137,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "batchTableColors": [
+          4278190335,
+          4278222848,
+          4294901760,
+          4278190335
+        ]
+      },
+      "batchedIndices": [
+        {
+          "offset": 0,
+          "count": 36,
+          "rgba": 4278190335,
+          "batchIds": [
+            0
+          ]
+        },
+        {
+          "offset": 36,
+          "count": 1524,
+          "rgba": 4278222848,
+          "batchIds": [
+            1
+          ]
+        },
+        {
+          "offset": 1560,
+          "count": 24576,
+          "rgba": 4294901760,
+          "batchIds": [
+            2
+          ]
+        },
+        {
+          "offset": 26136,
+          "count": 24576,
+          "rgba": 4278190335,
+          "batchIds": [
+            3
+          ]
+        }
+      ],
+      "boundingVolumesCount": 4,
+      "boundingVolumes": [
+        {
+          "center": [
+            1,
+            0,
+            0
+          ],
+          "radius": 6.928203230275509
+        },
+        {
+          "center": [
+            0,
+            5,
+            0
+          ],
+          "radius": 14.142135623730951
+        },
+        {
+          "center": [
+            0,
+            0,
+            6
+          ],
+          "radius": 4
+        },
+        {
+          "center": [
+            3,
+            4,
+            5
+          ],
+          "radius": 2.5
+        }
+      ]
+    },
+    "commandsSummary": [
+      {
+        "pass": 3,
+        "offset": 0,
+        "count": 36,
+        "pickOnly": false,
+        "primitiveType": 4
+      },
+      {
+        "pass": 6,
+        "offset": 0,
+        "count": 36,
+        "pickOnly": false,
+        "primitiveType": 4
+      },
+      {
+        "pass": 3,
+        "offset": 0,
+        "count": 36,
+        "pickOnly": false,
+        "primitiveType": 4
+      },
+      {
+        "pass": 6,
+        "offset": 0,
+        "count": 36,
+        "pickOnly": false,
+        "primitiveType": 4
+      },
+      {
+        "pass": 3,
+        "offset": 36,
+        "count": 1524,
+        "pickOnly": false,
+        "primitiveType": 4
+      },
+      {
+        "pass": 6,
+        "offset": 36,
+        "count": 1524,
+        "pickOnly": false,
+        "primitiveType": 4
+      },
+      {
+        "pass": 3,
+        "offset": 36,
+        "count": 1524,
+        "pickOnly": false,
+        "primitiveType": 4
+      },
+      {
+        "pass": 6,
+        "offset": 36,
+        "count": 1524,
+        "pickOnly": false,
+        "primitiveType": 4
+      },
+      {
+        "pass": 3,
+        "offset": 1560,
+        "count": 24576,
+        "pickOnly": false,
+        "primitiveType": 4
+      },
+      {
+        "pass": 6,
+        "offset": 1560,
+        "count": 24576,
+        "pickOnly": false,
+        "primitiveType": 4
+      },
+      {
+        "pass": 3,
+        "offset": 1560,
+        "count": 24576,
+        "pickOnly": false,
+        "primitiveType": 4
+      },
+      {
+        "pass": 6,
+        "offset": 1560,
+        "count": 24576,
+        "pickOnly": false,
+        "primitiveType": 4
+      },
+      {
+        "pass": 3,
+        "offset": 26136,
+        "count": 24576,
+        "pickOnly": false,
+        "primitiveType": 4
+      },
+      {
+        "pass": 6,
+        "offset": 26136,
+        "count": 24576,
+        "pickOnly": false,
+        "primitiveType": 4
+      },
+      {
+        "pass": 3,
+        "offset": 26136,
+        "count": 24576,
+        "pickOnly": false,
+        "primitiveType": 4
+      },
+      {
+        "pass": 6,
+        "offset": 26136,
+        "count": 24576,
+        "pickOnly": false,
+        "primitiveType": 4
+      },
+      {
+        "pass": 3,
+        "offset": 0,
+        "count": 36,
+        "pickOnly": true,
+        "primitiveType": 4
+      },
+      {
+        "pass": 6,
+        "offset": 0,
+        "count": 36,
+        "pickOnly": true,
+        "primitiveType": 4
+      },
+      {
+        "pass": 3,
+        "offset": 0,
+        "count": 36,
+        "pickOnly": true,
+        "primitiveType": 4
+      },
+      {
+        "pass": 6,
+        "offset": 0,
+        "count": 36,
+        "pickOnly": true,
+        "primitiveType": 4
+      },
+      {
+        "pass": 3,
+        "offset": 36,
+        "count": 1524,
+        "pickOnly": true,
+        "primitiveType": 4
+      },
+      {
+        "pass": 6,
+        "offset": 36,
+        "count": 1524,
+        "pickOnly": true,
+        "primitiveType": 4
+      },
+      {
+        "pass": 3,
+        "offset": 36,
+        "count": 1524,
+        "pickOnly": true,
+        "primitiveType": 4
+      },
+      {
+        "pass": 6,
+        "offset": 36,
+        "count": 1524,
+        "pickOnly": true,
+        "primitiveType": 4
+      },
+      {
+        "pass": 3,
+        "offset": 1560,
+        "count": 24576,
+        "pickOnly": true,
+        "primitiveType": 4
+      },
+      {
+        "pass": 6,
+        "offset": 1560,
+        "count": 24576,
+        "pickOnly": true,
+        "primitiveType": 4
+      },
+      {
+        "pass": 3,
+        "offset": 1560,
+        "count": 24576,
+        "pickOnly": true,
+        "primitiveType": 4
+      },
+      {
+        "pass": 6,
+        "offset": 1560,
+        "count": 24576,
+        "pickOnly": true,
+        "primitiveType": 4
+      },
+      {
+        "pass": 3,
+        "offset": 26136,
+        "count": 24576,
+        "pickOnly": true,
+        "primitiveType": 4
+      },
+      {
+        "pass": 6,
+        "offset": 26136,
+        "count": 24576,
+        "pickOnly": true,
+        "primitiveType": 4
+      },
+      {
+        "pass": 3,
+        "offset": 26136,
+        "count": 24576,
+        "pickOnly": true,
+        "primitiveType": 4
+      },
+      {
+        "pass": 6,
+        "offset": 26136,
+        "count": 24576,
+        "pickOnly": true,
+        "primitiveType": 4
+      }
+    ],
+    "destroyed": true,
+    "glError": 0
+  },
+  "vector3DTilePolygons": {
+    "ready": true,
+    "trianglesLength": 16,
+    "geometryByteLength": 264,
+    "workerCall": {
+      "worker": "createVectorTilePolygons",
+      "transferCount": 9,
+      "packedBuffer": [
+        4,
+        -10,
+        25,
+        6378137,
+        0,
+        0,
+        6378137,
+        6378137,
+        6356752.314245179,
+        -0.1,
+        -0.1,
+        0.1,
+        0.1
+      ],
+      "batchTableColors": [
+        4278190335,
+        4278255360
+      ],
+      "batchIds": [
+        0,
+        1
+      ]
+    },
+    "primitiveCenter": [
+      6378137,
+      0,
+      0
+    ],
+    "batchedIndices": [
+      {
+        "offset": 0,
+        "count": 24,
+        "rgba": 4278190335,
+        "batchIds": [
+          0
+        ]
+      },
+      {
+        "offset": 24,
+        "count": 24,
+        "rgba": 4278255360,
+        "batchIds": [
+          1
+        ]
+      }
+    ],
+    "obbCount": 2,
+    "firstObbCenter": [
+      6343634.364106026,
+      -509616.6479224697,
+      236138.95488077487
+    ],
+    "commands": [
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": 24,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 519,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 519,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 144,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 24,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 96,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": 24,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 514,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 514,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 144,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 24,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 96,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": 24,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": true,
+            "srcRgb": 1,
+            "dstRgb": 771,
+            "srcAlpha": 1,
+            "dstAlpha": 771
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 144,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 24,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 96,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": 24,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": true,
+            "srcRgb": 1,
+            "dstRgb": 771,
+            "srcAlpha": 1,
+            "dstAlpha": 771
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 144,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 24,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 96,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 24,
+        "count": 24,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 519,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 519,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 144,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 24,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 96,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 24,
+        "count": 24,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": true,
+            "func": 515
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": false,
+            "srcRgb": 1,
+            "dstRgb": 0,
+            "srcAlpha": 1,
+            "dstAlpha": 0
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 514,
+            "frontOp": [
+              7680,
+              34056,
+              7680
+            ],
+            "backFunction": 514,
+            "backOp": [
+              7680,
+              34055,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 144,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 24,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 96,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 24,
+        "count": 24,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": true,
+            "srcRgb": 1,
+            "dstRgb": 771,
+            "srcAlpha": 1,
+            "dstAlpha": 771
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 144,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 24,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 96,
+          "indexUsage": 35048
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 24,
+        "count": 24,
+        "instanceCount": 0,
+        "cull": false,
+        "pickOnly": false,
+        "pickId": null,
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": false,
+            "face": 1029
+          },
+          "blending": {
+            "enabled": true,
+            "srcRgb": 1,
+            "dstRgb": 771,
+            "srcAlpha": 1,
+            "dstAlpha": 771
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": 15,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 517,
+            "frontOp": [
+              0,
+              0,
+              0
+            ],
+            "backFunction": 517,
+            "backOp": [
+              0,
+              0,
+              0
+            ],
+            "reference": 0,
+            "mask": 15
+          }
+        },
+        "vsDefines": [],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 2,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 144,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 24,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 96,
+          "indexUsage": 35048
+        }
+      }
+    ],
+    "glError": 0,
+    "destroyed": true
+  },
+  "vector3DTilePolylines": {
+    "ready": true,
+    "trianglesLength": 8,
+    "geometryByteLength": 784,
+    "workerCall": {
+      "worker": "createVectorTilePolylines",
+      "transferCount": 5,
+      "packedBuffer": [
+        10,
+        100,
+        -0.1,
+        -0.1,
+        0.1,
+        0.1,
+        6378137,
+        6378137,
+        6356752.314245179,
+        6378137,
+        0,
+        0
+      ],
+      "batchIds": [
+        0,
+        1
+      ]
+    },
+    "positionsBatch0": [
+      6325766.166057912,
+      -595717.7737389082,
+      -555506.3409504123,
+      6344709.177576244,
+      -480481.428958062,
+      -439850.60046786116,
+      6363401.703819719,
+      -325902.21208234614,
+      -285424.2243863249
+    ],
+    "positionsBatch1": [
+      6374552.128702174,
+      -170595.5314627094,
+      -130830.5904251242,
+      6378134.112199747,
+      -14929.770192213773,
+      23839.99729971792
+    ],
+    "positionsMissing": null,
+    "commandCount": 1,
+    "command": {
+      "pass": 9,
+      "primitiveType": 4,
+      "offset": 0,
+      "count": null,
+      "instanceCount": 0,
+      "cull": true,
+      "pickOnly": false,
+      "pickId": "vec4(1.0, 0.0, 0.0, 1.0)",
+      "renderState": {
+        "colorMask": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "depthMask": false,
+        "depthTest": {
+          "enabled": true,
+          "func": 513
+        },
+        "cull": {
+          "enabled": false,
+          "face": 1029
+        },
+        "blending": {
+          "enabled": true,
+          "srcRgb": 770,
+          "dstRgb": 771,
+          "srcAlpha": 1,
+          "dstAlpha": 771
+        },
+        "polygonOffset": {
+          "enabled": true,
+          "factor": -5,
+          "units": -5
+        },
+        "stencilMask": -1,
+        "stencilTest": {
+          "enabled": false,
+          "frontFunction": 519,
+          "frontOp": [
+            7680,
+            7680,
+            7680
+          ],
+          "backFunction": 519,
+          "backOp": [
+            7680,
+            7680,
+            7680
+          ],
+          "reference": 0,
+          "mask": -1
+        }
+      },
+      "vsDefines": [
+        "VECTOR_TILE",
+        "CLIP_POLYLINE"
+      ],
+      "fsDefines": [
+        "VECTOR_TILE"
+      ],
+      "va": {
+        "numberOfAttributes": 5,
+        "attributes": [
+          {
+            "index": 0,
+            "components": 3,
+            "datatype": 5126,
+            "normalize": false,
+            "instanceDivisor": 0,
+            "bufferBytes": 192,
+            "bufferUsage": 35044
+          },
+          {
+            "index": 1,
+            "components": 3,
+            "datatype": 5126,
+            "normalize": false,
+            "instanceDivisor": 0,
+            "bufferBytes": 192,
+            "bufferUsage": 35044
+          },
+          {
+            "index": 2,
+            "components": 3,
+            "datatype": 5126,
+            "normalize": false,
+            "instanceDivisor": 0,
+            "bufferBytes": 192,
+            "bufferUsage": 35044
+          },
+          {
+            "index": 3,
+            "components": 2,
+            "datatype": 5126,
+            "normalize": false,
+            "instanceDivisor": 0,
+            "bufferBytes": 128,
+            "bufferUsage": 35044
+          },
+          {
+            "index": 4,
+            "components": 1,
+            "datatype": 5123,
+            "normalize": false,
+            "instanceDivisor": 0,
+            "bufferBytes": 32,
+            "bufferUsage": 35044
+          }
+        ],
+        "hasIndexBuffer": true,
+        "indexDatatype": 5123,
+        "indexBytes": 48,
+        "indexUsage": 35044
+      }
+    },
+    "modifiedModelView": [
+      -4.930380657631324e-32,
+      2.220446049250313e-16,
+      1,
+      0,
+      1,
+      2.220446049250313e-16,
+      0,
+      0,
+      -2.220446049250313e-16,
+      1,
+      -2.220446049250313e-16,
+      0,
+      4.930380657631324e-29,
+      -2.220446049250313e-13,
+      -1000,
+      1
+    ],
+    "hlDefault": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "hlDebug": [
+      1,
+      0,
+      1,
+      1
+    ],
+    "glError": 0,
+    "destroyed": true
+  },
+  "vector3DTileClampedPolylines": {
+    "ready": true,
+    "initialHeights": [
+      -100000,
+      9000
+    ],
+    "updatedHeights": [
+      -100000,
+      9000
+    ],
+    "uHeights": [
+      -100000,
+      9000
+    ],
+    "obbCenter": [
+      6301456.144968186,
+      0,
+      0
+    ],
+    "trianglesLength": 36,
+    "geometryByteLength": 2376,
+    "workerCall": {
+      "worker": "createVectorTileClampedPolylines",
+      "transferCount": 5,
+      "packedBuffer": [
+        10,
+        100,
+        -0.1,
+        -0.1,
+        0.1,
+        0.1,
+        6378137,
+        6378137,
+        6356752.314245179,
+        6378137,
+        0,
+        0
+      ],
+      "batchIds": [
+        0,
+        1
+      ]
+    },
+    "positionsBatch0": [
+      6325766.166057912,
+      -595717.7737389082,
+      -555506.3409504123,
+      6344709.177576244,
+      -480481.428958062,
+      -439850.60046786116,
+      6363401.703819719,
+      -325902.21208234614,
+      -285424.2243863249
+    ],
+    "bothCommands": [
+      {
+        "pass": 3,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": null,
+        "instanceCount": 0,
+        "cull": true,
+        "pickOnly": false,
+        "pickId": "vec4(1.0, 0.0, 0.0, 1.0)",
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": true,
+            "face": 1028
+          },
+          "blending": {
+            "enabled": true,
+            "srcRgb": 1,
+            "dstRgb": 771,
+            "srcAlpha": 1,
+            "dstAlpha": 771
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": -1,
+          "stencilTest": {
+            "enabled": false,
+            "frontFunction": 514,
+            "frontOp": [
+              7680,
+              7680,
+              7680
+            ],
+            "backFunction": 514,
+            "backOp": [
+              7680,
+              7680,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [
+          "VECTOR_TILE",
+          "CLIP_POLYLINE"
+        ],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 7,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 288,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 288,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 2,
+              "components": 4,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 384,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 3,
+              "components": 4,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 384,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 4,
+              "components": 4,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 384,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 5,
+              "components": 4,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 384,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 6,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 48,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 216,
+          "indexUsage": 35044
+        }
+      },
+      {
+        "pass": 6,
+        "primitiveType": 4,
+        "offset": 0,
+        "count": null,
+        "instanceCount": 0,
+        "cull": true,
+        "pickOnly": false,
+        "pickId": "vec4(1.0, 0.0, 0.0, 1.0)",
+        "renderState": {
+          "colorMask": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "depthMask": false,
+          "depthTest": {
+            "enabled": false,
+            "func": 513
+          },
+          "cull": {
+            "enabled": true,
+            "face": 1028
+          },
+          "blending": {
+            "enabled": true,
+            "srcRgb": 1,
+            "dstRgb": 771,
+            "srcAlpha": 1,
+            "dstAlpha": 771
+          },
+          "polygonOffset": {
+            "enabled": false,
+            "factor": 0,
+            "units": 0
+          },
+          "stencilMask": -1,
+          "stencilTest": {
+            "enabled": true,
+            "frontFunction": 514,
+            "frontOp": [
+              7680,
+              7680,
+              7680
+            ],
+            "backFunction": 514,
+            "backOp": [
+              7680,
+              7680,
+              7680
+            ],
+            "reference": 128,
+            "mask": 128
+          }
+        },
+        "vsDefines": [
+          "VECTOR_TILE",
+          "CLIP_POLYLINE"
+        ],
+        "fsDefines": [
+          "VECTOR_TILE"
+        ],
+        "va": {
+          "numberOfAttributes": 7,
+          "attributes": [
+            {
+              "index": 0,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 288,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 1,
+              "components": 3,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 288,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 2,
+              "components": 4,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 384,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 3,
+              "components": 4,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 384,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 4,
+              "components": 4,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 384,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 5,
+              "components": 4,
+              "datatype": 5126,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 384,
+              "bufferUsage": 35044
+            },
+            {
+              "index": 6,
+              "components": 1,
+              "datatype": 5123,
+              "normalize": false,
+              "instanceDivisor": 0,
+              "bufferBytes": 48,
+              "bufferUsage": 35044
+            }
+          ],
+          "hasIndexBuffer": true,
+          "indexDatatype": 5123,
+          "indexBytes": 216,
+          "indexUsage": 35044
+        }
+      }
+    ],
+    "terrainPasses": [
+      3
+    ],
+    "tilesetPasses": [
+      6
+    ],
+    "glError": 0,
+    "destroyed": true
+  },
+  "vector3DTilePoints": {
+    "beforeReady": {
+      "ready": false,
+      "pointsLength": 0,
+      "texturesByteLength": 0
+    },
+    "afterDecodeBeforeFeatures": {
+      "ready": true,
+      "pointsLength": 2,
+      "texturesByteLength": 0,
+      "workerCall": {
+        "worker": "createVectorTilePoints",
+        "transferCount": 2,
+        "packedBuffer": [
+          10,
+          100,
+          -0.1,
+          -0.1,
+          0.1,
+          0.1,
+          6378137,
+          6378137,
+          6356752.314245179
+        ]
+      },
+      "billboardPos0": [
+        6373094.243187734,
+        -248440.48325650234,
+        -53499.01464709746
+      ],
+      "billboardPos1": [
+        6367868.232925742,
+        140587.39983606854,
+        333048.6507303856
+      ]
+    },
+    "defaultFeatureState": {
+      "show": true,
+      "billboardImageId": "[\"rgb(255,255,255)\",8,\"rgb(0,0,0)\",0]",
+      "labelText": " ",
+      "labelHorizontalOrigin": 1,
+      "labelVerticalOrigin": 2,
+      "horizontalOrigin": 0,
+      "verticalOrigin": 0,
+      "anchorLineEnabled": true
+    },
+    "afterDefaultAtlas": {
+      "billboardAtlasBytes": 1024,
+      "labelAtlasBytes": 1088,
+      "texturesByteLength": 2112,
+      "commandCount": 2
+    },
+    "afterStyled": {
+      "billboardImageId0": "[\"rgb(255,0,0)\",12,\"rgb(0,0,255)\",2]",
+      "billboardAtlasBytes": 8192,
+      "labelAtlasBytes": 16640,
+      "texturesByteLength": 24832,
+      "billboardHighlight": [
+        1,
+        0.6470588235294118,
+        0,
+        1
+      ],
+      "labelHighlight": [
+        1,
+        0.6470588235294118,
+        0,
+        1
+      ],
+      "polylineHighlight": [
+        1,
+        0.6470588235294118,
+        0,
+        1
+      ],
+      "polylineUseHighlightColor": true,
+      "styledCommandCount": 5,
+      "pickCommandCount": 5,
+      "hasBillboardPickId0": true,
+      "hasBillboardPickId1": true,
+      "distinctBillboardPicks": true,
+      "hasPolylinePickId0": true,
+      "hasLabelPickId0": true,
+      "f0PositionAfterOffset": [
+        6373119.223323067,
+        -248441.45704986822,
+        -53499.22575637805
+      ],
+      "f0PolylinePositions": [
+        [
+          6373094.243187734,
+          -248440.48325650234,
+          -53499.01464709746
+        ],
+        [
+          6373119.223323067,
+          -248441.45704986822,
+          -53499.22575637805
+        ]
+      ],
+      "f0LabelText": "P",
+      "f0PointSize": 12,
+      "f0AnchorLineEnabled": true,
+      "f0AnchorLineColor": [
+        1,
+        1,
+        0,
+        1
+      ]
+    },
+    "afterClear": {
+      "show": true,
+      "pointSize": 8,
+      "labelText": "",
+      "anchorLineEnabled": false,
+      "heightOffset": 0,
+      "billboardImageId": "[\"rgb(255,255,255)\",8,\"rgb(0,0,0)\",0]"
+    },
+    "destroyed": true,
+    "glError": 0
+  },
+  "vector3DTileContent": {
+    "floating": {
+      "beforeUpdate": {
+        "ready": false,
+        "featuresLength": 6,
+        "pointsLength": 0,
+        "batchTableByteLength": 36,
+        "hasName0": true,
+        "hasHeight2": true,
+        "hasSurface0": true,
+        "hasCategory5": true,
+        "hasCategory0": false,
+        "heightVal2": 30.5,
+        "surfaceVal1": "gravel",
+        "categoryVal5": "cafe",
+        "examined": [
+          {
+            "batchId": 2,
+            "positionsLen": 9,
+            "url": "https://example.test/rich.vctr"
+          },
+          {
+            "batchId": 3,
+            "positionsLen": 6,
+            "url": "https://example.test/rich.vctr"
+          }
+        ]
+      },
+      "afterReady": {
+        "ready": true,
+        "pointsLength": 2,
+        "trianglesLength": 24,
+        "geometryByteLength": 1048,
+        "texturesByteLength": 2112,
+        "batchTableByteLength": 36,
+        "polylinePositionsBatch2Len": 9,
+        "lastCmdCount": 7
+      },
+      "destroyed": true
+    },
+    "clamped": {
+      "beforeUpdate": {
+        "ready": false,
+        "featuresLength": 6,
+        "pointsLength": 0,
+        "batchTableByteLength": 36,
+        "hasName0": true,
+        "hasHeight2": true,
+        "hasSurface0": true,
+        "hasCategory5": true,
+        "hasCategory0": false,
+        "heightVal2": 30.5,
+        "surfaceVal1": "gravel",
+        "categoryVal5": "cafe",
+        "examined": [
+          {
+            "batchId": 2,
+            "positionsLen": 9,
+            "url": "https://example.test/rich.vctr"
+          },
+          {
+            "batchId": 3,
+            "positionsLen": 6,
+            "url": "https://example.test/rich.vctr"
+          }
+        ]
+      },
+      "afterReady": {
+        "ready": true,
+        "pointsLength": 2,
+        "trianglesLength": 52,
+        "geometryByteLength": 2640,
+        "texturesByteLength": 2112,
+        "batchTableByteLength": 36,
+        "polylinePositionsBatch2Len": 9,
+        "lastCmdCount": 5
+      },
+      "destroyed": true
+    },
+    "glError": 0
+  },
+  "gaussian": {
+    "maxTextureSize": 8192,
+    "degree0": {
+      "input": {
+        "pos": [
+          0,
+          0,
+          0,
+          1,
+          0.5,
+          -2,
+          -1,
+          2,
+          3,
+          0.5,
+          -1.5,
+          5
+        ],
+        "rot": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "scl": [
+          0.5,
+          0.5,
+          0.5,
+          1,
+          1,
+          1,
+          1.5,
+          0.75,
+          1.25,
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929
+        ],
+        "col": [
+          255,
+          0,
+          0,
+          255,
+          0,
+          255,
+          0,
+          200,
+          0,
+          0,
+          255,
+          180,
+          255,
+          255,
+          0,
+          255
+        ],
+        "sh": []
+      },
+      "contentSnap": {
+        "ready": true,
+        "transformed": true,
+        "pointsLength": 4,
+        "featuresLength": 0,
+        "trianglesLength": 0,
+        "geometryByteLength": null,
+        "batchTableByteLength": 0,
+        "shDegree": 0,
+        "shCoefs": 0,
+        "packedSh": [],
+        "transformedPositions": [
+          0,
+          0,
+          0,
+          1,
+          2,
+          0.5,
+          -1,
+          -3,
+          2,
+          0.5,
+          -5,
+          -1.5
+        ],
+        "transformedRotations": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "transformedScales": [
+          0.5,
+          0.5,
+          0.5,
+          1,
+          1,
+          1,
+          1.5,
+          0.75,
+          1.25,
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929
+        ],
+        "requiresExtTrue": true
+      },
+      "primSnap": {
+        "name": "degree0-identity",
+        "numSplats": 4,
+        "selectedTileLength": 1,
+        "ready": false,
+        "isStable": true,
+        "indexesBeforeMove": [
+          3,
+          0,
+          1,
+          2
+        ],
+        "indexesAfterMove": [
+          2,
+          1,
+          0,
+          3
+        ],
+        "contentTexturesByteLength": 32768,
+        "splatTexture": {
+          "width": 2048,
+          "height": 1,
+          "pixelFormat": 36249,
+          "pixelDatatype": 5125,
+          "sizeInBytes": 32768
+        },
+        "shTexture": null,
+        "command": {
+          "pass": 11,
+          "primitiveType": 5,
+          "offset": 0,
+          "count": 4,
+          "instanceCount": 4,
+          "cull": false,
+          "pickOnly": false,
+          "pickId": null,
+          "renderState": {
+            "colorMask": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "depthMask": false,
+            "depthTest": {
+              "enabled": true,
+              "func": 515
+            },
+            "cull": {
+              "enabled": false,
+              "face": 1029
+            },
+            "blending": {
+              "enabled": true,
+              "srcRgb": 1,
+              "dstRgb": 771,
+              "srcAlpha": 1,
+              "dstAlpha": 771
+            },
+            "polygonOffset": {
+              "enabled": false,
+              "factor": 0,
+              "units": 0
+            },
+            "stencilMask": -1,
+            "stencilTest": {
+              "enabled": false,
+              "frontFunction": 519,
+              "frontOp": [
+                7680,
+                7680,
+                7680
+              ],
+              "backFunction": 519,
+              "backOp": [
+                7680,
+                7680,
+                7680
+              ],
+              "reference": 0,
+              "mask": -1
+            }
+          },
+          "vsDefines": [],
+          "fsDefines": [],
+          "va": {
+            "numberOfAttributes": 2,
+            "attributes": [
+              {
+                "index": 0,
+                "components": 2,
+                "datatype": 5126,
+                "normalize": false,
+                "instanceDivisor": 0,
+                "bufferBytes": 32,
+                "bufferUsage": 35048
+              },
+              {
+                "index": 2,
+                "components": 1,
+                "datatype": 5125,
+                "normalize": false,
+                "instanceDivisor": 1,
+                "bufferBytes": 16,
+                "bufferUsage": 35048
+              }
+            ],
+            "hasIndexBuffer": false,
+            "indexDatatype": null,
+            "indexBytes": 0,
+            "indexUsage": null
+          }
+        },
+        "inverseModelRotation": [
+          0,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "uSplitDirection": -1,
+        "uShDegree": 0
+      }
+    },
+    "degree1Mirrored": {
+      "input": {
+        "pos": [
+          0,
+          0,
+          0,
+          1,
+          0.5,
+          -2,
+          -1,
+          2,
+          3,
+          0.5,
+          -1.5,
+          5
+        ],
+        "rot": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "scl": [
+          0.5,
+          0.5,
+          0.5,
+          1,
+          1,
+          1,
+          1.5,
+          0.75,
+          1.25,
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929
+        ],
+        "col": [
+          255,
+          0,
+          0,
+          255,
+          0,
+          255,
+          0,
+          200,
+          0,
+          0,
+          255,
+          180,
+          255,
+          255,
+          0,
+          255
+        ],
+        "sh": [
+          [
+            -0.8999999761581421,
+            -0.6000000238418579,
+            -0.30000001192092896,
+            0,
+            0.30000001192092896,
+            0.6000000238418579,
+            0.8999999761581421,
+            -0.699999988079071,
+            -0.4000000059604645,
+            -0.10000000149011612,
+            0.20000000298023224,
+            0.5
+          ],
+          [
+            0.20000000298023224,
+            0.5,
+            0.800000011920929,
+            -0.800000011920929,
+            -0.5,
+            -0.20000000298023224,
+            0.10000000149011612,
+            0.4000000059604645,
+            0.699999988079071,
+            -0.8999999761581421,
+            -0.6000000238418579,
+            -0.30000001192092896
+          ],
+          [
+            -0.6000000238418579,
+            -0.30000001192092896,
+            0,
+            0.30000001192092896,
+            0.6000000238418579,
+            0.8999999761581421,
+            -0.699999988079071,
+            -0.4000000059604645,
+            -0.10000000149011612,
+            0.20000000298023224,
+            0.5,
+            0.800000011920929
+          ]
+        ]
+      },
+      "contentSnap": {
+        "ready": true,
+        "transformed": true,
+        "pointsLength": 4,
+        "featuresLength": 0,
+        "trianglesLength": 0,
+        "geometryByteLength": null,
+        "batchTableByteLength": 0,
+        "shDegree": 1,
+        "shCoefs": 9,
+        "packedSh": [
+          3100425011,
+          46284,
+          939536998,
+          14950,
+          3033315532,
+          0,
+          885784576,
+          14540,
+          3087055462,
+          45670,
+          952906956,
+          15155,
+          3113827123,
+          46694,
+          912666214,
+          14745,
+          3060185497,
+          44646,
+          845590118,
+          14336,
+          3100425011,
+          46284,
+          939536998,
+          14950
+        ],
+        "transformedPositions": [
+          0,
+          0,
+          -12756274,
+          1,
+          2,
+          -12756274,
+          -1,
+          -3,
+          -12756276,
+          0.5,
+          -5,
+          -12756272
+        ],
+        "transformedRotations": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "transformedScales": [
+          0.5,
+          0.5,
+          0.5,
+          1,
+          1,
+          1,
+          1.5,
+          0.75,
+          1.25,
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929
+        ],
+        "requiresExtTrue": true
+      },
+      "primSnap": {
+        "name": "degree1-mirrored",
+        "numSplats": 4,
+        "selectedTileLength": 1,
+        "ready": false,
+        "isStable": true,
+        "indexesBeforeMove": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "indexesAfterMove": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "contentTexturesByteLength": 32768,
+        "splatTexture": {
+          "width": 2048,
+          "height": 1,
+          "pixelFormat": 36249,
+          "pixelDatatype": 5125,
+          "sizeInBytes": 32768
+        },
+        "shTexture": {
+          "width": 8192,
+          "height": 1,
+          "pixelFormat": 33320,
+          "pixelDatatype": 5125,
+          "sizeInBytes": 65536
+        },
+        "command": {
+          "pass": 11,
+          "primitiveType": 5,
+          "offset": 0,
+          "count": 4,
+          "instanceCount": 4,
+          "cull": false,
+          "pickOnly": false,
+          "pickId": null,
+          "renderState": {
+            "colorMask": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "depthMask": false,
+            "depthTest": {
+              "enabled": true,
+              "func": 515
+            },
+            "cull": {
+              "enabled": false,
+              "face": 1028
+            },
+            "blending": {
+              "enabled": true,
+              "srcRgb": 1,
+              "dstRgb": 771,
+              "srcAlpha": 1,
+              "dstAlpha": 771
+            },
+            "polygonOffset": {
+              "enabled": false,
+              "factor": 0,
+              "units": 0
+            },
+            "stencilMask": -1,
+            "stencilTest": {
+              "enabled": false,
+              "frontFunction": 519,
+              "frontOp": [
+                7680,
+                7680,
+                7680
+              ],
+              "backFunction": 519,
+              "backOp": [
+                7680,
+                7680,
+                7680
+              ],
+              "reference": 0,
+              "mask": -1
+            }
+          },
+          "vsDefines": [
+            "HAS_SPHERICAL_HARMONICS 1"
+          ],
+          "fsDefines": [],
+          "va": {
+            "numberOfAttributes": 2,
+            "attributes": [
+              {
+                "index": 0,
+                "components": 2,
+                "datatype": 5126,
+                "normalize": false,
+                "instanceDivisor": 0,
+                "bufferBytes": 32,
+                "bufferUsage": 35048
+              },
+              {
+                "index": 2,
+                "components": 1,
+                "datatype": 5125,
+                "normalize": false,
+                "instanceDivisor": 1,
+                "bufferBytes": 16,
+                "bufferUsage": 35048
+              }
+            ],
+            "hasIndexBuffer": false,
+            "indexDatatype": null,
+            "indexBytes": 0,
+            "indexUsage": null
+          }
+        },
+        "inverseModelRotation": [
+          "-0",
+          "-0",
+          -1,
+          1,
+          "-0",
+          "-0",
+          "-0",
+          1,
+          "-0",
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "uSplitDirection": 0,
+        "uShDegree": 1
+      }
+    },
+    "glError": 0
+  }
+}

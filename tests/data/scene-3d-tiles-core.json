@@ -1,0 +1,3272 @@
+{
+  "cesiumVersion": "23.0.0",
+  "cesium3DTile": {
+    "rootHeader": {
+      "boundingVolume": {
+        "box": [
+          0,
+          0,
+          0,
+          50,
+          0,
+          0,
+          0,
+          40,
+          0,
+          0,
+          0,
+          30
+        ]
+      },
+      "content": {
+        "uri": "root.b3dm",
+        "boundingVolume": {
+          "sphere": [
+            1,
+            2,
+            3,
+            25
+          ]
+        }
+      },
+      "viewerRequestVolume": {
+        "sphere": [
+          0,
+          0,
+          0,
+          200
+        ]
+      },
+      "geometricError": 120,
+      "refine": "ADD",
+      "transform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        100,
+        200,
+        300,
+        1
+      ],
+      "extras": {
+        "author": "cesium",
+        "level": 0
+      }
+    },
+    "childHeader": {
+      "boundingVolume": {
+        "sphere": [
+          5,
+          0,
+          0,
+          10
+        ]
+      },
+      "content": {
+        "uri": "child.b3dm"
+      },
+      "transform": [
+        1.414213562373095,
+        1.4142135623730951,
+        0,
+        0,
+        -2.121320343559643,
+        2.1213203435596424,
+        0,
+        0,
+        0,
+        0,
+        1.5,
+        0,
+        10,
+        -20,
+        30,
+        1
+      ]
+    },
+    "grandChildHeader": {
+      "boundingVolume": {
+        "region": [
+          -0.2,
+          0.1,
+          0.2,
+          0.4,
+          10,
+          150
+        ]
+      },
+      "geometricError": 15,
+      "refine": "replace",
+      "transform": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        5,
+        0,
+        1
+      ]
+    },
+    "regionHeader": {
+      "boundingVolume": {
+        "region": [
+          -0.1,
+          0.2,
+          0.1,
+          0.35,
+          20,
+          220
+        ]
+      },
+      "contents": [
+        {
+          "uri": "a.b3dm"
+        },
+        {
+          "uri": "b.b3dm"
+        }
+      ]
+    },
+    "s2Header": {
+      "boundingVolume": {
+        "extensions": {
+          "3DTILES_bounding_volume_S2": {
+            "token": "1",
+            "minimumHeight": 0,
+            "maximumHeight": 1000
+          }
+        }
+      },
+      "geometricError": 40,
+      "refine": "add",
+      "content": {
+        "uri": ""
+      }
+    },
+    "tilesetModelMatrix": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1000,
+      0,
+      0,
+      1
+    ],
+    "shiftedModel": [
+      2,
+      0,
+      0,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      2,
+      0,
+      2000,
+      -500,
+      100,
+      1
+    ],
+    "regionDeltaModel": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      50,
+      -30,
+      10,
+      1
+    ],
+    "initial": {
+      "rootFar": {
+        "computedTransform": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          1100,
+          200,
+          300,
+          1
+        ],
+        "boundingSphere": {
+          "center": [
+            1100,
+            200,
+            300
+          ],
+          "radius": 70.71067811865476
+        },
+        "contentBoundingSphere": {
+          "center": [
+            1101,
+            202,
+            303
+          ],
+          "radius": 25
+        },
+        "geometricError": 120,
+        "unscaledGeometricError": 120,
+        "refine": "ADD",
+        "hasEmptyContent": false,
+        "hasMultipleContents": false,
+        "hasRenderableContent": true,
+        "extras": {
+          "author": "cesium",
+          "level": 0
+        },
+        "distanceToTile": 470,
+        "distanceToTileCenter": 500,
+        "insideViewerRequestVolume": false,
+        "visibleInFrustum": true,
+        "isVisible": false
+      },
+      "rootInside": {
+        "computedTransform": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          1100,
+          200,
+          300,
+          1
+        ],
+        "boundingSphere": {
+          "center": [
+            1100,
+            200,
+            300
+          ],
+          "radius": 70.71067811865476
+        },
+        "contentBoundingSphere": {
+          "center": [
+            1101,
+            202,
+            303
+          ],
+          "radius": 25
+        },
+        "geometricError": 120,
+        "unscaledGeometricError": 120,
+        "refine": "ADD",
+        "hasEmptyContent": false,
+        "hasMultipleContents": false,
+        "hasRenderableContent": true,
+        "extras": {
+          "author": "cesium",
+          "level": 0
+        },
+        "distanceToTile": 20,
+        "distanceToTileCenter": 50,
+        "insideViewerRequestVolume": true,
+        "visibleInFrustum": true,
+        "isVisible": true
+      },
+      "rootAway": {
+        "computedTransform": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          1100,
+          200,
+          300,
+          1
+        ],
+        "boundingSphere": {
+          "center": [
+            1100,
+            200,
+            300
+          ],
+          "radius": 70.71067811865476
+        },
+        "contentBoundingSphere": {
+          "center": [
+            1101,
+            202,
+            303
+          ],
+          "radius": 25
+        },
+        "geometricError": 120,
+        "unscaledGeometricError": 120,
+        "refine": "ADD",
+        "hasEmptyContent": false,
+        "hasMultipleContents": false,
+        "hasRenderableContent": true,
+        "extras": {
+          "author": "cesium",
+          "level": 0
+        },
+        "distanceToTile": 470,
+        "distanceToTileCenter": -500,
+        "insideViewerRequestVolume": false,
+        "visibleInFrustum": false,
+        "isVisible": false
+      },
+      "childFar": {
+        "computedTransform": [
+          1.414213562373095,
+          1.4142135623730951,
+          0,
+          0,
+          -2.121320343559643,
+          2.1213203435596424,
+          0,
+          0,
+          0,
+          0,
+          1.5,
+          0,
+          1110,
+          180,
+          330,
+          1
+        ],
+        "boundingSphere": {
+          "center": [
+            1117.0710678118655,
+            187.07106781186548,
+            330
+          ],
+          "radius": 30
+        },
+        "contentBoundingSphere": {
+          "center": [
+            1117.0710678118655,
+            187.07106781186548,
+            330
+          ],
+          "radius": 30
+        },
+        "geometricError": 360,
+        "unscaledGeometricError": 120,
+        "refine": "ADD",
+        "hasEmptyContent": false,
+        "hasMultipleContents": false,
+        "hasRenderableContent": true,
+        "extras": null,
+        "distanceToTile": 440.487596694921,
+        "distanceToTileCenter": 470,
+        "insideViewerRequestVolume": true,
+        "visibleInFrustum": true,
+        "isVisible": true
+      },
+      "grandChildFar": {
+        "computedTransform": [
+          1.414213562373095,
+          1.4142135623730951,
+          0,
+          0,
+          -2.121320343559643,
+          2.1213203435596424,
+          0,
+          0,
+          0,
+          0,
+          1.5,
+          0,
+          1099.3933982822018,
+          190.6066017177982,
+          330,
+          1
+        ],
+        "boundingSphere": {
+          "center": [
+            39544824.32116804,
+            -15209990.03295001,
+            3505447.9355339385
+          ],
+          "radius": 9723497.288564282
+        },
+        "contentBoundingSphere": {
+          "center": [
+            39544824.32116804,
+            -15209990.03295001,
+            3505447.9355339385
+          ],
+          "radius": 9723497.288564282
+        },
+        "geometricError": 45,
+        "unscaledGeometricError": 15,
+        "refine": "REPLACE",
+        "hasEmptyContent": true,
+        "hasMultipleContents": false,
+        "hasRenderableContent": false,
+        "extras": null,
+        "distanceToTile": 50706965.32685801,
+        "distanceToTileCenter": -3504647.9355339385,
+        "insideViewerRequestVolume": true,
+        "visibleInFrustum": false,
+        "isVisible": false
+      },
+      "regionInitial": {
+        "computedTransform": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "boundingSphere": {
+          "center": [
+            6115941.665284903,
+            0,
+            1718328.6507539342
+          ],
+          "radius": 787239.1914621606
+        },
+        "contentBoundingSphere": {
+          "center": [
+            6115941.665284903,
+            0,
+            1718328.6507539342
+          ],
+          "radius": 787239.1914621606
+        },
+        "geometricError": 80,
+        "unscaledGeometricError": 80,
+        "refine": "REPLACE",
+        "hasEmptyContent": false,
+        "hasMultipleContents": true,
+        "hasRenderableContent": true,
+        "extras": null,
+        "distanceToTile": 6369532.361157559,
+        "distanceToTileCenter": -1717528.6507539342,
+        "insideViewerRequestVolume": true,
+        "visibleInFrustum": false,
+        "isVisible": false
+      },
+      "s2Initial": {
+        "computedTransform": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "boundingSphere": {
+          "center": [
+            6379137,
+            0,
+            0
+          ],
+          "radius": 9004028.239240104
+        },
+        "contentBoundingSphere": {
+          "center": [
+            6379137,
+            0,
+            0
+          ],
+          "radius": 9004028.239240104
+        },
+        "geometricError": 40,
+        "unscaledGeometricError": 40,
+        "refine": "ADD",
+        "hasEmptyContent": true,
+        "hasMultipleContents": false,
+        "hasRenderableContent": false,
+        "extras": null,
+        "distanceToTile": 6370756.336188798,
+        "distanceToTileCenter": 800,
+        "insideViewerRequestVolume": true,
+        "visibleInFrustum": false,
+        "isVisible": false
+      }
+    },
+    "afterTransform": {
+      "root": {
+        "computedTransform": [
+          2,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          2200,
+          -100,
+          700,
+          1
+        ],
+        "boundingSphere": {
+          "center": [
+            -6049501.090488858,
+            282258.56390447053,
+            -1960189.7608770216
+          ],
+          "radius": 346191.5721643262
+        },
+        "contentBoundingSphere": {
+          "center": [
+            -6054491.635380091,
+            263956.03859967703,
+            -1967367.697403514
+          ],
+          "radius": 100
+        },
+        "geometricError": 240,
+        "unscaledGeometricError": 120,
+        "refine": "ADD",
+        "hasEmptyContent": false,
+        "hasMultipleContents": false,
+        "hasRenderableContent": true,
+        "extras": {
+          "author": "cesium",
+          "level": 0
+        },
+        "distanceToTile": 6365121.06376604,
+        "distanceToTileCenter": 1961189.7608770216,
+        "insideViewerRequestVolume": false,
+        "visibleInFrustum": false,
+        "isVisible": false
+      },
+      "child": {
+        "computedTransform": [
+          2.82842712474619,
+          2.8284271247461903,
+          0,
+          0,
+          -4.242640687119286,
+          4.242640687119285,
+          0,
+          0,
+          0,
+          0,
+          3,
+          0,
+          2220,
+          -140,
+          760,
+          1
+        ],
+        "boundingSphere": {
+          "center": [
+            -6014813.75899705,
+            338837.71415332274,
+            -2073699.8392256838
+          ],
+          "radius": 120
+        },
+        "contentBoundingSphere": {
+          "center": [
+            -6014813.75899705,
+            338837.71415332274,
+            -2073699.8392256838
+          ],
+          "radius": 120
+        },
+        "geometricError": 720,
+        "unscaledGeometricError": 120,
+        "refine": "ADD",
+        "hasEmptyContent": false,
+        "hasMultipleContents": false,
+        "hasRenderableContent": true,
+        "extras": null,
+        "distanceToTile": 6373553.412790961,
+        "distanceToTileCenter": 2074699.8392256838,
+        "insideViewerRequestVolume": true,
+        "visibleInFrustum": false,
+        "isVisible": false
+      },
+      "regionShifted": {
+        "computedTransform": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          50,
+          -30,
+          10,
+          1
+        ],
+        "boundingSphere": {
+          "center": [
+            6115991.665284903,
+            -30,
+            1718338.6507539342
+          ],
+          "radius": 787239.1914621606
+        },
+        "isObb": true
+      },
+      "regionExaggerated": {
+        "boundingSphere": {
+          "center": [
+            6115980.700028256,
+            0,
+            1718339.8232458737
+          ],
+          "radius": 787274.9618994032
+        },
+        "minimumHeight": -140,
+        "maximumHeight": 460
+      }
+    },
+    "lifecycle": [
+      {
+        "step": "initial",
+        "state": 0,
+        "hasEmptyContent": false,
+        "contentUnloaded": true,
+        "contentReady": false,
+        "contentExpired": false,
+        "contentFailed": false,
+        "hasUnloadedRenderableContent": true,
+        "contentAvailable": false
+      },
+      {
+        "step": "loading",
+        "state": 1,
+        "hasEmptyContent": false,
+        "contentUnloaded": false,
+        "contentReady": false,
+        "contentExpired": false,
+        "contentFailed": false,
+        "hasUnloadedRenderableContent": false,
+        "contentAvailable": false
+      },
+      {
+        "step": "processing",
+        "state": 2,
+        "hasEmptyContent": false,
+        "contentUnloaded": false,
+        "contentReady": false,
+        "contentExpired": false,
+        "contentFailed": false,
+        "hasUnloadedRenderableContent": false,
+        "contentAvailable": false
+      },
+      {
+        "step": "ready",
+        "state": 3,
+        "hasEmptyContent": false,
+        "contentUnloaded": false,
+        "contentReady": true,
+        "contentExpired": false,
+        "contentFailed": false,
+        "hasUnloadedRenderableContent": false,
+        "contentAvailable": true
+      },
+      {
+        "step": "expiredWithFallback",
+        "state": 4,
+        "hasEmptyContent": false,
+        "contentUnloaded": false,
+        "contentReady": false,
+        "contentExpired": true,
+        "contentFailed": false,
+        "hasUnloadedRenderableContent": false,
+        "contentAvailable": true
+      },
+      {
+        "step": "failedWithExpired",
+        "state": 5,
+        "hasEmptyContent": false,
+        "contentUnloaded": false,
+        "contentReady": false,
+        "contentExpired": false,
+        "contentFailed": true,
+        "hasUnloadedRenderableContent": false,
+        "contentAvailable": false
+      },
+      {
+        "step": "failedNoExpired",
+        "state": 5,
+        "hasEmptyContent": false,
+        "contentUnloaded": false,
+        "contentReady": false,
+        "contentExpired": false,
+        "contentFailed": true,
+        "hasUnloadedRenderableContent": false,
+        "contentAvailable": false
+      },
+      {
+        "step": "emptyTile",
+        "state": 3,
+        "hasEmptyContent": true,
+        "contentUnloaded": false,
+        "contentReady": true,
+        "contentExpired": false,
+        "contentFailed": false,
+        "hasUnloadedRenderableContent": false,
+        "contentAvailable": false
+      }
+    ]
+  },
+  "cesium3DTileBatchTable": {
+    "batchTableJson": {
+      "name": [
+        "alpha",
+        "beta",
+        "gamma"
+      ],
+      "active": [
+        true,
+        false,
+        true
+      ],
+      "tags": [
+        [
+          "a",
+          "b"
+        ],
+        [],
+        [
+          "c"
+        ]
+      ],
+      "meta": [
+        {
+          "k": 1
+        },
+        {
+          "k": 2
+        },
+        {
+          "k": 3
+        }
+      ],
+      "nullableProp": [
+        10,
+        null,
+        30
+      ],
+      "extras": {
+        "ignored": true
+      },
+      "b_byte": {
+        "byteOffset": 0,
+        "componentType": "BYTE",
+        "type": "SCALAR"
+      },
+      "b_ubyte": {
+        "byteOffset": 4,
+        "componentType": "UNSIGNED_BYTE",
+        "type": "SCALAR"
+      },
+      "b_short2": {
+        "byteOffset": 8,
+        "componentType": "SHORT",
+        "type": "VEC2"
+      },
+      "b_ushort3": {
+        "byteOffset": 20,
+        "componentType": "UNSIGNED_SHORT",
+        "type": "VEC3"
+      },
+      "b_int": {
+        "byteOffset": 40,
+        "componentType": "INT",
+        "type": "SCALAR"
+      },
+      "b_uint": {
+        "byteOffset": 52,
+        "componentType": "UNSIGNED_INT",
+        "type": "SCALAR"
+      },
+      "b_float4": {
+        "byteOffset": 64,
+        "componentType": "FLOAT",
+        "type": "VEC4"
+      },
+      "b_double2": {
+        "byteOffset": 112,
+        "componentType": "DOUBLE",
+        "type": "VEC2"
+      },
+      "extensions": {
+        "3DTILES_batch_table_hierarchy": {
+          "classes": [
+            {
+              "name": "Door",
+              "length": 2,
+              "instances": {
+                "door_width": {
+                  "byteOffset": 160,
+                  "componentType": "FLOAT",
+                  "type": "SCALAR"
+                },
+                "door_color": [
+                  "brown",
+                  "white"
+                ]
+              }
+            },
+            {
+              "name": "Wall",
+              "length": 1,
+              "instances": {
+                "wall_material": [
+                  "brick"
+                ]
+              }
+            },
+            {
+              "name": "Building",
+              "length": 1,
+              "instances": {
+                "building_name": [
+                  "HQ"
+                ],
+                "building_floors": [
+                  12
+                ]
+              }
+            }
+          ],
+          "instancesLength": 4,
+          "classIds": [
+            0,
+            0,
+            1,
+            2
+          ],
+          "parentCounts": [
+            1,
+            2,
+            1,
+            0
+          ],
+          "parentIds": [
+            2,
+            2,
+            3,
+            3
+          ]
+        }
+      }
+    },
+    "binaryBase64": "9gB/AAGA/wDU/pABAAD//wB9AIMBAAIAAwBkAMgALAHo/en9//8AAGB5/v8AAAAAQA0DAAAAAAAgoQcAAChr7gAAwD8AACDAAABQQAAAgEAAAAA/AACAPgAAAD4AAIA/AAAQwQAACEEAAOhAAADQQMl2vp8MJP5ArBxapAwkLsEAAAAAAAAAAI3ttaD3xrA+AAAAAABARUAAAAAAAADAv2ZmZj+amZk/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+    "beforeUpdate": {
+      "featuresLength": 3,
+      "batchTableByteLength": 180,
+      "propertyIds": [
+        [
+          "name",
+          "active",
+          "tags",
+          "meta",
+          "nullableProp",
+          "b_byte",
+          "b_ubyte",
+          "b_short2",
+          "b_ushort3",
+          "b_int",
+          "b_uint",
+          "b_float4",
+          "b_double2",
+          "door_width",
+          "door_color",
+          "wall_material",
+          "building_name",
+          "building_floors"
+        ],
+        [
+          "name",
+          "active",
+          "tags",
+          "meta",
+          "nullableProp",
+          "b_byte",
+          "b_ubyte",
+          "b_short2",
+          "b_ushort3",
+          "b_int",
+          "b_uint",
+          "b_float4",
+          "b_double2",
+          "door_width",
+          "door_color",
+          "building_name",
+          "building_floors",
+          "wall_material"
+        ],
+        [
+          "name",
+          "active",
+          "tags",
+          "meta",
+          "nullableProp",
+          "b_byte",
+          "b_ubyte",
+          "b_short2",
+          "b_ushort3",
+          "b_int",
+          "b_uint",
+          "b_float4",
+          "b_double2",
+          "wall_material",
+          "building_name",
+          "building_floors"
+        ]
+      ],
+      "hasProperties": [
+        {
+          "name": true,
+          "nullableProp": true,
+          "b_float4": true,
+          "door_width": true,
+          "wall_material": true,
+          "building_name": true,
+          "missing": false
+        },
+        {
+          "name": true,
+          "nullableProp": true,
+          "b_float4": true,
+          "door_width": true,
+          "wall_material": true,
+          "building_name": true,
+          "missing": false
+        },
+        {
+          "name": true,
+          "nullableProp": true,
+          "b_float4": true,
+          "door_width": false,
+          "wall_material": true,
+          "building_name": true,
+          "missing": false
+        }
+      ],
+      "classes": [
+        {
+          "exact": "Door",
+          "isExactDoor": true,
+          "isExactWall": false,
+          "isClassDoor": true,
+          "isClassWall": true,
+          "isClassBuilding": true,
+          "isClassUnknown": false
+        },
+        {
+          "exact": "Door",
+          "isExactDoor": true,
+          "isExactWall": false,
+          "isClassDoor": true,
+          "isClassWall": true,
+          "isClassBuilding": true,
+          "isClassUnknown": false
+        },
+        {
+          "exact": "Wall",
+          "isExactDoor": false,
+          "isExactWall": true,
+          "isClassDoor": false,
+          "isClassWall": true,
+          "isClassBuilding": true,
+          "isClassUnknown": false
+        }
+      ],
+      "initialValues": [
+        {
+          "name": {
+            "kind": "string",
+            "value": "alpha"
+          },
+          "active": {
+            "kind": "bool",
+            "value": true
+          },
+          "tags": {
+            "kind": "array",
+            "value": [
+              {
+                "kind": "string",
+                "value": "a"
+              },
+              {
+                "kind": "string",
+                "value": "b"
+              }
+            ]
+          },
+          "meta": {
+            "kind": "object",
+            "value": {
+              "k": 1
+            }
+          },
+          "nullableProp": {
+            "kind": "number",
+            "value": 10
+          },
+          "b_byte": {
+            "kind": "number",
+            "value": -10
+          },
+          "b_ubyte": {
+            "kind": "number",
+            "value": 1
+          },
+          "b_short2": {
+            "kind": "vec2",
+            "value": [
+              -300,
+              400
+            ]
+          },
+          "b_ushort3": {
+            "kind": "vec3",
+            "value": [
+              1,
+              2,
+              3
+            ]
+          },
+          "b_int": {
+            "kind": "number",
+            "value": -100000
+          },
+          "b_uint": {
+            "kind": "number",
+            "value": 0
+          },
+          "b_float4": {
+            "kind": "vec4",
+            "value": [
+              1.5,
+              -2.5,
+              3.25,
+              4
+            ]
+          },
+          "b_double2": {
+            "kind": "vec2",
+            "value": [
+              123456.789,
+              -987654.321
+            ]
+          },
+          "door_width": {
+            "kind": "number",
+            "value": 0.8999999761581421
+          },
+          "door_color": {
+            "kind": "string",
+            "value": "brown"
+          },
+          "wall_material": {
+            "kind": "string",
+            "value": "brick"
+          },
+          "building_name": {
+            "kind": "string",
+            "value": "HQ"
+          },
+          "building_floors": {
+            "kind": "number",
+            "value": 12
+          },
+          "missing": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "name": {
+            "kind": "string",
+            "value": "beta"
+          },
+          "active": {
+            "kind": "bool",
+            "value": false
+          },
+          "tags": {
+            "kind": "array",
+            "value": []
+          },
+          "meta": {
+            "kind": "object",
+            "value": {
+              "k": 2
+            }
+          },
+          "nullableProp": {
+            "kind": "null"
+          },
+          "b_byte": {
+            "kind": "number",
+            "value": 0
+          },
+          "b_ubyte": {
+            "kind": "number",
+            "value": 128
+          },
+          "b_short2": {
+            "kind": "vec2",
+            "value": [
+              0,
+              -1
+            ]
+          },
+          "b_ushort3": {
+            "kind": "vec3",
+            "value": [
+              100,
+              200,
+              300
+            ]
+          },
+          "b_int": {
+            "kind": "number",
+            "value": 0
+          },
+          "b_uint": {
+            "kind": "number",
+            "value": 500000
+          },
+          "b_float4": {
+            "kind": "vec4",
+            "value": [
+              0.5,
+              0.25,
+              0.125,
+              1
+            ]
+          },
+          "b_double2": {
+            "kind": "vec2",
+            "value": [
+              0,
+              0.000001
+            ]
+          },
+          "door_width": {
+            "kind": "number",
+            "value": 1.2000000476837158
+          },
+          "door_color": {
+            "kind": "string",
+            "value": "white"
+          },
+          "wall_material": {
+            "kind": "string",
+            "value": "brick"
+          },
+          "building_name": {
+            "kind": "string",
+            "value": "HQ"
+          },
+          "building_floors": {
+            "kind": "number",
+            "value": 12
+          },
+          "missing": {
+            "kind": "undefined"
+          }
+        },
+        {
+          "name": {
+            "kind": "string",
+            "value": "gamma"
+          },
+          "active": {
+            "kind": "bool",
+            "value": true
+          },
+          "tags": {
+            "kind": "array",
+            "value": [
+              {
+                "kind": "string",
+                "value": "c"
+              }
+            ]
+          },
+          "meta": {
+            "kind": "object",
+            "value": {
+              "k": 3
+            }
+          },
+          "nullableProp": {
+            "kind": "number",
+            "value": 30
+          },
+          "b_byte": {
+            "kind": "number",
+            "value": 127
+          },
+          "b_ubyte": {
+            "kind": "number",
+            "value": 255
+          },
+          "b_short2": {
+            "kind": "vec2",
+            "value": [
+              32000,
+              -32000
+            ]
+          },
+          "b_ushort3": {
+            "kind": "vec3",
+            "value": [
+              65000,
+              65001,
+              65535
+            ]
+          },
+          "b_int": {
+            "kind": "number",
+            "value": 200000
+          },
+          "b_uint": {
+            "kind": "number",
+            "value": 4000000000
+          },
+          "b_float4": {
+            "kind": "vec4",
+            "value": [
+              -9,
+              8.5,
+              7.25,
+              6.5
+            ]
+          },
+          "b_double2": {
+            "kind": "vec2",
+            "value": [
+              42.5,
+              -0.125
+            ]
+          },
+          "door_width": {
+            "kind": "undefined"
+          },
+          "door_color": {
+            "kind": "undefined"
+          },
+          "wall_material": {
+            "kind": "string",
+            "value": "brick"
+          },
+          "building_name": {
+            "kind": "string",
+            "value": "HQ"
+          },
+          "building_floors": {
+            "kind": "number",
+            "value": 12
+          },
+          "missing": {
+            "kind": "undefined"
+          }
+        }
+      ]
+    },
+    "afterMutate": {
+      "name0": {
+        "kind": "string",
+        "value": "alpha_updated"
+      },
+      "b_short2_1": {
+        "kind": "vec2",
+        "value": [
+          77,
+          -88
+        ]
+      },
+      "b_float4_2": {
+        "kind": "vec4",
+        "value": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "door_width_0": {
+        "kind": "number",
+        "value": 1.75
+      },
+      "door_color_0": {
+        "kind": "string",
+        "value": "red"
+      },
+      "dynamic_prop": [
+        {
+          "kind": "undefined"
+        },
+        {
+          "kind": "number",
+          "value": 999
+        },
+        {
+          "kind": "undefined"
+        }
+      ],
+      "inheritedSetError": "Inherited property \"building_name\" is read-only."
+    },
+    "initialShow": [
+      true,
+      true,
+      true
+    ],
+    "initialColor": [
+      [
+        1,
+        1,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        1,
+        1
+      ]
+    ],
+    "afterManualShowColor": {
+      "show": [
+        true,
+        false,
+        true
+      ],
+      "color": [
+        [
+          1,
+          0,
+          0,
+          0.5019607843137255
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0.5019607843137255,
+          1,
+          1
+        ]
+      ],
+      "translucentCount": 1
+    },
+    "afterGpuUpdate": {
+      "batchTableByteLength": 204,
+      "hasBatchTexture": true,
+      "hasPickTexture": true,
+      "pickColors": [
+        [
+          0.00392156862745098,
+          0,
+          0,
+          0
+        ],
+        [
+          0.00784313725490196,
+          0,
+          0,
+          0
+        ],
+        [
+          0.011764705882352941,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    "afterStyle": {
+      "show": [
+        false,
+        true,
+        true
+      ],
+      "color": [
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          0.25098039215686274
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ]
+      ]
+    },
+    "afterStyleReset": {
+      "show": [
+        true,
+        true,
+        true
+      ],
+      "color": [
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ]
+      ]
+    },
+    "legacyHierarchy": {
+      "exact0": "Room",
+      "isClassFloor0": true,
+      "room0": {
+        "kind": "number",
+        "value": 101
+      },
+      "floor0": {
+        "kind": "number",
+        "value": 2
+      },
+      "ids0": [
+        "room_num",
+        "floor_num"
+      ]
+    },
+    "destroyed": true
+  },
+  "maxTextureSize": 8192,
+  "cesium3DTileContent": {
+    "initialFeaturePropertiesDirty": false,
+    "getterThrows": {
+      "featuresLength": true,
+      "pointsLength": true,
+      "trianglesLength": true,
+      "geometryByteLength": true,
+      "texturesByteLength": true,
+      "batchTableByteLength": true,
+      "innerContents": true,
+      "ready": true,
+      "tileset": true,
+      "tile": true,
+      "url": true,
+      "batchTable": true,
+      "metadata": true,
+      "group": true
+    },
+    "methodThrows": {
+      "hasProperty": true,
+      "getFeature": true,
+      "applyDebugSettings": true,
+      "applyStyle": true,
+      "update": true,
+      "pick": true,
+      "isDestroyed": true,
+      "destroy": true
+    }
+  },
+  "cesium3DTileFeature": {
+    "featureId": 0,
+    "show": false,
+    "color": [
+      0.2,
+      0.4,
+      0.6,
+      0.8
+    ],
+    "pickColor": [
+      0.00392156862745098,
+      0,
+      0,
+      0
+    ],
+    "featurePropertiesDirtyAfterSet": true,
+    "hasClicked": true,
+    "clicked": {
+      "kind": "bool",
+      "value": true
+    },
+    "propertyIds": [
+      "name",
+      "active",
+      "tags",
+      "meta",
+      "nullableProp",
+      "b_byte",
+      "b_ubyte",
+      "b_short2",
+      "b_ushort3",
+      "b_int",
+      "b_uint",
+      "b_float4",
+      "b_double2",
+      "dynamic_prop",
+      "clicked",
+      "door_width",
+      "door_color",
+      "wall_material",
+      "building_name",
+      "building_floors"
+    ],
+    "isClassBuilding": true,
+    "isExactClassDoor": true,
+    "isExactClassBuilding": false,
+    "exactClassName": "Door",
+    "inherited": {
+      "name": {
+        "kind": "string",
+        "value": "alpha_updated"
+      },
+      "from_content": {
+        "kind": "string",
+        "value": "content_val"
+      },
+      "from_tile": {
+        "kind": "string",
+        "value": "tile_val"
+      },
+      "from_subtree": {
+        "kind": "string",
+        "value": "subtree_val"
+      },
+      "from_group": {
+        "kind": "string",
+        "value": "group_val"
+      },
+      "from_tileset": {
+        "kind": "string",
+        "value": "tileset_val"
+      },
+      "shared": {
+        "kind": "string",
+        "value": "content_shared"
+      },
+      "SHARED_SEM": {
+        "kind": "string",
+        "value": "content_by_semantic"
+      },
+      "missing": {
+        "kind": "undefined"
+      }
+    },
+    "inheritSchemaJson": {
+      "id": "inherit_schema",
+      "classes": {
+        "meta": {
+          "properties": {
+            "from_content": {
+              "type": "STRING"
+            },
+            "from_tile": {
+              "type": "STRING"
+            },
+            "from_subtree": {
+              "type": "STRING"
+            },
+            "from_group": {
+              "type": "STRING"
+            },
+            "from_tileset": {
+              "type": "STRING"
+            },
+            "shared": {
+              "type": "STRING"
+            },
+            "sem_prop": {
+              "type": "STRING",
+              "semantic": "SHARED_SEM"
+            },
+            "SHARED_SEM": {
+              "type": "STRING"
+            }
+          }
+        }
+      }
+    }
+  },
+  "cesium3DTilePointFeature": {
+    "basePos": [
+      -1266345.735705788,
+      -4726066.6256021885,
+      4078049.850961345
+    ],
+    "defaults": {
+      "staticDefaults": {
+        "defaultColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "defaultPointOutlineColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "defaultPointOutlineWidth": 0,
+        "defaultPointSize": 8
+      },
+      "show": true,
+      "color": null,
+      "pointSize": null,
+      "pointOutlineColor": null,
+      "pointOutlineWidth": null,
+      "image": null,
+      "heightOffset": null,
+      "labelText": "",
+      "labelColor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "labelOutlineColor": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "labelOutlineWidth": 1,
+      "labelStyle": 0,
+      "font": "30px sans-serif",
+      "backgroundColor": [
+        0.165,
+        0.165,
+        0.165,
+        0.8
+      ],
+      "backgroundPadding": [
+        7,
+        5
+      ],
+      "backgroundEnabled": false,
+      "anchorLineEnabled": true,
+      "anchorLineColor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "horizontalOrigin": 0,
+      "verticalOrigin": 0,
+      "labelHorizontalOrigin": 1,
+      "labelVerticalOrigin": 2,
+      "scaleByDistance": null,
+      "translucencyByDistance": null,
+      "distanceDisplayCondition": null,
+      "disableDepthTestDistance": null
+    },
+    "after": {
+      "afterShowFalse": {
+        "show": false,
+        "labelShow": false,
+        "billboardShow": false,
+        "polylineShow": false
+      },
+      "labelColorWhileHidden": {
+        "labelColor": [
+          1,
+          0.5,
+          0,
+          1
+        ],
+        "polylineShow": false
+      },
+      "labelColorZeroAlpha": {
+        "labelColor": [
+          0.2,
+          0.8,
+          0.4,
+          0
+        ],
+        "polylineShow": false
+      },
+      "labelColorPositiveAlpha": {
+        "labelColor": [
+          0.2,
+          0.8,
+          0.4,
+          0.9
+        ],
+        "polylineShow": true
+      },
+      "color": [
+        0.9,
+        0.1,
+        0.2,
+        1
+      ],
+      "pointSize": 14,
+      "pointOutlineColor": [
+        0.1,
+        0.2,
+        0.3,
+        1
+      ],
+      "pointOutlineWidth": 2.5,
+      "labelOutlineColor": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "labelOutlineWidth": 3,
+      "labelStyle": 2,
+      "font": "bold 20px Helvetica",
+      "backgroundColor": [
+        0.1,
+        0.1,
+        0.1,
+        0.75
+      ],
+      "backgroundPadding": [
+        10,
+        6
+      ],
+      "backgroundEnabled": true,
+      "anchorLineEnabled": false,
+      "anchorLineColor": [
+        1,
+        1,
+        0,
+        0.8
+      ],
+      "horizontalOrigin": 1,
+      "verticalOrigin": 1,
+      "labelHorizontalOrigin": -1,
+      "labelVerticalOrigin": -1,
+      "scaleByDistance": [
+        100,
+        2,
+        5000,
+        0.5
+      ],
+      "billboardScaleByDistance": [
+        100,
+        2,
+        5000,
+        0.5
+      ],
+      "translucencyByDistance": [
+        200,
+        1,
+        8000,
+        0.1
+      ],
+      "billboardTranslucencyByDistance": [
+        200,
+        1,
+        8000,
+        0.1
+      ],
+      "distanceDisplayCondition": [
+        10,
+        2500
+      ],
+      "billboardDdc": [
+        10,
+        2500
+      ],
+      "polylineDdc": [
+        10,
+        2500
+      ],
+      "disableDepthTestDistance": 1234.5,
+      "billboardDisableDepthTestDistance": 1234.5,
+      "heightSteps": [
+        {
+          "heightOffset": 25,
+          "billboardPos": [
+            -1266350.6923780697,
+            -4726085.124154981,
+            4078065.9206515863
+          ],
+          "labelPos": [
+            -1266350.6923780697,
+            -4726085.124154981,
+            4078065.9206515863
+          ],
+          "anchorStart": [
+            -1266345.735705788,
+            -4726066.6256021885,
+            4078049.850961345
+          ],
+          "anchorEnd": [
+            -1266350.6923780697,
+            -4726085.124154981,
+            4078065.9206515863
+          ]
+        },
+        {
+          "heightOffset": 60,
+          "billboardPos": [
+            -1266357.6317192644,
+            -4726111.02212889,
+            4078088.4182179254
+          ],
+          "labelPos": [
+            -1266357.6317192644,
+            -4726111.02212889,
+            4078088.4182179254
+          ],
+          "anchorStart": [
+            -1266345.735705788,
+            -4726066.6256021885,
+            4078049.850961345
+          ],
+          "anchorEnd": [
+            -1266357.6317192644,
+            -4726111.02212889,
+            4078088.4182179254
+          ]
+        },
+        {
+          "heightOffset": -10,
+          "billboardPos": [
+            -1266343.7530368753,
+            -4726059.226181071,
+            4078043.423085247
+          ],
+          "labelPos": [
+            -1266343.7530368753,
+            -4726059.226181071,
+            4078043.423085247
+          ],
+          "anchorStart": [
+            -1266345.735705788,
+            -4726066.6256021885,
+            4078049.850961345
+          ],
+          "anchorEnd": [
+            -1266343.7530368753,
+            -4726059.226181071,
+            4078043.423085247
+          ]
+        }
+      ],
+      "labelTextAfterUndefined": "",
+      "pfBatch": {
+        "hasName": true,
+        "name": {
+          "kind": "string",
+          "value": "alpha_updated"
+        },
+        "pfTag": {
+          "kind": "string",
+          "value": "summit"
+        },
+        "exactClass": "Door",
+        "isClassBuilding": true,
+        "isExactDoor": true,
+        "inheritedContent": {
+          "kind": "string",
+          "value": "content_val"
+        }
+      }
+    }
+  },
+  "implicit3DTileContent": {
+    "rootBox": [
+      10,
+      20,
+      30,
+      80,
+      0,
+      0,
+      0,
+      60,
+      0,
+      0,
+      0,
+      40
+    ],
+    "rootRegion": [
+      -0.4,
+      -0.2,
+      0.4,
+      0.6,
+      0,
+      200
+    ],
+    "boxDerivations": [
+      {
+        "level": 0,
+        "x": 0,
+        "y": 0,
+        "z": null,
+        "box": [
+          10,
+          20,
+          30,
+          80,
+          0,
+          0,
+          0,
+          60,
+          0,
+          0,
+          0,
+          40
+        ]
+      },
+      {
+        "level": 1,
+        "x": 0,
+        "y": 0,
+        "z": null,
+        "box": [
+          -30,
+          -10,
+          30,
+          40,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          40
+        ]
+      },
+      {
+        "level": 1,
+        "x": 1,
+        "y": 0,
+        "z": null,
+        "box": [
+          50,
+          -10,
+          30,
+          40,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          40
+        ]
+      },
+      {
+        "level": 1,
+        "x": 1,
+        "y": 1,
+        "z": null,
+        "box": [
+          50,
+          50,
+          30,
+          40,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          40
+        ]
+      },
+      {
+        "level": 2,
+        "x": 2,
+        "y": 3,
+        "z": null,
+        "box": [
+          30,
+          65,
+          30,
+          20,
+          0,
+          0,
+          0,
+          15,
+          0,
+          0,
+          0,
+          40
+        ]
+      },
+      {
+        "level": 1,
+        "x": 0,
+        "y": 1,
+        "z": 0,
+        "box": [
+          -30,
+          50,
+          10,
+          40,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          20
+        ]
+      },
+      {
+        "level": 1,
+        "x": 1,
+        "y": 0,
+        "z": 1,
+        "box": [
+          50,
+          -10,
+          50,
+          40,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          20
+        ]
+      },
+      {
+        "level": 2,
+        "x": 3,
+        "y": 1,
+        "z": 2,
+        "box": [
+          70,
+          5,
+          40,
+          20,
+          0,
+          0,
+          0,
+          15,
+          0,
+          0,
+          0,
+          10
+        ]
+      }
+    ],
+    "regionDerivations": [
+      {
+        "level": 0,
+        "x": 0,
+        "y": 0,
+        "z": null,
+        "region": [
+          -0.4,
+          -0.2,
+          0.4,
+          0.6,
+          0,
+          200
+        ]
+      },
+      {
+        "level": 1,
+        "x": 0,
+        "y": 0,
+        "z": null,
+        "region": [
+          -0.4,
+          -0.2,
+          0,
+          0.2,
+          0,
+          200
+        ]
+      },
+      {
+        "level": 1,
+        "x": 1,
+        "y": 1,
+        "z": null,
+        "region": [
+          0,
+          0.2,
+          0.4,
+          0.6000000000000001,
+          0,
+          200
+        ]
+      },
+      {
+        "level": 2,
+        "x": 3,
+        "y": 2,
+        "z": null,
+        "region": [
+          0.20000000000000007,
+          0.2,
+          0.4000000000000001,
+          0.4,
+          0,
+          200
+        ]
+      },
+      {
+        "level": 1,
+        "x": 1,
+        "y": 0,
+        "z": 1,
+        "region": [
+          0,
+          -0.2,
+          0.4,
+          0.2,
+          100,
+          200
+        ]
+      },
+      {
+        "level": 2,
+        "x": 1,
+        "y": 2,
+        "z": 3,
+        "region": [
+          -0.2,
+          0.2,
+          0,
+          0.4,
+          150,
+          200
+        ]
+      }
+    ],
+    "s2Derivations": [
+      {
+        "parentToken": "1",
+        "minH": 0,
+        "maxH": 100,
+        "childIndex": 0,
+        "level": 1,
+        "x": 0,
+        "y": 0,
+        "z": null,
+        "result": {
+          "token": "04",
+          "minimumHeight": 0,
+          "maximumHeight": 100
+        }
+      },
+      {
+        "parentToken": "1",
+        "minH": 0,
+        "maxH": 100,
+        "childIndex": 3,
+        "level": 1,
+        "x": 1,
+        "y": 1,
+        "z": null,
+        "result": {
+          "token": "14",
+          "minimumHeight": 0,
+          "maximumHeight": 100
+        }
+      },
+      {
+        "parentToken": "1",
+        "minH": 0,
+        "maxH": 100,
+        "childIndex": 5,
+        "level": 1,
+        "x": 1,
+        "y": 0,
+        "z": 1,
+        "result": {
+          "token": "1c",
+          "minimumHeight": 50,
+          "maximumHeight": 100
+        }
+      },
+      {
+        "parentToken": "3",
+        "minH": 10,
+        "maxH": 90,
+        "childIndex": 1,
+        "level": 1,
+        "x": 1,
+        "y": 0,
+        "z": null,
+        "result": {
+          "token": "2c",
+          "minimumHeight": 10,
+          "maximumHeight": 90
+        }
+      },
+      {
+        "parentToken": "3",
+        "minH": 10,
+        "maxH": 90,
+        "childIndex": 2,
+        "level": 1,
+        "x": 0,
+        "y": 1,
+        "z": null,
+        "result": {
+          "token": "3c",
+          "minimumHeight": 10,
+          "maximumHeight": 90
+        }
+      },
+      {
+        "parentToken": "3",
+        "minH": 10,
+        "maxH": 90,
+        "childIndex": 4,
+        "level": 1,
+        "x": 0,
+        "y": 0,
+        "z": 1,
+        "result": {
+          "token": "24",
+          "minimumHeight": 50,
+          "maximumHeight": 90
+        }
+      }
+    ],
+    "schemaJson": {
+      "id": "implicit_schema",
+      "classes": {
+        "tileClass": {
+          "properties": {
+            "height": {
+              "type": "SCALAR",
+              "componentType": "FLOAT32"
+            },
+            "minH": {
+              "type": "SCALAR",
+              "componentType": "FLOAT32",
+              "semantic": "TILE_MINIMUM_HEIGHT"
+            },
+            "maxH": {
+              "type": "SCALAR",
+              "componentType": "FLOAT32",
+              "semantic": "TILE_MAXIMUM_HEIGHT"
+            },
+            "customError": {
+              "type": "SCALAR",
+              "componentType": "FLOAT32",
+              "semantic": "TILE_GEOMETRIC_ERROR"
+            }
+          }
+        },
+        "contentClass": {
+          "properties": {
+            "cMinH": {
+              "type": "SCALAR",
+              "componentType": "FLOAT32",
+              "semantic": "CONTENT_MINIMUM_HEIGHT"
+            },
+            "cMaxH": {
+              "type": "SCALAR",
+              "componentType": "FLOAT32",
+              "semantic": "CONTENT_MAXIMUM_HEIGHT"
+            },
+            "label": {
+              "type": "STRING"
+            }
+          }
+        }
+      }
+    },
+    "qtRootHeader": {
+      "boundingVolume": {
+        "region": [
+          -0.4,
+          -0.2,
+          0.4,
+          0.6,
+          0,
+          200
+        ]
+      },
+      "geometricError": 100,
+      "refine": "REPLACE",
+      "content": {
+        "uri": "content/{level}_{x}_{y}.glb"
+      },
+      "implicitTiling": {
+        "subdivisionScheme": "QUADTREE",
+        "subtreeLevels": 2,
+        "availableLevels": 4,
+        "subtrees": {
+          "uri": "subtrees/{level}_{x}_{y}.json"
+        }
+      }
+    },
+    "qtSubtreeJson": {
+      "buffers": [
+        {
+          "byteLength": 128,
+          "uri": "data:application/octet-stream;base64,GxMBQAAAKEEAAKRBAAD0QQAAIkIAAKBAAAAgQQAAcEEAAKBBAADSQgAA3EIAAOZCAADwQgAAtEIAAChCAAAYQgAACEIAAEBBAACwQQAAAEIAAKRCAAC4QgAAzEIAAAAAAgAAAAQAAAAGAAAAYzBjMWM0AAAAAAAAAAAAAAAAAAA="
+        }
+      ],
+      "bufferViews": [
+        {
+          "buffer": 0,
+          "byteOffset": 0,
+          "byteLength": 1
+        },
+        {
+          "buffer": 0,
+          "byteOffset": 1,
+          "byteLength": 1
+        },
+        {
+          "buffer": 0,
+          "byteOffset": 2,
+          "byteLength": 2
+        },
+        {
+          "buffer": 0,
+          "byteOffset": 4,
+          "byteLength": 16
+        },
+        {
+          "buffer": 0,
+          "byteOffset": 20,
+          "byteLength": 16
+        },
+        {
+          "buffer": 0,
+          "byteOffset": 36,
+          "byteLength": 16
+        },
+        {
+          "buffer": 0,
+          "byteOffset": 52,
+          "byteLength": 16
+        },
+        {
+          "buffer": 0,
+          "byteOffset": 68,
+          "byteLength": 12
+        },
+        {
+          "buffer": 0,
+          "byteOffset": 80,
+          "byteLength": 12
+        },
+        {
+          "buffer": 0,
+          "byteOffset": 92,
+          "byteLength": 16
+        },
+        {
+          "buffer": 0,
+          "byteOffset": 108,
+          "byteLength": 6
+        }
+      ],
+      "tileAvailability": {
+        "bitstream": 0,
+        "availableCount": 4
+      },
+      "contentAvailability": [
+        {
+          "bitstream": 1,
+          "availableCount": 3
+        }
+      ],
+      "childSubtreeAvailability": {
+        "bitstream": 2,
+        "availableCount": 2
+      },
+      "propertyTables": [
+        {
+          "class": "tileClass",
+          "count": 4,
+          "properties": {
+            "height": {
+              "values": 3
+            },
+            "minH": {
+              "values": 4
+            },
+            "maxH": {
+              "values": 5
+            },
+            "customError": {
+              "values": 6
+            }
+          }
+        },
+        {
+          "class": "contentClass",
+          "count": 3,
+          "properties": {
+            "cMinH": {
+              "values": 7
+            },
+            "cMaxH": {
+              "values": 8
+            },
+            "label": {
+              "values": 10,
+              "stringOffsets": 9
+            }
+          }
+        }
+      ],
+      "tileMetadata": 0,
+      "contentMetadata": [
+        1
+      ]
+    },
+    "qtSummary": {
+      "url": "subtrees/0_0_0.json",
+      "ready": true,
+      "ownCounts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "hasProperty": false,
+      "getFeature": null,
+      "pick": null,
+      "totalTilesAfterExpand": 7,
+      "tree": {
+        "coords": {
+          "level": 0,
+          "x": 0,
+          "y": 0,
+          "z": null
+        },
+        "isPlaceholder": false,
+        "geometricError": 90,
+        "refine": "REPLACE",
+        "boundingVolume": {
+          "region": [
+            -0.4,
+            -0.2,
+            0.4,
+            0.6,
+            5,
+            105
+          ]
+        },
+        "contents": [
+          {
+            "uri": "content/0_0_0.glb",
+            "boundingVolume": {
+              "region": [
+                -0.4,
+                -0.2,
+                0.4,
+                0.6,
+                12,
+                82
+              ]
+            }
+          }
+        ],
+        "boundingSphere": {
+          "center": [
+            5761187.960996344,
+            0,
+            1203375.247244109
+          ],
+          "radius": 3565755.4153460036
+        },
+        "hasImplicitContentMetadata": true,
+        "tileMetaHeight": 10.5,
+        "children": [
+          {
+            "coords": {
+              "level": 1,
+              "x": 0,
+              "y": 0,
+              "z": null
+            },
+            "isPlaceholder": false,
+            "geometricError": 42,
+            "refine": "REPLACE",
+            "boundingVolume": {
+              "region": [
+                -0.4,
+                -0.2,
+                0,
+                0.2,
+                10,
+                110
+              ]
+            },
+            "contents": [
+              {
+                "uri": "content/1_0_0.glb",
+                "boundingVolume": {
+                  "region": [
+                    -0.4,
+                    -0.2,
+                    0,
+                    0.2,
+                    22,
+                    92
+                  ]
+                }
+              }
+            ],
+            "boundingSphere": {
+              "center": [
+                6128092.29999428,
+                -1242225.8077322626,
+                0
+              ],
+              "radius": 1790571.5445365952
+            },
+            "hasImplicitContentMetadata": true,
+            "tileMetaHeight": 20.5,
+            "children": [
+              {
+                "coords": {
+                  "level": 2,
+                  "x": 0,
+                  "y": 0,
+                  "z": null
+                },
+                "isPlaceholder": true,
+                "geometricError": 25,
+                "refine": "REPLACE",
+                "boundingVolume": {
+                  "region": [
+                    -0.4,
+                    -0.2,
+                    -0.2,
+                    0,
+                    0,
+                    200
+                  ]
+                },
+                "contents": [
+                  {
+                    "uri": "subtrees/2_0_0.json",
+                    "boundingVolume": null
+                  }
+                ],
+                "boundingSphere": {
+                  "center": [
+                    6032856.600254055,
+                    -1866181.235155252,
+                    -630970.9433856142
+                  ],
+                  "radius": 899241.7111621087
+                },
+                "hasImplicitContentMetadata": false,
+                "tileMetaHeight": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "coords": {
+              "level": 1,
+              "x": 0,
+              "y": 1,
+              "z": null
+            },
+            "isPlaceholder": false,
+            "geometricError": 38,
+            "refine": "REPLACE",
+            "boundingVolume": {
+              "region": [
+                -0.4,
+                0.2,
+                0,
+                0.6000000000000001,
+                15,
+                115
+              ]
+            },
+            "contents": [],
+            "boundingSphere": {
+              "center": [
+                5643539.092027418,
+                -1144002.0097394593,
+                2441120.9372383775
+              ],
+              "radius": 1788485.6479604067
+            },
+            "hasImplicitContentMetadata": false,
+            "tileMetaHeight": 30.5,
+            "children": []
+          },
+          {
+            "coords": {
+              "level": 1,
+              "x": 1,
+              "y": 1,
+              "z": null
+            },
+            "isPlaceholder": false,
+            "geometricError": 34,
+            "refine": "REPLACE",
+            "boundingVolume": {
+              "region": [
+                0,
+                0.2,
+                0.4,
+                0.6000000000000001,
+                20,
+                120
+              ]
+            },
+            "contents": [
+              {
+                "uri": "content/1_1_1.glb",
+                "boundingVolume": {
+                  "region": [
+                    0,
+                    0.2,
+                    0.4,
+                    0.6000000000000001,
+                    32,
+                    102
+                  ]
+                }
+              }
+            ],
+            "boundingSphere": {
+              "center": [
+                5643543.513827453,
+                1144002.9060827014,
+                2441122.8621582966
+              ],
+              "radius": 1788487.053514809
+            },
+            "hasImplicitContentMetadata": true,
+            "tileMetaHeight": 40.5,
+            "children": [
+              {
+                "coords": {
+                  "level": 2,
+                  "x": 2,
+                  "y": 3,
+                  "z": null
+                },
+                "isPlaceholder": true,
+                "geometricError": 25,
+                "refine": "REPLACE",
+                "boundingVolume": {
+                  "region": [
+                    0,
+                    0.4000000000000001,
+                    0.2,
+                    0.6000000000000001,
+                    0,
+                    200
+                  ]
+                },
+                "contents": [
+                  {
+                    "uri": "subtrees/2_2_3.json",
+                    "boundingVolume": null
+                  }
+                ],
+                "boundingSphere": {
+                  "center": [
+                    5545523.452609693,
+                    556408.2771597691,
+                    3031753.992875251
+                  ],
+                  "radius": 868991.0857220916
+                },
+                "hasImplicitContentMetadata": false,
+                "tileMetaHeight": null,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      "destroyed": true
+    },
+    "octRootHeader": {
+      "boundingVolume": {
+        "box": [
+          10,
+          20,
+          30,
+          80,
+          0,
+          0,
+          0,
+          60,
+          0,
+          0,
+          0,
+          40
+        ]
+      },
+      "geometricError": 64,
+      "refine": "ADD",
+      "content": {
+        "uri": "content/{level}_{x}_{y}_{z}.b3dm"
+      },
+      "implicitTiling": {
+        "subdivisionScheme": "OCTREE",
+        "subtreeLevels": 2,
+        "availableLevels": 2,
+        "subtrees": {
+          "uri": "subtrees/{level}_{x}_{y}_{z}.subtree"
+        }
+      }
+    },
+    "octSubtreeBinaryBase64": "c3VidAEAAADgAAAAAAAAAAgAAAAAAAAAeyJidWZmZXJzIjpbeyJieXRlTGVuZ3RoIjo4fV0sImJ1ZmZlclZpZXdzIjpbeyJidWZmZXIiOjAsImJ5dGVPZmZzZXQiOjAsImJ5dGVMZW5ndGgiOjJ9XSwidGlsZUF2YWlsYWJpbGl0eSI6eyJiaXRzdHJlYW0iOjAsImF2YWlsYWJsZUNvdW50Ijo0fSwiY29udGVudEF2YWlsYWJpbGl0eSI6W3siY29uc3RhbnQiOjF9XSwiY2hpbGRTdWJ0cmVlQXZhaWxhYmlsaXR5Ijp7ImNvbnN0YW50IjowfX1DAQAAAAAAAA==",
+    "octSummary": {
+      "url": "subtrees/0_0_0_0.subtree",
+      "ready": true,
+      "totalTilesAfterExpand": 5,
+      "tree": {
+        "coords": {
+          "level": 0,
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "isPlaceholder": false,
+        "geometricError": 64,
+        "refine": "ADD",
+        "boundingVolume": {
+          "box": [
+            10,
+            20,
+            30,
+            80,
+            0,
+            0,
+            0,
+            60,
+            0,
+            0,
+            0,
+            40
+          ]
+        },
+        "contents": [
+          {
+            "uri": "content/0_0_0_0.b3dm",
+            "boundingVolume": null
+          }
+        ],
+        "boundingSphere": {
+          "center": [
+            10,
+            20,
+            30
+          ],
+          "radius": 107.70329614269008
+        },
+        "hasImplicitContentMetadata": false,
+        "tileMetaHeight": null,
+        "children": [
+          {
+            "coords": {
+              "level": 1,
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "isPlaceholder": false,
+            "geometricError": 32,
+            "refine": "ADD",
+            "boundingVolume": {
+              "box": [
+                -30,
+                -10,
+                10,
+                40,
+                0,
+                0,
+                0,
+                30,
+                0,
+                0,
+                0,
+                20
+              ]
+            },
+            "contents": [
+              {
+                "uri": "content/1_0_0_0.b3dm",
+                "boundingVolume": null
+              }
+            ],
+            "boundingSphere": {
+              "center": [
+                -30,
+                -10,
+                10
+              ],
+              "radius": 53.85164807134504
+            },
+            "hasImplicitContentMetadata": false,
+            "tileMetaHeight": null,
+            "children": []
+          },
+          {
+            "coords": {
+              "level": 1,
+              "x": 1,
+              "y": 0,
+              "z": 1
+            },
+            "isPlaceholder": false,
+            "geometricError": 32,
+            "refine": "ADD",
+            "boundingVolume": {
+              "box": [
+                50,
+                -10,
+                50,
+                40,
+                0,
+                0,
+                0,
+                30,
+                0,
+                0,
+                0,
+                20
+              ]
+            },
+            "contents": [
+              {
+                "uri": "content/1_1_0_1.b3dm",
+                "boundingVolume": null
+              }
+            ],
+            "boundingSphere": {
+              "center": [
+                50,
+                -10,
+                50
+              ],
+              "radius": 53.85164807134504
+            },
+            "hasImplicitContentMetadata": false,
+            "tileMetaHeight": null,
+            "children": []
+          },
+          {
+            "coords": {
+              "level": 1,
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "isPlaceholder": false,
+            "geometricError": 32,
+            "refine": "ADD",
+            "boundingVolume": {
+              "box": [
+                50,
+                50,
+                50,
+                40,
+                0,
+                0,
+                0,
+                30,
+                0,
+                0,
+                0,
+                20
+              ]
+            },
+            "contents": [
+              {
+                "uri": "content/1_1_1_1.b3dm",
+                "boundingVolume": null
+              }
+            ],
+            "boundingSphere": {
+              "center": [
+                50,
+                50,
+                50
+              ],
+              "radius": 53.85164807134504
+            },
+            "hasImplicitContentMetadata": false,
+            "tileMetaHeight": null,
+            "children": []
+          }
+        ]
+      }
+    }
+  },
+  "multiple3DTileContent": {
+    "ownCounts": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "innerContentUrls": [
+      "buildings.b3dm",
+      "trees.i3dm"
+    ],
+    "initialReadyBeforeCreated": false,
+    "initialReady": false,
+    "pickUnready": null,
+    "afterFirstUpdateReady": false,
+    "afterSecondUpdateReady": true,
+    "pickReady": 3,
+    "stickyReady": true,
+    "dirtyInitial": false,
+    "dirtyWhenChildDirty": true,
+    "dirtyAfterClear": [
+      false,
+      false,
+      false
+    ],
+    "hasProperty": false,
+    "getFeature": null,
+    "url": null,
+    "calls": [
+      "update0",
+      "update1",
+      "update0",
+      "update1",
+      "update0",
+      "update1",
+      "style0:testStyle",
+      "style1:testStyle",
+      "debug0:true:0.5",
+      "debug1:true:0.5",
+      "destroy0",
+      "destroy1"
+    ],
+    "destroyed": true
+  },
+  "composite3DTileContent": {
+    "paddedBase64": "AAAAAAAAAABjbXB0AQAAAEQAAAACAAAAY21wdAEAAAAoAAAAAgAAAGIzZG0BAAAADAAAAGkzZG0BAAAADAAAAHZjdHIBAAAADAAAAA==",
+    "badChildBase64": "Y21wdAEAAAAcAAAAAQAAAHh4eHgBAAAADAAAAA==",
+    "badVerBase64": "Y21wdAIAAAAcAAAAAQAAAGIzZG0BAAAADAAAAA==",
+    "visited": [
+      {
+        "magic": "cmpt",
+        "offset": 24,
+        "url": "https://example.com/nested.cmpt?compositeIndex=0&k=v"
+      },
+      {
+        "magic": "b3dm",
+        "offset": 40,
+        "url": "https://example.com/nested.cmpt?compositeIndex=0_0&k=v"
+      },
+      {
+        "magic": "i3dm",
+        "offset": 52,
+        "url": "https://example.com/nested.cmpt?compositeIndex=0_1&k=v"
+      },
+      {
+        "magic": "vctr",
+        "offset": 64,
+        "url": "https://example.com/nested.cmpt?compositeIndex=1&k=v"
+      }
+    ],
+    "metaPropagated": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "dirtyNested": true,
+    "dirtyCleared": false,
+    "ownCounts": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "hasProperty": false,
+    "getFeature": null,
+    "unknownError": "Unknown tile content type, xxxx, inside Composite tile",
+    "versionError": "Only Composite Tile version 1 is supported. Version 2 is not."
+  },
+  "geometry3DTileContent": {
+    "emptyCase": {
+      "bytesBase64": "Z2VvbQEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "ready": true,
+      "featuresLength": 0,
+      "pointsLength": 0,
+      "trianglesLength": 0,
+      "geometryByteLength": 0,
+      "texturesByteLength": 0,
+      "batchTableByteLength": 0,
+      "pick": null,
+      "destroyed": true
+    },
+    "allSolidsCase": {
+      "bytesBase64": "Z2VvbQEAAAAsAwAA4AAAAPAAAAAwAQAAEAAAAHsiUlRDX0NFTlRFUiI6WzEwMCwyMDAsMzAwXSwiQk9YRVNfTEVOR1RIIjoxLCJCT1hFUyI6eyJieXRlT2Zmc2V0IjowfSwiQ1lMSU5ERVJTX0xFTkdUSCI6MSwiQ1lMSU5ERVJTIjp7ImJ5dGVPZmZzZXQiOjc2fSwiRUxMSVBTT0lEU19MRU5HVEgiOjEsIkVMTElQU09JRFMiOnsiYnl0ZU9mZnNldCI6MTQ4fSwiU1BIRVJFU19MRU5HVEgiOjEsIlNQSEVSRVMiOnsiYnl0ZU9mZnNldCI6MjI0fX0gAAAAQAAAgEAAAMBAAACAPwAAAAAAAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAAAAAAAAAAAAAAAgD8AAAAAAADSQgAASEMAAJZDAACAPwAAwD8AAKBAAACAPwAAAAAAAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAAAAAAAAAAAAAAAgD8AAAAAAADcQgAATUMAAJZDAACAPwAAIEAAAEBAAADAPwAAgD8AAAAAAAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAAAAAAAAAIA/AAAAAAAA5kIAAFJDAICYQwAAgD8AAGBAAADwQgAAV0MAAJtDeyJraW5kIjpbImJveCIsImN5bGluZGVyIiwiZWxsaXBzb2lkIiwic3BoZXJlIl0sIndlaWdodCI6eyJieXRlT2Zmc2V0IjowLCJjb21wb25lbnRUeXBlIjoiRkxPQVQiLCJ0eXBlIjoiU0NBTEFSIn0sImV4dGVuc2lvbnMiOnsiM0RUSUxFU19iYXRjaF90YWJsZV9oaWVyYXJjaHkiOnsiY2xhc3NlcyI6W3sibmFtZSI6IlNvbGlkIiwibGVuZ3RoIjo0LCJpbnN0YW5jZXMiOnsiY2F0ZWdvcnkiOlsiZ2VvbSIsImdlb20iLCJnZW9tIiwiZ2VvbSJdfX1dLCJpbnN0YW5jZXNMZW5ndGgiOjQsImNsYXNzSWRzIjpbMCwwLDAsMF19fX0gICAgIAAAOEEAALRBAAAGQgAAMkI=",
+      "rtcCenter": [
+        100,
+        200,
+        300
+      ],
+      "featuresLength": 4,
+      "pointsLength": 0,
+      "trianglesLength": 16904,
+      "geometryByteLength": 234396,
+      "texturesByteLength": 0,
+      "batchTableByteLength": 24,
+      "positionsLength": 28494,
+      "positionsSample": [
+        4,
+        -2,
+        -3,
+        6,
+        -2,
+        -3,
+        6,
+        2,
+        -3,
+        4,
+        2,
+        -3,
+        4,
+        -2,
+        3,
+        6,
+        -2,
+        3
+      ],
+      "positionsHash": "8e4c30a34d8b10d5",
+      "vertexBatchIdsLength": 9498,
+      "vertexBatchIdsHash": "5f80f39a3f5c6a3c",
+      "indicesLength": 50712,
+      "indicesHash": "c10a6f9ccb18ac08",
+      "indexOffsets": [
+        0,
+        36,
+        1560,
+        26136
+      ],
+      "indexCounts": [
+        36,
+        1524,
+        24576,
+        24576
+      ],
+      "batchIds": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "feature0": {
+        "kind": "box",
+        "weight": 11.5,
+        "category": "geom",
+        "exactClass": "Solid",
+        "hasWeight": true,
+        "hasMissing": false
+      },
+      "feature3": {
+        "kind": "sphere",
+        "weight": 44.5
+      },
+      "styleShowAfter": [
+        false,
+        true,
+        true,
+        true
+      ],
+      "styleColorsAfter": [
+        [
+          0,
+          0,
+          1,
+          0.5019607843137255
+        ],
+        [
+          1,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          1
+        ]
+      ],
+      "destroyed": true
+    },
+    "explicitCase": {
+      "bytesBase64": "Z2VvbQEAAACSAQAAqAAAAK4AAAAgAAAAAAAAAHsiQk9YRVNfTEVOR1RIIjoyLCJCT1hFUyI6eyJieXRlT2Zmc2V0IjowfSwiQk9YX0JBVENIX0lEUyI6eyJieXRlT2Zmc2V0IjoxNjh9LCJTUEhFUkVTX0xFTkdUSCI6MSwiU1BIRVJFUyI6eyJieXRlT2Zmc2V0IjoxNTJ9LCJTUEhFUkVfQkFUQ0hfSURTIjp7ImJ5dGVPZmZzZXQiOjE3Mn19ICAgIAAAgD8AAIA/AACAPwAAgD8AAAAAAAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAAAAAAAAAIA/AAAAAAAAgD8AAAAAAAAAAAAAgD8AAABAAAAAQAAAAEAAAIA/AAAAAAAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAAAAAAAAAAACAPwAAAAAAAKBAAAAAAAAAAAAAAIA/AAAAQAAAAAAAAIBAAAAAAAIAAAABAHsiaWQiOlsiemVybyIsIm9uZSIsInR3byJdfSAgICAg",
+      "featuresLength": 3,
+      "trianglesLength": 8216,
+      "geometryByteLength": 112366,
+      "batchIds": [
+        2,
+        0,
+        1
+      ],
+      "indexOffsets": [
+        0,
+        36,
+        72
+      ],
+      "indexCounts": [
+        36,
+        36,
+        24576
+      ],
+      "featureIds": [
+        "zero",
+        "one",
+        "two"
+      ]
+    },
+    "errors": {
+      "badVersion": {
+        "bytesBase64": "Z2VvbQIAAAA0AAAAGAAAAAAAAAAAAAAAAAAAAHsiQk9YRVNfTEVOR1RIIjowfSAgICAgIA==",
+        "error": "Only Geometry tile version 1 is supported.  Version 2 is not."
+      },
+      "emptyFeatureTable": {
+        "bytesBase64": "Z2VvbQEAAAAcAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+        "error": "Feature table must have a byte length greater than zero"
+      },
+      "partialBatchIds": {
+        "bytesBase64": "Z2VvbQEAAAD8AAAAgAAAAGAAAAAAAAAAAAAAAHsiQk9YRVNfTEVOR1RIIjoxLCJCT1hFUyI6eyJieXRlT2Zmc2V0IjowfSwiQk9YX0JBVENIX0lEUyI6eyJieXRlT2Zmc2V0Ijo3Nn0sIlNQSEVSRVNfTEVOR1RIIjoxLCJTUEhFUkVTIjp7ImJ5dGVPZmZzZXQiOjgwfX0gICAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "error": "If one group of batch ids is defined, then all batch ids must be defined"
+      }
+    }
+  }
+}

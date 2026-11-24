@@ -149,6 +149,7 @@ impl<G: Gl + 'static> LabelCollectionGpu<G> {
         blend_option: BlendOption,
         coarse_depth_test_distance: f64,
         three_point_depth_test_distance: f64,
+        highlight_color: Color,
         frame: &mut FrameState,
     ) -> SceneResult<()> {
         self.backgrounds.show = show;
@@ -157,6 +158,7 @@ impl<G: Gl + 'static> LabelCollectionGpu<G> {
         self.backgrounds.blend_option = blend_option;
         self.backgrounds.coarse_depth_test_distance = coarse_depth_test_distance;
         self.backgrounds.three_point_depth_test_distance = three_point_depth_test_distance;
+        self.backgrounds.highlight_color = highlight_color;
 
         self.glyphs.show = show;
         self.glyphs.model_matrix = model_matrix;
@@ -164,6 +166,7 @@ impl<G: Gl + 'static> LabelCollectionGpu<G> {
         self.glyphs.blend_option = blend_option;
         self.glyphs.coarse_depth_test_distance = coarse_depth_test_distance;
         self.glyphs.three_point_depth_test_distance = three_point_depth_test_distance;
+        self.glyphs.highlight_color = highlight_color;
 
         // Rebuild billboard backing when label count, glyphs, layout, or background presence changed
         let needs_rebuild = self.per_label.len() != labels.len()
@@ -346,6 +349,19 @@ impl<G: Gl + 'static> LabelCollectionGpu<G> {
         Ok(())
     }
 
+    fn size_in_bytes(&self) -> usize {
+        self.glyphs.size_in_bytes() + self.backgrounds.size_in_bytes()
+    }
+
+    fn label_pick_id(&self, index: usize) -> Option<Color> {
+        let backing = self.per_label.get(index)?;
+        backing
+            .glyphs
+            .first()
+            .and_then(|(_, _, _, bb)| bb.pick_id())
+            .or_else(|| backing.background.as_ref().and_then(|bg| bg.pick_id()))
+    }
+
     fn destroy(&mut self) -> SceneResult<()> {
         if !self.backgrounds.is_destroyed() {
             self.backgrounds.destroy()?;
@@ -372,8 +388,11 @@ trait LabelCollectionBackend {
         blend_option: BlendOption,
         coarse_depth_test_distance: f64,
         three_point_depth_test_distance: f64,
+        highlight_color: Color,
         frame: &mut FrameState,
     ) -> SceneResult<()>;
+    fn size_in_bytes(&self) -> usize;
+    fn label_pick_id(&self, index: usize) -> Option<Color>;
     fn destroy(&mut self) -> SceneResult<()>;
 }
 
@@ -394,6 +413,7 @@ impl<G: Gl + 'static> LabelCollectionBackend for LabelCollectionGpu<G> {
         blend_option: BlendOption,
         coarse_depth_test_distance: f64,
         three_point_depth_test_distance: f64,
+        highlight_color: Color,
         frame: &mut FrameState,
     ) -> SceneResult<()> {
         LabelCollectionGpu::sync_and_update(
@@ -405,8 +425,15 @@ impl<G: Gl + 'static> LabelCollectionBackend for LabelCollectionGpu<G> {
             blend_option,
             coarse_depth_test_distance,
             three_point_depth_test_distance,
+            highlight_color,
             frame,
         )
+    }
+    fn size_in_bytes(&self) -> usize {
+        LabelCollectionGpu::size_in_bytes(self)
+    }
+    fn label_pick_id(&self, index: usize) -> Option<Color> {
+        LabelCollectionGpu::label_pick_id(self, index)
     }
     fn destroy(&mut self) -> SceneResult<()> {
         LabelCollectionGpu::destroy(self)
@@ -446,6 +473,7 @@ pub struct LabelCollection {
     base_volume_wc_cached: Option<BoundingSphere>,
     rasterizer: Rc<dyn GlyphRasterizer>,
     height_sampler: Option<HeightSampler>,
+    highlight_color: Color,
     gpu: Option<Box<dyn LabelCollectionBackend>>,
     destroyed: bool,
 }
@@ -486,6 +514,7 @@ impl LabelCollection {
             base_volume_wc_cached: None,
             rasterizer: Rc::new(DefaultSdfGlyphRasterizer),
             height_sampler: None,
+            highlight_color: Color::WHITE,
             gpu: None,
             destroyed: false,
         }
@@ -534,6 +563,25 @@ impl LabelCollection {
 
     pub fn is_destroyed(&self) -> bool {
         self.destroyed
+    }
+
+    /// `_highlightColor`, used by `Vector3DTilePoints`.
+    pub fn highlight_color(&self) -> Color {
+        self.highlight_color
+    }
+
+    pub fn set_highlight_color(&mut self, color: Color) {
+        self.highlight_color = color;
+    }
+
+    /// `sizeInBytes`: total texture atlas memory in bytes across glyph and background collections.
+    pub fn size_in_bytes(&self) -> usize {
+        self.gpu.as_ref().map_or(0, |gpu| gpu.size_in_bytes())
+    }
+
+    /// Returns the allocated pick color for the label at `index`, if any.
+    pub fn label_pick_id(&self, index: usize) -> Option<Color> {
+        self.gpu.as_ref().and_then(|gpu| gpu.label_pick_id(index))
     }
 
     /// Computes a culling-safe bounding sphere accounting for label screen/world offsets.
@@ -832,6 +880,7 @@ impl ScenePrimitive for LabelCollection {
                 self.blend_option,
                 self.coarse_depth_test_distance,
                 self.three_point_depth_test_distance,
+                self.highlight_color,
                 frame,
             )?;
         }

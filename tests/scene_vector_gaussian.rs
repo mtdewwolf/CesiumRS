@@ -17,10 +17,10 @@ use cesium_rs::scene::{
     create_billboard_point_callback, degree_and_coef_from_attributes, draw_billboard_point, extract_sh_degree_and_coef,
     float32_to_float16, pack_spherical_harmonics_data, Camera, CameraOptions, FrameState, GaussianSplat3DTileContent,
     GaussianSplatAttribute, GaussianSplatPrimitive, GaussianSplatPrimitiveData, GaussianSplatPrimitiveOptions,
-    GaussianSplatTile, GaussianSplatTileContent, GaussianSplatTilesetState, Vector3DTileBatch,
-    Vector3DTileContent, Vector3DTileContentOptions, Vector3DTileGeometry, Vector3DTilePrimitive,
-    Vector3DTilePrimitiveOptions, Vector3DTilePolygons, Vector3DTilePolygonsOptions, Vector3DTilePolylines,
-    Vector3DTilePolylinesOptions, Vector3DTilePoints, Vector3DTilePointsOptions, HeightReference,
+    GaussianSplatTile, GaussianSplatTileContent, GaussianSplatTilesetState, HeightReference, Vector3DTileBatch,
+    Vector3DTileContent, Vector3DTileContentOptions, Vector3DTileGeometry, Vector3DTilePoints,
+    Vector3DTilePointsOptions, Vector3DTilePolygons, Vector3DTilePolygonsOptions, Vector3DTilePolylines,
+    Vector3DTilePolylinesOptions, Vector3DTilePrimitive, Vector3DTilePrimitiveOptions,
 };
 use serde_json::Value;
 use std::{rc::Rc, sync::Arc};
@@ -142,7 +142,11 @@ fn billboard_point_callback_matches_pinned_canvas_commands() {
 fn billboard_point_callback_builds_a_pixel_billboard_image() {
     let callback = create_billboard_point_callback::<GlStub>(1.0, "#ff0000", "#0000ff", 1.0, 4.0);
     match callback() {
-        cesium_rs::scene::BillboardImage::Source(cesium_rs::renderer::TextureSource::Pixels { width, height, bytes }) => {
+        cesium_rs::scene::BillboardImage::Source(cesium_rs::renderer::TextureSource::Pixels {
+            width,
+            height,
+            bytes,
+        }) => {
             assert_eq!((width, height), (6, 6));
             assert_eq!(bytes.len(), 6 * 6 * 4);
         }
@@ -173,8 +177,7 @@ fn vector_primitive_metrics_and_update_commands_match_reference() {
         let batch_ids = u16s(&case["batchIds"]);
         let index_counts = u32s(&case["indexCounts"]);
         let index_offsets = u32s(&case["indexOffsets"]);
-        let indices_len = *index_offsets.last().unwrap_or(&0) as usize
-            + *index_counts.last().unwrap_or(&0) as usize;
+        let indices_len = *index_offsets.last().unwrap_or(&0) as usize + *index_counts.last().unwrap_or(&0) as usize;
         let batched: Vec<Vector3DTileBatch> = case["initial"]
             .as_array()
             .unwrap()
@@ -198,7 +201,11 @@ fn vector_primitive_metrics_and_update_commands_match_reference() {
             ..Default::default()
         });
         assert_eq!(primitive.triangles_length(), case["trianglesLength"].as_f64().unwrap(), "{name}: triangles");
-        assert_eq!(primitive.geometry_byte_length(), case["geometryByteLength"].as_u64().unwrap() as usize, "{name}: bytes");
+        assert_eq!(
+            primitive.geometry_byte_length(),
+            case["geometryByteLength"].as_u64().unwrap() as usize,
+            "{name}: bytes"
+        );
 
         for (step_index, step) in case["steps"].as_array().unwrap().iter().enumerate() {
             let batch_id = step["batchId"].as_u64().unwrap() as u16;
@@ -273,11 +280,7 @@ fn build_vector_tile(
         padded_features.push(b' ');
     }
     let header = 4 + 4 + 4 + 8 * 4;
-    let mut offset = header
-        + padded_features.len()
-        + feature_binary.len()
-        + batch_json.len()
-        + batch_binary.len();
+    let mut offset = header + padded_features.len() + feature_binary.len() + batch_json.len() + batch_binary.len();
     offset += (4 - (offset % 4)) % 4;
     let total = offset
         + polygon_indices.len() * 4
@@ -330,11 +333,8 @@ fn build_vector_tile(
 fn standard_vector_tile() -> Arc<Vec<u8>> {
     let feature_json = br#"{"POLYGONS_LENGTH":2,"POLYGON_COUNTS":[4,3],"POLYGON_INDEX_COUNTS":[6,3],"POLYLINES_LENGTH":2,"POLYLINE_COUNTS":[3,2],"POINTS_LENGTH":2,"REGION":[-1.0,-1.0,1.0,1.0,10,100]}"#;
     let batch_json = br#"{"name":["a","b","c","d","e","f"]}"#;
-    let polyline_positions = encode(
-        &[1000, 1200, 1400, 1600, 1800],
-        &[2000, 2200, 2400, 2600, 2800],
-        Some(&[3000, 3200, 3400, 3600, 3800]),
-    );
+    let polyline_positions =
+        encode(&[1000, 1200, 1400, 1600, 1800], &[2000, 2200, 2400, 2600, 2800], Some(&[3000, 3200, 3400, 3600, 3800]));
     let points_positions = encode(&[500, 700], &[900, 1100], Some(&[1300, 1500]));
     build_vector_tile(
         1,
@@ -368,18 +368,23 @@ fn content_options(classification_type: Option<cesium_rs::scene::ClassificationT
 fn vector_tile_content_matches_reference_parse() {
     for case in fixture()["vector3DTileContent"].as_array().unwrap() {
         let name = case["name"].as_str().unwrap();
-        let classification = if name == "clamped" {
-            Some(cesium_rs::scene::ClassificationType::Terrain)
-        } else {
-            None
-        };
-        let content = Vector3DTileContent::<GlStub>::from_bytes(content_options(classification), standard_vector_tile(), 0)
-            .unwrap_or_else(|e| panic!("{name}: {}", e.message));
+        let classification = if name == "clamped" { Some(cesium_rs::scene::ClassificationType::Terrain) } else { None };
+        let content =
+            Vector3DTileContent::<GlStub>::from_bytes(content_options(classification), standard_vector_tile(), 0)
+                .unwrap_or_else(|e| panic!("{name}: {}", e.message));
         assert_eq!(content.features_length() as u64, case["featuresLength"].as_u64().unwrap(), "{name}: features");
         assert_eq!(content.points_length() as u64, case["pointsLength"].as_u64().unwrap(), "{name}: points");
         assert_eq!(content.triangles_length(), case["trianglesLength"].as_f64().unwrap(), "{name}: triangles");
-        assert_eq!(content.geometry_byte_length() as u64, case["geometryByteLength"].as_u64().unwrap(), "{name}: geometry");
-        assert_eq!(content.textures_byte_length() as u64, case["texturesByteLength"].as_u64().unwrap(), "{name}: textures");
+        assert_eq!(
+            content.geometry_byte_length() as u64,
+            case["geometryByteLength"].as_u64().unwrap(),
+            "{name}: geometry"
+        );
+        assert_eq!(
+            content.textures_byte_length() as u64,
+            case["texturesByteLength"].as_u64().unwrap(),
+            "{name}: textures"
+        );
         assert_eq!(
             content.batch_table_byte_length() as u64,
             case["batchTableByteLength"].as_u64().unwrap(),
@@ -388,11 +393,7 @@ fn vector_tile_content_matches_reference_parse() {
         assert_eq!(content.ready(), case["ready"].as_bool().unwrap(), "{name}: ready");
         assert_eq!(content.url(), case["url"].as_str().unwrap(), "{name}: url");
         assert_eq!(content.inner_contents().is_none(), case["innerContents"].is_null());
-        assert_eq!(
-            content.has_property(0, "name"),
-            case["hasProperty"].as_bool().unwrap(),
-            "{name}: hasProperty"
-        );
+        assert_eq!(content.has_property(0, "name"), case["hasProperty"].as_bool().unwrap(), "{name}: hasProperty");
 
         let polygons = case["polygons"].as_object().unwrap();
         let polygon = content.polygons().unwrap();
@@ -443,7 +444,9 @@ fn vector_tile_content_errors_match_reference() {
         let name = case["name"].as_str().unwrap();
         let bytes = match name {
             "bad-version" => build_vector_tile(2, None, br#"{"POLYGONS_LENGTH":0}"#, &[], &[], &[], &[], &[], &[], &[]),
-            "zero-byte-length" => build_vector_tile(1, Some(0), br#"{"POLYGONS_LENGTH":0}"#, &[], &[], &[], &[], &[], &[], &[]),
+            "zero-byte-length" => {
+                build_vector_tile(1, Some(0), br#"{"POLYGONS_LENGTH":0}"#, &[], &[], &[], &[], &[], &[], &[])
+            }
             "empty-feature-json" => build_vector_tile(1, None, &[], &[], &[], &[], &[], &[], &[], &[]),
             "missing-region" => build_vector_tile(
                 1,
@@ -522,11 +525,7 @@ fn gaussian_half_floats_match_pinned_conversion() {
             Some(text) => text.parse::<f32>().unwrap(),
             None => case["value"].as_f64().unwrap() as f32,
         };
-        assert_eq!(
-            float32_to_float16(value),
-            case["bits"].as_u64().unwrap() as u16,
-            "value {value}"
-        );
+        assert_eq!(float32_to_float16(value), case["bits"].as_u64().unwrap() as u16, "value {value}");
     }
 }
 
@@ -589,14 +588,11 @@ fn gaussian_spherical_harmonics_packing_matches_reference() {
             for (i, value) in values.iter_mut().enumerate() {
                 *value = (((seed + i * 13 + n * 7) % 211) as f64 / 17.0 - 6.0) as f32;
             }
-            attributes.push(GaussianSplatAttribute::new(
-                format!("_SH_DEGREE_{degree}_COEF_{n}"),
-                values,
-                points,
-            ));
+            attributes.push(GaussianSplatAttribute::new(format!("_SH_DEGREE_{degree}_COEF_{n}"), values, points));
         }
         let actual = pack_spherical_harmonics_data(points, degree, coefficient_count, &attributes);
-        let expected: Vec<u32> = case["packed"].as_array().unwrap().iter().map(|v| v.as_u64().unwrap() as u32).collect();
+        let expected: Vec<u32> =
+            case["packed"].as_array().unwrap().iter().map(|v| v.as_u64().unwrap() as u32).collect();
         assert_eq!(actual, expected, "degree {degree}");
     }
 }
@@ -630,7 +626,9 @@ fn gaussian_splat_content_contract_and_destruction() {
     assert!(!content.transformed());
     assert!(!content.has_property(0, "anything"));
     assert!(content.get_feature(0).is_none());
-    assert!(content.pick(&cesium_rs::core::Ray::new(Cartesian3::ZERO, Cartesian3::UNIT_Z), &make_frame([4, 4])).is_none());
+    assert!(content
+        .pick(&cesium_rs::core::Ray::new(Cartesian3::ZERO, Cartesian3::UNIT_Z), &make_frame([4, 4]))
+        .is_none());
     assert_eq!(content.colors(), &[255, 0, 0, 255, 0, 255, 0, 255]);
     assert_eq!(content.spherical_harmonics_degree(), 0);
     assert!(content.packed_spherical_harmonics_data().is_some());
@@ -748,7 +746,12 @@ fn gaussian_splat_primitive_builds_snapshot_sort_and_command() {
     let gl = RecordingGl::new();
     let mut frame = splat_frame(gl.clone());
     let mut camera = Camera::new(CameraOptions::new(64.0, 64.0));
-    camera.look_at(Cartesian3::new(6378137.0, 0.0, 0.0), cesium_rs::scene::CameraOffset::Cartesian(Cartesian3::new(0.0, 0.0, 10.0))).unwrap();
+    camera
+        .look_at(
+            Cartesian3::new(6378137.0, 0.0, 0.0),
+            cesium_rs::scene::CameraOffset::Cartesian(Cartesian3::new(0.0, 0.0, 10.0)),
+        )
+        .unwrap();
     frame.uniform.camera = camera.uniform_camera();
 
     let tile: Rc<dyn GaussianSplatTileContent> = Rc::new(SplatTile {
@@ -856,4 +859,590 @@ fn vector_geometry_and_polygon_options_keep_reference_quirks() {
     assert!(!geometry.ready());
     assert_eq!(geometry.triangles_length(), 0.0);
     assert_eq!(geometry.geometry_byte_length(), 0);
+}
+
+fn gpu_reference() -> Value {
+    serde_json::from_str(include_str!("data/scene-vector-gaussian-gpu.json")).unwrap()
+}
+
+fn command_passes(frame: &FrameState) -> Vec<u32> {
+    frame.command_list.iter().map(|command| command.pass as u32).collect()
+}
+
+fn reference_passes(commands: &Value) -> Vec<u32> {
+    commands.as_array().unwrap().iter().map(|command| command["pass"].as_u64().unwrap() as u32).collect()
+}
+
+#[test]
+fn billboard_point_interior_pixels_match_chromium_canvas() {
+    let reference = gpu_reference();
+    for case in reference["createBillboardPointCallback"]["cases"].as_array().unwrap() {
+        let args = &case["args"];
+        let canvas = draw_billboard_point(
+            args[0].as_f64().unwrap(),
+            args[1].as_str().unwrap(),
+            args[2].as_str().unwrap(),
+            args[3].as_f64().unwrap(),
+            args[4].as_f64().unwrap(),
+        );
+        assert_eq!(canvas.width, case["width"]);
+        assert_eq!(canvas.height, case["height"]);
+        let center = canvas.pixel(canvas.width / 2, canvas.height / 2);
+        for (i, channel) in center.into_iter().enumerate() {
+            assert!(channel.abs_diff(case["centerPixel"][i].as_u64().unwrap() as u8) <= 1);
+        }
+    }
+}
+
+#[test]
+fn vector_polyline_and_clamped_commands_match_cesium() {
+    use cesium_rs::scene::{ClassificationType, Vector3DTileClampedPolylines, Vector3DTileClampedPolylinesOptions};
+    let reference = gpu_reference();
+    let expected = &reference["vector3DTilePolylines"];
+    let positions = encode(
+        &[1000, 4000, 8000, 12000, 16000],
+        &[2000, 5000, 9000, 13000, 17000],
+        Some(&[3000, 6000, 10000, 14000, 18000]),
+    );
+    let rectangle = Rectangle::new(-0.1, -0.1, 0.1, 0.1);
+    let center = Cartesian3::new(6378137.0, 0.0, 0.0);
+    let mut frame = splat_frame(RecordingGl::new());
+    let mut floating = Vector3DTilePolylines::<RecordingGl>::new(Vector3DTilePolylinesOptions {
+        positions: positions.clone(),
+        counts: vec![3, 2],
+        widths: vec![4, 6],
+        minimum_height: 10.0,
+        maximum_height: 100.0,
+        rectangle,
+        center: Some(center),
+        batch_ids: vec![0, 1],
+        bounding_volume: BoundingSphere::new(center, 100000.0),
+        keep_decoded_positions: true,
+        ..Default::default()
+    });
+    floating.update(&mut frame).unwrap();
+    assert!(!floating.ready());
+    floating.update(&mut frame).unwrap();
+    assert_eq!(floating.ready(), expected["ready"]);
+    assert_eq!(floating.triangles_length(), expected["trianglesLength"].as_f64().unwrap());
+    assert_eq!(floating.geometry_byte_length(), expected["geometryByteLength"]);
+    assert_eq!(frame.command_list.len(), expected["commandCount"]);
+    assert_eq!(frame.command_list[0].pass as u32, expected["command"]["pass"]);
+    for (id, key) in [(0, "positionsBatch0"), (1, "positionsBatch1")] {
+        let positions = floating.get_positions(id).unwrap();
+        let expected = f64s(&expected[key]);
+        assert_eq!(positions.len(), expected.len());
+        assert!(positions.iter().zip(expected).all(|(a, b)| (a - b).abs() < 1.0e-6));
+    }
+    assert!(floating.get_positions(99).is_none());
+    floating.destroy().unwrap();
+    assert_eq!(floating.is_destroyed(), expected["destroyed"]);
+
+    let expected = &reference["vector3DTileClampedPolylines"];
+    let options = Vector3DTileClampedPolylinesOptions {
+        positions,
+        counts: vec![3, 2],
+        widths: vec![4, 6],
+        minimum_height: 10.0,
+        maximum_height: 100.0,
+        rectangle,
+        center: Some(center),
+        batch_ids: vec![0, 1],
+        keep_decoded_positions: true,
+        ..Default::default()
+    };
+    let mut clamped = Vector3DTileClampedPolylines::<RecordingGl>::new(options.clone());
+    let initial_heights = clamped.minimum_maximum_heights();
+    assert_eq!(vec![initial_heights.x, initial_heights.y], f64s(&expected["initialHeights"]));
+    clamped.update(&mut frame).unwrap();
+    assert!(!clamped.ready());
+    frame.command_list.clear();
+    clamped.update(&mut frame).unwrap();
+    assert_eq!(clamped.ready(), expected["ready"]);
+    assert_eq!(clamped.triangles_length(), expected["trianglesLength"].as_f64().unwrap());
+    assert_eq!(clamped.geometry_byte_length(), expected["geometryByteLength"]);
+    let positions = clamped.get_positions(0).unwrap();
+    let reference_positions = f64s(&expected["positionsBatch0"]);
+    assert_eq!(positions.len(), reference_positions.len());
+    assert!(positions.iter().zip(reference_positions).all(|(a, b)| (a - b).abs() < 1.0e-6));
+    assert_eq!(command_passes(&frame), reference_passes(&expected["bothCommands"]));
+    for (classification, key) in
+        [(ClassificationType::Terrain, "terrainPasses"), (ClassificationType::Cesium3DTile, "tilesetPasses")]
+    {
+        frame.command_list.clear();
+        let mut filtered = Vector3DTileClampedPolylines::<RecordingGl>::new(Vector3DTileClampedPolylinesOptions {
+            classification_type: classification,
+            ..options.clone()
+        });
+        filtered.update(&mut frame).unwrap();
+        filtered.update(&mut frame).unwrap();
+        assert_eq!(command_passes(&frame), u32s(&expected[key]));
+    }
+    clamped.destroy().unwrap();
+    assert_eq!(clamped.is_destroyed(), expected["destroyed"]);
+}
+
+#[test]
+fn vector_polygon_commands_match_cesium() {
+    let reference = gpu_reference();
+    let expected = &reference["vector3DTilePolygons"];
+    let mut frame = splat_frame(RecordingGl::new());
+    let mut polygons = Vector3DTilePolygons::<RecordingGl>::new(Vector3DTilePolygonsOptions {
+        positions: vec![1000, 1000, 10000, 1000, 10000, 10000, 20000, 20000, 30000, 20000, 30000, 30000],
+        counts: vec![3, 3],
+        indices: TypedArray::Uint32(vec![0, 1, 2, 0, 1, 2]),
+        index_counts: vec![3, 3],
+        minimum_height: -10.0,
+        maximum_height: 25.0,
+        polygon_minimum_heights: Some(vec![-5.0, 2.0]),
+        polygon_maximum_heights: Some(vec![15.0, 20.0]),
+        rectangle: Rectangle::new(-0.1, -0.1, 0.1, 0.1),
+        center: Some(Cartesian3::new(999.0, 999.0, 999.0)),
+        batch_table: Some(Rc::new(std::cell::RefCell::new(
+            cesium_rs::scene::vector_3d_tile_primitive::SimpleVector3DTileBatchTable::with_colors(vec![
+                Color::RED,
+                Color::LIME,
+            ]),
+        ))),
+        batch_ids: vec![0, 1],
+        bounding_volume: BoundingSphere::new(Cartesian3::ZERO, 100000.0),
+        ..Default::default()
+    });
+    for _ in 0..3 {
+        polygons.update(&mut frame).unwrap();
+    }
+    assert_eq!(polygons.ready(), expected["ready"]);
+    assert_eq!(polygons.triangles_length(), expected["trianglesLength"].as_f64().unwrap());
+    assert_eq!(polygons.geometry_byte_length(), expected["geometryByteLength"]);
+    assert_eq!(command_passes(&frame), reference_passes(&expected["commands"]));
+    polygons.destroy().unwrap();
+    assert_eq!(polygons.is_destroyed(), expected["destroyed"]);
+}
+
+#[test]
+fn vector_geometry_builds_the_pinned_mesh_batches() {
+    use cesium_rs::scene::{vector_3d_tile_primitive::SimpleVector3DTileBatchTable, Vector3DTileGeometryOptions};
+    let reference = gpu_reference();
+    let expected = &reference["vector3DTileGeometry"];
+    let mut frame = splat_frame(RecordingGl::new());
+    let shape = |scale: &[f32], translation: Cartesian3| {
+        scale.iter().copied().chain(Matrix4::from_translation(translation).0.map(|v| v as f32)).collect()
+    };
+    let mut geometry = Vector3DTileGeometry::<RecordingGl>::new(Vector3DTileGeometryOptions {
+        boxes: Some(shape(&[2.0, 3.0, 4.0], Cartesian3::UNIT_X)),
+        box_batch_ids: Some(vec![0]),
+        cylinders: Some(shape(&[2.0, 10.0], Cartesian3::new(0.0, 5.0, 0.0))),
+        cylinder_batch_ids: Some(vec![1]),
+        ellipsoids: Some(shape(&[2.0, 3.0, 4.0], Cartesian3::new(0.0, 0.0, 6.0))),
+        ellipsoid_batch_ids: Some(vec![2]),
+        spheres: Some(vec![2.5, 3.0, 4.0, 5.0]),
+        sphere_batch_ids: Some(vec![3]),
+        center: Some(Cartesian3::new(6378137.0, 0.0, 0.0)),
+        batch_table: Some(Rc::new(std::cell::RefCell::new(SimpleVector3DTileBatchTable::with_colors(vec![
+            Color::RED,
+            Color::GREEN,
+            Color::BLUE,
+            Color::RED,
+        ])))),
+        bounding_volume: Some(BoundingSphere::new(Cartesian3::new(6378137.0, 0.0, 0.0), 50.0)),
+        model_matrix: Matrix4::IDENTITY,
+    });
+    assert_eq!(geometry.ready(), expected["preReady"]["ready"]);
+    assert_eq!(geometry.triangles_length(), expected["preReady"]["trianglesLength"].as_f64().unwrap());
+    assert_eq!(geometry.geometry_byte_length(), expected["preReady"]["geometryByteLength"]);
+    geometry.update(&mut frame).unwrap();
+    geometry.update(&mut frame).unwrap();
+    let decoded = &expected["postDecode"];
+    assert_eq!(geometry.ready(), decoded["ready"]);
+    assert_eq!(geometry.triangles_length(), decoded["trianglesLength"].as_f64().unwrap());
+    assert_eq!(geometry.geometry_byte_length(), decoded["geometryByteLength"]);
+    let primitive = geometry.primitive().unwrap();
+    for (batch, expected) in primitive.batched_indices.iter().zip(decoded["batchedIndices"].as_array().unwrap()) {
+        assert_eq!(batch.offset, expected["offset"]);
+        assert_eq!(batch.count, expected["count"]);
+        assert_eq!(batch.color.to_rgba(), expected["rgba"]);
+        assert_eq!(batch.batch_ids, u32s(&expected["batchIds"]));
+    }
+    geometry.update(&mut frame).unwrap();
+    let expected_render = expected["commandsSummary"].as_array().unwrap();
+    assert_eq!(
+        command_passes(&frame),
+        expected_render[..expected_render.len() / 2]
+            .iter()
+            .map(|cmd| cmd["pass"].as_u64().unwrap() as u32)
+            .collect::<Vec<_>>()
+    );
+    geometry.destroy().unwrap();
+    assert_eq!(geometry.is_destroyed(), expected["destroyed"]);
+}
+
+#[test]
+fn gaussian_content_and_command_match_chromium_capture() {
+    use cesium_rs::scene::{model::model_utility::get_axis_correction_matrix, Axis, CameraOffset, SplitDirection};
+    let reference = gpu_reference();
+    let center = Cartesian3::new(6378137.0, 0.0, 0.0);
+    let root = cesium_rs::core::LocalFrame::new(cesium_rs::core::LocalAxis::East, cesium_rs::core::LocalAxis::North)
+        .unwrap()
+        .to_fixed_frame(center, &Ellipsoid::WGS84);
+    for (key, mirror, split) in
+        [("degree0", 1.0, SplitDirection::Left), ("degree1Mirrored", -1.0, SplitDirection::None)]
+    {
+        let case = &reference["gaussian"][key];
+        let input = &case["input"];
+        let floats = |value: &Value| f64s(value).into_iter().map(|v| v as f32).collect();
+        let mut attributes = [("POSITION", "pos"), ("ROTATION", "rot"), ("SCALE", "scl"), ("COLOR_0", "col")]
+            .into_iter()
+            .map(|(name, key)| GaussianSplatAttribute::new(name, floats(&input[key]), 4))
+            .collect::<Vec<_>>();
+        for (i, coefficients) in input["sh"].as_array().unwrap().iter().enumerate() {
+            attributes.push(GaussianSplatAttribute::new(format!("_SH_DEGREE_1_COEF_{i}"), floats(coefficients), 4));
+        }
+        let matrix = Matrix4::from_scale(Cartesian3::new(mirror, 1.0, 1.0));
+        let mut content = GaussianSplat3DTileContent::from_primitive(
+            "capture.gltf",
+            GaussianSplatPrimitiveData { attributes, ..Default::default() },
+        )
+        .unwrap();
+        let mut frame = splat_frame(RecordingGl { max_texture_size: 8192, ..RecordingGl::new() });
+        content.update(&mut frame);
+        content.transform(&root, &Matrix4::IDENTITY, &matrix, &root, &get_axis_correction_matrix(Axis::Y, Axis::X));
+        let expected_content = &case["contentSnap"];
+        assert_eq!(content.ready(), expected_content["ready"]);
+        assert_eq!(content.transformed(), expected_content["transformed"]);
+        assert_eq!(content.points_length(), expected_content["pointsLength"]);
+        assert_eq!(content.spherical_harmonics_degree(), expected_content["shDegree"]);
+        assert_eq!(content.packed_spherical_harmonics_data().unwrap(), u32s(&expected_content["packedSh"]));
+        for (actual, expected) in [
+            (content.positions(), "transformedPositions"),
+            (content.rotations(), "transformedRotations"),
+            (content.scales(), "transformedScales"),
+        ] {
+            assert_eq!(actual, floats(&expected_content[expected]), "{key} {expected}");
+        }
+        let tiles = [GaussianSplatTile::new(Rc::new(content))];
+        let mut state = GaussianSplatTilesetState::new(BoundingSphere::new(center, 10.0), &tiles);
+        state.model_matrix = matrix;
+        state.split_direction = split;
+        let mut camera = Camera::new(CameraOptions::new(64.0, 64.0));
+        camera.look_at(center, CameraOffset::Cartesian(Cartesian3::new(0.0, 0.0, 20.0))).unwrap();
+        frame.uniform.camera = camera.uniform_camera();
+        let mut primitive = GaussianSplatPrimitive::<RecordingGl>::new(Default::default());
+        primitive.set_root_transform(root);
+        for i in 1..=20 {
+            frame.frame_number = i;
+            frame.command_list.clear();
+            primitive.update(&mut frame, &state).unwrap();
+            if primitive.draw_command().is_some() {
+                break;
+            }
+        }
+        let expected = &case["primSnap"];
+        let command = primitive.last_command_info.as_ref().unwrap();
+        assert_eq!(primitive.num_splats(), expected["numSplats"]);
+        assert_eq!(primitive.selected_tile_length(), expected["selectedTileLength"]);
+        assert_eq!(command.pass as u32, expected["command"]["pass"]);
+        assert_eq!(command.count, expected["command"]["count"]);
+        assert_eq!(command.instance_count, expected["command"]["instanceCount"]);
+        assert_eq!(command.has_spherical_harmonics_texture, !expected["shTexture"].is_null());
+        assert_eq!(command.spherical_harmonics_degree, expected["uShDegree"]);
+        assert_eq!(primitive.indexes().unwrap(), u32s(&expected["indexesBeforeMove"]));
+        primitive.destroy().unwrap();
+    }
+}
+
+#[test]
+fn gaussian_splat_from_gltf_components_extracts_attributes() {
+    use cesium_rs::core::TypedArray;
+    use cesium_rs::scene::model_components::{Attribute, AttributeSemantic, Components, Node, Primitive, Scene};
+    use cesium_rs::scene::VertexAttributeSemantic;
+
+    let pos = Attribute::<RecordingGl> {
+        name: Some("POSITION".into()),
+        semantic: Some(AttributeSemantic::Vertex(VertexAttributeSemantic::Position)),
+        count: Some(2),
+        typed_array: Some(TypedArray::Float32(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0])),
+        ..Default::default()
+    };
+    let rot = Attribute::<RecordingGl> {
+        name: Some("ROTATION".into()),
+        semantic: Some(AttributeSemantic::Vertex(VertexAttributeSemantic::Rotation)),
+        count: Some(2),
+        typed_array: Some(TypedArray::Float32(vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0])),
+        ..Default::default()
+    };
+    let scl = Attribute::<RecordingGl> {
+        name: Some("SCALE".into()),
+        semantic: Some(AttributeSemantic::Vertex(VertexAttributeSemantic::Scale)),
+        count: Some(2),
+        typed_array: Some(TypedArray::Float32(vec![1.0, 1.0, 1.0, 2.0, 2.0, 2.0])),
+        ..Default::default()
+    };
+    let col = Attribute::<RecordingGl> {
+        name: Some("COLOR_0".into()),
+        semantic: Some(AttributeSemantic::Vertex(VertexAttributeSemantic::Color)),
+        count: Some(2),
+        typed_array: Some(TypedArray::Uint8(vec![255, 0, 0, 255, 0, 255, 0, 255])),
+        ..Default::default()
+    };
+    let prim = Primitive::<RecordingGl> { attributes: vec![pos, rot, scl, col], ..Default::default() };
+    let node = Node::<RecordingGl> {
+        primitives: vec![prim],
+        matrix: Some(Matrix4::from_translation(Cartesian3::new(10.0, 20.0, 30.0))),
+        ..Default::default()
+    };
+    let components =
+        Components::<RecordingGl> { scene: Some(Scene { nodes: vec![0] }), nodes: vec![node], ..Default::default() };
+
+    let content = GaussianSplat3DTileContent::from_gltf_components("test.glb", &components).unwrap();
+    assert_eq!(content.points_length(), 2);
+    assert_eq!(content.positions(), &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+    assert_eq!(content.colors(), &[255, 0, 0, 255, 0, 255, 0, 255]);
+    assert_eq!(content.geometry_byte_length(), 24 + 32 + 24 + 8);
+}
+
+#[test]
+fn vector_tile_points_and_content_gpu_match_chromium_capture() {
+    use cesium_rs::renderer::Context;
+    use cesium_rs::scene::{
+        Cesium3DTileStyle, ClassificationType, FrameResource, HeightReference, HorizontalOrigin, Vector3DTilePoints,
+        Vector3DTilePointsOptions, VerticalOrigin,
+    };
+    use std::cell::RefCell;
+    let reference = gpu_reference();
+
+    // --- 7. Vector3DTilePoints with real BillboardCollection / LabelCollection / PolylineCollection ---
+    let pts_ref = &reference["vector3DTilePoints"];
+    let rect = Rectangle::new(-0.1, -0.1, 0.1, 0.1);
+    let positions = encode(&[10000, 20000], &[15000, 25000], Some(&[5000, 12000]));
+    let mut points = Vector3DTilePoints::new(Vector3DTilePointsOptions {
+        positions,
+        batch_ids: vec![0, 1],
+        minimum_height: 10.0,
+        maximum_height: 100.0,
+        rectangle: rect,
+        height_reference: HeightReference::None,
+        batch_table: None,
+        ellipsoid: Ellipsoid::WGS84,
+    });
+    assert_eq!(points.ready(), pts_ref["beforeReady"]["ready"]);
+    assert_eq!(points.points_length() as u64, pts_ref["beforeReady"]["pointsLength"].as_u64().unwrap());
+    assert_eq!(points.textures_byte_length() as u64, pts_ref["beforeReady"]["texturesByteLength"].as_u64().unwrap());
+
+    let context = Context::new_webgl2(RecordingGl { max_texture_size: 4096, ..RecordingGl::new() });
+    let make_pts_frame = |ctx: &Context<RecordingGl>, pick: bool| {
+        let mut f = make_frame([64, 64]);
+        f.context = Some(FrameResource::new(ctx.clone()));
+        f.passes.render = !pick;
+        f.passes.pick = pick;
+        f
+    };
+
+    // Two-phase decode + install
+    let mut frame = make_pts_frame(&context, false);
+    points.update_with_context::<RecordingGl>(&mut frame).unwrap();
+    points.update_with_context::<RecordingGl>(&mut frame).unwrap();
+    assert_eq!(points.ready(), pts_ref["afterDecodeBeforeFeatures"]["ready"]);
+    assert_eq!(points.points_length() as u64, pts_ref["afterDecodeBeforeFeatures"]["pointsLength"].as_u64().unwrap());
+
+    let mut features = vec![None; 2];
+    points.create_features(&mut features);
+    let f0 = features[0].as_ref().unwrap().point.as_ref().unwrap().clone();
+    let f1_feat = features[1].as_ref().unwrap().point.as_ref().unwrap().clone();
+    assert_eq!(f0.show(), pts_ref["defaultFeatureState"]["show"]);
+    assert_eq!(f0.label_text().as_deref(), pts_ref["defaultFeatureState"]["labelText"].as_str());
+    assert_eq!(f0.horizontal_origin(), HorizontalOrigin::Center);
+    assert_eq!(f0.vertical_origin(), VerticalOrigin::Center);
+    assert_eq!(f0.label_horizontal_origin(), HorizontalOrigin::Right);
+    assert_eq!(f0.label_vertical_origin(), VerticalOrigin::Baseline);
+    assert_eq!(f0.anchor_line_enabled(), pts_ref["defaultFeatureState"]["anchorLineEnabled"]);
+
+    // Run updates + drain after_render so BillboardCollection & LabelCollection pack textures into real TextureAtlases
+    let run_pts_frame = |pts: &mut Vector3DTilePoints, ctx: &Context<RecordingGl>, pick: bool| -> FrameState {
+        let mut f = make_pts_frame(ctx, pick);
+        pts.update_with_context::<RecordingGl>(&mut f).unwrap();
+        for cb in f.after_render.drain(..) {
+            cb().unwrap();
+        }
+        f
+    };
+
+    let _ = run_pts_frame(&mut points, &context, false);
+    let f_def2 = run_pts_frame(&mut points, &context, false);
+    assert!(points.textures_byte_length() > 0, "default atlas should allocate texture memory");
+    assert!(!f_def2.command_list.is_empty(), "default points should emit GPU draw commands");
+
+    // Apply style + debug color
+    let style = Cesium3DTileStyle::new(Some(&serde_json::json!({
+        "color": "color('red')",
+        "pointSize": 12,
+        "pointOutlineColor": "color('blue')",
+        "pointOutlineWidth": 2,
+        "labelText": "'P'",
+        "labelColor": "color('lime')",
+        "heightOffset": 25,
+        "anchorLineEnabled": true,
+        "anchorLineColor": "color('yellow')",
+        "backgroundEnabled": true
+    })))
+    .unwrap();
+    points.apply_style(Some(&style), &mut features).unwrap();
+    points.apply_debug_settings(true, Color::ORANGE);
+
+    let _ = run_pts_frame(&mut points, &context, false);
+    let f_styled2 = run_pts_frame(&mut points, &context, false);
+    let f_pick = run_pts_frame(&mut points, &context, true);
+
+    let styled = &pts_ref["afterStyled"];
+    assert_eq!(f0.label_text().as_deref(), styled["f0LabelText"].as_str());
+    assert_eq!(f0.point_size(), Some(styled["f0PointSize"].as_f64().unwrap()));
+    assert_eq!(f0.anchor_line_enabled(), styled["f0AnchorLineEnabled"]);
+    let exp_pos = f64s(&styled["f0PositionAfterOffset"]);
+    let act_pos = f0.billboard().unwrap().position;
+    assert!((act_pos.x - exp_pos[0]).abs() < 1e-6);
+    assert!((act_pos.y - exp_pos[1]).abs() < 1e-6);
+    assert!((act_pos.z - exp_pos[2]).abs() < 1e-6);
+    assert!(points.textures_byte_length() > 0);
+    assert!(!f_styled2.command_list.is_empty());
+    assert!(!f_pick.command_list.is_empty());
+    let [bb0, lbl0, pl0] = f0.pick_id_colors();
+    let [bb1, _, _] = f1_feat.pick_id_colors();
+    assert!(bb0.is_some() && bb1.is_some() && bb0 != bb1, "billboards should receive distinct pick IDs");
+    assert!(pl0.is_some(), "anchor polyline should receive a pick ID");
+    assert!(lbl0.is_some(), "label should receive a pick ID");
+
+    points.apply_style(None, &mut features).unwrap();
+    assert_eq!(f0.label_text().as_deref(), pts_ref["afterClear"]["labelText"].as_str());
+    assert_eq!(f0.height_offset(), pts_ref["afterClear"]["heightOffset"].as_f64().unwrap());
+    points.destroy().unwrap();
+    assert_eq!(points.is_destroyed(), pts_ref["destroyed"]);
+
+    // --- 8. Vector3DTileContent with binary property + HIERARCHY batch table ---
+    let content_ref = &reference["vector3DTileContent"];
+    let height_bin: Vec<u8> = [10.5f32, 20.5, 30.5, 40.5, 50.5, 60.5]
+        .iter()
+        .flat_map(|v| v.to_le_bytes())
+        .collect();
+    let batch_json = serde_json::json!({
+        "name": ["poly0", "poly1", "line0", "line1", "pt0", "pt1"],
+        "height": { "byteOffset": 0, "componentType": "FLOAT", "type": "SCALAR" },
+        "HIERARCHY": {
+            "classes": [
+                { "name": "Road", "length": 3, "instances": { "surface": ["asphalt", "gravel", "dirt"] } },
+                { "name": "POI", "length": 3, "instances": { "category": ["park", "shop", "cafe"] } }
+            ],
+            "instancesLength": 6,
+            "classIds": [0, 0, 0, 1, 1, 1]
+        }
+    });
+    let feature_json = serde_json::json!({
+        "POLYGONS_LENGTH": 2,
+        "POLYGON_COUNTS": [3, 3],
+        "POLYGON_INDEX_COUNTS": [3, 3],
+        "POLYLINES_LENGTH": 2,
+        "POLYLINE_COUNTS": [3, 2],
+        "POINTS_LENGTH": 2,
+        "REGION": [-0.1, -0.1, 0.1, 0.1, 10, 100]
+    });
+    let poly_indices: Vec<u32> = vec![0, 1, 2, 0, 1, 2];
+    let poly_positions: Vec<u16> = vec![1000, 1000, 10000, 1000, 10000, 10000, 20000, 20000, 30000, 20000, 30000, 30000];
+    let line_positions = encode(&[1000, 4000, 8000, 12000, 16000], &[2000, 5000, 9000, 13000, 17000], Some(&[3000, 6000, 10000, 14000, 18000]));
+    let pt_positions = encode(&[10000, 20000], &[15000, 25000], Some(&[5000, 12000]));
+
+    let mut f_bytes = serde_json::to_vec(&feature_json).unwrap();
+    while !f_bytes.len().is_multiple_of(8) {
+        f_bytes.push(b' ');
+    }
+    let mut b_bytes = serde_json::to_vec(&batch_json).unwrap();
+    while !b_bytes.len().is_multiple_of(8) {
+        b_bytes.push(b' ');
+    }
+    let mut raw = Vec::new();
+    raw.extend_from_slice(b"vctr");
+    let header_len = 44usize;
+    let mut body_offset = header_len + f_bytes.len() + b_bytes.len() + height_bin.len();
+    let pad = (4 - (body_offset % 4)) % 4;
+    body_offset += pad;
+    let total_len = body_offset + poly_indices.len() * 4 + poly_positions.len() * 2 + line_positions.len() * 2 + pt_positions.len() * 2;
+    for v in [
+        1u32,
+        total_len as u32,
+        f_bytes.len() as u32,
+        0u32,
+        b_bytes.len() as u32,
+        height_bin.len() as u32,
+        (poly_indices.len() * 4) as u32,
+        (poly_positions.len() * 2) as u32,
+        (line_positions.len() * 2) as u32,
+        (pt_positions.len() * 2) as u32,
+    ] {
+        raw.extend_from_slice(&v.to_le_bytes());
+    }
+    raw.extend_from_slice(&f_bytes);
+    raw.extend_from_slice(&b_bytes);
+    raw.extend_from_slice(&height_bin);
+    raw.resize(raw.len() + pad, 0);
+    for v in &poly_indices {
+        raw.extend_from_slice(&v.to_le_bytes());
+    }
+    for v in &poly_positions {
+        raw.extend_from_slice(&v.to_le_bytes());
+    }
+    for v in &line_positions {
+        raw.extend_from_slice(&v.to_le_bytes());
+    }
+    for v in &pt_positions {
+        raw.extend_from_slice(&v.to_le_bytes());
+    }
+    let raw = Arc::new(raw);
+
+    for (key, classification) in [("floating", None), ("clamped", Some(ClassificationType::Both))] {
+        let case = &content_ref[key];
+        let examined = Rc::new(RefCell::new(Vec::new()));
+        let examined_cb = examined.clone();
+        let mut opts = content_options(classification);
+        opts.url = "https://example.test/rich.vctr".into();
+        opts.vector_keep_decoded_positions = true;
+        opts.examine_vector_lines = Some(Rc::new(move |pos, bid, url, _| {
+            examined_cb.borrow_mut().push(serde_json::json!({
+                "batchId": bid,
+                "positionsLen": pos.len(),
+                "url": url,
+            }));
+        }));
+        let mut content = Vector3DTileContent::<RecordingGl>::from_bytes(opts, raw.clone(), 0).unwrap();
+        let before = &case["beforeUpdate"];
+        assert_eq!(content.ready(), before["ready"]);
+        assert_eq!(content.features_length() as u64, before["featuresLength"].as_u64().unwrap());
+        assert_eq!(content.batch_table_byte_length() as u64, before["batchTableByteLength"].as_u64().unwrap());
+        assert_eq!(content.has_property(0, "name"), before["hasName0"]);
+        assert_eq!(content.has_property(2, "height"), before["hasHeight2"]);
+        assert_eq!(content.has_property(0, "surface"), before["hasSurface0"]);
+        assert_eq!(content.has_property(5, "category"), before["hasCategory5"]);
+        assert_eq!(content.has_property(0, "category"), before["hasCategory0"]);
+        assert_eq!(content.batch_table().borrow().property(2, "height").unwrap().as_f64().unwrap(), before["heightVal2"].as_f64().unwrap());
+        assert_eq!(content.batch_table().borrow().property(1, "surface").unwrap().as_str().unwrap(), before["surfaceVal1"].as_str().unwrap());
+        assert_eq!(content.batch_table().borrow().property(5, "category").unwrap().as_str().unwrap(), before["categoryVal5"].as_str().unwrap());
+        assert_eq!(serde_json::Value::Array(examined.borrow().clone()), before["examined"]);
+
+        let mut frame = make_pts_frame(&context, false);
+        for _ in 0..4 {
+            frame.command_list.clear();
+            content.update_content(&mut frame).unwrap();
+            for cb in frame.after_render.drain(..) {
+                cb().unwrap();
+            }
+        }
+        let after = &case["afterReady"];
+        assert_eq!(content.ready(), after["ready"]);
+        assert_eq!(content.points_length() as u64, after["pointsLength"].as_u64().unwrap());
+        assert_eq!(content.batch_table_byte_length() as u64, after["batchTableByteLength"].as_u64().unwrap());
+        assert!(content.textures_byte_length() > 0);
+        assert_eq!(
+            content.get_polyline_positions(2).unwrap().len() as u64,
+            after["polylinePositionsBatch2Len"].as_u64().unwrap()
+        );
+        assert!(!frame.command_list.is_empty());
+        content.destroy_content().unwrap();
+        assert_eq!(content.is_destroyed(), case["destroyed"]);
+    }
 }

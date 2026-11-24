@@ -409,12 +409,103 @@ const defaultsCase = {
   },
 };
 
+
+// Capture metadata and cube face requests without contacting Street View.
+globalThis.ImageData ??= class {};
+const googleStreetView = await (async () => {
+  const provider = await GoogleStreetViewCubeMapPanoramaProvider.fromUrl({
+    key: 'TEST_KEY',
+    url: 'https://maps.googleapis.com/maps/api/streetview',
+    tileSize: 512,
+  });
+
+  const requestedJsonUrls = [];
+  const requestedImageUrls = [];
+  const origFetchJson = C.Resource.prototype.fetchJson;
+  const origFetchImage = C.Resource.fetchImage;
+
+  let mockJsonResponse = { status: 'OK', pano_id: 'PANO_ABC', location: { lat: 37.7749, lng: -122.4194 } };
+  C.Resource.prototype.fetchJson = async function () {
+    requestedJsonUrls.push(this.url);
+    return mockJsonResponse;
+  };
+  C.Resource.fetchImage = async function (opts) {
+    requestedImageUrls.push(typeof opts === 'string' ? opts : opts.url);
+    return new ImageData();
+  };
+
+  try {
+    const carto = C.Cartographic.fromDegrees(-122.4194, 37.7749, 0.0);
+    const nearestDefault = await provider.getNearestPanoId(carto);
+    const nearestCustomRadius = await provider.getNearestPanoId(carto, 120);
+    const metaOk = await provider.getPanoIdMetadata('PANO_ABC');
+
+    mockJsonResponse = { status: 'ZERO_RESULTS' };
+    let nearestErr = null;
+    try {
+      await provider.getNearestPanoId(carto);
+    } catch (e) {
+      nearestErr = e.message;
+    }
+
+    mockJsonResponse = { status: 'NOT_FOUND' };
+    let metaErr = null;
+    try {
+      await provider.getPanoIdMetadata('BAD_PANO');
+    } catch (e) {
+      metaErr = e.message;
+    }
+
+    // loadPanorama with explicit panoId + signature + tileSize
+    const panoExplicit = await provider.loadPanorama({
+      cartographic: carto,
+      panoId: 'PANO_SIGNED',
+      tileSize: 256,
+      signature: 'SIG123',
+    });
+    const explicitFaceUrls = requestedImageUrls.splice(0, requestedImageUrls.length);
+
+    // loadPanorama without panoId -> resolves via getNearestPanoId
+    mockJsonResponse = { status: 'OK', pano_id: 'PANO_LOOKUP', location: { lat: 37.7749, lng: -122.4194 } };
+    const panoLookup = await provider.loadPanorama({ cartographic: carto });
+    const lookupFaceUrls = requestedImageUrls.splice(0, requestedImageUrls.length);
+
+    let missingKeyErr = null;
+    try {
+      await GoogleStreetViewCubeMapPanoramaProvider.fromUrl({});
+    } catch (e) {
+      missingKeyErr = e.message;
+    }
+
+    return {
+      cartographicDeg: [-122.4194, 37.7749, 0.0],
+      requestedJsonUrls,
+      nearestDefault,
+      nearestCustomRadius,
+      metaOk,
+      nearestErr,
+      metaErr,
+      missingKeyErr,
+      explicitFaceUrls,
+      explicitTransform: m3(panoExplicit.transform),
+      explicitCredit: panoExplicit.credit.html,
+      lookupFaceUrls,
+      lookupTransform: m3(panoLookup.transform),
+      lookupCredit: panoLookup.credit.html,
+    };
+  } finally {
+    C.Resource.prototype.fetchJson = origFetchJson;
+    C.Resource.fetchImage = origFetchImage;
+  }
+})();
+
 writeFileSync(new URL('../../tests/data/scene-atmosphere-environment.json', import.meta.url), JSON.stringify({
   skyAtmosphere: { before: skyBefore, after: skyAfter, defaultRadiiAndColor: c3(skyDefault._radiiAndDynamicAtmosphereColor), defaultScale: m4(skyDefault._scaleMatrix) },
   sun: { before: sunBefore, clamped: num(sunClamped), after: sunAfter },
   sunPostProcess: { length: sunPostProcess.length, stages },
   cubeMapPanorama: panoramaCase,
   google,
+  googleStreetView,
   specular: specularCase,
   dynamic: dynamicCase,
   invert: invertCase,

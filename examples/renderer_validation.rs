@@ -10,6 +10,44 @@ mod browser {
     fn error(e: impl std::fmt::Display) -> JsValue {
         JsValue::from_str(&e.to_string())
     }
+
+    #[wasm_bindgen]
+    pub fn scene_sun_texture(gl: JsValue, glow: f64, width: u32, height: u32) -> Result<String, JsValue> {
+        use cesium_rs::scene::{Camera, CameraOptions, FrameState, Sun};
+
+        let context = Context::new_webgl2(BrowserGl::new(gl).map_err(error)?);
+        let mut camera = Camera::new(CameraOptions::new(f64::from(width), f64::from(height)));
+        let uniform = UniformFrame::new(camera.uniform_camera(), JulianDate::default());
+        let mut frame = FrameState::new(uniform, CullingVolume::new(Vec::new()), [width, height]);
+        frame.passes.render = true;
+        let mut sun = Sun::new(context.clone());
+        sun.set_glow_factor(glow);
+        let viewport = Viewport { x: 0, y: 0, width, height };
+        let mut commands = sun.update(&frame, viewport, false).map_err(error)?.expect("render pass");
+        let mut engine = ComputeEngine::new(&context);
+        commands.compute_command.as_mut().expect("first update").execute(&mut engine).map_err(error)?;
+        let texture = sun.texture().expect("generated sun texture");
+        let (width, height) = (texture.width(), texture.height());
+        let framebuffer = Framebuffer::new(
+            &context,
+            FramebufferOptions {
+                colors: vec![Attachment::Texture(texture.clone())],
+                destroy_attachments: false,
+                ..Default::default()
+            },
+        )
+        .map_err(error)?;
+        let pixels = context
+            .read_pixels_from(ReadState {
+                region: TextureRegion { x: 0, y: 0, width, height },
+                framebuffer: Some(&framebuffer),
+            })
+            .map_err(error)?
+            .bytes;
+        let hash = pixels.iter().fold(0xcbf29ce484222325_u64, |hash, &byte| (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3));
+        Ok(json!({"width": width, "height": height, "hash": format!("{hash:x}")}).to_string())
+    }
+
     /// Exercises the real imagery upload and reprojection compute pass.
     #[wasm_bindgen]
     pub fn imagery_texture_pixels(gl: JsValue, config: &str) -> Result<String, JsValue> {

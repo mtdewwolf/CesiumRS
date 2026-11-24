@@ -178,6 +178,14 @@ impl GlobeTranslucencyState {
     pub fn update(&mut self, translucency: &GlobeTranslucency, frame: GlobeTranslucencyFrame) {
         self.mode = frame.mode;
         self.camera_underground = frame.camera_underground;
+        if !frame.show {
+            self.front_face_translucent = false;
+            self.back_face_translucent = false;
+            self.sun_visible_through_globe = true;
+            self.environment_visible = true;
+            self.use_depth_plane = false;
+            return;
+        }
         update_alpha(
             &mut self.front_face_alpha_by_distance,
             translucency.enabled,
@@ -191,16 +199,14 @@ impl GlobeTranslucencyState {
             translucency.back_face_alpha_by_distance(),
         );
         let translucent = |alpha: NearFarScalar| {
-            frame.show
-                && translucency.enabled
-                && (frame.base_alpha < 1.0 || alpha.near_value < 1.0 || alpha.far_value < 1.0)
+            translucency.enabled && (frame.base_alpha < 1.0 || alpha.near_value < 1.0 || alpha.far_value < 1.0)
         };
         self.front_face_translucent = translucent(self.front_face_alpha_by_distance);
         self.back_face_translucent = translucent(self.back_face_alpha_by_distance);
         self.sun_visible_through_globe =
-            !frame.show || self.front_face_translucent && (frame.camera_underground || self.back_face_translucent);
-        self.environment_visible = !frame.show || !frame.camera_underground || self.front_face_translucent;
-        self.use_depth_plane = frame.show && !frame.camera_underground && !self.front_face_translucent;
+            self.front_face_translucent && (frame.camera_underground || self.back_face_translucent);
+        self.environment_visible = !frame.camera_underground || self.front_face_translucent;
+        self.use_depth_plane = !frame.camera_underground && !self.front_face_translucent;
         self.requires_manual_depth_test = self.front_face_translucent
             && !self.back_face_translucent
             && !frame.depth_test_against_terrain

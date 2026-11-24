@@ -45,6 +45,7 @@ impl<G: Gl + 'static> GroundPrimitive<G> {
         let show = options.primitive.show.unwrap_or(true);
         let debug_show_bounding_volume = options.primitive.debug_show_bounding_volume.unwrap_or(false);
         let appearance_present = options.primitive.appearance.is_some();
+        let debug_show_shadow_volume = options.debug_show_shadow_volume;
         Self {
             inner: None,
             pending: Some(options),
@@ -52,7 +53,7 @@ impl<G: Gl + 'static> GroundPrimitive<G> {
             classification_type,
             show,
             debug_show_bounding_volume,
-            debug_show_shadow_volume: false,
+            debug_show_shadow_volume,
             ready: false,
             destroyed: false,
         }

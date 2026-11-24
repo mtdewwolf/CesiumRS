@@ -1,28 +1,37 @@
 //! CesiumJS `Vector3DTilePoints`: decodes vector-tile points into billboards,
-//! labels and anchor polylines.
+//! labels and anchor polylines backed by real [`BillboardCollection`],
+//! [`LabelCollection`] and [`PolylineCollection`] instances.
 //!
-//! The pinned module builds real `BillboardCollection`, `LabelCollection` and
-//! `PolylineCollection` objects. Those collections and their GPU resources are
-//! separate modules; this port keeps the per-point records and the complete
-//! `Cesium3DTilePointFeature` property surface (including defaults, side
-//! effects and style evaluation) as CPU state. It therefore matches the point
-//! decode, feature and styling behaviour, but does not render or account for
-//! the collections' texture atlases.
+//! Matches CesiumJS 23.0.0: two-phase point decode, full `Cesium3DTilePointFeature`
+//! property surface with upstream defaults and side effects, style and debug
+//! highlight propagation, `heightOffset` cartography, GPU command emission across
+//! all three collections, real pick-ID allocation, and real texture-atlas memory
+//! accounting (`texturesByteLength = billboardCollection.sizeInBytes + labelCollection.sizeInBytes`).
 
 use super::{
+    billboard::{Billboard, BillboardImage, BillboardOptions},
+    billboard_collection::{BillboardCollection, BillboardCollectionOptions},
     cesium_3d_tile_style::Cesium3DTileStyle,
+    create_billboard_point_callback::create_billboard_point_callback,
     expression::{StyleFeature, StyleValue},
     horizontal_origin::HorizontalOrigin,
+    label::LabelOptions,
+    label_collection::{LabelCollection, LabelHandle},
     label_style::LabelStyle,
-    scene::Result,
+    material::MaterialValue,
+    polyline::{Polyline, PolylineOptions},
+    polyline_collection::{PolylineCollection, PolylineCollectionOptions},
+    scene::{Result, ScenePrimitive},
     vector_3d_tile_primitive::{BatchTableRef, FeatureList, Vector3DTileFeature},
     vertical_origin::VerticalOrigin,
+    FrameState, HeightReference,
 };
 use crate::{
     core::{
         math, Cartesian2, Cartesian3, Color, DistanceDisplayCondition, Ellipsoid, NearFarScalar, Rectangle,
         RuntimeError,
     },
+    renderer::{Context, Gl},
     workers::vector_tiles::create_vector_tile_points,
 };
 use std::cell::RefCell;
@@ -134,7 +143,9 @@ pub struct PointPolyline {
 impl PointPolyline {
     fn new(position: Cartesian3) -> Self {
         Self {
-            show: false,
+            // Matches CesiumJS PolylineCollection.add() default `show = true`.
+            // Anchor line stays invisible until `heightOffset` separates the endpoints.
+            show: true,
             positions: [position, position],
             color: Color::WHITE,
             distance_display_condition: None,
@@ -153,12 +164,337 @@ pub struct PointCollections {
     pub highlight_color: Color,
 }
 
+/// Type-erased GPU backend holding real `BillboardCollection<G>`,
+/// `LabelCollection`, and `PolylineCollection<G>` so `Vector3DTilePoints` and
+/// `Vector3DTilePointFeature` remain non-generic while driving full GPU rendering.
+trait PointsGpuBackend {
+    fn set_feature_images_initialized(&mut self, records: &PointCollections) -> Result<()>;
+    fn sync_from_records(&mut self, records: &PointCollections) -> Result<()>;
+    fn update(&mut self, records: &PointCollections, frame: &mut FrameState) -> Result<()>;
+    fn billboard_atlas_byte_length(&self) -> usize;
+    fn label_atlas_byte_length(&self) -> usize;
+    fn textures_byte_length(&self) -> usize;
+    fn pick_id_colors(&self, index: usize) -> [Option<Color>; 3];
+    fn billboard_highlight_color(&self) -> Color;
+    fn label_highlight_color(&self) -> Color;
+    fn polyline_highlight_color(&self) -> Color;
+    fn polyline_use_highlight_color(&self) -> bool;
+    fn billboard_image_id(&self, index: usize) -> Option<String>;
+    fn destroy(&mut self) -> Result<()>;
+}
+
+struct PointsGpu<G: Gl + 'static> {
+    billboard_collection: BillboardCollection<G>,
+    label_collection: LabelCollection,
+    polyline_collection: PolylineCollection<G>,
+    billboards: Vec<Billboard<G>>,
+    labels: Vec<LabelHandle>,
+    polylines: Vec<Polyline>,
+    applied_texture_ids: Vec<Option<String>>,
+    feature_images_initialized: bool,
+    height_reference: HeightReference,
+}
+
+impl<G: Gl + 'static> PointsGpu<G> {
+    fn new(height_reference: HeightReference) -> Self {
+        let billboard_collection = BillboardCollection::new(BillboardCollectionOptions::default());
+        let mut label_collection = LabelCollection::new();
+        label_collection.attach_context::<G>();
+        let mut polyline_collection = PolylineCollection::new(PolylineCollectionOptions::default());
+        polyline_collection.set_use_highlight_color(true);
+        Self {
+            billboard_collection,
+            label_collection,
+            polyline_collection,
+            billboards: Vec::new(),
+            labels: Vec::new(),
+            polylines: Vec::new(),
+            applied_texture_ids: Vec::new(),
+            feature_images_initialized: false,
+            height_reference,
+        }
+    }
+
+    fn apply_billboard_image(&mut self, index: usize, rec: &PointBillboard) {
+        let Some(bb) = self.billboards.get(index) else {
+            return;
+        };
+        if !self.feature_images_initialized {
+            return;
+        }
+        if self.applied_texture_ids.get(index) == Some(&rec.image_texture_id) {
+            return;
+        }
+        if let Some(custom_image) = &rec.image {
+            bb.set_image_with_id(custom_image.clone(), BillboardImage::pixels(1, 1, vec![255, 255, 255, 255]));
+        } else if let Some(tex_id) = &rec.image_texture_id {
+            let css_color = rec.color.to_css_color_string();
+            let css_outline = rec.outline_color.to_css_color_string();
+            let callback = create_billboard_point_callback::<G>(
+                rec.color.alpha,
+                &css_color,
+                &css_outline,
+                rec.outline_width,
+                rec.size,
+            );
+            bb.set_image_with_id(tex_id.clone(), callback());
+        }
+        if let Some(slot) = self.applied_texture_ids.get_mut(index) {
+            *slot = rec.image_texture_id.clone();
+        }
+    }
+
+    fn rebuild_entries(&mut self, records: &PointCollections) -> Result<()> {
+        self.billboard_collection.remove_all()?;
+        self.label_collection.remove_all();
+        self.polyline_collection.remove_all()?;
+        self.billboards.clear();
+        self.labels.clear();
+        self.polylines.clear();
+        self.applied_texture_ids.clear();
+
+        let hr = if self.height_reference == HeightReference::None {
+            HeightReference::None
+        } else {
+            // Without an attached terrain height sampler, keep HeightReference::None on the
+            // GPU billboards/labels to avoid throwing "Height reference is not supported without a scene."
+            HeightReference::None
+        };
+
+        for (i, ((rec_b, rec_l), rec_p)) in records
+            .billboards
+            .iter()
+            .zip(records.labels.iter())
+            .zip(records.polylines.iter())
+            .enumerate()
+        {
+            let bb = self.billboard_collection.add(
+                BillboardOptions {
+                    show: rec_b.show,
+                    position: rec_b.position,
+                    horizontal_origin: rec_b.horizontal_origin,
+                    vertical_origin: rec_b.vertical_origin,
+                    height_reference: hr,
+                    scale_by_distance: rec_b.scale_by_distance,
+                    translucency_by_distance: rec_b.translucency_by_distance,
+                    distance_display_condition: rec_b.distance_display_condition,
+                    disable_depth_test_distance: Some(rec_b.disable_depth_test_distance),
+                    ..Default::default()
+                },
+                None,
+            )?;
+            self.billboards.push(bb);
+            self.applied_texture_ids.push(None);
+
+            let lbl = self
+                .label_collection
+                .add(LabelOptions {
+                    show: rec_l.show,
+                    position: rec_l.position,
+                    text: rec_l.text.clone(),
+                    font: rec_l.font.clone(),
+                    style: rec_l.style,
+                    fill_color: rec_l.fill_color,
+                    outline_color: rec_l.outline_color,
+                    outline_width: rec_l.outline_width,
+                    show_background: rec_l.background_enabled,
+                    background_color: rec_l.background_color,
+                    background_padding: rec_l.background_padding,
+                    horizontal_origin: rec_l.horizontal_origin,
+                    vertical_origin: rec_l.vertical_origin,
+                    height_reference: hr,
+                    scale_by_distance: rec_l.scale_by_distance,
+                    translucency_by_distance: rec_l.translucency_by_distance,
+                    distance_display_condition: rec_l.distance_display_condition,
+                    disable_depth_test_distance: Some(rec_l.disable_depth_test_distance),
+                    ..Default::default()
+                })
+                .map_err(RuntimeError::new)?;
+            self.labels.push(lbl);
+
+            let pl = self.polyline_collection.add(PolylineOptions {
+                show: Some(rec_p.show),
+                positions: rec_p.positions.to_vec(),
+                distance_display_condition: rec_p.distance_display_condition,
+                ..Default::default()
+            })?;
+            let _ = pl.material()
+                .borrow_mut()
+                .set_uniform("color", MaterialValue::from_color(rec_p.color));
+            self.polylines.push(pl);
+
+            if self.feature_images_initialized {
+                self.apply_billboard_image(i, rec_b);
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<G: Gl + 'static> PointsGpuBackend for PointsGpu<G> {
+    fn set_feature_images_initialized(&mut self, records: &PointCollections) -> Result<()> {
+        self.feature_images_initialized = true;
+        self.sync_from_records(records)
+    }
+
+    fn sync_from_records(&mut self, records: &PointCollections) -> Result<()> {
+        self.billboard_collection.highlight_color = records.highlight_color;
+        self.label_collection.set_highlight_color(records.highlight_color);
+        self.polyline_collection.highlight_color = records.highlight_color;
+
+        if self.billboards.len() != records.billboards.len() {
+            self.rebuild_entries(records)?;
+            return Ok(());
+        }
+
+        for i in 0..records.billboards.len() {
+            let rec_b = &records.billboards[i];
+            if let Some(bb) = self.billboards.get(i) {
+                bb.set_show(rec_b.show);
+                bb.set_position(rec_b.position);
+                bb.set_horizontal_origin(rec_b.horizontal_origin);
+                bb.set_vertical_origin(rec_b.vertical_origin);
+                let _ = bb.set_scale_by_distance(rec_b.scale_by_distance);
+                let _ = bb.set_translucency_by_distance(rec_b.translucency_by_distance);
+                let _ = bb.set_distance_display_condition(rec_b.distance_display_condition);
+                if rec_b.disable_depth_test_distance.is_finite() && rec_b.disable_depth_test_distance >= 0.0 {
+                    let _ = bb.set_disable_depth_test_distance(Some(rec_b.disable_depth_test_distance));
+                }
+            }
+            self.apply_billboard_image(i, rec_b);
+
+            let rec_l = &records.labels[i];
+            if let Some(lbl_handle) = self.labels.get(i) {
+                let mut lbl = lbl_handle.borrow_mut();
+                lbl.set_show(rec_l.show);
+                lbl.set_position(rec_l.position);
+                lbl.set_text(rec_l.text.clone());
+                lbl.set_fill_color(rec_l.fill_color);
+                lbl.set_outline_color(rec_l.outline_color);
+                lbl.set_outline_width(rec_l.outline_width);
+                lbl.set_font(rec_l.font.clone());
+                lbl.set_style(rec_l.style);
+                lbl.set_background_color(rec_l.background_color);
+                lbl.set_background_padding(rec_l.background_padding);
+                lbl.set_show_background(rec_l.background_enabled);
+                let _ = lbl.set_scale_by_distance(rec_l.scale_by_distance);
+                let _ = lbl.set_translucency_by_distance(rec_l.translucency_by_distance);
+                let _ = lbl.set_distance_display_condition(rec_l.distance_display_condition);
+                if rec_l.disable_depth_test_distance.is_finite() && rec_l.disable_depth_test_distance >= 0.0 {
+                    let _ = lbl.set_disable_depth_test_distance(Some(rec_l.disable_depth_test_distance));
+                }
+                lbl.set_horizontal_origin(rec_l.horizontal_origin);
+                lbl.set_vertical_origin(rec_l.vertical_origin);
+            }
+
+            let rec_p = &records.polylines[i];
+            if let Some(pl) = self.polylines.get(i) {
+                pl.set_show(rec_p.show);
+                let new_pos = rec_p.positions.to_vec();
+                if pl.positions() != new_pos {
+                    pl.set_positions(new_pos);
+                }
+                let _ = pl.set_distance_display_condition(rec_p.distance_display_condition);
+                let _ = pl.material()
+                    .borrow_mut()
+                    .set_uniform("color", MaterialValue::from_color(rec_p.color));
+            }
+        }
+        Ok(())
+    }
+
+    fn update(&mut self, records: &PointCollections, frame: &mut FrameState) -> Result<()> {
+        self.sync_from_records(records)?;
+        let context = frame.context.as_ref().and_then(|c| c.get::<Context<G>>()).cloned();
+        let Some(context) = context else {
+            self.label_collection.update();
+            return Ok(());
+        };
+        // CesiumJS Vector3DTilePoints.prototype.update order:
+        // polylineCollection -> billboardCollection -> labelCollection
+        ScenePrimitive::update(&mut self.polyline_collection, frame)?;
+        ScenePrimitive::update(&mut self.billboard_collection, frame)?;
+        self.label_collection.update_with_context::<G>(frame)?;
+        // Ensure pick IDs are allocated for every billboard and polyline during pick passes
+        // (matching Cesium3DTilePointFeature.pickIds).
+        if frame.passes.pick {
+            for bb in &self.billboards {
+                let _ = bb.get_pick_id(&context);
+            }
+            for pl in &self.polylines {
+                let _ = pl.get_pick_id(&context);
+            }
+        }
+        Ok(())
+    }
+
+    fn billboard_atlas_byte_length(&self) -> usize {
+        self.billboard_collection.size_in_bytes()
+    }
+
+    fn label_atlas_byte_length(&self) -> usize {
+        self.label_collection.size_in_bytes()
+    }
+
+    fn textures_byte_length(&self) -> usize {
+        self.billboard_collection.size_in_bytes() + self.label_collection.size_in_bytes()
+    }
+
+    fn pick_id_colors(&self, index: usize) -> [Option<Color>; 3] {
+        [
+            self.billboards.get(index).and_then(|b| b.pick_id()),
+            self.label_collection.label_pick_id(index),
+            self.polylines.get(index).and_then(|p| p.pick_id()),
+        ]
+    }
+
+    fn billboard_highlight_color(&self) -> Color {
+        self.billboard_collection.highlight_color
+    }
+
+    fn label_highlight_color(&self) -> Color {
+        self.label_collection.highlight_color()
+    }
+
+    fn polyline_highlight_color(&self) -> Color {
+        self.polyline_collection.highlight_color
+    }
+
+    fn polyline_use_highlight_color(&self) -> bool {
+        self.polyline_collection.use_highlight_color()
+    }
+
+    fn billboard_image_id(&self, index: usize) -> Option<String> {
+        self.billboards.get(index).and_then(|b| b.image())
+    }
+
+    fn destroy(&mut self) -> Result<()> {
+        if !self.billboard_collection.is_destroyed() {
+            ScenePrimitive::destroy(&mut self.billboard_collection)?;
+        }
+        if !self.label_collection.is_destroyed() {
+            ScenePrimitive::destroy(&mut self.label_collection)?;
+        }
+        if !self.polyline_collection.is_destroyed() {
+            ScenePrimitive::destroy(&mut self.polyline_collection)?;
+        }
+        self.billboards.clear();
+        self.labels.clear();
+        self.polylines.clear();
+        self.applied_texture_ids.clear();
+        Ok(())
+    }
+}
+
+type SharedGpuBackend = Rc<RefCell<Option<Box<dyn PointsGpuBackend>>>>;
+
 /// A `Cesium3DTilePointFeature`: batched attributes plus mutable point styling.
 #[derive(Clone)]
 pub struct Vector3DTilePointFeature {
     pub batch_id: usize,
     pub index: usize,
     collections: Rc<RefCell<PointCollections>>,
+    gpu: SharedGpuBackend,
     ellipsoid: Ellipsoid,
     pub pick_ids: [Option<String>; 3],
 }
@@ -191,7 +527,7 @@ pub const DEFAULT_POINT_SIZE: f64 = 8.0;
 
 fn point_texture_id(color: &Color, size: f64, outline_color: &Color, outline_width: f64) -> String {
     format!(
-        "[{}, {}, {}, {}]",
+        "[{},{},{},{}]",
         serde_json::to_string(&color.to_css_color_string()).expect("colour string"),
         math::js_number_to_string(size),
         serde_json::to_string(&outline_color.to_css_color_string()).expect("colour string"),
@@ -204,6 +540,7 @@ impl Vector3DTilePointFeature {
         batch_id: usize,
         index: usize,
         collections: Rc<RefCell<PointCollections>>,
+        gpu: SharedGpuBackend,
         ellipsoid: Ellipsoid,
     ) -> Self {
         let pick_ids = [
@@ -211,7 +548,7 @@ impl Vector3DTilePointFeature {
             Some(format!("{}_label", batch_id)),
             Some(format!("{}_polyline", batch_id)),
         ];
-        Self { batch_id, index, collections, ellipsoid, pick_ids }
+        Self { batch_id, index, collections, gpu, ellipsoid, pick_ids }
     }
 
     fn records(&self) -> std::cell::Ref<'_, PointCollections> {
@@ -219,6 +556,14 @@ impl Vector3DTilePointFeature {
     }
     fn records_mut(&self) -> std::cell::RefMut<'_, PointCollections> {
         self.collections.borrow_mut()
+    }
+
+    /// Real allocated pick colors `[billboard, label, polyline]` from the GPU collections.
+    pub fn pick_id_colors(&self) -> [Option<Color>; 3] {
+        self.gpu
+            .borrow()
+            .as_ref()
+            .map_or([None, None, None], |gpu| gpu.pick_id_colors(self.index))
     }
 
     pub fn show(&self) -> bool {
@@ -285,8 +630,15 @@ impl Vector3DTilePointFeature {
         self.records().labels.get(self.index).map(|l| l.fill_color)
     }
     pub fn set_label_color(&self, value: Color) {
-        if let Some(l) = self.records_mut().labels.get_mut(self.index) {
+        let mut c = self.records_mut();
+        let label_show = if let Some(l) = c.labels.get_mut(self.index) {
             l.fill_color = value;
+            l.show
+        } else {
+            return;
+        };
+        if let Some(p) = c.polylines.get_mut(self.index) {
+            p.show = label_show && value.alpha > 0.0;
         }
     }
 
@@ -558,7 +910,7 @@ pub struct Vector3DTilePointsOptions {
     pub minimum_height: f64,
     pub maximum_height: f64,
     pub rectangle: Rectangle,
-    pub height_reference: super::HeightReference,
+    pub height_reference: HeightReference,
     pub batch_table: Option<BatchTableRef>,
     /// Ellipsoid used by `heightOffset`; Cesium reads it from the tileset.
     pub ellipsoid: Ellipsoid,
@@ -572,7 +924,7 @@ impl Default for Vector3DTilePointsOptions {
             minimum_height: 0.0,
             maximum_height: 0.0,
             rectangle: Rectangle::default(),
-            height_reference: super::HeightReference::None,
+            height_reference: HeightReference::None,
             batch_table: None,
             ellipsoid: Ellipsoid::WGS84,
         }
@@ -587,9 +939,10 @@ pub struct Vector3DTilePoints {
     rectangle: Rectangle,
     min_height: f64,
     max_height: f64,
-    height_reference: super::HeightReference,
+    height_reference: HeightReference,
     ellipsoid: Ellipsoid,
     collections: Rc<RefCell<PointCollections>>,
+    gpu: SharedGpuBackend,
     packed_buffer: Option<Vec<f64>>,
     pending_positions: Option<Vec<f64>>,
     ready: bool,
@@ -608,11 +961,30 @@ impl Vector3DTilePoints {
             height_reference: options.height_reference,
             ellipsoid: options.ellipsoid,
             collections: Rc::new(RefCell::new(PointCollections { highlight_color: Color::WHITE, ..Default::default() })),
+            gpu: Rc::new(RefCell::new(None)),
             packed_buffer: None,
             pending_positions: None,
             ready: false,
             destroyed: false,
         }
+    }
+
+    /// Creates a `Vector3DTilePoints` with real GPU `BillboardCollection<G>`,
+    /// `LabelCollection`, and `PolylineCollection<G>` attached.
+    pub fn new_with_context<G: Gl + 'static>(options: Vector3DTilePointsOptions) -> Self {
+        let mut points = Self::new(options);
+        points.attach_context::<G>();
+        points
+    }
+
+    /// Attaches real GPU collections for graphics backend `G`.
+    pub fn attach_context<G: Gl + 'static>(&mut self) {
+        if self.gpu.borrow().is_some() {
+            return;
+        }
+        let mut backend = PointsGpu::<G>::new(self.height_reference);
+        let _ = backend.sync_from_records(&self.collections.borrow());
+        *self.gpu.borrow_mut() = Some(Box::new(backend));
     }
 
     pub fn ready(&self) -> bool {
@@ -621,19 +993,46 @@ impl Vector3DTilePoints {
     pub fn points_length(&self) -> usize {
         self.collections.borrow().billboards.len()
     }
+    /// Real texture-atlas memory in bytes: `billboardCollection.sizeInBytes + labelCollection.sizeInBytes`.
     pub fn textures_byte_length(&self) -> usize {
-        // The pinned value is the billboard and label texture-atlas memory.
-        // Atlases are owned by the unported collections; report the decoded
-        // image payload instead of inventing atlas layout numbers.
-        let c = self.collections.borrow();
-        c.billboards
-            .iter()
-            .map(|b| {
-                let length = b.size + 2.0 * b.outline_width;
-                let side = if length.is_finite() && length > 0.0 { length.ceil() as usize } else { 0 };
-                side * side * 4
-            })
-            .sum()
+        self.gpu.borrow().as_ref().map_or(0, |gpu| gpu.textures_byte_length())
+    }
+    pub fn billboard_atlas_byte_length(&self) -> usize {
+        self.gpu.borrow().as_ref().map_or(0, |gpu| gpu.billboard_atlas_byte_length())
+    }
+    pub fn label_atlas_byte_length(&self) -> usize {
+        self.gpu.borrow().as_ref().map_or(0, |gpu| gpu.label_atlas_byte_length())
+    }
+    pub fn billboard_highlight_color(&self) -> Color {
+        self.gpu
+            .borrow()
+            .as_ref()
+            .map_or(self.collections.borrow().highlight_color, |gpu| gpu.billboard_highlight_color())
+    }
+    pub fn label_highlight_color(&self) -> Color {
+        self.gpu
+            .borrow()
+            .as_ref()
+            .map_or(self.collections.borrow().highlight_color, |gpu| gpu.label_highlight_color())
+    }
+    pub fn polyline_highlight_color(&self) -> Color {
+        self.gpu
+            .borrow()
+            .as_ref()
+            .map_or(self.collections.borrow().highlight_color, |gpu| gpu.polyline_highlight_color())
+    }
+    pub fn polyline_use_highlight_color(&self) -> bool {
+        self.gpu
+            .borrow()
+            .as_ref()
+            .is_none_or(|gpu| gpu.polyline_use_highlight_color())
+    }
+    pub fn billboard_image_id(&self, index: usize) -> Option<String> {
+        self.gpu
+            .borrow()
+            .as_ref()
+            .and_then(|gpu| gpu.billboard_image_id(index))
+            .or_else(|| self.collections.borrow().billboards.get(index).and_then(|b| b.image_texture_id.clone()))
     }
     pub fn collections(&self) -> std::cell::Ref<'_, PointCollections> {
         self.collections.borrow()
@@ -647,7 +1046,7 @@ impl Vector3DTilePoints {
     pub fn positions_len(&self) -> usize {
         self.positions.len()
     }
-    pub fn height_reference(&self) -> super::HeightReference {
+    pub fn height_reference(&self) -> HeightReference {
         self.height_reference
     }
 
@@ -674,37 +1073,50 @@ impl Vector3DTilePoints {
         Ok(())
     }
 
-    fn install(&mut self) {
+    fn install(&mut self) -> Result<()> {
         let Some(positions) = self.pending_positions.take() else {
-            return;
+            return Ok(());
         };
-        let mut collections = self.collections.borrow_mut();
-        collections.billboards.clear();
-        collections.labels.clear();
-        collections.polylines.clear();
-        for (i, &batch_index) in self.batch_ids.iter().enumerate() {
-            let position = Cartesian3::new(
-                *positions.get(i * 3).unwrap_or(&f64::NAN),
-                *positions.get(i * 3 + 1).unwrap_or(&f64::NAN),
-                *positions.get(i * 3 + 2).unwrap_or(&f64::NAN),
-            );
-            collections.billboards.push(PointBillboard::new(position, batch_index));
-            collections.labels.push(PointLabel::new(position, batch_index));
-            collections.polylines.push(PointPolyline::new(position));
+        {
+            let mut collections = self.collections.borrow_mut();
+            collections.billboards.clear();
+            collections.labels.clear();
+            collections.polylines.clear();
+            for (i, &batch_index) in self.batch_ids.iter().enumerate() {
+                let position = Cartesian3::new(
+                    *positions.get(i * 3).unwrap_or(&f64::NAN),
+                    *positions.get(i * 3 + 1).unwrap_or(&f64::NAN),
+                    *positions.get(i * 3 + 2).unwrap_or(&f64::NAN),
+                );
+                collections.billboards.push(PointBillboard::new(position, batch_index));
+                collections.labels.push(PointLabel::new(position, batch_index));
+                collections.polylines.push(PointPolyline::new(position));
+            }
+        }
+        if let Some(gpu) = self.gpu.borrow_mut().as_mut() {
+            gpu.sync_from_records(&self.collections.borrow())?;
         }
         self.positions.clear();
         self.packed_buffer = None;
         self.ready = true;
+        Ok(())
     }
 
-    /// Cesium's `createFeatures`; features share the point collections.
+    /// Cesium's `createFeatures`; features share the point collections and trigger
+    /// `setBillboardImage` on the underlying `BillboardCollection`.
     pub fn create_features(&self, features: &mut FeatureList) {
         for (i, &batch_id) in self.batch_ids.iter().enumerate() {
             let index = batch_id as usize;
             if features.len() <= index {
                 features.resize(index + 1, None);
             }
-            let point = Vector3DTilePointFeature::new(index, i, self.collections.clone(), self.ellipsoid);
+            let point = Vector3DTilePointFeature::new(
+                index,
+                i,
+                self.collections.clone(),
+                self.gpu.clone(),
+                self.ellipsoid,
+            );
             features[index] = Some(Vector3DTileFeature {
                 batch_id: index,
                 show: true,
@@ -713,11 +1125,18 @@ impl Vector3DTilePoints {
                 point: Some(point),
             });
         }
+        if let Some(gpu) = self.gpu.borrow_mut().as_mut() {
+            let _ = gpu.set_feature_images_initialized(&self.collections.borrow());
+        }
     }
 
-    /// Cesium's `applyDebugSettings`.
+    /// Cesium's `applyDebugSettings`: updates `_highlightColor` on all three collections.
     pub fn apply_debug_settings(&mut self, enabled: bool, color: Color) {
-        self.collections.borrow_mut().highlight_color = if enabled { color } else { Color::WHITE };
+        let highlight = if enabled { color } else { Color::WHITE };
+        self.collections.borrow_mut().highlight_color = highlight;
+        if let Some(gpu) = self.gpu.borrow_mut().as_mut() {
+            let _ = gpu.sync_from_records(&self.collections.borrow());
+        }
     }
 
     fn clear_style(&self, features: &mut FeatureList) {
@@ -756,6 +1175,9 @@ impl Vector3DTilePoints {
             point.set_label_vertical_origin(VerticalOrigin::Baseline);
             feature.show = true;
             feature.color = Color::WHITE;
+        }
+        if let Some(gpu) = self.gpu.borrow_mut().as_mut() {
+            let _ = gpu.sync_from_records(&self.collections.borrow());
         }
     }
 
@@ -880,22 +1302,38 @@ impl Vector3DTilePoints {
                 point.set_label_vertical_origin(vertical_origin_of(&expression.evaluate(Some(style_feature))?));
             }
         }
+        if let Some(gpu) = self.gpu.borrow_mut().as_mut() {
+            gpu.sync_from_records(&self.collections.borrow())?;
+        }
         Ok(())
     }
 
-    /// Cesium's `update`; the first call starts decoding, the next installs it.
-    pub fn update(&mut self, _frame: &mut super::FrameState) -> Result<()> {
+    /// Cesium's `update` with automatic attachment of GPU collections for `G`.
+    pub fn update_with_context<G: Gl + 'static>(&mut self, frame: &mut FrameState) -> Result<()> {
+        if self.destroyed {
+            return Err(RuntimeError::new("This object was destroyed, i.e., destroy() was called."));
+        }
+        if self.gpu.borrow().is_none() {
+            self.attach_context::<G>();
+        }
+        self.update(frame)
+    }
+
+    /// Cesium's `update`; decodes/installs points, then drives
+    /// `PolylineCollection`, `BillboardCollection`, and `LabelCollection`.
+    pub fn update(&mut self, frame: &mut FrameState) -> Result<()> {
         if self.destroyed {
             return Err(RuntimeError::new("This object was destroyed, i.e., destroy() was called."));
         }
         if !self.ready {
             if self.pending_positions.is_none() && !self.positions.is_empty() {
                 self.decode()?;
-                return Ok(());
+            } else if self.pending_positions.is_some() {
+                self.install()?;
             }
-            if self.pending_positions.is_some() {
-                self.install();
-            }
+        }
+        if let Some(gpu) = self.gpu.borrow_mut().as_mut() {
+            gpu.update(&self.collections.borrow(), frame)?;
         }
         Ok(())
     }
@@ -907,6 +1345,9 @@ impl Vector3DTilePoints {
     pub fn destroy(&mut self) -> Result<()> {
         if self.destroyed {
             return Err(RuntimeError::new("This object was destroyed, i.e., destroy() was called."));
+        }
+        if let Some(mut gpu) = self.gpu.borrow_mut().take() {
+            gpu.destroy()?;
         }
         self.collections.borrow_mut().billboards.clear();
         self.collections.borrow_mut().labels.clear();
@@ -984,7 +1425,7 @@ mod tests {
             polylines: vec![PointPolyline::new(Cartesian3::new(1.0, 2.0, 3.0))],
             highlight_color: Color::WHITE,
         }));
-        Vector3DTilePointFeature::new(0, 0, collections, Ellipsoid::WGS84)
+        Vector3DTilePointFeature::new(0, 0, collections, Rc::new(RefCell::new(None)), Ellipsoid::WGS84)
     }
 
     #[test]
@@ -995,7 +1436,7 @@ mod tests {
         assert_eq!(f.label_horizontal_origin(), HorizontalOrigin::Right);
         assert_eq!(f.label_vertical_origin(), VerticalOrigin::Baseline);
         assert_eq!(f.image(), None);
-        assert!(f.image_texture_id_like().contains("8"));
+        assert_eq!(f.image_texture_id_like(), r#"["rgb(255,255,255)",8,"rgb(0,0,0)",0]"#);
     }
 
     #[test]
@@ -1014,7 +1455,7 @@ mod tests {
         f.set_color(Color::RED);
         f.set_point_size(12.0);
         assert_eq!(f.point_size(), Some(12.0));
-        assert!(f.billboard().unwrap().image_texture_id.unwrap().contains("12"));
+        assert_eq!(f.billboard().unwrap().image_texture_id.unwrap(), r#"["rgb(255,0,0)",12,"rgb(0,0,0)",0]"#);
     }
 
     #[test]

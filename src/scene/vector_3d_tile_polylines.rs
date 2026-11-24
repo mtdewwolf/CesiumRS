@@ -25,10 +25,7 @@ use crate::{
         create_vector_tile_polylines, DecodedVectorPositions, VectorTilePolylines, VectorTilePolylinesParameters,
     },
 };
-use std::{
-    cell::Cell,
-    rc::Rc,
-};
+use std::{cell::Cell, rc::Rc};
 
 /// Constructor options for [`Vector3DTilePolylines`].
 #[derive(Clone, Default)]
@@ -48,7 +45,8 @@ pub struct Vector3DTilePolylinesOptions {
 }
 
 /// The fragment shader built by `Vector3DTilePolylines.createShaders`.
-pub const POLYLINE_FS: &str = "uniform vec4 u_highlightColor; \nvoid main()\n{\n    out_FragColor = u_highlightColor;\n}\n";
+pub const POLYLINE_FS: &str =
+    "uniform vec4 u_highlightColor; \nvoid main()\n{\n    out_FragColor = u_highlightColor;\n}\n";
 
 pub fn polyline_attribute_locations() -> std::collections::BTreeMap<String, u32> {
     std::collections::BTreeMap::from([
@@ -235,7 +233,8 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTilePolylines<G> {
     }
 
     fn create_vertex_array(&mut self) -> Result<()> {
-        let packed = Self::pack_buffer(&self.rectangle, self.minimum_height, self.maximum_height, &self.ellipsoid, self.center);
+        let packed =
+            Self::pack_buffer(&self.rectangle, self.minimum_height, self.maximum_height, &self.ellipsoid, self.center);
         let result = create_vector_tile_polylines(VectorTilePolylinesParameters {
             positions: &self.positions,
             widths: &self.widths,
@@ -293,37 +292,18 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTilePolylines<G> {
         let Some(indices) = self.pending_indices.take() else {
             return Ok(());
         };
-        let vertex_count = arrays.current.len() / 3;
-        let mut attributes = GeometryAttributes {
-            position: Some(GeometryAttribute::floats(
-                3,
-                &arrays.current.iter().map(|&v| f64::from(v)).collect::<Vec<_>>(),
-            )),
-            ..Default::default()
-        };
+        let mut attributes = GeometryAttributes::default();
         let floats = |values: &[f32]| values.iter().map(|&v| f64::from(v)).collect::<Vec<_>>();
-        attributes.others.push((
-            "previousPosition".into(),
-            GeometryAttribute::floats(3, &floats(&arrays.previous)),
-        ));
-        attributes.others.push((
-            "currentPosition".into(),
-            GeometryAttribute::floats(3, &floats(&arrays.current)),
-        ));
+        attributes.others.push(("previousPosition".into(), GeometryAttribute::floats(3, &floats(&arrays.previous))));
+        attributes.others.push(("currentPosition".into(), GeometryAttribute::floats(3, &floats(&arrays.current))));
         attributes.others.push(("nextPosition".into(), GeometryAttribute::floats(3, &floats(&arrays.next))));
-        attributes.others.push((
-            "expandAndWidth".into(),
-            GeometryAttribute::floats(2, &floats(&arrays.expand_and_width)),
-        ));
+        attributes
+            .others
+            .push(("expandAndWidth".into(), GeometryAttribute::floats(2, &floats(&arrays.expand_and_width))));
         attributes.others.push((
             "a_batchId".into(),
-            GeometryAttribute::new(
-                ComponentDatatype::UnsignedShort,
-                1,
-                TypedArray::Uint16(arrays.batch_ids.clone()),
-            ),
+            GeometryAttribute::new(ComponentDatatype::UnsignedShort, 1, TypedArray::Uint16(arrays.batch_ids.clone())),
         ));
-        let _ = vertex_count;
         let geometry = Geometry::new(attributes, Some(indices), PrimitiveType::Triangles);
         let va = VertexArray::from_geometry(
             &context,
@@ -391,22 +371,15 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTilePolylines<G> {
             let color = highlight.get();
             uniforms.push((
                 "u_highlightColor".into(),
-                UniformValue::Float(vec![
-                    color.red as f32,
-                    color.green as f32,
-                    color.blue as f32,
-                    color.alpha as f32,
-                ]),
+                UniformValue::Float(vec![color.red as f32, color.green as f32, color.blue as f32, color.alpha as f32]),
             ));
             Ok(uniforms)
         });
         let mut options = super::scene::SceneDrawOptions::new(vertex_array, program);
         options.state = self.render_state.clone();
         options.uniform_map = Some(uniform_map);
-        let metadata = crate::renderer::DrawMetadata {
-            bounding_volume: Some(self.bounding_volume),
-            ..Default::default()
-        };
+        let metadata =
+            crate::renderer::DrawMetadata { bounding_volume: Some(self.bounding_volume), ..Default::default() };
         self.command = Some(super::scene::SceneCommand::from_draw(
             "vector-3d-tile-polylines",
             context,
@@ -485,11 +458,7 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTilePolylines<G> {
                 self.ready = true;
             }
         }
-        self.context = frame
-            .context
-            .as_ref()
-            .and_then(|c| c.get::<crate::renderer::Context<G>>())
-            .cloned();
+        self.context = frame.context.as_ref().and_then(|c| c.get::<crate::renderer::Context<G>>()).cloned();
         self.ensure_gpu(frame)?;
         self.ensure_command();
         if frame.passes.render || frame.passes.pick {

@@ -158,6 +158,9 @@ impl<G: Gl + 'static> Cesium3DTileBatchTable<G> {
         self.check(id)?;
         self.hierarchy.borrow().as_ref().map_or(Ok(false), |h| h.is_class(id, name)).map_err(metadata_error)
     }
+    pub fn is_exact_class(&self, id: usize, name: &str) -> Result<bool> {
+        Ok(self.get_exact_class_name(id)?.as_deref() == Some(name))
+    }
     pub fn get_exact_class_name(&self, id: usize) -> Result<Option<String>> {
         self.check(id)?;
         self.hierarchy
@@ -165,6 +168,10 @@ impl<G: Gl + 'static> Cesium3DTileBatchTable<G> {
             .as_ref()
             .map_or(Ok(None), |h| h.get_class_name(id).map(|v| v.and_then(Value::as_str).map(str::to_owned)))
             .map_err(metadata_error)
+    }
+    pub fn get_pick_color(&self, id: usize) -> Result<Option<Color>> {
+        self.check(id)?;
+        Ok(self.batch.borrow().get_pick_color(id)?.map(|p| p.color))
     }
     pub fn get_show(&self, id: usize) -> Result<bool> {
         self.batch.borrow().get_show(id)

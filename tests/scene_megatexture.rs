@@ -6,13 +6,13 @@ use cesium_rs::{
         MetadataComponentType,
     },
 };
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::cell::{Cell, RefCell};
 
 #[derive(Default)]
 struct Recording3DGl {
     next: Cell<u32>,
-    uploads: RefCell<Vec<Vec<u8>>>,
+    uploads: RefCell<Vec<Value>>,
 }
 
 impl Gl for Recording3DGl {
@@ -22,7 +22,17 @@ impl Gl for Recording3DGl {
     }
     fn invoke(&self, name: &str, args: &[GlValue<u32>]) -> Result<GlValue<u32>, RuntimeError> {
         if let ("texSubImage3D", [.., GlValue::Pixels { bytes, .. }]) = (name, args) {
-            self.uploads.borrow_mut().push(bytes.clone());
+            let arg = |i: usize| match args[i] {
+                GlValue::Number(value) => value as u32,
+                ref value => panic!("Expected a numeric WebGL argument, got {value:?}"),
+            };
+            self.uploads.borrow_mut().push(json!({
+                "origin": [arg(2), arg(3), arg(4)],
+                "size": [arg(5), arg(6), arg(7)],
+                "format": arg(8),
+                "type": arg(9),
+                "data": bytes,
+            }));
         }
         if name.starts_with("create") {
             self.next.set(self.next.get() + 1);
@@ -33,7 +43,7 @@ impl Gl for Recording3DGl {
                 gl::MAX_VIEWPORT_DIMS | gl::ALIASED_LINE_WIDTH_RANGE | gl::ALIASED_POINT_SIZE_RANGE => {
                     GlValue::Numbers(vec![1.0, 256.0])
                 }
-                gl::MAX_3D_TEXTURE_SIZE => GlValue::Number(256.0),
+                gl::MAX_3D_TEXTURE_SIZE => GlValue::Number(16.0),
                 gl::MAX_TEXTURE_SIZE => GlValue::Number(256.0),
                 _ => GlValue::Number(32.0),
             },
@@ -90,7 +100,7 @@ fn float64_upload_converts_to_f32_and_preserves_slot_invariants() {
     assert_eq!(mega.occupied_count, 1);
     let uploaded = context.host().uploads.borrow();
     let expected: Vec<u8> = values.iter().flat_map(|&v| (v as f32).to_le_bytes()).collect();
-    assert_eq!(uploaded.last().unwrap(), &expected);
+    assert_eq!(uploaded.last().unwrap()["data"], json!(expected));
     drop(uploaded);
 
     // Removing once succeeds; removing the same slot again fails without underflow.
@@ -100,4 +110,45 @@ fn float64_upload_converts_to_f32_and_preserves_slot_invariants() {
     assert_eq!(mega.occupied_count, 0);
     assert!(mega.occupied_indices().is_empty());
     mega.destroy().unwrap();
+}
+
+#[test]
+fn atlas_slot_reuse_and_uploads_match_pinned_cesium() {
+    let expected: Value = serde_json::from_str(include_str!("data/scene-megatexture-atlas.json")).unwrap();
+    let context = Context::new_webgl2(Recording3DGl::default());
+    let mut atlas =
+        Megatexture::new(&context, Cartesian3::new(2.0, 3.0, 2.0), 4, MetadataComponentType::Uint8, 1024, Some(6))
+            .unwrap();
+    assert_eq!(json!(atlas.texture.dimensions()), expected["dimensions"]);
+    assert_eq!(atlas.texture_memory_byte_length, expected["memory"]);
+    for (index, nearest) in [false, true, false].into_iter().enumerate() {
+        atlas.set_nearest_sampling(nearest).unwrap();
+        let sampler = atlas.texture.sampler();
+        assert_eq!(
+            json!([sampler.minification_filter as u32, sampler.magnification_filter as u32]),
+            expected["samplers"][index],
+        );
+    }
+
+    let tile = |seed: u8| TypedArray::Uint8((0..48).map(|i| seed.wrapping_mul(31).wrapping_add(i)).collect());
+    for (index, step) in expected["slots"].as_array().unwrap().iter().enumerate() {
+        let slot = match index {
+            4 => {
+                atlas.remove(1).unwrap();
+                1
+            }
+            5 => {
+                atlas.remove(3).unwrap();
+                3
+            }
+            _ => atlas.add(&tile(if index < 4 { index as u8 + 1 } else { index as u8 - 1 })).unwrap(),
+        };
+        assert_eq!(slot, step["slot"]);
+        assert_eq!(atlas.occupied_count, step["occupied"]);
+        assert_eq!(atlas.is_full(), step["full"]);
+    }
+    assert_eq!(atlas.add(&tile(9)).unwrap_err().message, expected["fullError"]);
+    assert_eq!(json!(*context.host().uploads.borrow()), expected["uploads"]);
+    atlas.destroy().unwrap();
+    assert_eq!(atlas.is_destroyed(), expected["destroyed"]);
 }

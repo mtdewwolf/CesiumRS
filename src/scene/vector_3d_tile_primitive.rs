@@ -35,6 +35,21 @@ use std::{
     rc::Rc,
 };
 
+fn queue_classification(
+    commands: &mut Vec<SceneCommand>,
+    classification_type: ClassificationType,
+    terrain: &[SceneCommand],
+    tiles: &[SceneCommand],
+) {
+    match classification_type {
+        ClassificationType::Terrain => commands.extend(terrain.iter().cloned()),
+        ClassificationType::Cesium3DTile => commands.extend(tiles.iter().cloned()),
+        ClassificationType::Both => {
+            commands.extend(terrain.iter().zip(tiles).flat_map(|(terrain, tile)| [terrain.clone(), tile.clone()]));
+        }
+    }
+}
+
 /// Batch-table behaviour used by the vector tile primitives. The 3D Tiles core
 /// port owns the concrete `Cesium3DTileBatchTable`; this trait is the boundary
 /// those primitives need: feature colours, shader decoration, live uniforms and
@@ -320,11 +335,7 @@ pub fn vector_tile_fragment_shader(batch_table: Option<&BatchTableRef>) -> Strin
 }
 
 fn get_stencil_depth_render_state(mask_3d_tiles: bool) -> crate::renderer::RenderState {
-    let stencil_function = if mask_3d_tiles {
-        StencilFunction::Equal.value()
-    } else {
-        StencilFunction::Always.value()
-    };
+    let stencil_function = if mask_3d_tiles { StencilFunction::Equal.value() } else { StencilFunction::Always.value() };
     crate::renderer::RenderState {
         color_mask: ColorMask { red: false, green: false, blue: false, alpha: false },
         stencil_test: StencilTest {
@@ -569,9 +580,9 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTilePrimitive<G> {
             return Ok(());
         };
         let color_expression = style.color();
-        let is_simple_style = color_expression.is_some_and(|expression| {
-            matches!(expression.json_value(), serde_json::Value::String(source) if !source.contains('$'))
-        });
+        let is_simple_style = color_expression.is_some_and(
+            |expression| matches!(expression.json_value(), serde_json::Value::String(source) if !source.contains('$')),
+        );
         self.updating_all_commands = is_simple_style;
 
         for &batch_id in &self.batch_ids {
@@ -733,8 +744,7 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTilePrimitive<G> {
             return;
         };
         let mut new_batched = vec![current.clone()];
-        let mut current_offset =
-            self.copy_indices_cpu(&indices, &mut new_indices, 0, &current.batch_ids);
+        let mut current_offset = self.copy_indices_cpu(&indices, &mut new_indices, 0, &current.batch_ids);
         current.offset = 0;
         current.count = current_offset;
         // The upstream array stores the same mutable batch object, so its
@@ -879,8 +889,7 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTilePrimitive<G> {
                     "{}\nvoid main() \n{{ \n    czm_non_pick_main(); \n    out_FragColor = {pick_expression}; \n}} \n",
                     crate::renderer::ShaderSource::replace_main(&fragment_base, "czm_non_pick_main")
                 );
-                let vs =
-                    crate::renderer::ShaderSource { sources: vec![vertex_base], ..Default::default() };
+                let vs = crate::renderer::ShaderSource { sources: vec![vertex_base], ..Default::default() };
                 let fs = crate::renderer::ShaderSource {
                     defines: vec!["VECTOR_TILE".into()],
                     sources: vec![pick_fragment],
@@ -915,12 +924,7 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTilePrimitive<G> {
             let color = highlight.get();
             uniforms.push((
                 "u_highlightColor".into(),
-                UniformValue::Float(vec![
-                    color.red as f32,
-                    color.green as f32,
-                    color.blue as f32,
-                    color.alpha as f32,
-                ]),
+                UniformValue::Float(vec![color.red as f32, color.green as f32, color.blue as f32, color.alpha as f32]),
             ));
             if let Some(table) = &table {
                 uniforms.extend(table.borrow().uniforms());
@@ -1004,15 +1008,17 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTilePrimitive<G> {
             color_options.offset = offset;
             color_options.count = Some(count);
             color_options.uniform_map = Some(uniform_map.clone());
+            let color_pass =
+                if wireframe { crate::renderer::Pass::Opaque } else { crate::renderer::Pass::TerrainClassification };
             self.color_commands.push(SceneCommand::from_draw(
                 "vector-3d-tile-primitive-color",
                 context.clone(),
-                crate::renderer::Pass::TerrainClassification,
+                color_pass,
                 metadata.clone(),
                 color_options,
             ));
             self.command_records.push(Vector3DTileCommandRecord {
-                pass: crate::renderer::Pass::TerrainClassification,
+                pass: color_pass,
                 offset,
                 count,
                 wireframe,
@@ -1045,7 +1051,8 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTilePrimitive<G> {
         if self.classification_type == ClassificationType::Terrain || !frame.invert_classification {
             return;
         }
-        let (Some(vertex_array), Some(program_stencil)) = (self.vertex_array.clone(), self.program_stencil.clone()) else {
+        let (Some(vertex_array), Some(program_stencil)) = (self.vertex_array.clone(), self.program_stencil.clone())
+        else {
             return;
         };
         let uniform_map = self.uniform_map(context.clone());
@@ -1179,27 +1186,18 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTilePrimitive<G> {
             if let Some(context) = self.context.clone() {
                 self.build_ignore_show_commands(frame, context);
             }
-            let queue_terrain = self.classification_type != ClassificationType::Cesium3DTile;
-            let queue_3dtiles = self.classification_type != ClassificationType::Terrain;
-            let wireframe = self.debug_wireframe;
-            if wireframe {
-                if queue_terrain {
-                    for (i, command) in self.color_commands.iter().enumerate() {
-                        if i % 2 == 1 {
-                            frame.command_list.push(command.clone());
-                        }
-                    }
-                }
+            if self.debug_wireframe {
+                frame.command_list.extend(self.color_commands.iter().skip(1).step_by(2).cloned());
             } else {
-                if queue_terrain {
-                    frame.command_list.extend(self.color_commands.iter().cloned());
+                queue_classification(
+                    &mut frame.command_list,
+                    self.classification_type,
+                    &self.color_commands,
+                    &self.color_commands_3d_tiles,
+                );
+                if frame.invert_classification {
+                    frame.command_list.extend(self.ignore_show_commands.iter().cloned());
                 }
-                if queue_3dtiles {
-                    frame.command_list.extend(self.color_commands_3d_tiles.iter().cloned());
-                }
-            }
-            if frame.invert_classification {
-                frame.command_list.extend(self.ignore_show_commands.iter().cloned());
             }
         }
 
@@ -1207,14 +1205,12 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTilePrimitive<G> {
             if let Some(context) = self.context.clone() {
                 self.build_pick_commands(context)?;
             }
-            let queue_terrain = self.classification_type != ClassificationType::Cesium3DTile;
-            let queue_3dtiles = self.classification_type != ClassificationType::Terrain;
-            if queue_terrain {
-                frame.command_list.extend(self.pick_commands.iter().cloned());
-            }
-            if queue_3dtiles {
-                frame.command_list.extend(self.pick_commands_3d_tiles.iter().cloned());
-            }
+            queue_classification(
+                &mut frame.command_list,
+                self.classification_type,
+                &self.pick_commands,
+                &self.pick_commands_3d_tiles,
+            );
         }
         Ok(())
     }
@@ -1250,7 +1246,6 @@ impl<G: crate::renderer::Gl + 'static> Vector3DTilePrimitive<G> {
         Ok(())
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -1310,11 +1305,8 @@ mod tests {
         p.index_offsets = vec![0, 6, 12];
         p.batch_ids = vec![0, 1, 2];
         p.batch_id_lookup = [(0, 0), (1, 1), (2, 2)].into_iter().collect();
-        p.batched_indices = vec![
-            batch(0, 6, Color::RED, &[0]),
-            batch(6, 6, Color::BLUE, &[1]),
-            batch(12, 6, Color::BLUE, &[2]),
-        ];
+        p.batched_indices =
+            vec![batch(0, 6, Color::RED, &[0]), batch(6, 6, Color::BLUE, &[1]), batch(12, 6, Color::BLUE, &[2])];
         assert!(p.rebatch_commands());
         // BLUE = 0x0000ffff, RED = 0xff0000ff: descending puts RED first, then
         // the two equal blue batches merge.
@@ -1412,8 +1404,11 @@ mod regression_tests {
         let mut camera = Camera::new(CameraOptions::new(32.0, 32.0));
         let uniform = camera.uniform_camera();
         let culling = camera.frustum.compute_culling_volume(uniform.position, uniform.direction, uniform.up);
-        let mut frame =
-            FrameState::new(UniformFrame::new(uniform, JulianDate::new(2451545.0, 0.0, TimeStandard::Tai)), culling, [32, 32]);
+        let mut frame = FrameState::new(
+            UniformFrame::new(uniform, JulianDate::new(2451545.0, 0.0, TimeStandard::Tai)),
+            culling,
+            [32, 32],
+        );
         frame.set_renderer_context(Context::new_webgl2(gl));
         frame.passes.render = true;
         frame.passes.pick = true;

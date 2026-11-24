@@ -20,7 +20,7 @@ use crate::{
     },
     renderer::{
         Buffer, BufferData, BufferKind, BufferUsage, ComputeCommand, Context, DrawMetadata, Gl, Pass, PixelDatatype,
-        Sampler, ShaderProgram, ShaderProgramOptions, ShaderSource, Texture, TextureOptions, UniformMap, UniformValue,
+        ShaderProgram, ShaderProgramOptions, ShaderSource, Texture, TextureOptions, UniformMap, UniformValue,
         VertexArray, VertexAttribute, Viewport,
     },
     shaders::root::{SUN_FS, SUN_TEXTURE_FS, SUN_VS},
@@ -149,7 +149,6 @@ impl<G: Gl + 'static> Sun<G> {
         };
         let mut options = TextureOptions::rgba(size as u32, size as u32);
         options.pixel_datatype = pixel_datatype;
-        options.sampler = Sampler::NEAREST;
         let texture = Rc::new(Texture::new(&self.context, options, None)?);
 
         self.glow_length_ts = self.glow_factor * 5.0;
