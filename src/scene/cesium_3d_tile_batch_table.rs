@@ -125,20 +125,22 @@ impl<G: Gl + 'static> Cesium3DTileBatchTable<G> {
     pub fn set_property(&self, id: usize, name: &str, value: MetadataValue) -> Result<()> {
         self.check(id)?;
         let mut columns = self.columns.borrow_mut();
-        if let Some(Column::Binary(c)) = columns.get_mut(name) {
-            c.set(id, &value).map_err(metadata_error)?;
-        } else if !self
-            .hierarchy
-            .borrow_mut()
-            .as_mut()
-            .map_or(Ok(false), |h| h.set_property(id, name, value.clone()))
-            .map_err(metadata_error)?
-        {
-            if !matches!(columns.get(name),Some(Column::Json(c)) if c.is_defined()) {
-                columns.insert(name, Column::Json(JsonColumn::Array(Vec::new())));
-            }
-            if let Some(Column::Json(c)) = columns.get_mut(name) {
-                c.set(id, value).map_err(metadata_error)?;
+        match columns.get_mut(name) {
+            Some(Column::Binary(c)) => c.set(id, &value).map_err(metadata_error)?,
+            Some(Column::Json(c)) if c.is_defined() => c.set(id, value).map_err(metadata_error)?,
+            _ => {
+                if !self
+                    .hierarchy
+                    .borrow_mut()
+                    .as_mut()
+                    .map_or(Ok(false), |h| h.set_property(id, name, value.clone()))
+                    .map_err(metadata_error)?
+                {
+                    columns.insert(name, Column::Json(JsonColumn::Array(Vec::new())));
+                    if let Some(Column::Json(c)) = columns.get_mut(name) {
+                        c.set(id, value).map_err(metadata_error)?;
+                    }
+                }
             }
         }
         self.feature_properties_dirty.set(true);
@@ -216,5 +218,44 @@ impl<G: Gl + 'static> Cesium3DTileBatchTable<G> {
     }
     pub fn is_destroyed(&self) -> bool {
         self.destroyed.get()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::renderer::GlValue;
+
+    struct DummyGl;
+    impl Gl for DummyGl {
+        type Object = u32;
+        fn drawing_buffer_size(&self) -> Result<[u32; 2]> {
+            Ok([1, 1])
+        }
+        fn invoke(&self, _: &str, _: &[GlValue<u32>]) -> Result<GlValue<u32>> {
+            Ok(GlValue::Null)
+        }
+    }
+
+    #[test]
+    fn set_property_updates_existing_json_column_before_hierarchy() {
+        let json = serde_json::json!({
+            "height": [10.0],
+            "HIERARCHY": {
+                "classes": [
+                    {
+                        "name": "Building",
+                        "length": 1,
+                        "instances": { "height": [99.0] }
+                    }
+                ],
+                "instancesLength": 1,
+                "classIds": [0]
+            }
+        });
+        let table = Cesium3DTileBatchTable::<DummyGl>::new(1, Some(&json), None, 64).unwrap();
+        assert_eq!(table.get_property(0, "height").unwrap(), Some(MetadataValue::Number(10.0)));
+        table.set_property(0, "height", MetadataValue::Number(42.0)).unwrap();
+        assert_eq!(table.get_property(0, "height").unwrap(), Some(MetadataValue::Number(42.0)));
     }
 }

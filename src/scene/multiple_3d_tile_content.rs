@@ -33,6 +33,11 @@ impl Multiple3DTileContent {
     pub fn is_destroyed(&self) -> bool {
         self.destroyed
     }
+    pub(crate) fn broadcast_feature_metadata(&mut self, metadata: &[FeatureMetadata]) {
+        for content in &mut self.contents {
+            content.set_feature_metadata(metadata);
+        }
+    }
 }
 impl TilesetContent for Multiple3DTileContent {
     fn set_feature_metadata(&mut self, metadata: &[FeatureMetadata]) {

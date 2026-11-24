@@ -123,7 +123,7 @@ impl TilesetContent for Composite3DTileContent {
     fn set_feature_metadata(&mut self, metadata: &[FeatureMetadata]) {
         self.metadata = metadata.first().and_then(|m| m.content.clone());
         self.group = metadata.first().and_then(|m| m.group.clone());
-        self.children.set_feature_metadata(metadata);
+        self.children.broadcast_feature_metadata(metadata);
     }
     fn inner_contents(&self) -> Option<&[Box<dyn TilesetContent>]> {
         Some(self.children.contents())

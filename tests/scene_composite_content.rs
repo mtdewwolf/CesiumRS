@@ -110,3 +110,51 @@ fn child_offsets_and_resource_indices_match_cesium() {
     .unwrap();
     assert_eq!(result.err().unwrap().message, fixture["versionError"].as_str().unwrap());
 }
+
+#[test]
+fn composite_broadcasts_single_metadata_layer_to_all_children() {
+    use cesium_rs::scene::FeatureMetadata;
+    struct MetaChild {
+        seen: Rc<Cell<usize>>,
+    }
+    impl TilesetContent for MetaChild {
+        fn set_feature_metadata(&mut self, metadata: &[FeatureMetadata]) {
+            self.seen.set(metadata.len());
+        }
+        fn metrics(&self) -> TileContentMetrics {
+            TileContentMetrics::default()
+        }
+        fn process(&mut self, _: &FrameState) -> Result<bool, RuntimeError> {
+            Ok(true)
+        }
+        fn update(&mut self, _: &mut FrameState) -> Result<(), RuntimeError> {
+            Ok(())
+        }
+        fn pick(&self, _: &Ray, _: &FrameState) -> Result<Option<Cartesian3>, RuntimeError> {
+            Ok(None)
+        }
+        fn destroy(&mut self) -> Result<(), RuntimeError> {
+            Ok(())
+        }
+    }
+
+    let seen0 = Rc::new(Cell::new(0));
+    let seen1 = Rc::new(Cell::new(0));
+    let seen_nested = Rc::new(Cell::new(0));
+    let nested = Composite3DTileContent::new(
+        Resource::new("https://example.com/nested.cmpt").unwrap(),
+        vec![Box::new(MetaChild { seen: seen_nested.clone() })],
+    );
+    let mut composite = Composite3DTileContent::new(
+        Resource::new("https://example.com/root.cmpt").unwrap(),
+        vec![
+            Box::new(MetaChild { seen: seen0.clone() }),
+            Box::new(MetaChild { seen: seen1.clone() }),
+            Box::new(nested),
+        ],
+    );
+    composite.set_feature_metadata(&[FeatureMetadata::default()]);
+    assert_eq!(seen0.get(), 1);
+    assert_eq!(seen1.get(), 1);
+    assert_eq!(seen_nested.get(), 1);
+}
