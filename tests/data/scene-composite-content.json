@@ -1,0 +1,40 @@
+{
+  "initialReady": false,
+  "ownCounts": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "url": "https://example.com/tile.cmpt?x=1",
+  "firstReady": false,
+  "secondReady": true,
+  "pick": 2,
+  "stickyReady": true,
+  "calls": [
+    "update0",
+    "update1",
+    "update0",
+    "update1",
+    "update0",
+    "update1",
+    "destroy0",
+    "destroy1"
+  ],
+  "destroyed": true,
+  "children": [
+    {
+      "magic": "b3dm",
+      "offset": 16,
+      "url": "https://example.com/tile.cmpt?compositeIndex=3_0&x=1"
+    },
+    {
+      "magic": "vctr",
+      "offset": 28,
+      "url": "https://example.com/tile.cmpt?compositeIndex=3_1&x=1"
+    }
+  ],
+  "versionError": "Only Composite Tile version 1 is supported. Version 2 is not."
+}

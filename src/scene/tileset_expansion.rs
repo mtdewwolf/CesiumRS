@@ -224,6 +224,7 @@ impl Cesium3DTileset {
         };
         bounds.update(&mut volume);
         let mut contents = Vec::new();
+        let mut content_metadata = Vec::new();
         for i in 0..description.content_count {
             if !subtree.content_is_available_at_index(index, Some(i)).map_err(runtime)? {
                 continue;
@@ -248,6 +249,7 @@ impl Cesium3DTileset {
                 content["boundingVolume"] = v;
             }
             contents.push(content);
+            content_metadata.push(metadata);
         }
         let error = metadata
             .as_ref()
@@ -273,6 +275,7 @@ impl Cesium3DTileset {
         self.tiles[tile].implicit_coordinates = Some(c);
         self.tiles[tile].implicit_subtree = Some(Rc::clone(subtree));
         self.tiles[tile].implicit_metadata = metadata;
+        self.tiles[tile].implicit_content_metadata = content_metadata;
         Ok(tile)
     }
     pub fn expand_subtree(

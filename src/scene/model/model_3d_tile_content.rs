@@ -19,13 +19,22 @@ pub struct Model3DTileContent<G: Gl + 'static> {
     pub resource: Resource,
     pub metadata: Option<FrameResource>,
     pub group: Option<FrameResource>,
+    feature_metadata: crate::scene::FeatureMetadata,
     ready: bool,
 }
 impl<G: Gl + 'static> Model3DTileContent<G> {
     pub fn new(mut model: Model<G>, tile: TileId, resource: Resource) -> Self {
         model.options.cull = false;
         model.options.opaque_pass = Pass::Cesium3DTile;
-        Self { model, tile, resource, metadata: None, group: None, ready: false }
+        Self {
+            model,
+            tile,
+            resource,
+            metadata: None,
+            group: None,
+            feature_metadata: Default::default(),
+            ready: false,
+        }
     }
     pub fn ready(&self) -> bool {
         self.ready && !self.model.is_destroyed()
@@ -75,12 +84,29 @@ impl<G: Gl + 'static> Model3DTileContent<G> {
                     &ModelAnimationOptions { loop_mode: Some(ModelAnimationLoop::Repeat), ..Default::default() },
                 )?;
             }
+            for table in &self.model.feature_tables {
+                *table.inner.metadata.borrow_mut() = self.feature_metadata.clone();
+            }
             self.ready = true;
         }
         Ok(())
     }
 }
 impl<G: Gl + 'static> TilesetContent for Model3DTileContent<G> {
+    fn set_feature_metadata(&mut self, metadata: &[crate::scene::FeatureMetadata]) {
+        self.feature_metadata = metadata.first().cloned().unwrap_or_default();
+        self.metadata = self.feature_metadata.content.clone().map(FrameResource::new);
+        self.group = self.feature_metadata.group.clone().map(FrameResource::new);
+        for table in &self.model.feature_tables {
+            *table.inner.metadata.borrow_mut() = self.feature_metadata.clone();
+        }
+    }
+    fn get_feature(&self, id: usize) -> Result<Option<Rc<dyn crate::scene::TileFeature>>> {
+        Ok(Some(Model3DTileContent::get_feature(self, id)?))
+    }
+    fn has_property(&self, id: usize, name: &str) -> Result<bool> {
+        Model3DTileContent::has_property(self, id, name)
+    }
     fn configure_model(&mut self, state: &TileContentModelState) {
         self.model.options.model_matrix = state.model_matrix;
         self.model.options.classification_type = state.classification_type;

@@ -1356,3 +1356,14 @@ actual CesiumJS methods into `tests/data/scene-imagery-picking.json`.
 and adds seven native concurrency, ownership and reentrancy checks. The custom
 ellipsoid case deliberately uses an independent map projection, so picking uses
 the scene's configured ellipsoid rather than the projection's ellipsoid.
+
+## Composite 3D tile content
+
+`Composite3DTileContent` owns child contents, derives nested composite indices
+for a caller-supplied factory, forwards updates and styles, picks the closest
+child hit, and destroys its children. Its tileset metrics aggregate the children.
+The pinned composite fixture covers readiness, pick, child order, destruction,
+resource indices and version errors. This is partial: the existing content trait
+lacks child readiness and metadata accessors, so updates currently query child
+processing for readiness, and metadata, group and dirty propagation are absent.
+The tileset loader does not yet construct this content automatically.

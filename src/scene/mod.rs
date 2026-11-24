@@ -798,3 +798,30 @@ pub use imagery_texture_pipeline::{ImageryPixels, ImageryTextureHost, ImageryTex
 
 pub mod globe_surface_tile;
 pub use globe_surface_tile::{GlobeSurfaceTile, SurfaceTerrainData};
+
+pub mod cesium_3d_tile;
+pub use cesium_3d_tile::Cesium3DTile;
+
+pub mod cesium_3d_tile_batch_table;
+pub use cesium_3d_tile_batch_table::Cesium3DTileBatchTable;
+
+pub mod cesium_3d_tile_content;
+pub use cesium_3d_tile_content::Cesium3DTileContent;
+
+pub mod cesium_3d_tile_feature;
+pub use cesium_3d_tile_feature::{Cesium3DTileFeature, FeatureMetadata, TileFeature};
+
+pub mod cesium_3d_tile_point_feature;
+pub use cesium_3d_tile_point_feature::Cesium3DTilePointFeature;
+
+pub mod composite_3d_tile_content;
+pub use composite_3d_tile_content::Composite3DTileContent;
+
+pub mod geometry_3d_tile_content;
+pub use geometry_3d_tile_content::Geometry3DTileContent;
+
+pub mod implicit_3d_tile_content;
+pub use implicit_3d_tile_content::Implicit3DTileContent;
+
+pub mod multiple_3d_tile_content;
+pub use multiple_3d_tile_content::Multiple3DTileContent;

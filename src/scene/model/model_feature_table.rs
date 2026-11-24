@@ -27,6 +27,7 @@ impl<G: Gl> Default for ModelFeatureStyle<'_, G> {
 type PipelineSources<T> = RefCell<Vec<Weak<RefCell<T>>>>;
 pub(crate) struct FeatureTableInner<G: Gl> {
     pub properties: RefCell<PropertyTable>,
+    pub(super) metadata: RefCell<crate::scene::FeatureMetadata>,
     pub batch: RefCell<BatchTexture<G>>,
     pub model: Option<Weak<dyn Any>>,
     batch_sources: PipelineSources<BatchTextureState<G>>,
@@ -81,6 +82,7 @@ impl<G: Gl + 'static> ModelFeatureTable<G> {
         Ok(Self {
             inner: Rc::new_cyclic(|table| FeatureTableInner {
                 properties: RefCell::new(properties),
+                metadata: Default::default(),
                 batch: RefCell::new(batch),
                 model,
                 batch_sources: RefCell::new(vec![]),

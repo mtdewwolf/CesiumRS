@@ -100,23 +100,7 @@ impl<G: Gl> ClassificationModelDrawCommand<G> {
         command.pass = pass;
         command.metadata.cull = false;
         command.metadata.pick_id = None;
-        let func = if pass == Pass::TerrainClassification { gl::ALWAYS } else { gl::EQUAL };
-        command.state = RenderState {
-            color_mask: no_color(),
-            depth_mask: false,
-            depth_test: DepthTest { enabled: true, func: gl::LEQUAL },
-            stencil_mask: stencil::CLASSIFICATION_MASK as i64,
-            stencil_test: StencilTest {
-                enabled: true,
-                front_function: func,
-                back_function: func,
-                reference: stencil::CESIUM_3D_TILE_MASK,
-                mask: stencil::CESIUM_3D_TILE_MASK as i64,
-                front_operation: StencilOperation { z_fail: gl::DECR_WRAP, ..Default::default() },
-                back_operation: StencilOperation { z_fail: gl::INCR_WRAP, ..Default::default() },
-            },
-            ..Default::default()
-        };
+        command.state = classification_depth_state(pass);
         command
     }
     fn color(&self, pass: Pass, picking: bool) -> ModelCommand<G> {
@@ -125,22 +109,7 @@ impl<G: Gl> ClassificationModelDrawCommand<G> {
         command.metadata.cull = picking;
         command.metadata.pick_only = picking;
         command.metadata.pick_id = if picking { self.pick_id.clone() } else { None };
-        let zero = StencilOperation { fail: gl::ZERO, z_fail: gl::ZERO, z_pass: gl::ZERO };
-        command.state = RenderState {
-            depth_mask: false,
-            stencil_mask: stencil::CLASSIFICATION_MASK as i64,
-            stencil_test: StencilTest {
-                enabled: true,
-                front_function: gl::NOTEQUAL,
-                back_function: gl::NOTEQUAL,
-                reference: 0,
-                mask: stencil::CLASSIFICATION_MASK as i64,
-                front_operation: zero.clone(),
-                back_operation: zero,
-            },
-            blending: if picking { Blending::default() } else { blending_state::pre_multiplied_alpha_blend() },
-            ..Default::default()
-        };
+        command.state = classification_color_state(picking);
         command
     }
 }
@@ -162,4 +131,42 @@ impl<G: Gl> RuntimeDrawCommand for ClassificationModelDrawCommand<G> {
     fn set_back_face_culling(&mut self, _: bool) {}
     fn set_shadows(&mut self, _: bool) {}
     fn set_debug_show_bounding_volume(&mut self, _: bool) {}
+}
+
+pub(crate) fn classification_depth_state(pass: Pass) -> RenderState {
+    let func = if pass == Pass::TerrainClassification { gl::ALWAYS } else { gl::EQUAL };
+    RenderState {
+        color_mask: no_color(),
+        depth_mask: false,
+        depth_test: DepthTest { enabled: true, func: gl::LEQUAL },
+        stencil_mask: stencil::CLASSIFICATION_MASK as i64,
+        stencil_test: StencilTest {
+            enabled: true,
+            front_function: func,
+            back_function: func,
+            reference: stencil::CESIUM_3D_TILE_MASK,
+            mask: stencil::CESIUM_3D_TILE_MASK as i64,
+            front_operation: StencilOperation { z_fail: gl::DECR_WRAP, ..Default::default() },
+            back_operation: StencilOperation { z_fail: gl::INCR_WRAP, ..Default::default() },
+        },
+        ..Default::default()
+    }
+}
+pub(crate) fn classification_color_state(picking: bool) -> RenderState {
+    let zero = StencilOperation { fail: gl::ZERO, z_fail: gl::ZERO, z_pass: gl::ZERO };
+    RenderState {
+        depth_mask: false,
+        stencil_mask: stencil::CLASSIFICATION_MASK as i64,
+        stencil_test: StencilTest {
+            enabled: true,
+            front_function: gl::NOTEQUAL,
+            back_function: gl::NOTEQUAL,
+            reference: 0,
+            mask: stencil::CLASSIFICATION_MASK as i64,
+            front_operation: zero.clone(),
+            back_operation: zero,
+        },
+        blending: if picking { Blending::default() } else { blending_state::pre_multiplied_alpha_blend() },
+        ..Default::default()
+    }
 }
