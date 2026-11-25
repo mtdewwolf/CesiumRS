@@ -118,37 +118,6 @@ for (const pkg of packages) {
 
 writeFileSync(join(here, "../../PORTING.md"), md);
 
-// Keep README metrics derived from the same status rows as PORTING.md.
-// The capability descriptions and roadmap remain hand-written.
-{
-  const readmeFile = join(here, "../../README.md");
-  const readme = readFileSync(readmeFile, "utf8");
-  const core = summary(rows.filter((r) => r.pkg === "Core"));
-  const remaining = Math.max(0, Math.ceil(((100 - core.percent) / 100) * core.lines));
-  const count = (n) => n.toLocaleString("en-US");
-  const status = `**Status: ${all.percent.toFixed(1)}% implemented; ${all.validatedPercent.toFixed(1)}% validated** (${count(all.ported)} validated modules, ${count(all.implemented)} implemented awaiting validation, and ${count(all.partial)} partial of ${count(all.modules - all.na)} applicable modules, weighted by JavaScript lines). **Core: ${core.percent.toFixed(1)}% implemented; ${core.validatedPercent.toFixed(1)}% validated** (${core.ported} validated applicable modules${remaining ? `; ${count(remaining)} implementation lines remain` : "; no remaining partial or todo modules"}). [PORTING.md](PORTING.md) lists every module and the [Plan](PORTING.md#plan).`;
-  function fixtureCount(dir) {
-    let total = 0;
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const path = join(dir, entry.name);
-      if (entry.isDirectory()) total += fixtureCount(path);
-      else if (entry.name.endsWith(".json")) {
-        const fixture = JSON.parse(readFileSync(path, "utf8"));
-        if (!Array.isArray(fixture.cases)) throw new Error(`Missing cases in fixture: ${path}`);
-        total += fixture.cases.length;
-      }
-    }
-    return total;
-  }
-  const statusPattern = /^\*\*Status: .*$/m;
-  const casesPattern = /\*\*[\d,]+ cases\*\*/;
-  if (!statusPattern.test(readme) || !casesPattern.test(readme)) {
-    throw new Error("README.md is missing its progress paragraph or fixture count");
-  }
-  const cases = fixtureCount(join(here, "../../tests/fixtures"));
-  writeFileSync(readmeFile, readme.replace(statusPattern, status).replace(casesPattern, `**${count(cases)} cases**`));
-}
-
 // ---- Charts ----
 
 const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
