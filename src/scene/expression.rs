@@ -830,6 +830,7 @@ struct Node {
     /// part of `left`, matching upstream's `value` being an AST node.
     regex_pattern: Option<Box<Node>>,
     literal_regex: Option<Rc<RefCell<RegExpValue>>>,
+    const_color: Option<Cartesian4>,
     children: Vec<Node>,
 }
 
@@ -843,7 +844,30 @@ impl Node {
             test: None,
             regex_pattern: None,
             literal_regex: None,
+            const_color: None,
             children: Vec::new(),
+        }
+    }
+
+    fn fold_const_color(mut self) -> Self {
+        if self.kind == NodeKind::LiteralColor && self.children.iter().all(Node::is_pure_const) {
+            if let Ok(StyleValue::Cartesian4(c)) = self.evaluate_literal_color_uncached(None) {
+                self.const_color = Some(c);
+            }
+        }
+        self
+    }
+
+    fn is_pure_const(&self) -> bool {
+        use NodeKind::*;
+        match self.kind {
+            LiteralNull | LiteralUndefined | LiteralBoolean | LiteralNumber | LiteralString => true,
+            Unary => self.left.as_ref().is_some_and(|n| n.is_pure_const()),
+            Binary => {
+                self.left.as_ref().is_some_and(|n| n.is_pure_const())
+                    && self.right.as_ref().is_some_and(|n| n.is_pure_const())
+            }
+            _ => false,
         }
     }
 
@@ -1141,21 +1165,25 @@ fn parse_call(callee: &Ast, arguments: &[Ast]) -> Result<Node, RuntimeError> {
                 }
                 node.children = children;
             }
-            Ok(node)
+            Ok(node.fold_const_color())
         }
         "rgb" | "hsl" => {
             if args_length < 3 {
                 return Err(RuntimeError::new(format!("{call} requires three arguments.")));
             }
             let children = arguments[..3].iter().map(create_runtime_ast).collect::<Result<Vec<_>, _>>()?;
-            Ok(Node::new(NodeKind::LiteralColor, NodeValue::String(call.clone())).with_children(children))
+            Ok(Node::new(NodeKind::LiteralColor, NodeValue::String(call.clone()))
+                .with_children(children)
+                .fold_const_color())
         }
         "rgba" | "hsla" => {
             if args_length < 4 {
                 return Err(RuntimeError::new(format!("{call} requires four arguments.")));
             }
             let children = arguments[..4].iter().map(create_runtime_ast).collect::<Result<Vec<_>, _>>()?;
-            Ok(Node::new(NodeKind::LiteralColor, NodeValue::String(call.clone())).with_children(children))
+            Ok(Node::new(NodeKind::LiteralColor, NodeValue::String(call.clone()))
+                .with_children(children)
+                .fold_const_color())
         }
         "vec2" | "vec3" | "vec4" => {
             let children = arguments.iter().map(create_runtime_ast).collect::<Result<Vec<_>, _>>()?;
@@ -1358,6 +1386,13 @@ impl Node {
     }
 
     fn evaluate_literal_color(&self, feature: Option<&dyn StyleFeature>) -> Result<StyleValue, RuntimeError> {
+        if let Some(c) = self.const_color {
+            return Ok(StyleValue::Cartesian4(c));
+        }
+        self.evaluate_literal_color_uncached(feature)
+    }
+
+    fn evaluate_literal_color_uncached(&self, feature: Option<&dyn StyleFeature>) -> Result<StyleValue, RuntimeError> {
         let args = self.children();
         let call = self.string_value();
         let color = match call {
@@ -1563,6 +1598,42 @@ impl Node {
     fn evaluate_binary(&self, feature: Option<&dyn StyleFeature>) -> Result<StyleValue, RuntimeError> {
         let call = self.string_value();
         let left = self.left.as_ref().expect("binary left").evaluate(feature)?;
+        if call == "&&" {
+            let StyleValue::Boolean(a) = left else {
+                return Err(RuntimeError::new(format!(
+                    "Operator \"&&\" requires boolean arguments. First argument is {}.",
+                    left.js_string()
+                )));
+            };
+            if !a {
+                return Ok(StyleValue::Boolean(false));
+            }
+            return match self.right.as_ref().expect("binary right").evaluate(feature)? {
+                StyleValue::Boolean(b) => Ok(StyleValue::Boolean(b)),
+                other => Err(RuntimeError::new(format!(
+                    "Operator \"&&\" requires boolean arguments. Second argument is {}.",
+                    other.js_string()
+                ))),
+            };
+        }
+        if call == "||" {
+            let StyleValue::Boolean(a) = left else {
+                return Err(RuntimeError::new(format!(
+                    "Operator \"||\" requires boolean arguments. First argument is {}.",
+                    left.js_string()
+                )));
+            };
+            if a {
+                return Ok(StyleValue::Boolean(true));
+            }
+            return match self.right.as_ref().expect("binary right").evaluate(feature)? {
+                StyleValue::Boolean(b) => Ok(StyleValue::Boolean(b)),
+                other => Err(RuntimeError::new(format!(
+                    "Operator \"||\" requires boolean arguments. Second argument is {}.",
+                    other.js_string()
+                ))),
+            };
+        }
         let right = self.right.as_ref().expect("binary right").evaluate(feature)?;
         match call {
             "+" => match (&left, &right) {
@@ -2440,5 +2511,465 @@ impl fmt::Debug for Expression {
 impl PartialEq for Expression {
     fn eq(&self, other: &Self) -> bool {
         self.expression == other.expression
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Flat bytecode fast path for scalar/boolean/color style expressions
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Copy)]
+enum FastVal {
+    Undefined,
+    Null,
+    Bool(bool),
+    Num(f64),
+    Color(Cartesian4),
+}
+
+impl FastVal {
+    #[inline]
+    fn from_style_value(v: StyleValue) -> Option<Self> {
+        match v {
+            StyleValue::Undefined => Some(Self::Undefined),
+            StyleValue::Null => Some(Self::Null),
+            StyleValue::Boolean(b) => Some(Self::Bool(b)),
+            StyleValue::Number(n) => Some(Self::Num(n)),
+            StyleValue::Cartesian4(c) => Some(Self::Color(c)),
+            _ => None,
+        }
+    }
+
+    #[inline]
+    fn to_boolean(self) -> bool {
+        match self {
+            Self::Undefined | Self::Null => false,
+            Self::Bool(b) => b,
+            Self::Num(n) => n != 0.0 && !n.is_nan(),
+            Self::Color(_) => true,
+        }
+    }
+
+    #[inline]
+    fn to_style_value(self) -> StyleValue {
+        match self {
+            Self::Undefined => StyleValue::Undefined,
+            Self::Null => StyleValue::Null,
+            Self::Bool(b) => StyleValue::Boolean(b),
+            Self::Num(n) => StyleValue::Number(n),
+            Self::Color(c) => StyleValue::Cartesian4(c),
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+enum FastOp {
+    PushUndefined,
+    PushNull,
+    PushBool(bool),
+    PushNum(f64),
+    PushColor(Cartesian4),
+    LoadVar(u16),
+    LoadTilesetTime,
+    Not,
+    Neg,
+    Pos,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Mod,
+    Eq,
+    Ne,
+    Lt,
+    Le,
+    Gt,
+    Ge,
+    /// Pops top boolean; if false, jumps to target (used for `&&` short-circuit and `if`).
+    JumpIfFalseBool(u16),
+    /// Pops top boolean; if true, jumps to target (used for `||` short-circuit).
+    JumpIfTrueBool(u16),
+    /// Pops top value, converts via `to_boolean()`, jumps if false (ConditionsExpression branch).
+    JumpIfFalsy(u16),
+    /// Unconditional jump.
+    Jump(u16),
+    /// Return top of stack.
+    ReturnTop,
+    /// Fast return of a constant color.
+    ReturnColor(Color),
+    /// Check top of stack is bool (for strict `&&`/`||` RHS validation).
+    AssertBool,
+}
+
+struct FastCompiler {
+    vars: Vec<String>,
+    ops: Vec<FastOp>,
+}
+
+impl FastCompiler {
+    fn new() -> Self {
+        Self { vars: Vec::new(), ops: Vec::new() }
+    }
+
+    fn intern_var(&mut self, name: &str) -> Option<u16> {
+        if let Some(pos) = self.vars.iter().position(|v| v == name) {
+            return u16::try_from(pos).ok();
+        }
+        let idx = u16::try_from(self.vars.len()).ok()?;
+        self.vars.push(name.to_owned());
+        Some(idx)
+    }
+
+    fn compile_node(&mut self, node: &Node) -> Option<()> {
+        use NodeKind::*;
+        match node.kind {
+            LiteralNull => self.ops.push(FastOp::PushNull),
+            LiteralUndefined => self.ops.push(FastOp::PushUndefined),
+            LiteralBoolean => match node.value {
+                NodeValue::Boolean(b) => self.ops.push(FastOp::PushBool(b)),
+                _ => return None,
+            },
+            LiteralNumber => match node.value {
+                NodeValue::Number(n) => self.ops.push(FastOp::PushNum(n)),
+                _ => return None,
+            },
+            LiteralColor => {
+                let c = node.const_color?;
+                self.ops.push(FastOp::PushColor(c));
+            }
+            Variable => {
+                let name = node.string_value();
+                if name == "feature" {
+                    return None;
+                }
+                let slot = self.intern_var(name)?;
+                self.ops.push(FastOp::LoadVar(slot));
+            }
+            BuiltinVariable => {
+                if node.string_value() == "tiles3d_tileset_time" {
+                    self.ops.push(FastOp::LoadTilesetTime);
+                } else {
+                    self.ops.push(FastOp::PushUndefined);
+                }
+            }
+            Unary => {
+                let left = node.left.as_ref()?;
+                self.compile_node(left)?;
+                match node.string_value() {
+                    "!" => self.ops.push(FastOp::Not),
+                    "-" => self.ops.push(FastOp::Neg),
+                    "+" => self.ops.push(FastOp::Pos),
+                    _ => return None,
+                }
+            }
+            Binary => {
+                let left = node.left.as_ref()?;
+                let right = node.right.as_ref()?;
+                let op = node.string_value();
+                if op == "&&" {
+                    self.compile_node(left)?;
+                    let j_false = self.ops.len();
+                    self.ops.push(FastOp::JumpIfFalseBool(0));
+                    self.compile_node(right)?;
+                    self.ops.push(FastOp::AssertBool);
+                    let j_end = self.ops.len();
+                    self.ops.push(FastOp::Jump(0));
+                    let false_target = u16::try_from(self.ops.len()).ok()?;
+                    self.ops.push(FastOp::PushBool(false));
+                    let end_target = u16::try_from(self.ops.len()).ok()?;
+                    self.ops[j_false] = FastOp::JumpIfFalseBool(false_target);
+                    self.ops[j_end] = FastOp::Jump(end_target);
+                    return Some(());
+                }
+                if op == "||" {
+                    self.compile_node(left)?;
+                    let j_true = self.ops.len();
+                    self.ops.push(FastOp::JumpIfTrueBool(0));
+                    self.compile_node(right)?;
+                    self.ops.push(FastOp::AssertBool);
+                    let j_end = self.ops.len();
+                    self.ops.push(FastOp::Jump(0));
+                    let true_target = u16::try_from(self.ops.len()).ok()?;
+                    self.ops.push(FastOp::PushBool(true));
+                    let end_target = u16::try_from(self.ops.len()).ok()?;
+                    self.ops[j_true] = FastOp::JumpIfTrueBool(true_target);
+                    self.ops[j_end] = FastOp::Jump(end_target);
+                    return Some(());
+                }
+                self.compile_node(left)?;
+                self.compile_node(right)?;
+                let inst = match op {
+                    "+" => FastOp::Add,
+                    "-" => FastOp::Sub,
+                    "*" => FastOp::Mul,
+                    "/" => FastOp::Div,
+                    "%" => FastOp::Mod,
+                    "===" => FastOp::Eq,
+                    "!==" => FastOp::Ne,
+                    "<" => FastOp::Lt,
+                    "<=" => FastOp::Le,
+                    ">" => FastOp::Gt,
+                    ">=" => FastOp::Ge,
+                    _ => return None,
+                };
+                self.ops.push(inst);
+            }
+            Conditional => {
+                let test = node.test.as_ref()?;
+                let cons = node.left.as_ref()?;
+                let alt = node.right.as_ref()?;
+                self.compile_node(test)?;
+                let j_false = self.ops.len();
+                self.ops.push(FastOp::JumpIfFalseBool(0));
+                self.compile_node(cons)?;
+                let j_end = self.ops.len();
+                self.ops.push(FastOp::Jump(0));
+                let alt_target = u16::try_from(self.ops.len()).ok()?;
+                self.compile_node(alt)?;
+                let end_target = u16::try_from(self.ops.len()).ok()?;
+                self.ops[j_false] = FastOp::JumpIfFalseBool(alt_target);
+                self.ops[j_end] = FastOp::Jump(end_target);
+            }
+            _ => return None,
+        }
+        Some(())
+    }
+}
+
+/// Compiled flat bytecode for an entire `ConditionsExpression` if/else-if chain.
+#[derive(Clone)]
+pub(crate) struct FastConditions {
+    vars: Vec<String>,
+    ops: Vec<FastOp>,
+}
+
+impl FastConditions {
+    pub(crate) fn compile(statements: &[(&Expression, &Expression)]) -> Option<Self> {
+        if statements.is_empty() {
+            return None;
+        }
+        let mut c = FastCompiler::new();
+        for &(cond, expr) in statements {
+            let cond_node = &cond.runtime_ast;
+            let expr_node = &expr.runtime_ast;
+            let always_true =
+                cond_node.kind == NodeKind::LiteralBoolean && matches!(cond_node.value, NodeValue::Boolean(true));
+            if always_true {
+                if let Some(color) = expr_node.const_color {
+                    c.ops.push(FastOp::ReturnColor(Color::from_cartesian4(color)));
+                } else {
+                    c.compile_node(expr_node)?;
+                    c.ops.push(FastOp::ReturnTop);
+                }
+                // Unreachable branches after `true` can be skipped.
+                return Some(Self { vars: c.vars, ops: c.ops });
+            }
+            c.compile_node(cond_node)?;
+            let j_next = c.ops.len();
+            c.ops.push(FastOp::JumpIfFalsy(0));
+            if let Some(color) = expr_node.const_color {
+                c.ops.push(FastOp::ReturnColor(Color::from_cartesian4(color)));
+            } else {
+                c.compile_node(expr_node)?;
+                c.ops.push(FastOp::ReturnTop);
+            }
+            let next_target = u16::try_from(c.ops.len()).ok()?;
+            c.ops[j_next] = FastOp::JumpIfFalsy(next_target);
+        }
+        c.ops.push(FastOp::PushUndefined);
+        c.ops.push(FastOp::ReturnTop);
+        Some(Self { vars: c.vars, ops: c.ops })
+    }
+
+    #[inline]
+    fn run(&self, feature: Option<&dyn StyleFeature>) -> Option<FastVal> {
+        let mut stack = [FastVal::Undefined; 32];
+        let mut sp = 0usize;
+        let mut cache = [FastVal::Undefined; 16];
+        let mut loaded_mask = 0u16;
+        let mut heap_cache: Vec<Option<FastVal>> =
+            if self.vars.len() > 16 { vec![None; self.vars.len()] } else { Vec::new() };
+
+        let ops = self.ops.as_slice();
+        let mut pc = 0usize;
+        while pc < ops.len() {
+            match ops[pc] {
+                FastOp::PushUndefined => {
+                    if sp >= stack.len() { return None; }
+                    stack[sp] = FastVal::Undefined;
+                    sp += 1;
+                }
+                FastOp::PushNull => {
+                    if sp >= stack.len() { return None; }
+                    stack[sp] = FastVal::Null;
+                    sp += 1;
+                }
+                FastOp::PushBool(b) => {
+                    if sp >= stack.len() { return None; }
+                    stack[sp] = FastVal::Bool(b);
+                    sp += 1;
+                }
+                FastOp::PushNum(n) => {
+                    if sp >= stack.len() { return None; }
+                    stack[sp] = FastVal::Num(n);
+                    sp += 1;
+                }
+                FastOp::PushColor(c) => {
+                    if sp >= stack.len() { return None; }
+                    stack[sp] = FastVal::Color(c);
+                    sp += 1;
+                }
+                FastOp::LoadVar(slot) => {
+                    let idx = slot as usize;
+                    let val = if idx < 16 {
+                        let bit = 1u16 << idx;
+                        if (loaded_mask & bit) != 0 {
+                            cache[idx]
+                        } else {
+                            let v = match feature.and_then(|f| f.property_inherited(&self.vars[idx])) {
+                                Some(sv) => FastVal::from_style_value(sv)?,
+                                None => FastVal::Undefined,
+                            };
+                            cache[idx] = v;
+                            loaded_mask |= bit;
+                            v
+                        }
+                    } else if let Some(v) = heap_cache[idx] {
+                        v
+                    } else {
+                        let v = match feature.and_then(|f| f.property_inherited(&self.vars[idx])) {
+                            Some(sv) => FastVal::from_style_value(sv)?,
+                            None => FastVal::Undefined,
+                        };
+                        heap_cache[idx] = Some(v);
+                        v
+                    };
+                    if sp >= stack.len() { return None; }
+                    stack[sp] = val;
+                    sp += 1;
+                }
+                FastOp::LoadTilesetTime => {
+                    if sp >= stack.len() { return None; }
+                    stack[sp] = FastVal::Num(feature.map_or(0.0, |f| f.tileset_time()));
+                    sp += 1;
+                }
+                FastOp::Not => {
+                    let FastVal::Bool(b) = stack[sp - 1] else { return None; };
+                    stack[sp - 1] = FastVal::Bool(!b);
+                }
+                FastOp::Neg => {
+                    let FastVal::Num(n) = stack[sp - 1] else { return None; };
+                    stack[sp - 1] = FastVal::Num(-n);
+                }
+                FastOp::Pos => {
+                    let FastVal::Num(_) = stack[sp - 1] else { return None; };
+                }
+                FastOp::Add => {
+                    let (FastVal::Num(a), FastVal::Num(b)) = (stack[sp - 2], stack[sp - 1]) else { return None; };
+                    sp -= 1;
+                    stack[sp - 1] = FastVal::Num(a + b);
+                }
+                FastOp::Sub => {
+                    let (FastVal::Num(a), FastVal::Num(b)) = (stack[sp - 2], stack[sp - 1]) else { return None; };
+                    sp -= 1;
+                    stack[sp - 1] = FastVal::Num(a - b);
+                }
+                FastOp::Mul => {
+                    let (FastVal::Num(a), FastVal::Num(b)) = (stack[sp - 2], stack[sp - 1]) else { return None; };
+                    sp -= 1;
+                    stack[sp - 1] = FastVal::Num(a * b);
+                }
+                FastOp::Div => {
+                    let (FastVal::Num(a), FastVal::Num(b)) = (stack[sp - 2], stack[sp - 1]) else { return None; };
+                    sp -= 1;
+                    stack[sp - 1] = FastVal::Num(a / b);
+                }
+                FastOp::Mod => {
+                    let (FastVal::Num(a), FastVal::Num(b)) = (stack[sp - 2], stack[sp - 1]) else { return None; };
+                    sp -= 1;
+                    stack[sp - 1] = FastVal::Num(js_mod(a, b));
+                }
+                FastOp::Eq | FastOp::Ne => {
+                    let eq = match (stack[sp - 2], stack[sp - 1]) {
+                        (FastVal::Undefined, FastVal::Undefined) | (FastVal::Null, FastVal::Null) => true,
+                        (FastVal::Bool(a), FastVal::Bool(b)) => a == b,
+                        (FastVal::Num(a), FastVal::Num(b)) => a == b,
+                        (FastVal::Color(a), FastVal::Color(b)) => a == b,
+                        _ => false,
+                    };
+                    let res = if matches!(ops[pc], FastOp::Ne) { !eq } else { eq };
+                    sp -= 1;
+                    stack[sp - 1] = FastVal::Bool(res);
+                }
+                FastOp::Lt => {
+                    let (FastVal::Num(a), FastVal::Num(b)) = (stack[sp - 2], stack[sp - 1]) else { return None; };
+                    sp -= 1;
+                    stack[sp - 1] = FastVal::Bool(a < b);
+                }
+                FastOp::Le => {
+                    let (FastVal::Num(a), FastVal::Num(b)) = (stack[sp - 2], stack[sp - 1]) else { return None; };
+                    sp -= 1;
+                    stack[sp - 1] = FastVal::Bool(a <= b);
+                }
+                FastOp::Gt => {
+                    let (FastVal::Num(a), FastVal::Num(b)) = (stack[sp - 2], stack[sp - 1]) else { return None; };
+                    sp -= 1;
+                    stack[sp - 1] = FastVal::Bool(a > b);
+                }
+                FastOp::Ge => {
+                    let (FastVal::Num(a), FastVal::Num(b)) = (stack[sp - 2], stack[sp - 1]) else { return None; };
+                    sp -= 1;
+                    stack[sp - 1] = FastVal::Bool(a >= b);
+                }
+                FastOp::JumpIfFalseBool(target) => {
+                    sp -= 1;
+                    let FastVal::Bool(b) = stack[sp] else { return None; };
+                    if !b {
+                        pc = target as usize;
+                        continue;
+                    }
+                }
+                FastOp::JumpIfTrueBool(target) => {
+                    sp -= 1;
+                    let FastVal::Bool(b) = stack[sp] else { return None; };
+                    if b {
+                        pc = target as usize;
+                        continue;
+                    }
+                }
+                FastOp::JumpIfFalsy(target) => {
+                    sp -= 1;
+                    if !stack[sp].to_boolean() {
+                        pc = target as usize;
+                        continue;
+                    }
+                }
+                FastOp::Jump(target) => {
+                    pc = target as usize;
+                    continue;
+                }
+                FastOp::AssertBool => {
+                    if !matches!(stack[sp - 1], FastVal::Bool(_)) {
+                        return None;
+                    }
+                }
+                FastOp::ReturnTop => return Some(stack[sp - 1]),
+                FastOp::ReturnColor(c) => return Some(FastVal::Color(Cartesian4::from_color(&c))),
+            }
+            pc += 1;
+        }
+        None
+    }
+
+    pub(crate) fn evaluate(&self, feature: Option<&dyn StyleFeature>) -> Option<StyleValue> {
+        self.run(feature).map(FastVal::to_style_value)
+    }
+
+    pub(crate) fn evaluate_color(&self, feature: Option<&dyn StyleFeature>) -> Option<Option<Color>> {
+        match self.run(feature)? {
+            FastVal::Undefined => Some(None),
+            FastVal::Color(c) => Some(Some(Color::from_cartesian4(c))),
+            _ => None, // fall back to AST to produce exact error message
+        }
     }
 }

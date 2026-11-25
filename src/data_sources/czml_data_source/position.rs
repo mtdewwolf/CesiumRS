@@ -5,12 +5,12 @@ use super::{
     adapters::CzmlPropertyTarget,
     packet::{create_reference_property, PacketContext},
     unwrap::{
-        combine_intervals, get_defined, is_defined, parse_reference_frame, unwrap_cartesian_interval,
-        update_interpolation_settings, UnwrappedCartesian,
+        combine_intervals, get_defined, is_defined, parse_iso8601_cached, parse_reference_frame,
+        unwrap_cartesian_interval, update_interpolation_settings, UnwrappedCartesian,
     },
 };
 use crate::{
-    core::{iso8601, JulianDate, ReferenceFrame, RuntimeError, TimeInterval},
+    core::{iso8601, ReferenceFrame, RuntimeError, TimeInterval},
     data_sources::{
         CompositePositionProperty, ConstantPositionProperty, PositionComponent, PositionProperty, PositionPropertyRef,
         PropertyInput, SampledPositionProperty, TimeIntervalCollectionPositionProperty,
@@ -98,16 +98,67 @@ pub(crate) fn process_position_property(
     let is_value = !is_defined(packet_data.get("reference"));
 
     let mut reference_frame = ReferenceFrame::Fixed;
-    let unwrapped = if is_value {
+    if is_value {
         if let Some(frame) =
             get_defined(packet_data, "referenceFrame").and_then(Value::as_str).and_then(parse_reference_frame)
         {
             reference_frame = frame;
         }
-        Some(unwrap_cartesian_interval(packet_data, false)?)
-    } else {
-        None
-    };
+    }
+
+    // Fast path for numeric-offset sampled cartesian positions without interval:
+    // skips `unwrap_cartesian_interval` and its intermediate `Vec<PackedSampleValue>`.
+    if !has_interval && is_value && number_of_derivatives == 0 {
+        if let (Some(epoch_str), Some(arr)) = (
+            get_defined(packet_data, "epoch").and_then(Value::as_str),
+            get_defined(packet_data, "cartesian").and_then(Value::as_array),
+        ) {
+            let (chunks, rem) = arr.as_chunks::<4>();
+            if !chunks.is_empty() && rem.is_empty() && chunks.iter().all(|c| c[0].is_number()) {
+                let ep = parse_iso8601_cached(epoch_str)?;
+                let mut times = Vec::with_capacity(chunks.len());
+                let mut positions = Vec::with_capacity(chunks.len());
+                let mut ok = true;
+                for c in chunks {
+                    if let (Some(t), Some(x), Some(y), Some(z)) =
+                        (c[0].as_f64(), c[1].as_f64(), c[2].as_f64(), c[3].as_f64())
+                    {
+                        times.push(ep.add_seconds(t));
+                        positions.push(crate::core::Cartesian3::new(x, y, z));
+                    } else {
+                        ok = false;
+                        break;
+                    }
+                }
+                if ok {
+                    let existing = existing_position_property(target.get_czml_property(property_name));
+                    let sampled_prop: PositionPropertyRef = match existing {
+                        Some(ref p)
+                            if p.as_any()
+                                .downcast_ref::<SampledPositionProperty>()
+                                .is_some_and(|s| s.reference_frame() == reference_frame) =>
+                        {
+                            p.clone()
+                        }
+                        _ => {
+                            let p: PositionPropertyRef = Rc::new(SampledPositionProperty::new(reference_frame, 0));
+                            target.set_czml_property(
+                                property_name,
+                                Some(PropertyInput::Component(PositionComponent::wrap(p.clone()))),
+                            )?;
+                            p
+                        }
+                    };
+                    let sampled = sampled_prop.as_any().downcast_ref::<SampledPositionProperty>().unwrap();
+                    sampled.add_samples(&times, &positions, None)?;
+                    update_interpolation_settings(packet_data, sampled);
+                    return Ok(());
+                }
+            }
+        }
+    }
+
+    let unwrapped = if is_value { Some(unwrap_cartesian_interval(packet_data, false)?) } else { None };
 
     let is_sampled = matches!(unwrapped, Some(UnwrappedCartesian::Sampled(_)));
 
@@ -128,7 +179,7 @@ pub(crate) fn process_position_property(
     }
 
     let epoch = match get_defined(packet_data, "epoch").and_then(Value::as_str) {
-        Some(s) => Some(JulianDate::from_iso8601(s).map_err(|e| RuntimeError::new(e.to_string()))?),
+        Some(s) => Some(parse_iso8601_cached(s)?),
         None => None,
     };
 

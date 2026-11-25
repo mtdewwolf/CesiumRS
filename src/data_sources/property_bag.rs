@@ -54,6 +54,44 @@ impl PropertyBag {
         );
         Self::from_values(entries, None)
     }
+    pub(crate) fn from_json_ref(value: &serde_json::Value) -> Result<Rc<Self>, RuntimeError> {
+        if value.is_null() {
+            return Ok(Rc::new(Self::new()));
+        }
+        let serde_json::Value::Object(values) = value else {
+            return Err(RuntimeError::new("properties requires an object"));
+        };
+        let bag = Rc::new(Self::new());
+        let mut keys: Vec<&str> = values.keys().map(String::as_str).collect();
+        // Fast check: only run JS integer-index sorting if any key looks like a non-negative integer index.
+        let needs_js_sort = keys.iter().any(|k| !k.is_empty() && k.as_bytes()[0].is_ascii_digit());
+        if needs_js_sort {
+            let ordered = crate::core::query::js_object_order(
+                values.iter().map(|(k, v)| (k.clone(), v)).collect(),
+            );
+            let mut fields = Vec::with_capacity(ordered.len());
+            for (k, v) in ordered {
+                let field = create_property_descriptor(k, true, None, &bag.changes);
+                if !v.is_null() {
+                    field.set(Some(PropertyInput::Value(DynamicValue::from_json(v.clone()))))?;
+                }
+                fields.push(field);
+            }
+            *bag.fields.borrow_mut() = fields;
+        } else {
+            let mut fields = Vec::with_capacity(keys.len());
+            for k in keys.drain(..) {
+                let v = &values[k];
+                let field = create_property_descriptor(k, true, None, &bag.changes);
+                if !v.is_null() {
+                    field.set(Some(PropertyInput::Value(DynamicValue::from_json(v.clone()))))?;
+                }
+                fields.push(field);
+            }
+            *bag.fields.borrow_mut() = fields;
+        }
+        Ok(bag)
+    }
     pub fn property_names(&self) -> Vec<String> {
         self.fields.borrow().iter().map(|f| f.name().to_owned()).collect()
     }

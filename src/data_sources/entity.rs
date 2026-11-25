@@ -1,7 +1,6 @@
 //! Entity state, typed components, hierarchy, availability and model transforms.
 use super::{
-    create_property_descriptor,
-    create_property_descriptor::{constant_component, ComponentFactory},
+    create_property_descriptor::ComponentFactory,
     create_raw_property_descriptor, ChangeEvent, ComponentRef, ConstantPositionProperty, DynamicValue,
     PositionComponent, PositionContext, PositionPropertyRef, PropertyBag, PropertyChange, PropertyComponent,
     PropertyDescriptor, PropertyInput, PropertyIntervals, PropertyRef, Subscription,
@@ -132,7 +131,8 @@ pub struct Entity {
     children: RefCell<Vec<Weak<Entity>>>,
     availability: RefCell<Option<Availability>>,
     collection: RefCell<Option<Weak<super::EntityCollection>>>,
-    names: RefCell<Vec<String>>,
+    /// Populated lazily only if `add_property` or `remove_property` is called.
+    names: RefCell<Option<Vec<String>>>,
     fields: RefCell<Vec<PropertyDescriptor>>,
     slot_changes: ChangeEvent<PropertyChange>,
     changed: ChangeEvent<EntityChange>,
@@ -147,39 +147,40 @@ impl Entity {
         let changed = ChangeEvent::<EntityChange>::new();
         let registry = options.registry.clone();
         let context = options.context.clone();
-        let mut names = ENTITY_PROPERTY_NAMES.iter().map(|n| (*n).to_owned()).collect::<Vec<_>>();
-        names.extend(registry.names());
         let entity = Rc::new_cyclic(|weak: &Weak<Entity>| {
             let target = weak.clone();
             let forward = slots.add_listener(move |change| {
                 if let Some(entity) = target.upgrade() {
-                    entity.changed.raise(EntityChange { entity: entity.weak.clone(), property: change.clone() });
+                    if entity.changed.has_listeners() {
+                        entity.changed.raise(EntityChange { entity: entity.weak.clone(), property: change.clone() });
+                    }
                 }
             });
             Self {
-                id: options.id.clone().unwrap_or_else(create_guid::create_guid),
-                name: RefCell::new(options.name.clone()),
+                id: options.id.unwrap_or_else(create_guid::create_guid),
+                name: RefCell::new(options.name),
                 show: Cell::new(options.show),
                 tracking: Cell::new(options.tracking_reference_frame),
                 parent: RefCell::new(None),
                 children: RefCell::new(vec![]),
                 availability: RefCell::new(None),
                 collection: RefCell::new(None),
-                names: RefCell::new(names),
+                names: RefCell::new(None),
                 fields: RefCell::new(vec![]),
                 slot_changes: slots.clone(),
                 changed: changed.clone(),
                 _slot_forward: forward,
                 weak: weak.clone(),
-                registry: registry.clone(),
-                context: context.clone(),
+                registry,
+                context,
             }
         });
-        for name in entity.property_names() {
-            entity.ensure_field(&name, false)?;
+        if options.parent.is_some() {
+            entity.set_parent(options.parent)?;
         }
-        entity.set_parent(options.parent)?;
-        entity.set_availability(options.availability);
+        if options.availability.is_some() {
+            entity.set_availability(options.availability);
+        }
         if let Some(value) = options.position {
             entity.set_position(Some(value))?;
         }
@@ -189,7 +190,9 @@ impl Entity {
         if let Some(value) = options.properties {
             entity.set_property("properties", Some(PropertyInput::Component(value)))?;
         }
-        entity.merge_values(&options.values)?;
+        if !options.values.is_empty() {
+            entity.merge_values(&options.values)?;
+        }
         Ok(entity)
     }
     pub fn with_id(id: impl Into<String>) -> EntityRef {
@@ -201,8 +204,30 @@ impl Entity {
     pub fn definition_changed(&self) -> &ChangeEvent<EntityChange> {
         &self.changed
     }
+    fn has_registered_name(&self, name: &str) -> bool {
+        if let Some(names) = &*self.names.borrow() {
+            names.iter().any(|n| n == name)
+        } else {
+            ENTITY_PROPERTY_NAMES.contains(&name) || self.registry.factory(name).is_some()
+        }
+    }
+    fn materialize_names(&self) -> std::cell::RefMut<'_, Vec<String>> {
+        let mut guard = self.names.borrow_mut();
+        if guard.is_none() {
+            let mut names: Vec<String> = ENTITY_PROPERTY_NAMES.iter().map(|&n| n.to_owned()).collect();
+            names.extend(self.registry.names());
+            *guard = Some(names);
+        }
+        std::cell::RefMut::map(guard, |opt| opt.as_mut().unwrap())
+    }
     pub fn property_names(&self) -> Vec<String> {
-        self.names.borrow().clone()
+        if let Some(names) = &*self.names.borrow() {
+            names.clone()
+        } else {
+            let mut names: Vec<String> = ENTITY_PROPERTY_NAMES.iter().map(|&n| n.to_owned()).collect();
+            names.extend(self.registry.names());
+            names
+        }
     }
     pub fn name(&self) -> Option<String> {
         self.name.borrow().clone()
@@ -319,10 +344,12 @@ impl Entity {
         *self.collection.borrow_mut() = Some(value);
     }
     fn notify(&self, name: &str, new_value: Option<PropertyInput>, old_value: Option<PropertyInput>) {
-        self.changed.raise(EntityChange {
-            entity: self.weak.clone(),
-            property: PropertyChange { name: name.into(), new_value, old_value, child_changed: false },
-        });
+        if self.changed.has_listeners() {
+            self.changed.raise(EntityChange {
+                entity: self.weak.clone(),
+                property: PropertyChange { name: name.into(), new_value, old_value, child_changed: false },
+            });
+        }
     }
     pub fn get_property(&self, name: &str) -> Option<PropertyInput> {
         match name {
@@ -384,7 +411,7 @@ impl Entity {
             let name = name.to_owned();
             return Some(Rc::new(move |value| Self::graphics_component(&name, value)));
         }
-        ENTITY_PROPERTY_NAMES.contains(&name).then(|| Rc::new(constant_component) as ComponentFactory)
+        None
     }
     /// Coerces a raw Entity graphics option (a record/JSON object) into the
     /// matching typed graphics component. Typed components set directly are
@@ -418,17 +445,25 @@ impl Entity {
         let field = if custom {
             create_raw_property_descriptor(name, true, &self.slot_changes)
         } else {
-            create_property_descriptor(name, false, self.factory(name), &self.slot_changes)
+            let slot_name: std::borrow::Cow<'static, str> =
+                match ENTITY_PROPERTY_NAMES.iter().find(|&&n| n == name) {
+                    Some(&static_name) => std::borrow::Cow::Borrowed(static_name),
+                    None => std::borrow::Cow::Owned(name.to_owned()),
+                };
+            PropertyDescriptor::new_constant(slot_name, false, self.factory(name), &self.slot_changes)
         };
         self.fields.borrow_mut().push(field.clone());
         Ok(field)
     }
     pub fn set_property(&self, name: &str, value: Option<PropertyInput>) -> Result<(), RuntimeError> {
-        if !self.names.borrow().iter().any(|n| n == name)
+        if !self.has_registered_name(name)
             && !ENTITY_PROPERTY_NAMES.contains(&name)
             && self.registry.factory(name).is_none()
         {
             return Err(RuntimeError::new(format!("{name} is not a registered property.")));
+        }
+        if value.is_none() && self.fields.borrow().iter().all(|f| f.name() != name) {
+            return Ok(());
         }
         self.ensure_field(name, false)?.set(value)
     }
@@ -443,31 +478,32 @@ impl Entity {
     }
     pub fn add_property(&self, name: impl Into<String>) -> Result<(), RuntimeError> {
         let name = name.into();
-        if self.names.borrow().contains(&name) {
+        if self.has_registered_name(&name) {
             return Err(RuntimeError::new(format!("{name} is already a registered property.")));
         }
         if Self::is_reserved(&name) || self.registry.factory(&name).is_some() {
             return Err(RuntimeError::new(format!("{name} is a reserved property name.")));
         }
-        self.names.borrow_mut().push(name.clone());
+        self.materialize_names().push(name.clone());
         self.ensure_field(&name, true)?;
         Ok(())
     }
     pub fn remove_property(&self, name: &str) -> Result<(), RuntimeError> {
-        let index = self
-            .names
-            .borrow()
+        let mut names = self.materialize_names();
+        let index = names
             .iter()
             .position(|n| n == name)
             .ok_or_else(|| RuntimeError::new(format!("{name} is not a registered property.")))?;
-        self.names.borrow_mut().remove(index);
+        names.remove(index);
+        drop(names);
         if !ENTITY_PROPERTY_NAMES.contains(&name) && self.registry.factory(name).is_none() {
             let field = {
                 let mut fields = self.fields.borrow_mut();
-                let index = fields.iter().position(|f| f.name() == name).unwrap();
-                fields.remove(index)
+                fields.iter().position(|f| f.name() == name).map(|index| fields.remove(index))
             };
-            field.deactivate();
+            if let Some(field) = field {
+                field.deactivate();
+            }
         }
         Ok(())
     }
@@ -547,7 +583,7 @@ impl Entity {
             }
             let target = self.get_property(name);
             if target.as_ref().is_none_or(|v| !v.is_defined())
-                && !self.names.borrow().contains(name)
+                && !self.has_registered_name(name)
                 && !ENTITY_PROPERTY_NAMES.contains(&name.as_str())
                 && self.registry.factory(name).is_none()
             {

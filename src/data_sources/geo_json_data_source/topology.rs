@@ -5,7 +5,7 @@ use serde_json::{json, Value};
 
 pub(super) struct Topology<'a> {
     arcs: &'a Value,
-    transform: Option<(Vec<f64>, Vec<f64>)>,
+    transform: Option<([f64; 3], [f64; 3])>,
 }
 impl<'a> Topology<'a> {
     pub fn new(topology: &'a Value) -> Result<Self, RuntimeError> {
@@ -13,19 +13,19 @@ impl<'a> Topology<'a> {
         let transform = if transform.is_null() {
             None
         } else {
-            Some((coordinate(&transform["scale"])?, coordinate(&transform["translate"])?))
+            Some((coordinate(&transform["scale"])?.0, coordinate(&transform["translate"])?.0))
         };
         Ok(Self { arcs: &topology["arcs"], transform })
     }
     fn point(&self, p: &Value, sum: &mut [f64; 2]) -> Result<Value, RuntimeError> {
-        let mut p = coordinate(p)?;
+        let (mut p, len) = coordinate(p)?;
         if let Some((scale, translate)) = &self.transform {
             for axis in 0..2 {
                 sum[axis] += p[axis];
                 p[axis] = sum[axis] * scale[axis] + translate[axis];
             }
         }
-        Ok(json!(p))
+        Ok(json!(&p[..len]))
     }
     fn line(&self, indices: &Value, min_len: usize) -> Result<Value, RuntimeError> {
         let mut line = Vec::new();

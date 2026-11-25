@@ -21,8 +21,8 @@ pub enum DynamicValue {
     Pin(Rc<GeoJsonPin>),
     Quaternion(Quaternion),
     Color(Color),
-    Matrix3(Matrix3),
-    Matrix4(Matrix4),
+    Matrix3(Box<Matrix3>),
+    Matrix4(Box<Matrix4>),
     Date(Rc<JulianDate>),
     Json(JsonReference),
     Record(BagValues),
@@ -231,8 +231,40 @@ value!(Cartesian3, Cartesian3);
 value!(Cartesian4, Cartesian4);
 value!(Quaternion, Quaternion);
 value!(Color, Color);
-value!(Matrix3, Matrix3);
-value!(Matrix4, Matrix4);
+impl From<Matrix3> for DynamicValue {
+    fn from(value: Matrix3) -> Self {
+        Self::Matrix3(Box::new(value))
+    }
+}
+impl ComponentValue for Matrix3 {
+    fn into_dynamic(self) -> DynamicValue {
+        DynamicValue::Matrix3(Box::new(self))
+    }
+    fn from_dynamic(value: &DynamicValue) -> Option<Self> {
+        if let DynamicValue::Matrix3(v) = value {
+            Some(**v)
+        } else {
+            None
+        }
+    }
+}
+impl From<Matrix4> for DynamicValue {
+    fn from(value: Matrix4) -> Self {
+        Self::Matrix4(Box::new(value))
+    }
+}
+impl ComponentValue for Matrix4 {
+    fn into_dynamic(self) -> DynamicValue {
+        DynamicValue::Matrix4(Box::new(self))
+    }
+    fn from_dynamic(value: &DynamicValue) -> Option<Self> {
+        if let DynamicValue::Matrix4(v) = value {
+            Some(**v)
+        } else {
+            None
+        }
+    }
+}
 value!(Rc<JulianDate>, Date);
 value!(Rc<Vec<Cartesian3>>, Positions);
 value!(Rc<PolygonHierarchy>, PolygonHierarchy);

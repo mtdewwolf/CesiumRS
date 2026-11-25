@@ -1066,3 +1066,74 @@ pub(crate) fn builtin_updaters() -> Vec<CzmlUpdater> {
         CzmlUpdater::new(process_availability),
     ]
 }
+
+/// Fast path for default built-in updaters: scans only the keys actually
+/// present in `packet` once to form a bitmask, then invokes only matching
+/// updaters in exact reverse `builtin_updaters()` order.
+pub(crate) fn apply_builtin_packet(
+    entity: &EntityRef,
+    packet: &Value,
+    entity_collection: &Rc<EntityCollection>,
+    source_uri: Option<&Resource>,
+) -> Result<(), RuntimeError> {
+    let Some(map) = packet.as_object() else { return Ok(()) };
+    let mut mask: u32 = 0;
+    for (k, v) in map {
+        if v.is_null() {
+            continue;
+        }
+        mask |= match k.as_str() {
+            "availability" => 1 << 0,
+            "orientation" => 1 << 1,
+            "wall" => 1 << 2,
+            "viewFrom" => 1 << 3,
+            "tileset" => 1 << 4,
+            "position" => 1 << 5,
+            "rectangle" => 1 << 6,
+            "properties" => 1 << 7,
+            "polylineVolume" => 1 << 8,
+            "polyline" => 1 << 9,
+            "polygon" => 1 << 10,
+            "point" => 1 << 11,
+            "path" => 1 << 12,
+            "description" => 1 << 13,
+            "name" => 1 << 14,
+            "model" => 1 << 15,
+            "label" => 1 << 16,
+            "ellipsoid" => 1 << 17,
+            "ellipse" => 1 << 18,
+            "cylinder" => 1 << 19,
+            "corridor" => 1 << 20,
+            "box" => 1 << 21,
+            "billboard" => 1 << 22,
+            _ => 0,
+        };
+    }
+    if mask == 0 {
+        return Ok(());
+    }
+    if mask & (1 << 0) != 0 { process_availability(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 1) != 0 { process_orientation(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 2) != 0 { process_wall(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 3) != 0 { process_view_from(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 4) != 0 { process_tileset(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 5) != 0 { process_position(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 6) != 0 { process_rectangle(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 7) != 0 { process_properties(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 8) != 0 { process_polyline_volume(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 9) != 0 { process_polyline(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 10) != 0 { process_polygon(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 11) != 0 { process_point(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 12) != 0 { process_path(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 13) != 0 { process_description(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 14) != 0 { process_name(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 15) != 0 { process_model(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 16) != 0 { process_label(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 17) != 0 { process_ellipsoid(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 18) != 0 { process_ellipse(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 19) != 0 { process_cylinder(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 20) != 0 { process_corridor(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 21) != 0 { process_box(entity, packet, entity_collection, source_uri)?; }
+    if mask & (1 << 22) != 0 { process_billboard(entity, packet, entity_collection, source_uri)?; }
+    Ok(())
+}
