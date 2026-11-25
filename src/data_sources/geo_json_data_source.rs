@@ -114,22 +114,28 @@ impl Default for GeoJsonOptions {
         }
     }
 }
-pub enum GeoJsonInput {
+pub enum GeoJsonInput<'a> {
     Json(Value),
+    JsonRef(&'a Value),
     Text(String),
     Resource(Resource),
 }
-impl From<Value> for GeoJsonInput {
+impl From<Value> for GeoJsonInput<'static> {
     fn from(value: Value) -> Self {
         Self::Json(value)
     }
 }
-impl From<&str> for GeoJsonInput {
+impl<'a> From<&'a Value> for GeoJsonInput<'a> {
+    fn from(value: &'a Value) -> Self {
+        Self::JsonRef(value)
+    }
+}
+impl From<&str> for GeoJsonInput<'static> {
     fn from(value: &str) -> Self {
         Self::Text(value.into())
     }
 }
-impl From<Resource> for GeoJsonInput {
+impl From<Resource> for GeoJsonInput<'static> {
     fn from(value: Resource) -> Self {
         Self::Resource(value)
     }
@@ -173,14 +179,27 @@ impl GeoJsonDataSource {
 
     /// Replace entities. Strings may contain a JSON document or a resource URL.
     /// Supply the host's ResourceClient in the options for URLs and Resources.
-    pub async fn load(&self, input: impl Into<GeoJsonInput>, options: &GeoJsonOptions) -> Result<(), RuntimeError> {
+    pub async fn load<'a>(
+        &self,
+        input: impl Into<GeoJsonInput<'a>>,
+        options: &GeoJsonOptions,
+    ) -> Result<(), RuntimeError> {
         self.preload(input.into(), options, true).await
     }
     /// Append entities, preserving existing IDs and resolving collisions.
-    pub async fn process(&self, input: impl Into<GeoJsonInput>, options: &GeoJsonOptions) -> Result<(), RuntimeError> {
+    pub async fn process<'a>(
+        &self,
+        input: impl Into<GeoJsonInput<'a>>,
+        options: &GeoJsonOptions,
+    ) -> Result<(), RuntimeError> {
         self.preload(input.into(), options, false).await
     }
-    async fn preload(&self, input: GeoJsonInput, options: &GeoJsonOptions, clear: bool) -> Result<(), RuntimeError> {
+    async fn preload<'a>(
+        &self,
+        input: GeoJsonInput<'a>,
+        options: &GeoJsonOptions,
+        clear: bool,
+    ) -> Result<(), RuntimeError> {
         self.active_loads.set(self.active_loads.get() + 1);
         let loading = Loading(self);
         self.set_loading(true)?;
@@ -191,7 +210,12 @@ impl GeoJsonDataSource {
         }
         result
     }
-    async fn read(&self, input: GeoJsonInput, options: &GeoJsonOptions, clear: bool) -> Result<(), RuntimeError> {
+    async fn read<'a>(
+        &self,
+        input: GeoJsonInput<'a>,
+        options: &GeoJsonOptions,
+        clear: bool,
+    ) -> Result<(), RuntimeError> {
         let mut source_uri = options.source_uri.clone();
         let input = match input {
             GeoJsonInput::Text(s) if s.trim_start().starts_with(['{', '[']) => {
@@ -202,27 +226,35 @@ impl GeoJsonDataSource {
             }
             other => other,
         };
-        let json = match input {
-            GeoJsonInput::Json(v) => v,
+        let owned: Option<Value>;
+        let json: &Value = match input {
+            GeoJsonInput::Json(v) => {
+                owned = Some(v);
+                owned.as_ref().unwrap()
+            }
+            GeoJsonInput::JsonRef(v) => v,
             GeoJsonInput::Resource(resource) => {
                 let client = options
                     .resource_client
                     .as_ref()
                     .ok_or_else(|| RuntimeError::new("Resource loading requires a ResourceClient."))?;
                 source_uri.get_or_insert_with(|| resource.get_url_component(false, false));
-                resource
-                    .fetch_json(client)
-                    .ok_or_else(|| RuntimeError::new("GeoJSON request was not scheduled."))?
-                    .await
-                    .map_err(|e| RuntimeError::new(e.to_string()))?
-                    .ok_or_else(|| RuntimeError::new("Empty GeoJSON response."))?
+                owned = Some(
+                    resource
+                        .fetch_json(client)
+                        .ok_or_else(|| RuntimeError::new("GeoJSON request was not scheduled."))?
+                        .await
+                        .map_err(|e| RuntimeError::new(e.to_string()))?
+                        .ok_or_else(|| RuntimeError::new("Empty GeoJSON response."))?,
+                );
+                owned.as_ref().unwrap()
             }
             GeoJsonInput::Text(_) => unreachable!(),
         };
         if let Some(url) = source_uri {
             self.set_name(Some(get_filename_from_uri(&url)));
         }
-        let kind = field(&json, "type");
+        let kind = field(json, "type");
         if !geometry::supported(&kind) {
             return Err(RuntimeError::new(format!("Unsupported GeoJSON object type: {kind}")));
         }
@@ -231,7 +263,7 @@ impl GeoJsonDataSource {
             self.entities().remove_all();
         }
         if let Some(project) = project {
-            geometry::Loader::new(self.entities(), options, &project)?.object(&json)?;
+            geometry::Loader::new(self.entities(), options, &project)?.object(json)?;
         }
         Ok(())
     }
@@ -240,10 +272,15 @@ impl GeoJsonDataSource {
 fn array(v: &Value) -> Result<&Vec<Value>, RuntimeError> {
     v.as_array().ok_or_else(|| RuntimeError::new("Expected an array."))
 }
-fn coordinate(v: &Value) -> Result<Vec<f64>, RuntimeError> {
+fn coordinate(v: &Value) -> Result<([f64; 3], usize), RuntimeError> {
     let coords = array(v)?;
     if coords.len() < 2 {
         return Err(RuntimeError::new("Expected longitude and latitude."));
     }
-    coords.iter().map(|c| c.as_f64().ok_or_else(|| RuntimeError::new("Expected numeric coordinates."))).collect()
+    let mut out = [0.0; 3];
+    let len = coords.len().min(3);
+    for i in 0..len {
+        out[i] = coords[i].as_f64().ok_or_else(|| RuntimeError::new("Expected numeric coordinates."))?;
+    }
+    Ok((out, len))
 }

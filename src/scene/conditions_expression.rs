@@ -1,7 +1,7 @@
 //! CesiumJS `ConditionsExpression`: an ordered if/else chain of style
 //! expressions.
 
-use super::expression::{Expression, ShaderState, StyleFeature, StyleValue};
+use super::expression::{Expression, FastConditions, ShaderState, StyleFeature, StyleValue};
 use super::style_expression::StyleExpression;
 use crate::core::{Color, RuntimeError};
 use serde_json::Value as Json;
@@ -19,6 +19,7 @@ struct Statement {
 pub struct ConditionsExpression {
     conditions_expression: Json,
     runtime_conditions: Option<Vec<Statement>>,
+    fast: Option<FastConditions>,
 }
 
 impl std::fmt::Debug for ConditionsExpression {
@@ -69,7 +70,7 @@ impl ConditionsExpression {
             .transpose()?;
         match conditions {
             Some(conditions) => Self::new(&conditions, defines),
-            None => Ok(Self { conditions_expression: conditions_expression.clone(), runtime_conditions: None }),
+            None => Ok(Self { conditions_expression: conditions_expression.clone(), runtime_conditions: None, fast: None }),
         }
     }
 
@@ -87,7 +88,9 @@ impl ConditionsExpression {
                 })
             })
             .collect::<Result<Vec<_>, RuntimeError>>()?;
-        Ok(Self { conditions_expression, runtime_conditions: Some(runtime_conditions) })
+        let pairs: Vec<_> = runtime_conditions.iter().map(|s| (&s.condition, &s.expression)).collect();
+        let fast = FastConditions::compile(&pairs);
+        Ok(Self { conditions_expression, runtime_conditions: Some(runtime_conditions), fast })
     }
 
     pub fn conditions_expression(&self) -> &Json {
@@ -108,6 +111,11 @@ fn js_string(value: &Json) -> String {
 
 impl StyleExpression for ConditionsExpression {
     fn evaluate(&self, feature: Option<&dyn StyleFeature>) -> Result<StyleValue, RuntimeError> {
+        if let Some(fast) = &self.fast {
+            if let Some(val) = fast.evaluate(feature) {
+                return Ok(val);
+            }
+        }
         let Some(conditions) = &self.runtime_conditions else {
             return Ok(StyleValue::Undefined);
         };
@@ -120,6 +128,11 @@ impl StyleExpression for ConditionsExpression {
     }
 
     fn evaluate_color(&self, feature: Option<&dyn StyleFeature>) -> Result<Option<Color>, RuntimeError> {
+        if let Some(fast) = &self.fast {
+            if let Some(color) = fast.evaluate_color(feature) {
+                return Ok(color);
+            }
+        }
         let Some(conditions) = &self.runtime_conditions else {
             return Ok(None);
         };

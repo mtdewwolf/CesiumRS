@@ -21,7 +21,10 @@ use crate::core::{
     Resource, ResourceClient, RuntimeError, TimeInterval,
 };
 use serde_json::Value;
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
 
 thread_local! {
     static CURRENT_ID: RefCell<Option<String>> = const { RefCell::new(None) };
@@ -131,31 +134,38 @@ pub struct CzmlLoadOptions {
 }
 
 /// Accepted input forms for [`CzmlDataSource::load`] and [`CzmlDataSource::process`].
-pub enum CzmlInput {
+pub enum CzmlInput<'a> {
     Json(Value),
+    JsonRef(&'a Value),
     Text(String),
     Resource(Resource),
 }
 
-impl From<Value> for CzmlInput {
+impl From<Value> for CzmlInput<'static> {
     fn from(v: Value) -> Self {
         Self::Json(v)
     }
 }
 
-impl From<&str> for CzmlInput {
+impl<'a> From<&'a Value> for CzmlInput<'a> {
+    fn from(v: &'a Value) -> Self {
+        Self::JsonRef(v)
+    }
+}
+
+impl From<&str> for CzmlInput<'static> {
     fn from(s: &str) -> Self {
         Self::Text(s.to_owned())
     }
 }
 
-impl From<String> for CzmlInput {
+impl From<String> for CzmlInput<'static> {
     fn from(s: String) -> Self {
         Self::Text(s)
     }
 }
 
-impl From<Resource> for CzmlInput {
+impl From<Resource> for CzmlInput<'static> {
     fn from(r: Resource) -> Self {
         Self::Resource(r)
     }
@@ -186,6 +196,7 @@ pub struct CzmlDataSource {
     resource_credits: RefCell<Vec<Credit>>,
     source_uri: RefCell<Option<Resource>>,
     updaters: RefCell<Vec<CzmlUpdater>>,
+    custom_updaters: Cell<bool>,
 }
 
 impl CzmlDataSource {
@@ -198,12 +209,23 @@ impl CzmlDataSource {
             credit: RefCell::new(None),
             resource_credits: RefCell::new(Vec::new()),
             source_uri: RefCell::new(None),
-            updaters: RefCell::new(graphics::builtin_updaters()),
+            updaters: RefCell::new(Vec::new()),
+            custom_updaters: Cell::new(false),
         })
     }
 
+    fn ensure_updaters_initialized(&self) {
+        let mut list = self.updaters.borrow_mut();
+        if list.is_empty() && !self.custom_updaters.get() {
+            *list = graphics::builtin_updaters();
+        }
+    }
+
     /// Creates a new `CzmlDataSource` and loads `czml` into it.
-    pub async fn load_new(czml: impl Into<CzmlInput>, options: &CzmlLoadOptions) -> Result<Rc<Self>, RuntimeError> {
+    pub async fn load_new<'a>(
+        czml: impl Into<CzmlInput<'a>>,
+        options: &CzmlLoadOptions,
+    ) -> Result<Rc<Self>, RuntimeError> {
         let source = Self::new(None);
         source.load(czml, options).await?;
         Ok(source)
@@ -227,11 +249,14 @@ impl CzmlDataSource {
 
     /// Returns a snapshot of the registered packet updaters.
     pub fn updaters(&self) -> Vec<CzmlUpdater> {
+        self.ensure_updaters_initialized();
         self.updaters.borrow().clone()
     }
 
     /// Adds a custom updater function if not already registered.
     pub fn register_updater(&self, updater: CzmlUpdater) {
+        self.ensure_updaters_initialized();
+        self.custom_updaters.set(true);
         let mut list = self.updaters.borrow_mut();
         if !list.contains(&updater) {
             list.push(updater);
@@ -240,9 +265,11 @@ impl CzmlDataSource {
 
     /// Removes a previously registered updater function.
     pub fn unregister_updater(&self, updater: &CzmlUpdater) -> bool {
+        self.ensure_updaters_initialized();
         let mut list = self.updaters.borrow_mut();
         if let Some(pos) = list.iter().position(|u| u == updater) {
             list.remove(pos);
+            self.custom_updaters.set(true);
             true
         } else {
             false
@@ -250,12 +277,20 @@ impl CzmlDataSource {
     }
 
     /// Replaces existing entities and loads the provided CZML data.
-    pub async fn load(&self, czml: impl Into<CzmlInput>, options: &CzmlLoadOptions) -> Result<(), RuntimeError> {
+    pub async fn load<'a>(
+        &self,
+        czml: impl Into<CzmlInput<'a>>,
+        options: &CzmlLoadOptions,
+    ) -> Result<(), RuntimeError> {
         self.load_impl(czml.into(), options, true).await
     }
 
     /// Incrementally processes CZML data without clearing existing entities.
-    pub async fn process(&self, czml: impl Into<CzmlInput>, options: &CzmlLoadOptions) -> Result<(), RuntimeError> {
+    pub async fn process<'a>(
+        &self,
+        czml: impl Into<CzmlInput<'a>>,
+        options: &CzmlLoadOptions,
+    ) -> Result<(), RuntimeError> {
         self.load_impl(czml.into(), options, false).await
     }
 
@@ -299,7 +334,12 @@ impl CzmlDataSource {
         process_material_packet_data(target, property_name, packet_data, &ctx)
     }
 
-    async fn load_impl(&self, input: CzmlInput, options: &CzmlLoadOptions, clear: bool) -> Result<(), RuntimeError> {
+    async fn load_impl<'a>(
+        &self,
+        input: CzmlInput<'a>,
+        options: &CzmlLoadOptions,
+        clear: bool,
+    ) -> Result<(), RuntimeError> {
         *self.credit.borrow_mut() = options.credit.clone();
 
         let mut source_uri = match &options.source_uri {
@@ -309,7 +349,12 @@ impl CzmlDataSource {
 
         self.set_loading(true)?;
 
-        let resolved: Result<(Value, Option<Resource>), RuntimeError> = async {
+        enum ResolvedJson<'a> {
+            Owned(Value),
+            Borrowed(&'a Value),
+        }
+
+        let resolved: Result<(ResolvedJson<'a>, Option<Resource>), RuntimeError> = async {
             let input = match input {
                 CzmlInput::Text(s) if s.trim_start().starts_with(['[', '{']) => {
                     CzmlInput::Json(serde_json::from_str(&s).map_err(|e| RuntimeError::new(e.to_string()))?)
@@ -321,7 +366,8 @@ impl CzmlDataSource {
             };
 
             let json = match input {
-                CzmlInput::Json(v) => v,
+                CzmlInput::Json(v) => ResolvedJson::Owned(v),
+                CzmlInput::JsonRef(v) => ResolvedJson::Borrowed(v),
                 CzmlInput::Resource(resource) => {
                     let client = options
                         .resource_client
@@ -333,12 +379,14 @@ impl CzmlDataSource {
                     if let Some(credits) = resource.credits() {
                         self.resource_credits.borrow_mut().extend(credits);
                     }
-                    resource
-                        .fetch_json(client)
-                        .ok_or_else(|| RuntimeError::new("CZML request was not scheduled."))?
-                        .await
-                        .map_err(|e| RuntimeError::new(e.to_string()))?
-                        .ok_or_else(|| RuntimeError::new("Empty CZML response."))?
+                    ResolvedJson::Owned(
+                        resource
+                            .fetch_json(client)
+                            .ok_or_else(|| RuntimeError::new("CZML request was not scheduled."))?
+                            .await
+                            .map_err(|e| RuntimeError::new(e.to_string()))?
+                            .ok_or_else(|| RuntimeError::new("Empty CZML response."))?,
+                    )
                 }
                 CzmlInput::Text(_) => unreachable!(),
             };
@@ -349,7 +397,11 @@ impl CzmlDataSource {
         let res = match resolved {
             Ok((json, uri)) => {
                 *self.source_uri.borrow_mut() = uri.clone();
-                self.load_czml(&json, uri.as_ref(), clear)
+                let val = match &json {
+                    ResolvedJson::Owned(v) => v,
+                    ResolvedJson::Borrowed(v) => v,
+                };
+                self.load_czml(val, uri.as_ref(), clear)
             }
             Err(e) => Err(e),
         };
@@ -362,6 +414,7 @@ impl CzmlDataSource {
     }
 
     fn load_czml(&self, czml: &Value, source_uri: Option<&Resource>, clear: bool) -> Result<(), RuntimeError> {
+        let _iso_cache = unwrap::IsoCacheGuard::enter();
         self.set_loading(true)?;
         let entities = self.entities().clone();
 
@@ -371,13 +424,14 @@ impl CzmlDataSource {
             entities.remove_all();
         }
 
-        let updaters = self.updaters.borrow().clone();
+        let custom = self.custom_updaters.get();
+        let updaters = if custom { self.updaters.borrow().clone() } else { Vec::new() };
         if let Some(arr) = czml.as_array() {
             for packet in arr {
-                self.process_czml_packet(packet, &entities, &updaters, source_uri)?;
+                self.process_czml_packet(packet, &entities, custom.then_some(updaters.as_slice()), source_uri)?;
             }
         } else if czml.is_object() {
-            self.process_czml_packet(czml, &entities, &updaters, source_uri)?;
+            self.process_czml_packet(czml, &entities, custom.then_some(updaters.as_slice()), source_uri)?;
         } else {
             return Err(RuntimeError::new("CZML input must be a JSON object or array of packets."));
         }
@@ -408,7 +462,7 @@ impl CzmlDataSource {
         &self,
         packet: &Value,
         entities: &Rc<EntityCollection>,
-        updaters: &[CzmlUpdater],
+        custom_updaters: Option<&[CzmlUpdater]>,
         source_uri: Option<&Resource>,
     ) -> Result<(), RuntimeError> {
         if !packet.is_object() {
@@ -434,8 +488,15 @@ impl CzmlDataSource {
                 let parent = entities.get_or_create_entity(parent_id);
                 entity.set_parent(Some(parent))?;
             }
-            for updater in updaters.iter().rev() {
-                updater.call(&entity, packet, entities, source_uri)?;
+            match custom_updaters {
+                Some(updaters) => {
+                    for updater in updaters.iter().rev() {
+                        updater.call(&entity, packet, entities, source_uri)?;
+                    }
+                }
+                None => {
+                    graphics::apply_builtin_packet(&entity, packet, entities, source_uri)?;
+                }
             }
         }
         Ok(())

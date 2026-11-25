@@ -7,7 +7,7 @@ use crate::core::{create_guid, iso8601, JulianDate, RuntimeError, TimeInterval};
 use std::{
     any::Any,
     cell::{Cell, RefCell},
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     rc::{Rc, Weak},
 };
 #[derive(Clone)]
@@ -18,12 +18,43 @@ pub struct CollectionChange {
     pub changed: Vec<EntityRef>,
 }
 #[derive(Default)]
+struct PendingEntities {
+    list: Vec<EntityRef>,
+    ids: HashSet<String>,
+}
+impl PendingEntities {
+    fn is_empty(&self) -> bool {
+        self.list.is_empty()
+    }
+    fn contains(&self, id: &str) -> bool {
+        self.ids.contains(id)
+    }
+    fn put(&mut self, entity: EntityRef) {
+        if self.ids.insert(entity.id().to_owned()) {
+            self.list.push(entity);
+        } else if let Some(i) = self.list.iter().position(|e| e.id() == entity.id()) {
+            self.list[i] = entity;
+        }
+    }
+    fn take_id(&mut self, id: &str) -> Option<EntityRef> {
+        if self.ids.remove(id) {
+            self.list.iter().position(|e| e.id() == id).map(|i| self.list.remove(i))
+        } else {
+            None
+        }
+    }
+    fn take_vec(&mut self) -> Vec<EntityRef> {
+        self.ids.clear();
+        std::mem::take(&mut self.list)
+    }
+}
+#[derive(Default)]
 struct State {
     entities: Vec<EntityRef>,
     by_id: HashMap<String, EntityRef>,
-    added: Vec<EntityRef>,
-    removed: Vec<EntityRef>,
-    changed: Vec<EntityRef>,
+    added: PendingEntities,
+    removed: PendingEntities,
+    changed: PendingEntities,
     subscriptions: HashMap<String, Subscription>,
     suspend: usize,
     firing: bool,
@@ -48,13 +79,6 @@ pub struct EntityCollection {
 }
 fn take_id(values: &mut Vec<EntityRef>, id: &str) -> Option<EntityRef> {
     values.iter().position(|e| e.id() == id).map(|i| values.remove(i))
-}
-fn put(values: &mut Vec<EntityRef>, entity: EntityRef) {
-    if let Some(i) = values.iter().position(|e| e.id() == entity.id()) {
-        values[i] = entity;
-    } else {
-        values.push(entity);
-    }
 }
 impl EntityCollection {
     pub fn new() -> Rc<Self> {
@@ -164,12 +188,13 @@ impl EntityCollection {
         let subscription = entity.definition_changed().subscribe(self.listener.clone());
         {
             let mut state = self.state.borrow_mut();
-            state.by_id.insert(entity.id().to_owned(), entity.clone());
+            let id = entity.id().to_owned();
+            state.by_id.insert(id.clone(), entity.clone());
             state.entities.push(entity.clone());
-            if take_id(&mut state.removed, entity.id()).is_none() {
-                put(&mut state.added, entity.clone());
+            if state.removed.take_id(&id).is_none() {
+                state.added.put(entity.clone());
             }
-            state.subscriptions.insert(entity.id().to_owned(), subscription);
+            state.subscriptions.insert(id, subscription);
         }
         self.fire_changed();
         Ok(entity)
@@ -180,11 +205,13 @@ impl EntityCollection {
     pub fn remove_by_id(&self, id: &str) -> bool {
         let (subscription, entity) = {
             let mut state = self.state.borrow_mut();
-            let Some(entity) = take_id(&mut state.entities, id) else { return false };
-            state.by_id.remove(id);
-            if take_id(&mut state.added, id).is_none() {
-                put(&mut state.removed, entity.clone());
-                take_id(&mut state.changed, id);
+            if state.by_id.remove(id).is_none() {
+                return false;
+            }
+            let entity = take_id(&mut state.entities, id).unwrap();
+            if state.added.take_id(id).is_none() {
+                state.removed.put(entity.clone());
+                state.changed.take_id(id);
             }
             (state.subscriptions.remove(id), entity)
         };
@@ -198,15 +225,15 @@ impl EntityCollection {
             let mut state = self.state.borrow_mut();
             let entities = std::mem::take(&mut state.entities);
             for entity in &entities {
-                if !state.added.iter().any(|e| e.id() == entity.id()) {
-                    put(&mut state.removed, entity.clone());
+                if !state.added.contains(entity.id()) {
+                    state.removed.put(entity.clone());
                 }
             }
             (
                 entities,
                 std::mem::take(&mut state.by_id),
-                std::mem::take(&mut state.added),
-                std::mem::take(&mut state.changed),
+                state.added.take_vec(),
+                state.changed.take_vec(),
                 std::mem::take(&mut state.subscriptions),
             )
         };
@@ -219,8 +246,8 @@ impl EntityCollection {
             if !state.by_id.get(entity.id()).is_some_and(|e| Rc::ptr_eq(e, &entity)) {
                 return;
             }
-            if !state.added.iter().any(|e| e.id() == entity.id()) {
-                put(&mut state.changed, entity);
+            if !state.added.contains(entity.id()) {
+                state.changed.put(entity);
             }
         }
         self.fire_changed();
@@ -243,9 +270,9 @@ impl EntityCollection {
                 state.refire = false;
                 CollectionChange {
                     collection: self.weak.clone(),
-                    added: std::mem::take(&mut state.added),
-                    removed: std::mem::take(&mut state.removed),
-                    changed: std::mem::take(&mut state.changed),
+                    added: state.added.take_vec(),
+                    removed: state.removed.take_vec(),
+                    changed: state.changed.take_vec(),
                 }
             };
             self.changed.raise(event);

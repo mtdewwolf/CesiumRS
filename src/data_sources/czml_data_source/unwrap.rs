@@ -20,7 +20,57 @@ use crate::{
     },
 };
 use serde_json::Value;
-use std::rc::Rc;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
+
+#[derive(Default)]
+struct IsoCache {
+    depth: usize,
+    dates: HashMap<String, JulianDate>,
+    intervals: HashMap<String, TimeInterval<()>>,
+}
+
+thread_local! {
+    static ISO_CACHE: RefCell<IsoCache> = RefCell::new(IsoCache::default());
+}
+
+pub(crate) struct IsoCacheGuard;
+
+impl IsoCacheGuard {
+    pub(crate) fn enter() -> Self {
+        ISO_CACHE.with(|c| c.borrow_mut().depth += 1);
+        Self
+    }
+}
+
+impl Drop for IsoCacheGuard {
+    fn drop(&mut self) {
+        ISO_CACHE.with(|c| {
+            let mut cache = c.borrow_mut();
+            cache.depth = cache.depth.saturating_sub(1);
+            if cache.depth == 0 {
+                cache.dates.clear();
+                cache.intervals.clear();
+            }
+        });
+    }
+}
+
+pub(crate) fn parse_iso8601_cached(s: &str) -> Result<JulianDate, RuntimeError> {
+    ISO_CACHE.with(|c| {
+        let mut cache = c.borrow_mut();
+        if cache.depth > 0 {
+            if let Some(&jd) = cache.dates.get(s) {
+                return Ok(jd);
+            }
+            let jd = JulianDate::from_iso8601(s).map_err(|e| RuntimeError::new(e.to_string()))?;
+            if cache.dates.len() < 256 {
+                cache.dates.insert(s.to_owned(), jd);
+            }
+            return Ok(jd);
+        }
+        JulianDate::from_iso8601(s).map_err(|e| RuntimeError::new(e.to_string()))
+    })
+}
 
 /// Unwrapped representation of a CZML property interval.
 pub(crate) enum UnwrappedInterval {
@@ -42,7 +92,20 @@ pub(crate) fn get_defined<'a>(obj: &'a Value, key: &str) -> Option<&'a Value> {
 
 pub(crate) fn interval_from_string(interval_string: Option<&str>) -> Result<Option<TimeInterval<()>>, RuntimeError> {
     let Some(s) = interval_string else { return Ok(None) };
-    TimeInterval::from_iso8601(s, true, true, None).map(Some).map_err(|e| RuntimeError::new(e.to_string()))
+    ISO_CACHE.with(|c| {
+        let mut cache = c.borrow_mut();
+        if cache.depth > 0 {
+            if let Some(iv) = cache.intervals.get(s) {
+                return Ok(Some(iv.clone()));
+            }
+            let iv = TimeInterval::from_iso8601(s, true, true, None).map_err(|e| RuntimeError::new(e.to_string()))?;
+            if cache.intervals.len() < 256 {
+                cache.intervals.insert(s.to_owned(), iv.clone());
+            }
+            return Ok(Some(iv));
+        }
+        TimeInterval::from_iso8601(s, true, true, None).map(Some).map_err(|e| RuntimeError::new(e.to_string()))
+    })
 }
 
 pub(crate) fn combine_intervals(

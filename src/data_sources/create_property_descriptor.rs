@@ -5,6 +5,7 @@ use super::{
 };
 use crate::core::RuntimeError;
 use std::{
+    borrow::Cow,
     cell::{Cell, RefCell},
     rc::Rc,
 };
@@ -19,10 +20,15 @@ pub struct PropertyChange {
 pub fn constant_component(value: DynamicValue) -> Result<ComponentRef, RuntimeError> {
     Ok(PropertyComponent::wrap(Rc::new(ConstantProperty::new(Some(value)))))
 }
+enum Factory {
+    None,
+    Constant,
+    Custom(ComponentFactory),
+}
 struct Slot {
-    name: String,
+    name: Cow<'static, str>,
     configurable: bool,
-    factory: Option<ComponentFactory>,
+    factory: Factory,
     value: RefCell<Option<PropertyInput>>,
     subscription: RefCell<Option<Subscription>>,
     event: WeakChangeEvent<PropertyChange>,
@@ -38,8 +44,40 @@ impl PropertyDescriptor {
         factory: Option<ComponentFactory>,
         event: &ChangeEvent<PropertyChange>,
     ) -> Self {
+        Self::new_inner(
+            Cow::Owned(name.into()),
+            configurable,
+            match factory {
+                Some(f) => Factory::Custom(f),
+                None => Factory::None,
+            },
+            event,
+        )
+    }
+    pub(crate) fn new_constant(
+        name: impl Into<Cow<'static, str>>,
+        configurable: bool,
+        factory: Option<ComponentFactory>,
+        event: &ChangeEvent<PropertyChange>,
+    ) -> Self {
+        Self::new_inner(
+            name.into(),
+            configurable,
+            match factory {
+                Some(f) => Factory::Custom(f),
+                None => Factory::Constant,
+            },
+            event,
+        )
+    }
+    fn new_inner(
+        name: Cow<'static, str>,
+        configurable: bool,
+        factory: Factory,
+        event: &ChangeEvent<PropertyChange>,
+    ) -> Self {
         Self(Rc::new(Slot {
-            name: name.into(),
+            name,
             configurable,
             factory,
             value: RefCell::new(None),
@@ -68,33 +106,42 @@ impl PropertyDescriptor {
             return Err(RuntimeError::new("property has been removed"));
         }
         let value = match (value, &self.0.factory) {
-            (Some(PropertyInput::Value(value)), Some(factory)) => Some(PropertyInput::Component(factory(value)?)),
+            (Some(PropertyInput::Value(v)), Factory::Constant) => Some(PropertyInput::Component(constant_component(v)?)),
+            (Some(PropertyInput::Value(v)), Factory::Custom(factory)) => Some(PropertyInput::Component(factory(v)?)),
             (value, _) => value,
         };
         let old_subscription = self.0.subscription.borrow_mut().take();
         drop(old_subscription);
         let generation = self.0.generation.get().wrapping_add(1);
         self.0.generation.set(generation);
-        let old = self.get();
-        let changed = match (&old, &value) {
-            (None, None) => false,
-            (Some(a), Some(b)) => !a.strict_equals(b),
-            _ => true,
+        let changed = {
+            let old = self.0.value.borrow();
+            match (&*old, &value) {
+                (None, None) => false,
+                (Some(a), Some(b)) => !a.strict_equals(b),
+                _ => true,
+            }
         };
         if changed {
-            *self.0.value.borrow_mut() = value.clone();
+            let old = self.0.value.replace(value.clone());
             if let Some(event) = self.0.event.upgrade() {
-                event.raise(PropertyChange {
-                    name: self.0.name.clone(),
-                    new_value: value.clone(),
-                    old_value: old,
-                    child_changed: false,
-                });
+                if event.has_listeners() {
+                    event.raise(PropertyChange {
+                        name: self.0.name.as_ref().to_owned(),
+                        new_value: value,
+                        old_value: old,
+                        child_changed: false,
+                    });
+                }
             }
         }
         // A handler can replace/remove this slot. Never reinstall an obsolete child.
         if self.0.active.get() && self.0.generation.get() == generation {
-            if let Some(PropertyInput::Component(component)) = self.get() {
+            let component = match &*self.0.value.borrow() {
+                Some(PropertyInput::Component(c)) => Some(c.clone()),
+                _ => None,
+            };
+            if let Some(component) = component {
                 let event = self.0.event.clone();
                 let name = self.0.name.clone();
                 let weak_slot = Rc::downgrade(&self.0);
@@ -103,21 +150,25 @@ impl PropertyDescriptor {
                     if let (Some(slot), Some(event), Some(component)) =
                         (weak_slot.upgrade(), event.upgrade(), weak_component.upgrade())
                     {
-                        let current = slot.value.borrow().clone();
-                        if !slot.active.get()
-                            || !current
-                                .and_then(|v| v.component())
-                                .is_some_and(|v| v.identity() == component.identity())
-                        {
+                        if !slot.active.get() {
                             return;
                         }
-                        let value = Some(PropertyInput::Component(component));
-                        event.raise(PropertyChange {
-                            name: name.clone(),
-                            new_value: value.clone(),
-                            old_value: value,
-                            child_changed: true,
-                        });
+                        let matches = match &*slot.value.borrow() {
+                            Some(PropertyInput::Component(c)) => c.identity() == component.identity(),
+                            _ => false,
+                        };
+                        if !matches {
+                            return;
+                        }
+                        if event.has_listeners() {
+                            let value = Some(PropertyInput::Component(component));
+                            event.raise(PropertyChange {
+                                name: name.as_ref().to_owned(),
+                                new_value: value.clone(),
+                                old_value: value,
+                                child_changed: true,
+                            });
+                        }
                     }
                 });
                 *self.0.subscription.borrow_mut() = Some(subscription);
@@ -132,5 +183,5 @@ pub fn create_property_descriptor(
     factory: Option<ComponentFactory>,
     event: &ChangeEvent<PropertyChange>,
 ) -> PropertyDescriptor {
-    PropertyDescriptor::new(name, configurable, Some(factory.unwrap_or_else(|| Rc::new(constant_component))), event)
+    PropertyDescriptor::new_constant(Cow::Owned(name.into()), configurable, factory, event)
 }

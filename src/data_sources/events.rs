@@ -2,7 +2,6 @@
 //! subscriptions remove themselves on drop and forwarding uses weak owners.
 use std::{
     cell::{Cell, RefCell},
-    collections::HashSet,
     rc::{Rc, Weak},
 };
 pub type PropertyListener = Rc<dyn Fn(&DefinitionChanged)>;
@@ -15,7 +14,7 @@ struct Slot {
 struct Inner {
     slots: RefCell<Vec<Option<Slot>>>,
     pending: RefCell<Vec<Slot>>,
-    removed: RefCell<HashSet<u64>>,
+    removed: RefCell<Vec<u64>>,
     next: Cell<u64>,
     count: Cell<usize>,
     invoking: Cell<bool>,
@@ -91,6 +90,9 @@ impl DefinitionChanged {
     /// their previous identity. No borrow spans a callback.
     pub fn raise(&self) {
         let inner = &self.0;
+        if inner.count.get() == 0 && inner.depth.get() == 0 && inner.pending.borrow().is_empty() {
+            return;
+        }
         inner.depth.set(inner.depth.get() + 1);
         inner.invoking.set(true);
         let mut index = 0;
@@ -117,17 +119,19 @@ impl DefinitionChanged {
                 inner.slots.borrow_mut().push(Some(slot));
             }
         }
-        let old = {
-            let mut slots = inner.slots.borrow_mut();
-            slots
-                .iter_mut()
-                .filter(|s| s.as_ref().is_some_and(|s| removed.contains(&s.id)))
-                .filter_map(Option::take)
-                .collect::<Vec<_>>()
-        };
-        drop(old);
+        if !removed.is_empty() {
+            let old = {
+                let mut slots = inner.slots.borrow_mut();
+                slots
+                    .iter_mut()
+                    .filter(|s| s.as_ref().is_some_and(|s| removed.contains(&s.id)))
+                    .filter_map(Option::take)
+                    .collect::<Vec<_>>()
+            };
+            drop(old);
+        }
         inner.depth.set(inner.depth.get() - 1);
-        if inner.depth.get() == 0 {
+        if inner.depth.get() == 0 && !removed.is_empty() {
             inner.slots.borrow_mut().retain(Option::is_some);
         }
     }
@@ -135,31 +139,22 @@ impl DefinitionChanged {
 impl Subscription {
     pub fn remove(&mut self) -> bool {
         let (Some(inner), Some(id)) = (self.event.upgrade(), self.id.take()) else { return false };
-        let exists = inner.slots.borrow().iter().flatten().any(|s| s.id == id)
-            || inner.pending.borrow().iter().any(|s| s.id == id);
-        if !exists || inner.removed.borrow().contains(&id) {
+        let in_slots = inner.slots.borrow().iter().position(|s| s.as_ref().is_some_and(|s| s.id == id));
+        let in_pending =
+            if in_slots.is_none() { inner.pending.borrow().iter().position(|s| s.id == id) } else { None };
+        if (in_slots.is_none() && in_pending.is_none()) || inner.removed.borrow().contains(&id) {
             return false;
         }
         inner.count.set(inner.count.get().saturating_sub(1));
         if inner.invoking.get() {
-            inner.removed.borrow_mut().insert(id);
+            inner.removed.borrow_mut().push(id);
         } else {
-            let removed = {
-                let mut slots = inner.slots.borrow_mut();
-                slots
-                    .iter_mut()
-                    .filter(|s| s.as_ref().is_some_and(|s| s.id == id))
-                    .filter_map(Option::take)
-                    .collect::<Vec<_>>()
-            };
-            drop(removed);
-            let pending = {
-                let mut p = inner.pending.borrow_mut();
-                let removed = p.iter().filter(|s| s.id == id).cloned().collect::<Vec<_>>();
-                p.retain(|s| s.id != id);
-                removed
-            };
-            drop(pending);
+            let removed_slot = in_slots.and_then(|idx| inner.slots.borrow_mut()[idx].take());
+            drop(removed_slot);
+            if let Some(idx) = in_pending {
+                let removed_pending = inner.pending.borrow_mut().remove(idx);
+                drop(removed_pending);
+            }
         }
         true
     }

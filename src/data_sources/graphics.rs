@@ -7,7 +7,7 @@
 //! payload-bearing event adapter. The `Graphics` trait is the native analogue
 //! of Cesium's duck-typed graphics object, used by tests and later visualizers.
 use super::{
-    create_property_descriptor, entity_component::component_equals, ChangeEvent, ComponentRef, ConstantProperty,
+    entity_component::component_equals, ChangeEvent, ComponentRef, ConstantProperty,
     DefinitionChanged, DynamicValue, EntityComponent, JsonReference, PropertyBag, PropertyChange, PropertyComponent,
     PropertyDescriptor, PropertyInput,
 };
@@ -30,32 +30,28 @@ pub trait Graphics: EntityComponent {
 }
 /// Ordered property slots plus the graphics object's definition event.
 pub(crate) struct GraphicsProperties {
+    names: &'static [&'static str],
     fields: RefCell<Vec<PropertyDescriptor>>,
     changed: ChangeEvent<PropertyChange>,
 }
 impl GraphicsProperties {
     pub(crate) fn new(names: &'static [&'static str]) -> Self {
-        let changed = ChangeEvent::new();
-        let fields = names
-            .iter()
-            .map(|name| {
-                let factory: Option<super::ComponentFactory> = match *name {
-                    "material" | "depthFailMaterial" => {
-                        Some(super::create_material_property_descriptor::material_factory())
-                    }
-                    // PolygonGraphics accepts a position array where a
-                    // PolygonHierarchy is expected.
-                    "hierarchy" => Some(Rc::new(create_polygon_hierarchy_component)),
-                    // ModelGraphics articulations and environment map options
-                    // are PropertyBags; nested bag merging is handled below.
-                    "articulations" | "environmentMapOptions" => Some(Rc::new(create_property_bag_component)),
-                    "nodeTransformations" => Some(Rc::new(create_node_bag)),
-                    _ => None,
-                };
-                create_property_descriptor(*name, false, factory, &changed)
-            })
-            .collect();
-        Self { fields: RefCell::new(fields), changed }
+        Self { names, fields: RefCell::new(Vec::new()), changed: ChangeEvent::new() }
+    }
+    fn factory_for(name: &'static str) -> Option<super::ComponentFactory> {
+        match name {
+            "material" | "depthFailMaterial" => {
+                Some(super::create_material_property_descriptor::material_factory())
+            }
+            // PolygonGraphics accepts a position array where a
+            // PolygonHierarchy is expected.
+            "hierarchy" => Some(Rc::new(create_polygon_hierarchy_component)),
+            // ModelGraphics articulations and environment map options
+            // are PropertyBags; nested bag merging is handled below.
+            "articulations" | "environmentMapOptions" => Some(Rc::new(create_property_bag_component)),
+            "nodeTransformations" => Some(Rc::new(create_node_bag)),
+            _ => None,
+        }
     }
     pub(crate) fn definition_changed(&self) -> &DefinitionChanged {
         self.changed.definition_changed()
@@ -67,13 +63,26 @@ impl GraphicsProperties {
         self.fields.borrow().iter().find(|f| f.name() == name).and_then(PropertyDescriptor::get)
     }
     pub(crate) fn set(&self, name: &str, value: Option<PropertyInput>) -> Result<(), RuntimeError> {
-        let field = self
-            .fields
-            .borrow()
-            .iter()
-            .find(|f| f.name() == name)
-            .cloned()
-            .ok_or_else(|| RuntimeError::new(format!("{name} is not a graphics property.")))?;
+        let existing = self.fields.borrow().iter().find(|f| f.name() == name).cloned();
+        let field = match existing {
+            Some(f) => f,
+            None => {
+                let Some(&static_name) = self.names.iter().find(|&&n| n == name) else {
+                    return Err(RuntimeError::new(format!("{name} is not a graphics property.")));
+                };
+                if value.is_none() {
+                    return Ok(());
+                }
+                let f = PropertyDescriptor::new_constant(
+                    std::borrow::Cow::Borrowed(static_name),
+                    false,
+                    Self::factory_for(static_name),
+                    &self.changed,
+                );
+                self.fields.borrow_mut().push(f.clone());
+                f
+            }
+        };
         field.set(value)
     }
     pub(crate) fn is_constant(&self) -> bool {
@@ -87,6 +96,13 @@ impl GraphicsProperties {
     pub(crate) fn equals(&self, other: &Self) -> Result<bool, RuntimeError> {
         for field in self.fields.borrow().iter() {
             if !component_equals(field.get().as_ref(), other.get(field.name()).as_ref())? {
+                return Ok(false);
+            }
+        }
+        for field in other.fields.borrow().iter() {
+            if self.fields.borrow().iter().all(|f| f.name() != field.name())
+                && !component_equals(None, field.get().as_ref())?
+            {
                 return Ok(false);
             }
         }

@@ -56,6 +56,9 @@ impl<T: 'static> ChangeEvent<T> {
     pub fn number_of_listeners(&self) -> usize {
         self.base.number_of_listeners()
     }
+    pub fn has_listeners(&self) -> bool {
+        self.base.number_of_listeners() > 0
+    }
     pub fn subscribe(&self, listener: ChangeListener<T>) -> Subscription {
         let mut bridges = self.payload.bridges.borrow_mut();
         bridges.retain(|(_, bridge)| bridge.strong_count() > 0);
@@ -83,6 +86,9 @@ impl<T: 'static> ChangeEvent<T> {
         self.subscribe(Rc::new(listener))
     }
     pub fn raise(&self, value: T) {
+        if self.base.number_of_listeners() == 0 {
+            return;
+        }
         self.payload.frames.borrow_mut().push(Rc::new(value));
         self.base.raise();
         let frame = self.payload.frames.borrow_mut().pop();

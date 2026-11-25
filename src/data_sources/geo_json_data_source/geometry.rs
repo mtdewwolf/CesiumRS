@@ -6,7 +6,7 @@ use crate::{
     },
     data_sources::{
         color_material_property::color_material_component, BillboardGraphics, CallbackProperty, ComponentRef,
-        ConstantProperty, DynamicValue, EntityCollection, EntityRef, PolygonGraphics, PolylineGraphics,
+        ConstantProperty, DynamicValue, EntityCollection, EntityRef, PolygonGraphics, PolylineGraphics, PropertyBag,
         PropertyComponent, PropertyInput, PropertyValue,
     },
     scene::{HeightReference, VerticalOrigin},
@@ -49,7 +49,10 @@ fn entries(value: &Value) -> Vec<(String, &Value)> {
     }
 }
 fn text(v: &Value) -> String {
-    DynamicValue::from_json(v.clone()).property_string()
+    match v {
+        Value::String(s) => s.clone(),
+        _ => DynamicValue::from_json(v.clone()).property_string(),
+    }
 }
 fn name_property(p: &Value) -> Option<String> {
     if !p["title"].is_null() {
@@ -199,7 +202,8 @@ impl<'a> Loader<'a> {
         let entity = self.entities.get_or_create_entity(id);
         let props = &f["properties"];
         if !props.is_null() {
-            entity.set_property("properties", value(DynamicValue::from_json(props.clone())))?;
+            let bag = PropertyBag::from_json_ref(props)?;
+            entity.set_property("properties", Some(PropertyInput::Component(bag)))?;
             let name = name_property(props);
             if let Some(key) = &name {
                 entity.set_name(Some(text(&props[key])));
@@ -245,19 +249,25 @@ impl<'a> Loader<'a> {
             Some(s) => PinSymbol::Maki(s.into()),
         };
         let pin = Rc::new(GeoJsonPin { symbol, color, size });
-        let coords = coordinate(coords)?;
+        let (coords, coord_len) = coordinate(coords)?;
         let billboard = BillboardGraphics::new();
         billboard.set_vertical_origin(value(VerticalOrigin::Bottom.value() as f64))?;
         billboard.set_image(value(pin))?;
-        if coords.len() == 2 && self.options.clamp_to_ground {
+        if coord_len == 2 && self.options.clamp_to_ground {
             billboard.set_height_reference(value(HeightReference::ClampToGround.value() as f64))?;
         }
         let entity = self.entity(feature)?;
         entity.set_property("billboard", Some(PropertyInput::Component(Rc::new(billboard))))?;
-        entity.set_property("position", value((self.project)(&coords)?))
+        entity.set_property("position", value((self.project)(&coords[..coord_len])?))
     }
     fn positions(&self, coordinates: &Value) -> Result<Vec<Cartesian3>, RuntimeError> {
-        array(coordinates)?.iter().map(|p| (self.project)(&coordinate(p)?)).collect()
+        let arr = array(coordinates)?;
+        let mut out = Vec::with_capacity(arr.len());
+        for p in arr {
+            let (coords, len) = coordinate(p)?;
+            out.push((self.project)(&coords[..len])?);
+        }
+        Ok(out)
     }
     fn stroke_override(&self, p: &Value) -> Option<Color> {
         let mut color = p["stroke"].as_str().and_then(Color::from_css_color_string);
@@ -271,9 +281,7 @@ impl<'a> Loader<'a> {
     }
     fn line(&self, feature: &Value, coords: &Value) -> Result<(), RuntimeError> {
         let p = &feature["properties"];
-        let entity = self.entity(feature)?;
         let line = Rc::new(PolylineGraphics::new());
-        entity.set_property("polyline", Some(PropertyInput::Component(line.clone())))?;
         line.set_clamp_to_ground(value(self.options.clamp_to_ground))?;
         line.set_material(
             self.stroke_override(p)
@@ -282,7 +290,9 @@ impl<'a> Loader<'a> {
         )?;
         line.set_width(self.width(p))?;
         line.set_positions(value(Rc::new(self.positions(coords)?)))?;
-        line.set_arc_type(value(ArcType::Rhumb as i32 as f64))
+        line.set_arc_type(value(ArcType::Rhumb as i32 as f64))?;
+        let entity = self.entity(feature)?;
+        entity.set_property("polyline", Some(PropertyInput::Component(line)))
     }
     fn polygon(&self, feature: &Value, coords: &Value) -> Result<(), RuntimeError> {
         let rings = array(coords)?;
