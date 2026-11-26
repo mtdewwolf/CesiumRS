@@ -68,7 +68,23 @@ ureq = { version = "3.4", optional = true }
 wasm-bindgen = { version = "0.2", optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
 js-sys = { version = "0.3", optional = true }
-web-sys = { version = "0.3", optional = true, features = ["HtmlVideoElement", "HtmlMediaElement", "Event", "EventTarget"] }
+web-sys = { version = "0.3", optional = true, features = [
+    "HtmlVideoElement",
+    "HtmlMediaElement",
+    "HtmlCanvasElement",
+    "ImageBitmap",
+    "Event",
+    "EventTarget",
+    "WebGl2RenderingContext",
+    "WebGlBuffer",
+    "WebGlFramebuffer",
+    "WebGlProgram",
+    "WebGlRenderbuffer",
+    "WebGlShader",
+    "WebGlTexture",
+    "WebGlUniformLocation",
+    "WebGlVertexArrayObject",
+] }
 
 [features]
 native-host = ["dep:ureq"]
@@ -107,5 +123,11 @@ required-features = ["browser"]
 # Dedicated Scene Model & Model3DTileContent WebGL2 parity harness.
 [[example]]
 name = "model_validation"
+crate-type = ["cdylib"]
+required-features = ["browser"]
+
+# Interactive full-feature browser live testbed website.
+[[example]]
+name = "live_testbed"
 crate-type = ["cdylib"]
 required-features = ["browser"]

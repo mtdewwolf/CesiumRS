@@ -256,7 +256,7 @@ impl SceneCommand {
                     if let Some(oit) = submission.oit {
                         source = oit.shader_for_rendering(&source);
                     }
-                    let program = Rc::new(renderer::ShaderProgram::from_sources(&context, &source)?);
+                    let program = context.with_shader_cache(|cache| cache.get_shader_program(&source))?;
                     programs.borrow_mut().insert(key, Rc::clone(&program));
                     program
                 };

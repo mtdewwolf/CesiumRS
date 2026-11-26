@@ -556,6 +556,12 @@ impl<G: Gl + 'static> Model<G> {
         }
         *self.view_matrix.borrow_mut() = frame.uniform.camera.view;
         *self.view_3d_matrix.borrow_mut() = frame.uniform.camera.view;
+        if let Some(planes) = &self.clipping_planes {
+            let clip_model = planes.clipping_planes.borrow().model_matrix;
+            if let Ok(m) = frame.uniform.camera.view.multiply(&matrix).multiply(&clip_model).inverse_transpose() {
+                *planes.clipping_planes_matrix.borrow_mut() = m;
+            }
+        }
         self.sync_uniforms(graph);
         let previous_table = self.feature_table_id;
         self.select_feature_table(graph);
@@ -1093,6 +1099,7 @@ impl<G: Gl + 'static> Model<G> {
     }
     fn sync_uniforms(&self, graph: &ModelSceneGraph<G, ModelDrawCommandKind<G>>) {
         let mut u = self.uniform_state.borrow_mut();
+        u.model_id = self.options.id.clone();
         u.opaque_pass = self.options.opaque_pass;
         u.color = self.options.color.unwrap_or(Color::WHITE);
         u.has_color = self.options.color.is_some();

@@ -414,6 +414,11 @@ impl JulianDate {
     }
 
     pub fn now() -> Self {
+        #[cfg(all(target_arch = "wasm32", feature = "browser"))]
+        let ms = js_sys::Date::now();
+        #[cfg(all(target_arch = "wasm32", not(feature = "browser")))]
+        let ms = 0.0;
+        #[cfg(not(target_arch = "wasm32"))]
         let ms = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_millis() as f64)

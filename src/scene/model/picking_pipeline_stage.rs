@@ -30,6 +30,8 @@ impl<G: Gl> Default for PickBatchTextureSource<G> {
 /// Object stored in a `Context` `PickId` created by `PickingPipelineStage`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ModelPickObject {
+    /// Optional `ModelOptions.id` string (used by host facades to identify picked models).
+    pub model_id: Option<String>,
     /// Whether `primitive` on `detailPickObject` points to the tileset (`model.content.tileset`) vs `model`.
     pub has_content: bool,
     pub runtime_node: usize,
@@ -86,10 +88,12 @@ pub fn process<G: Gl + 'static>(
         return Ok(());
     }
 
+    let model_id = resources.model.borrow().model_id.clone();
     if node.instances.is_some() {
-        process_instanced_pick_ids(resources, context, statistics, has_content)?;
+        process_instanced_pick_ids(resources, context, statistics, has_content, model_id)?;
     } else {
         let pick_object = Rc::new(ModelPickObject {
+            model_id,
             has_content,
             runtime_node: resources.runtime_node,
             runtime_primitive: resources.runtime_primitive,
@@ -117,11 +121,13 @@ fn process_instanced_pick_ids<G: Gl + 'static>(
     context: &Context<G>,
     statistics: &mut ModelStatistics,
     has_content: bool,
+    model_id: Option<String>,
 ) -> Result<(), RuntimeError> {
     let instance_count = resources.instance_count as usize;
     let mut pick_ids = vec![0.0f32; instance_count * 4];
     for i in 0..instance_count {
         let pick_object = Rc::new(ModelPickObject {
+            model_id: model_id.clone(),
             has_content,
             runtime_node: resources.runtime_node,
             runtime_primitive: resources.runtime_primitive,

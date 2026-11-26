@@ -323,13 +323,26 @@ impl MersenneTwister {
     }
 }
 
-thread_local! {
-    static RNG: RefCell<MersenneTwister> = RefCell::new(MersenneTwister::new(
+fn default_rng_seed() -> u32 {
+    #[cfg(all(target_arch = "wasm32", feature = "browser"))]
+    {
+        return js_sys::Date::now() as u32;
+    }
+    #[cfg(all(target_arch = "wasm32", not(feature = "browser")))]
+    {
+        return 5489;
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_millis() as u32)
-            .unwrap_or(5489),
-    ));
+            .unwrap_or(5489)
+    }
+}
+
+thread_local! {
+    static RNG: RefCell<MersenneTwister> = RefCell::new(MersenneTwister::new(default_rng_seed()));
 }
 
 /// Seeds the generator behind [`next_random_number`] for this thread.

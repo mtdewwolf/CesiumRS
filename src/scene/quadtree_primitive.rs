@@ -974,6 +974,29 @@ impl<P: QuadtreeTileProvider> QuadtreePrimitive<P> {
                 );
                 self.debug.tiles_waiting_for_children += 1;
             }
+        } else {
+            // Cannot refine yet (e.g. terrain data not loaded yet, or at max terrain level):
+            // queue this tile for loading and select it for rendering (parent will kick if unrenderable).
+            Self::queue_tile_load_internal(
+                &self.tile_provider,
+                &mut self.tile_load_queue_high,
+                tile,
+                frame_state,
+            );
+            self.add_tile_to_render_list(tile);
+
+            let is_renderable = tile.borrow().renderable;
+            traversal_details.all_are_renderable = is_renderable;
+            traversal_details.any_were_rendered_last_frame =
+                last_frame_selection_result == TileSelectionResult::Rendered;
+            traversal_details.not_yet_renderable_count = if is_renderable { 0 } else { 1 };
+
+            tile.borrow_mut().last_selection_result_frame = Some(frame_state.frame_number);
+            tile.borrow_mut().last_selection_result = TileSelectionResult::Rendered;
+
+            if !traversal_details.any_were_rendered_last_frame {
+                self.tile_to_update_heights.push(tile.clone());
+            }
         }
     }
 

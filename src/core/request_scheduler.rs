@@ -235,7 +235,15 @@ impl<T> RequestScheduler<T> {
             let Some(future) = &mut active.future else {
                 continue;
             };
-            match future.as_mut().poll(cx) {
+            let own_waker = r.borrow().deferred.as_ref().and_then(|d| d.borrow().waker());
+            let poll_result = match own_waker {
+                Some(ref waker) => {
+                    let mut item_cx = Context::from_waker(waker);
+                    future.as_mut().poll(&mut item_cx)
+                }
+                None => future.as_mut().poll(cx),
+            };
+            match poll_result {
                 Poll::Pending => self.active.push(active),
                 Poll::Ready(result) => {
                     if !active.local {

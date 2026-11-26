@@ -756,7 +756,12 @@ impl<G: Gl + 'static> BillboardCollection<G> {
     }
 
     fn write_scale_by_distance(&mut self, _: &WriteContext<G>, b: &Billboard<G>) -> Result<()> {
-        let v = self.near_far(b.scale_by_distance(), |f| &mut f.scale_by_distance);
+        let sbd = b.scale_by_distance();
+        if let Some(s) = sbd {
+            let peak = b.scale() * s.near_value.max(s.far_value).max(1.0);
+            self.extents.max_scale = self.extents.max_scale.max(peak);
+        }
+        let v = self.near_far(sbd, |f| &mut f.scale_by_distance);
         let l = *self.locations();
         self.write(l.scale_by_distance, b, |_| v.to_vec())
     }

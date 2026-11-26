@@ -950,3 +950,8 @@ pub use create_elevation_band_material::{
     ElevationBandTextureData, MAXIMUM_HEIGHT as ELEVATION_BAND_MAXIMUM_HEIGHT,
     MINIMUM_HEIGHT as ELEVATION_BAND_MINIMUM_HEIGHT,
 };
+
+#[cfg(all(target_arch = "wasm32", feature = "browser"))]
+pub mod browser_scene;
+#[cfg(all(target_arch = "wasm32", feature = "browser"))]
+pub use browser_scene::BrowserScene;

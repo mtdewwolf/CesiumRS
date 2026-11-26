@@ -7,10 +7,21 @@ use super::julian_date::JulianDate;
 
 /// Milliseconds from a monotonic clock, like Cesium's `getTimestamp`.
 pub fn get_timestamp() -> f64 {
-    thread_local! {
-        static START: std::time::Instant = std::time::Instant::now();
+    #[cfg(all(target_arch = "wasm32", feature = "browser"))]
+    {
+        return js_sys::Date::now();
     }
-    START.with(|s| s.elapsed().as_secs_f64() * 1000.0)
+    #[cfg(all(target_arch = "wasm32", not(feature = "browser")))]
+    {
+        return 0.0;
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        thread_local! {
+            static START: std::time::Instant = std::time::Instant::now();
+        }
+        START.with(|s| s.elapsed().as_secs_f64() * 1000.0)
+    }
 }
 
 /// Options for [`Clock::new`]; Cesium's defaults when `None`.

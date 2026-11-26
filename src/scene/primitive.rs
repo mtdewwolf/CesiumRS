@@ -3,7 +3,7 @@
 use super::{
     appearance::Appearance,
     batch_table::{BatchTable, BatchTableAttribute, BatchValue},
-    material::{material_uniform_values, Material},
+    material::{material_uniform_values, Material, MaterialImage, MaterialValue},
     primitive_pipeline::{CombineGeometryParameters, CombineGeometryResults, PickOffset, PrimitivePipeline},
     primitive_shader::{self, ShaderRewrites},
     primitive_state::PrimitiveState,
@@ -759,6 +759,16 @@ impl<G: Gl + 'static> Primitive<G> {
         }
         let uniforms = self.uniforms(appearance)?;
         let depth_fail_uniforms = depth_fail_appearance.map(|appearance| self.uniforms(appearance)).transpose()?;
+        let material_textures = appearance
+            .material()
+            .map(|mat| resolve_material_textures(mat, context))
+            .transpose()?
+            .unwrap_or_default();
+        let depth_fail_material_textures = depth_fail_appearance
+            .and_then(|a| a.material())
+            .map(|mat| resolve_material_textures(mat, context))
+            .transpose()?
+            .unwrap_or_default();
         let batch_texture = self.batch.as_ref().unwrap().table.texture();
         let pixel_size = appearance.pixel_size();
         let uniform_map = self.rtc_center.map(|center| {
@@ -811,6 +821,11 @@ impl<G: Gl + 'static> Primitive<G> {
                 if let Some(texture) = batch_texture {
                     options.textures.push(("batchTexture".into(), texture.clone() as Rc<dyn SampledTexture<G>>));
                     names.push("batchTexture".into());
+                }
+                let mat_tex = if *depth_fail { &depth_fail_material_textures } else { &material_textures };
+                for (name, texture) in mat_tex {
+                    options.textures.push((name.clone(), texture.clone()));
+                    names.push(name.clone());
                 }
                 if let Some(center) = self.rtc_center {
                     let uniform = rtc_uniform(context, self.model_matrix, center);
@@ -1110,6 +1125,35 @@ impl<G: Gl + 'static> ScenePrimitive for Primitive<G> {
         }
         result
     }
+}
+
+fn resolve_material_textures<G: Gl + 'static>(
+    material: &Material,
+    context: &Context<G>,
+) -> Result<Vec<(String, Rc<dyn SampledTexture<G>>)>> {
+    let mut textures: Vec<(String, Rc<dyn SampledTexture<G>>)> = Vec::new();
+    for (name, value) in material.uniform_bindings() {
+        match value {
+            MaterialValue::Sampler2D(image) => {
+                let resolved = match image {
+                    MaterialImage::Texture(id) => context.with_texture_cache(|cache| Ok(cache.get_texture(&id)))?,
+                    MaterialImage::Url(url) => context.with_texture_cache(|cache| Ok(cache.get_texture(&url)))?,
+                    MaterialImage::Default => None,
+                };
+                let texture = match resolved {
+                    Some(texture) => texture,
+                    None => context.default_texture()?,
+                };
+                textures.push((name, texture as Rc<dyn SampledTexture<G>>));
+            }
+            MaterialValue::SamplerCube(_) => {
+                let cube = context.default_cube_map()?;
+                textures.push((name, cube as Rc<dyn SampledTexture<G>>));
+            }
+            _ => {}
+        }
+    }
+    Ok(textures)
 }
 
 #[cfg(test)]

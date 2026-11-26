@@ -21,6 +21,7 @@ use std::{
 /// between draws; providers read the latest values on every submission.
 #[derive(Clone, Debug)]
 pub struct ModelUniformState {
+    pub model_id: Option<String>,
     pub opaque_pass: Pass,
     pub color: Color,
     /// Whether `model.color` was explicitly defined (`defined(model.color)`).
@@ -66,6 +67,7 @@ pub struct ModelUniformState {
 impl Default for ModelUniformState {
     fn default() -> Self {
         Self {
+            model_id: None,
             opaque_pass: Pass::Opaque,
             color: Color::WHITE,
             has_color: false,

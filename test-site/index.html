@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CesiumRS — Full-Feature Live Testbed</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230b1422' stroke='%23f0ad30' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%2338d6f5'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <span>CesiumRS</span>
+      <small>Live Testbed</small>
+    </div>
+    <nav class="tabs" id="main-tabs">
+      <button class="tab-btn active" data-tab="globe">Globe &amp; Scene</button>
+      <button class="tab-btn" data-tab="model">glTF Model &amp; Effects</button>
+      <button class="tab-btn" data-tab="datasources">DataSources</button>
+      <button class="tab-btn" data-tab="workers">Workers &amp; Terrain</button>
+      <button class="tab-btn" data-tab="renderer">Renderer &amp; GPU</button>
+      <button class="tab-btn" data-tab="browserhost">Browser Host</button>
+      <button class="tab-btn" data-tab="shaders">Shaders (306)</button>
+      <button class="tab-btn" data-tab="selftest">Run All Tests</button>
+    </nav>
+    <div class="status-pill" id="wasm-status">
+      <span class="status-dot" id="wasm-dot"></span>
+      <span id="wasm-label">Loading WASM…</span>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <!-- ==================== 1. GLOBE & SCENE ==================== -->
+    <section class="panel-view active" id="tab-globe">
+      <div class="globe-layout" style="display:flex;">
+        <aside class="globe-sidebar">
+          <div class="sec">
+            <h3 class="sec-title">Body &amp; Scene Mode</h3>
+            <div class="grid-4" id="body-buttons">
+              <button class="sm active" data-body="wgs84">WGS84</button>
+              <button class="sm" data-body="moon">Moon</button>
+              <button class="sm" data-body="mars">Mars</button>
+              <button class="sm" data-body="unit">Unit</button>
+            </div>
+            <div class="grid-3 mt-6" id="mode-buttons">
+              <button class="sm active" data-mode="0">3D Globe</button>
+              <button class="sm" data-mode="1">2D Map</button>
+              <button class="sm" data-mode="2">Columbus</button>
+            </div>
+          </div>
+
+          <div class="sec">
+            <h3 class="sec-title">Camera Presets <button class="sm" id="btn-reset-north">North Up</button></h3>
+            <div class="grid-2" id="preset-buttons">
+              <button class="sm" data-lon="-74.006" data-lat="40.7128" data-range="4500000">New York</button>
+              <button class="sm" data-lon="-0.1276" data-lat="51.5074" data-range="4500000">London</button>
+              <button class="sm" data-lon="139.6917" data-lat="35.6895" data-range="4500000">Tokyo</button>
+              <button class="sm" data-lon="151.2093" data-lat="-33.8688" data-range="4500000">Sydney</button>
+              <button class="sm" data-lon="-105.0" data-lat="39.5" data-range="5200000">Colorado 3D</button>
+              <button class="sm" data-lon="0" data-lat="89.0" data-range="9000000">North Pole</button>
+            </div>
+            <label class="field mt-6">
+              <span>Field of View <strong id="fov-val">50°</strong></span>
+              <input type="range" id="fov-slider" min="25" max="90" value="50" />
+            </label>
+          </div>
+
+          <div class="sec">
+            <h3 class="sec-title">Geodesic vs Rhumb Line</h3>
+            <div class="grid-2" id="route-buttons">
+              <button class="sm active" data-route="-74.006,40.7128,-0.1276,51.5074">NYC → London</button>
+              <button class="sm" data-route="139.69,35.69,-122.42,37.77">Tokyo → SF</button>
+              <button class="sm" data-route="-43.17,-22.91,18.42,-33.92">Rio → Cape Town</button>
+              <button class="sm" data-route="2.35,48.86,151.21,-33.87">Paris → Sydney</button>
+            </div>
+            <div class="row mt-6">
+              <button class="sm" id="btn-measure" style="flex:1;">Tap-to-Measure on Globe</button>
+            </div>
+            <pre class="code-out mt-6" id="route-stats" style="max-height:110px;"></pre>
+          </div>
+
+          <div class="sec">
+            <h3 class="sec-title">3D Core Geometries (ENU)</h3>
+            <div class="row">
+              <select id="geom-select">
+                <option value="none">None</option>
+                <option value="box">BoxGeometry</option>
+                <option value="sphere">SphereGeometry</option>
+                <option value="ellipsoid">EllipsoidGeometry</option>
+                <option value="cylinder">CylinderGeometry</option>
+                <option value="polygon">PolygonGeometry (w/ Hole)</option>
+                <option value="corridor">CorridorGeometry</option>
+                <option value="wall">WallGeometry</option>
+                <option value="rectangle">RectangleGeometry</option>
+                <option value="circle">CircleGeometry</option>
+                <option value="frustum">FrustumGeometry</option>
+              </select>
+            </div>
+            <label class="toggle mt-6">
+              <span>Wireframe (WireframeIndexGenerator)</span>
+              <input type="checkbox" id="chk-geom-wire" />
+            </label>
+            <div id="geom-meta" class="meta" style="font-family:var(--mono);font-size:11px;color:var(--muted);"></div>
+          </div>
+
+          <div class="sec">
+            <h3 class="sec-title">Splines &amp; Layers</h3>
+            <label class="toggle"><span>Graticule (15°)</span><input type="checkbox" id="chk-graticule" checked /></label>
+            <label class="toggle"><span>Rhumb Line (Magenta)</span><input type="checkbox" id="chk-rhumb" checked /></label>
+            <label class="toggle"><span>Solar Day/Night Lighting</span><input type="checkbox" id="chk-sun" checked /></label>
+            <label class="toggle"><span>Atmosphere Halo</span><input type="checkbox" id="chk-atmo" checked /></label>
+            <label class="toggle"><span>Starfield</span><input type="checkbox" id="chk-stars" checked /></label>
+            <label class="toggle"><span>Tile Grid Overlay</span><input type="checkbox" id="chk-tiles" /></label>
+            <div class="grid-2 mt-6" id="tile-scheme-row">
+              <button class="sm active" data-scheme="0">Geographic</button>
+              <button class="sm" data-scheme="1">Web Mercator</button>
+            </div>
+            <label class="toggle mt-6"><span>3D Animated Spline</span><input type="checkbox" id="chk-spline" /></label>
+            <div class="grid-3 mt-6" id="spline-mode-row">
+              <button class="sm active" data-spline="catmull">CatmullRom</button>
+              <button class="sm" data-spline="hermite">Hermite</button>
+              <button class="sm" data-spline="linear">Linear</button>
+            </div>
+          </div>
+
+          <div class="sec">
+            <h3 class="sec-title">Clipping Plane</h3>
+            <label class="toggle"><span>Enable Clipping Plane</span><input type="checkbox" id="chk-clip" /></label>
+            <label class="field mt-6">
+              <span>Distance Offset <strong id="clip-dist-val">0.00</strong></span>
+              <input type="range" id="clip-dist" min="-1" max="1" step="0.02" value="0" />
+            </label>
+            <label class="field">
+              <span>Azimuth Angle <strong id="clip-ang-val">0°</strong></span>
+              <input type="range" id="clip-ang" min="0" max="360" value="0" />
+            </label>
+          </div>
+
+          <div class="sec">
+            <h3 class="sec-title">PostProcessStageCollection (GPU)</h3>
+            <label class="field">
+              <span>Effect Stage</span>
+              <select id="pp-effect">
+                <option value="none">None (Direct)</option>
+                <option value="night_vision">Night Vision</option>
+                <option value="bw">Black &amp; White</option>
+                <option value="brightness">Brightness</option>
+                <option value="blur">2-Pass Gaussian Blur</option>
+                <option value="lens_flare">Lens Flare</option>
+              </select>
+            </label>
+            <label class="toggle"><span>FXAA</span><input type="checkbox" id="pp-fxaa" /></label>
+            <label class="toggle"><span>Bloom Composite</span><input type="checkbox" id="pp-bloom" /></label>
+            <label class="field mt-6">
+              <span>Tonemapper (HDR)</span>
+              <select id="pp-tonemapper">
+                <option value="none">Off</option>
+                <option value="aces">ACES</option>
+                <option value="filmic">Filmic</option>
+                <option value="pbr_neutral">PBR Neutral</option>
+                <option value="reinhard">Reinhard</option>
+                <option value="modified_reinhard">Modified Reinhard</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Exposure <strong id="pp-exp-val">1.0</strong></span>
+              <input type="range" id="pp-exposure" min="0.2" max="3.0" step="0.1" value="1.0" />
+            </label>
+          </div>
+        </aside>
+
+        <div class="globe-stage">
+          <canvas id="globe-canvas"></canvas>
+          <div class="hud-overlay" id="globe-hud">
+            <div class="hud-row"><span>Camera</span><span id="hud-cam">—</span></div>
+            <div class="hud-row"><span>Range</span><span id="hud-range">—</span></div>
+            <div class="hud-row"><span>Hdg / Pitch</span><span id="hud-hp">—</span></div>
+            <div class="hud-row"><span>Picked</span><span id="hud-pick">Click globe to pick</span></div>
+            <div class="hud-row"><span>Subsolar</span><span id="hud-sun">—</span></div>
+            <div class="hud-row"><span>Sublunar</span><span id="hud-moon">—</span></div>
+            <div class="hud-row"><span>FPS / Tile</span><span id="hud-fps">—</span></div>
+          </div>
+          <div class="hud-bottom">
+            <div class="clock-bar">
+              <button class="sm" id="clk-toggle">Pause</button>
+              <button class="sm" id="clk-speed">×3600</button>
+              <button class="sm" id="clk-now">Now</button>
+              <span id="clk-iso">—</span>
+              <span id="clk-jd" style="color:var(--muted);">JD —</span>
+            </div>
+            <div class="hint-pill">Drag: orbit · Shift/Right-drag: tilt · Scroll: zoom · Click: pick</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 2. glTF MODEL & EFFECTS ==================== -->
+    <section class="panel-view" id="tab-model">
+      <div class="lab-scroll">
+        <div class="lab-grid">
+          <div class="lab-card" style="grid-column: span 2;">
+            <h2>Live glTF 2.0 Model Pipeline (scene::model::Model) <span class="badge" id="model-status">Ready</span></h2>
+            <canvas id="model-canvas" class="preview-canvas" style="height:340px;"></canvas>
+            <div class="grid-3">
+              <label class="field">
+                <span>Color Blend Mode</span>
+                <select id="model-blend">
+                  <option value="highlight">Highlight</option>
+                  <option value="mix">Mix</option>
+                  <option value="replace">Replace</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Blend Amount <strong id="model-blend-amt-val">0.5</strong></span>
+                <input type="range" id="model-blend-amt" min="0" max="1" step="0.05" value="0.5" />
+              </label>
+              <label class="field">
+                <span>Tint Color</span>
+                <input type="color" id="model-color" value="#ffffff" style="height:30px;padding:2px;" />
+              </label>
+            </div>
+            <div class="row">
+              <input type="file" id="model-file" accept=".glb,.gltf" style="flex:1;" />
+              <button id="btn-model-reload" class="primary">Apply / Rebuild Model</button>
+              <button id="btn-model-reset">Reset Procedural Orbiter GLB</button>
+            </div>
+            <label class="field">
+              <span>Live CustomShader Fragment GLSL (leave empty for default PBR)</span>
+              <textarea id="model-custom-fs" style="min-height:95px;" placeholder="void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {&#10;  material.diffuse = vec3(0.2, 0.85, 1.0) * (0.5 + 0.5 * fsInput.attributes.normalEC.y);&#10;}"></textarea>
+            </label>
+            <div class="row">
+              <button class="sm" id="btn-shader-preset-1">Preset: Rim Hologram</button>
+              <button class="sm" id="btn-shader-preset-2">Preset: Thermal Bands</button>
+              <button class="sm" id="btn-shader-preset-clear">Clear CustomShader</button>
+            </div>
+          </div>
+
+          <div class="lab-card">
+            <h2>Cesium3DTileStyle Evaluator &amp; GLSL Codegen <span class="badge">scene::style</span></h2>
+            <label class="field">
+              <span>3D Tiles Style JSON</span>
+              <textarea id="style-json" style="min-height:110px;">{
+  "show": "${Height} > 10",
+  "color": {
+    "conditions": [
+      ["${Height} >= 100", "color('gold', 0.95)"],
+      ["${Height} >= 50", "color('#38d6f5', 0.9)"],
+      ["true", "color('crimson', 0.85)"]
+    ]
+  },
+  "pointSize": "clamp(${Height} / 10.0, 4.0, 18.0)"
+}</textarea>
+            </label>
+            <label class="field">
+              <span>Sample Features JSON</span>
+              <textarea id="style-features" style="min-height:85px;">[
+  {"name": "Skyscraper", "Height": 145, "class": "building"},
+  {"name": "Midrise", "Height": 64, "class": "building"},
+  {"name": "House", "Height": 14, "class": "building"},
+  {"name": "Shed", "Height": 4, "class": "shed"}
+]</textarea>
+            </label>
+            <button id="btn-eval-style" class="primary">Evaluate Style + Generate GLSL</button>
+            <pre class="code-out" id="style-out"></pre>
+          </div>
+
+          <div class="lab-card">
+            <h2>GPU Scene Effects: Sun, BRDF LUT &amp; AutoExposure <span class="badge">WebGL2 Compute</span></h2>
+            <div class="row" style="justify-content:space-around;flex-wrap:wrap;">
+              <div style="text-align:center;">
+                <canvas id="sun-canvas" class="preview-canvas sq"></canvas>
+                <div class="mt-6"><strong>scene::Sun</strong> Procedural Compute</div>
+                <label class="field mt-6">
+                  <span>Glow Factor <strong id="sun-glow-val">1.0</strong></span>
+                  <input type="range" id="sun-glow" min="0.2" max="3.0" step="0.1" value="1.0" />
+                </label>
+              </div>
+              <div style="text-align:center;">
+                <canvas id="brdf-canvas" class="preview-canvas sq"></canvas>
+                <div class="mt-6"><strong>BrdfLutGenerator</strong> (256×256)</div>
+                <button class="sm mt-6" id="btn-run-effects">Recompute Sun + BRDF + AutoExposure</button>
+              </div>
+            </div>
+            <pre class="code-out" id="effects-out"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 3. DATASOURCES LAB ==================== -->
+    <section class="panel-view" id="tab-datasources">
+      <div class="lab-scroll">
+        <div class="lab-grid">
+          <div class="lab-card" style="grid-column: span 2;">
+            <h2>Geospatial DataSources Parser &amp; Live Globe Overlay <span class="badge">CZML · GeoJSON · KML · GPX</span></h2>
+            <div class="row" id="ds-format-tabs">
+              <button class="sm active" data-ds="czml">CZML</button>
+              <button class="sm" data-ds="geojson">GeoJSON</button>
+              <button class="sm" data-ds="kml">KML 2.2</button>
+              <button class="sm" data-ds="gpx">GPX</button>
+              <button class="sm primary" id="btn-ds-parse" style="margin-left:auto;">Parse in Rust WASM</button>
+              <button class="sm" id="btn-ds-plot">Plot on 3D Globe →</button>
+            </div>
+            <textarea id="ds-input" style="min-height:240px;"></textarea>
+            <pre class="code-out" id="ds-output"></pre>
+          </div>
+
+          <div class="lab-card">
+            <h2>KML 2.2 / KMZ Exporter <span class="badge">data_sources::export_kml</span></h2>
+            <p style="margin:0;color:var(--muted);">Converts GeoJSON entities loaded into an <code>EntityCollection</code> back into spec-compliant KML 2.2 XML or a compressed KMZ archive.</p>
+            <div class="row">
+              <button class="primary" id="btn-export-kml">Export KML 2.2 XML</button>
+              <button id="btn-export-kmz">Export KMZ (ZIP)</button>
+            </div>
+            <pre class="code-out" id="kml-export-out" style="max-height:300px;"></pre>
+          </div>
+
+          <div class="lab-card">
+            <h2>Time-Dynamic Properties &amp; Clock <span class="badge">Sampled · Interval · Velocity</span></h2>
+            <label class="field">
+              <span>Elapsed Seconds (0–100s) <strong id="prop-t-val">35.0s</strong></span>
+              <input type="range" id="prop-t-slider" min="0" max="100" step="0.5" value="35" />
+            </label>
+            <div class="row">
+              <button class="sm" id="btn-prop-anim">Animate Scrub</button>
+            </div>
+            <pre class="code-out" id="prop-out" style="max-height:300px;"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 4. WORKERS & TERRAIN ==================== -->
+    <section class="panel-view" id="tab-workers">
+      <div class="lab-scroll">
+        <div class="lab-grid">
+          <div class="lab-card">
+            <h2>31 Geometry Workers Inspector <span class="badge" id="wgeom-badge">workers::geometry</span></h2>
+            <div class="row">
+              <select id="wgeom-select"></select>
+              <button class="sm" id="wgeom-wire-btn">Wireframe</button>
+            </div>
+            <canvas id="wgeom-canvas" class="preview-canvas"></canvas>
+            <pre class="code-out" id="wgeom-out" style="max-height:130px;"></pre>
+          </div>
+
+          <div class="lab-card">
+            <h2>Heightmap Terrain Tessellator <span class="badge">core::HeightmapTessellator</span></h2>
+            <div class="grid-3">
+              <label class="field">
+                <span>Pattern</span>
+                <select id="terrain-pattern">
+                  <option value="alpine">Alpine Peaks</option>
+                  <option value="crater">Volcanic Crater</option>
+                  <option value="canyon">Canyon Gorge</option>
+                  <option value="waves">Sinusoidal</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Grid <strong id="terrain-grid-val">33×33</strong></span>
+                <input type="range" id="terrain-grid" min="12" max="56" value="33" />
+              </label>
+              <label class="field">
+                <span>Exaggeration <strong id="terrain-exag-val">1.8×</strong></span>
+                <input type="range" id="terrain-exag" min="0.5" max="4.0" step="0.1" value="1.8" />
+              </label>
+            </div>
+            <canvas id="terrain-canvas" class="preview-canvas"></canvas>
+            <pre class="code-out" id="terrain-out" style="max-height:130px;"></pre>
+          </div>
+
+          <div class="lab-card">
+            <h2>Gaussian Splat Sorter &amp; Covariance Packer <span class="badge">workers::gaussian_splats</span></h2>
+            <div class="row">
+              <label class="field" style="flex:1;margin:0;">
+                <span>Splat Count <strong id="splat-count-val">4000</strong></span>
+                <input type="range" id="splat-count" min="500" max="15000" step="500" value="4000" />
+              </label>
+              <button class="primary sm" id="btn-splat-run">Sort &amp; Pack</button>
+            </div>
+            <canvas id="splat-canvas" class="preview-canvas"></canvas>
+            <pre class="code-out" id="splat-out" style="max-height:130px;"></pre>
+          </div>
+
+          <div class="lab-card">
+            <h2>Spatial Indices (S2 / Morton / Hilbert) &amp; Codecs <span class="badge">core + workers</span></h2>
+            <div class="grid-3">
+              <label class="field"><span>Lon (°)</span><input type="number" id="sp-lon" value="-105.27" step="0.5" /></label>
+              <label class="field"><span>Lat (°)</span><input type="number" id="sp-lat" value="40.01" step="0.5" /></label>
+              <label class="field"><span>Level</span><input type="number" id="sp-lvl" value="8" min="1" max="12" /></label>
+            </div>
+            <div class="grid-3">
+              <label class="field"><span>Morton X</span><input type="number" id="sp-mx" value="42" /></label>
+              <label class="field"><span>Morton Y</span><input type="number" id="sp-my" value="19" /></label>
+              <label class="field"><span>Morton Z</span><input type="number" id="sp-mz" value="7" /></label>
+            </div>
+            <div class="row">
+              <button class="primary sm" id="btn-spatial">Inspect Spatial Indices</button>
+              <button class="sm" id="btn-codecs">Run Codec &amp; GeometryPipeline Checks</button>
+            </div>
+            <pre class="code-out" id="spatial-out" style="max-height:220px;"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 5. RENDERER & GPU ==================== -->
+    <section class="panel-view" id="tab-renderer">
+      <div class="lab-scroll">
+        <div class="lab-grid">
+          <div class="lab-card">
+            <h2>WebGL2 GPU Pipeline Verification Suite <span class="badge">renderer::Context&lt;BrowserGl&gt;</span></h2>
+            <button class="primary" id="btn-gpu-suite">Run 8 Live WebGL2 GPU Tests</button>
+            <div class="test-list" id="gpu-suite-list"></div>
+          </div>
+
+          <div class="lab-card">
+            <h2>Live ComputeEngine &amp; TextureAtlas <span class="badge">Fullscreen Compute · Packing</span></h2>
+            <div class="row" style="justify-content:space-around;flex-wrap:wrap;">
+              <div style="text-align:center;">
+                <canvas id="compute-canvas" class="preview-canvas sq"></canvas>
+                <div class="mt-6"><strong>ComputeCommand</strong> Animated Pass</div>
+              </div>
+              <div style="text-align:center;">
+                <canvas id="atlas-canvas" class="preview-canvas sq"></canvas>
+                <div class="mt-6"><strong>TextureAtlas</strong> Packed Subregions</div>
+              </div>
+            </div>
+            <pre class="code-out" id="atlas-out" style="max-height:110px;"></pre>
+          </div>
+
+          <div class="lab-card wide">
+            <h2>WebGL2 Context Limits &amp; Capabilities <span class="badge">Context::limits()</span></h2>
+            <pre class="code-out" id="gpu-caps-out" style="max-height:320px;"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 6. BROWSER HOST ADAPTERS ==================== -->
+    <section class="panel-view" id="tab-browserhost">
+      <div class="lab-scroll">
+        <div class="lab-grid">
+          <div class="lab-card">
+            <h2>writeTextToCanvas <span class="badge">core::browser_canvas</span></h2>
+            <div class="grid-2">
+              <label class="field"><span>Text</span><input type="text" id="txt-label" value="CesiumRS 🚀 WebAssembly" /></label>
+              <label class="field"><span>Font</span><input type="text" id="txt-font" value="bold 28px sans-serif" /></label>
+            </div>
+            <div class="grid-3">
+              <label class="field"><span>Fill</span><input type="color" id="txt-fill" value="#f0ad30" style="height:30px;" /></label>
+              <label class="field"><span>Stroke</span><input type="color" id="txt-stroke" value="#08121f" style="height:30px;" /></label>
+              <label class="field"><span>Padding</span><input type="number" id="txt-pad" value="10" min="0" max="40" /></label>
+            </div>
+            <button class="primary sm" id="btn-render-text">Render Text Canvas</button>
+            <div id="text-canvas-host" class="pin-gallery"></div>
+            <pre class="code-out" id="text-dims-out" style="max-height:90px;"></pre>
+          </div>
+
+          <div class="lab-card">
+            <h2>BrowserPinBuilder <span class="badge">fromColor · fromText</span></h2>
+            <div class="grid-3">
+              <label class="field"><span>Label</span><input type="text" id="pin-text" value="RS" /></label>
+              <label class="field"><span>Color</span><input type="color" id="pin-color" value="#38d6f5" style="height:30px;" /></label>
+              <label class="field"><span>Size (px)</span><input type="number" id="pin-size" value="64" min="24" max="128" /></label>
+            </div>
+            <button class="primary sm" id="btn-render-pins">Generate Map Pins</button>
+            <div id="pin-gallery" class="pin-gallery"></div>
+          </div>
+
+          <div class="lab-card">
+            <h2>BrowserCore Credit Sanitizer (DOMPurify) <span class="badge">core::browser_host</span></h2>
+            <label class="field">
+              <span>Untrusted HTML Credit (try XSS payloads)</span>
+              <input type="text" id="credit-html" value='Imagery &copy; <a href="https://www.naturalearthdata.com">Natural Earth</a> <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onerror="alert(1)"><script>window.__xss=1</script>' />
+            </label>
+            <button class="primary sm" id="btn-sanitize-credit">Sanitize via BrowserCore::creditElement</button>
+            <div class="credit-preview" id="credit-dom-out"></div>
+            <pre class="code-out" id="credit-raw-out" style="max-height:90px;"></pre>
+          </div>
+
+          <div class="lab-card">
+            <h2>BrowserScreenSpaceEventHandler <span class="badge">Rust Input State Machine</span></h2>
+            <div id="gesture-pad" class="gesture-pad">Click, double-click, right-click, drag, or scroll here</div>
+            <pre class="code-out" id="gesture-log" style="max-height:170px;">Waiting for pointer/wheel events…</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 7. SHADERS (307) ==================== -->
+    <section class="panel-view" id="tab-shaders">
+      <div class="shader-split">
+        <div class="shader-list-panel">
+          <input type="text" id="shader-search" placeholder="Search 306 GLSL shaders…" />
+          <select id="shader-cat">
+            <option value="ALL">All Categories (306)</option>
+            <option value="Builtin">Builtin (140)</option>
+            <option value="Appearances">Appearances (14)</option>
+            <option value="Materials">Materials (19)</option>
+            <option value="Model">Model (36)</option>
+            <option value="PostProcessStages">PostProcessStages (26)</option>
+            <option value="Voxels">Voxels (16)</option>
+            <option value="Root">Root (55)</option>
+          </select>
+          <div class="shader-items" id="shader-items"></div>
+        </div>
+        <div class="shader-detail">
+          <div class="row-between">
+            <div>
+              <strong id="shader-title">Select a shader module</strong>
+              <span class="badge" id="shader-meta" style="margin-left:8px;">—</span>
+            </div>
+            <div class="row">
+              <button class="sm primary" id="btn-compile-shader">Test-Compile GLSL in WebGL2</button>
+              <span id="shader-compile-badge" class="badge">Idle</span>
+            </div>
+          </div>
+          <div class="shader-code-grid">
+            <div style="display:flex;flex-direction:column;min-height:0;">
+              <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:4px;">WebGL2 GLSL Source (shaders::shader)</div>
+              <pre class="code-out" id="shader-src"></pre>
+            </div>
+            <div style="display:flex;flex-direction:column;min-height:0;">
+              <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:4px;">Demodernized WebGL1 Output (demodernize_shader)</div>
+              <pre class="code-out" id="shader-webgl1"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 8. RUN ALL TESTS ==================== -->
+    <section class="panel-view" id="tab-selftest">
+      <div class="lab-scroll">
+        <div class="lab-grid">
+          <div class="lab-card wide">
+            <h2>
+              <span>Full-Stack Live Browser Self-Test Suite</span>
+              <span class="row">
+                <span class="badge" id="selftest-summary">Not run yet</span>
+                <button class="primary" id="btn-run-all-tests">Run All Live Feature Tests</button>
+              </span>
+            </h2>
+            <p style="margin:0;color:var(--muted);">
+              Exercises every CesiumRS subsystem live inside this browser tab: Core geodesy/rhumb/projections/astronomy/S2/Morton/Hilbert, WebGL2 Renderer/MSAA/Compute/CubeMap/Texture3D/Atlas/PickId, Scene PostProcess/Sun/BRDF/AutoExposure/glTF Model/3D Tile Style, DataSources CZML/GeoJSON/KML/GPX/ExportKML/TimeProperties, Workers (all 31 geometry workers + Heightmap Tessellator + Gaussian Splat Radix Sorter + Codecs), Browser Host adapters, and all 307 GLSL Shaders.
+            </p>
+            <div class="test-list" id="selftest-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

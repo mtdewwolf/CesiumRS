@@ -89,6 +89,9 @@ pub(crate) struct Deferred<T> {
 }
 
 impl<T> Deferred<T> {
+    pub(crate) fn waker(&self) -> Option<Waker> {
+        self.waker.clone()
+    }
     pub(crate) fn complete(&mut self, result: Result<T, RequestErrorEvent>) {
         self.result = Some(result);
         if let Some(waker) = self.waker.take() {

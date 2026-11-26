@@ -28,6 +28,27 @@ impl<G: Gl> TextureCache<G> {
         self.textures.insert(key, texture);
         Ok(())
     }
+    pub fn replace_texture(&mut self, keyword: impl Into<String>, texture: Rc<Texture<G>>) -> Result<()> {
+        let key = keyword.into();
+        ensure(!self.destroyed, "Texture cache is destroyed")?;
+        if let Some(old) = self.textures.insert(key, texture) {
+            if Rc::strong_count(&old) == 1 {
+                let _ = old.destroy();
+            }
+        }
+        Ok(())
+    }
+    pub fn remove_texture(&mut self, keyword: &str) -> Result<()> {
+        if self.destroyed {
+            return Ok(());
+        }
+        if let Some(old) = self.textures.remove(keyword) {
+            if Rc::strong_count(&old) == 1 {
+                let _ = old.destroy();
+            }
+        }
+        Ok(())
+    }
     pub fn destroy_released_textures(&mut self) -> Result<()> {
         let keys: Vec<_> =
             self.textures.iter().filter(|(_, t)| Rc::strong_count(t) == 1).map(|(k, _)| k.clone()).collect();
