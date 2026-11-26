@@ -5,7 +5,14 @@ use crate::{
     core::{math::js_number_to_string, RuntimeError},
     renderer::{render_state::ColorMask, *},
 };
-use std::rc::Rc;
+use std::{rc::Rc, sync::LazyLock};
+
+static DEPTH_WRITES: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"\b(?:gl_FragDepth|discard)\b").unwrap());
+static VERTEX_LOG_DEPTH: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"\s+czm_vertexLogDepth\(").unwrap());
+static FRAGMENT_LOG_DEPTH: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"\s+czm_writeLogDepth\(").unwrap());
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PickMetadataShader {
@@ -68,8 +75,7 @@ impl DerivedCommand {
     pub fn depth_only(options: &ShaderProgramOptions) -> ShaderProgramOptions {
         let mut result = options.clone();
         let fs = &options.fragment_shader_source;
-        let writes = regex::Regex::new(r"\b(?:gl_FragDepth|discard)\b").unwrap();
-        if !fs.sources.iter().any(|s| writes.is_match(s)) {
+        if !fs.sources.iter().any(|s| DEPTH_WRITES.is_match(s)) {
             result.fragment_shader_source = if fs.defines.iter().any(|d| d == "LOG_DEPTH") {
                 ShaderSource {
                     sources: vec![
@@ -99,17 +105,14 @@ impl DerivedCommand {
         let fs = &mut result.fragment_shader_source;
         vs.defines.push("LOG_DEPTH".into());
         fs.defines.push("LOG_DEPTH".into());
-        let called = |sources: &[String], name: &str| {
-            regex::Regex::new(&format!(r"\s+{name}\(")).unwrap().is_match(&sources.join("\n"))
-        };
-        if !called(&vs.sources, "czm_vertexLogDepth") {
+        if !VERTEX_LOG_DEPTH.is_match(&vs.sources.join("\n")) {
             for s in &mut vs.sources {
                 *s = ShaderSource::replace_main(s, "czm_log_depth_main");
             }
             vs.sources.push("\n\nvoid main()\n{\n    czm_log_depth_main();\n    czm_vertexLogDepth();\n}\n".into());
         }
         let mut log_source = String::new();
-        if !called(&fs.sources, "czm_writeLogDepth") && !fs.defines.iter().any(|d| d == "LOG_DEPTH_WRITE") {
+        if !FRAGMENT_LOG_DEPTH.is_match(&fs.sources.join("\n")) && !fs.defines.iter().any(|d| d == "LOG_DEPTH_WRITE") {
             for s in &mut fs.sources {
                 *s = ShaderSource::replace_main(s, "czm_log_depth_main");
             }

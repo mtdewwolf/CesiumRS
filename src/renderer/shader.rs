@@ -90,9 +90,10 @@ impl ShaderSource {
         Self { sources: vec![source.into()], ..Default::default() }
     }
     pub fn replace_main(source: &str, renamed: &str) -> String {
-        regex::Regex::new(r"void\s+main\s*\(\s*(?:void)?\s*\)")
-            .unwrap()
-            .replace_all(source, regex::NoExpand(&format!("void {renamed}()")))
+        static MAIN: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
+            regex::Regex::new(r"void\s+main\s*\(\s*(?:void)?\s*\)").unwrap()
+        });
+        MAIN.replace_all(source, regex::NoExpand(&format!("void {renamed}()")))
             .into_owned()
     }
     pub fn combine_webgl2(&self, fragment: bool, capabilities: ShaderCapabilities) -> Result<String> {
